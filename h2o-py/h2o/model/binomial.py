@@ -623,6 +623,27 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the specificity value for each of the cross-validated splits.
 
         :returns: The specificity values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <=.2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.specificity(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.specificity(train=True, valid=True, xval=True)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -779,6 +800,31 @@ class H2OBinomialModel(ModelBase):
         :param bool xval: If True, return the metric value for each of the cross-validated splits.
 
         :returns: The metric values for the specified key(s).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        # thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99])
+        >>> thresholds = [0.01,0.5,0.99]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(y=response_col,
+        ...           x=predictors,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        # allowable metrics are absolute_mcc, accuracy, precision,
+        # f0point5, f1, f2, mean_per_class_accuracy, min_per_class_accuracy,
+        # tns, fns, fps, tps, tnr, fnr, fpr, tpr, recall, sensitivity,
+        # missrate, fallout, specificity
+        >>> gbm.metric(metric='tpr', thresholds=thresholds)
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
