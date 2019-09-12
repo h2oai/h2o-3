@@ -428,6 +428,8 @@ Supported Versions
 -  CDH 5.10
 -  CDH 5.13
 -  CDH 5.14
+-  CDH 5.15
+-  CDH 5.16
 -  CDH 6.0
 -  CDH 6.1
 -  CDH 6.2
