@@ -137,7 +137,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
     super(key);
-    Key.logInfo(_key);
     this.startTime = startTime;
     this.buildSpec = buildSpec;
     runCountdown = Countdown.fromSeconds(buildSpec.build_control.stopping_criteria.max_runtime_secs());
