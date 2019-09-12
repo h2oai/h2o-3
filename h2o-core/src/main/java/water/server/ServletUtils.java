@@ -185,7 +185,6 @@ public class ServletUtils {
     response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
     response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
     response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
-    response.setHeader("X-h2o-context-path", sanatizeContextPath(H2O.ARGS.context_path));
     // Security headers
     response.setHeader("X-Frame-Options", "deny");
     response.setHeader("X-XSS-Protection", "1; mode=block");
