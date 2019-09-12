@@ -1,6 +1,7 @@
 package ai.h2o.automl.training;
 
 import ai.h2o.automl.*;
+import hex.grid.Grid;
 import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
@@ -61,7 +62,7 @@ public class GBMSteps extends TrainingSteps {
     private TrainingStep[] defaults = new GBMModelStep[] {
             new GBMModelStep("def_1", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 6;
                     gbmParameters._min_rows = 1;
@@ -71,7 +72,7 @@ public class GBMSteps extends TrainingSteps {
             },
             new GBMModelStep("def_2", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 7;
                     gbmParameters._min_rows = 10;
@@ -81,7 +82,7 @@ public class GBMSteps extends TrainingSteps {
             },
             new GBMModelStep("def_3", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 8;
                     gbmParameters._min_rows = 10;
@@ -91,7 +92,7 @@ public class GBMSteps extends TrainingSteps {
             },
             new GBMModelStep("def_4", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 10;
                     gbmParameters._min_rows = 10;
@@ -101,7 +102,7 @@ public class GBMSteps extends TrainingSteps {
             },
             new GBMModelStep("def_5", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 15;
                     gbmParameters._min_rows = 100;
@@ -114,7 +115,7 @@ public class GBMSteps extends TrainingSteps {
     private TrainingStep[] grids = new GBMGridStep[] {
             new GBMGridStep("grid_1", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<Grid> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
 
                     Map<String, Object[]> searchParams = new HashMap<>();

@@ -4,7 +4,6 @@ import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Iced;
 import water.Key;
-import water.api.schemas3.JobV3;
 import water.fvec.Frame;
 
 /**
@@ -167,14 +166,12 @@ public class AutoMLBuildSpec extends Iced {
   public static final class AutoMLBuildModels extends Iced {
     public Algo[] exclude_algos;
     public Algo[] include_algos;
+    public StepDefinition[] training_plan;
   }
 
   public AutoMLBuildControl build_control;
   public AutoMLInput input_spec;
   public AutoMLBuildSpec.AutoMLBuildModels build_models;
-
-  // output
-  public JobV3 job;
 
   private transient String project_cached = null;
   public String project() {

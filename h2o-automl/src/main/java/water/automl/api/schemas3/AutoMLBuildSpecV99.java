@@ -4,7 +4,7 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
-import hex.ScoreKeeper;
+import hex.ScoreKeeper.StoppingMetric;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.Schema;
@@ -137,7 +137,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     public int stopping_rounds;
 
     @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", valuesProvider = StoppingMetricValuesProvider.class, level = API.Level.secondary, direction=API.Direction.INOUT)
-    public ScoreKeeper.StoppingMetric stopping_metric;
+    public StoppingMetric stopping_metric;
 
     @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT)
     public double stopping_tolerance;
@@ -170,6 +170,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
     @API(help="A list of algorithms to restrict to during the model-building phase.", valuesProvider=AlgoProvider.class, direction=API.Direction.INPUT)
     public Algo[] include_algos;
+
+    @API(help="BLAH BLAH BLAH", direction=API.Direction.INPUT)
+    public StepDefinitionV99[] training_plan;
+
   } // class AutoMLBuildModels
 
   ////////////////
@@ -189,6 +193,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   @API(help="The AutoML Job key", direction=API.Direction.OUTPUT)
   public JobV3 job;
 
+  @Override
+  public AutoMLBuildSpec fillImpl(AutoMLBuildSpec impl) {
+    return super.fillImpl(impl, new String[] {"job"});
+  }
 
   @Override
   public AutoMLBuildSpecV99 fillFromBody(String body) {

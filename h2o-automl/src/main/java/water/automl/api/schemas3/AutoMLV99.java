@@ -3,7 +3,6 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.EventLog;
 import ai.h2o.automl.Leaderboard;
-import water.DKV;
 import water.Iced;
 import water.Key;
 import water.api.API;
@@ -58,6 +57,9 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
   @API(help="Metric used to sort leaderboard", direction=API.Direction.INPUT)
   public String sort_metric;
+
+  @API(help="Blah Blah Blah", direction=API.Direction.OUTPUT)
+  public StepDefinitionV99[] executed_plan;
 
   @Override public AutoMLV99 fillFromImpl(AutoML autoML) {
     super.fillFromImpl(autoML, new String[] { "leaderboard", "event_log", "leaderboard_table", "event_log_table", "sort_metric" });

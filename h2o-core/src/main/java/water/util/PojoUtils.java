@@ -522,9 +522,9 @@ public class PojoUtils {
           f.set(o, valuesCast);
         } else if(f.getType().getComponentType().isEnum()) {
           Object[] valuesTyped = ((Object[]) value);
-          Enum[] valuesCast = (Enum[])java.lang.reflect.Array.newInstance(f.getType().getComponentType(), ((Object[]) value).length);
+          Enum[] valuesCast = (Enum[]) Array.newInstance(f.getType().getComponentType(), valuesTyped.length);
           for (int i = 0; i < valuesTyped.length; i++) {
-            String v = (String)valuesTyped[i];
+            String v = (String) valuesTyped[i];
             try {
               valuesCast[i] = Enum.valueOf((Class<Enum>) f.getType().getComponentType(), v);
             } catch (IllegalArgumentException e) {
@@ -532,6 +532,18 @@ public class PojoUtils {
             }
           }
           f.set(o, valuesCast);
+        } else if (Schema.class.isAssignableFrom(f.getType().getComponentType())) {
+          Object[] valuesTyped = ((Object[])value);
+          Schema[] valuesCast = (Schema[]) Array.newInstance(f.getType().getComponentType(), valuesTyped.length);;
+          try {
+            for (int i = 0; i < valuesTyped.length; i++) {
+              Schema v = (Schema)f.getType().getComponentType().newInstance();
+              valuesCast[i] = v.fillFromAny(valuesTyped[i]);
+            }
+            f.set(o, valuesCast);
+          } catch (InstantiationException e) {
+            throw new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + value, e);
+          }
         } else {
           throw new IllegalArgumentException("setField can't yet convert an array of: " + value.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
         }

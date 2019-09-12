@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.WorkAllocations.JobType;
 import hex.Model;
 import hex.grid.Grid;
@@ -35,6 +36,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
+  private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
   /**
    * Instantiate an AutoML object and start it running.  Progress can be tracked via its job().
    *
@@ -47,20 +49,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     synchronized (AutoML.class) {
       // protect against two runs whose startTime is the same second
       if (lastStartTime != null) {
-        while (lastStartTime.getYear() == startTime.getYear() &&
-            lastStartTime.getMonth() == startTime.getMonth() &&
-            lastStartTime.getDate() == startTime.getDate() &&
-            lastStartTime.getHours() == startTime.getHours() &&
-            lastStartTime.getMinutes() == startTime.getMinutes() &&
-            lastStartTime.getSeconds() == startTime.getSeconds())
+        while (Math.abs(lastStartTime.getTime() - startTime.getTime()) < 1e3 ) {
+          try {
+            Thread.sleep(500);
+          } catch (InterruptedException ignored) {}
           startTime = new Date();
+        }
       }
       lastStartTime = startTime;
     }
 
-    String keyString = buildSpec.build_control.project_name;
-    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(keyString), startTime, buildSpec);
-
+    AutoML aml = AutoML.makeAutoML(Key.make(buildSpec.project()), startTime, buildSpec);
     DKV.put(aml);
     startAutoML(aml);
     return aml;
@@ -74,7 +73,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public static void startAutoML(AutoML aml) {
     // Currently AutoML can only run one job at a time
     if (aml.job == null || !aml.job.isRunning()) {
-      H2OJob j = new H2OJob(aml, aml._key, aml.runCountdown.remainingTime());
+      H2OJob<AutoML> j = new H2OJob(aml, aml._key, aml.runCountdown.remainingTime());
       aml.job = j._job;
       j.start(aml.workAllocations.remainingWork());
       DKV.put(aml);
@@ -82,7 +81,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public static AutoML makeAutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
-
     return new AutoML(key, startTime, buildSpec);
   }
 
@@ -116,13 +114,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   Vec foldColumn;
   Vec weightsColumn;
 
-  Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
-
   Date startTime;
-  static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
   Countdown runCountdown;
-  Job job;                  // the Job object for the build of this AutoML.
+  Job<AutoML> job;                  // the Job object for the build of this AutoML.
   WorkAllocations workAllocations;
+  StepDefinition[] executedPlan;
 
   private TrainingStepsRegistry trainingStepsRegistry;
   private TrainingStepsExecutor trainingStepsExecutor;
@@ -133,6 +129,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Vec[] originalTrainingFrameVecs;
   private String[] originalTrainingFrameNames;
   private long[] originalTrainingFrameChecksums;
+  private Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
 
   public AutoML() {
     super(null);
@@ -140,18 +137,20 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
     super(key);
+    Key.logInfo(_key);
     this.startTime = startTime;
     this.buildSpec = buildSpec;
     runCountdown = Countdown.fromSeconds(buildSpec.build_control.stopping_criteria.max_runtime_secs());
 
     try {
-      eventLog = EventLog.make(this._key);
+      eventLog = EventLog.make(_key);
       eventLog().info(Stage.Workflow, "Project: " + projectName());
       eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.format(this.startTime))
               .setNamedValue("creation_epoch", this.startTime, EventLogEntry.epochFormat);
 
       workAllocations = planWork();
-      
+      StepDefinition[] trainingPlan = buildSpec.build_models.training_plan == null ? defaultTrainingPlan : buildSpec.build_models.training_plan;
+
       handleCVParameters(buildSpec);
 
       handleReproducibilityParameters(buildSpec);
@@ -162,7 +161,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       initLeaderboard(buildSpec);
 
-      trainingStepsRegistry = new TrainingStepsRegistry(this);
+      trainingStepsRegistry = new TrainingStepsRegistry(this, trainingPlan);
       trainingStepsExecutor = new TrainingStepsExecutor(leaderboard, eventLog, runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
@@ -243,6 +242,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return workAllocations;
   }
 
+  private static StepDefinition[] defaultTrainingPlan = {
+          new StepDefinition(Algo.XGBoost.name(), Alias.defaults),
+          new StepDefinition(Algo.GLM.name(), Alias.defaults),
+          new StepDefinition(Algo.DRF.name(), new String[]{ "def_1" }),
+          new StepDefinition(Algo.GBM.name(), Alias.defaults),
+          new StepDefinition(Algo.DeepLearning.name(), Alias.defaults),
+          new StepDefinition(Algo.DRF.name(), new String[]{ "XRT" }),
+          new StepDefinition(Algo.XGBoost.name(), Alias.grids),
+          new StepDefinition(Algo.GBM.name(), Alias.grids),
+          new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
+          new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
+  };
+
   @Override
   public void run() {
     runCountdown.start();
@@ -285,7 +297,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (job != null) job.get();
   }
 
-  public Job job() {
+  public Job<AutoML> job() {
     if (null == this.job) return null;
     return DKV.getGet(this.job._key);
   }
@@ -386,7 +398,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (null == this.origTrainingFrame)
       throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
 
-    Map<String, Frame> compatible_frames = new LinkedHashMap(){{
+    Map<String, Frame> compatible_frames = new LinkedHashMap<String, Frame>(){{
       put("training", origTrainingFrame);
       put("validation", validationFrame);
       put("blending", blendingFrame);

@@ -1,5 +1,6 @@
 package water;
 
+import water.util.Log;
 import water.util.ReflectionUtils;
 import water.util.StringUtils;
 import water.util.UnsafeUtils;
@@ -494,5 +495,14 @@ final public class Key<T extends Keyed> extends Iced<Key<T>> implements Comparab
     ab.put1(',');
     ab.putJSONStr("type", ReflectionUtils.findActualClassParameter(k.getClass(), 0).getSimpleName());
     return ab;
+  }
+
+  public static void logInfo(Key key) {
+    boolean is_home = key.home();
+    boolean is_on_leader = key.home_node() == H2O.CLOUD.leader();
+    Log.info("***** Cloud = "+H2O.CLOUD+" *****");
+    Log.info("***** LEADER = "+H2O.CLOUD.leader()+" *****");
+    Log.info("***** SELF = "+H2O.SELF+" *****");
+    Log.info("***** key "+key+" is home="+is_home+", on_leader="+is_on_leader+" (HOME="+key.home_node()+") *****");
   }
 }

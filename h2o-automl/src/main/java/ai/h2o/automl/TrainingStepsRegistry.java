@@ -23,66 +23,37 @@ public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
         }
     }
 
-    private static class StepsDescription extends Iced<StepsDescription> {
-
-        private String _name;
-        private String _alias;
-        private String[] _ids;
-
-        public StepsDescription(String name, String alias) {
-            _name = name;
-            _alias = alias;
-        }
-
-        public StepsDescription(String name, String[] ids) {
-            _name = name;
-            _ids = ids;
-        }
-
-        @Override
-        public String toString() {
-            return "{"+_name+" : "+(_ids == null ? _alias : Arrays.toString(_ids))+"}";
-        }
-    }
-
-    private static StepsDescription[] defaultExecutionOrder = {
-            new StepsDescription(Algo.XGBoost.name(), "defaults"),
-            new StepsDescription(Algo.GLM.name(), "defaults"),
-            new StepsDescription(Algo.DRF.name(), new String[]{ "def_1" }),
-            new StepsDescription(Algo.GBM.name(), "defaults"),
-            new StepsDescription(Algo.DeepLearning.name(), "defaults"),
-            new StepsDescription(Algo.DRF.name(), new String[]{ "XRT" }),
-            new StepsDescription(Algo.XGBoost.name(), "grids"),
-            new StepsDescription(Algo.GBM.name(), "grids"),
-            new StepsDescription(Algo.DeepLearning.name(), "grids"),
-            new StepsDescription(Algo.StackedEnsemble.name(), "defaults"),
-    };
-
     private Key<AutoML> _amlKey;
+    private StepDefinition[] _defaultTrainingPlan;
 
     public TrainingStepsRegistry(AutoML aml) {
+        this(aml, new StepDefinition[0]);
+    }
+
+    public TrainingStepsRegistry(AutoML aml, StepDefinition[] defaultTrainingPlan) {
         _amlKey = aml._key;
+        _defaultTrainingPlan = defaultTrainingPlan;
     }
 
     public TrainingStep[] getOrderedSteps() {
-        return getOrderedSteps(defaultExecutionOrder);
+        return getOrderedSteps(_defaultTrainingPlan);
     }
 
-    public TrainingStep[] getOrderedSteps(StepsDescription[] executionOrder) {
-        aml().eventLog().info(Stage.Workflow, "Loading execution steps "+Arrays.toString(executionOrder));
+    public TrainingStep[] getOrderedSteps(StepDefinition[] trainingPlan) {
+        aml().eventLog().info(Stage.Workflow, "Loading execution steps "+Arrays.toString(trainingPlan));
         List<TrainingStep> orderedSteps = new ArrayList<>();
-        for (StepsDescription descr : executionOrder) {
-            Class<TrainingSteps> clazz = stepsByName.get(descr._name);
+        for (StepDefinition step : trainingPlan) {
+            Class<TrainingSteps> clazz = stepsByName.get(step._name);
             if (clazz == null) {
-                aml().eventLog().warn(Stage.Workflow, "Could not find TrainingSteps class for "+descr._name);
+                aml().eventLog().warn(Stage.Workflow, "Could not find TrainingSteps class for "+step._name);
                 continue;
             }
             try {
                 TrainingSteps steps = clazz.getConstructor(AutoML.class).newInstance(aml());
-                if (descr._alias != null) {
-                    orderedSteps.addAll(Arrays.asList(steps.getSteps(descr._alias)));
-                } else if (descr._ids != null) {
-                    orderedSteps.addAll(Arrays.asList(steps.getSteps(descr._ids)));
+                if (step._alias != null) {
+                    orderedSteps.addAll(Arrays.asList(steps.getSteps(step._alias)));
+                } else if (step._ids != null) {
+                    orderedSteps.addAll(Arrays.asList(steps.getSteps(step._ids)));
                 }
             } catch (NoSuchMethodException|IllegalAccessException|InstantiationException|InvocationTargetException e) {
                 throw new RuntimeException(e);

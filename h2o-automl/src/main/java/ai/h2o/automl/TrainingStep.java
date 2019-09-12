@@ -37,11 +37,11 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
     protected abstract Key makeKey(String name, boolean withCounter);
 
+    protected abstract Job makeJob();
+
     protected boolean canRun() {
         return getWork() != null;
     }
-
-    protected abstract Job makeJob();
 
     protected WorkAllocations getWorkAllocations() {
         return _aml.workAllocations;
@@ -157,6 +157,9 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         }
 
         @Override
+        protected abstract Job<M> makeJob();
+
+        @Override
         protected Work getWork() {
             return getWorkAllocations().getAllocation(_algo, JobType.ModelBuild);
         }
@@ -214,6 +217,9 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         public GridStep(Algo algo, String id, AutoML autoML) {
             super(algo, id, autoML);
         }
+
+        @Override
+        protected abstract Job<Grid> makeJob();
 
         @Override
         protected Work getWork() {

@@ -2,6 +2,7 @@ package ai.h2o.automl.training;
 
 import ai.h2o.automl.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.grid.Grid;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.Job;
@@ -77,7 +78,7 @@ public class XGBoostSteps extends TrainingSteps {
     private TrainingStep[] defaults = new XGBoostModelStep[] {
             new XGBoostModelStep("def_1", _aml,false) {
                 @Override
-                protected Job makeJob() {
+                protected Job<XGBoostModel> makeJob() {
                     //XGB 1 (medium depth)
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
                     xgBoostParameters._max_depth = 10;
@@ -98,7 +99,7 @@ public class XGBoostSteps extends TrainingSteps {
             },
             new XGBoostModelStep("def_2", _aml, false) {
                 @Override
-                protected Job makeJob() {
+                protected Job<XGBoostModel> makeJob() {
                     //XGB 2 (deep)
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
                     xgBoostParameters._max_depth = 20;
@@ -119,7 +120,7 @@ public class XGBoostSteps extends TrainingSteps {
             },
             new XGBoostModelStep("def_3", _aml, false) {
                 @Override
-                protected Job makeJob() {
+                protected Job<XGBoostModel> makeJob() {
                     //XGB 3 (shallow)
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
                     xgBoostParameters._max_depth = 5;
@@ -143,7 +144,7 @@ public class XGBoostSteps extends TrainingSteps {
     private TrainingStep[] grids = new XGBoostGridStep[] {
             new XGBoostGridStep("grid_1", _aml, false) {
                 @Override
-                protected Job makeJob() {
+                protected Job<Grid> makeJob() {
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
                     Map<String, Object[]> searchParams = new HashMap<>();
 //                    searchParams.put("_ntrees", new Integer[]{100, 1000, 10000}); // = _n_estimators

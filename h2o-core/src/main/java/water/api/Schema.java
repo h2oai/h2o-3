@@ -357,6 +357,15 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
   }
 
   /**
+   *
+   * @param o
+   * @return
+   */
+  public S fillFromAny(Object o) {
+    throw new IllegalArgumentException("can't convert object of type " + o.getClass() + " to schema " + this.getSchemaType());
+  }
+
+  /**
    * Safe method to set the field on given schema object
    * @param o  schema object to modify
    * @param f  field to modify

@@ -1,10 +1,9 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.StepDefinition.Alias;
 import water.Iced;
 import water.util.ArrayUtils;
 
-import java.util.Arrays;
-import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -30,13 +29,13 @@ public abstract class TrainingSteps extends Iced<TrainingSteps> {
                 .toArray(TrainingStep[]::new);
     }
 
-    TrainingStep[] getSteps(String alias) {
+    TrainingStep[] getSteps(Alias alias) {
         switch (alias) {
-            case "all":
+            case all:
                 return getAllSteps();
-            case "defaults":
+            case defaults:
                 return getDefaultModels();
-            case "grids":
+            case grids:
                 return getGrids();
             default:
                 return new TrainingStep[0];

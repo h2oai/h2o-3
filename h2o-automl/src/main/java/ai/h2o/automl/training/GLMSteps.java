@@ -41,7 +41,7 @@ public class GLMSteps extends TrainingSteps {
     private TrainingStep[] defaults = new GLMModelStep[] {
             new GLMModelStep("def_1", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<GLMModel> makeJob() {
                     GLMParameters glmParameters = prepareModelParameters();
                     glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
                     glmParameters._missing_values_handling = GLMParameters.MissingValuesHandling.MeanImputation;
@@ -55,7 +55,7 @@ public class GLMSteps extends TrainingSteps {
             /*
             new GLMStep("grid_1", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<Grid> makeJob() {
                     GLMParameters glmParameters = prepareModelParameters();
                     glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
 

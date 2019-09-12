@@ -3,6 +3,7 @@ package ai.h2o.automl.training;
 import ai.h2o.automl.*;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.grid.Grid;
 import water.Job;
 
 import java.util.HashMap;
@@ -60,7 +61,7 @@ public class DeepLearningSteps extends TrainingSteps {
     private TrainingStep[] defaults = new DeepLearningModelStep[] {
             new DeepLearningModelStep("def_1", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<DeepLearningModel> makeJob() {
                     DeepLearningParameters dlParameters = new DeepLearningParameters();  // don't use common params for default DL
                     dlParameters._hidden = new int[]{ 10, 10, 10 };
                     return trainModel(dlParameters);
@@ -71,7 +72,7 @@ public class DeepLearningSteps extends TrainingSteps {
     private TrainingStep[] grids = new DeepLearningGridStep[] {
             new DeepLearningGridStep("grid_1", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<Grid> makeJob() {
                     DeepLearningParameters dlParameters = prepareModelParameters();
 
                     Map<String, Object[]> searchParams = prepareSearchParams();
@@ -94,7 +95,7 @@ public class DeepLearningSteps extends TrainingSteps {
             },
             new DeepLearningGridStep("grid_2", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<Grid> makeJob() {
                     DeepLearningParameters dlParameters = prepareModelParameters();
 
                     Map<String, Object[]> searchParams = prepareSearchParams();
@@ -116,7 +117,7 @@ public class DeepLearningSteps extends TrainingSteps {
             },
             new DeepLearningGridStep("grid_3", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<Grid> makeJob() {
                     DeepLearningParameters dlParameters = prepareModelParameters();
 
                     Map<String, Object[]> searchParams = prepareSearchParams();

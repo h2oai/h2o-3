@@ -91,7 +91,7 @@ public class StackedEnsembleSteps extends TrainingSteps {
             new StackedEnsembleModelStep("best", _aml) {
                 { _description = _description+" (build using top model from each algorithm type)"; }
                 @Override
-                protected Job makeJob() {
+                protected Job<StackedEnsembleModel> makeJob() {
                     // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
                     // This will give another ensemble that is smaller than the original which takes all models into consideration.
                     List<Model> bestModelsOfEachType = new ArrayList<>();
@@ -114,7 +114,7 @@ public class StackedEnsembleSteps extends TrainingSteps {
             new StackedEnsembleModelStep("all", _aml) {
                 { _description = _description+" (build using all AutoML models)"; }
                 @Override
-                protected Job makeJob() {
+                protected Job<StackedEnsembleModel> makeJob() {
                     int nonEnsembleCount = 0;
                     for (Model aModel : getTrainedModels())
                         if (!(aModel instanceof StackedEnsembleModel))

@@ -38,7 +38,7 @@ public class DRFSteps extends TrainingSteps {
     private TrainingStep[] defaults = new DRFModelStep[] {
             new DRFModelStep("def_1", _aml) {
                 @Override
-                protected Job makeJob() {
+                protected Job<DRFModel> makeJob() {
                     DRFParameters drfParameters = prepareModelParameters();
                     return trainModel(drfParameters);
                 }
@@ -47,7 +47,7 @@ public class DRFSteps extends TrainingSteps {
                 { _description = _description+" (Extremely Randomized Trees)"; }
 
                 @Override
-                protected Job makeJob() {
+                protected Job<DRFModel> makeJob() {
                     DRFParameters drfParameters = prepareModelParameters();
                     drfParameters._histogram_type = HistogramType.Random;
 

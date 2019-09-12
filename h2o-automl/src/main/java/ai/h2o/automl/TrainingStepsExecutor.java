@@ -67,6 +67,7 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
     }
 
     void submit(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
+        Log.info("***** Submitting job: "+job._description+" *****");
         String jobDescription = job._result == null ? job._description : job._result.toString()+" ["+job._description+"]";
         eventLog().debug(Stage.ModelTraining, jobDescription + " started");
         _jobs.add(job);
