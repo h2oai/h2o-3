@@ -228,6 +228,40 @@ Where:
  - *y* is the actual target value.
  - :math:`\hat{y}` is the predicted target value.
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the iris dataset:
+    fr <- as.h2o(iris)
+
+    # build and train the model:
+    m <- h2o.deeplearning(x = 2:5, y=1, training_frame=fr)
+
+    # find the rmsle value:
+    h2o.mae(m)
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the predictor names and the response column name:
+    predictors = ["displacement","power","weight","acceleration","year"]
+    response = "cylinders"
+
+    # split the training and validation sets:
+    train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+
+    # build and train the model:
+    cars_gbm = H2OGradientBoostingEstimator(distribution = "poisson", seed = 1234)
+    cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+
+    # find the rmsle value:
+    cars_gbm.rmsle(train=True, valid=True, xval=True)
+
 MAE (Mean Absolute Error)
 #########################
 
@@ -242,6 +276,41 @@ Where:
 
   - *N* is the total number of errors
   - :math:`| x_i - x |` equals the absolute errors.
+
+Examples:
+
+.. example-code::
+   .. code-block:: r  
+
+    # import the iris dataset:
+    fr <- as.h2o(iris)
+
+    # build and train the model:
+    m <- h2o.deeplearning(x = 2:5, y=1, training_frame=fr)
+
+    # find the mae value:
+    h2o.mae(m)
+
+
+   .. code-block:: python
+   
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the predictor names and the response column name:
+    predictors = ["displacement","power","weight","acceleration","year"]
+    response = "cylinders"
+
+    # split the training and validation sets:
+    train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+
+    # build and train the model:
+    cars_gbm = H2OGradientBoostingEstimator(distribution = "poisson", seed = 1234)
+    cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+
+    # find the mae value:
+    cars_gbm.mae(train=True, valid=True, xval=True)
 
 Classification
 ''''''''''''''
