@@ -41,7 +41,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.F1(train=False, valid=False, xval=False)# <- Default: return training metric value
+        >>> gbm.F1()# <- Default: return training metric value
         >>> gbm.F1(train=True,  valid=True,  xval=True)
         """
         return self.metric('f1', thresholds, train, valid, xval)
@@ -80,7 +80,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.F2(train=False, valid=False, xval=False) # <- Default: return training metric value
+        >>> gbm.F2() # <- Default: return training metric value
         >>> gbm.F2(train=True, valid=True, xval=True)
         """
         return self.metric('f2', thresholds, train, valid, xval)
@@ -118,7 +118,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)         
-        >>> F0point5 = gbm.F0point5(train=False, valid=False, xval=False) # <- Default: return training metric value
+        >>> F0point5 = gbm.F0point5() # <- Default: return training metric value
         >>> F0point5 = gbm.F0point5(train=True,  valid=True,  xval=True)
         """
         return self.metric('f0point5', thresholds, train, valid, xval)
@@ -157,7 +157,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.accuracy(train=False, valid=False, xval=False) # <- Default: return training metric value
+        >>> gbm.accuracy() # <- Default: return training metric value
         >>> gbm.accuracy(train=True, valid=True, xval=True)
         """
         return self.metric('accuracy', thresholds, train, valid, xval)
@@ -196,7 +196,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.error(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.error() # <- Default: return training metric
         >>> gbm.error(train=True, valid=True, xval=True)
         """
         return self.metric('error', thresholds, train, valid, xval)
@@ -235,7 +235,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.precision(train=False, valid=False, xval=False) # <- Default: return training metric value
+        >>> gbm.precision() # <- Default: return training metric value
         >>> gbm.precision(train=True, valid=True, xval=True)
         """
         return self.metric('precision', thresholds, train, valid, xval)
@@ -274,7 +274,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.tpr(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.tpr() # <- Default: return training metric
         >>> gbm.tpr(train=True, valid=True, xval=True)
         """
         return self.metric('tpr', thresholds, train, valid, xval)
@@ -313,7 +313,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.tnr(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.tnr() # <- Default: return training metric
         >>> gbm.tnr(train=True, valid=True, xval=True)
         """
         return self.metric('tnr', thresholds, train, valid, xval)
@@ -352,7 +352,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.fnr(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.fnr() # <- Default: return training metric
         >>> gbm.fnr(train=True, valid=True, xval=True)
         """
         return self.metric('fnr', thresholds, train, valid, xval)
@@ -391,7 +391,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.fpr(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.fpr() # <- Default: return training metric
         >>> gbm.fpr(train=True, valid=True, xval=True)
         """
         return self.metric('fpr', thresholds, train, valid, xval)
@@ -430,7 +430,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.recall(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.recall() # <- Default: return training metric
         >>> gbm.recall(train=True, valid=True, xval=True)
         """
         return self.metric('recall', thresholds, train, valid, xval)
@@ -469,7 +469,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.sensitivity(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.sensitivity() # <- Default: return training metric
         >>> gbm.sensitivity(train=True, valid=True, xval=True)
         """
         return self.metric('sensitivity', thresholds, train, valid, xval)
@@ -508,7 +508,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.fallout(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.fallout() # <- Default: return training metric
         >>> gbm.fallout(train=True, valid=True, xval=True)
         """
         return self.metric('fallout', thresholds, train, valid, xval)
@@ -547,7 +547,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.missrate(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.missrate() # <- Default: return training metric
         >>> gbm.missrate(train=True, valid=True, xval=True)
         """
         return self.metric('missrate', thresholds, train, valid, xval)
@@ -586,7 +586,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.specificity(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.specificity() # <- Default: return training metric
         >>> gbm.specificity(train=True, valid=True, xval=True)
         """
         return self.metric('specificity', thresholds, train, valid, xval)
@@ -625,7 +625,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.mcc(train=False, valid=False, xval=False) # <- Default: return training metric value
+        >>> gbm.mcc() # <- Default: return training metric value
         >>> gbm.mcc(train=True, valid=True, xval=True)
         """
         return self.metric('mcc', thresholds, train, valid, xval)
@@ -664,7 +664,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.max_per_class_error(train=False, valid=False, xval=False) # <- Default: return training metric value
+        >>> gbm.max_per_class_error() # <- Default: return training metric value
         >>> gbm.max_per_class_error(train=True, valid=True, xval=True)
         """
         return self.metric('max_per_class_error', thresholds, train, valid, xval)
@@ -703,7 +703,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.mean_per_class_error(train=False, valid=False, xval=False) # <- Default: return training metric
+        >>> gbm.mean_per_class_error() # <- Default: return training metric
         >>> gbm.mean_per_class_error(train=True, valid=True, xval=True)
         """
         return self.metric('mean_per_class_error', thresholds, train, valid, xval)
@@ -837,7 +837,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.roc(train=False, valid=False, xval=False) # <- Default: return training data
+        >>> gbm.roc() # <- Default: return training data
         >>> gbm.roc(train=True, valid=True, xval=True)
         """
         return self._delegate_to_metrics('roc', train, valid, xval)
@@ -875,7 +875,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.gains_lift(train=False, valid=False, xval=False) # <- Default: return training metric Gain/Lift table
+        >>> gbm.gains_lift() # <- Default: return training metric Gain/Lift table
         >>> gbm.gains_lift(train=True, valid=True, xval=True)
         """
         return self._delegate_to_metrics('gains_lift', train, valid, xval)
@@ -917,7 +917,7 @@ class H2OBinomialModel(ModelBase):
         ...           x=predictors,
         ...           validation_frame=valid,
         ...           training_frame=train)
-        >>> gbm.confusion_matrix(train=False, valid=False, xval=False) # <- Default: return training metric value
+        >>> gbm.confusion_matrix() # <- Default: return training metric value
         >>> gbm.confusion_matrix(train=True, valid=True, xval=True)
         """
         return self._delegate_to_metrics('confusion_matrix', train, valid, xval,
