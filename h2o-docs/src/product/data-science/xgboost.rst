@@ -244,17 +244,20 @@ The list of limitations include:
 
   2. The list of supported platforms includes:
  
-    +----------+-----------------+-----+-----+-----------------------+
-    | Platform | Minimal XGBoost | OMP | GPU | Compilation OS        |
-    +==========+=================+=====+=====+=======================+
-    |Linux     | yes             | yes | yes | Ubuntu 14.04, g++ 4.7 |
-    +----------+-----------------+-----+-----+-----------------------+
-    |OS X      | yes             | no  | no  | OS X 10.11            |
-    +----------+-----------------+-----+-----+-----------------------+
-    |Windows   | no              | no  | no  | NA                    |
-    +----------+-----------------+-----+-----+-----------------------+
+    +----------+-----------------+-----+-----+----------------+
+    | Platform | Minimal XGBoost | OMP | GPU | Compilation OS |
+    +==========+=================+=====+=====+================+
+    |Linux     | yes             | yes | yes | CentOS 7       |
+    +----------+-----------------+-----+-----+----------------+
+    |OS X      | yes             | no  | no  | OS X 10.11     |
+    +----------+-----------------+-----+-----+----------------+
+    |Windows   | no              | no  | no  | NA             |
+    +----------+-----------------+-----+-----+----------------+
 
-    **Note**: Minimal XGBoost configuration includes support for a single CPU.
+    **Notes**:
+
+    - Minimal XGBoost configuration includes support for a single CPU.
+    - Testing is done on Ubuntu 16 and CentOS 7 with GCC 5. These can be considered as being supported.
 
   3. Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
 
