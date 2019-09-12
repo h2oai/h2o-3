@@ -1,5 +1,5 @@
 #!/bin/bash
-source ../my.multiNodeUtils.sh
+source ../multiNodeUtils.sh
 
 # Argument parsing
 if [ "$1" = "jacoco" ]
