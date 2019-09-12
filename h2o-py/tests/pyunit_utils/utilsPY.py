@@ -3306,6 +3306,54 @@ def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[T
                                                                                              "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
                                                                                                                    rowInd+1, frame1[rowInd+1,colInd])
 
+def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[True, True]):
+    for colInd in sorted_column_indices:
+        for rowInd in range(0, frame1.nrow-1):
+            if (random.uniform(0.0,1.0) < prob):
+                if colInd == sorted_column_indices[0]:
+                    if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
+                        if ascending[colInd]:
+                            assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                                                     "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
+                                                                                                           rowInd+1, frame1[rowInd+1,colInd])
+                        else:
+                            assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                                                     "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
+                                                                                                           rowInd+1, frame1[rowInd+1,colInd])
+                else: # for second column
+                    if not(math.isnan(frame1[rowInd, sorted_column_indices[0]])) and not(math.isnan(frame1[rowInd+1,sorted_column_indices[0]])):
+                        if (frame1[rowInd,sorted_column_indices[0]]==frame1[rowInd+1, sorted_column_indices[0]]):  # meaningful to compare row entries then
+                            if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
+                                if ascending[colInd]:
+                                    assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                                                             "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
+                                                                                                                   rowInd+1, frame1[rowInd+1,colInd])
+                                else:
+                                    assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                                                             "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
+                                                                                                                   rowInd+1, frame1[rowInd+1,colInd])
+
+def check_sorted_1_column(frame1, sorted_column_index, prob=0.5, ascending=True):
+    totRow = frame1.nrow * prob
+    skipRow = int(frame1.nrow/totRow)
+    for rowInd in range(0, frame1.nrow-1, skipRow):
+        if not (math.isnan(frame1[rowInd, sorted_column_index])) and not (
+            math.isnan(frame1[rowInd + 1, sorted_column_index])):
+            if ascending:
+                assert frame1[rowInd, sorted_column_index] <= frame1[
+                    rowInd + 1, sorted_column_index], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                      "row {2}: {3}".format(rowInd,
+                                                                            frame1[rowInd, sorted_column_index],
+                                                                            rowInd + 1,
+                                                                            frame1[rowInd + 1, sorted_column_index])
+            else:
+                assert frame1[rowInd, sorted_column_index] >= frame1[
+                    rowInd + 1, sorted_column_index], "Wrong sort order: value at row {0}: {1}, value at " \
+                                                      "row {2}: {3}".format(rowInd,
+                                                                            frame1[rowInd, sorted_column_index],
+                                                                            rowInd + 1,
+                                                                            frame1[rowInd + 1, sorted_column_index])
+
 def assert_correct_frame_operation(sourceFrame, h2oResultFrame, operString):
     """
     This method checks each element of a numeric H2OFrame and throw an assert error if its value does not
