@@ -197,14 +197,7 @@ public class ServletUtils {
       response.addHeader(header._key, header._value);
     }
   }
-
-  public static String sanatizeContextPath(String context_path) {
-    if(null == context_path || context_path.isEmpty()) {
-      return "/";
-    }
-    return context_path + "/";
-  }
-
+  
   @SuppressWarnings("unused")
   public static void logRequest(String method, HttpServletRequest request, HttpServletResponse response) {
     Log.httpd(method, request.getRequestURI(), getStatus(), System.currentTimeMillis() - getStartMillis());
