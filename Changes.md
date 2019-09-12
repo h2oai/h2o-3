@@ -2,6 +2,67 @@
 
 ## H2O
 
+### Yau (3.26.0.4) - 9/12/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/4/index.html</a>
+
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6366'>PUBDEV-6366</a>] - Fixed several broken metric methods in the Python and R clients.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6686'>PUBDEV-6686</a>] - Fixed an NPE issue that occurred while building DRF. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6778'>PUBDEV-6778</a>] - The temp folder is no longer deleted after running `h2o.mojo_predict_df`. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6868'>PUBDEV-6868</a>] - Flow now works correctly in environments that already have a context path prefixed. (STILL OPEN)
+</li>
+</ul>
+            
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6776'>PUBDEV-6776</a>] - Introduced a Transform operation together with Target Encoding Model. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6813'>PUBDEV-6813</a>] - Added support for CDH 5.15 and and CDH 5.16.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6794'>PUBDEV-6794</a>] - In the Flow > Models menu, moved MOJO Model to below the list of algorithms and re-labeled it "Import MOJO Model."
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6803'>PUBDEV-6803</a>] - Removed unnecessary read confirmation timeout.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6839'>PUBDEV-6839</a>] - Unified the Target Encoding API arguments with other models - using (x,y).
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6848'>PUBDEV-6848</a>] - Target Encoder ignores non-categorical encoded columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6854'>PUBDEV-6854</a>] - Added "fetch mode" option to Flow. As a result, Hive users can now import tables from hive1.X from within f
+Flow. Note that Hive 1.x doesn't support OFFSET. So for Hive 1.x, use import_hive_table or use non-distributed JDBC import (i.e., `fetch node = single`).
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6823'>PUBDEV-6823</a>] - Added `plug_values` to the Parameters Appendix.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6850'>PUBDEV-6850</a>] - Added Python examples to CoxPH options.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6861'>PUBDEV-6861</a>] - Added information about GPU usage and support for XGBoost in the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6871'>PUBDEV-6871</a>] - Added Teradata to list of supported JDBC types.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6879'>PUBDEV-6879</a>] - Added Teradata to list of supported JDBC types.
+</li>
+</ul>
+
+
+
+
 ### Yau (3.26.0.3) - 8/23/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/3/index.html</a>
