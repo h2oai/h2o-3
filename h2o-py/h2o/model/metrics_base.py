@@ -173,7 +173,10 @@ class MetricsBase(backwards_compatible()):
         """The area under the precision recall curve."""
         return self._metric_json['pr_auc']
 
-
+    def aucpr(self):
+        """The area under the precision recall curve.  aucpr will be deprecated.  Please use pr_auc"""
+        return self._metric_json['pr_auc']
+    
     def aic(self):
         """The AIC for this set of metrics."""
         return self._metric_json['AIC']

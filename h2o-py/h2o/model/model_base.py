@@ -810,6 +810,12 @@ class ModelBase(backwards_compatible(Keyed)):
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def aucpr(self, train=False, valid=False, xval=False):
+        """
+        Get the pr_auc (Area Under PRECISION RECALL Curve).  aucpr will be deprecated.  Please use pr_auc
+        """
+        return self.pr_auc(train, valid, xval)
+ 
     def pr_auc(self, train=False, valid=False, xval=False):
         """
         Get the pr_auc (Area Under PRECISION RECALL Curve).
