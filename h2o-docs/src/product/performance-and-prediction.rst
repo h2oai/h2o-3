@@ -45,7 +45,6 @@ Examples:
 
     # build and train the model:
     cars.glm <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train)
-    cars.glm.valid <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train, validation_frame = cars.test)
 
     # find the r2 value:
     r2.basic <- h2o.r2(cars.glm)
@@ -71,7 +70,8 @@ Examples:
     predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
 
     # find the r2 value:
@@ -108,7 +108,6 @@ Examlples:
 
     # build and train the model:
     cars.glm <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train)
-    cars.glm.valid <- h2o.glm(x = 3:7, y = 2, training_frame = cars.train, validation_frame = cars.test)
 
     # find the mse value:
     mse.basic <- h2o.mse(cars.glm)
@@ -135,8 +134,10 @@ Examlples:
     predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, 
+              training_frame=train)
 
     # find the mse value:
     gbm.mse(train=True, valid=False, xval=False)
@@ -179,7 +180,9 @@ Examples:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, 
+                                  training_frame = pros.train, 
+                                  validation_frame = pros.test, nfolds = 2)
 
     # find the rmse value:
     rmse.valid.xval.T <- h2o.rmse(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
@@ -205,7 +208,8 @@ Examples:
     predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
 
     # find the rmse value:
@@ -233,14 +237,24 @@ Examples:
 .. example-code::
    .. code-block:: r
 
-    # import the iris dataset:
-    fr <- as.h2o(iris)
+    # import the cars dataset:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the predictors and response:
+    predictors <- c("displacement","power","weight","acceleration","year")
+    response <- "cylinders"
+
+    # split the training and validation sets:
+    cars.splits <- h2o.splitFrame(data = cars, ratios = .8, seed = 1234)
+    train <- cars.splits[[1]]
+    valid <- cars.splits[[2]]
 
     # build and train the model:
-    m <- h2o.deeplearning(x = 2:5, y=1, training_frame=fr)
+    cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
+                        validation_frame = valid, distribution = "poisson", seed = 1234)
 
     # find the rmsle value:
-    h2o.mae(m)
+    h2o.rmsle(cars_gbm)
 
 
    .. code-block:: python
@@ -257,7 +271,7 @@ Examples:
 
     # build and train the model:
     cars_gbm = H2OGradientBoostingEstimator(distribution = "poisson", seed = 1234)
-    cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+    cars_gbm.train(x=predictors, y=response, training_frame=train, validation_frame=valid)
 
     # find the rmsle value:
     cars_gbm.rmsle(train=True, valid=True, xval=True)
@@ -282,14 +296,25 @@ Examples:
 .. example-code::
    .. code-block:: r  
 
-    # import the iris dataset:
-    fr <- as.h2o(iris)
+    # import the cars dataset:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the predictors and response:
+    predictors <- c("displacement","power","weight","acceleration","year")
+    response <- "cylinders"
+
+    # split the training and validation sets:
+    cars.splits <- h2o.splitFrame(data = cars, ratios = .8, seed = 1234)
+    train <- cars.splits[[1]]
+    valid <- cars.splits[[2]]
 
     # build and train the model:
-    m <- h2o.deeplearning(x = 2:5, y=1, training_frame=fr)
+    cars_gbm <- h2o.gbm(x = predictors, y = response, 
+                        training_frame = train, validation_frame = valid, 
+                        distribution = "poisson", seed = 1234)
 
     # find the mae value:
-    h2o.mae(m)
+    h2o.mae(cars_gbm)
 
 
    .. code-block:: python
@@ -362,11 +387,12 @@ Examples:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = pros.train, validation_frame = pros.test, 
+                        nfolds = 2)
 
     # find the gini coefficient:
-    giniCoef.valid.xval.T <- h2o.giniCoef(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
-    giniCoef.valid.xval.T
+    h2o.giniCoef(pros_gbm)
 
 
    .. code-block:: python
@@ -389,7 +415,8 @@ Examples:
     predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
 
     # find the gini coefficient:
@@ -425,10 +452,12 @@ Examples:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = pros.train, validation_frame = pros.test, 
+                        nfolds = 2)
 
     # find the absolute mcc value:
-    perf <- h2o.performance(pros.gbm.valid.xval, pros)
+    perf <- h2o.performance(pros_gbm, pros)
     h2o.mcc(perf)
 
 
@@ -452,7 +481,8 @@ Examples:
     predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
 
     # find the absolute mcc value:
@@ -493,10 +523,12 @@ Examples:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = pros.train, validation_frame = pros.test, 
+                        nfolds = 2)
 
     # find the F1 value:
-    perf <- h2o.performance(pros.gbm.valid.xval, pros)
+    perf <- h2o.performance(pros_gbm, pros)
     h2o.F1(perf)
 
 
@@ -520,7 +552,8 @@ Examples:
     predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
 
     # find the F1 value:
@@ -562,10 +595,12 @@ Examples:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = pros.train, validation_frame = pros.test, 
+                        nfolds = 2)
 
     # find the F0.5 value:
-    perf <- h2o.performance(pros.gbm.valid.xval, pros)
+    perf <- h2o.performance(pros_gbm, pros)
     h2o.F0point5(perf)
 
 
@@ -589,7 +624,8 @@ Examples:
     predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
 
     # find the F0.5 value:
@@ -625,7 +661,9 @@ Examples:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = pros.train, validation_frame = pros.test, 
+                        nfolds = 2)
 
     # find the F2 value:
     perf <- h2o.performance(pros.gbm.valid.xval, pros)
@@ -652,7 +690,8 @@ Examples:
     predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
 
     # find the F2 value:
@@ -689,10 +728,12 @@ Examples:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = pros.train, validation_frame = pros.test, 
+                        nfolds = 2)
 
     # find the accuracy value:
-    perf <- h2o.performance(pros.gbm.valid.xval, pros)
+    perf <- h2o.performance(pros_gbm, pros)
     h2o.accuracy(perf)
 
 
@@ -716,7 +757,8 @@ Examples:
     predictors = ["displacement","power","weight","acceleration","year"] 
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)   
 
     # find the accuracy value:
@@ -767,11 +809,12 @@ Examples:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = pros.train, validation_frame = pros.test, 
+                        nfolds = 2)
 
     # find the logloss value:
-    logloss.valid.xval.T <- h2o.logloss(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
-    logloss.valid.xval.T   
+    h2o.logloss(pros_gbm)  
 
 
    .. code-block:: python
@@ -794,7 +837,8 @@ Examples:
     predictors = ["displacement","power","weight","acceleration","year"] 
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)  
 
     # find the logloss value:
@@ -808,7 +852,7 @@ This model metric is used to evaluate how well a binary classification model is 
 
 H2O uses the trapezoidal rule to approximate the area under the ROC curve. (**Tip**: AUC is usually not the best metric for an imbalanced binary target because a high number of True Negatives can cause the AUC to look inflated. For an imbalanced binary target, we recommend AUCPR or MCC.)
 
-Example:
+Examples:
 
 .. example-code::
    .. code-block:: r
@@ -829,11 +873,12 @@ Example:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, training_frame = pros.train, validation_frame = pros.test, nfolds = 2)
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = pros.train, validation_frame = pros.test, 
+                        nfolds = 2)
 
     # find the auc value:
-    auc.valid.xval.T <- h2o.auc(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
-    auc.valid.xval.T
+    h2o.auc(pros_gbm)
 
 
    .. code-block:: python
@@ -856,7 +901,8 @@ Example:
     predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
 
     # find the auc value:
@@ -868,6 +914,63 @@ AUCPR (Area Under the Precision-Recall Curve)
 This model metric is used to evaluate how well a binary classification model is able to distinguish between precision recall pairs or points. These values are obtained using different thresholds on a probabilistic or other continuous-output classifier. AUCPR is an average of the precision-recall weighted by the probability of a given threshold.
 
 The main difference between AUC and AUCPR is that AUC calculates the area under the ROC curve and AUCPR calculates the area under the Precision Recall curve. The Precision Recall curve does not care about True Negatives. For imbalanced data, a large quantity of True Negatives usually overshadows the effects of changes in other metrics like False Positives. The AUCPR will be much more sensitive to True Positives, False Positives, and False Negatives than AUC. As such, AUCPR is recommended over AUC for highly imbalanced data.
+
+**Note**: AUCPR primarily runs with command "model.pr_auc", though it is backwards compatible to run with "model.aucpr".
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the cars dataset:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the predictors and response:
+    predictors <- c("displacement","power","weight","acceleration","year")
+    response_col <- "economy_20mpg"
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(cars, seed = 1234)
+    train <- h2o.assign(cars[p.sid > .2, ], "train")
+    test <- h2o.assign(cars[p.sid <= .2, ], "test")
+
+    # build and train the model:
+    cars_gbm <- h2o.gbm(x = predictors, y = response_col, 
+                        training_frame = train, validation_frame = test, 
+                        distribution = "bernoulli", nfolds = 3, 
+                        fold_assignment = "Random")
+
+    # find the pr_auc value:
+    h2o.pr_auc(cars_gbm)
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the predictor names, the response column name, and 
+    # distribution
+    response_col = "economy_20mpg"
+    distribution = "bernoulli"
+    predictors = ["displacement","power","weight","acceleration","year"]
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
+                                       fold_assignment="Random")
+    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # find the pr_auc value:
+    gbm.pr_auc(train=True, valid=True, xval=True)
+
 
 Metric Best Practices - Regression
 '''''''''''''''''''''''''''''''''''
@@ -1032,10 +1135,145 @@ Misclassification
 
 This parameter specifies that a model must improve its misclassification rate by a given amount (specified by the `stopping_tolerance <data-science/algo-params/stopping_tolerance.html>`__ parameter) in order to continue iterating. The misclassification rate is the number of observations incorrectly classified divided by the total number of observations. 
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the airlines dataset:
+    airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+
+    # set the factors:
+    airlines["Year"] <- as.factor(airlines["Year"])
+    airlines["Month"] <- as.factor(airlines["Month"])
+    airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
+    airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
+    airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
+
+    # set the predictors and response:
+    predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
+                    "DayOfWeek", "Month", "Distance", "FlightNum")
+    response <- "IsDepDelayed"
+
+    # split the training and validation sets:
+    airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+    train <- airlines.splits[[1]]
+    valid <- airlines.splits[[2]]
+
+    # build and train the model using the misclassification stopping metric:
+    airlines.gbm <- h2o.gbm(x = predictors, y = response, 
+                            training_frame = train, validation_frame = valid, 
+                            stopping_metric = "misclassification", stopping_rounds = 3, 
+                            stopping_tolerance = 1e-2, seed = 1234)
+
+    # find the auc value:
+    h2o.auc(airlines.gbm, valid = TRUE)
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the airlines dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+
+    # set the factors:
+    airlines["Year"]= airlines["Year"].asfactor()
+    airlines["Month"]= airlines["Month"].asfactor()
+    airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+    airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+    airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+
+    # set the predictors and response:
+    predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
+                  "DayOfWeek", "Month", "Distance", "FlightNum"]
+    response = "IsDepDelayed"
+
+    # split the training and validation sets:
+    train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+
+    # build and train the model using the misclassification stopping metric:
+    airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "misclassification", 
+                                                stopping_rounds = 3, 
+                                                stopping_tolerance = 1e-2, 
+                                                seed = 1234)
+    airlines_gbm.train(x = predictors, y = response, 
+                       training_frame = train, validation_frame = valid)
+
+    # find the auc value:
+    airlines_gbm.auc(valid=True)
+
 Lift Top Group
 ''''''''''''''
 
-This parameter specifies that a model must improve its lift within the top 1% of the training data. To calculate the lift, H2O sorts each observation from highest to lowest predicted value. The top group or top 1% corresponds to the observations with the highest predicted values. Lift is the ratio of correctly classified positive observations (rows with a positive target) to the total number of positive observations within a group. 
+This parameter specifies that a model must improve its lift within the top 1% of the training data. To calculate the lift, H2O sorts each observation from highest to lowest predicted value. The top group or top 1% corresponds to the observations with the highest predicted values. Lift is the ratio of correctly classified positive observations (rows with a positive target) to the total number of positive observations within a group
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the airlines dataset:
+    airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+
+    # set the factors:
+    airlines["Year"] <- as.factor(airlines["Year"])
+    airlines["Month"] <- as.factor(airlines["Month"])
+    airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
+    airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
+    airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
+
+    # set the predictors and response:
+    predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
+                    "DayOfWeek", "Month", "Distance", "FlightNum")
+    response <- "IsDepDelayed"
+
+    # split the training and validation sets:
+    airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+    train <- airlines.splits[[1]]
+    valid <- airlines.splits[[2]]
+
+    # build and train the model using the lift_top_group stopping metric:
+    airlines.gbm <- h2o.gbm(x = predictors, y = response, 
+                            training_frame = train, validation_frame = valid, 
+                            stopping_metric = "lift_top_group", stopping_rounds = 3, 
+                            stopping_tolerance = 1e-2, seed = 1234)
+
+    # find the auc value:
+    h2o.auc(airlines.gbm, valid = TRUE)
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the airlines dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+
+    # set the factors:
+    airlines["Year"]= airlines["Year"].asfactor()
+    airlines["Month"]= airlines["Month"].asfactor()
+    airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+    airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+    airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+
+    # set the predictors and response:
+    predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
+                  "DayOfWeek", "Month", "Distance", "FlightNum"]
+    response = "IsDepDelayed"
+
+    # split the training and validation sets:
+    train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+
+    # build and train the model using the lifttopgroup stopping metric:
+    airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "lifttopgroup", 
+                                                stopping_rounds = 3, 
+                                                stopping_tolerance = 1e-2, 
+                                                seed = 1234)
+    airlines_gbm.train(x = predictors, y = response, 
+                       training_frame = train, validation_frame = valid)
+
+    # find the auc value:
+    airlines_gbm.auc(valid=True)
+
 
 Deviance
 ''''''''
@@ -1046,11 +1284,112 @@ The model will stop building if the deviance fails to continue to improve. Devia
 
   Loss = Quadratic -> MSE==Deviance For Absolute/Laplace or Huber -> MSE != Deviance
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the cars dataset:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the predictors and response:
+    predictors <- c("economy","cylinders","displacement","power","weight")
+    response = "acceleration"
+
+    #split the training and validation sets:
+    p.sid <- h2o.runif(cars, seed=1234)
+    train <- h2o.assign(cars[p.sid > .2, ], "train")
+    test <- h2o.assign(cars[p.sid <= .2, ], "test")
+
+    # build and train the model using the deviance stopping metric:
+    cars_gbm <- h2o.gbm(x=predictors, y=repsonse, 
+                        training_frame=train, validation_frame=test, 
+                        stopping_metric = "deviance", stopping_rounds = 3, 
+                        stopping_tolerance = 1e-2, seed = 1234)
+
+    # find the mse value:
+    h2o.mse(cars_gbm, valid=TRUE)
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the predictors and response:
+    predictors = ["economy","cylinders","displacement","power","weight"]
+    response = "acceleration"
+
+    # split the training and validation sets:
+    train, valid = cars.split_frame(ratios=[.8],seed=1234)
+
+    # build and train the model using the deviance stopping metric:
+    cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "deviance", 
+                                            stopping_rounds = 3, 
+                                            stopping_tolerance = 1e-2, 
+                                            seed = 1234)
+    cars_gbm.train(x=predictors, y=response, 
+                   training_frame=train, validation_frame=valid)
+
+    # find the mse value:
+    cars_gbm.mse(valid=True)
 
 Mean-Per-Class-Error
 ''''''''''''''''''''
 
 The model will stop building after the mean-per-class error rate fails to improve. 
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the cars dataset:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the predictors and response:
+    predictors <- c("economy","cylinders","displacement","power","weight")
+    response = "acceleration"
+
+    #split the training and validation sets:
+    p.sid <- h2o.runif(cars, seed=1234)
+    train <- h2o.assign(cars[p.sid > .2, ], "train")
+    test <- h2o.assign(cars[p.sid <= .2, ], "test")
+
+    # build and train the model:
+    cars_gbm <- h2o.gbm(x=predictors, y=repsonse, 
+                        training_frame=train, validation_frame=test, 
+                        stopping_metric = "mean_per_class_error", stopping_rounds = 3, 
+                        stopping_tolerance = 1e-2, seed = 1234)
+
+    # find the mse value:
+    h2o.mse(cars_gbm, valid=TRUE)
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the predictors and response:
+    predictors = ["economy","cylinders","displacement","power","weight"]
+    response = "acceleration"
+
+    # split the training and validation sets:
+    train, valid = cars.split_frame(ratios=[.8],seed=1234)
+
+    # build and train the model using the meanperclasserror stopping metric:
+    cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "meanperclasserror", 
+                                            stopping_rounds = 3, 
+                                            stopping_tolerance = 1e-2, 
+                                            seed = 1234)
+    cars_gbm.train(x=predictors, y=repsonse, 
+                   training_frame=train, validation_frame=valid)
+
+    # find the mse value:
+    cars_gbm.mse(valid=True)
 
 In addition to the above options, Logloss, MSE, RMSE, MAE, RMSLE, and AUC can also be used as the stopping metric. 
 
