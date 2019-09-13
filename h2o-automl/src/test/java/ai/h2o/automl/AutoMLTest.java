@@ -38,6 +38,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
+//      autoMLBuildSpec.build_models.exclude_algos = aro(Algo.XGBoost);
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -242,7 +243,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(30);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = true;
 
-      aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
+      aml = AutoML.makeAutoML(Key.make(), new Date(), autoMLBuildSpec);
       AutoML.startAutoML(aml);
       aml.get();
 
@@ -269,7 +270,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.keep_cross_validation_fold_assignment = false;
 
-      aml = AutoML.makeAutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
+      aml = AutoML.makeAutoML(Key.make(), new Date(), autoMLBuildSpec);
       AutoML.startAutoML(aml);
       aml.get();
 
@@ -292,9 +293,9 @@ public class AutoMLTest extends water.TestUtil {
       fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
-      aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
+      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
 
-      WorkAllocations workPlan = aml.planWork();
+      WorkAllocations workPlan = aml.planWork(aml.getExecutionPlan());
 
       Map<Algo, Integer> defaultAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.DeepLearning, 1*10+3*20);
@@ -302,7 +303,7 @@ public class AutoMLTest extends water.TestUtil {
         put(Algo.GBM, 5*10+1*60);
         put(Algo.GLM, 1*20);
         put(Algo.XGBoost, 3*10+1*100);
-        put(Algo.StackedEnsemble, 2*15);
+        put(Algo.StackedEnsemble, 2*10);
       }};
       int maxTotalWork = 0;
       for (Map.Entry<Algo, Integer> entry : defaultAllocs.entrySet()) {
@@ -314,7 +315,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(workPlan.remainingWork(), maxTotalWork);
 
       autoMLBuildSpec.build_models.exclude_algos = aro(Algo.DeepLearning, Algo.DRF);
-      workPlan = aml.planWork();
+      workPlan = aml.planWork(aml.getExecutionPlan());
 
       assertEquals(workPlan.remainingWork(), maxTotalWork - defaultAllocs.get(Algo.DeepLearning) - defaultAllocs.get(Algo.DRF));
 
@@ -435,18 +436,14 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
-      aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
-      WorkAllocations workPlan = aml.planWork();
+      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+      WorkAllocations workPlan = aml.planWork(aml.getExecutionPlan());
       for (Algo algo : autoMLBuildSpec.build_models.exclude_algos) {
-        assertNull(workPlan.getAllocation(algo, JobType.ModelBuild));
-        assertNull(workPlan.getAllocation(algo, JobType.HyperparamSearch));
+        assertEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
       }
       for (Algo algo : Algo.values()) {
         if (!ArrayUtils.contains(autoMLBuildSpec.build_models.exclude_algos, algo)) {
-          assertFalse(
-              workPlan.getAllocation(algo, JobType.ModelBuild) == null
-                  && workPlan.getAllocation(algo, JobType.HyperparamSearch) == null
-          );
+          assertNotEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
         }
       }
     } finally {
@@ -464,23 +461,18 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
-      aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
-      WorkAllocations workPlan = aml.planWork();
+      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+      WorkAllocations workPlan = aml.planWork(aml.getExecutionPlan());
       for (Algo algo : autoMLBuildSpec.build_models.include_algos) {
         if (algo.enabled()) {
-          assertFalse(
-                  workPlan.getAllocation(algo, JobType.ModelBuild) == null
-                          && workPlan.getAllocation(algo, JobType.HyperparamSearch) == null
-          );
+          assertNotEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
         } else {
-          assertNull(workPlan.getAllocation(algo, JobType.ModelBuild));
-          assertNull(workPlan.getAllocation(algo, JobType.HyperparamSearch));
+          assertEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
         }
       }
       for (Algo algo : Algo.values()) {
         if (!ArrayUtils.contains(autoMLBuildSpec.build_models.include_algos, algo)) {
-          assertNull(workPlan.getAllocation(algo, JobType.ModelBuild));
-          assertNull(workPlan.getAllocation(algo, JobType.HyperparamSearch));
+          assertEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
         }
       }
     } finally {
@@ -500,7 +492,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.GBM, Algo.GLM, };
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
       try {
-        aml = new AutoML(Key.<AutoML>make(), new Date(), autoMLBuildSpec);
+        aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
         fail("Should have thrown an H2OIllegalArgumentException for providing both include_algos and exclude_algos");
       } catch (H2OIllegalArgumentException e) {
         assertTrue(e.getMessage().startsWith("Parameters `exclude_algos` and `include_algos` are mutually exclusive"));

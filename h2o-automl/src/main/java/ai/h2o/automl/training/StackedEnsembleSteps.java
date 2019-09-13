@@ -13,6 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static ai.h2o.automl.TrainingStep.ModelStep.BASE_MODEL_WEIGHT;
+
 public class StackedEnsembleSteps extends TrainingSteps {
 
     public static class Provider implements TrainingStepsProvider<StackedEnsembleSteps> {
@@ -29,8 +31,8 @@ public class StackedEnsembleSteps extends TrainingSteps {
 
     static abstract class StackedEnsembleModelStep extends TrainingStep.ModelStep<StackedEnsembleModel> {
 
-        StackedEnsembleModelStep(String id, AutoML autoML) {
-            super(Algo.StackedEnsemble, id, autoML);
+        StackedEnsembleModelStep(String id, int weight, AutoML autoML) {
+            super(Algo.StackedEnsemble, id, weight, autoML);
             _ignoreConstraints = true;
         }
 
@@ -39,20 +41,20 @@ public class StackedEnsembleSteps extends TrainingSteps {
             Model[] allModels = getTrainedModels();
             Work seWork = getWork();
             if (seWork == null) {
-                _aml.job().update(0, "StackedEnsemble builds skipped");
-                _aml.eventLog().info(EventLogEntry.Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
+                aml().job().update(0, "StackedEnsemble builds skipped");
+                aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
                 return false;
             } else if (allModels.length == 0) {
-                _aml.job().update(seWork.consumeAll(), "No models built; StackedEnsemble builds skipped");
-                _aml.eventLog().info(EventLogEntry.Stage.ModelTraining, "No models were built, due to timeouts or the exclude_algos option. StackedEnsemble builds skipped.");
+                aml().job().update(seWork.consume(), "No models built; StackedEnsemble builds skipped");
+                aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "No models were built, due to timeouts or the exclude_algos option. StackedEnsemble builds skipped.");
                 return false;
             } else if (allModels.length == 1) {
-                _aml.job().update(seWork.consumeAll(), "One model built; StackedEnsemble builds skipped");
-                _aml.eventLog().info(EventLogEntry.Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
+                aml().job().update(seWork.consume(), "One model built; StackedEnsemble builds skipped");
+                aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model built");
                 return false;
-            } else if (!isCVEnabled() && _aml.getBlendingFrame() == null) {
-                _aml.job().update(seWork.consumeAll(), "Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
-                _aml.eventLog().info(EventLogEntry.Stage.ModelTraining, "Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
+            } else if (!isCVEnabled() && aml().getBlendingFrame() == null) {
+                aml().job().update(seWork.consume(), "Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
+                aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
                 return false;
             }
             return true;
@@ -64,12 +66,12 @@ public class StackedEnsembleSteps extends TrainingSteps {
         }
 
         Job<StackedEnsembleModel> stack(String modelName, Key<Model>[] modelKeyArrays, boolean isLast) {
-            AutoMLBuildSpec buildSpec = _aml.getBuildSpec();
+            AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             // Set up Stacked Ensemble
             StackedEnsembleModel.StackedEnsembleParameters stackedEnsembleParameters = new StackedEnsembleParameters();
             stackedEnsembleParameters._base_models = modelKeyArrays;
-            stackedEnsembleParameters._valid = (_aml.getValidationFrame() == null ? null : _aml.getValidationFrame()._key);
-            stackedEnsembleParameters._blending = (_aml.getBlendingFrame() == null ? null : _aml.getBlendingFrame()._key);
+            stackedEnsembleParameters._valid = (aml().getValidationFrame() == null ? null : aml().getValidationFrame()._key);
+            stackedEnsembleParameters._blending = (aml().getBlendingFrame() == null ? null : aml().getBlendingFrame()._key);
             stackedEnsembleParameters._keep_levelone_frame = true; //TODO Why is this true? Can be optionally turned off
             stackedEnsembleParameters._keep_base_model_predictions = !isLast; //avoids recomputing some base predictions for each SE
             // Add cross-validation args
@@ -88,7 +90,7 @@ public class StackedEnsembleSteps extends TrainingSteps {
 
 
     private TrainingStep[] defaults = new StackedEnsembleModelStep[] {
-            new StackedEnsembleModelStep("best", _aml) {
+            new StackedEnsembleModelStep("best", BASE_MODEL_WEIGHT, aml()) {
                 { _description = _description+" (build using top model from each algorithm type)"; }
                 @Override
                 protected Job<StackedEnsembleModel> makeJob() {
@@ -111,7 +113,7 @@ public class StackedEnsembleSteps extends TrainingSteps {
                     return stack(_algo+"_BestOfFamily", bestModelKeys, false);
                 }
             },
-            new StackedEnsembleModelStep("all", _aml) {
+            new StackedEnsembleModelStep("all",BASE_MODEL_WEIGHT, aml()) {
                 { _description = _description+" (build using all AutoML models)"; }
                 @Override
                 protected Job<StackedEnsembleModel> makeJob() {

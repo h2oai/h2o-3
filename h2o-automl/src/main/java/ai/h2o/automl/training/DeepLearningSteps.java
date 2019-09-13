@@ -9,6 +9,9 @@ import water.Job;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ai.h2o.automl.TrainingStep.GridStep.BASE_GRID_WEIGHT;
+import static ai.h2o.automl.TrainingStep.ModelStep.BASE_MODEL_WEIGHT;
+
 public class DeepLearningSteps extends TrainingSteps {
 
     public static class Provider implements TrainingStepsProvider<DeepLearningSteps> {
@@ -24,15 +27,15 @@ public class DeepLearningSteps extends TrainingSteps {
     }
 
     static abstract class DeepLearningModelStep extends TrainingStep.ModelStep<DeepLearningModel> {
-        public DeepLearningModelStep(String id, AutoML autoML) {
-            super(Algo.DeepLearning, id, autoML);
+        public DeepLearningModelStep(String id, int weight, AutoML autoML) {
+            super(Algo.DeepLearning, id, weight, autoML);
         }
     }
 
     static abstract class DeepLearningGridStep extends TrainingStep.GridStep<DeepLearningModel> {
 
-        DeepLearningGridStep(String id, AutoML autoML) {
-            super(Algo.DeepLearning, id, autoML);
+        DeepLearningGridStep(String id, int weight, AutoML autoML) {
+            super(Algo.DeepLearning, id, weight, autoML);
         }
 
         DeepLearningParameters prepareModelParameters() {
@@ -59,7 +62,7 @@ public class DeepLearningSteps extends TrainingSteps {
 
 
     private TrainingStep[] defaults = new DeepLearningModelStep[] {
-            new DeepLearningModelStep("def_1", _aml) {
+            new DeepLearningModelStep("def_1", BASE_MODEL_WEIGHT, aml()) {
                 @Override
                 protected Job<DeepLearningModel> makeJob() {
                     DeepLearningParameters dlParameters = new DeepLearningParameters();  // don't use common params for default DL
@@ -70,7 +73,7 @@ public class DeepLearningSteps extends TrainingSteps {
     };
 
     private TrainingStep[] grids = new DeepLearningGridStep[] {
-            new DeepLearningGridStep("grid_1", _aml) {
+            new DeepLearningGridStep("grid_1", BASE_GRID_WEIGHT, aml()) {
                 @Override
                 protected Job<Grid> makeJob() {
                     DeepLearningParameters dlParameters = prepareModelParameters();
@@ -93,7 +96,7 @@ public class DeepLearningSteps extends TrainingSteps {
                     return hyperparameterSearch(dlParameters, searchParams);
                 }
             },
-            new DeepLearningGridStep("grid_2", _aml) {
+            new DeepLearningGridStep("grid_2", BASE_GRID_WEIGHT, aml()) {
                 @Override
                 protected Job<Grid> makeJob() {
                     DeepLearningParameters dlParameters = prepareModelParameters();
@@ -115,7 +118,7 @@ public class DeepLearningSteps extends TrainingSteps {
                     return hyperparameterSearch(dlParameters, searchParams);
                 }
             },
-            new DeepLearningGridStep("grid_3", _aml) {
+            new DeepLearningGridStep("grid_3", BASE_GRID_WEIGHT, aml()) {
                 @Override
                 protected Job<Grid> makeJob() {
                     DeepLearningParameters dlParameters = prepareModelParameters();

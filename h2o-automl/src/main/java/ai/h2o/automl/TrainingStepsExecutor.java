@@ -85,13 +85,13 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
                     job.stop();
                 }
             }
-            long workedSoFar = Math.round(job.progress() * work.share);
+            long workedSoFar = Math.round(job.progress() * work._weight);
 
             if (null != parentJob) {
                 parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), jobDescription);
             }
 
-            if (JobType.HyperparamSearch == work.type) {
+            if (JobType.HyperparamSearch == work._type) {
                 Grid<?> grid = (Grid)job._result.get();
                 int totalGridModelsBuilt = grid.getModelCount();
                 if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
@@ -111,7 +111,7 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
         }
 
         // pick up any stragglers:
-        if (JobType.HyperparamSearch == work.type) {
+        if (JobType.HyperparamSearch == work._type) {
             if (job.isCrashed()) {
                 eventLog().warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
             } else if (job.get() == null) {
@@ -125,7 +125,7 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
                 }
                 eventLog().debug(Stage.ModelTraining, jobDescription + " complete");
             }
-        } else if (JobType.ModelBuild == work.type) {
+        } else if (JobType.ModelBuild == work._type) {
             if (job.isCrashed()) {
                 eventLog().warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
             } else if (job.get() == null) {
@@ -138,7 +138,7 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
 
         // add remaining work
         if (null != parentJob) {
-            parentJob.update(work.share - lastWorkedSoFar);
+            parentJob.update(work._weight - lastWorkedSoFar);
         }
         work.consume();
         _jobs.remove(job);

@@ -10,6 +10,9 @@ import water.Job;
 import java.util.HashMap;
 import java.util.Map;
 
+import static ai.h2o.automl.TrainingStep.GridStep.BASE_GRID_WEIGHT;
+import static ai.h2o.automl.TrainingStep.ModelStep.BASE_MODEL_WEIGHT;
+
 public class GBMSteps extends TrainingSteps {
 
     public static class Provider implements TrainingStepsProvider<GBMSteps> {
@@ -33,8 +36,8 @@ public class GBMSteps extends TrainingSteps {
 
     static abstract class GBMModelStep extends TrainingStep.ModelStep<GBMModel> {
 
-        GBMModelStep(String id, AutoML autoML) {
-            super(Algo.GBM, id, autoML);
+        GBMModelStep(String id, int weight, AutoML autoML) {
+            super(Algo.GBM, id, weight, autoML);
         }
 
         GBMParameters prepareModelParameters() {
@@ -48,8 +51,8 @@ public class GBMSteps extends TrainingSteps {
     }
 
     static abstract class GBMGridStep extends TrainingStep.GridStep<GBMModel> {
-        public GBMGridStep(String id, AutoML autoML) {
-            super(Algo.GBM, id, autoML);
+        public GBMGridStep(String id, int weight, AutoML autoML) {
+            super(Algo.GBM, id, weight, autoML);
         }
 
         GBMParameters prepareModelParameters() {
@@ -60,7 +63,7 @@ public class GBMSteps extends TrainingSteps {
 
 
     private TrainingStep[] defaults = new GBMModelStep[] {
-            new GBMModelStep("def_1", _aml) {
+            new GBMModelStep("def_1", BASE_MODEL_WEIGHT, aml()) {
                 @Override
                 protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
@@ -70,7 +73,7 @@ public class GBMSteps extends TrainingSteps {
                     return trainModel(gbmParameters);
                 }
             },
-            new GBMModelStep("def_2", _aml) {
+            new GBMModelStep("def_2", BASE_MODEL_WEIGHT, aml()) {
                 @Override
                 protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
@@ -80,7 +83,7 @@ public class GBMSteps extends TrainingSteps {
                     return trainModel(gbmParameters);
                 }
             },
-            new GBMModelStep("def_3", _aml) {
+            new GBMModelStep("def_3", BASE_MODEL_WEIGHT,aml()) {
                 @Override
                 protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
@@ -90,7 +93,7 @@ public class GBMSteps extends TrainingSteps {
                     return trainModel(gbmParameters);
                 }
             },
-            new GBMModelStep("def_4", _aml) {
+            new GBMModelStep("def_4", BASE_MODEL_WEIGHT, aml()) {
                 @Override
                 protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
@@ -100,7 +103,7 @@ public class GBMSteps extends TrainingSteps {
                     return trainModel(gbmParameters);
                 }
             },
-            new GBMModelStep("def_5", _aml) {
+            new GBMModelStep("def_5", BASE_MODEL_WEIGHT, aml()) {
                 @Override
                 protected Job<GBMModel> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
@@ -113,7 +116,7 @@ public class GBMSteps extends TrainingSteps {
     };
 
     private TrainingStep[] grids = new GBMGridStep[] {
-            new GBMGridStep("grid_1", _aml) {
+            new GBMGridStep("grid_1", 3*BASE_GRID_WEIGHT, aml()) {
                 @Override
                 protected Job<Grid> makeJob() {
                     GBMParameters gbmParameters = prepareModelParameters();

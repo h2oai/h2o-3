@@ -5,6 +5,8 @@ import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.Job;
 
+import static ai.h2o.automl.TrainingStep.ModelStep.BASE_MODEL_WEIGHT;
+
 
 public class GLMSteps extends TrainingSteps {
 
@@ -22,16 +24,16 @@ public class GLMSteps extends TrainingSteps {
 
     static abstract class GLMModelStep extends TrainingStep.ModelStep<GLMModel> {
 
-        GLMModelStep(String id, AutoML autoML) {
-            super(Algo.GLM, id, autoML);
+        GLMModelStep(String id, int weight, AutoML autoML) {
+            super(Algo.GLM, id, weight, autoML);
         }
 
         GLMParameters prepareModelParameters() {
             GLMParameters glmParameters = new GLMParameters();
             glmParameters._lambda_search = true;
             glmParameters._family =
-                    _aml.getResponseColumn().isBinary() && !(_aml.getResponseColumn().isNumeric()) ? GLMParameters.Family.binomial
-                            : _aml.getResponseColumn().isCategorical() ? GLMParameters.Family.multinomial
+                    aml().getResponseColumn().isBinary() && !(aml().getResponseColumn().isNumeric()) ? GLMParameters.Family.binomial
+                            : aml().getResponseColumn().isCategorical() ? GLMParameters.Family.multinomial
                             : GLMParameters.Family.gaussian;  // TODO: other continuous distributions!
             return glmParameters;
         }
@@ -39,7 +41,7 @@ public class GLMSteps extends TrainingSteps {
 
 
     private TrainingStep[] defaults = new GLMModelStep[] {
-            new GLMModelStep("def_1", _aml) {
+            new GLMModelStep("def_1", BASE_MODEL_WEIGHT, aml()) {
                 @Override
                 protected Job<GLMModel> makeJob() {
                     GLMParameters glmParameters = prepareModelParameters();
@@ -53,7 +55,7 @@ public class GLMSteps extends TrainingSteps {
 
     private TrainingStep[] grids = new TrainingStep[] {
             /*
-            new GLMStep("grid_1", _aml) {
+            new GLMGridStep("grid_1", BASE_GRID_WEIGHT, aml()) {
                 @Override
                 protected Job<Grid> makeJob() {
                     GLMParameters glmParameters = prepareModelParameters();

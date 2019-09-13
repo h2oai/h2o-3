@@ -2,7 +2,6 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.EventLogEntry.Stage;
 import ai.h2o.automl.StepDefinition.Alias;
-import ai.h2o.automl.WorkAllocations.JobType;
 import hex.Model;
 import hex.grid.Grid;
 import hex.splitframe.ShuffleSplitFrame;
@@ -35,6 +34,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
+
+  private static StepDefinition[] defaultTrainingPlan = {
+          new StepDefinition(Algo.XGBoost.name(), Alias.defaults),
+          new StepDefinition(Algo.GLM.name(), Alias.defaults),
+          new StepDefinition(Algo.DRF.name(), new String[]{ "def_1" }),
+          new StepDefinition(Algo.GBM.name(), Alias.defaults),
+          new StepDefinition(Algo.DeepLearning.name(), Alias.defaults),
+          new StepDefinition(Algo.DRF.name(), new String[]{ "XRT" }),
+          new StepDefinition(Algo.XGBoost.name(), Alias.grids),
+          new StepDefinition(Algo.GBM.name(), Alias.grids),
+          new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
+          new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
+  };
 
   private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
   /**
@@ -73,7 +85,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public static void startAutoML(AutoML aml) {
     // Currently AutoML can only run one job at a time
     if (aml.job == null || !aml.job.isRunning()) {
-      H2OJob<AutoML> j = new H2OJob(aml, aml._key, aml.runCountdown.remainingTime());
+      H2OJob<AutoML> j = new H2OJob<>(aml, aml._key, aml.runCountdown.remainingTime());
       aml.job = j._job;
       j.start(aml.workAllocations.remainingWork());
       DKV.put(aml);
@@ -130,6 +142,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private String[] originalTrainingFrameNames;
   private long[] originalTrainingFrameChecksums;
   private Key<Grid> gridKeys[] = new Key[0];  // Grid key for the GridSearches
+  private transient TrainingStep[] executionPlan;
 
   public AutoML() {
     super(null);
@@ -147,9 +160,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.format(this.startTime))
               .setNamedValue("creation_epoch", this.startTime, EventLogEntry.epochFormat);
 
-      workAllocations = planWork();
-      StepDefinition[] trainingPlan = buildSpec.build_models.training_plan == null ? defaultTrainingPlan : buildSpec.build_models.training_plan;
-
       handleCVParameters(buildSpec);
 
       handleReproducibilityParameters(buildSpec);
@@ -160,8 +170,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       initLeaderboard(buildSpec);
 
-      trainingStepsRegistry = new TrainingStepsRegistry(this, trainingPlan);
+      StepDefinition[] trainingPlan = buildSpec.build_models.training_plan == null ? defaultTrainingPlan : buildSpec.build_models.training_plan;
+      trainingStepsRegistry = new TrainingStepsRegistry(trainingPlan);
       trainingStepsExecutor = new TrainingStepsExecutor(leaderboard, eventLog, runCountdown);
+      workAllocations = planWork(getExecutionPlan());
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
       throw e;
@@ -199,8 +211,16 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
+  TrainingStep[] getExecutionPlan() {
+    if (executionPlan == null) {
+      Log.info("***** XXXXXXXXXXX *****");
+      executionPlan = trainingStepsRegistry.getOrderedSteps(this);
+    }
+    return executionPlan;
+  }
 
-  WorkAllocations planWork() {
+
+  WorkAllocations planWork(TrainingStep[] trainingSteps) {
     if (buildSpec.build_models.exclude_algos != null && buildSpec.build_models.include_algos != null) {
       throw new  H2OIllegalArgumentException("Parameters `exclude_algos` and `include_algos` are mutually exclusive: please use only one of them if necessary.");
     }
@@ -221,17 +241,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     WorkAllocations workAllocations = new WorkAllocations();
-    // todo: merge this with steps
-    workAllocations.allocate(Algo.DeepLearning, 1, JobType.ModelBuild, 10)
-            .allocate(Algo.DeepLearning, 3, JobType.HyperparamSearch, 20)
-            .allocate(Algo.DRF, 2, JobType.ModelBuild, 10)
-            .allocate(Algo.GBM, 5, JobType.ModelBuild, 10)
-            .allocate(Algo.GBM, 1, JobType.HyperparamSearch, 60)
-            .allocate(Algo.GLM, 1, JobType.ModelBuild, 20)
-            .allocate(Algo.XGBoost, 3, JobType.ModelBuild, 10)
-            .allocate(Algo.XGBoost, 1, JobType.HyperparamSearch, 100)
-            .allocate(Algo.StackedEnsemble, 2, JobType.ModelBuild, 15)
-            .end();
+    for (TrainingStep step: trainingSteps) {
+      workAllocations.allocate(step.makeWork());
+    }
+    workAllocations.freeze();
 
     for (Algo skippedAlgo : skippedAlgos) {
       eventLog().info(Stage.ModelTraining, "Disabling Algo: "+skippedAlgo+" as requested by the user.");
@@ -240,19 +253,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     return workAllocations;
   }
-
-  private static StepDefinition[] defaultTrainingPlan = {
-          new StepDefinition(Algo.XGBoost.name(), Alias.defaults),
-          new StepDefinition(Algo.GLM.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "def_1" }),
-          new StepDefinition(Algo.GBM.name(), Alias.defaults),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.defaults),
-          new StepDefinition(Algo.DRF.name(), new String[]{ "XRT" }),
-          new StepDefinition(Algo.XGBoost.name(), Alias.grids),
-          new StepDefinition(Algo.GBM.name(), Alias.grids),
-          new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
-          new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
-  };
 
   @Override
   public void run() {
@@ -460,14 +460,13 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       for (int i = 0; i < originalTrainingFrameVecs.length; i++)
         originalTrainingFrameChecksums[i] = originalTrainingFrameVecs[i].checksum();
     }
-    DKV.put(this);
   }
 
 
   //*****************  Training Jobs  *****************//
 
   private void learn() {
-    for (TrainingStep step : trainingStepsRegistry.getOrderedSteps()) {
+    for (TrainingStep step : getExecutionPlan()) {
         if (!exceededSearchLimits(step._description, step._ignoreConstraints)) {
           trainingStepsExecutor.submit(step, job());
         }

@@ -23,47 +23,37 @@ public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
         }
     }
 
-    private Key<AutoML> _amlKey;
     private StepDefinition[] _defaultTrainingPlan;
 
-    public TrainingStepsRegistry(AutoML aml) {
-        this(aml, new StepDefinition[0]);
-    }
-
-    public TrainingStepsRegistry(AutoML aml, StepDefinition[] defaultTrainingPlan) {
-        _amlKey = aml._key;
+    public TrainingStepsRegistry(StepDefinition[] defaultTrainingPlan) {
         _defaultTrainingPlan = defaultTrainingPlan;
     }
 
-    public TrainingStep[] getOrderedSteps() {
-        return getOrderedSteps(_defaultTrainingPlan);
+    public TrainingStep[] getOrderedSteps(AutoML aml) {
+        return getOrderedSteps(aml, _defaultTrainingPlan);
     }
 
-    public TrainingStep[] getOrderedSteps(StepDefinition[] trainingPlan) {
-        aml().eventLog().info(Stage.Workflow, "Loading execution steps "+Arrays.toString(trainingPlan));
+    public TrainingStep[] getOrderedSteps(AutoML aml, StepDefinition[] trainingPlan) {
+        aml.eventLog().info(Stage.Workflow, "Loading execution steps "+Arrays.toString(trainingPlan));
         List<TrainingStep> orderedSteps = new ArrayList<>();
-        for (StepDefinition step : trainingPlan) {
-            Class<TrainingSteps> clazz = stepsByName.get(step._name);
+        for (StepDefinition def : trainingPlan) {
+            Class<TrainingSteps> clazz = stepsByName.get(def._name);
             if (clazz == null) {
-                aml().eventLog().warn(Stage.Workflow, "Could not find TrainingSteps class for "+step._name);
+                aml.eventLog().warn(Stage.Workflow, "Could not find TrainingSteps class for "+def._name);
                 continue;
             }
             try {
-                TrainingSteps steps = clazz.getConstructor(AutoML.class).newInstance(aml());
-                if (step._alias != null) {
-                    orderedSteps.addAll(Arrays.asList(steps.getSteps(step._alias)));
-                } else if (step._ids != null) {
-                    orderedSteps.addAll(Arrays.asList(steps.getSteps(step._ids)));
+                TrainingSteps steps = clazz.getConstructor(AutoML.class).newInstance(aml);
+                if (def._alias != null) {
+                    orderedSteps.addAll(Arrays.asList(steps.getSteps(def._alias)));
+                } else if (def._steps != null) {
+                    orderedSteps.addAll(Arrays.asList(steps.getSteps(def._steps)));
                 }
             } catch (NoSuchMethodException|IllegalAccessException|InstantiationException|InvocationTargetException e) {
                 throw new RuntimeException(e);
             }
         }
         return orderedSteps.toArray(new TrainingStep[0]);
-    }
-
-    public final AutoML aml() {
-        return DKV.getGet(_amlKey);
     }
 
 }

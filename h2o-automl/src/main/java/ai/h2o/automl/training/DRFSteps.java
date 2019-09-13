@@ -7,6 +7,8 @@ import hex.tree.drf.DRFModel.DRFParameters;
 import water.Job;
 import water.Key;
 
+import static ai.h2o.automl.TrainingStep.ModelStep.BASE_MODEL_WEIGHT;
+
 public class DRFSteps extends TrainingSteps {
 
     public static class Provider implements TrainingStepsProvider<DRFSteps> {
@@ -23,8 +25,8 @@ public class DRFSteps extends TrainingSteps {
 
     static abstract class DRFModelStep extends TrainingStep.ModelStep<DRFModel> {
 
-        DRFModelStep(String id, AutoML autoML) {
-            super(Algo.DRF, id, autoML);
+        DRFModelStep(String id, int weight, AutoML autoML) {
+            super(Algo.DRF, id, weight, autoML);
         }
 
         DRFParameters prepareModelParameters() {
@@ -36,14 +38,14 @@ public class DRFSteps extends TrainingSteps {
 
 
     private TrainingStep[] defaults = new DRFModelStep[] {
-            new DRFModelStep("def_1", _aml) {
+            new DRFModelStep("def_1", BASE_MODEL_WEIGHT, aml()) {
                 @Override
                 protected Job<DRFModel> makeJob() {
                     DRFParameters drfParameters = prepareModelParameters();
                     return trainModel(drfParameters);
                 }
             },
-            new DRFModelStep("XRT", _aml) {
+            new DRFModelStep("XRT", BASE_MODEL_WEIGHT, aml()) {
                 { _description = _description+" (Extremely Randomized Trees)"; }
 
                 @Override

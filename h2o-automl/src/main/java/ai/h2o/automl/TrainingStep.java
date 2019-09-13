@@ -20,16 +20,20 @@ import java.util.Map;
 
 public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
+    private transient AutoML _aml;
+
     protected Algo _algo;
     protected String _id;
-    protected AutoML _aml;
+    protected int _weight;
     protected boolean _ignoreConstraints;  // whether or not to ignore the max_models/max_runtime constraints
     protected String _description;
 
-    protected TrainingStep(Algo algo, String id, AutoML autoML) {
+    protected TrainingStep(Algo algo, String id, int weight, AutoML autoML) {
         _algo = algo;
         _id = id;
+        _weight = weight;
         _aml = autoML;
+//        _amlKey = autoML._key;
         _description = algo.name()+" "+id;
     }
 
@@ -37,36 +41,43 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
     protected abstract Key makeKey(String name, boolean withCounter);
 
+    protected abstract Work makeWork();
+
     protected abstract Job makeJob();
+
+    protected AutoML aml() {
+//        return _aml == null ? (_aml = _amlKey.get()) : _aml;
+        return _aml;
+    }
 
     protected boolean canRun() {
         return getWork() != null;
     }
 
     protected WorkAllocations getWorkAllocations() {
-        return _aml.workAllocations;
+        return aml().workAllocations;
     }
 
     protected Model[] getTrainedModels() {
-        return _aml.leaderboard().getModels();
+        return aml().leaderboard().getModels();
     }
 
     protected boolean isCVEnabled() {
-        return _aml.isCVEnabled();
+        return aml().isCVEnabled();
     }
 
     void setCommonModelBuilderParams(Model.Parameters params) {
-        params._train = _aml.trainingFrame._key;
-        if (null != _aml.validationFrame)
-            params._valid = _aml.validationFrame._key;
+        params._train = aml().trainingFrame._key;
+        if (null != aml().validationFrame)
+            params._valid = aml().validationFrame._key;
 
-        AutoMLBuildSpec buildSpec = _aml.getBuildSpec();
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
         params._response_column = buildSpec.input_spec.response_column;
         params._ignored_columns = buildSpec.input_spec.ignored_columns;
 
         // currently required, for the base_models, for stacking:
         if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {
-            params._keep_cross_validation_predictions = _aml.getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
+            params._keep_cross_validation_predictions = aml().getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
 
             // TODO: StackedEnsemble doesn't support weights yet in score0
             params._fold_column = buildSpec.input_spec.fold_column;
@@ -94,7 +105,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
     void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, boolean isIndividualModel) {
         // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
-        AutoMLBuildSpec buildSpec = _aml.getBuildSpec();
+        AutoMLBuildSpec buildSpec = aml().getBuildSpec();
         parms._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
 
         //FIXME: Do we really need to compare with defaults before setting the buildSpec value instead?
@@ -109,7 +120,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         // do the same row and column sampling.
         // Leave it as is for Grids as HyperSpaceWalker has its own increment logic.
         if (isIndividualModel && parms._seed == defaults._seed && buildSpec.build_control.stopping_criteria.seed() != -1)
-            parms._seed = buildSpec.build_control.stopping_criteria.seed() + _aml.individualModelsTrained.getAndIncrement();
+            parms._seed = buildSpec.build_control.stopping_criteria.seed() + aml().individualModelsTrained.getAndIncrement();
 
         if (parms._stopping_metric == defaults._stopping_metric)
             parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
@@ -130,7 +141,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
     private String getSortMetric() {
         //ensures that the sort metric is always updated according to the defaults set by leaderboard
-        Leaderboard leaderboard = _aml.leaderboard();
+        Leaderboard leaderboard = aml().leaderboard();
         return leaderboard == null ? null : leaderboard.sort_metric;
     }
 
@@ -152,22 +163,29 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
     public static abstract class ModelStep<M extends Model> extends TrainingStep<M> {
 
-        public ModelStep(Algo algo, String id, AutoML autoML) {
-            super(algo, id, autoML);
+        public static int BASE_MODEL_WEIGHT = 10;
+
+        public ModelStep(Algo algo, String id, int cost, AutoML autoML) {
+            super(algo, id, cost, autoML);
         }
 
         @Override
         protected abstract Job<M> makeJob();
 
         @Override
+        protected Work makeWork() {
+            return new Work(_id, _algo, JobType.ModelBuild, _weight);
+        }
+
+        @Override
         protected Work getWork() {
-            return getWorkAllocations().getAllocation(_algo, JobType.ModelBuild);
+            return getWorkAllocations().getAllocation(_id, _algo);
         }
 
         @SuppressWarnings("unchecked")
         @Override
         protected Key<M> makeKey(String name, boolean withCounter) {
-            return (Key<M>)_aml.modelKey(name, withCounter);
+            return (Key<M>)aml().modelKey(name, withCounter);
         }
 
         protected Job<M> trainModel(Model.Parameters parms) {
@@ -196,17 +214,17 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
             if (_ignoreConstraints)
                 builder._parms._max_runtime_secs = 0;
             else if (builder._parms._max_runtime_secs == 0)
-                builder._parms._max_runtime_secs = _aml.timeRemainingMs() / 1e3;
+                builder._parms._max_runtime_secs = aml().timeRemainingMs() / 1e3;
             else
-                builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, _aml.timeRemainingMs() / 1e3);
+                builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, aml().timeRemainingMs() / 1e3);
 
             builder.init(false);          // validate parameters
 
-            Log.debug("Training model: " + algoName + ", time remaining (ms): " + _aml.timeRemainingMs());
+            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
             try {
                 return builder.trainModelOnH2ONode();
             } catch (H2OIllegalArgumentException exception) {
-                _aml.eventLog().warn(EventLogEntry.Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
+                aml().eventLog().warn(EventLogEntry.Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
                 return null;
             }
         }
@@ -214,21 +232,29 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
     }
 
     public static abstract class GridStep<M extends Model> extends TrainingStep<M> {
-        public GridStep(Algo algo, String id, AutoML autoML) {
-            super(algo, id, autoML);
+
+        public static int BASE_GRID_WEIGHT = 20;
+
+        public GridStep(Algo algo, String id, int cost, AutoML autoML) {
+            super(algo, id, cost, autoML);
         }
 
         @Override
         protected abstract Job<Grid> makeJob();
 
         @Override
+        protected Work makeWork() {
+            return new Work(_id, _algo, JobType.HyperparamSearch, _weight);
+        }
+
+        @Override
         protected Work getWork() {
-            return getWorkAllocations().getAllocation(_algo, JobType.HyperparamSearch);
+            return getWorkAllocations().getAllocation(_id, _algo);
         }
 
         @Override
         protected Key<Grid> makeKey(String name, boolean withCounter) {
-            return _aml.gridKey(name, withCounter);
+            return aml().gridKey(name, withCounter);
         }
 
         protected Job<Grid> hyperparameterSearch(Model.Parameters baseParms, Map<String, Object[]> searchParms) {
@@ -248,41 +274,36 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
             try {
                 defaults = baseParms.getClass().newInstance();
             } catch (Exception e) {
-                _aml.eventLog().warn(EventLogEntry.Stage.ModelTraining, "Internal error doing hyperparameter search");
+                aml().eventLog().warn(EventLogEntry.Stage.ModelTraining, "Internal error doing hyperparameter search");
                 throw new H2OIllegalArgumentException("Hyperparameter search can't create a new instance of Model.Parameters subclass: " + baseParms.getClass());
             }
 
             setCommonModelBuilderParams(baseParms);
             setStoppingCriteria(baseParms, defaults, false);
 
-            AutoMLBuildSpec buildSpec = _aml.getBuildSpec();
+            AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria =
                     (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
             Work work = getWork();
-            double maxAssignedTime = _aml.timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
+            double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
             // predicate can be removed if/when we decide to include SEs in the max_models limit
-            int maxAssignedModels = (int) Math.ceil(_aml.remainingModels() * getWorkAllocations().remainingWorkRatio(work, new Predicate<Work>() {
-                @Override
-                public Boolean apply(Work work) {
-                    return work.algo != Algo.StackedEnsemble;
-                }
-            }));
+            int maxAssignedModels = (int) Math.ceil(aml().remainingModels() * getWorkAllocations().remainingWorkRatio(work, w -> w._algo != Algo.StackedEnsemble));
 
             if (searchCriteria.max_runtime_secs() == 0)
-                searchCriteria.set_max_runtime_secs(maxAssignedTime);
+                searchCriteria.set_max_runtime_secs(maxAssignedTimeSecs);
             else
-                searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(), maxAssignedTime));
+                searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(), maxAssignedTimeSecs));
 
             if (searchCriteria.max_models() == 0)
                 searchCriteria.set_max_models(maxAssignedModels);
             else
                 searchCriteria.set_max_models(Math.min(searchCriteria.max_models(), maxAssignedModels));
 
-            _aml.eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+_algo+" hyperparameter search");
+            aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+_algo+" hyperparameter search");
 
             if (null == gridKey) gridKey = makeKey(_algo.name(), true);
-            _aml.addGridKey(gridKey);
-            Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+_aml.timeRemainingMs());
+            aml().addGridKey(gridKey);
+            Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+aml().timeRemainingMs());
             return GridSearch.startGridSearch(
                     gridKey,
                     baseParms,
