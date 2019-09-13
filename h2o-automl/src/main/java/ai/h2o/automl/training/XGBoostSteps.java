@@ -145,7 +145,7 @@ public class XGBoostSteps extends TrainingSteps {
     };
 
     private TrainingStep[] grids = new XGBoostGridStep[] {
-            new XGBoostGridStep("grid_1", BASE_GRID_WEIGHT, aml(), false) {
+            new XGBoostGridStep("grid_1", 5*BASE_GRID_WEIGHT, aml(), false) {
                 @Override
                 protected Job<Grid> makeJob() {
                     XGBoostParameters xgBoostParameters = prepareModelParameters();

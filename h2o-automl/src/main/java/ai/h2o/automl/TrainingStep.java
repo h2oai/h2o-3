@@ -14,7 +14,6 @@ import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
-import water.util.fp.Predicate;
 
 import java.util.Map;
 
@@ -33,7 +32,6 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         _id = id;
         _weight = weight;
         _aml = autoML;
-//        _amlKey = autoML._key;
         _description = algo.name()+" "+id;
     }
 
@@ -46,7 +44,6 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
     protected abstract Job makeJob();
 
     protected AutoML aml() {
-//        return _aml == null ? (_aml = _amlKey.get()) : _aml;
         return _aml;
     }
 

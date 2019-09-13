@@ -1,9 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.EventLogEntry.Stage;
-import water.DKV;
 import water.Iced;
-import water.Key;
 import water.nbhm.NonBlockingHashMap;
 
 import java.lang.reflect.InvocationTargetException;

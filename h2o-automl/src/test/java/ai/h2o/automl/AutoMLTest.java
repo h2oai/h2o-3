@@ -38,7 +38,6 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
-//      autoMLBuildSpec.build_models.exclude_algos = aro(Algo.XGBoost);
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -301,7 +300,7 @@ public class AutoMLTest extends water.TestUtil {
         put(Algo.DeepLearning, 1*10+3*20);
         put(Algo.DRF, 2*10);
         put(Algo.GBM, 5*10+1*60);
-        put(Algo.GLM, 1*20);
+        put(Algo.GLM, 1*10);
         put(Algo.XGBoost, 3*10+1*100);
         put(Algo.StackedEnsemble, 2*10);
       }};

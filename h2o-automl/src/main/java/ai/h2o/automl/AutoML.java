@@ -213,7 +213,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   TrainingStep[] getExecutionPlan() {
     if (executionPlan == null) {
-      Log.info("***** XXXXXXXXXXX *****");
       executionPlan = trainingStepsRegistry.getOrderedSteps(this);
     }
     return executionPlan;

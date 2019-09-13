@@ -3,7 +3,6 @@ package ai.h2o.automl;
 import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.StepDefinition.Step;
 import water.Iced;
-import water.Key;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
@@ -14,15 +13,13 @@ import java.util.stream.Stream;
 public abstract class TrainingSteps extends Iced<TrainingSteps> {
 
     private transient AutoML _aml;
-    private Key<AutoML> _amlKey;
 
     public TrainingSteps(AutoML autoML) {
         _aml = autoML;
-        _amlKey = autoML._key;
     }
 
     protected AutoML aml() {
-        return _aml == null ? (_aml = _amlKey.get()) : _aml;
+        return _aml;
     }
 
     Optional<TrainingStep> getStep(String id) {
