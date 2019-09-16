@@ -209,14 +209,17 @@ def test_executed_plan():
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_executed_plan",
                     max_models=5,
-                    training_plan=['DRF', 'GLM', ('GBM', 'grids'), 'StackedEnsemble'],
+                    training_plan=['DRF',
+                                   ('GLM', 'defaults'),
+                                   dict(name='GBM', steps=[dict(id='grid_1', weight=77)]),
+                                   'StackedEnsemble'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
     print(aml.leaderboard)
     assert aml.executed_plan == [
         dict(name='DRF', steps=[dict(id='def_1', weight=10), dict(id='XRT', weight=10)]),
         dict(name='GLM', steps=[dict(id='def_1', weight=10)]),
-        dict(name='GBM', steps=[dict(id='grid_1', weight=60)]),
+        dict(name='GBM', steps=[dict(id='grid_1', weight=77)]),
         dict(name='StackedEnsemble', steps=[dict(id='best', weight=10), dict(id='all', weight=10)]),
     ]
 
