@@ -1420,13 +1420,15 @@ Examples:
     train <- cars.splits[[1]]
     valid <- cars.splits[[2]]
 
-    # set the predictors columns, response column, and distribution: 
+    # set the predictors columns, response column, and distribution type: 
     predictors <- c("displacement","power","weight","acceleration","year")
     response <- "cylinders"
     distribution <- "multinomial"
 
     # build and train the model:
-    cars_gbm <- h2o.gbm(x=predictors, y=response, training_frame=train, validation_frame = valid, nfolds=3, distribution=distribution)
+    cars_gbm <- h2o.gbm(x=predictors, y=response, 
+                        training_frame=train, validation_frame = valid, 
+                        nfolds=3, distribution=distribution)
 
     # build the confusion matrix:
     h2o.confusionMatrix(cars_gbm)
@@ -1445,7 +1447,7 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the predictors columns, response column, and distribution:
+    # set the predictors columns, response column, and distribution type:
     predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "cylinders"
     distribution = "multinomial"
@@ -1464,6 +1466,57 @@ Variable importances represent the statistical significance of each variable in 
 
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the prostate dataset:
+    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factor:
+    prostate[,2] <- as.factor(prostate[,2])
+
+    # split the training and validation sets:
+    pros.split <- h2o.splitFrame(data = prostate, ratio = .8, seed = 1234)
+    train <- pros.split[[1]]
+    valid <- pros.split[[2]]
+
+    # build and train the model:
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = train, 
+                        validation_frame = valid, 
+                        distribution = "bernoulli")
+
+    # build the variable importances plot:
+    h2o.varimp_plot(pros_gbm)
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["cylinders"] = cars["cylinders"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the predictors columns, response column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
+    response_col = "cylinders"
+    distribution = "multinomial"
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds = 3, distribution = distribution)
+    gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
+
+    # build the variable importances plot:
+    gbm.varimp_plot()
 
 
 ROC Curve
@@ -1484,6 +1537,67 @@ The lower-left side of the graph represents less tolerance for false positives w
 .. figure:: images/Flow_ROC.png
    :alt: ROC Curve example
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the prostate dataset:
+    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[,2] <- as.factor(pros[,2])
+    pros[,4] <- as.factor(pros[,4])
+    pros[,5] <- as.factor(pros[,5])
+    pros[,6] <- as.factor(pros[,6])
+    pros[,9] <- as.factor(pros[,9])
+
+    # split the training and validation sets:
+    p.sid <- h2o.runif(pros, seed=1234)
+    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+
+    # build and train the model:
+    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                        training_frame = pros.train, 
+                        validation_frame = pros.test, 
+                        nfolds = 2)
+
+    # build the roc curve:
+    perf <- h2o.performance(pros_gbm, pros)
+    plot(perf, type="roc")
+
+
+   .. code-block:: python
+   
+    # import H2OGradientBoostingEstimator and the prostate dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor() 
+
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"] 
+    response = "CAPSULE"
+
+    # split the training and validation sets:
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
+
+    # build and train the model:
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, training_frame = pros)
+
+    # build the roc curve:
+    perf = pros_gbm.model_performance(pros)
+    perf.plot(type = "roc")
+
 Hit Ratio
 '''''''''
 
@@ -1492,6 +1606,64 @@ The hit ratio is a table representing the number of times that the prediction wa
 .. figure:: images/HitRatioTable.png
    :alt: Hit Ratio Table
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the cars dataset:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["cylinders"] = as.factor(cars["cylinders"])
+
+    # split the training and validation sets:
+    cars.splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
+    train <- cars.splits[[1]]
+    valid <- cars.splits[[2]
+
+    # set the predictors columns, response column, and distribution type:
+    predictors <- c("displacement","power","weight","acceleration","year")
+    response <- "cylinders"
+    distribution <- "multinomial"
+
+    # build and train model:
+    cars_gbm <- h2o.gbm(x=predictors, y=response, 
+                        training_frame=train, validation_frame = valid, 
+                        nfolds=3, distribution=distribution)
+
+    # build the hit ratio table:
+    gbm_hit <- h2o.hit_ratio_table(cars_gbm, train = FALSE, valid = FALSE)
+    gbm_hit
+
+
+   .. code-block:: python
+    
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["cylinders"] = cars["cylinders"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the predictors columns, repsonse column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
+    response_col = "cylinders"
+    distribution = "multinomial"
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds = 3, distribution = distribution)
+    gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
+
+    # build the hit ratio table:
+    gbm_hit = gbm.hit_ratio_table(valid=True)
+    gbm_hit.show()
+
 Standardized Coefficient Magnitudes
 '''''''''''''''''''''''''''''''''''
 
@@ -1499,6 +1671,53 @@ This chart represents the relationship of a specific feature to the response var
 
 .. figure:: images/SCM.png
    :alt: Standardized Coefficient Magnitudes
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the prostate dataset:
+    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factor:
+    prostate[,2] <- as.factor(prostate[,2])
+
+    # set the predictors and response columns:
+    response <- "CAPSULE"
+    predictors <- c("AGE","RACE","PSA","DCAPS")
+
+    # build and train the model:
+    pros_glm <- h2o.glm(x = predictors, y = response, 
+                        training_frame = prostate, 
+                        family = "binomial", nfolds = 0, 
+                        alpha = 0.5, lambda_search = FALSE)
+
+    # build the standardized coefficient magnitudes plot:
+    h2o.std_coef_plot(pros_glm)
+
+
+   .. code-block:: python
+   
+    # import H2OGeneralizedLinearEstimator and the prostate dataset:
+    from h2o.estimators import H2OGeneralizedLinearEstimator
+    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factor:
+    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+
+    # set the predictors and response columns:
+    response = "CAPSULE"
+    predictors = ["AGE","RACE","PSA","DCAPS"] 
+
+    # build and train the model:
+    glm = H2OGeneralizedLinearEstimator(nfolds = 5, alpha = 0.5, 
+                                        lambda_search = False, 
+                                        family = "binomial")
+    glm.train(x=predictors, y=response, training_frame=prostate)
+
+    # build the standardized coefficient magnitudes plot:
+    glm.std_coef_plot()
 
 Partial Dependence Plots
 ''''''''''''''''''''''''
@@ -1523,6 +1742,49 @@ Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j
     :alt: Partial Dependence Summary
     :height: 483
     :width: 355
+
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the prostate dataset:
+    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    prostate[, "CAPSULE"] <- as.factor(prostate[, "CAPSULE"])
+    prostate[, "RACE"] <- as.factor(prostate[, "RACE"])
+
+    # build and train the model:
+    pros_gbm <- h2o.gbm(x = c("AGE","RACE"), y = "CAPSULE", 
+                        training_frame = prostate, 
+                        ntrees = 10, max_depth = 5, 
+                        learn_rate = 0.1)
+
+    # build the partial dependence plot:
+    h2o.partialPlot(object = pros_gbm, data = prostate, cols = c("AGE","RACE"))
+
+
+   .. code-block:: python
+   
+    # import H2OGradiantBoostingEstimator and the prostate dataset:
+    from h2o.estimators import H2OGradientBoostingEstimator
+    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+
+    # set the factors:
+    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+    prostate["RACE"] = prostate["RACE"].asfactor()
+
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE"]
+    response = "CAPSULE"
+
+    # build and train the model:
+    pros_gbm = H2OGradientBoostingEstimator(ntrees = 10, max_depth = 5, learn_rate = 0.1)
+    pros_gbm.train(x = predictors, y = response, training_frame = prostate)
+
+    #build the partial dependence plot:
+    pros_gbm.partial_plot(data = prostate, cols = ["AGE","RACE"], server=True, plot = True)
 
 Prediction
 ----------
