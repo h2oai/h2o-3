@@ -1404,6 +1404,59 @@ A confusion matrix is a table depicting performance of algorithm in terms of fal
 .. figure:: images/Flow_ConfusionMatrix.png
    :alt: Confusion Matrix example
 
+Examples:
+
+.. example-code::
+   .. code-block:: r
+
+    # import the cars dataset:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor
+    cars["cylinders"] = as.factor(cars["cylinders"])
+
+    # split the training and validation sets:
+    cars.splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
+    train <- cars.splits[[1]]
+    valid <- cars.splits[[2]]
+
+    # set the predictors columns, response column, and distribution: 
+    predictors <- c("displacement","power","weight","acceleration","year")
+    response <- "cylinders"
+    distribution <- "multinomial"
+
+    # build and train the model:
+    cars_gbm <- h2o.gbm(x=predictors, y=response, training_frame=train, validation_frame = valid, nfolds=3, distribution=distribution)
+
+    # build the confusion matrix:
+    h2o.confusionMatrix(cars_gbm)
+
+
+   .. code-block:: python
+
+    # import H2OGradientBoostingEstimator and the cars dataset:
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["cylinders"] = cars["cylinders"].asfactor()
+
+    # split the training and validation sets:
+    r = cars[0].runif()
+    train = cars[r > .2]
+    valid = cars[r <= .2]
+
+    # set the predictors columns, response column, and distribution:
+    predictors = ["displacement","power","weight","acceleration","year"]
+    response_col = "cylinders"
+    distribution = "multinomial"
+
+    # build and train the model:
+    gbm = H2OGradientBoostingEstimator(nfolds = 3, distribution = distribution)
+    gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
+
+    # build the confusion matrix:
+    gbm.confusion_matrix(train)
+
 Variable Importances
 ''''''''''''''''''''
 
@@ -1411,6 +1464,7 @@ Variable importances represent the statistical significance of each variable in 
 
 .. figure:: images/Flow_VariableImportances.png
    :alt: Variable Importances example
+
 
 ROC Curve
 '''''''''
