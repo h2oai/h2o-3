@@ -74,9 +74,7 @@ class H2OMultinomialModel(ModelBase):
         ...           y=response_col,
         ...           training_frame=train,
         ...           validation_frame=valid)
-        >>> hit_ratio_table = gbm.hit_ratio_table(train=False,
-        ...                                       valid=False,
-        ...                                       xval=False) # <- Default: return training metrics
+        >>> hit_ratio_table = gbm.hit_ratio_table() # <- Default: return training metrics
         >>> hit_ratio_table
         >>> hit_ratio_table1 = gbm.hit_ratio_table(train=True,
         ...                                        valid=True,
@@ -118,9 +116,7 @@ class H2OMultinomialModel(ModelBase):
         ...           y=response_col,
         ...           training_frame=train,
         ...           validation_frame=valid)
-        >>> mean_per_class_error = gbm.mean_per_class_error(train=False,
-        ...                                                 valid=False,
-        ...                                                 xval=False) # <- Default: return training metric
+        >>> mean_per_class_error = gbm.mean_per_class_error() # <- Default: return training metric
         >>> mean_per_class_error
         >>> mean_per_class_error1 = gbm.mean_per_class_error(train=True,
         ...                                                  valid=True,
