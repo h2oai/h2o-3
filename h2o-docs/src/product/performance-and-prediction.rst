@@ -64,10 +64,10 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the parameters:
+    # set the predictors columns, response column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -128,10 +128,10 @@ Examlples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the parameters:
+    # set the predictors columns, response column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -180,13 +180,12 @@ Examples:
     pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
     # build and train the model:
-    pros.gbm.valid.xval <- h2o.gbm(x = 3:9, y = 2, 
+    pros.gbm <- h2o.gbm(x = 3:9, y = 2, 
                                   training_frame = pros.train, 
                                   validation_frame = pros.test, nfolds = 2)
 
     # find the rmse value:
-    rmse.valid.xval.T <- h2o.rmse(pros.gbm.valid.xval,train=TRUE,valid=TRUE,xval=TRUE)
-    rmse.valid.xval.T 
+    h2o.rmse(pros.gbm,train=TRUE,valid=TRUE,xval=TRUE)
 
    .. code-block:: python
    
@@ -202,10 +201,11 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the parameters:
+    # set the predictors columns, response column, and distribution types:
+    predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
+
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -240,7 +240,7 @@ Examples:
     # import the cars dataset:
     cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors <- c("displacement","power","weight","acceleration","year")
     response <- "cylinders"
 
@@ -262,7 +262,7 @@ Examples:
     # import H2OGradientBoostingEstimator and the cars dataset:
     cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictor names and the response column name:
+    # set the predictors and the response columns:
     predictors = ["displacement","power","weight","acceleration","year"]
     response = "cylinders"
 
@@ -299,7 +299,7 @@ Examples:
     # import the cars dataset:
     cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors <- c("displacement","power","weight","acceleration","year")
     response <- "cylinders"
 
@@ -323,7 +323,7 @@ Examples:
     from h2o.estimators import H2OGradientBoostingEstimator
     cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictor names and the response column name:
+    # set the predictors and response columns:
     predictors = ["displacement","power","weight","acceleration","year"]
     response = "cylinders"
 
@@ -409,10 +409,9 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2] 
 
-    # set the parameters:
+    # set the predictors columns, response column, and distribution type:
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -475,10 +474,10 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the parameters:
+    # set the predictors column, response column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -546,10 +545,10 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2] 
 
-    # set the parameters:
+    # set the predictors columns, response column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -618,10 +617,10 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the parameters:
+    # set the predictors columns, response column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -684,10 +683,10 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the parameters:
+    # set the predictors columns, response column, and distribution types:
+    predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -751,7 +750,7 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the parameters:
+    # set the predictors columns, response column, and distribution type:
     response_col = "economy_20mpg"
     distribution = "bernoulli"
     predictors = ["displacement","power","weight","acceleration","year"] 
@@ -831,10 +830,10 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the parameters:
-    esponse_col = "economy_20mpg"
-    distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"] 
+    # set the predictors columns, response column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
+    response_col = "economy_20mpg"
+    distribution = "bernoulli" 
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -895,10 +894,10 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2] 
 
-    # set the parameters:
+    # set the predictors columns, response column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -915,7 +914,7 @@ This model metric is used to evaluate how well a binary classification model is 
 
 The main difference between AUC and AUCPR is that AUC calculates the area under the ROC curve and AUCPR calculates the area under the Precision Recall curve. The Precision Recall curve does not care about True Negatives. For imbalanced data, a large quantity of True Negatives usually overshadows the effects of changes in other metrics like False Positives. The AUCPR will be much more sensitive to True Positives, False Positives, and False Negatives than AUC. As such, AUCPR is recommended over AUC for highly imbalanced data.
 
-**Note**: AUCPR primarily runs with command "model.pr_auc", though it is backwards compatible to run with "model.aucpr".
+**Note**: The metric function of AUCPR *only* runs with command ``model.pr_auc``. This is different than the ``stopping_metric`` which can be set equal to "AUCPR".
 
 Examples:
 
@@ -925,7 +924,7 @@ Examples:
     # import the cars dataset:
     cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors <- c("displacement","power","weight","acceleration","year")
     response_col <- "economy_20mpg"
 
@@ -957,11 +956,10 @@ Examples:
     train = cars[r > .2]
     valid = cars[r <= .2]
 
-    # set the predictor names, the response column name, and 
-    # distribution
+    # set the predictors columns, response column, and distribution type:
+    predictors = ["displacement","power","weight","acceleration","year"]
     response_col = "economy_20mpg"
     distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"]
 
     # build and train the model:
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
@@ -1150,7 +1148,7 @@ Examples:
     airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
     airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
                     "DayOfWeek", "Month", "Distance", "FlightNum")
     response <- "IsDepDelayed"
@@ -1183,7 +1181,7 @@ Examples:
     airlines["Cancelled"] = airlines["Cancelled"].asfactor()
     airlines['FlightNum'] = airlines['FlightNum'].asfactor()
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
                   "DayOfWeek", "Month", "Distance", "FlightNum"]
     response = "IsDepDelayed"
@@ -1222,7 +1220,7 @@ Examples:
     airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
     airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
                     "DayOfWeek", "Month", "Distance", "FlightNum")
     response <- "IsDepDelayed"
@@ -1255,7 +1253,7 @@ Examples:
     airlines["Cancelled"] = airlines["Cancelled"].asfactor()
     airlines['FlightNum'] = airlines['FlightNum'].asfactor()
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
                   "DayOfWeek", "Month", "Distance", "FlightNum"]
     response = "IsDepDelayed"
@@ -1292,7 +1290,7 @@ Examples:
     # import the cars dataset:
     cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors <- c("economy","cylinders","displacement","power","weight")
     response = "acceleration"
 
@@ -1317,7 +1315,7 @@ Examples:
     from h2o.estimators import H2OGradientBoostingEstimator
     cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors = ["economy","cylinders","displacement","power","weight"]
     response = "acceleration"
 
@@ -1348,7 +1346,7 @@ Examples:
     # import the cars dataset:
     cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors <- c("economy","cylinders","displacement","power","weight")
     response = "acceleration"
 
@@ -1357,7 +1355,7 @@ Examples:
     train <- h2o.assign(cars[p.sid > .2, ], "train")
     test <- h2o.assign(cars[p.sid <= .2, ], "test")
 
-    # build and train the model:
+    # build and train the model using the mean_per_class_error stopping metric:
     cars_gbm <- h2o.gbm(x=predictors, y=repsonse, 
                         training_frame=train, validation_frame=test, 
                         stopping_metric = "mean_per_class_error", stopping_rounds = 3, 
@@ -1373,7 +1371,7 @@ Examples:
     from h2o.estimators import H2OGradientBoostingEstimator
     cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response:
+    # set the predictors and response columns:
     predictors = ["economy","cylinders","displacement","power","weight"]
     response = "acceleration"
 
