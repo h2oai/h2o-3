@@ -93,29 +93,18 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "false");
             Frame predsJava = Scope.track(model.score(testFrame));
 
-            assertFrameEquals(predsNative, predsJava, getAbsDelta(), getRelDelta(parms));
+            assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms));
         } finally {
             Scope.exit();
         }
     }
 
-    private double getAbsDelta() {
-        if ("gbtree".equals(booster)) {
-            return 1e-10;
-        } else if ("dart".equals(booster)) {
-            return 1e-10;
-        } else {
-            // for GBlinear the results might be different on least significant
-            // digit which when converted from float to double leads to difference
-            // on 6th least significant decimal digit
-            return 1e-3;
-        }
-    }
-    
     private Double getRelDelta(XGBoostModel.XGBoostParameters parms) {
         if (usesGpu(parms)) {
             // train/predict on gpu is non-deterministic
             return 1e-3;
+        } else if ("gblinear".equals(booster)) {
+            return 1e-6;
         } else {
             return null;
         }
