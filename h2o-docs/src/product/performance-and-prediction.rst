@@ -190,31 +190,34 @@ Examples:
 
    .. code-block:: python
    
-    # import H2OGradientBoostingEstimator and the cars dataset:
+    # import H2OGradientBoostingEstimator and the prostate dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors columns, response column, and distribution types:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "economy_20mpg"
-    distribution = "bernoulli"
-
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
-                                       fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)
 
     # find the rmse value:
-    gbm.rmse(train=True, valid=False, xval=False)
+    pros_gbm.rmse(train=True, valid=False, xval=False)
 
 
 RMSLE (Root Mean Squared Logarithmic Error)
@@ -398,29 +401,34 @@ Examples:
 
    .. code-block:: python
     
-    # import H2OGradientBoosting Estimator and the cars dataset:
+    # import H2OGradientBoostingEstimator and the prostate dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2] 
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors columns, response column, and distribution type:
-    response_col = "economy_20mpg"
-    distribution = "bernoulli"
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
-                                       fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)
 
     # find the gini coefficient:
-    gbm.gini(train=True, valid=False, xval=False)
+    pros_gbm.gini(train=True, valid=False, xval=False)
 
 
 Absolute MCC (Matthews Correlation Coefficient)
@@ -463,30 +471,34 @@ Examples:
 
    .. code-block:: python
 
-    # import H2OGradientBoostingEstimator and the cars dataset:
+    # import H2OGradientBoostingEstimator and the prostate dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors column, response column, and distribution type:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "economy_20mpg"
-    distribution = "bernoulli"
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
-                                       fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)
 
     # find the absolute mcc value:
-    gbm.mcc(train=True, valid=False, xval=False)
+    pros_gbm.mcc(train=True, valid=False, xval=False)
 
 
 F1
@@ -534,30 +546,34 @@ Examples:
 
    .. code-block:: python
 
-    # import H2OGradientBoostingEstimator and the cars dataset:
+    # import H2OGradientBoostingEstimator and the prostate dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2] 
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors columns, response column, and distribution type:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "economy_20mpg"
-    distribution = "bernoulli"
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
-                                       fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)
 
     # find the F1 value:
-    gbm.F1(train=True, valid=False, xval=False)
+    pros_gbm.F1(train=True, valid=False, xval=False)
 
 F0.5
 ####
@@ -606,30 +622,33 @@ Examples:
 
    .. code-block:: python
 
-    # import H2OGradientBoostingEstimator and the cars dataset:
+    # import H2OGradientBoostingEstimator and the prostate dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors columns, response column, and distribution type:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "economy_20mpg"
-    distribution = "bernoulli"
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
-                                       fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
-
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)
     # find the F0.5 value:
-    gbm.F0point5(train=True, valid=False, xval=False)
+    pros_gbm.F0point5(train=True, valid=False, xval=False)
 
 
 F2
@@ -672,30 +691,34 @@ Examples:
 
    .. code-block:: python
 
-    # import H2OGradientBoostingEstimator and the cars dataset:
+    # import H2OGradientBoostingEstimator and the prostate dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors columns, response column, and distribution types:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "economy_20mpg"
-    distribution = "bernoulli"
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
-                                       fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)
 
     # find the F2 value:
-    gbm.F2(train=True, valid=False, xval=False)
+    pros_gbm.F2(train=True, valid=False, xval=False)
 
 Accuracy
 ########
@@ -741,28 +764,32 @@ Examples:
 
     # import H2OGradientBoostingEstimator and the cars dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors columns, response column, and distribution type:
-    response_col = "economy_20mpg"
-    distribution = "bernoulli"
-    predictors = ["displacement","power","weight","acceleration","year"] 
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
-                                       fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)   
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)
 
     # find the accuracy value:
-    gbm.accuracy(train=True, valid=False, xval=False)
+    pros_gbm.accuracy(train=True, valid=False, xval=False)
 
 Logloss
 #######
@@ -819,27 +846,31 @@ Examples:
 
    .. code-block:: python
    
-    # import H2OGradientBoostingEstimator and the cars dataset:
+    # import H2OGradientBoostingEstimator and the prostate dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors columns, response column, and distribution type:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "economy_20mpg"
-    distribution = "bernoulli" 
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
-                                       fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)  
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)  
 
     # find the logloss value:
     gbm.logloss(train=True, valid=False, xval=True)
@@ -883,30 +914,34 @@ Examples:
 
    .. code-block:: python
 
-    # import H2OGradientBoostingEstimator and the cars dataset:
+    # import H2OGradientBoostingEstimator and the prostate dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2] 
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors columns, response column, and distribution type:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "economy_20mpg"
-    distribution = "bernoulli"
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, 
-                                       fold_assignment="Random")
-    gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)
 
     # find the auc value:
-    gbm.auc(train=True, valid=False, xval=True)
+    pros_gbm.auc(train=True, valid=False, xval=True)
 
 AUCPR (Area Under the Precision-Recall Curve)
 #############################################
@@ -1493,29 +1528,34 @@ Examples:
 
    .. code-block:: python
 
-    # import H2OGradientBoostingEstimator and the cars dataset:
+    # import H2OGradientBoostingEstimator and the prostate dataset:
     from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    cars["cylinders"] = cars["cylinders"].asfactor()
+    # set the factors:
+    pros[1] = pros[1].asfactor()
+    pros[3] = pros[3].asfactor()
+    pros[4] = pros[4].asfactor()
+    pros[5] = pros[5].asfactor()
+    pros[8] = pros[8].asfactor()
 
     # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+    r = pros[1].runif()
+    train = pros[r > .2]
+    valid = pros[r <= .2]
 
-    # set the predictors columns, response column, and distribution type:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "cylinders"
-    distribution = "multinomial"
+    # set the predictors and response columns:
+    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds = 3, distribution = distribution)
-    gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+    pros_gbm.train(x = predictors, y = response, 
+                   training_frame = train, 
+                   validation_frame = valid)
 
     # build the variable importances plot:
-    gbm.varimp_plot()
+    pros_gbm.varimp_plot()
 
 
 ROC Curve
