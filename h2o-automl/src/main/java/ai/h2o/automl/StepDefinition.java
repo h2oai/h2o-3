@@ -3,7 +3,12 @@ package ai.h2o.automl;
 import water.Iced;
 
 import java.util.Arrays;
+import java.util.Objects;
 
+/**
+ * Defines a step or a list of steps to be executed.
+ * The steps implementations are provided by instances of (@link {@link TrainingStepsProvider}.
+ */
 public class StepDefinition extends Iced<StepDefinition> {
 
     public enum Alias { all, defaults, grids }
@@ -11,7 +16,15 @@ public class StepDefinition extends Iced<StepDefinition> {
     public static class Step extends Iced<Step> {
         static final int DEFAULT_WEIGHT = -1;  // means that the Step will use the default weight set by the TrainingStep
 
+        /**
+         * The id of the step (must be unique per step provider).
+         */
         String _id;
+        /**
+         * The relative weight for the given step.
+         * The higher the weight, the more time percentage it will be offered in a time-constrained context.
+         * For hyperparameter search, the weight may also impact the number of models trained in a count-model-constrained context.
+         */
         int _weight = DEFAULT_WEIGHT;  // share of time dedicated
 
         public Step(String _id) {
@@ -28,10 +41,33 @@ public class StepDefinition extends Iced<StepDefinition> {
         public String toString() {
             return _id+(_weight > DEFAULT_WEIGHT ? " ("+ _weight +")" : "");
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            Step step = (Step) o;
+            return _id.equals(step._id)
+                    && _weight == step._weight;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(_id, _weight);
+        }
     }
 
+    /**
+     * The name of the step provider ({@link TrainingStepsProvider}): this is usually also the name of the algorithm.
+     */
     String _name;
+    /**
+     * An alias representing a predefined list of steps to be executed.
+     */
     Alias _alias;
+    /**
+     * The list of steps to be executed.
+     */
     Step[] _steps;
 
     public StepDefinition(String name, Alias alias) {
@@ -53,5 +89,22 @@ public class StepDefinition extends Iced<StepDefinition> {
     @Override
     public String toString() {
         return "{"+_name+" : "+(_steps == null ? _alias : Arrays.toString(_steps))+"}";
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        StepDefinition that = (StepDefinition) o;
+        return _name.equals(that._name)
+                && _alias == that._alias
+                && Arrays.equals(_steps, that._steps);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(_name, _alias);
+        result = 31 * result + Arrays.hashCode(_steps);
+        return result;
     }
 }

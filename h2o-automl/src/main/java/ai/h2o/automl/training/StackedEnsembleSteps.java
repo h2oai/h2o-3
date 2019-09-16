@@ -13,7 +13,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static ai.h2o.automl.TrainingStep.ModelStep.BASE_MODEL_WEIGHT;
+import static ai.h2o.automl.TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 public class StackedEnsembleSteps extends TrainingSteps {
 
@@ -90,10 +90,10 @@ public class StackedEnsembleSteps extends TrainingSteps {
 
 
     private TrainingStep[] defaults = new StackedEnsembleModelStep[] {
-            new StackedEnsembleModelStep("best", BASE_MODEL_WEIGHT, aml()) {
+            new StackedEnsembleModelStep("best", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                 { _description = _description+" (build using top model from each algorithm type)"; }
                 @Override
-                protected Job<StackedEnsembleModel> makeJob() {
+                protected Job<StackedEnsembleModel> startJob() {
                     // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
                     // This will give another ensemble that is smaller than the original which takes all models into consideration.
                     List<Model> bestModelsOfEachType = new ArrayList<>();
@@ -113,10 +113,10 @@ public class StackedEnsembleSteps extends TrainingSteps {
                     return stack(_algo+"_BestOfFamily", bestModelKeys, false);
                 }
             },
-            new StackedEnsembleModelStep("all",BASE_MODEL_WEIGHT, aml()) {
+            new StackedEnsembleModelStep("all", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                 { _description = _description+" (build using all AutoML models)"; }
                 @Override
-                protected Job<StackedEnsembleModel> makeJob() {
+                protected Job<StackedEnsembleModel> startJob() {
                     int nonEnsembleCount = 0;
                     for (Model aModel : getTrainedModels())
                         if (!(aModel instanceof StackedEnsembleModel))

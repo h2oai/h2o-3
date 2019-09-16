@@ -63,7 +63,10 @@ public abstract class TrainingSteps extends Iced<TrainingSteps> {
     }
 
     TrainingStep[] getAllSteps() {
-        return ArrayUtils.append(getDefaultModels(), getGrids());
+        TrainingStep[] all = new TrainingStep[0];  // create a fresh array to avoid type issues in arraycopy
+        all = ArrayUtils.append(all, getDefaultModels());
+        all = ArrayUtils.append(all, getGrids());
+        return all;
     }
 
     protected TrainingStep[] getDefaultModels() { return new TrainingStep[0]; }

@@ -1,9 +1,15 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.WorkAllocations.JobType;
+import ai.h2o.automl.StepDefinition.Step;
 import hex.Model;
 import hex.SplitFrame;
+import hex.deeplearning.DeepLearningModel;
+import hex.ensemble.StackedEnsembleModel;
+import hex.glm.GLMModel;
 import hex.tree.SharedTreeModel.SharedTreeParameters;
+import hex.tree.drf.DRFModel;
+import hex.tree.gbm.GBMModel;
+import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
@@ -14,8 +20,10 @@ import water.Lockable;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertNotNull;
 import static junit.framework.TestCase.assertNull;
@@ -318,6 +326,57 @@ public class AutoMLTest extends water.TestUtil {
 
       assertEquals(workPlan.remainingWork(), maxTotalWork - defaultAllocs.get(Algo.DeepLearning) - defaultAllocs.get(Algo.DRF));
 
+    } finally {
+      if (aml != null) aml.delete();
+      if (fr != null) fr.remove();
+    }
+  }
+
+  @Test public void test_training_plan() {
+    AutoML aml = null;
+    Frame fr=null;
+    try {
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.build_models.training_plan = new StepDefinition[] {
+              new StepDefinition(Algo.GBM.name(), new String[]{ "def_1" }),             // 1 model
+              new StepDefinition(Algo.GLM.name(), StepDefinition.Alias.all),            // 1 model
+              new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 20) }),  // 1 model
+              new StepDefinition(Algo.XGBoost.name(), StepDefinition.Alias.grids),      // 1 grid
+              new StepDefinition(Algo.DeepLearning.name(), StepDefinition.Alias.grids), // 1 grid
+              new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)   // 2 models
+      };
+      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.XGBoost, Algo.DeepLearning};
+      aml = AutoML.startAutoML(autoMLBuildSpec);
+      aml.get();
+
+      assertEquals(5, aml.leaderboard().getModelCount());
+      assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(GBMModel.class::isInstance).count());
+      assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(GLMModel.class::isInstance).count());
+      assertEquals(1, Stream.of(aml.leaderboard().getModels()).filter(DRFModel.class::isInstance).count());
+      assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(XGBoostModel.class::isInstance).count());
+      assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(DeepLearningModel.class::isInstance).count());
+      assertEquals(2, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count());
+
+      assertNotNull(aml.executedPlan);
+      Log.info(Arrays.toString(aml.executedPlan));
+      assertArrayEquals(new StepDefinition[] {
+              new StepDefinition(Algo.GBM.name(), new Step[]{
+                      new Step("def_1", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+              }),
+              new StepDefinition(Algo.GLM.name(), new Step[]{
+                      new Step("def_1", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+              }),
+              new StepDefinition(Algo.DRF.name(), new Step[]{
+                      new Step("XRT", 20),
+              }),
+              new StepDefinition(Algo.StackedEnsemble.name(), new Step[]{
+                      new Step("best", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("all", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+              }),
+      }, aml.executedPlan);
     } finally {
       if (aml != null) aml.delete();
       if (fr != null) fr.remove();

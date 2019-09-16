@@ -10,8 +10,8 @@ import water.Job;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ai.h2o.automl.TrainingStep.GridStep.BASE_GRID_WEIGHT;
-import static ai.h2o.automl.TrainingStep.ModelStep.BASE_MODEL_WEIGHT;
+import static ai.h2o.automl.TrainingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
+import static ai.h2o.automl.TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 public class GBMSteps extends TrainingSteps {
 
@@ -63,9 +63,9 @@ public class GBMSteps extends TrainingSteps {
 
 
     private TrainingStep[] defaults = new GBMModelStep[] {
-            new GBMModelStep("def_1", BASE_MODEL_WEIGHT, aml()) {
+            new GBMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                 @Override
-                protected Job<GBMModel> makeJob() {
+                protected Job<GBMModel> startJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 6;
                     gbmParameters._min_rows = 1;
@@ -73,9 +73,9 @@ public class GBMSteps extends TrainingSteps {
                     return trainModel(gbmParameters);
                 }
             },
-            new GBMModelStep("def_2", BASE_MODEL_WEIGHT, aml()) {
+            new GBMModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                 @Override
-                protected Job<GBMModel> makeJob() {
+                protected Job<GBMModel> startJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 7;
                     gbmParameters._min_rows = 10;
@@ -83,9 +83,9 @@ public class GBMSteps extends TrainingSteps {
                     return trainModel(gbmParameters);
                 }
             },
-            new GBMModelStep("def_3", BASE_MODEL_WEIGHT,aml()) {
+            new GBMModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT,aml()) {
                 @Override
-                protected Job<GBMModel> makeJob() {
+                protected Job<GBMModel> startJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 8;
                     gbmParameters._min_rows = 10;
@@ -93,9 +93,9 @@ public class GBMSteps extends TrainingSteps {
                     return trainModel(gbmParameters);
                 }
             },
-            new GBMModelStep("def_4", BASE_MODEL_WEIGHT, aml()) {
+            new GBMModelStep("def_4", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                 @Override
-                protected Job<GBMModel> makeJob() {
+                protected Job<GBMModel> startJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 10;
                     gbmParameters._min_rows = 10;
@@ -103,9 +103,9 @@ public class GBMSteps extends TrainingSteps {
                     return trainModel(gbmParameters);
                 }
             },
-            new GBMModelStep("def_5", BASE_MODEL_WEIGHT, aml()) {
+            new GBMModelStep("def_5", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                 @Override
-                protected Job<GBMModel> makeJob() {
+                protected Job<GBMModel> startJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
                     gbmParameters._max_depth = 15;
                     gbmParameters._min_rows = 100;
@@ -116,9 +116,9 @@ public class GBMSteps extends TrainingSteps {
     };
 
     private TrainingStep[] grids = new GBMGridStep[] {
-            new GBMGridStep("grid_1", 3*BASE_GRID_WEIGHT, aml()) {
+            new GBMGridStep("grid_1", 3* DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
                 @Override
-                protected Job<Grid> makeJob() {
+                protected Job<Grid> startJob() {
                     GBMParameters gbmParameters = prepareModelParameters();
 
                     Map<String, Object[]> searchParams = new HashMap<>();

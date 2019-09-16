@@ -5,7 +5,7 @@ import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.Job;
 
-import static ai.h2o.automl.TrainingStep.ModelStep.BASE_MODEL_WEIGHT;
+import static ai.h2o.automl.TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 
 public class GLMSteps extends TrainingSteps {
@@ -41,9 +41,9 @@ public class GLMSteps extends TrainingSteps {
 
 
     private TrainingStep[] defaults = new GLMModelStep[] {
-            new GLMModelStep("def_1", BASE_MODEL_WEIGHT, aml()) {
+            new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                 @Override
-                protected Job<GLMModel> makeJob() {
+                protected Job<GLMModel> startJob() {
                     GLMParameters glmParameters = prepareModelParameters();
                     glmParameters._alpha = new double[] {0.0, 0.2, 0.4, 0.6, 0.8, 1.0};
                     glmParameters._missing_values_handling = GLMParameters.MissingValuesHandling.MeanImputation;

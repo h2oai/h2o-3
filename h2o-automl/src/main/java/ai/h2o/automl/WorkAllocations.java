@@ -36,20 +36,22 @@ public class WorkAllocations extends Iced<WorkAllocations> {
     }
   }
 
-  private boolean canAllocate = true;
+  private boolean frozen;
   private Work[] allocations = new Work[0];
 
   WorkAllocations allocate(Work work) {
-    if (!canAllocate) throw new IllegalStateException("Can't allocate new work.");
+    if (frozen) throw new IllegalStateException("Can not allocate new work.");
     allocations = ArrayUtils.append(allocations, work);
     return this;
   }
 
-  void freeze() {
-    canAllocate = false;
+  WorkAllocations freeze() {
+    frozen = true;
+    return this;
   }
 
   void remove(Algo algo) {
+    if (frozen) throw new IllegalStateException("Can not modify allocations.");
     List<Work> filtered = new ArrayList<>(allocations.length);
     for (Work alloc : allocations) {
       if (!algo.equals(alloc._algo)) {

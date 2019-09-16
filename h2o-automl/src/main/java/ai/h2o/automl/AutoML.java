@@ -243,19 +243,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     for (TrainingStep step: trainingSteps) {
       workAllocations.allocate(step.makeWork());
     }
-    workAllocations.freeze();
-
     for (Algo skippedAlgo : skippedAlgos) {
       eventLog().info(Stage.ModelTraining, "Disabling Algo: "+skippedAlgo+" as requested by the user.");
       workAllocations.remove(skippedAlgo);
     }
+    workAllocations.freeze();
 
     return workAllocations;
   }
 
   @Override
   public void run() {
-    runCountdown.start();
     trainingStepsExecutor.start();
     eventLog().info(Stage.Workflow, "AutoML build started: " + EventLogEntry.dateTimeFormat.format(runCountdown.start_time()))
             .setNamedValue("start_epoch", runCountdown.start_time(), EventLogEntry.epochFormat);
@@ -267,7 +265,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public void stop() {
     if (null == trainingStepsExecutor) return; // already stopped
     trainingStepsExecutor.stop();
-    runCountdown.stop();
     eventLog().info(Stage.Workflow, "AutoML build stopped: " + EventLogEntry.dateTimeFormat.format(runCountdown.stop_time()))
             .setNamedValue("stop_epoch", runCountdown.stop_time(), EventLogEntry.epochFormat);
     eventLog().info(Stage.Workflow, "AutoML build done: built " + trainingStepsExecutor.modelCount() + " models");
@@ -465,11 +462,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   //*****************  Training Jobs  *****************//
 
   private void learn() {
+    List<TrainingStep> executed = new ArrayList<>();
     for (TrainingStep step : getExecutionPlan()) {
         if (!exceededSearchLimits(step._description, step._ignoreConstraints)) {
-          trainingStepsExecutor.submit(step, job());
+          if (trainingStepsExecutor.submit(step, job())) {
+            executed.add(step);
+          }
         }
     }
+    executedPlan = trainingStepsRegistry.createExecutionPlanFromSteps(executed.toArray(new TrainingStep[0]));
   }
 
 

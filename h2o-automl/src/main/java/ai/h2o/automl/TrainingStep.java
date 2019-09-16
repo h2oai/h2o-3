@@ -17,6 +17,9 @@ import water.util.Log;
 
 import java.util.Map;
 
+/**
+ * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
+ */
 public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
     private transient AutoML _aml;
@@ -26,6 +29,8 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
     protected int _weight;
     protected boolean _ignoreConstraints;  // whether or not to ignore the max_models/max_runtime constraints
     protected String _description;
+
+    StepDefinition _fromDef;
 
     protected TrainingStep(Algo algo, String id, int weight, AutoML autoML) {
         _algo = algo;
@@ -41,7 +46,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
     protected abstract Work makeWork();
 
-    protected abstract Job makeJob();
+    protected abstract Job startJob();
 
     protected AutoML aml() {
         return _aml;
@@ -63,6 +68,17 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         return aml().isCVEnabled();
     }
 
+    /**
+     * Assign common parameters to the model params before building the model or set of models.
+     * This includes:
+     * <ul>
+     *   <li>data-related parameters: frame/columns parameters, class distribution.</li>
+     *   <li>cross-validation parameters/</li>
+     *   <li>memory-optimization: if certain objects build during training should be kept after training or not/</li>
+     *   <li>model management: checkpoints.</li>
+     * </ul>
+     * @param params the model parameters to which the common parameters will be added.
+     */
     void setCommonModelBuilderParams(Model.Parameters params) {
         params._train = aml().trainingFrame._key;
         if (null != aml().validationFrame)
@@ -73,7 +89,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         params._ignored_columns = buildSpec.input_spec.ignored_columns;
 
         // currently required, for the base_models, for stacking:
-        if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {
+        if (! (params instanceof StackedEnsembleModel.StackedEnsembleParameters)) {  // TODO: now that we have an object hierarchy, we can think about refactoring this logic
             params._keep_cross_validation_predictions = aml().getBlendingFrame() == null ? true : buildSpec.build_control.keep_cross_validation_predictions;
 
             // TODO: StackedEnsemble doesn't support weights yet in score0
@@ -100,6 +116,13 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
     }
 
+    /**
+     * Configures early-stopping for the model or set of models to be built.
+     *
+     * @param parms the model parameters to which the stopping criteria will be added.
+     * @param defaults the default parameters for the corresponding {@link ModelBuilder}.
+     * @param isIndividualModel is the parms will be use to build a single model or for hyperparameter search.
+     */
     void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, boolean isIndividualModel) {
         // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
         AutoMLBuildSpec buildSpec = aml().getBuildSpec();
@@ -157,17 +180,19 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         }
     }
 
-
+    /**
+     * Convenient base class for single/default model steps.
+     */
     public static abstract class ModelStep<M extends Model> extends TrainingStep<M> {
 
-        public static int BASE_MODEL_WEIGHT = 10;
+        public static final int DEFAULT_MODEL_TRAINING_WEIGHT = 10;
 
         public ModelStep(Algo algo, String id, int cost, AutoML autoML) {
             super(algo, id, cost, autoML);
         }
 
         @Override
-        protected abstract Job<M> makeJob();
+        protected abstract Job<M> startJob();
 
         @Override
         protected Work makeWork() {
@@ -190,9 +215,9 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         }
 
         /**
-         * @param key (optional) model key
-         * @param parms the model builder params
-         * @return a started training model
+         * @param key (optional) model key.
+         * @param parms the model builder params.
+         * @return a started training model.
          */
         protected Job<M> trainModel(Key<M> key, Model.Parameters parms) {
             String algoName = ModelBuilder.algoName(_algo.urlName());
@@ -228,16 +253,19 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
     }
 
+    /**
+     * Convenient base class for steps defining a (random) grid search.
+     */
     public static abstract class GridStep<M extends Model> extends TrainingStep<M> {
 
-        public static int BASE_GRID_WEIGHT = 20;
+        public static final int DEFAULT_GRID_TRAINING_WEIGHT = 20;
 
         public GridStep(Algo algo, String id, int cost, AutoML autoML) {
             super(algo, id, cost, autoML);
         }
 
         @Override
-        protected abstract Job<Grid> makeJob();
+        protected abstract Job<Grid> startJob();
 
         @Override
         protected Work makeWork() {
@@ -259,12 +287,10 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         }
 
         /**
-         * Do a random hyperparameter search.  Caller must eventually do a <i>get()</i>
-         * on the returned Job to ensure that it's complete.
          * @param gridKey optional grid key
-         * @param baseParms ModelBuilder parameter values that are common across all models in the search
-         * @param searchParms hyperparameter search space
-         * @return the started hyperparameter search job
+         * @param baseParms ModelBuilder parameter values that are common across all models in the search.
+         * @param searchParms hyperparameter search space,
+         * @return the started hyperparameter search job.
          */
         protected Job<Grid> hyperparameterSearch(Key<Grid> gridKey, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
             Model.Parameters defaults;

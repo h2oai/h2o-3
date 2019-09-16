@@ -16,17 +16,20 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
+/**
+ * Class responsible for starting all the {@link TrainingStep}s and monitoring their associated {@link Job},
+ * i.e. polling jobs and adding their result model(s) to the {@link Leaderboard}.
+ */
 class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
 
-    private transient List<Job> _jobs; // subjobs
+    EventLog _eventLog;
+    Leaderboard _leaderboard;
+    Countdown _runCountdown;
 
-    private EventLog _eventLog;
-    private Leaderboard _leaderboard;
+    private transient List<Job> _jobs; // subjobs
     private AtomicInteger _modelCount = new AtomicInteger();
-    private Countdown _runCountdown;
 
     TrainingStepsExecutor(Leaderboard leaderboard, EventLog eventLog, Countdown runCountdown) {
-        _jobs = new ArrayList<>();
         _leaderboard = leaderboard;
         _eventLog = eventLog;
         _runCountdown = runCountdown;
@@ -37,36 +40,40 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
     }
 
     void start() {
+        _jobs = new ArrayList<>();
         _modelCount.set(0);
+        _runCountdown.start();
     }
 
     void stop() {
+        _runCountdown.stop();
         if (null == _jobs) return; // already stopped
         for (Job j : _jobs) j.stop();
         for (Job j : _jobs) j.get(); // Hold until they all completely stop.
         _jobs = null;
     }
 
-    //TODO
-    void skip(String name, Work work, Job parentJob) {
+    boolean submit(TrainingStep step, Job parentJob) {
+        if (step.canRun()) {
+            Job job = step.startJob();
+            if (job == null) {
+                skip(step._description, step.getWork(), parentJob);
+            } else {
+                monitor(job, step.getWork(), parentJob, step._ignoreConstraints);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private void skip(String name, Work work, Job parentJob) {
         if (null != parentJob) {
             parentJob.update(work.consume(), "SKIPPED: " + name);
             Log.info("AutoML; skipping " + name);
         }
     }
 
-    void submit(TrainingStep step, Job parentJob) {
-        if (step.canRun()) {
-            Job job = step.makeJob();
-            if (job == null) {
-                skip(step._description, step.getWork(), parentJob);
-            } else {
-                submit(job, step.getWork(), parentJob, step._ignoreConstraints);
-            }
-        }
-    }
-
-    void submit(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
+    private void monitor(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
         String jobDescription = job._result == null ? job._description : job._result.toString()+" ["+job._description+"]";
         eventLog().debug(Stage.ModelTraining, jobDescription + " started");
         _jobs.add(job);

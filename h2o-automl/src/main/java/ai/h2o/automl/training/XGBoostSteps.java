@@ -10,8 +10,8 @@ import water.Job;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ai.h2o.automl.TrainingStep.GridStep.BASE_GRID_WEIGHT;
-import static ai.h2o.automl.TrainingStep.ModelStep.BASE_MODEL_WEIGHT;
+import static ai.h2o.automl.TrainingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
+import static ai.h2o.automl.TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 public class XGBoostSteps extends TrainingSteps {
 
@@ -79,9 +79,9 @@ public class XGBoostSteps extends TrainingSteps {
 
 
     private TrainingStep[] defaults = new XGBoostModelStep[] {
-            new XGBoostModelStep("def_1", BASE_MODEL_WEIGHT, aml(),false) {
+            new XGBoostModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml(),false) {
                 @Override
-                protected Job<XGBoostModel> makeJob() {
+                protected Job<XGBoostModel> startJob() {
                     //XGB 1 (medium depth)
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
                     xgBoostParameters._max_depth = 10;
@@ -100,9 +100,9 @@ public class XGBoostSteps extends TrainingSteps {
                     return trainModel(xgBoostParameters);
                 }
             },
-            new XGBoostModelStep("def_2", BASE_MODEL_WEIGHT, aml(), false) {
+            new XGBoostModelStep("def_2", DEFAULT_MODEL_TRAINING_WEIGHT, aml(), false) {
                 @Override
-                protected Job<XGBoostModel> makeJob() {
+                protected Job<XGBoostModel> startJob() {
                     //XGB 2 (deep)
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
                     xgBoostParameters._max_depth = 20;
@@ -121,9 +121,9 @@ public class XGBoostSteps extends TrainingSteps {
                     return trainModel(xgBoostParameters);
                 }
             },
-            new XGBoostModelStep("def_3", BASE_MODEL_WEIGHT, aml(), false) {
+            new XGBoostModelStep("def_3", DEFAULT_MODEL_TRAINING_WEIGHT, aml(), false) {
                 @Override
-                protected Job<XGBoostModel> makeJob() {
+                protected Job<XGBoostModel> startJob() {
                     //XGB 3 (shallow)
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
                     xgBoostParameters._max_depth = 5;
@@ -145,9 +145,9 @@ public class XGBoostSteps extends TrainingSteps {
     };
 
     private TrainingStep[] grids = new XGBoostGridStep[] {
-            new XGBoostGridStep("grid_1", 5*BASE_GRID_WEIGHT, aml(), false) {
+            new XGBoostGridStep("grid_1", 5* DEFAULT_GRID_TRAINING_WEIGHT, aml(), false) {
                 @Override
-                protected Job<Grid> makeJob() {
+                protected Job<Grid> startJob() {
                     XGBoostParameters xgBoostParameters = prepareModelParameters();
                     Map<String, Object[]> searchParams = new HashMap<>();
 //                    searchParams.put("_ntrees", new Integer[]{100, 1000, 10000}); // = _n_estimators

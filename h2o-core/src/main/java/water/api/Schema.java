@@ -352,8 +352,7 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * @return the filled schema
    */
   public S fillFromBody(String body) {
-    PojoUtils.fillFromJson(this, body);
-    return (S) this;
+    return (S) PojoUtils.fillFromJson(this, body);
   }
 
   /**
