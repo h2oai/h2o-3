@@ -4,6 +4,7 @@ from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.typechecks import assert_is_type
 from .model_base import ModelBase
+from h2o.exceptions import H2OValueError
 
 
 class H2OBinomialModel(ModelBase):
@@ -381,8 +382,12 @@ class H2OBinomialModel(ModelBase):
         :param str metric: A unit of measurement for the y-axis.
         :param bool server: if True, then generate the image inline (using matplotlib's "Agg" backend)
         """
-        assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse")
+        assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse", "objective", 
+                       "negative_log_likelihood")
         if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
+            # make sure metric is not those of GLM metrics for other models
+            if metric in ("negative_log_likelihood", "objective"):
+                raise H2OValueError("Metrics: negative_log_likelihood, objective are only for glm models.")
             if metric == "AUTO":
                 metric = "logloss"
         self._plot(timestep=timestep, metric=metric, server=server)
