@@ -2,6 +2,18 @@
 
 ## H2O
 
+### Yau (3.26.0.5) - 9/16/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/5/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6886'>PUBDEV-6886</a>] - Fixes a critical bug in Flow: Flow loads but user cannot perform any action.
+</li>
+</ul>
+
+
 ### Yau (3.26.0.4) - 9/12/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/4/index.html</a>
