@@ -117,6 +117,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Vec getFoldColumn() { return foldColumn; }
   public Vec getWeightsColumn() { return weightsColumn; }
 
+  public StepDefinition[] getExecutedPlan() { return executedPlan; }
+
   Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
   Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
   Frame blendingFrame;

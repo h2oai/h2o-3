@@ -3,6 +3,7 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.EventLog;
 import ai.h2o.automl.Leaderboard;
+import ai.h2o.automl.StepDefinition;
 import water.Iced;
 import water.Key;
 import water.api.API;
@@ -58,11 +59,11 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   @API(help="Metric used to sort leaderboard", direction=API.Direction.INPUT)
   public String sort_metric;
 
-  @API(help="Blah Blah Blah", direction=API.Direction.OUTPUT)
+  @API(help="The list of training steps effectively used during the AutoML run", direction=API.Direction.OUTPUT)
   public StepDefinitionV99[] executed_plan;
 
   @Override public AutoMLV99 fillFromImpl(AutoML autoML) {
-    super.fillFromImpl(autoML, new String[] { "leaderboard", "event_log", "leaderboard_table", "event_log_table", "sort_metric" });
+    super.fillFromImpl(autoML, new String[] { "leaderboard", "event_log", "leaderboard_table", "event_log_table", "sort_metric", "executed_plan" });
 
     if (null == autoML) return this;
 
@@ -102,6 +103,14 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     }
     this.event_log = new EventLogV99().fillFromImpl(eventLog);
     this.event_log_table = new TwoDimTableV3().fillFromImpl(eventLog.toTwoDimTable());
+
+    if (autoML.getExecutedPlan() != null) {
+      executed_plan = new StepDefinitionV99[autoML.getExecutedPlan().length];
+      int i = 0;
+      for (StepDefinition stepDef : autoML.getExecutedPlan()) {
+        executed_plan[i++] = new StepDefinitionV99().fillFromImpl(stepDef);
+      }
+    }
 
     return this;
   }

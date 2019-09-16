@@ -27,6 +27,8 @@ public class StepDefinition extends Iced<StepDefinition> {
          */
         int _weight = DEFAULT_WEIGHT;  // share of time dedicated
 
+        public Step() { /* for autofill from schema */ }
+
         public Step(String _id) {
             this._id = _id;
         }
@@ -69,6 +71,8 @@ public class StepDefinition extends Iced<StepDefinition> {
      * The list of steps to be executed.
      */
     Step[] _steps;
+
+    public StepDefinition() { /* for autofill from schema */ }
 
     public StepDefinition(String name, Alias alias) {
         _name = name;
