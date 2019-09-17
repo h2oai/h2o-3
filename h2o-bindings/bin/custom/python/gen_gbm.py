@@ -616,13 +616,313 @@ cov_gbm.logloss(valid = True)
 >>> predictors = ["displacement","power","weight","acceleration","year"]
 >>> response = "economy_20mpg"
 >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_gbm = H2OGradientBoostingEstimator(ntrees = 1, seed = 1234)
->>> cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+>>> cars_gbm = H2OGradientBoostingEstimator(ntrees = 1,
+...                                         seed = 1234)
+>>> cars_gbm.train(x = predictors,
+...                y = response,
+...                training_frame = train,
+...                validation_frame = valid)
 >>> print(cars_gbm.auc(valid=True))
 >>> print("Number of trees built for cars_gbm model:", cars_gbm.ntrees)
->>> cars_gbm_continued = H2OGradientBoostingEstimator(checkpoint= cars_gbm.model_id, ntrees = 50, seed = 1234)
->>> cars_gbm_continued.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+>>> cars_gbm_continued = H2OGradientBoostingEstimator(checkpoint= cars_gbm.model_id,
+...                                                   ntrees = 50,
+...                                                   seed = 1234)
+>>> cars_gbm_continued.train(x = predictors,
+...                          y = response,
+...                          training_frame = train,
+...                          validation_frame = valid)
 >>> cars_gbm_continued.auc(valid=True)
 >>> print("Number of trees built for cars_gbm model:",cars_gbm_continued.ntrees) 
 """,
+    sample_rate="""
+>>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+>>> airlines["Month"]= airlines["Month"].asfactor()                             >>> airlines["Year"]= airlines["Year"].asfactor()
+>>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+>>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+>>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+>>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+>>> response = "IsDepDelayed"
+>>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+>>> airlines_gbm = H2OGradientBoostingEstimator(sample_rate = .7,
+...                                             seed = 1234)
+>>> airlines_gbm.train(x = predictors,
+...                    y = response,
+...                    training_frame = train,
+...                    validation_frame = valid)
+>>> airlines_gbm.auc(valid=True)
+""",
+    sample_rate_per_class="""
+>>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+>>> covtype[54] = covtype[54].asfactor()
+>>> predictors = covtype.columns[0:54]
+>>> response = 'C55'
+>>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+>>> rate_per_class_list = [1, .4, 1, 1, 1, 1, 1]
+>>> cov_gbm = H2OGradientBoostingEstimator(sample_rate_per_class = rate_per_class_list,
+...                                        seed = 1234)
+>>> cov_gbm.train(x = predictors,
+...               y = response,
+...               training_frame = train,
+...               validation_frame = valid)
+>>> cov_gbm.logloss(valid = True)
+""",
+    col_sample_rate="""
+>>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+>>> airlines["Year"]= airlines["Year"].asfactor()
+>>> airlines["Month"]= airlines["Month"].asfactor()
+>>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+>>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+>>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+>>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+>>> response = "IsDepDelayed"
+>>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+>>> airlines_gbm = H2OGradientBoostingEstimator(col_sample_rate = .7,
+...                                             seed = 1234)
+>>> airlines_gbm.train(x = predictors,
+...                    y = response,
+...                    training_frame = train,
+...                    validation_frame = valid)
+>>> airlines_gbm.auc(valid=True)
+""",
+    col_sample_rate_change_per_level="""
+>>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+>>> airlines["Year"]= airlines["Year"].asfactor()
+>>> airlines["Month"]= airlines["Month"].asfactor()
+>>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+>>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+>>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+>>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+>>> response = "IsDepDelayed"
+>>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+>>> airlines_gbm = H2OGradientBoostingEstimator(col_sample_rate_change_per_level = .9,
+...                                             seed = 1234)
+>>> airlines_gbm.train(x = predictors,
+...                    y = response,
+...                    training_frame = train,
+...                    validation_frame = valid)
+>>> airlines_gbm.auc(valid=True)
+""",
+    col_sample_rate_per_tree="""
+>>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+>>> airlines["Year"]= airlines["Year"].asfactor()
+>>> airlines["Month"]= airlines["Month"].asfactor()
+>>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+>>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+>>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+>>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+>>> response = "IsDepDelayed"
+>>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+>>> airlines_gbm = H2OGradientBoostingEstimator(col_sample_rate_per_tree = .7,
+...                                             seed = 1234)
+>>> airlines_gbm.train(x = predictors,
+...                    y = response,
+...                    training_frame = train,
+...                    validation_frame = valid)
+>>> airlines_gbm.auc(valid=True)
+""",
+    min_split_improvement="""
+>>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+>>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+>>> predictors = ["displacement","power","weight","acceleration","year"]
+>>> response = "economy_20mpg"
+>>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+>>> cars_gbm = H2OGradientBoostingEstimator(min_split_improvement = 1e-3,
+...                                         seed = 1234)
+>>> cars_gbm.train(x = predictors,
+...                y = response,
+...                training_frame = train,
+...                validation_frame = valid)
+>>> cars_gbm.auc(valid=True)
+""",
+    histogram_type="""
+>>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+>>> airlines["Year"]= airlines["Year"].asfactor()
+>>> airlines["Month"]= airlines["Month"].asfactor()
+>>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+>>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+>>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+>>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+>>> response = "IsDepDelayed"
+>>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+>>> airlines_gbm = H2OGradientBoostingEstimator(histogram_type = "UniformAdaptive",
+...                                             seed = 1234)
+>>> airlines_gbm.train(x = predictors,
+...                    y = response,
+...                    training_frame = train,
+...                    validation_frame = valid)
+>>> airlines_gbm.auc(valid=True)
+""",
+    max_abs_leafnode_pred="""
+>>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+>>> covtype[54] = covtype[54].asfactor()
+>>> predictors = covtype.columns[0:54]
+>>> response = 'C55'
+>>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+>>> cov_gbm = H2OGradientBoostingEstimator(max_abs_leafnode_pred= 2,
+...                                        seed = 1234)
+>>> cov_gbm.train(x = predictors,
+...               y = response,
+...               training_frame = train,
+...               validation_frame = valid)
+>>> cov_gbm.logloss(valid=True)
+""",
+    pred_noise_bandwidth="""
+>>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+>>> titanic['survived'] = titanic['survived'].asfactor()
+>>> predictors = titanic.columns
+>>> del predictors[1:3]
+>>> response = 'survived'
+>>> train, valid = titanic.split_frame(ratios = [.8], seed = 1234)
+>>> titanic_gbm = H2OGradientBoostingEstimator(pred_noise_bandwidth = 0.1,
+...                                            seed = 1234)
+>>> titanic_gbm.train(x = predictors,
+...                   y = response,
+...                   training_frame = train,
+...                   validation_frame = valid)
+>>> titanic_gbm.auc(valid = True)
+""",
+    categorical_encoding="""
+>>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+>>> airlines["Year"]= airlines["Year"].asfactor()
+>>> airlines["Month"]= airlines["Month"].asfactor()
+>>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+>>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+>>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+>>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+>>> response = "IsDepDelayed"
+>>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+>>> airlines_gbm = H2OGradientBoostingEstimator(categorical_encoding = "labelencoder",
+...                                             seed =1234)
+>>> airlines_gbm.train(x = predictors,
+...                    y = response,
+...                    training_frame = train,
+...                    validation_frame = valid)
+>>> airlines_gbm.auc(valid=True)
+""",
+    calibrate_model="""
+>>> ecology = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
+>>> ecology['Angaus'] = ecology['Angaus'].asfactor()
+>>> response = 'Angaus'
+>>> train, calib = ecology.split_frame(seed = 12354)                            >>> predictors = ecology.columns[3:13]
+>>> w = h2o.create_frame(binary_fraction=1,
+...                      binary_ones_fraction=0.5,
+...                      missing_fraction=0,
+...                      rows=744, cols=1)
+>>> w.set_names(["weight"])
+>>> train = train.cbind(w)
+>>> ecology_gbm = H2OGradientBoostingEstimator(ntrees = 10,
+...                                            max_depth = 5,
+...                                            min_rows = 10,
+...                                            learn_rate = 0.1,
+...                                            distribution = "multinomial",
+...                                            weights_column = "weight",
+...                                            calibrate_model = True,
+...                                            calibration_frame = calib)
+>>> ecology_gbm.train(x = predictors,
+...                   y = "Angaus",
+...                   training_frame = train)
+>>> ecology_gbm.auc()
+""",
+    calibration_frame="""
+>>> ecology = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/ecology_model.csv")
+>>> ecology['Angaus'] = ecology['Angaus'].asfactor()
+>>> response = 'Angaus'
+>>> predictors = ecology.columns[3:13]
+>>> train, calib = ecology.split_frame(seed = 12354)
+>>> w = h2o.create_frame(binary_fraction=1,
+...                      binary_ones_fraction=0.5,
+...                      missing_fraction=0,
+...                      rows=744,cols=1)
+>>> w.set_names(["weight"])
+>>> train = train.cbind(w)
+>>> ecology_gbm = H2OGradientBoostingEstimator(ntrees = 10,
+...                                            max_depth = 5,
+...                                            min_rows = 10,
+...                                            learn_rate = 0.1,
+...                                            distribution = "multinomial",
+...                                            calibrate_model = True,
+...                                            calibration_frame = calib)
+>>> ecology_gbm.train(x = predictors,
+...                   y = "Angaus",
+...                   training_frame = train,
+...                   weights_column = "weight")
+>>> ecology_gbm.auc()
+""",
+    custom_distribution_func="""
+>>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+>>> airlines["Year"]= airlines["Year"].asfactor()
+>>> airlines["Month"]= airlines["Month"].asfactor()
+>>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+>>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+>>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+>>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+>>> response = "IsDepDelayed"
+>>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+>>> airlines_gbm = H2OGradientBoostingEstimator(ntrees=3,
+...                                             max_depth=5,
+...                                             distribution="bernoulli",
+...                                             seed = 1234)
+>>> airlines_gbm.train(x=predictors,
+...                    y = response,
+...                    training_frame = train,
+...                    validation_frame = valid)
+>>> from h2o.utils.distributions import CustomDistributionBernoulli
+>>> custom_distribution_bernoulli = h2o.upload_custom_distribution(CustomDistributionBernoulli,
+...                                                                func_name="custom_bernoulli",
+...                                                                func_file="custom_bernoulli.py")
+>>> airlines_gbm_custom = H2OGradientBoostingEstimator(ntrees=3,
+...                                                    max_depth=5,
+...                                                    distribution="custom",
+...                                                    custom_distribution_func=custom_distribution_bernoulli,
+...                                                    seed=1235)
+>>> airlines_gbm_custom.train(x=predictors,
+...                           y=response,
+...                           training_frame=train,
+...                           validation_frame=valid)
+>>> airlines_gbm.auc()
+""",
+    export_checkpoints_dir="""
+>>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
+>>> predictors = ["DayofMonth", "DayOfWeek"]
+>>> response = "IsDepDelayed"
+>>> hyper_parameters = {'ntrees': [5,10]}
+>>> search_crit = {'strategy': "RandomDiscrete",
+...                'max_models': 5,
+...                'seed': 1234,
+...                'stopping_rounds': 3,
+...                'stopping_metric': "AUTO",
+...                'stopping_tolerance': 1e-2}
+>>> checkpoints_dir = tempfile.mkdtemp()
+>>> air_grid = H2OGridSearch(H2OGradientBoostingEstimator,
+...                          hyper_params=hyper_parameters,
+...                          search_criteria=search_crit)
+>>> air_grid.train(x=predictors,
+...                y=response,
+...                training_frame=airlines,
+...                distribution="bernoulli",
+...                learn_rate=0.1,
+...                max_depth=3,
+...                export_checkpoints_dir=checkpoints_dir)
+>>> len(listdir(checkpoints_dir))
+""",
+    monotone_constraints="""
+>>> prostate_hex = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+>>> prostate_hex["CAPSULE"] = prostate_hex["CAPSULE"].asfactor()
+>>> response = "CAPSULE"
+>>> seed=42
+>>> monotone_constraints={"AGE":1}
+>>> gbm_model = H2OGradientBoostingEstimator(seed=seed,
+                                             monotone_constraints=monotone_constraints)
+>>> gbm_model.train(y=response,
+                    ignored_columns=["ID"],
+                    training_frame=prostate_hex)
+>>> gbm_model.scoring_history()
+"""
 )
