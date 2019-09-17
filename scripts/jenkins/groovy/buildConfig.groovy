@@ -341,8 +341,8 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'gpu && !2gpu'),
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'gpu && !2gpu')
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl32'),
+    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')
 
     private final String defaultNodeLabel
     private final String benchmarkNodeLabel
