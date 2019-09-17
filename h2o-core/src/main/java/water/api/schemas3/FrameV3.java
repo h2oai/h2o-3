@@ -68,7 +68,7 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
   @API(help="Distribution summary", direction=API.Direction.OUTPUT)
   public TwoDimTableV3 distribution_summary;
 
-  public static class ColSpecifierV3 extends SchemaV3<VecSpecifier, ColSpecifierV3> {
+  public static class ColSpecifierV3 extends SchemaV3<VecSpecifier, ColSpecifierV3> implements AutoParseable {
     public ColSpecifierV3() { }
     public ColSpecifierV3(String column_name) {
       this.column_name = column_name;

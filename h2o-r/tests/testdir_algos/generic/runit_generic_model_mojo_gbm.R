@@ -1,46 +1,6 @@
+source("generic_model_test_common.R")
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
-
-compare_output <- function(original_output, generic_output){
-
-    removed_original <- c()
-    for (i in 1:length(original_output)) {
-        line <- original_output[i]
-        
-        if(grepl("Extract .+ frame", line)  || grepl("H2ORegressionModel: gbm", line) || grepl("H2OMultinomialModel: gbm", line)){ # There are no frames to extract in generic
-            removed_original <- append(removed_original, i)
-        } else if(grepl("H2OBinomialModel: gbm", line)){
-            removed_original <- append(removed_original, i)
-        } else if(grepl("Model ID", line)){
-            removed_original <- append(removed_original, i)
-        } else if(grepl("H2OBinomialMetrics: gbm", line)  || grepl("H2ORegressionMetrics: gbm", line) || grepl("H2OMultinomialMetrics: gbm", line)){
-            removed_original <- append(removed_original, i)
-        }
-    }
-    if(length(removed_original) > 0){
-        original_output <- original_output[-removed_original]        
-    }
-    
-    removed_generic <- c()
-    for (i in 1:length(generic_output)) {
-        line <- generic_output[i]
-        
-        if(grepl("H2OBinomialModel: generic", line) || grepl("H2ORegressionMetrics: generic", line) || grepl("H2OMultinomialModel: generic", line)){
-            removed_generic <- append(removed_generic, i)
-        } else if(grepl("Model ID", line)){
-            removed_generic <- append(removed_generic, i)
-        } else if(grepl("H2OBinomialMetrics: generic", line) || grepl("H2ORegressionModel: generic", line) || grepl("H2OMultinomialMetrics: generic", line)){
-            removed_generic <- append(removed_generic, i)
-        }
-    }
-    if(length(removed_generic) > 0){
-        generic_output <- generic_output[-removed_generic]
-    }
-    print(original_output)
-    print(generic_output)
-    expect_equal(TRUE, all.equal(original_output, generic_output))
-}
-
 
 test.model.generic.gbm <- function() {
     data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
@@ -55,7 +15,9 @@ test.model.generic.gbm <- function() {
     
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
-    compare_output(original_output, generic_output)
+    compare_output(original_output, generic_output,
+                   c("Extract .+ frame","H2OBinomialModel: gbm", "Model ID", "H2OBinomialMetrics: gbm"),
+                   c("H2OBinomialModel: generic", "Model ID", "H2OBinomialMetrics: generic"))
     
     generic_model_preds  <- h2o.predict(generic_model, data)
     expect_equal(length(generic_model_preds), 3)
@@ -75,7 +37,9 @@ test.model.generic.gbm <- function() {
     
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
-    compare_output(original_output, generic_output)
+    compare_output(original_output, generic_output,
+                   c("Extract .+ frame","H2ORegressionModel: gbm", "Model ID", "H2ORegressionMetrics: gbm"),
+                   c("H2ORegressionMetrics: generic", "Model ID", "H2ORegressionModel: generic"))
     
     # Multinomial
     cols <- c("Origin", "Distance")
@@ -89,7 +53,9 @@ test.model.generic.gbm <- function() {
     
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))
-    compare_output(original_output, generic_output)
+    compare_output(original_output, generic_output,
+                   c("Extract .+ frame", "H2OMultinomialModel: gbm", "Model ID", "H2OMultinomialMetrics: gbm"),
+                   c("H2OMultinomialModel: generic", "Model ID", "H2OMultinomialMetrics: generic"))
     
 }
 

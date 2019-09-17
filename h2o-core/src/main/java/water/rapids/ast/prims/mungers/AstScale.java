@@ -19,6 +19,17 @@ import java.util.Arrays;
  * TRUE/FALSE.
 */
 public class AstScale extends AstPrimitive {
+  
+  private final boolean _in_place;
+
+  private AstScale(boolean inPlace) {
+    _in_place = inPlace;
+  }
+
+  public AstScale() {
+    this(false);
+  }
+
   @Override
   public String[] args() {
     return new String[]{"ary", "center", "scale"};
@@ -33,7 +44,7 @@ public class AstScale extends AstPrimitive {
   public String str() {
     return "scale";
   }
-
+  
   @Override
   public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
     final Frame originalFrame = stk.track(asts[1].exec(env)).getFrame();
@@ -52,18 +63,35 @@ public class AstScale extends AstPrimitive {
 
     final double[] means = calcMeans(env, asts[2], numericFrame, originalFrame);
     final double[] mults = calcMults(env, asts[3], numericFrame, originalFrame);
+ 
     // Update in-place.
-    new InPlaceSlateTask(means, mults).doAll(numericFrame);
+    final Frame workFrame = _in_place ? numericFrame : numericFrame.deepCopy(null);
+    new InPlaceScaleTask(means, mults).doAll(workFrame);
 
-    // Return the original frame (with categorical and other columns), this is okay to do because the update was made in-place.
-    return new ValFrame(originalFrame);
+    final Frame outputFrame;
+    if (_in_place) {
+      outputFrame = originalFrame; 
+    } else {
+      outputFrame = new Frame();
+      String[] names = originalFrame.names();
+      byte[] types = originalFrame.types();
+      for (int i = 0; i < originalFrame.numCols(); i++) {
+        if (types[i] == Vec.T_NUM) {
+          outputFrame.add(names[i], workFrame.vec(names[i]));
+        } else {
+          outputFrame.add(names[i], originalFrame.vec(i));
+        }
+      }
+    }
+
+    return new ValFrame(outputFrame);
   }
 
-  private static class InPlaceSlateTask extends MRTask<InPlaceSlateTask> {
+  private static class InPlaceScaleTask extends MRTask<InPlaceScaleTask> {
     private final double[] _means;
     private final double[] _mults;
 
-    InPlaceSlateTask(double[] means, double[] mults) {
+    InPlaceScaleTask(double[] means, double[] mults) {
       _means = means;
       _mults = mults;
     }
@@ -137,4 +165,14 @@ public class AstScale extends AstPrimitive {
     return numVals;
   }
 
+  public static class AstScaleInPlace extends AstScale {
+    public AstScaleInPlace() {
+      super(true);
+    }
+    @Override
+    public String str() {
+      return "scale_inplace";
+    }
+  }
+  
 }

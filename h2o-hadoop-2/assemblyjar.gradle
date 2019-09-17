@@ -3,8 +3,8 @@ apply plugin: 'com.github.johnrengelman.shadow'
 
 description = 'H2O HDFS client shadowjar for Hadoop ' + hadoopVersion
 
-sourceCompatibility = 1.7
-targetCompatibility = 1.7
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
 
 dependencies {
   compile(project(":h2o-mapreduce-generic")) {

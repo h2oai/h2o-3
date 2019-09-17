@@ -5,7 +5,6 @@ import hex.genmodel.*;
 import hex.genmodel.attributes.metrics.SerializedName;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.Objects;
@@ -95,14 +94,14 @@ public class ModelJsonReader {
                         }
                         break;
                     case DOUBLE:
-                        if (primitiveValue.isNumber()) {
+                        if (!primitiveValue.isJsonNull()) { // isNumber skips NaNs
                             data[i][j] = primitiveValue.getAsDouble();
                         } else {
                             data[i][j] = null;
                         }
                         break;
                     case FLOAT:
-                        if (primitiveValue.isNumber()) {
+                        if (!primitiveValue.isJsonNull()) { // isNumber skips NaNs
                             data[i][j] = primitiveValue.getAsFloat();
                         } else {
                             data[i][j] = null;

@@ -11,6 +11,10 @@ import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 public class Merge {
 
+  public static Frame sort(final Frame fr, int col) {
+    return sort(fr, new int[]{col});
+  }
+  
   public static Frame sort(final Frame fr, int[] cols) {
     int numCol = cols.length;
     int[] ascending = new int[numCol];

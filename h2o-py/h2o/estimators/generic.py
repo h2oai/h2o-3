@@ -14,22 +14,23 @@ from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 class H2OGenericEstimator(H2OEstimator):
     """
-    Generic Model
+    Import MOJO Model
 
     """
 
     algo = "generic"
+    param_names = {"model_id", "model_key", "path"}
 
     def __init__(self, **kwargs):
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "model_key"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
+        if all(kwargs.get(name, None) is None for name in ["model_key", "path"]):
+            raise H2OValueError('At least one of ["model_key", "path"] is required.')
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
@@ -49,6 +50,20 @@ class H2OGenericEstimator(H2OEstimator):
         self._parms["model_key"] = H2OFrame._validate(model_key, 'model_key')
 
 
+    @property
+    def path(self):
+        """
+        Path to file with self-contained model archive.
+
+        Type: ``str``.
+        """
+        return self._parms.get("path")
+
+    @path.setter
+    def path(self, path):
+        assert_is_type(path, None, str)
+        self._parms["path"] = path
+
 
     def _requires_training_frame(self):
         """
@@ -65,10 +80,7 @@ class H2OGenericEstimator(H2OEstimator):
         :param file: A string containing path to the file to create the model from
         :return: H2OGenericEstimator instance representing the generic model
         """
-        from h2o import lazy_import, get_frame
-        model_key = lazy_import(file)
-        model_bytes_frame = get_frame(model_key[0])
-        model = H2OGenericEstimator(model_key = model_bytes_frame)
+        model = H2OGenericEstimator(path = file)
         model.train()
 
         return model

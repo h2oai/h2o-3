@@ -53,6 +53,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
 
+
   public static Model[] fetchAll() {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
@@ -106,6 +107,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public interface GetMostImportantFeatures {
     String[] getMostImportantFeatures(int n);
+  }
+
+  public interface GetNTrees {
+    int getNTrees();
   }
 
   /**
@@ -962,6 +967,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return (float) classification_error();
       case AUC:
         return (float)(1-auc());
+      case AUCPR:
+        return (float)(1-AUCPR());
 /*      case r2:
         return (float)(1-r2());*/
       case mean_per_class_error:
@@ -1048,6 +1055,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if (mm == null) return Double.NaN;
 
     return ((ModelMetricsBinomial)mm)._auc._auc;
+  }
+
+  public double AUCPR() {
+    if (scoringInfo != null)
+      return last_scored().cross_validation ? last_scored().scored_xval._pr_auc : last_scored().validation ? last_scored().scored_valid._pr_auc : last_scored().scored_train._pr_auc;
+
+    ModelMetrics mm = _output._cross_validation_metrics != null ? _output._cross_validation_metrics : _output._validation_metrics != null ? _output._validation_metrics : _output._training_metrics;
+    if (mm == null) return Double.NaN;
+
+    return ((ModelMetricsBinomial)mm)._auc._pr_auc;
   }
 
   public double deviance() {
@@ -1603,7 +1620,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param predictFr
    * @return
    */
-  protected Frame postProcessPredictions(Frame adaptFrm, Frame predictFr, Job j) {
+  protected Frame postProcessPredictions(Frame adaptFrm, Frame predictFr, Job j) {  
     return predictFr;
   }
 
@@ -1732,11 +1749,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  protected interface BigScorePredict {
+  public interface BigScorePredict {
     BigScoreChunkPredict initMap(final Frame fr, final Chunk chks[]);
   }
 
-  protected interface BigScoreChunkPredict extends AutoCloseable {
+  public interface BigScoreChunkPredict extends AutoCloseable {
     double[] score0(Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds);
     @Override
     void close();
@@ -1791,7 +1808,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  */
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
-
+  
   /**Override scoring logic for models that handle weight/offset**/
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double offset) {
     assert (offset == 0) : "Override this method for non-trivial offset!";

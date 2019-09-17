@@ -65,6 +65,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             "Test only" );
 
     context.registerEndpoint("get_tree", "GET /3/Tree", TreeHandler.class, "getTree", "Obtain a traverseable representation of a specific tree");
+    
   }
 
   @Override

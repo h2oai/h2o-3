@@ -161,7 +161,11 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   /**
    * Metric to use for convergence checking, only for _stopping_rounds > 0
    */
-  @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF with the Python client.", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error", "anomaly_score", "custom", "custom_increasing"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+  @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and " +
+          "anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and " +
+          "DRF with the Python client.", values = {"AUTO", "deviance", "logloss", "MSE", "RMSE","MAE","RMSLE", "AUC", 
+          "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "anomaly_score", "custom", 
+          "custom_increasing"}, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public ScoreKeeper.StoppingMetric stopping_metric;
 
   @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
@@ -287,5 +291,23 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
 
     ab.putJSONA("parameters", metadata);
     return ab;
+  }
+
+  /**
+   * 
+   * @param schemaClass   A schema class to extract {@link API} annotated parameters 
+   * @param <X> A generic type for a {@link Class} object representing a class extending {@link ModelParametersSchemaV3}. 
+   * @return
+   */
+  protected static <X extends Class<? extends ModelParametersSchemaV3>> List<String> extractDeclaredApiParameters(X schemaClass){
+    final Field[] declaredFields = schemaClass.getDeclaredFields();
+    
+    final List<String> paramsList = new ArrayList<>(declaredFields.length);
+    for (Field field : declaredFields){
+      if(!field.isAnnotationPresent(API.class)) continue;
+      paramsList.add(field.getName());
+    }
+    
+    return paramsList;
   }
 }

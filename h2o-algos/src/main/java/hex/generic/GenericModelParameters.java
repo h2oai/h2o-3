@@ -7,10 +7,21 @@ import water.fvec.Frame;
 public class GenericModelParameters extends Model.Parameters {
 
     /**
+     * Path of the file with embedded model
+     */
+    public String _path;
+
+    /**
      * Key to the file with embedded model
      */
     public Key<Frame> _model_key;
-    
+
+    /**
+     * Skip the check for white-listed algorithms, this allows load any MOJO.
+     * Use at your own risk - unsupported.
+     */
+    public boolean _disable_algo_check;
+
     @Override
     public String algoName() {
         return "Generic";
@@ -18,7 +29,7 @@ public class GenericModelParameters extends Model.Parameters {
 
     @Override
     public String fullName() {
-        return "Generic Model";
+        return "Import MOJO Model";
     }
 
     @Override

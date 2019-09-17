@@ -72,7 +72,7 @@ public class InteractionWrappedVec extends WrappedVec {
    * Obtain the length of the expanded (i.e. one-hot expanded) interaction column.
    */
   public int expandedLength() {
-    if( _v1Domain==null && _v2Domain==null ) return 1; // 2 numeric columns -> 1 column
+    if (isNumericInteraction()) return 1; // 2 numeric columns -> 1 column
     else if( isCategorical() ) return domain().length; // 2 cat -> domains (limited) length
     else if( _v1Domain!=null ) return _v1Enums==null?_v1Domain.length - (_useAllFactorLevels?0:1):_v1Enums.length-(_useAllFactorLevels?0:1);
     else return _v2Enums==null?_v2Domain.length - (_useAllFactorLevels?0:1):_v2Enums.length - (_useAllFactorLevels?0:1);
@@ -141,13 +141,17 @@ public class InteractionWrappedVec extends WrappedVec {
     }
   }
 
+  public boolean isNumericInteraction() {
+    return null==v1Domain() && null==v2Domain();
+  }
+  
   @Override public double mean() {
-    if( null==t && null==v1Domain() && null==v2Domain() )
+    if (null==t && isNumericInteraction())
       return super.mean();
     return 0;
   }
   @Override public double sigma() {
-    if( null==t && null==v1Domain() && null==v2Domain() )
+    if (null==t && isNumericInteraction())
       return super.sigma();
     return 1;
   }

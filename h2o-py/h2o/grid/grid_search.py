@@ -454,7 +454,7 @@ class H2OGridSearch(backwards_compatible()):
         if header:
             print('Grid Summary:')
         print()
-        H2ODisplay(table, ['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
+        H2ODisplay(table, header=['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
 
 
     def show(self):

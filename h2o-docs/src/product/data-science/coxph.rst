@@ -56,6 +56,7 @@ Defining a CoxPH Model
 
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: (Internal only.) When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns. This option is disabled by default.
 
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 Cox Proportional Hazards Model Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

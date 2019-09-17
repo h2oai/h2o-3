@@ -18,9 +18,11 @@ import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.URL;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -354,11 +356,48 @@ public class TestUtil extends Iced {
 
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
+      if (runWithoutLocalFiles()) {
+        downloadTestFileFromS3(fname);
+      }
       return NFSFileVec.make(fname);
     } catch (IOException ioe) {
       fail(ioe.getMessage());
       return null;
     }
+  }
+
+  private static boolean runWithoutLocalFiles() {
+    return Boolean.getBoolean("H2O_JUNIT_ALLOW_NO_SMALLDATA");
+  }
+  
+  private static void downloadTestFileFromS3(String fname) throws IOException {
+    if (fname.startsWith("./"))
+      fname = fname.substring(2);
+    File f = new File(fname);
+    if (! f.exists()) {
+      f.getParentFile().mkdirs();
+      File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
+      org.apache.commons.io.FileUtils.copyURLToFile(
+              new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
+              tmpFile, 1000, 2000);
+      if (! tmpFile.renameTo(f)) {
+        Log.warn("Couldn't download " + fname + " from S3.");
+      }
+    }
+  }
+
+  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
+    return parse_test_file(outputKey, fname, guessSetup, null);
+  }
+
+  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
+    NFSFileVec nfs = makeNfsFileVec(fname);
+    ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
+    if (skippedColumns != null) {
+      guessParseSetup.setSkippedColumns(skippedColumns);
+      guessParseSetup.setParseColumnIndices(guessParseSetup.getNumberColumns(), skippedColumns);
+    }
+    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   public static Frame parse_test_file( Key outputKey, String fname) {
@@ -392,20 +431,6 @@ public class TestUtil extends Iced {
     if (transformer != null)
       guessedSetup = transformer.transformSetup(guessedSetup);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
-  }
-
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
-    return parse_test_file(outputKey, fname, guessSetup, null);
-  }
-
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
-    NFSFileVec nfs = makeNfsFileVec(fname);
-    ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
-    if (skippedColumns != null) {
-      guessParseSetup.setSkippedColumns(skippedColumns);
-      guessParseSetup.setParseColumnIndices(guessParseSetup.getNumberColumns(), skippedColumns);
-    }
-    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
@@ -670,11 +695,15 @@ public class TestUtil extends Iced {
   public static <T> T[] aro(T ...a) { return a ;}
 
   // ==== Comparing Results ====
-  
-  public static void assertFrameEquals(Frame expected, Frame actual, double delta) {
+
+  public static void assertFrameEquals(Frame expected, Frame actual, double absDelta) {
+    assertFrameEquals(expected, actual, absDelta, null);
+  }
+
+  public static void assertFrameEquals(Frame expected, Frame actual, Double absDelta, Double relativeDelta) {
     assertEquals("Frames have different number of vecs. ", expected.vecs().length, actual.vecs().length);
     for (int i = 0; i < expected.vecs().length; i++) {
-      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), delta);
+      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), absDelta, relativeDelta);
     }
   }
 
@@ -683,10 +712,38 @@ public class TestUtil extends Iced {
   }
 
   public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, double delta) {
+    assertVecEquals(messagePrefix, expecteds, actuals, delta, null);
+  }
+
+  public static void assertVecEquals(String messagePrefix, Vec expecteds, Vec actuals, Double absDelta, Double relativeDelta) {
     assertEquals(expecteds.length(), actuals.length());
     for(int i = 0; i < expecteds.length(); i++) {
       final String message = messagePrefix + i + ": " + expecteds.at(i) + " != " + actuals.at(i) + ", chunkIds = " + expecteds.elem2ChunkIdx(i) + ", " + actuals.elem2ChunkIdx(i) + ", row in chunks = " + (i - expecteds.chunkForRow(i).start()) + ", " + (i - actuals.chunkForRow(i).start());
-      assertEquals(message, expecteds.at(i), actuals.at(i), delta);
+      double expectedVal = expecteds.at(i);
+      double actualVal = actuals.at(i);
+      assertEquals(message, expectedVal, actualVal, computeAssertionDelta(expectedVal, absDelta, relativeDelta));
+    }
+  }
+  
+  private static double computeAssertionDelta(double expectedVal, Double absDelta, Double relDelta) {
+    if ((absDelta == null || absDelta.isNaN()) && (relDelta == null || relDelta.isNaN())) {
+      throw new IllegalArgumentException("Either absolute or relative delta has to be non-null and non-NaN");
+    } else if (relDelta == null || relDelta.isNaN()) {
+      return absDelta;
+    } else {
+      double computedRelativeDelta;
+      double deltaBase = Math.abs(expectedVal);
+      if (deltaBase == 0) {
+        computedRelativeDelta = relDelta;
+      } else {
+        computedRelativeDelta = deltaBase * relDelta;
+      }
+      if (absDelta == null || absDelta.isNaN()) {
+        return computedRelativeDelta;
+      } else {
+        // use the bigger delta for the assert
+        return Math.max(computedRelativeDelta, absDelta);
+      }
     }
   }
 
@@ -1096,6 +1153,12 @@ public class TestUtil extends Iced {
     }
 
     return true;
+  }
+
+  public static final String[] ignoredColumns(final Frame frame, final String... usedColumns) {
+    Set<String> ignored = new HashSet(Arrays.asList(frame.names()));
+    ignored.removeAll(Arrays.asList(usedColumns));
+    return ignored.toArray(new String[ignored.size()]);
   }
 
   public static boolean compareFrames(final Frame f1, final Frame f2) throws IllegalStateException {

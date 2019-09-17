@@ -5,19 +5,18 @@ import hex.genmodel.GenModel;
 import hex.genmodel.IClusteringModel;
 import hex.genmodel.PredictContributions;
 import hex.genmodel.PredictContributionsFactory;
-import hex.genmodel.algos.tree.SharedTreeMojoModel;
-import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
+import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 
-import java.io.*;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
+import java.io.IOException;
+import java.io.Serializable;
+import java.util.*;
 
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
@@ -347,6 +346,8 @@ public class EasyPredictModelWrapper implements Serializable {
         return predictDimReduction(data);
       case WordEmbedding:
         return predictWord2Vec(data);
+      case TargetEncoder:
+        return transformWithTargetEncoding(data);
       case AnomalyDetection:
         return predictAnomalyDetection(data);
 
@@ -535,6 +536,7 @@ public class EasyPredictModelWrapper implements Serializable {
    * @throws PredictException
    */
   public BinomialModelPrediction predictBinomial(RowData data, double offset) throws PredictException {
+
     double[] preds = preamble(ModelCategory.Binomial, data, offset);
 
     BinomialModelPrediction p = new BinomialModelPrediction();
@@ -566,6 +568,26 @@ public class EasyPredictModelWrapper implements Serializable {
       p.contributions = predictContributions.calculateContributions(rawData);
     }
     return p;
+  }
+
+  /**
+   * Perform target encoding based on TargetEncoderMojoModel
+   * @param data RowData structure with data for which we want to produce transformations
+   * @return TargetEncoderPrediction with transformations ordered in accordance with corresponding categorical columns' indices in training data
+   * @throws PredictException
+   */
+  public TargetEncoderPrediction transformWithTargetEncoding(RowData data) throws PredictException{
+    if (! (m instanceof TargetEncoderMojoModel))
+      throw new PredictException("Model is not of the expected type, class = " + m.getClass().getSimpleName());
+
+    TargetEncoderMojoModel tem = (TargetEncoderMojoModel) this.m;
+    Set<String> teColumnNames = tem._teColumnNameToIdx.keySet();
+
+    double[] preds = new double[teColumnNames.size()];
+
+    TargetEncoderPrediction prediction = new TargetEncoderPrediction();
+    prediction.transformations = predict(data, 0, preds);
+    return prediction;
   }
 
   @SuppressWarnings("unused") // not used in this class directly, kept for backwards compatibility
@@ -800,7 +822,8 @@ public class EasyPredictModelWrapper implements Serializable {
   }
   protected double[] preamble(ModelCategory c, RowData data, double offset) throws PredictException {
     validateModelCategory(c);
-    return predict(data, offset, new double[m.getPredsSize(c)]);
+    final int predsSize = m.getPredsSize(c);
+    return predict(data, offset, new double[predsSize]);
   }
 
   private static double[] nanArray(int len) {

@@ -147,7 +147,7 @@ Defining a DRF Model
 
 -  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping.
    The available options are:
-
+    
     - ``auto``: This defaults to ``logloss`` for classification, ``deviance`` for regression, and ``anomaly_score`` for Isolation Forest. Note that custom and custom_increasing can only be used in GBM and DRF with the Python client. Must be one of: ``AUTO``, ``anomaly_score``. Defaults to ``AUTO``.
     - ``anomaly_score`` (Isolation Forest only)
     - ``deviance``
@@ -159,6 +159,7 @@ Defining a DRF Model
     - ``auc``
     - ``lift_top_group``
     - ``misclassification``
+    - ``aucpr``
     - ``mean_per_class_error``
     - ``custom`` (Python client only)
     - ``custom_increasing`` (Python client only)
@@ -241,10 +242,11 @@ Defining a DRF Model
 
 -  `custom_metric_func <algo-params/custom_metric_func.html>`__: Optionally specify a custom evaluation function.
 
--  **export_checkpoints_dir**: Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
+-  `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
+
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 -  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
-
 
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~

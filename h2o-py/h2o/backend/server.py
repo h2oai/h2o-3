@@ -378,8 +378,16 @@ class H2OLocalServer(object):
         :return: Path to the java executable.
         :raises H2OStartupError: if java cannot be found.
         """
-        # is java callable directly (doesn't work on windows it seems)?
         java = "java.exe" if sys.platform == "win32" else "java"
+
+        h2o_java = os.getenv("H2O_JAVA_HOME")
+        if h2o_java:
+            full_path = os.path.join(h2o_java, "bin", java)
+            if not os.path.exists(full_path):
+                raise H2OStartupError("Environment variable H2O_JAVA_HOME is set to '%d' but this location doesn't appear to be a valid Java Home directory, unset environment variable or provide valid path to Java Home." % h2o_java)
+            return full_path
+
+        # is java callable directly (doesn't work on windows it seems)?
         if os.access(java, os.X_OK):
             return java
 

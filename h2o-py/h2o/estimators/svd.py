@@ -19,23 +19,23 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
     """
 
     algo = "svd"
+    param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
+                   "score_each_iteration", "transform", "svd_method", "nv", "max_iterations", "seed", "keep_u",
+                   "u_name", "use_all_factor_levels", "max_runtime_secs", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OSingularValueDecompositionEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                      "score_each_iteration", "transform", "svd_method", "nv", "max_iterations", "seed", "keep_u",
-                      "u_name", "use_all_factor_levels", "max_runtime_secs", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._parms["_rest_version"] = 99
 
     @property
     def training_frame(self):
@@ -260,3 +260,16 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
+    def init_for_pipeline(self):
+        """
+        Returns H2OSVD object which implements fit and transform method to be used in sklearn.Pipeline properly.
+        All parameters defined in self.__params, should be input parameters in H2OSVD.__init__ method.
+
+        :returns: H2OSVD object
+        """
+        import inspect
+        from h2o.transforms.decomposition import H2OSVD
+        # check which parameters can be passed to H2OSVD init
+        var_names = list(dict(inspect.getmembers(H2OSVD.__init__.__code__))['co_varnames'])
+        parameters = {k: v for k, v in self._parms.items() if k in var_names}
+        return H2OSVD(**parameters)

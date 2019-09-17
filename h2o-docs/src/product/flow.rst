@@ -641,7 +641,8 @@ In the **Build a Model** cell, select an algorithm from the drop-down menu. (Ref
  - **CoxPH**: Create a Cox Proportional Hazards model.
  - **Deep Learning**: Create a Deep Learning model.
  - **Distributed Random Forest**: Create a distributed Random Forest model.
- - **Gradient Boosting Machine**: Create a Gradient Boosted model
+ - **Gradient Boosting Machine**: Create a Gradient Boosted model.
+ - **MOJO Model**: Create a MOJO model.
  - **Generalized Linear Model**: Create a Generalized Linear model.
  - **Generalized Low Rank Model**: Create a Generalized Low Rank model.
  - **Isolation Forest**: Create an Isolation Forest model.

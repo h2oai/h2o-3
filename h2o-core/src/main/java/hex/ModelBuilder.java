@@ -91,7 +91,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  default settings. */
   protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
   protected ModelBuilder(P parms, boolean startup_once, String externalSchemaDirectory ) {
-    String base = getClass().getSimpleName().toLowerCase();
+    String base = getName();
     if (!startup_once)
       throw H2O.fail("Algorithm " + base + " registration issue. It can only be called at startup.");
     _job = null;
@@ -1354,13 +1354,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
         }
-        if (nclasses()!=2 && _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC) {
-          error("_stopping_metric", "Stopping metric cannot be AUC for multinomial classification.");
+        if (nclasses()!=2 && (_parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC || _parms._stopping_metric
+                == ScoreKeeper.StoppingMetric.AUCPR)) {
+          error("_stopping_metric", "Stopping metric cannot be AUC or AUCPR for multinomial " +
+                  "classification.");
         }
       } else {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.misclassification ||
                 _parms._stopping_metric == ScoreKeeper.StoppingMetric.AUC ||
-                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss)
+                _parms._stopping_metric == ScoreKeeper.StoppingMetric.logloss || _parms._stopping_metric
+                == ScoreKeeper.StoppingMetric.AUCPR)
         {
           error("_stopping_metric", "Stopping metric cannot be " + _parms._stopping_metric.toString() + " for regression.");
         }
@@ -1686,16 +1689,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       i++;
     }
-
+    MathUtils.SimpleStats simpleStats = new MathUtils.SimpleStats(numMetrics);
     for (i=0;i<N;++i)
-      stats.add(vals[i],1);
+      simpleStats.add(vals[i],1);
     for (i=0;i<numMetrics;++i) {
-      table.set(i, 0, (float)stats.mean()[i]);
-      table.set(i, 1, (float)stats.sigma()[i]);
+      table.set(i, 0, (float)simpleStats.mean()[i]);
+      table.set(i, 1, (float)simpleStats.sigma()[i]);
     }
-
     Log.info(table);
     return table;
+  }
+
+  /**
+   * Overridable Model Builder name used in generated code, in case the name of the ModelBuilder class is not suitable.
+   *
+   * @return Name of the builder to be used in generated code
+   */
+  public String getName() {
+    return getClass().getSimpleName().toLowerCase();
   }
 
 }

@@ -4,17 +4,16 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.Keyed;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.rapids.vals.ValFrame;
+import water.util.Log;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
 public class GroupByTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(5); }
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Test public void testBasic() {
     Frame fr = null;
@@ -256,12 +255,46 @@ public class GroupByTest extends TestUtil {
 
     ids.delete();
     Keyed.remove(Key.make("cov"));
-  }    
+  }
+  
+  @Test
+  public void testPubDev6319() {
+    Scope.enter();
+    try {
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(fr);
 
+      String aggregateColumn = "survived";
+      String groupByColumn = "home.dest";
+
+      String rapidEx = String.format("(GB %s [%d]  sum %s \"all\" nrow %s \"all\")", fr._key,
+              fr.find(groupByColumn), fr.find(aggregateColumn), fr.find(aggregateColumn));
+      Frame expected = Rapids.exec(rapidEx).getFrame();
+      Scope.track(expected);
+
+      for (int attempt = 0; attempt < 200; attempt++) {
+        Log.info("Running attempt: " + attempt);
+        Val val = Rapids.exec(rapidEx);
+        Frame groupedFrame = val.getFrame();
+        Scope.track(groupedFrame);
+
+        assertArrayEquals(expected.vec(0).domain(), expected.vec(0).domain());
+        assertCatVecEquals(expected.vec(0), groupedFrame.vec(0));
+
+        assertVecEquals(expected.vec(1), groupedFrame.vec(1), 0); // sum
+        assertVecEquals(expected.vec(2), groupedFrame.vec(2), 0); // nrow
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
 
   private void chkDim( Frame fr, int col, int row ) {
-    Assert.assertEquals(col,fr.numCols());
-    Assert.assertEquals(row,fr.numRows());
+    String str = "Failure: expected column number %d, actual column number %d";
+    Assert.assertTrue(String.format("Expected column number: %d, actual column number: %d", col, fr.numCols()),
+            col==fr.numCols());
+    Assert.assertTrue(String.format("Expected row number: %d, actual row number: %d", row, fr.numRows()), 
+            row==fr.numRows());
   }
   private void chkFr( Frame fr, int col, int row, double exp ) { chkFr(fr,col,row,exp,Math.ulp(1)); }
   private void chkFr( Frame fr, int col, int row, double exp, double tol ) { 

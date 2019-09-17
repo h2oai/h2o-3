@@ -1,12 +1,11 @@
 package hex.genmodel.attributes;
 
 import com.google.gson.JsonObject;
-import hex.ModelCategory;
 import hex.genmodel.MojoModel;
-import hex.genmodel.attributes.metrics.MojoModelMetrics;
-import hex.genmodel.attributes.metrics.MojoModelMetricsBinomial;
-import hex.genmodel.attributes.metrics.MojoModelMetricsMultinomial;
-import hex.genmodel.attributes.metrics.MojoModelMetricsRegression;
+import hex.genmodel.algos.glm.GlmMojoModel;
+import hex.genmodel.algos.glm.GlmMultinomialMojoModel;
+import hex.genmodel.algos.glm.GlmOrdinalMojoModel;
+import hex.genmodel.attributes.metrics.*;
 
 import java.io.Serializable;
 
@@ -28,18 +27,18 @@ public class ModelAttributes implements Serializable {
 
 
     if (ModelJsonReader.elementExists(modelJson, "output.training_metrics")) {
-      _trainingMetrics = determineModelMetricsType(model._category);
+      _trainingMetrics = determineModelMetricsType(model);
       ModelJsonReader.fillObject(_trainingMetrics, modelJson, "output.training_metrics");
     } else _trainingMetrics = null;
 
     if (ModelJsonReader.elementExists(modelJson, "output.validation_metrics")) {
-      _validation_metrics = determineModelMetricsType(model._category);
+      _validation_metrics = determineModelMetricsType(model);
       ModelJsonReader.fillObject(_validation_metrics, modelJson, "output.validation_metrics");
     } else _validation_metrics = null;
 
     if (ModelJsonReader.elementExists(modelJson, "output.cross_validation_metrics")) {
       _cross_validation_metrics_summary = ModelJsonReader.readTable(modelJson, "output.cross_validation_metrics_summary");
-      _cross_validation_metrics = determineModelMetricsType(model._category);
+      _cross_validation_metrics = determineModelMetricsType(model);
       ModelJsonReader.fillObject(_cross_validation_metrics, modelJson, "output.cross_validation_metrics");
     } else {
       _cross_validation_metrics = null;
@@ -47,23 +46,32 @@ public class ModelAttributes implements Serializable {
     }
   }
 
-  private static MojoModelMetrics determineModelMetricsType(final ModelCategory modelCategory) {
-    switch (modelCategory) {
-      case Unknown:
-        return new MojoModelMetrics();
+  private static MojoModelMetrics determineModelMetricsType(final MojoModel mojoModel) {
+    switch (mojoModel.getModelCategory()) {
       case Binomial:
-        return new MojoModelMetricsBinomial();
+        if (mojoModel instanceof GlmMojoModel) {
+          return new MojoModelMetricsBinomialGLM();
+        } else return new MojoModelMetricsBinomial();
       case Multinomial:
-        return new MojoModelMetricsMultinomial();
+        if (mojoModel instanceof GlmMultinomialMojoModel) {
+          return new MojoModelMetricsMultinomialGLM();
+        } else return new MojoModelMetricsMultinomial();
       case Regression:
-        return new MojoModelMetricsRegression();
+        if (mojoModel instanceof GlmMojoModel) {
+          return new MojoModelMetricsRegressionGLM();
+        } else return new MojoModelMetricsRegression();
+      case AnomalyDetection:
+        return new MojoModelMetricsAnomaly();
       case Ordinal:
+        if (mojoModel instanceof GlmOrdinalMojoModel) {
+          return new MojoModelMetricsOrdinalGLM();
+        } else return new MojoModelMetricsOrdinal();
+      case Unknown:
       case Clustering:
       case AutoEncoder:
       case DimReduction:
       case WordEmbedding:
       case CoxPH:
-      case AnomalyDetection:
       default:
         return new MojoModelMetrics(); // Basic model metrics if nothing else is available
     }

@@ -9,6 +9,10 @@ public abstract class FileVec extends ByteVec {
   long _len;                    // File length
   final byte _be;
 
+  public String getPath() {
+    return getPathForKey(_key);
+  }
+  
   // Returns String with path for given key.
   public static String getPathForKey(Key k) {
     final int off = k._kb[0]==Key.CHK   || k._kb[0]==Key.VEC ? Vec.KEY_PREFIX_LEN : 0;
