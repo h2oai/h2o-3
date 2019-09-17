@@ -249,13 +249,13 @@ class H2OAutoML(Keyed):
                     assert is_step_def(step_def)
                     plan.append(step_def)
                 elif is_type(step_def, str):
-                    plan.append(dict(name=step_def, alias='all'))
+                    plan.append(dict(name=step_def))
                 else:
                     assert 0 < len(step_def) < 3
                     assert_is_type(step_def[0], str)
                     name = step_def[0]
                     if len(step_def) == 1:
-                        plan.append(dict(name=name, alias='all'))
+                        plan.append(dict(name=name))
                     else:
                         assert_is_type(step_def[1], str, list)
                         ids = step_def[1]
@@ -355,7 +355,7 @@ class H2OAutoML(Keyed):
         return dict() if self._training_info is None else self._training_info
 
     @property
-    def executed_plan(self):
+    def trained_steps(self):
         """
         expose the effective training plan used by the AutoML run.
         This executed plan can be directly reinjected as the `training_plan` property of a new AutoML instance
@@ -364,7 +364,7 @@ class H2OAutoML(Keyed):
         :return: a list of dictionaries representing the effective training plan.
         """
         # removing alias to be able to reinject result to a new AutoML instance
-        return map(lambda sdef: dict(name=sdef['name'], steps=sdef['steps']), self._state_json['executed_plan'])
+        return map(lambda sdef: dict(name=sdef['name'], steps=sdef['steps']), self._state_json['trained_steps'])
 
     #---------------------------------------------------------------------------
     # Training AutoML

@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.StepDefinition.Step;
 import water.Iced;
 import water.nbhm.NonBlockingHashMap;
@@ -49,7 +50,7 @@ public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
      * @return the list of {@link TrainingStep}s to execute according to the given training plan.
      */
     public TrainingStep[] getOrderedSteps(AutoML aml, StepDefinition[] trainingPlan) {
-        aml.eventLog().info(Stage.Workflow, "Loading execution steps "+Arrays.toString(trainingPlan));
+        aml.eventLog().info(Stage.Workflow, "Loading execution steps: "+Arrays.toString(trainingPlan));
         List<TrainingStep> orderedSteps = new ArrayList<>();
         for (StepDefinition def : trainingPlan) {
             Class<TrainingSteps> clazz = stepsByName.get(def._name);
@@ -58,7 +59,7 @@ public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
             }
             try {
                 TrainingSteps steps = clazz.getConstructor(AutoML.class).newInstance(aml);
-                TrainingStep[] toAdd = null;
+                TrainingStep[] toAdd;
                 if (def._alias != null) {
                     toAdd = steps.getSteps(def._alias);
                 } else if (def._steps != null) {
@@ -70,6 +71,8 @@ public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
                                 .forEach(s -> aml.eventLog().warn(Stage.Workflow,
                                         "Step '"+s._id+"' not defined in provider '"+def._name+"': skipping it."));
                     }
+                } else { // if name, but no alias or steps, put them all by default (support for simple syntax)
+                    toAdd = steps.getSteps(Alias.all);
                 }
                 if (toAdd != null) {
                     for (TrainingStep ts : toAdd) {

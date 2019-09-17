@@ -60,10 +60,10 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
   public String sort_metric;
 
   @API(help="The list of training steps effectively used during the AutoML run", direction=API.Direction.OUTPUT)
-  public StepDefinitionV99[] executed_plan;
+  public StepDefinitionV99[] trained_steps;
 
   @Override public AutoMLV99 fillFromImpl(AutoML autoML) {
-    super.fillFromImpl(autoML, new String[] { "leaderboard", "event_log", "leaderboard_table", "event_log_table", "sort_metric", "executed_plan" });
+    super.fillFromImpl(autoML, new String[] { "leaderboard", "event_log", "leaderboard_table", "event_log_table", "sort_metric", "trained_steps" });
 
     if (null == autoML) return this;
 
@@ -104,11 +104,11 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     this.event_log = new EventLogV99().fillFromImpl(eventLog);
     this.event_log_table = new TwoDimTableV3().fillFromImpl(eventLog.toTwoDimTable());
 
-    if (autoML.getExecutedPlan() != null) {
-      executed_plan = new StepDefinitionV99[autoML.getExecutedPlan().length];
+    if (autoML.getTrainedSteps() != null) {
+      trained_steps = new StepDefinitionV99[autoML.getTrainedSteps().length];
       int i = 0;
-      for (StepDefinition stepDef : autoML.getExecutedPlan()) {
-        executed_plan[i++] = new StepDefinitionV99().fillFromImpl(stepDef);
+      for (StepDefinition stepDef : autoML.getTrainedSteps()) {
+        trained_steps[i++] = new StepDefinitionV99().fillFromImpl(stepDef);
       }
     }
 

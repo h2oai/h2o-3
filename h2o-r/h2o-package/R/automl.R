@@ -46,6 +46,7 @@
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with exclude_algos param.
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+#' @param training_plan List. The list of training steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. Defaults to FALSE.
@@ -88,6 +89,7 @@ h2o.automl <- function(x, y, training_frame,
                        project_name = NULL,
                        exclude_algos = NULL,
                        include_algos = NULL,
+                       training_plan = NULL,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
@@ -192,19 +194,51 @@ h2o.automl <- function(x, y, training_frame,
     }
     input_spec$sort_metric <- tolower(sort_metric)
   }
+  build_models <- list()
   if (!is.null(exclude_algos)) {
     if (!is.null(include_algos)) stop("Use either include_algos or exclude_algos, not both.")
     if (length(exclude_algos) == 1) {
       exclude_algos <- as.list(exclude_algos)
     }
-    build_models <- list(exclude_algos = exclude_algos)
+    build_models$exclude_algos = exclude_algos
   } else if (!is.null(include_algos)) {
     if (length(include_algos) == 1) {
       include_algos <- as.list(include_algos)
     }
-    build_models <- list(include_algos = include_algos)
-  } else {
-    build_models <- list()
+    build_models$include_algos <- include_algos
+  }
+  if (!is.null(training_plan)) {
+    is.string <- function(s) is.character(s) && length(s) == 1
+    is.step <- function(s) is.string(s) || is.list(s) && !is.null(s$id)
+    training_plan <- lapply(training_plan, function(step) {
+      if (is.string(step)) {
+        list(name=step)
+      } else if (!(is.list(step)
+                    && !is.null(step$name)
+                    && (is.null(step$alias) || is.null(step$steps)))) {
+        stop("Each steps definition must be a string or a list with a 'name' key and an optional 'alias' or 'steps' key.")
+      } else if (!(is.null(step$alias) || step$alias %in% c('all', 'defaults', 'grids'))) {
+        stop("alias key must be one of 'all', 'defaults', 'grids'.")
+      } else if (!(is.null(step$steps)
+                    || is.step(step$steps)
+                    || is.vector(step$steps) && is.null(names(step$steps)) && all(sapply(step$steps, is.step)))){
+        stop("steps key must be a vector, and each element must be a string or a list with an 'id' key.")
+      } else if (is.string(step$steps)) {
+        list(name=step$name, steps=list(list(id=step$steps)))
+      } else if (is.list(step$steps) && !is.null(step$steps$id)) {
+        list(name=step$name, steps=list(step$steps))
+      } else if (!is.null(step$steps)) {
+        list(name=step$name, steps=lapply(step$steps, function(s) {
+          if (is.string(s))
+            list(id=s)
+          else
+            s
+        }))
+      } else {
+        step
+      }
+    })
+    build_models$training_plan <- training_plan
   }
 
   # Update build_control with nfolds
@@ -339,7 +373,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
   #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
 
-  leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
+  leaderboard <- as.data.frame(automl_job$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
 
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
@@ -364,11 +398,19 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   }
 
   if (should_fetch('event_log')) {
-    event_log <- as.data.frame(automl_job["event_log_table"]$event_log_table)
+    event_log <- as.data.frame(automl_job$event_log_table)
     event_log <- .automl.fetch_table(event_log, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
     # row.names(event_log) <- seq(nrow(event_log))
   } else {
     event_log <- NULL
+  }
+
+  if (should_fetch('trained_steps')) {
+    trained_steps <- lapply(automl_job$trained_steps, function(sdef) {
+      list(name=sdef$name, steps=sdef$steps)
+    })
+  } else {
+    trained_steps <- NULL
   }
 
   project <- automl_job$project
@@ -377,7 +419,8 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
     project_name=project,
     leaderboard=leaderboard,
     leader=leader,
-    event_log=event_log
+    event_log=event_log,
+    trained_steps=trained_steps
   ))
 }
 
@@ -412,6 +455,7 @@ h2o.getAutoML <- function(project_name) {
              leader = state$leader,
              leaderboard = state$leaderboard,
              event_log = state$event_log,
+             trained_steps = state$trained_steps,
              training_info = training_info
   ))
 }

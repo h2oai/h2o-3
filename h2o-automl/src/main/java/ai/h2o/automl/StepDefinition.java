@@ -74,6 +74,10 @@ public class StepDefinition extends Iced<StepDefinition> {
 
     public StepDefinition() { /* for autofill from schema */ }
 
+    public StepDefinition(String name) {
+        this(name, Alias.all);
+    }
+
     public StepDefinition(String name, Alias alias) {
         _name = name;
         _alias = alias;

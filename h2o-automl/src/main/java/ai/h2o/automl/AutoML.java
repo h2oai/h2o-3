@@ -117,7 +117,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Vec getFoldColumn() { return foldColumn; }
   public Vec getWeightsColumn() { return weightsColumn; }
 
-  public StepDefinition[] getExecutedPlan() { return executedPlan; }
+  public StepDefinition[] getTrainedSteps() { return trainedSteps; }
 
   Frame trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
   Frame validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
@@ -132,7 +132,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   Countdown runCountdown;
   Job<AutoML> job;                  // the Job object for the build of this AutoML.
   WorkAllocations workAllocations;
-  StepDefinition[] executedPlan;
+  StepDefinition[] trainedSteps;
 
   private TrainingStepsRegistry trainingStepsRegistry;
   private TrainingStepsExecutor trainingStepsExecutor;
@@ -472,7 +472,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           }
         }
     }
-    executedPlan = trainingStepsRegistry.createExecutionPlanFromSteps(executed.toArray(new TrainingStep[0]));
+    trainedSteps = trainingStepsRegistry.createExecutionPlanFromSteps(executed.toArray(new TrainingStep[0]));
+    eventLog().info(Stage.Workflow, "Actual trained steps: "+Arrays.toString(trainedSteps));
   }
 
 

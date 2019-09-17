@@ -360,8 +360,8 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(DeepLearningModel.class::isInstance).count());
       assertEquals(2, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count());
 
-      assertNotNull(aml.executedPlan);
-      Log.info(Arrays.toString(aml.executedPlan));
+      assertNotNull(aml.trainedSteps);
+      Log.info(Arrays.toString(aml.trainedSteps));
       assertArrayEquals(new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new Step[]{
                       new Step("def_1", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
@@ -376,7 +376,7 @@ public class AutoMLTest extends water.TestUtil {
                       new Step("best", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
                       new Step("all", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
-      }, aml.executedPlan);
+      }, aml.trainedSteps);
     } finally {
       if (aml != null) aml.delete();
       if (fr != null) fr.remove();

@@ -863,6 +863,7 @@ setClass("H2OAutoML", slots = c(project_name = "character",
                                 leader = "H2OModel",
                                 leaderboard = "H2OFrame",
                                 event_log = "H2OFrame",
+                                trained_steps = "list",
                                 training_info = "list"),
                       contains = "Keyed")
 #' @rdname h2o.keyof

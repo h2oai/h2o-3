@@ -205,9 +205,9 @@ def test_training_plan_using_minimal_syntax():
     assert any('AllModels' in name for name in se)
 
 
-def test_executed_plan():
+def test_trained_steps():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_executed_plan",
+    aml = H2OAutoML(project_name="py_trained_steps",
                     max_models=5,
                     training_plan=['DRF',
                                    ('GLM', 'defaults'),
@@ -216,20 +216,20 @@ def test_executed_plan():
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
     print(aml.leaderboard)
-    assert aml.executed_plan == [
+    assert aml.trained_steps == [
         dict(name='DRF', steps=[dict(id='def_1', weight=10), dict(id='XRT', weight=10)]),
         dict(name='GLM', steps=[dict(id='def_1', weight=10)]),
         dict(name='GBM', steps=[dict(id='grid_1', weight=77)]),
         dict(name='StackedEnsemble', steps=[dict(id='best', weight=10), dict(id='all', weight=10)]),
     ]
 
-    new_aml = H2OAutoML(project_name="py_reinject_executed_plan",
+    new_aml = H2OAutoML(project_name="py_reinject_trained_steps",
                         max_models=5,
-                        training_plan=aml.executed_plan,
+                        training_plan=aml.trained_steps,
                         seed=1)
     new_aml.train(y=ds.target, training_frame=ds.train)
     print(new_aml.leaderboard)
-    assert aml.executed_plan == new_aml.executed_plan
+    assert aml.trained_steps == new_aml.trained_steps
 
 
 def test_exclude_algos_is_applied_on_top_of_training_plan():
@@ -254,6 +254,6 @@ pu.run_tests([
     test_training_plan_using_full_syntax,
     test_training_plan_using_simplified_syntax,
     test_training_plan_using_minimal_syntax,
-    test_executed_plan,
+    test_trained_steps,
     test_exclude_algos_is_applied_on_top_of_training_plan
 ])
