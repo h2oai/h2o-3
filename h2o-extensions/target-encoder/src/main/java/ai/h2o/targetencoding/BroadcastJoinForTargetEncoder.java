@@ -4,13 +4,8 @@ import water.MRTask;
 import water.fvec.CategoricalWrappedVec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.DistributedException;
-import water.util.Log;
 
 class BroadcastJoinForTargetEncoder {
-
-  private static String FOLD_VALUE_IS_OUT_OF_RANGE_MSG = "Fold value should be a non-negative integer (i.e. should belong to [0, Integer.MAX_VALUE] range)";
-
 
   static class FrameWithEncodingDataToArray extends MRTask<FrameWithEncodingDataToArray> {
     
@@ -53,9 +48,7 @@ class BroadcastJoinForTargetEncoder {
 
         if (_foldColumnIdx != -1) {
           long foldValueFromVec = cs[_foldColumnIdx].at8(i);
-          if (!(foldValueFromVec <= Integer.MAX_VALUE && foldValueFromVec > 0)) {
-            throw new DistributedException(new AssertionError(FOLD_VALUE_IS_OUT_OF_RANGE_MSG + " but was " + foldValueFromVec));
-          }
+          // We are allowed to do casting to `int` as we have validation before submitting this MRTask
           int foldValue = (int) foldValueFromVec;
           arrForNumerators = _encodingDataPerNode[2 * foldValue - 2];
           arrForDenominators = _encodingDataPerNode[2 * foldValue - 1];
@@ -103,6 +96,9 @@ class BroadcastJoinForTargetEncoder {
 
     int broadcastedFrameCatCardinality = broadcastedFrame.vec(rightCatColumnsIdxs[0]).cardinality();
 
+    if(rightFoldColumnIdx != -1 && broadcastedFrame.vec(rightFoldColumnIdx).max() > Integer.MAX_VALUE) 
+      throw new IllegalArgumentException("Fold value should be a non-negative integer (i.e. should belong to [0, Integer.MAX_VALUE] range)");
+      
     // Note: for our goals there is no need to store it in 2d array
     // Use `broadcastedFrame` as major frame(first argument) while computing level mappings as it contains all the levels from `training` dataset
     int[][] levelMappings = {CategoricalWrappedVec.computeMap( broadcastedFrame.vec(0).domain(), leftFrame.vec(leftCatColumnsIdxs[0]).domain())};
@@ -137,10 +133,10 @@ class BroadcastJoinForTargetEncoder {
       for (int i = 0; i < num.len(); i++) {
         int levelValue = (int) categoricalChunk.at8(i);
         int mappedLevelValue = -1;
-        try {
+        int numberOfLevelValues = _levelMappings[0].length;
+        if(levelValue < numberOfLevelValues ) {
           mappedLevelValue = _levelMappings[0][levelValue];
-        } catch (Exception ex) {
-          Log.info("Categorical level with index `" + levelValue + "` was not present in training data. ");
+        } else {
           setEncodingComponentsToNAs(num, den, i);
           continue;
         }
@@ -151,7 +147,6 @@ class BroadcastJoinForTargetEncoder {
         int foldValue = -1;
         if (_foldColumnIdx != -1) {
           long foldValueFromVec = cs[_foldColumnIdx].at8(i);
-          assert foldValueFromVec <= Integer.MAX_VALUE && foldValueFromVec >= 0 : FOLD_VALUE_IS_OUT_OF_RANGE_MSG;
           foldValue = (int) foldValueFromVec;
 
         } else {
