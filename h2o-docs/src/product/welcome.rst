@@ -444,6 +444,7 @@ Supported Versions
 -  MapR 5.0
 -  MapR 5.1
 -  MapR 5.2
+-  MapR 6.1
 -  IOP 4.2
 
 **Important Points to Remember**:
