@@ -54,7 +54,7 @@ examples = dict(
 ...                training_frame=cars)
 >>> cars_gbm.auc()
 """,
-   keep_cross_validation_models="""
+    keep_cross_validation_models="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","acceleration","year"]
