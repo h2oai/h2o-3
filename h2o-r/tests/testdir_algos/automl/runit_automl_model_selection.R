@@ -204,14 +204,14 @@ automl.model_selection.suite <- function() {
   }
 
   makeSuite(
-    # test_exclude_algos,
-    # test_include_algos,
-    # test_include_exclude_algos,
-    # test_bad_training_plan,
-    # test_training_plan_full_syntax,
-    # test_training_plan_minimal_syntax,
+    test_exclude_algos,
+    test_include_algos,
+    test_include_exclude_algos,
+    test_bad_training_plan,
+    test_training_plan_full_syntax,
+    test_training_plan_minimal_syntax,
     test_trained_steps,
-    # test_exclude_algos_is_applied_on_top_of_training_plan
+    test_exclude_algos_is_applied_on_top_of_training_plan
   )
 }
 
