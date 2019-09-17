@@ -2,12 +2,13 @@ package ai.h2o.targetencoding;
 
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Scope;
-import water.TestUtil;
-import water.fvec.Frame;
-import water.fvec.TestFrameBuilder;
-import water.fvec.Vec;
+import water.*;
+import water.fvec.*;
+import water.rapids.Merge;
+import water.rapids.ast.prims.mungers.AstMerge;
+import water.rapids.ast.prims.mungers.AstSort;
 
+import java.io.File;
 import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
@@ -218,6 +219,64 @@ public class TargetEncoderBuilderTest extends TestUtil {
     }
   }
 
+  @Test
+  public void columnOrderHasNoEffectWhenNoiseIsZero() {
+    try {
+      Scope.enter();
+      final Frame frame = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(frame);
+      asFactor(frame, "survived");
+      addKFoldColumn(frame, "fold_column", 5, 1234L);
+      RowIndexTask.addRowIndex(frame);
+      DKV.put(frame);
+
+      final TargetEncoder te1 = new TargetEncoder(new String[]{"home.dest", "embarked"});
+      final Map<String, Frame> encodingMap1 = te1.prepareEncodingMap(frame, "survived", "fold_column", false);
+
+      final TargetEncoder te2 = new TargetEncoder(new String[]{"embarked","home.dest"});
+      final Map<String, Frame> encodingMap2 = te2.prepareEncodingMap(frame, "survived", "fold_column", false);
+
+      // check the encodings are actually the same
+      areEncodingMapsIdentical(encodingMap1, encodingMap2);
+
+      final Frame te1Result = te1.applyTargetEncoding(frame, "survived", encodingMap1,
+              TargetEncoder.DataLeakageHandlingStrategy.KFold, "fold_column", false, 0, false,
+              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Scope.track(te1Result);
+      Frame te1ResultSorted = Scope.track(Merge.sort(te1Result, te1Result.find(RowIndexTask.ROW_INDEX_COL)));
+
+      final Frame te2Result = te2.applyTargetEncoding(frame, "survived", encodingMap2,
+              TargetEncoder.DataLeakageHandlingStrategy.KFold, "fold_column", false, 0, false,
+              TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Scope.track(te2Result);
+      Frame te2ResultSorted = Scope.track(Merge.sort(te2Result, te2Result.find(RowIndexTask.ROW_INDEX_COL)));
+
+      removeEncodingMaps(encodingMap1, encodingMap2);
+
+      Frame te2ResultSortedReordered = new Frame(te1ResultSorted.names(), te2ResultSorted.vecs(te1ResultSorted.names()));
+      assertTrue(isBitIdentical(te1ResultSorted, te2ResultSortedReordered));
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static class RowIndexTask extends MRTask<RowIndexTask> {
+    static String ROW_INDEX_COL = "__row_index";
+
+    @Override
+    public void map(Chunk c, NewChunk nc) {
+      long start = c.start();
+      for (int i = 0; i < c._len; i++) {
+        nc.addNum(start + i);
+      }
+    }
+
+    private static void addRowIndex(Frame f) {
+      Vec indexVec = new RowIndexTask().doAll(Vec.T_NUM, f.anyVec())
+              .outputFrame().anyVec();
+      f.insertVec(0, ROW_INDEX_COL, indexVec);
+    }
+  }
 
   private void removeEncodingMaps(Map<String, Frame> encodingMapFromTargetEncoder, Map<String, Frame> targetEncodingMapFromBuilder) {
     if (encodingMapFromTargetEncoder != null)
