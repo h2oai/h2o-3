@@ -19,7 +19,6 @@ from .base import Keyed
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.deepwater import H2ODeepWaterEstimator
-from .estimators.estimator_base import H2OEstimator
 from .estimators.xgboost import H2OXGBoostEstimator
 from .estimators.generic import H2OGenericEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
@@ -41,8 +40,7 @@ from .model.model_base import ModelBase
 from .transforms.decomposition import H2OSVD
 from .utils.config import H2OConfigReader
 from .utils.compatibility import *  # NOQA
-from .utils.compatibility import PY3
-from .utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
+from .utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
 logging.basicConfig()
@@ -1025,9 +1023,7 @@ def download_csv(data, filename):
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(filename, str)
-    url = h2oconn.make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(data.frame_id)
-    with open(filename, "wb") as f:
-        f.write(urlopen()(url).read())
+    return api("GET /3/DownloadDataset?frame_id=%s&hex_string=false" % data.frame_id, save_to=filename)
 
 
 def download_all_logs(dirname=".", filename=None, container=None):
@@ -1051,27 +1047,13 @@ def download_all_logs(dirname=".", filename=None, container=None):
     assert_is_type(filename, str, None)
     assert_is_type(container, "ZIP", "LOG", None)
     type = "/%s" % container if container else ""
-    url = "%s/3/Logs/download%s" % (h2oconn.base_url, type)
-    opener = urlopen()
-    response = opener(url)
 
-    if not os.path.exists(dirname): os.mkdir(dirname)
-    if filename is None:
-        if PY3:
-            headers = [h[1] for h in response.headers._headers]
-        else:
-            headers = response.headers.headers
-        for h in headers:
-            if "filename=" in h:
-                filename = h.split("filename=")[1].strip()
-                break
-    path = os.path.join(dirname, filename)
-    response = opener(url).read()
+    def save_to(resp):
+        path = os.path.join(dirname, filename if filename else h2oconn.save_to_detect(resp))
+        print("Writing H2O logs to " + path)
+        return path
 
-    print("Writing H2O logs to " + path)
-    with open(path, "wb") as f:
-        f.write(response)
-    return path
+    return api("GET /3/Logs/download%s" % type, save_to=save_to)
 
 
 def save_model(model, path="", force=False):
