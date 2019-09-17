@@ -89,15 +89,6 @@ def url_encode(s):
 def quote(s):
     return url_encode(s)
 
-
-def urlopen():
-    if PY3:
-        from urllib import request
-        return request.urlopen
-    else:
-        import urllib2
-        return urllib2.urlopen
-
 def clamp(x, xmin, xmax):
     """Return the value of x, clamped from below by `xmin` and from above by `xmax`."""
     return max(xmin, min(x, xmax))

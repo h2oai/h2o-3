@@ -20,6 +20,7 @@ import re
 import sys
 import tempfile
 import time
+import types
 from warnings import warn
 
 import requests
@@ -386,7 +387,7 @@ class H2OConnection(backwards_compatible()):
 
         stream = False
         if save_to is not None:
-            assert_is_type(save_to, str)
+            assert_is_type(save_to, str, types.FunctionType)
             stream = True   
 
         if self._cookies is not None and isinstance(self._cookies, list):
@@ -403,6 +404,8 @@ class H2OConnection(backwards_compatible()):
             resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
                                     headers=headers, timeout=self._timeout, stream=stream,
                                     auth=self._auth, verify=self._verify_ssl_cert, proxies=self._proxies)
+            if isinstance(save_to, types.FunctionType):
+                save_to = save_to(resp)
             self._log_end_transaction(start_time, resp)
             return self._process_response(resp, save_to)
 
@@ -422,6 +425,12 @@ class H2OConnection(backwards_compatible()):
             err.endpoint = endpoint
             err.payload = (data, json, files, params)
             raise
+
+
+    @staticmethod
+    def save_to_detect(resp):
+        disposition = resp.headers['Content-Disposition']
+        return disposition.split("filename=")[1].strip()
 
 
     def close(self):
