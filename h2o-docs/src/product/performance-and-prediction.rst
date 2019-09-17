@@ -370,14 +370,16 @@ Each metric is described in greater detail in the sectinos that follow. The exam
     response = "IsDepDelayed"
 
     # split into train and validation sets 
-    train, valid = airlines.split_frame(ratios = [.8], seed = 1234)
+    train, test, valid = airlines.split_frame(ratios = [.7, .15], seed = 1234)
 
     # train your model
-    airlines_gbm = H2OGradientBoostingEstimator(sample_rate = .7, seed =1234) 
+    airlines_gbm = H2OGradientBoostingEstimator(sample_rate = .7, seed = 1234) 
     airlines_gbm.train(x = predictors, 
                        y = response, 
                        training_frame = train, 
-                       validation_frame = valid)
+                       validation_frame = valid
+                       
+    # get the model performance for this model on 
 
 Gini Coefficient
 ################
@@ -397,12 +399,15 @@ The Gini index itself is independent of the model and only depends on the Lorenz
 
 Using the previous example, run the following to retrieve the Gini coefficient value.
 
-    # retrieve the mae value:
+.. example-code::
+   .. code-block:: r
+
+    # retrieve the gini value:
     gini <- h2o.giniCoef(airlines.gbm)
     gini
     [1] 0.5715841
 
-    # retrieve the mae value for both the training and validation data:
+    # retrieve the gini value for both the training and validation data:
     gini_valid <- h2o.giniCoef(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
     gini_valid
          train      valid 
@@ -410,34 +415,13 @@ Using the previous example, run the following to retrieve the Gini coefficient v
 
    .. code-block:: python
     
-    # import H2OGradientBoostingEstimator and the prostate dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-
-    # set the factors:
-    pros[1] = pros[1].asfactor()
-    pros[3] = pros[3].asfactor()
-    pros[4] = pros[4].asfactor()
-    pros[5] = pros[5].asfactor()
-    pros[8] = pros[8].asfactor()
-
-    # split the training and validation sets:
-    r = pros[1].runif()
-    train = pros[r > .2]
-    valid = pros[r <= .2]
-
-    # set the predictors and response columns:
-    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
-    response = "CAPSULE"
-
-    # build and train the model:
-    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
-    pros_gbm.train(x = predictors, y = response, 
-                   training_frame = train, 
-                   validation_frame = valid)
-
     # retrieve the gini coefficient:
-    pros_gbm.gini(train=True, valid=False, xval=False)
+    airlines_gbm.gini()
+    0.5715841348613386
+
+    # retrieve the gini coefficient for both the training and validation data:
+    airlines_gbm.gini(train=True, valid=True, xval=False)
+    {'train': 0.5715841348613386, 'valid': 0.48299402265152613}
 
 
 Absolute MCC (Matthews Correlation Coefficient)
@@ -448,67 +432,33 @@ Setting the ``absolute_mcc`` parameter sets the threshold for the model's confus
 .. math::
 	MCC = \frac{TP \; x \; TN \; - FP \; x \; FN}{\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}
 
-Examples:
+**Example**
+
+Using the previous example, run the following to retrieve the MCC value.
 
 .. example-code::
    .. code-block:: r
 
-    # import the prostate dataset:
-    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+    # retrieve the mcc value:
+    mcc <- h2o.absolute_mcc(airlines.gbm)
+    mcc
+    [1] 0.5715841
 
-    # set the factors:
-    pros[,2] <- as.factor(pros[,2])
-    pros[,4] <- as.factor(pros[,4])
-    pros[,5] <- as.factor(pros[,5])
-    pros[,6] <- as.factor(pros[,6])
-    pros[,9] <- as.factor(pros[,9])
-
-    # split the training and validation sets:
-    p.sid <- h2o.runif(pros, seed=1234)
-    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
-    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
-
-    # build and train the model:
-    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
-                        training_frame = pros.train, validation_frame = pros.test, 
-                        nfolds = 2)
-
-    # retrieve the absolute mcc value:
-    perf <- h2o.performance(pros_gbm, pros)
-    h2o.mcc(perf)
-
+    # retrieve the mcc value for both the training and validation data:
+    mcc_valid <- h2o.mcc(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+    mcc_valid
+         train      valid 
+    0.06140515 0.07947862 
 
    .. code-block:: python
+    
+    # retrieve the mcc:
+    airlines_gbm.mcc()
+    0.5715841348613386
 
-    # import H2OGradientBoostingEstimator and the prostate dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-
-    # set the factors:
-    pros[1] = pros[1].asfactor()
-    pros[3] = pros[3].asfactor()
-    pros[4] = pros[4].asfactor()
-    pros[5] = pros[5].asfactor()
-    pros[8] = pros[8].asfactor()
-
-    # split the training and validation sets:
-    r = pros[1].runif()
-    train = pros[r > .2]
-    valid = pros[r <= .2]
-
-    # set the predictors and response columns:
-    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
-    response = "CAPSULE"
-
-    # build and train the model:
-    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
-    pros_gbm.train(x = predictors, y = response, 
-                   training_frame = train, 
-                   validation_frame = valid)
-
-    # retrieve the absolute mcc value:
-    pros_gbm.mcc(train=True, valid=False, xval=False)
-
+    # retrieve the mcc for both the training and validation data:
+    airlines_gbm.gini(train=True, valid=True, xval=False)
+    {'train': 0.5715841348613386, 'valid': 0.48299402265152613}
 
 F1
 ##
