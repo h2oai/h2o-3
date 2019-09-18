@@ -364,7 +364,7 @@ class H2OAutoML(Keyed):
         :return: a list of dictionaries representing the effective training plan.
         """
         # removing alias to be able to reinject result to a new AutoML instance
-        return map(lambda sdef: dict(name=sdef['name'], steps=sdef['steps']), self._state_json['trained_steps'])
+        return list(map(lambda sdef: dict(name=sdef['name'], steps=sdef['steps']), self._state_json['trained_steps']))
 
     #---------------------------------------------------------------------------
     # Training AutoML
