@@ -69,5 +69,69 @@ examples = dict(
 ...                training_frame=train,
 ...                validation_frame=valid)
 >>> cars_gbm.auc()
+""",
+    keep_cross_validation_predictions="""
+>>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+>>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+>>> predictors = ["displacement","power","weight","acceleration","year"]
+>>> response = "economy_20mpg"
+>>> folds = 5
+>>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+>>> cars_gbm = H2OGradientBoostingEstimator(keep_cross_validation_predictions = True,
+...                                         nfolds=5,
+...                                         seed=1234)
+>>> cars_gbm.train(x=predictors,
+...                y=response,
+...                training_frame=train,
+...                validation_frame=valid)
+>>> cars_gbm.auc()
+""",
+    keep_cross_validation_fold_assignment="""
+>>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+>>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+>>> predictors = ["displacement","power","weight","acceleration","year"]
+>>> response = "economy_20mpg"
+>>> folds = 5
+>>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+>>> cars_gbm = H2OGradientBoostingEstimator(keep_cross_validation_fold_assignment=True,
+...                                         nfolds=5,
+...                                         seed=1234)
+>>> cars_gbm.train(x=predictors,
+...                y=response,
+...                training_frame=train,
+...                validation_frame=valid)
+>>> cars_gbm.auc()
+""",
+    score_each_iteration="""
+>>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+>>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+>>> predictors = ["displacement","power","weight","acceleration","year"]
+>>> response = "economy_20mpg"
+>>> train, valid = cars.split_frame(ratios = [.8],
+...                                 seed = 1234)
+>>> cars_gbm = H2OGradientBoostingEstimator(score_each_iteration = True,
+...                                         ntrees = 55,
+...                                         seed = 1234)
+>>> cars_gbm.train(x=predictors,
+...                y=response,
+...                training_frame=train,
+...                validation_frame=valid)
+>>> cars_gbm.scoring_history()
+""",
+    score_tree_interval="""
+>>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+>>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+>>> predictors = ["displacement","power","weight","acceleration","year"]
+>>> response = "economy_20mpg"
+>>> train, valid = cars.split_frame(ratios = [.8],
+...                                 seed = 1234)
+>>> cars_gbm = H2OGradientBoostingEstimator(score_tree_interval = True,
+...                                         ntrees = 55,
+...                                         seed = 1234)
+>>> cars_gbm.train(x=predictors,
+...                y=response,
+...                training_frame=train,
+...                validation_frame=valid)
+>>> cars_gbm.scoring_history()
 """
 )

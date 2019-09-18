@@ -112,6 +112,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> folds = 5
+        >>> cars_gbm = H2OGradientBoostingEstimator(nfolds=folds,
+        ...                                         seed = 1234
+        >>> cars_gbm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=cars)
+        >>> cars_gbm.auc()
         """
         return self._parms.get("nfolds")
 
@@ -127,6 +141,23 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Whether to keep the cross-validation models.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> folds = 5
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(keep_cross_validation_models = True,
+        ...                                         nfolds=folds,
+        ...                                         seed=1234)
+        >>> cars_gbm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
+        >>> cars_gbm.auc()
         """
         return self._parms.get("keep_cross_validation_models")
 
@@ -142,6 +173,23 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Whether to keep the predictions of the cross-validation models.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> folds = 5
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(keep_cross_validation_predictions = True,
+        ...                                         nfolds=5,
+        ...                                         seed=1234)
+        >>> cars_gbm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
+        >>> cars_gbm.auc()
         """
         return self._parms.get("keep_cross_validation_predictions")
 
@@ -157,6 +205,23 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Whether to keep the cross-validation fold assignment.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> folds = 5
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(keep_cross_validation_fold_assignment=True,
+        ...                                         nfolds=5,
+        ...                                         seed=1234)
+        >>> cars_gbm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
+        >>> cars_gbm.auc()
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
@@ -172,6 +237,23 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8],
+        ...                                 seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(score_each_iteration = True,
+        ...                                         ntrees = 55,
+        ...                                         seed = 1234)
+        >>> cars_gbm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
+        >>> cars_gbm.scoring_history()
         """
         return self._parms.get("score_each_iteration")
 
@@ -187,6 +269,23 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Score the model after every so many trees. Disabled if set to 0.
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8],
+        ...                                 seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(score_tree_interval = True,
+        ...                                         ntrees = 55,
+        ...                                         seed = 1234)
+        >>> cars_gbm.train(x=predictors,
+        ...                y=response,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
+        >>> cars_gbm.scoring_history()
         """
         return self._parms.get("score_tree_interval")
 
