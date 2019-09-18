@@ -51,7 +51,7 @@ public class TrainingStepsExecutorTest extends TestUtil {
         return new TrainingStep(Algo.GBM,"dummy", 42, aml) {
             Work work = withWork ? new Work(_id, _algo, WorkAllocations.JobType.ModelBuild, _weight) : null;
             @Override
-            protected Work getWork() {
+            protected Work getAllocatedWork() {
                 return work;
             }
 

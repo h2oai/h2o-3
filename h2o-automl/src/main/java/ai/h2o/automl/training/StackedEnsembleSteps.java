@@ -39,7 +39,7 @@ public class StackedEnsembleSteps extends TrainingSteps {
         @Override
         protected boolean canRun() {
             Model[] allModels = getTrainedModels();
-            Work seWork = getWork();
+            Work seWork = getAllocatedWork();
             if (seWork == null) {
                 aml().job().update(0, "StackedEnsemble builds skipped");
                 aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");

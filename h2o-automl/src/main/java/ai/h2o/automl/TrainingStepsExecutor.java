@@ -57,9 +57,9 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
         if (step.canRun()) {
             Job job = step.startJob();
             if (job == null) {
-                skip(step._description, step.getWork(), parentJob);
+                skip(step._description, step.getAllocatedWork(), parentJob);
             } else {
-                monitor(job, step.getWork(), parentJob, step._ignoreConstraints);
+                monitor(job, step.getAllocatedWork(), parentJob, step._ignoreConstraints);
                 return true;
             }
         }

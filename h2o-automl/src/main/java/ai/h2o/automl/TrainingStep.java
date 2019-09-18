@@ -40,7 +40,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         _description = algo.name()+" "+id;
     }
 
-    protected abstract Work getWork();
+    protected abstract Work getAllocatedWork();
 
     protected abstract Key makeKey(String name, boolean withCounter);
 
@@ -53,7 +53,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
     }
 
     protected boolean canRun() {
-        return getWork() != null;
+        return getAllocatedWork() != null;
     }
 
     protected WorkAllocations getWorkAllocations() {
@@ -200,7 +200,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         }
 
         @Override
-        protected Work getWork() {
+        protected Work getAllocatedWork() {
             return getWorkAllocations().getAllocation(_id, _algo);
         }
 
@@ -273,7 +273,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
         }
 
         @Override
-        protected Work getWork() {
+        protected Work getAllocatedWork() {
             return getWorkAllocations().getAllocation(_id, _algo);
         }
 
@@ -307,7 +307,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria =
                     (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
-            Work work = getWork();
+            Work work = getAllocatedWork();
             double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
             // predicate can be removed if/when we decide to include SEs in the max_models limit
             int maxAssignedModels = (int) Math.ceil(aml().remainingModels() * getWorkAllocations().remainingWorkRatio(work, w -> w._algo != Algo.StackedEnsemble));
