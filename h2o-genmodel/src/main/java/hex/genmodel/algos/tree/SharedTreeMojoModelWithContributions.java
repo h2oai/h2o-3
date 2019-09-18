@@ -35,16 +35,14 @@ public abstract class SharedTreeMojoModelWithContributions extends SharedTreeMoj
     
     public class ContributionsPredictor implements PredictContributions {
         private final TreeSHAPPredictor<double[]> _treeSHAPPredictor;
-        private final Object _workspace;
 
         public ContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
             _treeSHAPPredictor = treeSHAPPredictor;
-            _workspace = _treeSHAPPredictor.makeWorkspace();
         }
         
-        public float[] calculateContributions(double[] input) {
+        public final float[] calculateContributions(double[] input) {
             float[] contribs = new float[nfeatures() + 1];
-            _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, _workspace);
+            _treeSHAPPredictor.calculateContributions(input, contribs);
             return getContribs(contribs);
         }
         
