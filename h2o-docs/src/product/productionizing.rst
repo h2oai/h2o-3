@@ -221,9 +221,10 @@ Run following bash script as "userdata" to transfer your MOJO into the instance 
 
 .. code::
 
+   #cloud-boothook
    #!/bin/bash
    export mojofile="s3://yourbucket/yourmojo.zip"
-   aws s3 cp $mojo /tmp/pipeline.mojo
+   aws s3 cp $mojofile /tmp/pipeline.mojo
 
 After this instance has launched, you can make real time inference using the following command. Remember to change the IP address. Input data is provided through the ``row`` parameter in the URL.
 

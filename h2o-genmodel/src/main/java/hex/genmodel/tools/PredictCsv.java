@@ -5,6 +5,7 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
+import hex.genmodel.algos.pca.PCAMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -178,8 +179,13 @@ public class PredictCsv {
           datawidth = ((GlrmMojoModel) model.m)._permutation.length;
           head = "reconstr_";
         } else {
-          datawidth = ((GlrmMojoModel) model.m)._ncolX;
-          head = "Arch";
+          if (model.m instanceof GlrmMojoModel) {
+            datawidth = ((GlrmMojoModel) model.m)._ncolX;
+            head = "Arch";
+          } else {  // PCA here
+            datawidth = ((PCAMojoModel) model.m)._k;
+            head = "PC";
+          }
         }
 
         int lastData = datawidth-1;

@@ -19,19 +19,18 @@ class H2OAggregatorEstimator(H2OEstimator):
     """
 
     algo = "aggregator"
+    param_names = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
+                   "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding",
+                   "save_mapping_frame", "num_iteration_without_new_exemplar", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OAggregatorEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
-                      "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding",
-                      "save_mapping_frame", "num_iteration_without_new_exemplar", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
@@ -203,10 +202,9 @@ class H2OAggregatorEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
     @property
     def aggregated_frame(self):
-        if (self._model_json is not None and
-            self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
+        if (self._model_json is not None
+                and self._model_json.get("output", {}).get("output_frame", {}).get("name") is not None):
             out_frame_name = self._model_json["output"]["output_frame"]["name"]
             return H2OFrame.get_frame(out_frame_name)

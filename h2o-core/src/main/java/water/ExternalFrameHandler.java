@@ -3,7 +3,6 @@ package water;
 
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.SocketChannel;
 
 /**
  * <p>This class is used to coordinate the requests for accessing/obtaining H2O frames from non-H2O environments
@@ -53,32 +52,23 @@ final class ExternalFrameHandler {
      *  the connection has been reused for sending more data or not
      * */
     static final byte INIT_BYTE = 42;
-
-    /**
-     * Bytes used for signaling that either reading from h2o frame or writing to h2o frame has finished.
-     * It is important for these 2 bytes to be different, otherwise we could confirm writing by reading byte, which
-     * would lead to unwanted states.
-     */
-    static final byte CONFIRM_READING_DONE = 1;
-    static final byte CONFIRM_WRITING_DONE = 2;
-
-    /**
-     * Main task codes
-     */
-    static final byte CREATE_FRAME = 0;
-    static final byte DOWNLOAD_FRAME = 1;
-
+    
     /**
      * Method which receives the {@link ByteChannel} and {@link AutoBuffer} and dispatches the request for further processing
      */
     void process(ByteChannel sock, AutoBuffer ab) throws IOException {
-        int requestType = ab.get1();
+        ExternalBackendRequestType requestType = ExternalBackendRequestType.fromByte(ab.get1());
         switch (requestType) {
-            case CREATE_FRAME:
-                ExternalFrameWriterBackend.handleWriteToChunk(sock, ab);
+            case WRITE_TO_CHUNK:
+                ExternalFrameWriterBackend.writeToChunk(sock, ab);
                 break;
             case DOWNLOAD_FRAME:
-                ExternalFrameReaderBackend.handleReadingFromChunk(sock, ab);
+                ExternalFrameReaderBackend.readFromChunk(sock, ab);
+            case INIT_FRAME:
+                ExternalFrameWriterBackend.initFrame(sock, ab);
+                break;
+            case FINALIZE_FRAME:
+                ExternalFrameWriterBackend.finalizeFrame(sock, ab);
                 break;
         }
     }

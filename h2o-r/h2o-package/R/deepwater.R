@@ -2,19 +2,20 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Deep Water - Neural Network -------------------------- #
-#' 
+#'
 #' Build a Deep Learning model using multiple native GPU backends
 #' 
 #' Builds a deep neural network on an H2OFrame containing various data sources.
-#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
-#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
+#' @param training_frame Id of the training data frame.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param autoencoder \code{Logical}. Auto-Encoder. Defaults to FALSE.
-#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
 #' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
@@ -46,7 +47,7 @@
 #'        available data (e.g., replicated training data), -2: automatic. Defaults to -2.
 #' @param target_ratio_comm_to_comp Target ratio of communication overhead to computation. Only for multi-node operation and
 #'        train_samples_per_iteration = -2 (auto-tuning). Defaults to 0.05.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Note: only reproducible when running single threaded.
 #'        Defaults to -1 (time-based random number).
 #' @param standardize \code{Logical}. If enabled, automatically standardize the data. If disabled, the user must provide properly
@@ -81,11 +82,11 @@
 #' @param network Network architecture. Must be one of: "auto", "user", "lenet", "alexnet", "vgg", "googlenet", "inception_bn",
 #'        "resnet". Defaults to auto.
 #' @param backend Deep Learning Backend. Must be one of: "mxnet", "caffe", "tensorflow". Defaults to mxnet.
-#' @param image_shape Width and height of image. Defaults to [0, 0].
+#' @param image_shape Width and height of image. Defaults to c(0, 0).
 #' @param channels Number of (color) channels. Defaults to 3.
 #' @param sparse \code{Logical}. Sparse data handling (more efficient for data with lots of 0 values). Defaults to FALSE.
 #' @param gpu \code{Logical}. Whether to use a GPU (if available). Defaults to TRUE.
-#' @param device_id Device IDs (which GPUs to use). Defaults to [0].
+#' @param device_id Device IDs (which GPUs to use). Defaults to c(0).
 #' @param cache_data \code{Logical}. Whether to cache the data in memory (automatically disabled if data size is too large).
 #'        Defaults to TRUE.
 #' @param network_definition_file Path of file containing network definition (graph, architecture).
@@ -105,7 +106,9 @@
 #'        "dataset". Defaults to auto.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
-h2o.deepwater <- function(x, y, training_frame,
+h2o.deepwater <- function(x,
+                          y,
+                          training_frame,
                           model_id = NULL,
                           checkpoint = NULL,
                           autoencoder = FALSE,
@@ -166,12 +169,13 @@ h2o.deepwater <- function(x, y, training_frame,
                           input_dropout_ratio = 0,
                           hidden_dropout_ratios = NULL,
                           problem_type = c("auto", "image", "dataset"),
-                          export_checkpoints_dir = NULL
-                          ) 
+                          export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -181,8 +185,7 @@ h2o.deepwater <- function(x, y, training_frame,
      }
   }
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y, autoencoder)
@@ -314,9 +317,12 @@ h2o.deepwater <- function(x, y, training_frame,
     parms$problem_type <- problem_type
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
   # Error check and build model
-  .h2o.modelJob('deepwater', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('deepwater', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }
+
 
 #' Determines whether Deep Water is available
 #'
@@ -325,16 +331,16 @@ h2o.deepwater <- function(x, y, training_frame,
 #' @param h2oRestApiVersion (Optional) Specific version of the REST API to use.
 #' @export
 h2o.deepwater.available <- function(h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-res <- .h2o.__remoteSend(method = "GET",
-h2oRestApiVersion = h2oRestApiVersion,
-page = .h2o.__MODEL_BUILDERS("deepwater"))
-visibility <- res$model_builders[["deepwater"]][["visibility"]]
-if (visibility == "Experimental") {
-print("Cannot build a Deep Water model - no backend found.")
-available <- FALSE
-} else {
-available <- TRUE
-}
-return(available)
+    res <- .h2o.__remoteSend(method = "GET",
+                             h2oRestApiVersion = h2oRestApiVersion,
+                             page = .h2o.__MODEL_BUILDERS("deepwater"))
+    visibility <- res$model_builders[["deepwater"]][["visibility"]]
+    if (visibility == "Experimental") {
+        print("Cannot build a Deep Water model - no backend found.")
+        available <- FALSE
+    } else {
+        available <- TRUE
+    }
+    return(available)
 }
 

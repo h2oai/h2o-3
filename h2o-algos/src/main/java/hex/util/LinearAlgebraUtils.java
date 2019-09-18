@@ -39,7 +39,7 @@ public class LinearAlgebraUtils {
    * Impute missing values and transform numeric value x in col of dinfo._adaptedFrame
    */
   private static double modifyNumeric(double x, int col, DataInfo dinfo) {
-    double y = (Double.isNaN(x) && dinfo._imputeMissing) ? dinfo._numMeans[col] : x;  // Impute missing value with mean
+    double y = (Double.isNaN(x) && dinfo._imputeMissing) ? dinfo._numNAFill[col] : x;  // Impute missing value
     if (dinfo._normSub != null && dinfo._normMul != null)  // Transform x if requested
       y = (y - dinfo._normSub[col]) * dinfo._normMul[col];
     return y;

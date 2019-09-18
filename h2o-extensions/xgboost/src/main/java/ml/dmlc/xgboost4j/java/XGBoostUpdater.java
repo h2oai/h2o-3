@@ -6,6 +6,8 @@ import water.*;
 import water.nbhm.NonBlockingHashMap;
 import water.util.Log;
 
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.SynchronousQueue;
@@ -21,6 +23,7 @@ public class XGBoostUpdater extends Thread {
   private final Key<XGBoostModel> _modelKey;
   private final DMatrix _trainMat;
   private final BoosterParms _boosterParms;
+  private final byte[] _checkpointBoosterBytes;
   private final Map<String, String> _rabitEnv;
 
   private volatile SynchronousQueue<BoosterCallable<?>> _in;
@@ -28,12 +31,15 @@ public class XGBoostUpdater extends Thread {
 
   private Booster _booster;
 
-  private XGBoostUpdater(Key<XGBoostModel> modelKey, DMatrix trainMat, BoosterParms boosterParms,
-                         Map<String, String> rabitEnv) {
+  private XGBoostUpdater(
+      Key<XGBoostModel> modelKey, DMatrix trainMat, BoosterParms boosterParms, 
+      byte[] checkpointBoosterBytes, Map<String, String> rabitEnv
+  ) {
     super("XGBoostUpdater-" + modelKey);
     _modelKey = modelKey;
     _trainMat = trainMat;
     _boosterParms = boosterParms;
+    _checkpointBoosterBytes = checkpointBoosterBytes;
     _rabitEnv = rabitEnv;
     _in = new SynchronousQueue<>();
     _out = new SynchronousQueue<>();
@@ -110,16 +116,28 @@ public class XGBoostUpdater extends Thread {
     public Booster call() throws XGBoostError {
       if ((_booster == null) && _tid == 0) {
         HashMap<String, DMatrix> watches = new HashMap<>();
-        // Create empty Booster
+        // Create initial Booster
+        Booster checkpointBooster = null;
+        if (_checkpointBoosterBytes != null) {
+          try {
+            checkpointBooster = XGBoost.loadModel(new ByteArrayInputStream(_checkpointBoosterBytes));
+          } catch (IOException e) {
+            throw new RuntimeException("Failed to load checkpoint booster.");
+          }
+        }
         _booster = ml.dmlc.xgboost4j.java.XGBoost.train(_trainMat,
                 _boosterParms.get(),
                 0,
                 watches,
                 null,
-                null);
+                null, 
+                null, 
+                0,
+                checkpointBooster
+              );
         // Force Booster initialization; we can call any method that does "lazy init"
         byte[] boosterBytes = _booster.toByteArray();
-        Log.info("Initial (0 tree) Booster created, size=" + boosterBytes.length);
+        Log.info("Initial Booster created, size=" + boosterBytes.length);
       } else {
         // Do one iteration
         assert _booster != null;
@@ -166,8 +184,8 @@ public class XGBoostUpdater extends Thread {
   }
 
   static XGBoostUpdater make(Key<XGBoostModel> modelKey, DMatrix trainMat, BoosterParms boosterParms,
-                             Map<String, String> rabitEnv) {
-    XGBoostUpdater updater = new XGBoostUpdater(modelKey, trainMat, boosterParms, rabitEnv);
+                             byte[] checkpoint, Map<String, String> rabitEnv) {
+    XGBoostUpdater updater = new XGBoostUpdater(modelKey, trainMat, boosterParms, checkpoint, rabitEnv);
     updater.setUncaughtExceptionHandler(LoggingExceptionHandler.INSTANCE);
     if (updaters.putIfAbsent(modelKey, updater) != null)
       throw new IllegalStateException("XGBoostUpdater for modelKey=" + modelKey + " already exists!");

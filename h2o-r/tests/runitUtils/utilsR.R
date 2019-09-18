@@ -848,12 +848,41 @@ function(integerRange, num_rows, num_cols) {
   binary_fraction = 0,
   time_fraction = 0,
   string_fraction = 0,
-  integer_ranger = integerRange,
+  integer_range = integerRange,
   missing_fraction = runif(1, 0, 0.05)
   )
 
   return(random_frame)
 }
+
+#----------------------------------------------------------------------
+# This function will generate a random dataset containing real columns only.
+# Copied from Pasha.
+#
+# Parameters:  denote factor range
+#----------------------------------------------------------------------
+random_dataset_real_only <-
+  function(num_rows, num_cols, realR=10, missingR=0.0, seed=12345) {
+    
+    random_frame <-
+      h2o.createFrame(
+        rows = num_rows,
+        cols = num_cols,
+        randomize = TRUE,
+        has_response = FALSE,
+        categorical_fraction = 0,
+        integer_fraction = 0,
+        binary_fraction = 0,
+        time_fraction = 0,
+        string_fraction = 0,
+        real_range = realR,
+        missing_fraction = missingR,
+        seed=seed
+      )
+    
+    return(random_frame)
+  }
+
 
 #----------------------------------------------------------------------
 # This function will generate a random neural network in the form of
@@ -1093,6 +1122,23 @@ buildModelSaveMojoGLM <- function(params) {
   h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
   return(list("model"=model, "dirName"=tmpdir_name))
+}
+
+buildModelSaveMojoPCA <- function(params) {
+model <- do.call("h2o.prcomp", params)
+model_key <- model@model_id
+tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
+if (.Platform$OS.type == "windows") {
+shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
+shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
+} else {
+safeSystem(sprintf("rm -fr %s", tmpdir_name))
+safeSystem(sprintf("mkdir -p %s", tmpdir_name))
+}
+h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
+
+return(list("model"=model, "dirName"=tmpdir_name))
 }
 
 buildModelSaveMojoGLRM <- function(params) {

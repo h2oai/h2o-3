@@ -13,10 +13,8 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
 import water.parser.ParseDataset;
-import water.util.FileUtils;
 import water.util.TwoDimTable;
-
-import java.io.File;
+import water.H2O;
 
 public class DeepLearningCheckpointReporting extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -101,7 +99,8 @@ public class DeepLearningCheckpointReporting extends TestUtil {
           durationAfter = durationAfter.substring(0, durationAfter.length()-4);
           double diff = Double.parseDouble(durationAfter) - Double.parseDouble(durationBefore);
           
-          Assert.assertTrue("Duration must be smooth; actual " + diff + ", expected at most " + sleepTime + " (before=" + durationBefore + ", after=" + durationAfter + ")", diff < sleepTime+1);
+          if (H2O.getCloudSize() == 1) // only do this assertion for single node tests
+            Assert.assertTrue("Duration must be smooth; actual " + diff + ", expected at most " + sleepTime + " (before=" + durationBefore + ", after=" + durationAfter + ")", diff < sleepTime+1);
 
           // Check that time stamp does see the sleep
           String timeStampBefore = (String)table.get((int)(p._epochs),0);

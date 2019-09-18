@@ -208,7 +208,7 @@ class ModelBase(backwards_compatible(Keyed)):
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                     data={"feature_frequencies": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
-
+    
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
         Predict on a dataset.
@@ -764,7 +764,10 @@ class ModelBase(backwards_compatible(Keyed)):
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
-        for k, v in viewitems(tm): m[k] = None if v is None else v.auc()
+        for k, v in viewitems(tm):
+            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
+                raise H2OValueError("auc() is only available for Binomial classifiers.")
+            m[k] = None if v is None else v.auc()
         return list(m.values())[0] if len(m) == 1 else m
 
 
@@ -807,6 +810,28 @@ class ModelBase(backwards_compatible(Keyed)):
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
 
+    def pr_auc(self, train=False, valid=False, xval=False):
+        """
+        Get the pr_auc (Area Under PRECISION RECALL Curve).
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If train is True, then return the pr_auc value for the training data.
+        :param bool valid: If valid is True, then return the pr_auc value for the validation data.
+        :param bool xval:  If xval is True, then return the pr_auc value for the validation data.
+
+        :returns: The pr_auc.
+        """
+        tm = ModelBase._get_metrics(self, train, valid, xval)
+        m = {}
+        for k, v in viewitems(tm): 
+            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
+                raise H2OValueError("pr_auc() is only available for Binomial classifiers.")
+            m[k] = None if v is None else v.pr_auc()
+        return list(m.values())[0] if len(m) == 1 else m
+    
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
         Download the POJO for this model to the directory specified by path.
@@ -901,16 +926,17 @@ class ModelBase(backwards_compatible(Keyed)):
         scoring_history = self.scoring_history()
         # Separate functionality for GLM since its output is different from other algos
         if self._model_json["algo"] == "glm":
-            # GLM has only one timestep option, which is `iteration`
-            timestep = "iteration"
+            # GLM has only one timestep option, which is `iterations`
+            timestep = "iterations"
             if metric == "AUTO":
-                metric = "log_likelihood"
-            elif metric not in ("log_likelihood", "objective"):
-                raise H2OValueError("for GLM, metric must be one of: log_likelihood, objective")
+                metric = "objective" # this includes the negative log likelihood and the penalties.
+            elif metric not in ("negative_log_likelihood", "objective"):
+                raise H2OValueError("for GLM, metric must be one of: negative_log_likelihood, objective")
             plt.xlabel(timestep)
             plt.ylabel(metric)
             plt.title("Validation Scoring History")
-            plt.plot(scoring_history[timestep], scoring_history[metric])
+            style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
+            plt.plot(scoring_history[timestep], scoring_history[metric], style)
 
         elif self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
             # Set timestep
@@ -1180,7 +1206,7 @@ class ModelBase(backwards_compatible(Keyed)):
             print("Numpy not found.  Cannot plot 2D partial plots.")
         ycol = colPairs[1]
         nBins = nbins
-        if ycol in user_cols:
+        if user_cols is not None and ycol in user_cols:
             ind = user_cols.index(ycol)
             nBins = user_num_splits[ind]
         nrow = int(len(x)/nBins)

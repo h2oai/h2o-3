@@ -584,13 +584,11 @@ This section provides examples of performing predictions in Python and R. Refer 
 Predicting Leaf Node Assignment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For tree-based models, including GBM, DRF, and Isolation Forest, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf node assignment on an H2O model. 
+For tree-based models, the ``h2o.predict_leaf_node_assignment()`` function predicts the leaf node assignment on an H2O model. 
 
 This function predicts against a test frame. For every row in the test frame, this function returns the leaf placements of the row in all the trees in the model. An optional Type can also be specified to define the placements. Placements can be represented either by paths to the leaf nodes from the tree root (``Path`` - default) or by H2O's internal identifiers (``Node_ID``). The order of the rows in the results is the same as the order in which the data was loaded.
 
 This function returns an H2OFrame object with categorical leaf assignment identifiers for each tree in the model.
-
-**Note**: This option is not currently supported for XGBoost.
 
 Using the previous example, run the following to predict the leaf node assignments:
 
@@ -623,18 +621,17 @@ Predict Contributions
 
 In H2O-3, each returned H2OFrame has a specific shape (#rows, #features + 1). This includes a feature contribution column for each input feature, with the last column being the model bias (same value for each row). The sum of the feature contributions and the bias term is equal to the raw prediction of the model. Raw prediction of tree-based model is the sum of the predictions of the individual trees before the inverse link function is applied to get the actual prediction. For Gaussian distribution, the sum of the contributions is equal to the model prediction. 
 
-H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model.
-        
+H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``predict_contributions`` returns a new H2OFrame with the predicted feature contributions - SHAP (SHapley Additive exPlanation) values on an H2O model. If you have SHAP installed, then raphical representations can be retrieved in Python using `SHAP functions <https://shap.readthedocs.io/en/latest/#>`__. (Note that retrieving graphs via R is not yet supported.) An .ipynb demo showing this example is also available `here <https://github.com/h2oai/h2o-3/tree/master/h2o-py/demos/predict_contributionsShap.ipynb>`__.
+
 **Note**: Multinomial classification models are currently not supported.
 
-Using the previous example, run the following to predict contributions:
 
 .. example-code::
    .. code-block:: r
   
     # Predict the contributions using the GBM model and test data.
-    predict_contributions <- h2o.predict_contributions(model, prostate.test)
-    predict_contributions
+    contributions <- h2o.predict_contributions(model, prostate.test)
+    contributions
 
     AGE        RACE       PSA        GLEASON    BiasTerm
     ---------  ---------- ---------  ---------  ----------
@@ -651,8 +648,8 @@ Using the previous example, run the following to predict contributions:
    .. code-block:: python
 
     # Predict the contributions using the GBM model and test data.
-    predict_contributions = model.predict_contributions(test)
-    predict_contributions
+    contributions = model.predict_contributions(test)
+    contributions
 
     AGE          RACE        PSA        GLEASON    BiasTerm
     -----------  ----------  ---------  ---------  ----------
@@ -668,6 +665,31 @@ Using the previous example, run the following to predict contributions:
     -0.901466     0.0216657   0.453894  -2.39536    -0.581522
 
     [58 rows x 5 columns]
+
+    # Import required packages for running SHAP commands
+    import shap
+
+    # Load JS visualization code
+    shap.initjs()
+
+    # Convert the H2OFrame to use with SHAP's visualization functions
+    contributions_matrix = contributions.as_data_frame().as_matrix()
+
+    # Calculate SHAP values for all features
+    shap_values = contributions_matrix[:,0:4]
+
+    # Expected values is the last returned column
+    expected_value = contributions_matrix[:,4].min()
+
+    # Visualize the training set predictions
+    X=["AGE","RACE","PSA","GLEASON"]
+    shap.force_plot(expected_value, shap_values, X)
+
+    # Summarize the effects of all the features
+    shap.summary_plot(shap_values, X)
+
+    # View the same summary as a bar chart
+    shap.summary_plot(shap_values, X, plot_type="bar")
 
 
 Predict Stage Probabilities
@@ -698,6 +720,53 @@ For classification problems, when running ``h2o.predict()`` or ``.predict()``, t
 - If you train a model with train and validation data, the Max F1 threshold from the validation data model metrics is used.
 - If you train a model with train data and set the ``nfold`` parameter, the Max F1 threshold from the training data model metrics is used.
 - If you train a model with the train data and validation data and also set the ``nfold parameter``, the Max F1 threshold from the validation data model metrics is used.
+
+Predict Feature Frequency
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Use the ``feature_frequencies`` function to retrieve the number of times a feature was used on a prediction path in a tree model. This option is only available in GBM, DRF, and IF.
+
+Using the previous example, run the following to the find frequency of each feature in the prediction path of the model:
+
+.. example-code::
+   .. code-block:: r
+  
+    # Retrieve the number of occurrences of each feature for given observations
+    # on their respective paths in a tree ensemble model
+    feature_frequencies <- h2o.feature_frequencies(model, prostate.train)
+    feature_frequencies
+
+    AGE RACE PSA GLEASON
+     98    8 199      46
+    114    6 238      42
+    103    9 227      57
+     94   13 183      53
+    103    9 225      57
+    102    5 238      36
+
+    [275 rows x 4 columns]
+
+   .. code-block:: python
+
+    # Retrieve the number of occurrences of each feature for given observations
+    # on their respective paths in a tree ensemble model
+    feature_frequencies = model.feature_frequencies(train)
+    feature_frequencies
+
+    AGE    RACE    PSA    GLEASON
+    -----  ------  -----  ---------
+    109      10    197         68
+    109       3    220         64
+    101      11    222         66
+    106       6    188         65
+     90       1    199         61
+    130       7    194         65
+    103       3    217         66
+    103      11    203         65
+    102       3    218         66
+    112       6    203         64
+
+    [273 rows x 4 columns]
 
 Predict using MOJOs
 ~~~~~~~~~~~~~~~~~~~

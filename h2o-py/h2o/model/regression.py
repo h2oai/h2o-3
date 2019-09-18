@@ -18,6 +18,24 @@ class H2ORegressionModel(ModelBase):
         :param timestep: A unit of measurement for the x-axis.
         :param metric: A unit of measurement for the y-axis.
         :returns: A scoring history plot.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy"
+        >>> distribution = "gaussian"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           training_frame=train,
+        ...           validation_frame=valid)
+        >>> gbm.plot(timestep="AUTO", metric="AUTO",)
         """
 
         if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
@@ -106,8 +124,8 @@ def h2o_r2_score(y_actual, y_predicted, weights=1.):
     :returns: R-squared (best is 1.0, lower is worse).
     """
     ModelBase._check_targets(y_actual, y_predicted)
-    numerator = (weights * (y_actual - y_predicted) ** 2).sum()
-    denominator = (weights * (y_actual - _colmean(y_actual)) ** 2).sum()
+    numerator = (weights * (y_actual - y_predicted) ** 2).sum().flatten()
+    denominator = (weights * (y_actual - _colmean(y_actual)) ** 2).sum().flatten()
 
     if denominator == 0.0:
         return 1. if numerator == 0. else 0.  # 0/0 => 1, else 0

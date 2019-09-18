@@ -2,7 +2,7 @@ package hex.genmodel.attributes.metrics;
 
 import hex.genmodel.attributes.Table;
 
-public class MojoModelMetricsMultinomial extends MojoModelMetrics {
+public class MojoModelMetricsMultinomial extends MojoModelMetricsSupervised {
 
   @SerializedName(value = "cm", insideElementPath = "table")
   public Table _confusion_matrix;

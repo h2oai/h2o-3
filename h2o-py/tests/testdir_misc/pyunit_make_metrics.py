@@ -16,7 +16,7 @@ from h2o.model.metrics_base import H2OBinomialModelMetrics
 base_metric_methods = ['aic', 'auc', 'gini', 'logloss', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'mse',
                        'nobs', 'pr_auc', 'r2', 'rmse', 'rmsle',
                        'residual_deviance', 'residual_degrees_of_freedom', 'null_deviance', 'null_degrees_of_freedom']
-max_metrics = list(H2OBinomialModelMetrics.max_metrics)
+max_metrics = list(H2OBinomialModelMetrics.maximizing_metrics)
 
 
 def pyunit_make_metrics():
@@ -79,6 +79,24 @@ def pyunit_make_metrics():
     print("m2:")
     print(m2)
 
+    assert m0.accuracy()[0][1] + m0.error()[0][1] == 1
+    assert len(m0.accuracy(thresholds='all')) == len(m0.fprs)
+
+    assert m0.accuracy().value == m1.accuracy().value == m0.accuracy()[0][1]
+    assert m0.accuracy().value + m0.error().value == 1
+
+    assert isinstance(m0.accuracy(thresholds=0.4).value, float)
+    assert m0.accuracy(thresholds=0.4).value == m1.accuracy(thresholds=0.4).value == m0.accuracy(thresholds=0.4)[0][1]
+    assert m0.accuracy(thresholds=0.4).value + m0.error(thresholds=0.4).value == 1
+
+    assert isinstance(m0.accuracy(thresholds=[0.4]).value, list)
+    assert len(m0.accuracy(thresholds=[0.4]).value) == 1
+    assert m0.accuracy(thresholds=[0.4]).value[0] == m0.accuracy(thresholds=0.4).value
+
+    assert isinstance(m0.accuracy(thresholds=[0.4, 0.5]).value, list)
+    assert len(m0.accuracy(thresholds=[0.4, 0.5]).value) == 2
+    assert m0.accuracy(thresholds=[0.4, 0.5]).value == [m0.accuracy(thresholds=0.4).value, m0.accuracy(thresholds=0.5).value]
+
     # Testing base metric methods
     # FIXME: check the same failures for other ModelMetrics impl. and then fix'emall or move them out of base class...
     base_metrics_methods_failing_on_H2OBinomialModelMetrics = ['aic', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'rmsle']
@@ -109,9 +127,7 @@ def pyunit_make_metrics():
                                     'max_per_class_error', 'mean_per_class_error',
                                     'precision', 'recall', 'specificity', 'fallout', 'missrate', 'sensitivity',
                                     'fpr', 'fnr', 'tpr', 'tnr']
-    failing_binomial_metrics = ['max_per_class_error', 'recall', 'specificity', 'fallout', 'missrate', 'sensitivity',
-                                'fpr', 'fnr', 'tpr', 'tnr']
-    for metric_method in (m for m in binomial_only_metric_methods if m not in failing_binomial_metrics):
+    for metric_method in (m for m in binomial_only_metric_methods):
         # FIXME: not sure that returning a 2d-array is justified when not passing any threshold
         m0mm = getattr(m0, metric_method)()[0]
         m1mm = getattr(m1, metric_method)()[0]
@@ -120,15 +136,6 @@ def pyunit_make_metrics():
             "{} is different for model_performance and make_metrics on [0, 1] domain".format(metric_method)
         assert m1mm == m2mm or abs(m1mm[1] - m2mm[1]) < 1e-5, \
             "{} is different for make_metrics on [0, 1] domain and make_metrics without domain".format(metric_method)
-
-    failures = 0
-    for metric_method in failing_binomial_metrics:
-        for m in [m0, m1, m2]:
-            try:
-                assert isinstance(getattr(m, metric_method)()[0][1], float)
-            except:
-                failures += 1
-    assert failures == 3 * len(failing_binomial_metrics)
 
     # Testing confusion matrix
     cm0 = m0.confusion_matrix(metrics=max_metrics)

@@ -1,9 +1,12 @@
 package water.rapids.ast.prims.mungers;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -17,6 +20,7 @@ import water.rapids.vals.ValFrame;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@RunWith(Parameterized.class)
 public class AstScaleTest extends TestUtil {
 
   @Rule
@@ -25,6 +29,12 @@ public class AstScaleTest extends TestUtil {
   @BeforeClass
   public static void setup() { stall_till_cloudsize(1); }
 
+  @Parameterized.Parameters
+  public static Object[] scaleFunc() { return new Object[]{"scale", "scale_inplace"}; };
+  
+  @Parameterized.Parameter
+  public String scaleFunc;
+  
   @Test
   public void testScaleNumeric() {
     Scope.enter();
@@ -42,9 +52,10 @@ public class AstScaleTest extends TestUtil {
               .withDataForCol(1, ard(-0.5, -0.5, -0.5, 1.5))
               .build();
 
-      ValFrame v = (ValFrame) Rapids.exec("(scale " + fr._key + " 1 1)");
+      ValFrame v = (ValFrame) Rapids.exec("(" + scaleFunc + " " + fr._key + " 1 1)");
 
       compareFrames(expected, v.getFrame(), 1e-10);
+      checkInPlace(fr, v);
     } finally {
       Scope.exit();
     }
@@ -67,9 +78,10 @@ public class AstScaleTest extends TestUtil {
               .withDataForCol(1, ard(-0.5, -0.5, -0.5, 1.5))
               .build();
 
-      ValFrame v = (ValFrame) Rapids.exec("(scale " + fr._key + " 1 1)");
+      ValFrame v = (ValFrame) Rapids.exec("(" + scaleFunc + " " + fr._key + " 1 1)");
 
       compareFrames(expected, v.getFrame(), 1e-10);
+      checkInPlace(fr, v);
     } finally {
       Scope.exit();
     }
@@ -92,9 +104,10 @@ public class AstScaleTest extends TestUtil {
               .withDataForCol(1, ar("a", "b", "c", "d"))
               .build();
 
-      ValFrame v = (ValFrame) Rapids.exec("(scale " + fr._key + " 1 1)");
+      ValFrame v = (ValFrame) Rapids.exec("(" + scaleFunc + " " + fr._key + " 1 1)");
 
       compareFrames(expected, v.getFrame());
+      checkInPlace(fr, v);
     } finally {
       Scope.exit();
     }
@@ -130,4 +143,19 @@ public class AstScaleTest extends TestUtil {
     AstScale.calcMults(null, multSpec, fr, origFr);
   }
 
+  private void checkInPlace(Frame input, ValFrame result) {
+    Frame output = result.getFrame();
+    if ("scale_inplace".equals(scaleFunc)) {
+      assertFrameEquals(input, output, 0);
+    } else {
+      for (int i = 0; i < input.numCols(); i++) {
+        if (input.vec(i).get_type() == Vec.T_NUM) {
+          Assert.assertNotEquals(input.vec(i).max(), output.vec(i).max());
+        } else {
+          assertCatVecEquals(input.vec(i), output.vec(i));
+        }
+      }
+    }
+  }
+  
 }

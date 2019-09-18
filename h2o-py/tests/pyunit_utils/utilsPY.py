@@ -5,7 +5,7 @@ from builtins import range
 from past.builtins import basestring
 from functools import reduce
 from scipy.sparse import csr_matrix
-import sys, os
+import sys, os, gc
 import pandas as pd
 
 try:        # works with python 2.7 not 3
@@ -56,8 +56,7 @@ class Namespace:
     """
     @staticmethod
     def add(namespace, **kwargs):
-        for k, v in kwargs.items():
-            setattr(namespace, k, v)
+        namespace.__dict__.update(kwargs)
         return namespace
 
     def __init__(self, **kwargs):
@@ -518,8 +517,10 @@ def pyunit_exec(test_name):
     exec(pyunit_c, {})
 
 def standalone_test(test):
-    if not h2o.h2o.connection():
+    if not h2o.connection() or not h2o.connection().connected:
+        print("Creating connection for test %s" % test.__name__)
         h2o.init(strict_version_check=False)
+        print("New session: %s" % h2o.connection().session_id)
 
     h2o.remove_all()
 
@@ -3615,7 +3616,7 @@ def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6, returnRes
                             return False
                     else:
                         assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                      "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
+                                      "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
 
     if returnResult:
         return True
@@ -3642,7 +3643,7 @@ def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5, returnResult=Fals
                             return False
                     else:
                         assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                                                         "{1}".format(temp1[rowInd][colInd], temp1[rowInd][colInd], rowInd, colInd)
+                                                                         "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
 
     if returnResult:
         return True
@@ -3691,7 +3692,7 @@ def build_save_model_DRF(params, x, train, respName):
 
 
 # generate random dataset, copied from Pasha
-def random_dataset(response_type, verbose=True, NTESTROWS=200, missing_fraction=0.0, seed=None):
+def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=15000, NTESTROWS=200, missing_fraction=0.0, seed=None):
     """Create and return a random dataset."""
     if verbose: print("\nCreating a dataset for a %s problem:" % response_type)
     fractions = {k + "_fraction": random.random() for k in "real categorical integer time string binary".split()}
@@ -3706,7 +3707,7 @@ def random_dataset(response_type, verbose=True, NTESTROWS=200, missing_fraction=
         response_factors = 2
     else:
         response_factors = random.randint(3, 10)
-    df = h2o.create_frame(rows=random.randint(15000, 25000) + NTESTROWS, cols=random.randint(3, 20),
+    df = h2o.create_frame(rows=random.randint(ncol_lower, ncol_upper) + NTESTROWS, cols=random.randint(3, 20),
                           missing_fraction=missing_fraction,
                           has_response=True, response_factors=response_factors, positive_response=True, factors=10,
                           seed=seed, **fractions)
@@ -4270,3 +4271,22 @@ def assertModelColNamesTypesCorrect(modelNames, modelTypes, frameNames, frameTyp
             "Expected training data types for column {0} is {1}.  Actual training data types for column {2} from " \
             "model output is {3}".format(frameNames[ind], frameTypesDict[frameNames[ind]],
                                          frameNames[ind], modelTypes[modelNames.index(frameNames[ind])])
+
+
+def saveModelMojo(model):
+    '''
+    Given a H2O model, this function will save it in a directory off the results directory.  In addition, it will
+    return the absolute path of where the mojo file is.
+    
+    :param model: 
+    :return: 
+    '''
+    # save model
+    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
+    MOJONAME = regex.sub("_", model._id)
+
+    print("Downloading Java prediction model code from H2O")
+    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
+    os.makedirs(tmpdir)
+    model.download_mojo(path=tmpdir)    # save mojo
+    return tmpdir
