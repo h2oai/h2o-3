@@ -2018,6 +2018,18 @@ class H2OXGBoostEstimator(H2OEstimator):
         Backend. By default (auto), a GPU is used if available.
 
         One of: ``"auto"``, ``"gpu"``, ``"cpu"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+        >>> pros["CAPSULE"] = pros["CAPSULE"].asfactor()
+        >>> pros_xgb = H2OXGBoostEstimator(tree_method = "exact",
+        ...                                seed = 123,
+        ...                                backend = "cpu")
+        >>> pros_xgb.train(y="CAPSULE",
+        ...                ignored_columns=["ID"],
+        ...                training_frame=pros)
+        >>> pros_xgb.auc()
         """
         return self._parms.get("backend")
 
