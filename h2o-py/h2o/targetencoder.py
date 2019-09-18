@@ -18,7 +18,7 @@ __all__ = ("TargetEncoder", )
 class TargetEncoder(object):
 
     """
-    Status: alpha version
+    Deprecated API. Please use H2OTargetencoderEstimator instead.
 
     This is a main class that provides Python's API to the Java implementation of the target encoding.
 
@@ -55,6 +55,8 @@ class TargetEncoder(object):
     def __init__(self, x=None, y=None, fold_column='', blended_avg=True, inflection_point=10, smoothing=20, **kwargs):
 
         """
+        Deprecated API. Please use H2OTargetencoderEstimator instead.
+        
         Creates instance of the TargetEncoder class and setting parameters that will be used in both `train` and `transform` methods.
         """
 
@@ -81,6 +83,8 @@ class TargetEncoder(object):
 
     def fit(self, frame = None):
         """
+        Deprecated API. Please use H2OTargetencoderEstimator instead.
+        
         Returns encoding map as an object that maps 'column_name' -> 'frame_with_encoding_map_for_this_column_name'
 
         :param frame frame: An H2OFrame object with which to create the target encoding map
@@ -100,6 +104,8 @@ class TargetEncoder(object):
 
     def transform(self, frame=None, holdout_type=None, noise=-1, seed=-1):
         """
+        Deprecated API. Please use H2OTargetencoderEstimator instead.
+        
         Apply transformation to `te_columns` based on the encoding maps generated during `TargetEncoder.fit()` call.
         You must not pass encodings manually from `.fit()` method because they are being stored internally
         after `.fit()' had been called.

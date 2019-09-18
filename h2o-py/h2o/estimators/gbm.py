@@ -23,30 +23,28 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     """
 
     algo = "gbm"
+    param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_models",
+                   "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "score_each_iteration",
+                   "score_tree_interval", "fold_assignment", "fold_column", "response_column", "ignored_columns",
+                   "ignore_const_cols", "offset_column", "weights_column", "balance_classes", "class_sampling_factors",
+                   "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k", "ntrees", "max_depth",
+                   "min_rows", "nbins", "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds",
+                   "stopping_metric", "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node",
+                   "learn_rate", "learn_rate_annealing", "distribution", "quantile_alpha", "tweedie_power",
+                   "huber_alpha", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
+                   "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
+                   "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
+                   "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
+                   "export_checkpoints_dir", "monotone_constraints", "check_constant_response"}
 
     def __init__(self, **kwargs):
         super(H2OGradientBoostingEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_models",
-                      "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment",
-                      "score_each_iteration", "score_tree_interval", "fold_assignment", "fold_column",
-                      "response_column", "ignored_columns", "ignore_const_cols", "offset_column", "weights_column",
-                      "balance_classes", "class_sampling_factors", "max_after_balance_size",
-                      "max_confusion_matrix_size", "max_hit_ratio_k", "ntrees", "max_depth", "min_rows", "nbins",
-                      "nbins_top_level", "nbins_cats", "r2_stopping", "stopping_rounds", "stopping_metric",
-                      "stopping_tolerance", "max_runtime_secs", "seed", "build_tree_one_node", "learn_rate",
-                      "learn_rate_annealing", "distribution", "quantile_alpha", "tweedie_power", "huber_alpha",
-                      "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
-                      "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
-                      "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
-                      "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
-                      "export_checkpoints_dir", "monotone_constraints", "check_constant_response"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
@@ -58,6 +56,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.auc(valid=True)
         """
         return self._parms.get("training_frame")
 
@@ -72,6 +84,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
         Id of the validation data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.auc(valid=True)
         """
         return self._parms.get("validation_frame")
 

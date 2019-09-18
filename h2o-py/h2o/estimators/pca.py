@@ -19,20 +19,19 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     """
 
     algo = "pca"
+    param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
+                   "score_each_iteration", "transform", "pca_method", "pca_impl", "k", "max_iterations",
+                   "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs",
+                   "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OPrincipalComponentAnalysisEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                      "score_each_iteration", "transform", "pca_method", "pca_impl", "k", "max_iterations",
-                      "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs",
-                      "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
@@ -281,7 +280,6 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
-
 
 
     def init_for_pipeline(self):

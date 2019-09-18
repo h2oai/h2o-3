@@ -3,7 +3,6 @@ package water;
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
 import java.sql.Timestamp;
-import java.util.concurrent.*;
 
 import static water.ExternalFrameUtils.writeToChannel;
 
@@ -14,7 +13,7 @@ import static water.ExternalFrameUtils.writeToChannel;
  *
  * <strong>Example usage of this class:</strong></br>
  *
- * First we need to open the connection to H2O and initialize the reader:</br>
+ * <p>First we need to open the connection to H2O and initialize the reader:</br>
  * <pre>
  * {@code
  * // specify indexes of columns we want to read data from
@@ -50,15 +49,6 @@ import static water.ExternalFrameUtils.writeToChannel;
  * }
  * </pre>
  * </p>
- *
- * <p>
- * And at the end we need to make sure to force to code wait for all data to be read:</br>
- * <pre>
- * {@code
- * reader.waitUntilAllReceived();
- * }
- * </pre>
- * </p>
  */
 final public class ExternalFrameReaderClient {
 
@@ -69,7 +59,7 @@ final public class ExternalFrameReaderClient {
     private int[] selectedColumnIndices;
     private ByteChannel channel;
     private int numRows;
-    private byte[] expectedTypes = null;
+    private byte[] expectedTypes;
 
     /**
      * @param channel               channel to h2o node
@@ -87,6 +77,16 @@ final public class ExternalFrameReaderClient {
         this.ab = initAndGetAb();
     }
 
+    public static ExternalFrameReaderClient create(String ip, int port, short timestamp, 
+                                                   String frameKey, int chunkIdx, int[] selectedColumnIndices, byte[] expectedTypes) throws IOException {
+        ByteChannel channel = ExternalFrameUtils.getConnection(ip, port, timestamp);
+        return new ExternalFrameReaderClient(channel, frameKey, chunkIdx, selectedColumnIndices, expectedTypes);
+    }
+    
+    public void close() throws IOException {
+        channel.close();
+    }
+    
     public int getNumRows() {
         return numRows;
     }
@@ -157,32 +157,11 @@ final public class ExternalFrameReaderClient {
     public boolean isLastNA() {
         return isLastNA;
     }
-
-    /**
-     * This method ensures the application waits for all bytes to be received before continuing in the
-     * application's control flow.
-     *
-     * It has to be called at the end of reading.
-     * @param timeout timeout in seconds
-     * @throws ExternalFrameConfirmationException
-     */
-    public void waitUntilAllReceived(int timeout) throws ExternalFrameConfirmationException {
-        try {
-            byte flag = ExternalFrameConfirmationCheck.getConfirmation(ab, timeout);
-            assert (flag == ExternalFrameHandler.CONFIRM_READING_DONE);
-        } catch (TimeoutException ex) {
-            throw new ExternalFrameConfirmationException("Timeout for confirmation exceeded!");
-        } catch (InterruptedException e) {
-            throw new ExternalFrameConfirmationException("Confirmation thread interrupted!");
-        } catch (ExecutionException e) {
-            throw new ExternalFrameConfirmationException("Confirmation failed!");
-        }
-    }
-
+    
     private AutoBuffer initAndGetAb() throws IOException {
         AutoBuffer sentAb = new AutoBuffer();
         sentAb.put1(ExternalFrameHandler.INIT_BYTE);
-        sentAb.put1(ExternalFrameHandler.DOWNLOAD_FRAME);
+        sentAb.put1(ExternalBackendRequestType.DOWNLOAD_FRAME.getByte());
         sentAb.putStr(frameKey);
         sentAb.putInt(chunkIdx);
         sentAb.putA1(expectedTypes);

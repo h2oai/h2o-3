@@ -29,7 +29,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** Name of the column with offsets (used for certain types of models). */
   public String _offsetColumn;
 
-
   public GenModel(String[] names, String[][] domains, String responseColumn) {
     _names = names;
     _domains = domains;

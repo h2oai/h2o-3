@@ -89,15 +89,6 @@ def url_encode(s):
 def quote(s):
     return url_encode(s)
 
-
-def urlopen():
-    if PY3:
-        from urllib import request
-        return request.urlopen
-    else:
-        import urllib2
-        return urllib2.urlopen
-
 def clamp(x, xmin, xmax):
     """Return the value of x, clamped from below by `xmin` and from above by `xmax`."""
     return max(xmin, min(x, xmax))
@@ -179,7 +170,7 @@ def _handle_numpy_array(python_obj, header):
 
 def _handle_pandas_data_frame(python_obj, header):
     data = _handle_python_lists(python_obj.values.tolist(), -1)[1]
-    return list(python_obj.columns), data
+    return list(str(c) for c in python_obj.columns), data
 
 def _handle_python_dicts(python_obj, check_header):
     header = list(python_obj.keys()) if python_obj else _gen_header(1)

@@ -39,6 +39,7 @@ abstract public class Val extends Iced {
 
   // One of these methods is overridden in each subclass
   public double   getNum()   { throw badValue("number"); }
+  public boolean  getBool()  { return getNum() == 1; }
   public double[] getNums()  { throw badValue("number array"); }
   public String   getStr()   { throw badValue("String"); }
   public String[] getStrs()  { throw badValue("String array"); }

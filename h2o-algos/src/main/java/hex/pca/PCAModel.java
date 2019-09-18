@@ -222,4 +222,9 @@ public class PCAModel extends Model<PCAModel,PCAModel.PCAParameters,PCAModel.PCA
 
     bodySb.i().p("}").nl();
   }
+  
+  @Override
+  public PCAMojoWriter getMojo() {
+    return new PCAMojoWriter(this);
+  }
 }

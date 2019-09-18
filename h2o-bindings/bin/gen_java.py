@@ -252,7 +252,13 @@ def generate_proxy(classname, endpoints):
         required_param_strs = []
         for field in e["input_params"]:
             fname = field["name"]
-            ftype = "Path" if field["is_path_param"] else "Field"
+            if field["is_path_param"]:
+                ftype = "Path"
+            else:
+                if e["http_method"] == "GET":
+                    ftype = "Query"
+                else:
+                    ftype = "Field"
             ptype = translate_type(field["type"], field["schema_name"])
             if ptype.endswith("KeyV3") or ptype == "ColSpecifierV3": ptype = "String"
             if ptype.endswith("KeyV3[]"): ptype = "String[]"
@@ -302,7 +308,7 @@ def generate_proxy(classname, endpoints):
                 elif ptype.endswith("KeyV3[]"):
                     found_key_array_parameter = True
                     s = "(p.{parm} == null? null : keyArrayToStringArray(p.{parm}))".format(parm=pname)
-                elif ptype.startswith("ColSpecifier"):
+                elif ptype == "ColSpecifierV3":
                     s = "(p.{parm} == null? null : p.{parm}.columnName)".format(parm=pname)
                 else:
                     s = "p." + pname
@@ -479,7 +485,7 @@ def generate_main_class(endpoints):
                     s = "keyToString(%s)" % fname
                 elif ftype.endswith("KeyV3[]"):
                     s = "keyArrayToStringArray(%s)" % fname
-                elif ftype.startswith("ColSpecifier"):
+                elif ftype == "ColSpecifierV3":
                     s = "colToString(%s)" % fname
                 else:
                     s = fname

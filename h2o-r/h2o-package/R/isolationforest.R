@@ -2,12 +2,12 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- isolationforest -------------------------- #
-#' 
+#'
 #' Trains an Isolation Forest model
-#' 
+#'
+#' @param training_frame Id of the training data frame.
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
 #' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
@@ -15,7 +15,7 @@
 #' @param max_depth Maximum tree depth. Defaults to 8.
 #' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 1.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
 #'        Defaults to FALSE.
@@ -39,7 +39,8 @@
 #'        much) Defaults to 0.01.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @export
-h2o.isolationForest <- function(training_frame, x,
+h2o.isolationForest <- function(training_frame,
+                                x,
                                 model_id = NULL,
                                 score_each_iteration = FALSE,
                                 score_tree_interval = 0,
@@ -59,18 +60,17 @@ h2o.isolationForest <- function(training_frame, x,
                                 stopping_rounds = 0,
                                 stopping_metric = c("AUTO", "anomaly_score"),
                                 stopping_tolerance = 0.01,
-                                export_checkpoints_dir = NULL
-                                ) 
+                                export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   if(!missing(x))
     parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(score_each_iteration))
@@ -111,6 +111,8 @@ h2o.isolationForest <- function(training_frame, x,
     parms$stopping_tolerance <- stopping_tolerance
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
   # Error check and build model
-  .h2o.modelJob('isolationforest', parms, h2oRestApiVersion = 3) 
+  model <- .h2o.modelJob('isolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
+  return(model)
 }

@@ -114,7 +114,7 @@ public abstract class AbstractMojoWriter {
     tmpfile.append('\n');
   }
 
-  private void writelnkv(String key, String value) {
+  protected void writelnkv(String key, String value) {
     writelnkv(key, value, false);
   }
 

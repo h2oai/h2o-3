@@ -16,6 +16,7 @@ Use this option to specify a custom evaluation function. A custom metric functio
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
+- `upload_custom_metric <upload_custom_metric.html>`__
 - `stopping_metric <stopping_metric.html>`__
 
 Example

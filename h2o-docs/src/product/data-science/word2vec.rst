@@ -45,6 +45,8 @@ Defining a Word2vec Model
 
 - **pre_trained**: Specify the ID of a data frame that contains a pre-trained (external) Word2vec model.
 
+-  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
 Interpreting a Word2vec Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

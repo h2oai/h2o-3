@@ -106,7 +106,7 @@ def random_seeds_test():
             assert abs(nativePreds1_2[ind]-nativePreds1[ind])<1e-7, "Native XGBoost Model 1 should have same predictions" \
                                                                     " as previous with same seed but do not."
         for ind in range(4):
-            assert abs(nativePred1[ind]-nativePred2[ind])>=1e-6, \
+            assert abs(nativePred1[ind]-nativePred2[ind])>=1e-10, \
                 "Native XGBoost model 1 prediction prob: {0} and native XGBoost model 3 prediction prob: {1}.  " \
                 "They are too similar.".format(nativePred1[ind], nativePred2[ind])
     else:

@@ -41,6 +41,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/eps_sdev
    data-science/algo-params/estimate_k
    data-science/algo-params/exclude_algos
+   data-science/algo-params/export_checkpoints_dir
    data-science/algo-params/family
    data-science/algo-params/fold_assignment
    data-science/algo-params/fold_column
@@ -85,6 +86,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/min_split_improvement
    data-science/algo-params/missing_values_handling
    data-science/algo-params/model_id
+   data-science/algo-params/monotone_constraints
    data-science/algo-params/mtries
    data-science/algo-params/nbins
    data-science/algo-params/nbins_cats
@@ -98,6 +100,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/offset_column
    data-science/algo-params/pca_impl
    data-science/algo-params/pca_method
+   data-science/algo-params/plug_values
    data-science/algo-params/pred_noise_bandwidth
    data-science/algo-params/prior
    data-science/algo-params/quantile_alpha
@@ -125,6 +128,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/tweedie_power
    data-science/algo-params/tweedie_variance_power
    data-science/algo-params/upload_custom_distribution
+   data-science/algo-params/upload_custom_metric
    data-science/algo-params/use_all_factor_levels
    data-science/algo-params/user_points
    data-science/algo-params/validation_frame

@@ -180,17 +180,16 @@ h2o.mojo_predict_csv <- function(input_csv_path, mojo_zip_path, output_csv_path=
 #' @return Returns a data.frame containing computed predictions
 #' @export
 h2o.mojo_predict_df <- function(frame, mojo_zip_path, genmodel_jar_path=NULL, classpath=NULL, java_options=NULL, verbose=F, setInvNumNA=F) {
-	tmp_dir <- tempdir()
-	dir.create(tmp_dir)
+	input_csv_path <- file.path(tempdir(), paste0('h2o_input_', runif(1,0,99999999999), '.csv'))
+	prediction_csv_path <- file.path(tempdir(), paste0('h2o_prediction_', runif(1,0,99999999999), '.csv'))
 	tryCatch(
 		{
-			input_csv_path <- file.path(tmp_dir, 'input.csv')
-			prediction_csv_path <- file.path(tmp_dir, 'prediction.csv')
 			write.csv(frame, file=input_csv_path, row.names=F)
-			return(h2o.mojo_predict_csv(input_csv_path=input_csv_path, mojo_zip_path=mojo_zip_path, output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path, classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA))
+			return(h2o.mojo_predict_csv(input_csv_path = input_csv_path, mojo_zip_path=mojo_zip_path, output_csv_path=prediction_csv_path, genmodel_jar_path=genmodel_jar_path, classpath=classpath, java_options=java_options, verbose=verbose, setInvNumNA=setInvNumNA))
 		},
-		finally={
-			unlink(tmp_dir, recursive=T)
+		finally = {
+		  unlink(input_csv_path)
+		  unlink(prediction_csv_path)
 		}
 	)
 }

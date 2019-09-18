@@ -55,7 +55,13 @@ def test_regression():
     print("Create custom ", name,  "model")
     (model2, f_test2) = regression_model_distribution(H2OGradientBoostingEstimator, 
                                                       upload_distribution(CustomDistributionGaussian, name))
+
     check_model_metrics(model, model2, name)
+    
+    print("Test scoring history is without deviance if custom distribution is set.")
+    sh = model.scoring_history().columns
+    shc = model2.scoring_history().columns
+    assert "training_deviance" in sh and "training_deviance" not in shc
     
     
 def test_binomial():
