@@ -4,6 +4,7 @@ import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Iced;
 import water.Key;
+import water.api.schemas3.JobV3;
 import water.fvec.Frame;
 
 /**
@@ -173,17 +174,11 @@ public class AutoMLBuildSpec extends Iced {
   public AutoMLInput input_spec;
   public AutoMLBuildSpec.AutoMLBuildModels build_models;
 
-  private transient String project_cached = null;
-  public String project() {
-    if (null != project_cached)
-      return project_cached;
+  // output
+  public JobV3 job;
 
-    // allow the user to override:
-    if (null != build_control.project_name) {
-      project_cached = build_control.project_name;
-      return project_cached;
-    }
-    project_cached = "automl_"+input_spec.training_frame+"_"+input_spec.response_column;
-    return project_cached;
+  public String project() {
+    return build_control.project_name != null ? build_control.project_name
+            : "automl_"+input_spec.training_frame+"_"+input_spec.response_column;
   }
 }
