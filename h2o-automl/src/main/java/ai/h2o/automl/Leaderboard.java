@@ -115,7 +115,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
    *
    */
   public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
-    super(Key.make(idForProject(project_name)));
+    super(Key.<Leaderboard>make(idForProject(project_name)));
     this.project_name = project_name;
     this.eventLog = eventLog;
     this.leaderboardFrame = leaderboardFrame;
