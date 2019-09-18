@@ -93,6 +93,7 @@ information can be queried out of the object. Upon completion of the GLM, the re
 coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
 MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices.
 """
+)
 
 examples = dict(
     training_frame="""
