@@ -415,18 +415,21 @@ examples = dict(
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 >>> predictors = ["displacement","power","weight","year","economy_20mpg"]
 >>> response = "acceleration"
+>>> from h2o.estimators import H2OXGBoostEstimator
+>>> cars_xgb = H2OXGBoostEstimator(seed = 1234)
+>>> train, valid = cars.split_frame(ratios=[.8])
 >>> cars_xgb.train(x = predictors,
-...                y = response,
-...                training_frame = train,
-...                validation_frame = valid)
+...                y=response,
+...                training_frame=train,
+...                validation_frame=valid)
 >>> cars_xgb.mse()
 >>> cars_xgb_continued = H2OXGBoostEstimator(checkpoint = cars_xgb.model_id,
-...                                          ntrees = 50,
+...                                          ntrees = 51,
 ...                                          seed = 1234)
 >>> cars_xgb_continued.train(x = predictors,
-...                          y = response,
-...                          training_frame = train,
-...                          validation_frame = valid)
+                             y =response,
+                             training_frame=train,
+                             validation_frame=valid)
 >>> cars_xgb_continued.mse()
 """,
     export_checkpoints_dir="""
