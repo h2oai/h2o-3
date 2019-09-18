@@ -643,45 +643,77 @@ The following example demonstrates how to build a gradient boosting model that w
     print('Validation Logloss for GBM with Checkpointing: ' + str(round(gbm_nocv_checkpoint.logloss(valid=True), 3)))
     Validation Logloss for GBM with Checkpointing: 0.331
 
-    Checkpoint with XGBoost
-    -----------------------
+Checkpoint with XGBoost
+-----------------------
 
-    In XGBoost, checkpoint can be used to continue training on a previously generated model rather than rebuilding the model from scratch. For example, you may train a model with 50 trees and wonder what the model would look like if you trained 10 more.
+In XGBoost, checkpoint can be used to continue training on a previously generated model rather than rebuilding the model from scratch. For example, you may train a model with 50 trees and wonder what the model would look like if you trained 10 more.
 
-    **Note**: The following parameters cannot be modified during checkpointing:
+**Note**: The following parameters cannot be modified during checkpointing:
 
-    - build_tree_one_node
-    - max_depth
-    - min_rows
-    - nbins
-    - nbins_cats
-    - nbins_top_level
-    - sample_rate
+- build_tree_one_node
+- max_depth
+- min_rows
+- nbins
+- nbins_cats
+- nbins_top_level
+- sample_rate
 
-    The following example demonstrates how to build a gradient boosting model that will later be used for checkpointing. This checkpoint example shows how to continue training on an existing model. We do not recommend using GBM to train on new data. This example uses the cars dataset, which classifies whether or not a car is economical based on the car's displacement, power, weight, and acceleration, and the year it was made.
+The following example demonstrates how to build a gradient boosting model that will later be used for checkpointing. This checkpoint example shows how to continue training on an existing model. We do not recommend using GBM to train on new data. This example uses the cars dataset, which classifies whether or not a car is economical based on the car's displacement, power, weight, and acceleration, and the year it was made.
 
-    .. example-code::
-      .. code-block:: python
+.. example-code::
+  .. code-block:: r
 
-        from h2o.estimators.xgboost import H2OXGBoostEstimator
+   # import the iris dataset:
+   iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 
-        milsong_train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/milsongs/milsongs-train.csv.gz")
-        milsong_valid = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/milsongs/milsongs-test.csv.gz")
-        distribution = "gaussian"
+   # set the factor and response column:
+   iris["class"] <- as.factor(iris["class"])
+   response <- "class"
 
-        # build first model
-        ntrees1 = 2
-        max_depth1 = 2
-        min_rows1 = 10
-        model1 = H2OXGBoostEstimator(ntrees=ntrees1, max_depth=max_depth1, min_rows=min_rows1, distribution=distribution)
-        model1.train(x=list(range(1,milsong_train.ncol)), y=0, training_frame=milsong_train, validation_frame=milsong_valid)
+   # split the training and validation sets:
+   splits <- h2o.splitFrame(iris, ratio=.8)
+   train <- splits[[1]]
+   valid <- splits[[2]]
 
-        # save the model, then load the model
-        h2o.save_model(model1, path='', force=True)
-        model_reloaded = h2o.load_model('/Users/htillman/XGBoost_model_python_1566996589903_4')
+   # build and train the first model:
+   iris_xgb <- h2o.xgboost(model_id='iris_xgb', y=response, training_frame=train, validation_frame=valid)
 
-        # continue building the model
-        ntrees2 = ntrees1 + 1
-        max_depth2 = max_depth1
-        min_rows2 = min_rows1
-        model2 = H2OXGBoostEstimator(ntrees=ntrees2, max_depth=max_depth2, min_rows=min_rows2, distribution=distribution, checkpoint=model_reloaded)
+   # check the mse value:
+   h2o.mse(iris_xgb)
+
+   # build and train the second model using a checkpoint:
+   iris_xgb_cont <- h2o.xgboost(y=response, training_frame=train, validation_frame=valid, checkpoint='iris_xgb', ntrees=51)
+
+   # check the mse value:
+   h2o.mse(iris_xgb_cont)
+
+
+  .. code-block:: python
+
+    # import H2oXGBoostEstimator and the cars dataset:
+    from h2o.estimators import H2OXGBoostEstimator
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # set the factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+
+    # set the predictors and response column:
+    predictors = ["displacement","power","weight","year","economy_20mpg"]
+    response = "acceleration"
+
+    # split the validation and training sets:
+    train, valid = cars.split_frame(ratios=[.8])
+
+    # build and train the first model:
+    cars_xgb = H2OXGBoostEstimator(seed = 1234)
+    cars_xgb.train(x = predictors, y=response, training_frame=train, validation_frame=valid)
+
+    # find the mse value:
+    cars_xgb.mse()
+
+    # build the second model using the checkpoint:
+    cars_xgb_continued.train(x = predictors, y =response, training_frame=train, validation_frame=valid)
+
+    # find the mse value for comparison:
+    cars_xgb_continued.mse()
+
