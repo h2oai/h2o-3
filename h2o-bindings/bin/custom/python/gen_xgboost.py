@@ -1020,6 +1020,42 @@ examples = dict(
 ...                  validation_frame=valid)
 >>> print(boston_xgb.mse(valid=True))
 """,
-    
+    dmatrix_type="""
+>>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+>>> predictors = boston.columns[:-1]
+>>> response = "medv"
+>>> boston['chas'] = boston['chas'].asfactor()
+>>> train, valid = boston.split_frame(ratios = [.8])
+>>> boston_xgb = H2OXGBoostEstimator(dmatrix_type="auto",
+...                                  seed=1234)
+>>> boston_xgb.train(x=predictors,
+...                  y=response,
+...                  training_frame=train,
+...                  validation_frame=valid)
+>>> boston_xgb.mse()
+""",
+    gpu_id="""
+>>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+>>> predictors = boston.columns[:-1]
+>>> response = "medv"
+>>> boston['chas'] = boston['chas'].asfactor()
+>>> train, valid = boston.split_frame(ratios = [.8])
+>>> boston_xgb = H2OXGBoostEstimator(gpu_id=0,
+...                                  seed=1234)
+>>> boston_xgb.train(x=predictors,
+...                  y=response,
+...                  training_frame=train,
+...                  validation_frame=valid)
+>>> boston_xgb.mse()
+""",
+    available="""
+>>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+>>> predictors = boston.columns[:-1]
+>>> response = "medv"
+>>> boston['chas'] = boston['chas'].asfactor()
+>>> train, valid = boston.split_frame(ratios = [.8])
+>>> boston_xgb = H2OXGBoostEstimator(seed=1234)
+>>> boston_xgb.available()
+"""
 )
 
