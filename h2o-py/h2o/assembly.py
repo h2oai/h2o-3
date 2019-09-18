@@ -7,7 +7,7 @@ import h2o
 from h2o.frame import H2OFrame
 from h2o.transforms.transform_base import H2OTransformer
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.shared_utils import urlopen, quoted
+from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import assert_is_type
 import os
 
