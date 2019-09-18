@@ -4,6 +4,16 @@ def class_extensions():
         """
         Ask the H2O server whether a XGBoost model can be built (depends on availability of native backends).
         :return: True if a XGBoost model can be built, or False otherwise.
+
+        :examples:
+
+        >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+        >>> predictors = boston.columns[:-1]
+        >>> response = "medv"
+        >>> boston['chas'] = boston['chas'].asfactor()
+        >>> train, valid = boston.split_frame(ratios = [.8])
+        >>> boston_xgb = H2OXGBoostEstimator(seed=1234)
+        >>> boston_xgb.available()
         """
         if "XGBoost" not in h2o.cluster().list_core_extensions():
             print("Cannot build an XGBoost model - no backend found.")
@@ -1049,13 +1059,7 @@ examples = dict(
 >>> boston_xgb.mse()
 """,
     available="""
->>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
->>> predictors = boston.columns[:-1]
->>> response = "medv"
->>> boston['chas'] = boston['chas'].asfactor()
->>> train, valid = boston.split_frame(ratios = [.8])
->>> boston_xgb = H2OXGBoostEstimator(seed=1234)
->>> boston_xgb.available()
+
 """
 )
 
