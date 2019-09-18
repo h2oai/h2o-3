@@ -27,7 +27,7 @@ import static water.DKV.getGet;
  * <p>
  * TODO: make this robust against removal of models from the DKV.
  */
-public class Leaderboard extends Keyed<Leaderboard> {
+public class Leaderboard extends Lockable<Leaderboard> {
   /**
    * Identifier for models that should be grouped together in the leaderboard
    * (e.g., "airlines" and "iris").
@@ -115,7 +115,7 @@ public class Leaderboard extends Keyed<Leaderboard> {
    *
    */
   public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
-    this._key = Key.make(idForProject(project_name));
+    super(Key.<Leaderboard>make(idForProject(project_name)));
     this.project_name = project_name;
     this.eventLog = eventLog;
     this.leaderboardFrame = leaderboardFrame;
@@ -204,121 +204,88 @@ public class Leaderboard extends Keyed<Leaderboard> {
     final Key<Model> newLeader[] = new Key[1]; // only set if there's a new leader
     final double newLeaderSortMetric[] = new double[1];
 
-    new TAtomic<Leaderboard>() {
-      @Override
-      final public Leaderboard atomic(Leaderboard updating) {
-        if (updating == null) {
-          Log.err("trying to update null leaderboard!");
-          throw new H2OIllegalArgumentException("Trying to update a null leaderboard.");
+    write_lock(); //no job/key needed as currently the leaderboard instance can only be updated by its corresponding AutoML job (otherwise, would need to pass a job param to addModels)
+    final Key<Model>[] oldModels = models;
+    final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
+
+    // eliminate duplicates
+    Set<Key<Model>> uniques = new HashSet<>(oldModels.length + newModels.length);
+    uniques.addAll(Arrays.asList(oldModels));
+    uniques.addAll(Arrays.asList(newModels));
+    models = uniques.toArray(new Key[0]);
+
+    // Try fetching ModelMetrics for *all* models, not just
+    // new models, because the leaderboardFrame might have changed.
+    leaderboard_set_metrics = new IcedHashMap<>();
+    Model model = null;
+    for (Key<Model> aKey : models) {
+      model = aKey.get();
+      if (null == model) {
+        eventLog().warn(EventLogEntry.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
+        continue;
+      }
+
+      // If leaderboardFrame is null, use default model metrics instead
+      ModelMetrics mm = null;
+      if (leaderboardFrame == null) {
+        mm = ModelMetrics.defaultModelMetrics(model);
+      } else {
+        mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
+        if (mm == null) {
+          //scores and magically stores the metrics where we're looking for it on the next line
+          model.score(leaderboardFrame).delete();
+          mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
         }
-
-        final Key<Model>[] oldModels = updating.models;
-        final Key<Model> oldLeader = (oldModels == null || 0 == oldModels.length) ? null : oldModels[0];
-
-        // eliminate duplicates
-        Set<Key<Model>> uniques = new HashSet(oldModels.length + newModels.length);
-        uniques.addAll(Arrays.asList(oldModels));
-        uniques.addAll(Arrays.asList(newModels));
-        updating.models = uniques.toArray(new Key[0]);
-
-        // Try fetching ModelMetrics for *all* models, not just
-        // new models, because the leaderboardFrame might have changed.
-        updating.leaderboard_set_metrics = new IcedHashMap<>();
-        Model model = null;
-        for (Key<Model> aKey : updating.models) {
-          model = aKey.get();
-          if (null == model) {
-            eventLog().warn(EventLogEntry.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + aKey);
-            continue;
-          }
-
-          // If leaderboardFrame is null, use default model metrics instead
-          ModelMetrics mm = null;
-          if (leaderboardFrame == null) {
-            mm = ModelMetrics.defaultModelMetrics(model);
-          } else {
-            mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
-            if (mm == null) {
-              //scores and magically stores the metrics where we're looking for it on the next line
-              model.score(leaderboardFrame).delete();
-              mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
-            }
-          }
-          if (mm != null) updating.leaderboard_set_metrics.put(mm._key, mm);
-        }
-
-        // Sort by metric on the leaderboard/test set or default model metrics.
-        try {
-          List<Key<Model>> modelsSorted = null;
-          if (leaderboardFrame == null) {
-            modelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(updating.models));
-          } else {
-            modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(updating.models));
-          }
-          updating.models = modelsSorted.toArray(new Key[0]);
-        } catch (H2OIllegalArgumentException e) {
-          Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
-          throw e;
-        }
-
-        Model[] updating_models = new Model[updating.models.length];
-        modelsForModelKeys(updating.models, updating_models);
-
-        updating.sort_metrics = getMetrics(updating.sort_metric, updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-
-        if (model._output.isBinomialClassifier()) { // Binomial case
-          updating.auc = getMetrics("auc", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.logloss = getMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mean_per_class_error = getMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-        } else if (model._output.isMultinomialClassifier()) { //Multinomial Case
-          updating.mean_per_class_error = getMetrics("mean_per_class_error", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.logloss = getMetrics("logloss", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-        } else { //Regression Case
-          updating.mean_residual_deviance= getMetrics("mean_residual_deviance", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmse = getMetrics("rmse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mse = getMetrics("mse", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.mae = getMetrics("mae", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-          updating.rmsle = getMetrics("rmsle", updating.leaderboard_set_metrics, leaderboardFrame, updating_models);
-        }
-
-        // If we're updated leader let this know so that it can notify the user
-        // (outside the tatomic, since it can take a long time).
-        if (oldLeader == null || !oldLeader.equals(updating.models[0])) {
-          newLeader[0] = updating.models[0];
-          newLeaderSortMetric[0] = updating.sort_metrics[0];
-        }
-
-        return updating;
-      } // atomic
-    }.invoke(this._key);
-
-    // We've updated the DKV but not this instance, so:
-    Leaderboard updated = DKV.getGet(this._key);
-    this.models = updated.models;
-    this.leaderboard_set_metrics = updated.leaderboard_set_metrics;
-    this.sort_metrics = updated.sort_metrics;
-    if (updated.getLeader()._output.isBinomialClassifier()) { // Binomial case
-      this.auc = updated.auc;
-      this.logloss = updated.logloss;
-      this.mean_per_class_error = updated.mean_per_class_error;
-      this.rmse = updated.rmse;
-      this.mse = updated.mse;
-    } else if (updated.getLeader()._output.isMultinomialClassifier()) { // Multinomial case
-      this.mean_per_class_error = updated.mean_per_class_error;
-      this.logloss = updated.logloss;
-      this.rmse = updated.rmse;
-      this.mse = updated.mse;
-    } else { // Regression case
-      this.mean_residual_deviance = updated.mean_residual_deviance;
-      this.rmse = updated.rmse;
-      this.mse = updated.mse;
-      this.mae = updated.mae;
-      this.rmsle = updated.rmsle;
+      }
+      if (mm != null) leaderboard_set_metrics.put(mm._key, mm);
     }
+
+    // Sort by metric on the leaderboard/test set or default model metrics.
+    try {
+      List<Key<Model>> modelsSorted = null;
+      if (leaderboardFrame == null) {
+        modelsSorted = ModelMetrics.sortModelsByMetric(sort_metric, sort_decreasing, Arrays.asList(models));
+      } else {
+        modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, sort_metric, sort_decreasing, Arrays.asList(models));
+      }
+      models = modelsSorted.toArray(new Key[0]);
+    } catch (H2OIllegalArgumentException e) {
+      Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
+      throw e;
+    }
+
+    Model[] updating_models = new Model[models.length];
+    modelsForModelKeys(models, updating_models);
+
+    sort_metrics = getMetrics(sort_metric, leaderboard_set_metrics, leaderboardFrame, updating_models);
+
+    if (model._output.isBinomialClassifier()) { // Binomial case
+      auc = getMetrics("auc", leaderboard_set_metrics, leaderboardFrame, updating_models);
+      logloss = getMetrics("logloss", leaderboard_set_metrics, leaderboardFrame, updating_models);
+      mean_per_class_error = getMetrics("mean_per_class_error", leaderboard_set_metrics, leaderboardFrame, updating_models);
+      rmse = getMetrics("rmse", leaderboard_set_metrics, leaderboardFrame, updating_models);
+      mse = getMetrics("mse", leaderboard_set_metrics, leaderboardFrame, updating_models);
+    } else if (model._output.isMultinomialClassifier()) { //Multinomial Case
+      mean_per_class_error = getMetrics("mean_per_class_error", leaderboard_set_metrics, leaderboardFrame, updating_models);
+      logloss = getMetrics("logloss", leaderboard_set_metrics, leaderboardFrame, updating_models);
+      rmse = getMetrics("rmse",leaderboard_set_metrics, leaderboardFrame, updating_models);
+      mse = getMetrics("mse",leaderboard_set_metrics, leaderboardFrame, updating_models);
+    } else { //Regression Case
+      mean_residual_deviance= getMetrics("mean_residual_deviance",leaderboard_set_metrics, leaderboardFrame, updating_models);
+      rmse = getMetrics("rmse",leaderboard_set_metrics, leaderboardFrame, updating_models);
+      mse = getMetrics("mse",leaderboard_set_metrics, leaderboardFrame, updating_models);
+      mae = getMetrics("mae",leaderboard_set_metrics, leaderboardFrame, updating_models);
+      rmsle = getMetrics("rmsle",leaderboard_set_metrics, leaderboardFrame, updating_models);
+    }
+
+    // If we're updated leader let this know so that it can notify the user
+    // (outside the tatomic, since it can take a long time).
+    if (oldLeader == null || !oldLeader.equals(models[0])) {
+      newLeader[0] = models[0];
+      newLeaderSortMetric[0] = sort_metrics[0];
+    }
+    update();
+    unlock();
 
     // always
     if (null != newLeader[0]) {
