@@ -308,7 +308,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // check that the base models are all consistent with first based model
 
         if (modelCategory != aModel._output.getModelCategory())
-          throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different categories of models: " + Arrays.toString(_parms._base_models));
+          throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different categories of models: "+Arrays.toString(_parms._base_models));
 
         // NOTE: if we loosen this restriction and fold_column is set add a check below.
         Frame aTrainingFrame = aModel._parms.train();
@@ -364,7 +364,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         //
         // Hack alert: DRF only does Bernoulli and Gaussian, so only compare _domains.length above.
         if (! (aModel instanceof DRFModel) && distributionFamily(aModel) != distributionFamily(this))
-          Log.warn("Base models are inconsistent; they use different distributions: " + distributionFamily(this) + " and: " + distributionFamily(aModel) + ". Is this intentional?");
+          Log.warn("Base models are inconsistent; they use different distributions: "
+                  +distributionFamily(this)+" and: "+distributionFamily(aModel) +". Is this intentional?");
 
         // TODO: If we're set to DistributionFamily.AUTO then GLM might auto-conform the response column
         // giving us inconsistencies.
@@ -374,8 +375,9 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         this._dist = DistributionFactory.getDistribution(distributionFamily(aModel));
         responseColumn = aModel._parms._response_column;
 
-        if (! responseColumn.equals(_parms._response_column))
-          throw  new H2OIllegalArgumentException("StackedModel response_column must match the response_column of each base model.  Found: " + responseColumn + " and: " + _parms._response_column);
+        if (! _parms._response_column.equals(responseColumn))  // _params._response_column can't be null, validated by ModelBuilder
+          throw new H2OIllegalArgumentException("StackedModel response_column must match the response_column of each base model."
+                  +" Found: "+_parms._response_column+"(StackedEnsemble) and: "+responseColumn+" (model "+k+").");
 
         basemodel_nfolds = aModel._parms._nfolds;
         basemodel_fold_assignment = aModel._parms._fold_assignment;
@@ -389,8 +391,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     } // for all base_models
 
     if (null == aModel)
-      throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; " + _parms._base_models.length + " were specified but none of those were found: " + Arrays.toString(_parms._base_models));
-
+      throw new H2OIllegalArgumentException("When creating a StackedEnsemble you must specify one or more models; "
+              +_parms._base_models.length+" were specified but none of those were found: "+Arrays.toString(_parms._base_models));
   }
   
   void deleteBaseModelPredictions() {
