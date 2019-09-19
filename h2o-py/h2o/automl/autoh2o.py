@@ -406,11 +406,6 @@ class H2OAutoML(Keyed):
         ncols = training_frame.ncols
         names = training_frame.names
 
-        #Set project name if None
-        if self.project_name is None:
-            self.project_name = "automl_" + training_frame.frame_id
-            self.build_control["project_name"] = self.project_name
-
         # Minimal required arguments are training_frame and y (response)
         if y is None:
             raise H2OValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
@@ -493,6 +488,9 @@ class H2OAutoML(Keyed):
             print("Exception from the back end: ")
             print(resp)
             return
+
+        if not self.project_name:
+            self.build_control['project_name'] = self.project_name = resp['build_control']['project_name']
 
         self._job = H2OJob(resp['job'], "AutoML")
         poll_updates = ft.partial(self._poll_training_updates, verbosity=self._verbosity, state={})

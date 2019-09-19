@@ -71,7 +71,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       lastStartTime = startTime;
     }
 
-    AutoML aml = makeAutoML(Key.make(buildSpec.project()), startTime, buildSpec);
+    String keyString = buildSpec.project();
+    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(keyString), startTime, buildSpec);
+
+    DKV.put(aml);
     startAutoML(aml);
     return aml;
   }

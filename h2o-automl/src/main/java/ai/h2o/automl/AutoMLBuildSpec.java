@@ -178,7 +178,9 @@ public class AutoMLBuildSpec extends Iced {
   public JobV3 job;
 
   public String project() {
-    return build_control.project_name != null ? build_control.project_name
-            : "automl_"+input_spec.training_frame+"_"+input_spec.response_column;
+    if (build_control.project_name == null) {
+      build_control.project_name = "automl_"+input_spec.training_frame+"_"+input_spec.response_column;
+    }
+    return build_control.project_name;
   }
 }
