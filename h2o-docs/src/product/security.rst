@@ -267,6 +267,9 @@ The following options are available:
     -jks_pass <password>
          (Default is 'h2oh2o')
 
+    -jks_alias <alias>
+         (Optional) Which certificate from the keystore to use
+
 Example:
 
 ::
@@ -285,6 +288,9 @@ The following options are available:
 
     -jks_pass <password>
          (Default is 'h2oh2o')
+
+    -jks_alias <alias>
+         (Optional) Which certificate from the keystore to use
 
 Example:
 
