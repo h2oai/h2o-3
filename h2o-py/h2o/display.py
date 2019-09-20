@@ -44,7 +44,10 @@ class H2ODisplay(object):
             print(self.table_header + ":")
             print()
         if H2ODisplay._in_zep():
-            print("%html " + H2ODisplay._html_table(self.table, self.header))
+            if is_pandas:
+                print(table)
+            else:
+                print("%html " + H2ODisplay._html_table(self.table, self.header))
             self.do_print = False
         elif H2ODisplay._in_ipy():
             from IPython.display import display
@@ -75,7 +78,7 @@ class H2ODisplay(object):
 
     @staticmethod
     def prefer_pandas():
-        return H2ODisplay._in_ipy()
+        return H2ODisplay._in_ipy() 
 
     @staticmethod
     def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html

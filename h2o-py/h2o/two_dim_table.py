@@ -94,8 +94,10 @@ class H2OTwoDimTable(object):
         """Print the contents of this table."""
         print()
         if header and self._table_header:
-            print(self._table_header + ":", end=' ')
-            if self._table_description: print(self._table_description)
+            table_header = self._table_header + ": "
+            if self._table_description:
+                table_header += self._table_description
+            print(table_header)
 
         (table, nr, is_pandas) = self._as_show_table()
 
