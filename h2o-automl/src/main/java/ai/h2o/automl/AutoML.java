@@ -32,6 +32,8 @@ import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING
  */
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
+  public static final Comparator<AutoML> byStartTime = Comparator.comparing(a -> a.startTime);
+
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
@@ -71,18 +73,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       lastStartTime = startTime;
     }
 
-    String keyString = buildSpec.project();
-    Key<AutoML> key = Key.make(keyString);
-    AutoML old = key.get();
-    if (old != null
-            && (!old.getBuildSpec().input_spec.training_frame.equals(buildSpec.input_spec.training_frame)
-                || !old.getBuildSpec().input_spec.response_column.equals(buildSpec.input_spec.response_column))) {
-      key = Key.make(keyString+"_"+buildSpec.input_spec.training_frame+'_'+buildSpec.input_spec.response_column);
-    }
-
+    // if user offers a different training frame or response column,
+    //   the new models will be added to a new Leaderboard, without removing the previous one.
+    // otherwise, the new models will be added to the existing leaderboard.
+    Key<AutoML> key = Key.make(buildSpec.project()+"@"+buildSpec.input_spec.training_frame+'.'+buildSpec.input_spec.response_column);
     AutoML aml = new AutoML(key, startTime, buildSpec);
-
-    DKV.put(aml);
     startAutoML(aml);
     return aml;
   }
