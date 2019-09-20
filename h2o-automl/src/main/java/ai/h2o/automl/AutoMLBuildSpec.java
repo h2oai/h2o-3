@@ -7,10 +7,16 @@ import water.Key;
 import water.api.schemas3.JobV3;
 import water.fvec.Frame;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
 /**
  * Parameters which specify the build (or extension) of an AutoML build job.
  */
 public class AutoMLBuildSpec extends Iced {
+
+  private static final DateFormat projectTimeStampFormat = new SimpleDateFormat("yyyyMMdd_HmmssSSS");
 
   /**
    * Default constructor provides the default behavior.
@@ -179,7 +185,7 @@ public class AutoMLBuildSpec extends Iced {
 
   public String project() {
     if (build_control.project_name == null) {
-      build_control.project_name = "automl_"+input_spec.training_frame+"_"+input_spec.response_column;
+      build_control.project_name = "AutoML_"+ projectTimeStampFormat.format(new Date());
     }
     return build_control.project_name;
   }

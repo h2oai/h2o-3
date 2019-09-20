@@ -72,7 +72,15 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     String keyString = buildSpec.project();
-    AutoML aml = AutoML.makeAutoML(Key.<AutoML>make(keyString), startTime, buildSpec);
+    Key<AutoML> key = Key.make(keyString);
+    AutoML old = key.get();
+    if (old != null
+            && (!old.getBuildSpec().input_spec.training_frame.equals(buildSpec.input_spec.training_frame)
+                || !old.getBuildSpec().input_spec.response_column.equals(buildSpec.input_spec.response_column))) {
+      key = Key.make(keyString+"_"+buildSpec.input_spec.training_frame+'_'+buildSpec.input_spec.response_column);
+    }
+
+    AutoML aml = new AutoML(key, startTime, buildSpec);
 
     DKV.put(aml);
     startAutoML(aml);
@@ -123,10 +131,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public StepDefinition[] getActualModelingSteps() { return _actualModelingSteps; }
 
-  Frame _trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
-  Frame _validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
-  Frame _blendingFrame;
-  Frame _leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics
+  Frame _trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place.
+  Frame _validationFrame;  // optional validation frame; the training_frame is split automatically if it's not specified.
+  Frame _blendingFrame;    // optional blending frame for SE (usually if xval is disabled).
+  Frame _leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics.
 
   Vec _responseColumn;
   Vec _foldColumn;
@@ -190,7 +198,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private void initLeaderboard(AutoMLBuildSpec buildSpec) {
     String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
-    _leaderboard = Leaderboard.getOrMake(projectName(), _eventLog, _leaderboardFrame, sort_metric);
+    _leaderboard = Leaderboard.getOrMake(_key.toString(), _eventLog, _leaderboardFrame, sort_metric);
   }
 
   private void handleReproducibilityParameters(AutoMLBuildSpec buildSpec) {
