@@ -132,6 +132,7 @@ public class h2odriver extends Configured implements Tool {
   static ArrayList<String> extraJvmArguments = new ArrayList<String>();
   static String jksFileName = null;
   static String jksPass = null;
+  static String jksAlias = null;
   static String securityConf = null;
   static boolean internal_secure_connections = false;
   static boolean hashLogin = false;
@@ -1025,6 +1026,10 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         jksPass = args[i];
       }
+      else if (s.equals("-jks_alias")) {
+        i++; if (i >= args.length) { usage(); }
+        jksAlias = args[i];
+      }
       else if (s.equals("-internal_secure_connections")) {
         internal_secure_connections = true;
       }
@@ -1604,6 +1609,9 @@ public class h2odriver extends Configured implements Tool {
     addMapperArg(conf, "-ga_hadoop_ver", hadoopVersion);
     if (jksPass != null) {
       addMapperArg(conf, "-jks_pass", jksPass);
+    }
+    if (jksAlias != null) {
+      addMapperArg(conf, "-jks_alias", jksAlias);
     }
     if (hashLogin) {
       addMapperArg(conf, "-hash_login");
