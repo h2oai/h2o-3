@@ -50,7 +50,7 @@ public class AutoMLHandler extends Handler {
     final Key[] automlKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
-        return Value.isSubclassOf(k._type, AutoML.class) && k._key.toString().startsWith(project_name+"@");
+        return Value.isSubclassOf(k._type, AutoML.class) && k._key.toString().startsWith(project_name+AutoML.keySeparator);
       }
     }).keys();
     AutoML[] amls = new AutoML[automlKeys.length];
