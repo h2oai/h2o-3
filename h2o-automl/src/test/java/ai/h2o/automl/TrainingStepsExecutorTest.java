@@ -1,9 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.WorkAllocations.Work;
-import hex.AUC2;
 import hex.Model;
-import hex.ModelMetricsBinomial;
 import hex.ModelMetricsRegression;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
@@ -85,7 +83,7 @@ public class TrainingStepsExecutorTest extends TestUtil {
 
     @Test
     public void test_start_stop() {
-        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml.runCountdown);
+        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         assertTrue(executor._runCountdown.running());
         executor.stop();
@@ -94,7 +92,7 @@ public class TrainingStepsExecutorTest extends TestUtil {
 
     @Test
     public void test_submit_training_step_with_no_allocated_work() {
-        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml.runCountdown);
+        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
         boolean started = executor.submit(makeStep(makeJob("dummy"), false), parentJob);
@@ -104,7 +102,7 @@ public class TrainingStepsExecutorTest extends TestUtil {
 
     @Test
     public void test_submit_training_step_with_no_job() {
-        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml.runCountdown);
+        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
         parentJob.start(new H2O.H2OCountedCompleter() {
@@ -125,7 +123,7 @@ public class TrainingStepsExecutorTest extends TestUtil {
 
     @Test
     public void test_submit_valid_training_step() {
-        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml.runCountdown);
+        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
         parentJob.start(new H2O.H2OCountedCompleter() {

@@ -57,7 +57,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
     }
 
     protected WorkAllocations getWorkAllocations() {
-        return aml().workAllocations;
+        return aml()._workAllocations;
     }
 
     protected Model[] getTrainedModels() {
@@ -80,9 +80,9 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
      * @param params the model parameters to which the common parameters will be added.
      */
     void setCommonModelBuilderParams(Model.Parameters params) {
-        params._train = aml().trainingFrame._key;
-        if (null != aml().validationFrame)
-            params._valid = aml().validationFrame._key;
+        params._train = aml()._trainingFrame._key;
+        if (null != aml()._validationFrame)
+            params._valid = aml()._validationFrame._key;
 
         AutoMLBuildSpec buildSpec = aml().getBuildSpec();
         params._response_column = buildSpec.input_spec.response_column;

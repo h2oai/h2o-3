@@ -302,8 +302,6 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
 
-      WorkAllocations workPlan = aml.planWork(aml.getExecutionPlan());
-
       Map<Algo, Integer> defaultAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.DeepLearning, 1*10+3*20);
         put(Algo.DRF, 2*10);
@@ -319,12 +317,12 @@ public class AutoMLTest extends water.TestUtil {
         }
       }
 
-      assertEquals(workPlan.remainingWork(), maxTotalWork);
+      assertEquals(aml._workAllocations.remainingWork(), maxTotalWork);
 
       autoMLBuildSpec.build_models.exclude_algos = aro(Algo.DeepLearning, Algo.DRF);
-      workPlan = aml.planWork(aml.getExecutionPlan());
+      aml.planWork();
 
-      assertEquals(workPlan.remainingWork(), maxTotalWork - defaultAllocs.get(Algo.DeepLearning) - defaultAllocs.get(Algo.DRF));
+      assertEquals(aml._workAllocations.remainingWork(), maxTotalWork - defaultAllocs.get(Algo.DeepLearning) - defaultAllocs.get(Algo.DRF));
 
     } finally {
       if (aml != null) aml.delete();
@@ -360,8 +358,8 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(DeepLearningModel.class::isInstance).count());
       assertEquals(2, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count());
 
-      assertNotNull(aml.trainedSteps);
-      Log.info(Arrays.toString(aml.trainedSteps));
+      assertNotNull(aml._trainedSteps);
+      Log.info(Arrays.toString(aml._trainedSteps));
       assertArrayEquals(new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new Step[]{
                       new Step("def_1", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
@@ -376,7 +374,7 @@ public class AutoMLTest extends water.TestUtil {
                       new Step("best", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
                       new Step("all", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
-      }, aml.trainedSteps);
+      }, aml._trainedSteps);
     } finally {
       if (aml != null) aml.delete();
       if (fr != null) fr.remove();
@@ -495,13 +493,12 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
       aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
-      WorkAllocations workPlan = aml.planWork(aml.getExecutionPlan());
       for (Algo algo : autoMLBuildSpec.build_models.exclude_algos) {
-        assertEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
+        assertEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
       }
       for (Algo algo : Algo.values()) {
         if (!ArrayUtils.contains(autoMLBuildSpec.build_models.exclude_algos, algo)) {
-          assertNotEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
+          assertNotEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
         }
       }
     } finally {
@@ -520,17 +517,16 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
       aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
-      WorkAllocations workPlan = aml.planWork(aml.getExecutionPlan());
       for (Algo algo : autoMLBuildSpec.build_models.include_algos) {
         if (algo.enabled()) {
-          assertNotEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
+          assertNotEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
         } else {
-          assertEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
+          assertEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
         }
       }
       for (Algo algo : Algo.values()) {
         if (!ArrayUtils.contains(autoMLBuildSpec.build_models.include_algos, algo)) {
-          assertEquals(0, workPlan.getAllocations(w -> w._algo == algo).length);
+          assertEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
         }
       }
     } finally {

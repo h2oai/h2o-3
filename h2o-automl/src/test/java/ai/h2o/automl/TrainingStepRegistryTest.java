@@ -51,31 +51,31 @@ public class TrainingStepRegistryTest extends TestUtil {
         assertEquals("Detected some duplicate registration", 6, new HashSet<>(TrainingStepsRegistry.stepsByName.values()).size());
         for (Algo algo: Algo.values()) {
             assertTrue(TrainingStepsRegistry.stepsByName.containsKey(algo.name()));
-            assertTrue(TrainingSteps.class.isAssignableFrom(TrainingStepsRegistry.stepsByName.get(algo.name())));
+            assertNotNull(TrainingStepsRegistry.stepsByName.get(algo.name()));
         }
     }
 
     @Test
     public void test_empty_definition() {
-        TrainingStepsRegistry registry = new TrainingStepsRegistry(new StepDefinition[0]);
-        assertEquals(0, registry.getOrderedSteps(aml).length);
+        TrainingStepsRegistry registry = new TrainingStepsRegistry();
+        assertEquals(0, registry.getOrderedSteps(new StepDefinition[0], aml).length);
     }
 
     @Test
-    public void test_override_default_definition() {
-        TrainingStepsRegistry registry = new TrainingStepsRegistry(new StepDefinition[0]);
-        assertEquals(2, registry.getOrderedSteps(aml, new StepDefinition[]{
+    public void test_non_empty_definition() {
+        TrainingStepsRegistry registry = new TrainingStepsRegistry();
+        assertEquals(2, registry.getOrderedSteps(new StepDefinition[]{
                 new StepDefinition(Algo.StackedEnsemble.name(), StepDefinition.Alias.defaults)
-        }).length);
+        }, aml).length);
     }
 
     @Test
     public void test_all_registered_steps() {
-        TrainingStepsRegistry registry = new TrainingStepsRegistry(new StepDefinition[0]);
+        TrainingStepsRegistry registry = new TrainingStepsRegistry();
         List<StepDefinition> allSteps = sortedProviders.stream()
                 .map(name -> new StepDefinition(name, StepDefinition.Alias.all))
                 .collect(Collectors.toList());
-        TrainingStep[] trainingSteps = registry.getOrderedSteps(aml, allSteps.toArray(new StepDefinition[0]));
+        TrainingStep[] trainingSteps = registry.getOrderedSteps(allSteps.toArray(new StepDefinition[0]), aml);
         assertEquals((1 + 3/*DL*/) + (2/*DRF*/) + (5 + 1/*GBM*/) + (1/*GLM*/) + (2/*SE*/) + (3 + 1/*XGB*/),
                 trainingSteps.length);
         assertEquals(1, Stream.of(trainingSteps).filter(s -> s._algo == Algo.DeepLearning).filter(TrainingStep.ModelStep.class::isInstance).count());
@@ -103,35 +103,35 @@ public class TrainingStepRegistryTest extends TestUtil {
 
     @Test
     public void test_all_default_models() {
-        List<StepDefinition> allDefaultSteps = sortedProviders.stream()
+        StepDefinition[] allDefaultSteps = sortedProviders.stream()
                 .map(name -> new StepDefinition(name, StepDefinition.Alias.defaults))
-                .collect(Collectors.toList());
-        TrainingStepsRegistry registry = new TrainingStepsRegistry(allDefaultSteps.toArray(new StepDefinition[0]));
-        TrainingStep[] trainingSteps = registry.getOrderedSteps(aml);
+                .toArray(StepDefinition[]::new);
+        TrainingStepsRegistry registry = new TrainingStepsRegistry();
+        TrainingStep[] trainingSteps = registry.getOrderedSteps(allDefaultSteps, aml);
         assertEquals((1/*DL*/) + (2/*DRF*/) + (5/*GBM*/) + (1/*GLM*/) + (2/*SE*/) + (3/*XGB*/),
                 trainingSteps.length);
     }
 
     @Test
     public void test_all_grids() {
-        List<StepDefinition> allGridSteps = sortedProviders.stream()
+        StepDefinition[] allGridSteps = sortedProviders.stream()
                 .map(name -> new StepDefinition(name, StepDefinition.Alias.grids))
-                .collect(Collectors.toList());
-        TrainingStepsRegistry registry = new TrainingStepsRegistry(allGridSteps.toArray(new StepDefinition[0]));
-        TrainingStep[] trainingSteps = registry.getOrderedSteps(aml);
+                .toArray(StepDefinition[]::new);
+        TrainingStepsRegistry registry = new TrainingStepsRegistry();
+        TrainingStep[] trainingSteps = registry.getOrderedSteps(allGridSteps, aml);
         assertEquals((3/*DL*/) + (1/*GBM*/) + (1/*XGB*/),
                 trainingSteps.length);
     }
 
     @Test
     public void test_registration_by_id() {
-        List<StepDefinition> byIdSteps = Arrays.asList(
-                new StepDefinition(Algo.DRF.name(), new String[] {"XRT"}),
-                new StepDefinition(Algo.XGBoost.name(), new String[] {"grid_1"}),
-                new StepDefinition(Algo.StackedEnsemble.name(), new String[] {"all", "best"})
-        );
-        TrainingStepsRegistry registry = new TrainingStepsRegistry(byIdSteps.toArray(new StepDefinition[0]));
-        TrainingStep[] trainingSteps = registry.getOrderedSteps(aml);
+        StepDefinition[] byIdSteps = new StepDefinition[]{
+                new StepDefinition(Algo.DRF.name(), new String[]{"XRT"}),
+                new StepDefinition(Algo.XGBoost.name(), new String[]{"grid_1"}),
+                new StepDefinition(Algo.StackedEnsemble.name(), new String[]{"all", "best"})
+        };
+        TrainingStepsRegistry registry = new TrainingStepsRegistry();
+        TrainingStep[] trainingSteps = registry.getOrderedSteps(byIdSteps, aml);
         assertEquals(4, trainingSteps.length);
         assertEquals(Arrays.asList("XRT", "grid_1", "all", "best"), Arrays.stream(trainingSteps).map(s -> s._id).collect(Collectors.toList()));
         assertEquals(Arrays.asList(10, 100, 10, 10), Arrays.stream(trainingSteps).map(s -> s._weight).collect(Collectors.toList()));
@@ -139,12 +139,12 @@ public class TrainingStepRegistryTest extends TestUtil {
 
     @Test
     public void test_registration_with_weight() {
-        List<StepDefinition> byIdSteps = Arrays.asList(
+        StepDefinition[] withWeightSteps = new StepDefinition[]{
                 new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 666)}),
                 new StepDefinition(Algo.GBM.name(), new Step[] { new Step("def_3", 42), new Step("grid_1", 777)})
-        );
-        TrainingStepsRegistry registry = new TrainingStepsRegistry(byIdSteps.toArray(new StepDefinition[0]));
-        TrainingStep[] trainingSteps = registry.getOrderedSteps(aml);
+        };
+        TrainingStepsRegistry registry = new TrainingStepsRegistry();
+        TrainingStep[] trainingSteps = registry.getOrderedSteps(withWeightSteps, aml);
         assertEquals(3, trainingSteps.length);
         assertEquals(Arrays.asList("XRT", "def_3", "grid_1"), Arrays.stream(trainingSteps).map(s -> s._id).collect(Collectors.toList()));
         assertEquals(Arrays.asList(666, 42, 777), Arrays.stream(trainingSteps).map(s -> s._weight).collect(Collectors.toList()));
@@ -152,21 +152,21 @@ public class TrainingStepRegistryTest extends TestUtil {
 
     @Test(expected = IllegalArgumentException.class)
     public void test_unknown_provider_names_raise_error() {
-        List<StepDefinition> byIdSteps = Arrays.asList(
+        StepDefinition[] unknownProviderSteps = new StepDefinition[]{
                 new StepDefinition("dummy", StepDefinition.Alias.all)
-        );
-        TrainingStepsRegistry registry = new TrainingStepsRegistry(byIdSteps.toArray(new StepDefinition[0]));
-        TrainingStep[] trainingSteps = registry.getOrderedSteps(aml);
+        };
+        TrainingStepsRegistry registry = new TrainingStepsRegistry();
+        TrainingStep[] trainingSteps = registry.getOrderedSteps(unknownProviderSteps, aml);
         assertEquals(0, trainingSteps.length);
     }
 
     @Test
     public void test_unknown_ids_are_skipped_with_warning() {
-        List<StepDefinition> byIdSteps = Arrays.asList(
+        StepDefinition[] unknownIdsSteps = new StepDefinition[]{
                 new StepDefinition(Algo.GBM.name(), new String[] {"dummy"})
-        );
-        TrainingStepsRegistry registry = new TrainingStepsRegistry(byIdSteps.toArray(new StepDefinition[0]));
-        TrainingStep[] trainingSteps = registry.getOrderedSteps(aml);
+        };
+        TrainingStepsRegistry registry = new TrainingStepsRegistry();
+        TrainingStep[] trainingSteps = registry.getOrderedSteps(unknownIdsSteps, aml);
         assertEquals(0, trainingSteps.length);
         assertTrue(Stream.of(aml.eventLog()._events)
                 .anyMatch(e ->

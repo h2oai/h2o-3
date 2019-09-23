@@ -21,67 +21,48 @@ import java.util.stream.Stream;
  */
 public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
 
-    static final NonBlockingHashMap<String, Class<TrainingSteps>> stepsByName = new NonBlockingHashMap<>();
+    static final NonBlockingHashMap<String, TrainingStepsProvider> stepsByName = new NonBlockingHashMap<>();
 
     static {
         ServiceLoader<TrainingStepsProvider> trainingStepsProviders = ServiceLoader.load(TrainingStepsProvider.class);
         for (TrainingStepsProvider provider : trainingStepsProviders) {
-            stepsByName.put(provider.getName(), provider.getStepsClass());
+            stepsByName.put(provider.getName(), provider);
         }
     }
-
-    private StepDefinition[] _defaultTrainingPlan;
-
-    public TrainingStepsRegistry(StepDefinition[] defaultTrainingPlan) {
-        _defaultTrainingPlan = defaultTrainingPlan;
-    }
-
-    /**
-     * @param aml the AutoML instance responsible to execute the {@link TrainingStep}s.
-     * @return the list of {@link TrainingStep}s to execute according to the default training plan.
-     */
-    public TrainingStep[] getOrderedSteps(AutoML aml) {
-        return getOrderedSteps(aml, _defaultTrainingPlan);
-    }
-
 
     /**
      * @param aml the AutoML instance responsible to execute the {@link TrainingStep}s.
      * @return the list of {@link TrainingStep}s to execute according to the given training plan.
      */
-    public TrainingStep[] getOrderedSteps(AutoML aml, StepDefinition[] trainingPlan) {
+    public TrainingStep[] getOrderedSteps(StepDefinition[] trainingPlan, AutoML aml) {
         aml.eventLog().info(Stage.Workflow, "Loading execution steps: "+Arrays.toString(trainingPlan));
         List<TrainingStep> orderedSteps = new ArrayList<>();
         for (StepDefinition def : trainingPlan) {
-            Class<TrainingSteps> clazz = stepsByName.get(def._name);
-            if (clazz == null) {
+            TrainingStepsProvider provider = stepsByName.get(def._name);
+            if (provider == null) {
                 throw new IllegalArgumentException("Missing provider for training steps '"+def._name+"'");
             }
-            try {
-                TrainingSteps steps = clazz.getConstructor(AutoML.class).newInstance(aml);
-                TrainingStep[] toAdd;
-                if (def._alias != null) {
-                    toAdd = steps.getSteps(def._alias);
-                } else if (def._steps != null) {
-                    toAdd = steps.getSteps(def._steps);
-                    if (toAdd.length < def._steps.length) {
-                        List<String> toAddIds = Stream.of(toAdd).map(s -> s._id).collect(Collectors.toList());
-                        Stream.of(def._steps)
-                                .filter(s -> !toAddIds.contains(s._id))
-                                .forEach(s -> aml.eventLog().warn(Stage.Workflow,
-                                        "Step '"+s._id+"' not defined in provider '"+def._name+"': skipping it."));
-                    }
-                } else { // if name, but no alias or steps, put them all by default (support for simple syntax)
-                    toAdd = steps.getSteps(Alias.all);
+            TrainingSteps steps = provider.newInstance(aml);
+            TrainingStep[] toAdd;
+            if (def._alias != null) {
+                toAdd = steps.getSteps(def._alias);
+            } else if (def._steps != null) {
+                toAdd = steps.getSteps(def._steps);
+                if (toAdd.length < def._steps.length) {
+                    List<String> toAddIds = Stream.of(toAdd).map(s -> s._id).collect(Collectors.toList());
+                    Stream.of(def._steps)
+                            .filter(s -> !toAddIds.contains(s._id))
+                            .forEach(s -> aml.eventLog().warn(Stage.Workflow,
+                                    "Step '"+s._id+"' not defined in provider '"+def._name+"': skipping it."));
                 }
-                if (toAdd != null) {
-                    for (TrainingStep ts : toAdd) {
-                        ts._fromDef = def;
-                    }
-                    orderedSteps.addAll(Arrays.asList(toAdd));
+            } else { // if name, but no alias or steps, put them all by default (support for simple syntax)
+                toAdd = steps.getSteps(Alias.all);
+            }
+            if (toAdd != null) {
+                for (TrainingStep ts : toAdd) {
+                    ts._fromDef = def;
                 }
-            } catch (NoSuchMethodException|IllegalAccessException|InstantiationException|InvocationTargetException e) {
-                throw new RuntimeException(e);
+                orderedSteps.addAll(Arrays.asList(toAdd));
             }
         }
         return orderedSteps.toArray(new TrainingStep[0]);

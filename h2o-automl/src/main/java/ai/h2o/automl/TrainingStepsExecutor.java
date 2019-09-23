@@ -22,16 +22,18 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
 
-    EventLog _eventLog;
-    Leaderboard _leaderboard;
+    private static final int pollingIntervalInMillis = 1000;
+
+    Key<EventLog> _eventLogKey;
+    Key<Leaderboard> _leaderboardKey;
     Countdown _runCountdown;
 
     private transient List<Job> _jobs; // subjobs
     private AtomicInteger _modelCount = new AtomicInteger();
 
     TrainingStepsExecutor(Leaderboard leaderboard, EventLog eventLog, Countdown runCountdown) {
-        _leaderboard = leaderboard;
-        _eventLog = eventLog;
+        _leaderboardKey = leaderboard._key;
+        _eventLogKey = eventLog._key;
         _runCountdown = runCountdown;
     }
 
@@ -109,7 +111,7 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
             }
 
             try {
-                Thread.sleep(1000);
+                Thread.sleep(pollingIntervalInMillis);
             }
             catch (InterruptedException e) {
                 // keep going
@@ -151,10 +153,6 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
         _jobs.remove(job);
     }
 
-
-    // If we have multiple AutoML engines running on the same project they will be updating the Leaderboard concurrently,
-    // so always use leaderboard() instead of the raw field, to get it from the DKV.
-    // Also, the leaderboard will reject duplicate models, so use the difference in Leaderboard length here.
     private void addModels(final Key<Model>[] newModels) {
         int before = leaderboard().getModelCount();
         leaderboard().addModels(newModels);
@@ -170,11 +168,11 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
     }
 
     private EventLog eventLog() {
-        return _eventLog == null ? null : (_eventLog = _eventLog._key.get());
+        return _eventLogKey.get();
     }
 
     private Leaderboard leaderboard() {
-        return _leaderboard == null ? null : (_leaderboard = _leaderboard._key.get());
+        return _leaderboardKey.get();
     }
 
 }

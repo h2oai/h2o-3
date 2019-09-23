@@ -41,14 +41,6 @@ public abstract class TrainingSteps extends Iced<TrainingSteps> {
         return tSteps.toArray(new TrainingStep[0]);
     }
 
-    TrainingStep[] getSteps(String[] ids) {
-        return Stream.of(ids)
-                .map(this::getStep)
-                .filter(Optional::isPresent)
-                .map(Optional::get)
-                .toArray(TrainingStep[]::new);
-    }
-
     TrainingStep[] getSteps(Alias alias) {
         switch (alias) {
             case all:
