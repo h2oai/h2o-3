@@ -57,9 +57,10 @@ h2o.stackedEnsemble <- function(x,
                                 export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
-  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  training_frame <- .validate.H2OFrame(training_frame, required=is.null(blending_frame))
   validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
-  blending_frame <- .validate.H2OFrame(blending_frame, required=FALSE)
+  blending_frame <- .validate.H2OFrame(blending_frame, required=is.null(training_frame))
+  if (is.null(training_frame)) training_frame <- blending_frame  # guarantee presence of default metrics
 
   # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
@@ -70,6 +71,7 @@ h2o.stackedEnsemble <- function(x,
          x <- setdiff(colnames(training_frame), y)
      }
   }
+  print(x)
 
   # Validate other args
   # Get the base models from model IDs (if any) that will be used for constructing model summary

@@ -23,13 +23,12 @@ import static hex.Model.Parameters.FoldAssignmentScheme.Random;
  */
 public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnsembleModel.StackedEnsembleParameters,StackedEnsembleModel.StackedEnsembleOutput> {
 
-  // common parameters for the base models:
+  // common parameters for the base models (keeping them public for backwards compatibility, although it's nonsense)
   public ModelCategory modelCategory;
   public long trainingFrameRows = -1;
 
   public String responseColumn = null;
-  private NonBlockingHashSet<String> names = null;  // keep columns as a set for easier comparison
-  
+
   public enum StackingStrategy {
     cross_validation,
     blending
@@ -291,67 +290,64 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     String basemodel_fold_column = null;
     long seed = -1;
     //end 1st model collected fields
-    
-    trainingFrameRows = require_consistent_training_frames ? _parms.train().numRows() : 0;
 
     for (Key<Model> k : _parms._base_models) {
       aModel = DKV.getGet(k);
       if (null == aModel) {
-        Log.warn("Failed to find base model; skipping: " + k);
+        Log.warn("Failed to find base model; skipping: "+k);
         continue;
       }
-      Log.debug("Checking properties for model " + k);
+      Log.debug("Checking properties for model "+k);
       if (!aModel.isSupervised()) {
-        throw new H2OIllegalArgumentException("Base model is not supervised: " + aModel._key.toString());
+        throw new H2OIllegalArgumentException("Base model is not supervised: "+aModel._key.toString());
       }
 
       if (beenHere) {
         // check that the base models are all consistent with first based model
 
         if (modelCategory != aModel._output.getModelCategory())
-          throw new H2OIllegalArgumentException("Base models are inconsistent: there is a mix of different categories of models: "+Arrays.toString(_parms._base_models));
-
-        // NOTE: if we loosen this restriction and fold_column is set add a check below.
-        Frame aTrainingFrame = aModel._parms.train();
-        if (require_consistent_training_frames && trainingFrameRows != aTrainingFrame.numRows())
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames." +
-              " Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
+          throw new H2OIllegalArgumentException("Base models are inconsistent: "
+                  +"there is a mix of different categories of models among "+Arrays.toString(_parms._base_models));
 
         if (! responseColumn.equals(aModel._parms._response_column))
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns." +
-              " Found: "+responseColumn+"(StackedEnsemble) and "+aModel._parms._response_column+" (model "+k+").");
-        
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns."
+                  +" Found: "+responseColumn+"(StackedEnsemble) and "+aModel._parms._response_column+" (model "+k+").");
+
+        if (require_consistent_training_frames) {
+          if (trainingFrameRows < 0) trainingFrameRows = _parms.train().numRows();
+          Frame aTrainingFrame = aModel._parms.train();
+          if (trainingFrameRows != aTrainingFrame.numRows())
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames."
+                    +" Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
+        }
+
         if (cv_required_on_base_model) {
-          if (aModel._parms._fold_assignment != basemodel_fold_assignment) {
-            if ((aModel._parms._fold_assignment == AUTO && basemodel_fold_assignment == Random) ||
-                (aModel._parms._fold_assignment == Random && basemodel_fold_assignment == AUTO)) {
-              // A-ok
-            } else {
-              throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_assignments.");
-            }
+
+          if (aModel._parms._fold_assignment != basemodel_fold_assignment
+                  && !(aModel._parms._fold_assignment == AUTO && basemodel_fold_assignment == Random)
+          ) {
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_assignments.");
           }
 
-          // If we have a fold_column make sure nfolds from base models are consistent
-          if (aModel._parms._fold_column == null && basemodel_nfolds != aModel._parms._nfolds)
-            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
+          if (aModel._parms._fold_column == null) {
+            // If we don't have a fold_column require:
+            // nfolds > 1
+            // nfolds consistent across base models
+            if (aModel._parms._nfolds < 2)
+              throw new H2OIllegalArgumentException("Base model does not use cross-validation: "+aModel._parms._nfolds);
+            if (basemodel_nfolds != aModel._parms._nfolds)
+              throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
 
-          // If we don't have a fold_column require nfolds > 1
-          if (aModel._parms._fold_column == null && aModel._parms._nfolds < 2)
-            throw new H2OIllegalArgumentException("Base model does not use cross-validation: " + aModel._parms._nfolds);
+            if (basemodel_fold_assignment == Random && aModel._parms._seed != seed)
+              throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded k-fold cross-validation but have different seeds.");
 
-          // NOTE: we already check that the training_frame checksums are the same, so
-          // we don't need to check the Vec checksums here:
-          if (aModel._parms._fold_column != null &&
-              ! aModel._parms._fold_column.equals(basemodel_fold_column))
-            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
-
-          if (aModel._parms._fold_column == null &&
-              basemodel_fold_assignment == Random &&
-              aModel._parms._seed != seed)
-            throw new H2OIllegalArgumentException("Base models are inconsistent: they use random-seeded k-fold cross-validation but have different seeds.");
+          } else {
+            if (!aModel._parms._fold_column.equals(basemodel_fold_column))
+              throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
+          }
 
           if (! aModel._parms._keep_cross_validation_predictions)
-            throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
+            throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: "+aModel._parms._nfolds);
         }
 
         // In GLM, we get _family instead of _distribution.

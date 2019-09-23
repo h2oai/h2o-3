@@ -32,7 +32,11 @@ def class_extensions():
 
     # Override train method to support blending
     def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
-        blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=False)
+        training_frame = H2OFrame._validate(training_frame, 'training_frame', required=blending_frame is None)
+        blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=training_frame is None)
+
+        if training_frame is None:
+            training_frame = blending_frame  # used to bypass default checks in super class and backend and to guarantee default metrics
 
         def extend_parms(parms):
             if blending_frame is not None:
