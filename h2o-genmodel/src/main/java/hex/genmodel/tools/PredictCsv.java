@@ -418,7 +418,7 @@ public class PredictCsv {
       if (!parsedColumnNames.contains(columnName) && !columnName.equals(model.m._responseColumn)) {
         missingColumns.add(columnName);
       } else {
-        parsedColumnNames.remove(missingColumns);
+        parsedColumnNames.remove(columnName);
       }
     }
     
