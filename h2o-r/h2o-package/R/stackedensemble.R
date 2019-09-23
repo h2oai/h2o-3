@@ -71,7 +71,6 @@ h2o.stackedEnsemble <- function(x,
          x <- setdiff(colnames(training_frame), y)
      }
   }
-  print(x)
 
   # Validate other args
   # Get the base models from model IDs (if any) that will be used for constructing model summary
