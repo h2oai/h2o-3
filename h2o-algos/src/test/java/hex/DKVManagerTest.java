@@ -16,6 +16,8 @@ import java.util.List;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
+import static water.fvec.VecHelper.*;
+
 
 public class DKVManagerTest extends TestUtil {
 
@@ -322,7 +324,7 @@ public class DKVManagerTest extends TestUtil {
             assertNotNull(DKV.get(vec._key));
 
             for (int i = 0; i < vec.nChunks(); i++) {
-              assertNotNull(vec.chunkIdx(i));
+              assertNotNull(vecChunkIdx(vec, i));
             }
         }
     }

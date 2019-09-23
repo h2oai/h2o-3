@@ -1021,16 +1021,14 @@ public class Vec extends Keyed<Vec> {
   /** Get a Chunk's Value by index.  Basically the index-to-key map, plus the
    *  {@code DKV.get()}.  Warning: this pulls the data locally; using this call
    *  on every Chunk index on the same node will probably trigger an OOM!  */
-  public Value chunkIdx( int cidx ) {
+  Value chunkIdx( int cidx ) {
     Value val = DKV.get(chunkKey(cidx));
-    assert checkMissing(cidx,val) : "Missing chunk " + chunkKey(cidx);
+    if (val == null) {
+      boolean vecExists = DKV.get(_key) != null; // does that Vec even (still) exist?
+      String vecInfo = (vecExists ? "is in DKV" : "is not in DKV") + "; home=" + _key.home_node() + "; self=" + H2O.SELF; 
+      throw new IllegalStateException("Missing chunk " + cidx + " for vector " + _key + "; Vec info: " + vecInfo);
+    }
     return val;
-  }
-
-  private boolean checkMissing(int cidx, Value val) {
-    if( val != null ) return true;
-    Log.err("Error: Missing chunk " + cidx + " for " + _key);
-    return false;
   }
 
   /** Return the next Chunk, or null if at end.  Mostly useful for parsers or

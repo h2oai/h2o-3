@@ -141,8 +141,6 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     stop("`https` must be TRUE or FALSE")
   if(!is.logical(insecure) || length(insecure) != 1L || is.na(insecure))
     stop("`insecure` must be TRUE or FALSE")
-  if(https != insecure)
-    stop("`https` and `insecure` must both be TRUE to enable HTTPS")
   if(!is.character(username) || !nzchar(username))
     stop("`username` must be a character string or NA_character_")
   if (!is.character(password) || !nzchar(password))

@@ -97,6 +97,48 @@ public class PredictCsvTest {
     }
   }
 
+  @Test
+  public void testScoreNoMissingColumns() throws IOException {
+    final PrintStream originaOutputStream = System.out;
+    String predictCsvOutput = null;
+    try {
+      Scope.enter();
+      // The following iris dataset has columns named: {C1,C2,C3,C4,C5}, while the test dataset used below has descriptive names. 
+      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/junit/iris.csv"));
+
+      GBMModel.GBMParameters p = new GBMModel.GBMParameters();
+      p._train = train._key;
+      p._seed = 0xC0DE;
+      p._response_column = "class";
+      p._ntrees = 1;
+
+      GBMModel model = new GBM(p).trainModel().get();
+      final File modelFile = folder.newFile();
+      model.exportMojo(modelFile.getAbsolutePath(), true);
+
+      final File outputFile = folder.newFile();
+
+      ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+      PrintStream printStream = new PrintStream(outputBytes);
+      System.setOut(printStream);
+      try {
+        PredictCsv.main(new String[]{"--mojo", modelFile.getAbsolutePath(),
+                "--input", FileUtils.getFile("smalldata/junit/iris.csv").getAbsolutePath(),
+                "--output", outputFile.getAbsolutePath()});
+        fail("Expected PredictCSV to exit");
+      } catch (PreventedExitException e) {
+        assertEquals(0, e.status); // PredictCsv is expected to finish without errors
+      }
+
+      predictCsvOutput = new String(outputBytes.toByteArray());
+      assertTrue(predictCsvOutput.isEmpty());
+    } finally {
+      System.setOut(originaOutputStream);
+      System.out.print(predictCsvOutput);
+      Scope.exit();
+    }
+  }
+
 
   protected static class PreventedExitException extends SecurityException {
     public final int status;
