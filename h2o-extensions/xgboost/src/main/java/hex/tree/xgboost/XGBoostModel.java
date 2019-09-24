@@ -1,12 +1,12 @@
 package hex.tree.xgboost;
 
 import biz.k11i.xgboost.Predictor;
+import biz.k11i.xgboost.gbm.Dart;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
-import hex.genmodel.GenModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.SharedTreeNode;
@@ -670,7 +670,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
   
-  private String renderTreeClass(String namePrefix, RegTree[][] trees, final int gidx, final int tidx, CodeGeneratorPipeline fileCtx) {
+  private String renderTreeClass(String namePrefix, RegTree[][] trees, final int gidx, final int tidx, final float[] weights, CodeGeneratorPipeline fileCtx) {
     final RegTree tree = trees[gidx][tidx];
     final String className = namePrefix + "_Tree_g_" + gidx + "_t_" + tidx;
     fileCtx.add(new CodeGenerator() {
@@ -681,6 +681,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         sb.ip("static float score0(double[] data) {").nl();
         sb.ii(1);
         sb.ip("return ");
+        if (weights != null) {
+          sb.pj(weights[tidx]).p(" * ");
+        }
         renderTree(sb, tree, 0);
         sb.p(";").nl();
         sb.di(1);
@@ -733,13 +736,25 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   ) {
     final String namePrefix = JCodeGen.toJavaId(_key.toString());
     Predictor p = PredictorFactory.makePredictor(model_info._boosterBytes, false);
-    GBTree booster = ((GBTree) p.getBooster());
+    if (p.getBooster() instanceof GBTree) {
+      renderJavaPredictBodyTree(p, namePrefix, sb, fileCtx);
+    } else {
+      throw new UnsupportedOperationException("GBlinear not supported for now.");
+    }
+  }
+
+  private void renderJavaPredictBodyTree(Predictor p, String namePrefix, SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    GBTree booster = (GBTree) p.getBooster();
+    float[] treeWeights = null;
+    if (booster instanceof Dart) {
+      treeWeights = ((Dart) booster).getWeightDrop();
+    }
     RegTree[][] trees = booster.getGroupedTrees();
     for (int gidx = 0; gidx < trees.length; gidx++) {
       sb.ip("preds[").p(gidx).p("] = ").nl();
       sb.ii(1);
       for (int tidx = 0; tidx < trees[gidx].length; tidx++) {
-        String treeClassName = renderTreeClass(namePrefix, trees, gidx, tidx, fileCtx);
+        String treeClassName = renderTreeClass(namePrefix, trees, gidx, tidx, treeWeights, fileCtx);
         sb.ip(treeClassName).p(".score0(data)").p(" + ").nl();
       }
       sb.ip("").pj(p.getBaseScore()).p(";").nl();
