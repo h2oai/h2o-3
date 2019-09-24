@@ -124,73 +124,74 @@ final public class ExternalFrameWriterClient {
     waitForRequestToFinish(timeout, requestType);
   }
 
-    public void close() throws IOException {
+    public void close() throws IOException, ExternalFrameConfirmationException {
+        waitForRequestToFinish(timeout, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
         channel.close();
     }
 
-    public void sendBoolean(boolean data) throws IOException, ExternalFrameConfirmationException {
+    public void sendBoolean(boolean data) throws IOException {
         ExternalFrameUtils.sendBoolean(ab, channel, data);
         increaseCurrentColIdx();
     }
 
-    public void sendByte(byte data) throws IOException, ExternalFrameConfirmationException {
+    public void sendByte(byte data) throws IOException {
         ExternalFrameUtils.sendByte(ab, channel, data);
         increaseCurrentColIdx();
     }
 
-    public void sendChar(char data) throws IOException, ExternalFrameConfirmationException {
+    public void sendChar(char data) throws IOException {
         ExternalFrameUtils.sendChar(ab, channel, data);
         increaseCurrentColIdx();
     }
 
-    public void sendShort(short data) throws IOException, ExternalFrameConfirmationException {
+    public void sendShort(short data) throws IOException {
         ExternalFrameUtils.sendShort(ab, channel, data);
         increaseCurrentColIdx();
     }
 
-    public void sendInt(int data) throws IOException, ExternalFrameConfirmationException {
+    public void sendInt(int data) throws IOException {
         ExternalFrameUtils.sendInt(ab, channel, data);
         increaseCurrentColIdx();
     }
 
-    public void sendLong(long data) throws IOException, ExternalFrameConfirmationException {
+    public void sendLong(long data) throws IOException {
         ExternalFrameUtils.sendLong(ab, channel, data);
         increaseCurrentColIdx();
     }
 
-    public void sendFloat(float data) throws IOException, ExternalFrameConfirmationException {
+    public void sendFloat(float data) throws IOException {
         ExternalFrameUtils.sendFloat(ab, channel, data);
         increaseCurrentColIdx();
     }
 
-    public void sendDouble(double data) throws IOException, ExternalFrameConfirmationException {
+    public void sendDouble(double data) throws IOException {
         ExternalFrameUtils.sendDouble(ab, channel, data);
         increaseCurrentColIdx();
     }
 
-    public void sendString(String data) throws IOException, ExternalFrameConfirmationException {
+    public void sendString(String data) throws IOException {
         ExternalFrameUtils.sendString(ab, channel, data);
         increaseCurrentColIdx();
     }
 
-    public void sendTimestamp(Timestamp timestamp) throws IOException, ExternalFrameConfirmationException {
+    public void sendTimestamp(Timestamp timestamp) throws IOException {
         ExternalFrameUtils.sendTimestamp(ab, channel, timestamp);
         increaseCurrentColIdx();
     }
 
-    public void sendNA() throws IOException, ExternalFrameConfirmationException {
+    public void sendNA() throws IOException {
         ExternalFrameUtils.sendNA(ab, channel, expectedTypes[currentColIdx]);
         increaseCurrentColIdx();
     }
 
-  public void sendSparseVector(int[] indices, double[] values) throws IOException, ExternalFrameConfirmationException {
+  public void sendSparseVector(int[] indices, double[] values) throws IOException {
     ExternalFrameUtils.sendBoolean(ab, channel, ExternalFrameUtils.VECTOR_IS_SPARSE);
     ExternalFrameUtils.sendIntArray(ab, channel, indices);
     ExternalFrameUtils.sendDoubleArray(ab, channel, values);
     increaseCurrentColIdx();
   }
 
-  public void sendDenseVector(double[] values) throws IOException, ExternalFrameConfirmationException {
+  public void sendDenseVector(double[] values) throws IOException {
     ExternalFrameUtils.sendBoolean(ab, channel, ExternalFrameUtils.VECTOR_IS_DENSE);
     ExternalFrameUtils.sendDoubleArray(ab, channel, values);
     increaseCurrentColIdx();
@@ -214,15 +215,10 @@ final public class ExternalFrameWriterClient {
     }
   }
 
-  private void increaseCurrentColIdx() throws IOException, ExternalFrameConfirmationException {
+  private void increaseCurrentColIdx() {
     currentColIdx++;
     if (currentColIdx == numCols) {
       currentRowIdx++;
-      if (currentRowIdx == numRows) {
-        writeToChannel(ab, channel);
-        waitForRequestToFinish(timeout, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
-      }
-
       currentColIdx = 0;
     }
   }
