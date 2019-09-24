@@ -623,13 +623,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   protected boolean toJavaCheckTooBig() {
-    return true;
-  }
-
-  protected SBPrintStream toJavaSuper(String modelName, SBPrintStream sb) {
-    super.toJavaSuper(modelName, sb);
-    
-    return sb;
+    return _output == null || _output._ntrees * _parms._max_depth > 1000;
   }
 
   @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
