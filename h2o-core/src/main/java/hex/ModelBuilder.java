@@ -171,25 +171,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /**
-   * Method to create deep copy of ModelBuilder so that it could be trained independently without affecting original builder.
+   * Method to create copy of ModelBuilder so that it could be trained independently without affecting original builder.
    */
   public <B extends ModelBuilder> B makeCopy() {
-    Key<Model> modelKey = Key.<Model>make();
-    Job<Model> job = new Job<>(modelKey, ModelBuilder.javaName(this._parms.algoName().toLowerCase()), this._parms.algoName());
+    Key<Model> modelKey = Key.make();
+    Job<Model> job = new Job<>(modelKey, this._parms.javaName(), this._parms.algoName());
     B newMB = ModelBuilder.make(this._parms.algoName(), job, modelKey);
-    newMB._parms = this._parms.clone();
-
-    Frame trainCopy = this._parms.train().deepCopy(Key.make().toString());
-    DKV.put(trainCopy);
-    newMB._parms.setTrain(trainCopy._key);
-
-    // Case when validation frame is provided
-    if(this._parms.valid() != null) {
-      Frame validCopy = this._parms.valid().deepCopy(Key.make().toString());
-      DKV.put(validCopy);
-      newMB._parms.setValid(validCopy._key);
-    }
-
+    newMB._parms = this._parms;
     return newMB;
   }
 

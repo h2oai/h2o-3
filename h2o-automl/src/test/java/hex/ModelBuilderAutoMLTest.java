@@ -2,6 +2,7 @@ package hex;
 
 import ai.h2o.automl.Algo;
 import hex.tree.SharedTreeModel;
+import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -45,8 +46,8 @@ public class ModelBuilderAutoMLTest extends TestUtil {
 
       double referenceResult = scoreOnTest(modelBuilder, test);
       for (int runIdx = 0; runIdx < numberOfRuns; runIdx++) {
+
         ModelBuilder clonedModelBuilder = modelBuilder.makeCopy();
-        Scope.track(clonedModelBuilder._parms.train()); // because we don't use valid frame in CV case -> we need to track only train
         clonedModelBuilder.init(false);
 
         double evaluationResult = scoreOnTest(clonedModelBuilder, test);
@@ -80,13 +81,13 @@ public class ModelBuilderAutoMLTest extends TestUtil {
       Scope.track(train, valid, test);
 
       ModelBuilder modelBuilder = modelBuilderForGBMFixture(train, valid, responseColumnName, builderSeed);
+
       // We should init builder before cloning it
       modelBuilder.init(false);
 
       double referenceResult = scoreOnTest(modelBuilder, test);
       for (int runIdx = 0; runIdx < numberOfRuns; runIdx++) {
         ModelBuilder clonedModelBuilder = modelBuilder.makeCopy();
-        Scope.track(clonedModelBuilder._parms.train(), clonedModelBuilder._parms.valid()); 
         clonedModelBuilder.init(false);
 
         double evaluationResult = scoreOnTest(clonedModelBuilder, test);
