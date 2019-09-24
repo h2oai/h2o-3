@@ -297,7 +297,7 @@ class H2OAutoML(Keyed):
     #---------------------------------------------------------------------------
     @property
     def key(self):
-        return self.project_name
+        return self._job.dest_key if self._job else self.project_name
 
     @property
     def leader(self):
@@ -571,8 +571,7 @@ class H2OAutoML(Keyed):
     # Private
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
-        key = self.project_name if not self._job else self._job.dest_key
-        state = H2OAutoML._fetch_state(key)
+        state = H2OAutoML._fetch_state(self.key)
         self._leader_id = state['leader_id']
         self._leaderboard = state['leaderboard']
         self._event_log = el = state['event_log']
