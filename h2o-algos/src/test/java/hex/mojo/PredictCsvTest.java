@@ -11,7 +11,6 @@ import org.junit.rules.TemporaryFolder;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.fvec.NFSFileVec;
 
 
 import java.io.ByteArrayOutputStream;
@@ -123,7 +122,7 @@ public class PredictCsvTest {
       System.setOut(printStream);
       try {
         PredictCsv.main(new String[]{"--mojo", modelFile.getAbsolutePath(),
-                "--input", FileUtils.getFile("smalldata/junit/iris.csv").getAbsolutePath(),
+                "--input", TestUtil.makeNfsFileVec("smalldata/junit/iris.csv").getPath(),
                 "--output", outputFile.getAbsolutePath()});
         fail("Expected PredictCSV to exit");
       } catch (PreventedExitException e) {
