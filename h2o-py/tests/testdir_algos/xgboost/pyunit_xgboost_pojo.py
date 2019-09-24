@@ -68,7 +68,7 @@ def test_booster(name):
 def test_xgboost_mojo_pojo():
     test_booster("gbtree")
     test_booster("dart")
-    #test_booster("gbliear")
+    #test_booster("gblinear")
 
 
 if __name__ == "__main__":

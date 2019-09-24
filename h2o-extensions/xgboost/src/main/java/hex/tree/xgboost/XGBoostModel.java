@@ -670,7 +670,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
   
-  private String renderTreeClass(String namePrefix, RegTree[][] trees, final int gidx, final int tidx, final float[] weights, CodeGeneratorPipeline fileCtx) {
+  private String renderTreeClass(String namePrefix, RegTree[][] trees, final int gidx, final int tidx, final Dart dart, CodeGeneratorPipeline fileCtx) {
     final RegTree tree = trees[gidx][tidx];
     final String className = namePrefix + "_Tree_g_" + gidx + "_t_" + tidx;
     fileCtx.add(new CodeGenerator() {
@@ -681,8 +681,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         sb.ip("static float score0(double[] data) {").nl();
         sb.ii(1);
         sb.ip("return ");
-        if (weights != null) {
-          sb.pj(weights[tidx]).p(" * ");
+        if (dart != null) {
+          sb.pj(dart.weight(tidx)).p(" * ");
         }
         renderTree(sb, tree, 0);
         sb.p(";").nl();
@@ -745,16 +745,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private void renderJavaPredictBodyTree(Predictor p, String namePrefix, SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
     GBTree booster = (GBTree) p.getBooster();
-    float[] treeWeights = null;
+    Dart dartBooster = null;
     if (booster instanceof Dart) {
-      treeWeights = ((Dart) booster).getWeightDrop();
+      dartBooster = (Dart) booster;
     }
     RegTree[][] trees = booster.getGroupedTrees();
     for (int gidx = 0; gidx < trees.length; gidx++) {
       sb.ip("preds[").p(gidx).p("] = ").nl();
       sb.ii(1);
       for (int tidx = 0; tidx < trees[gidx].length; tidx++) {
-        String treeClassName = renderTreeClass(namePrefix, trees, gidx, tidx, treeWeights, fileCtx);
+        String treeClassName = renderTreeClass(namePrefix, trees, gidx, tidx, dartBooster, fileCtx);
         sb.ip(treeClassName).p(".score0(data)").p(" + ").nl();
       }
       sb.ip("").pj(p.getBaseScore()).p(";").nl();
