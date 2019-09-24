@@ -650,13 +650,12 @@ In XGBoost, checkpoint can be used to continue training on a previously generate
 
 **Note**: The following parameters cannot be modified during checkpointing:
 
-- build_tree_one_node
+- tree_method
+- grow_policy
+- booster
+- sample_rate
 - max_depth
 - min_rows
-- nbins
-- nbins_cats
-- nbins_top_level
-- sample_rate
 
 The following example demonstrates how to build a gradient boosting model that will later be used for checkpointing. This checkpoint example shows how to continue training on an existing model. We do not recommend using GBM to train on new data. This example uses the cars dataset, which classifies whether or not a car is economical based on the car's displacement, power, weight, and acceleration, and the year it was made.
 

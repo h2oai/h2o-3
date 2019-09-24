@@ -26,7 +26,7 @@ When setting parameters that continue to build on a previous model, specifically
 
 The following options cannot be modified when rebuilding a model using ``checkpoint``:
 
- **GBM/DRF/XGBoost Options**
+ **GBM/DRF Options**
 
 	- build_tree_one_node
 	- max_depth
@@ -35,6 +35,15 @@ The following options cannot be modified when rebuilding a model using ``checkpo
 	- nbins_cats
 	- nbins_top_level
 	- sample_rate
+
+ **XGBoost Options**
+ 
+    - tree_method
+    - grow_policy
+    - booster
+    - sample_rate
+    - max_depth
+    - min_rows   
 
  **Deep Learning Options**
 
