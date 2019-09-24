@@ -41,16 +41,16 @@ public class ModelBuilderAutoMLTest extends TestUtil {
       Scope.track(train, test);
 
       ModelBuilder modelBuilder = modelBuilderForGBMFixture(train, null, responseColumnName, builderSeed);
-      // We should init builder before cloning it
+      
       modelBuilder.init(false);
 
       double referenceResult = scoreOnTest(modelBuilder, test);
       for (int runIdx = 0; runIdx < numberOfRuns; runIdx++) {
 
-        ModelBuilder clonedModelBuilder = modelBuilder.makeCopy();
-        clonedModelBuilder.init(false);
+        ModelBuilder newModelBuilder = ModelBuilder.make(modelBuilder._parms);
+        newModelBuilder.init(false);
 
-        double evaluationResult = scoreOnTest(clonedModelBuilder, test);
+        double evaluationResult = scoreOnTest(newModelBuilder, test);
         assertEquals("Original ModelBuilder's score was not equal to its clones scores( " + "runIdx #" + runIdx + ")" , referenceResult, evaluationResult, 1e-5);
       }
     } finally {
@@ -81,16 +81,14 @@ public class ModelBuilderAutoMLTest extends TestUtil {
       Scope.track(train, valid, test);
 
       ModelBuilder modelBuilder = modelBuilderForGBMFixture(train, valid, responseColumnName, builderSeed);
-
-      // We should init builder before cloning it
       modelBuilder.init(false);
 
       double referenceResult = scoreOnTest(modelBuilder, test);
       for (int runIdx = 0; runIdx < numberOfRuns; runIdx++) {
-        ModelBuilder clonedModelBuilder = modelBuilder.makeCopy();
-        clonedModelBuilder.init(false);
+        ModelBuilder newModelBuilder = ModelBuilder.make(modelBuilder._parms);
+        newModelBuilder.init(false);
 
-        double evaluationResult = scoreOnTest(clonedModelBuilder, test);
+        double evaluationResult = scoreOnTest(newModelBuilder, test);
         assertEquals("Original ModelBuilder's score was not equal to its clones scores( " + "runIdx #" + runIdx + ")" , referenceResult, evaluationResult, 1e-5);
       }
 
