@@ -38,12 +38,12 @@ The following options cannot be modified when rebuilding a model using ``checkpo
 
  **XGBoost Options**
  
-    - tree_method
-    - grow_policy
     - booster
+    - grow_policy
+    - max_rows
+    - min_rows
     - sample_rate
-    - max_depth
-    - min_rows   
+    - tree_method   
 
  **Deep Learning Options**
 
