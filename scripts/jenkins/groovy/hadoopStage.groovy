@@ -1,4 +1,5 @@
 H2O_HADOOP_STARTUP_MODE_HADOOP='ON_HADOOP'
+H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO='ON_HADOOP_WITH_SPNEGO'
 H2O_HADOOP_STARTUP_MODE_STANDALONE='STANDALONE'
 
 def call(final pipelineContext, final stageConfig) {
@@ -48,19 +49,18 @@ def call(final pipelineContext, final stageConfig) {
     }
 }
 
-
-
 private String getMakeTargetSuffix(final stageConfig) {
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return "-hdp"
+        case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
+            return "-spnego"
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             return "-standalone"
         default:
             error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
     }
 }
-
 
 private String getPostFailedBuildAction(final mode) {
     switch (mode) {
