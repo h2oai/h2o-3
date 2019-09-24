@@ -37,7 +37,7 @@ public class PredictorFactory {
 
   private static boolean unsafeTreesSupported() {
     // XGBoost Predictor uses LE, we can only use our scoring if the system has the same endianness
-    return ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
+    return false; //ByteOrder.nativeOrder().equals(ByteOrder.LITTLE_ENDIAN);
   }
 
   private static class UnsafeRegTreeFactory implements RegTreeFactory {

@@ -6,25 +6,29 @@ import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.genmodel.utils.LinkFunctionType;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
+import water.codegen.CodeGenerator;
+import water.codegen.CodeGeneratorPipeline;
+import water.exceptions.JCodeSB;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.JCodeGen;
 import water.util.Log;
+import water.util.SBPrintStream;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -194,7 +198,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public void dump(String format) {
     File fmFile = null;
     try {
-      Booster b = BoosterHelper.loadModel(new ByteArrayInputStream((this).model_info._boosterBytes));
+      Booster b = BoosterHelper.loadModel(new ByteArrayInputStream(this.model_info._boosterBytes));
       fmFile = File.createTempFile("xgboost-feature-map", ".bin");
       FileOutputStream os = new FileOutputStream(fmFile);
       os.write(this.model_info._featureMap.getBytes());
@@ -591,14 +595,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
 
-  private final int getXGBoostClassIndex(final String treeClass) {
+  private int getXGBoostClassIndex(final String treeClass) {
     final ModelCategory modelCategory = _output.getModelCategory();
     if(ModelCategory.Regression.equals(modelCategory) && (treeClass != null && !treeClass.isEmpty())){
       throw new IllegalArgumentException("There should be no tree class specified for regression.");
     }
-    if ((treeClass == null || treeClass.isEmpty()) && ModelCategory.Regression.equals(modelCategory)) return 0;
-    if ((treeClass == null || treeClass.isEmpty()) && !ModelCategory.Regression.equals(modelCategory)) {
-      throw new IllegalArgumentException("Non-regressional models require tree class specified.");
+    if ((treeClass == null || treeClass.isEmpty())) {
+      if (ModelCategory.Regression.equals(modelCategory)) return 0;
+      else throw new IllegalArgumentException("Non-regressional models require tree class specified.");
     }
 
     final String[] domain = _output._domains[_output._domains.length - 1];
@@ -611,6 +615,152 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     return treeClassIndex;
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Serialization into a POJO
+  //--------------------------------------------------------------------------------------------------------------------
+
+  @Override
+  protected boolean toJavaCheckTooBig() {
+    return true;
+  }
+
+  protected SBPrintStream toJavaSuper(String modelName, SBPrintStream sb) {
+    super.toJavaSuper(modelName, sb);
+    
+    return sb;
+  }
+
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    sb.nl();
+    sb.ip("public boolean isSupervised() { return true; }").nl();
+    sb.ip("public int nclasses() { return ").p(_output.nclasses()).p("; }").nl();
+    return sb;
+  }
+  
+  private void renderTree(JCodeSB sb, RegTree tree, int nidx) {
+    RegTreeNode node = tree.getNodes()[nidx];
+    if (node.isLeaf()) {
+      sb.ip("").pj(node.getLeafValue());
+    } else {
+      String accessor;
+      if (node.getSplitIndex() >= _output._catOffsets[_output._cats]) {
+        int colIdx = node.getSplitIndex() - _output._catOffsets[_output._cats] + _output._cats;
+        accessor = "data[" + colIdx + "]";
+      } else {
+        int colIdx = 0;
+        while (node.getSplitIndex() >= _output._catOffsets[colIdx+1]) colIdx++;
+        int colValue = node.getSplitIndex() - _output._catOffsets[colIdx];
+        accessor = "(data[" + colIdx + "] == " + colValue + " ? 1 : " + (_output._sparse?"NaN":"0") + ")";
+      }
+      String operator;
+      int trueChild;
+      int falseChild;
+      if (node.default_left()) {
+        operator = " < ";
+        trueChild = node.getLeftChildIndex();
+        falseChild = node.getRightChildIndex();
+      } else {
+        operator = " >= ";
+        trueChild = node.getRightChildIndex();
+        falseChild = node.getLeftChildIndex();
+      }
+      sb.ip("((Double.isNaN(").p(accessor).p(") || ").p(accessor).p(operator).pj(node.getSplitCondition()).p(") ?").nl();
+      sb.ii(1);
+      renderTree(sb, tree, trueChild);
+      sb.nl().ip(":").nl();
+      renderTree(sb, tree, falseChild);
+      sb.di(1);
+      sb.nl().ip(")");
+    }
+  }
+  
+  private String renderTreeClass(String namePrefix, RegTree[][] trees, final int gidx, final int tidx, CodeGeneratorPipeline fileCtx) {
+    final RegTree tree = trees[gidx][tidx];
+    final String className = namePrefix + "_Tree_g_" + gidx + "_t_" + tidx;
+    fileCtx.add(new CodeGenerator() {
+      @Override
+      public void generate(JCodeSB sb) {
+        sb.nl().p("class ").p(className).p(" {").nl();
+        sb.ii(1);
+        sb.ip("static float score0(double[] data) {").nl();
+        sb.ii(1);
+        sb.ip("return ");
+        renderTree(sb, tree, 0);
+        sb.p(";").nl();
+        sb.di(1);
+        sb.ip("}").nl();
+        sb.di(1);
+        sb.ip("}").nl();
+      }
+    });
+    return className;
+  }
+  
+  private void renderPredTransformViaLinkFunction(LinkFunctionType type, SBPrintStream sb) {
+    LinkFunction lf = LinkFunctionFactory.getLinkFunction(type);
+    sb.ip("preds[0] = (float) ").p(lf.linkInvString("preds[0]")).p(";").nl();
+  }
+  
+  private void renderMultiClassPredTransform(SBPrintStream sb) {
+    sb.ip("double max = preds[0];").nl();
+    sb.ip("for (int i = 1; i < preds.length-1; i++) max = Math.max(preds[i], max); ").nl();
+    sb.ip("double sum = 0.0D;").nl();
+    sb.ip("for (int i = 0; i < preds.length-1; i++) {").nl();
+    sb.ip("  preds[i] = Math.exp(preds[i] - max);").nl();
+    sb.ip("  sum += preds[i];").nl();
+    sb.ip("}").nl();
+    sb.ip("for (int i = 0; i < preds.length-1; i++) {").nl();
+    sb.ip("  preds[i] /= (float) sum;").nl();
+    sb.ip("}").nl();
+  }
+  
+  private void renderPredTransform(String objFunction, SBPrintStream sb) {
+    if (ObjectiveType.REG_GAMMA.getId().equals(objFunction) ||
+        ObjectiveType.REG_TWEEDIE.getId().equals(objFunction) ||
+        ObjectiveType.COUNT_POISSON.getId().equals(objFunction)) {
+      renderPredTransformViaLinkFunction(LinkFunctionType.log, sb);
+    } else if (ObjectiveType.BINARY_LOGISTIC.getId().equals(objFunction)) {
+      renderPredTransformViaLinkFunction(LinkFunctionType.logit, sb);
+    } else if(ObjectiveType.REG_LINEAR.getId().equals(objFunction) ||
+        ObjectiveType.RANK_PAIRWISE.getId().equals(objFunction)) {
+      renderPredTransformViaLinkFunction(LinkFunctionType.identity, sb);
+    } else if (ObjectiveType.MULTI_SOFTPROB.getId().equals(objFunction)) {
+      renderMultiClassPredTransform(sb);
+    } else {
+      throw new IllegalArgumentException("Unexpected objFunction " + objFunction);
+    }
+  }
+
+  @Override
+  protected void toJavaPredictBody(
+      SBPrintStream sb, CodeGeneratorPipeline classCtx, CodeGeneratorPipeline fileCtx, boolean verboseCode
+  ) {
+    final String namePrefix = JCodeGen.toJavaId(_key.toString());
+    Predictor p = PredictorFactory.makePredictor(model_info._boosterBytes, false);
+    GBTree booster = ((GBTree) p.getBooster());
+    RegTree[][] trees = booster.getGroupedTrees();
+    for (int gidx = 0; gidx < trees.length; gidx++) {
+      sb.ip("preds[").p(gidx).p("] = ").nl();
+      sb.ii(1);
+      for (int tidx = 0; tidx < trees[gidx].length; tidx++) {
+        String treeClassName = renderTreeClass(namePrefix, trees, gidx, tidx, fileCtx);
+        sb.ip(treeClassName).p(".score0(data)").p(" + ").nl();
+      }
+      sb.ip("").pj(p.getBaseScore()).p(";").nl();
+      sb.di(1);
+    }
+    renderPredTransform(p.getObjName(), sb);
+    if (_output.nclasses() > 2) {
+      sb.ip("for (int i = preds.length-2; i >= 0; i--)").nl();
+      sb.ip("  preds[1 + i] = preds[i];").nl();
+      sb.ip("preds[0] = GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, ").p(defaultThreshold()).p(");").nl();
+    } else if (_output.nclasses() == 2) {
+      sb.ip("preds[1] = 1f - preds[0];").nl();
+      sb.ip("preds[2] = preds[0];").nl();
+      sb.ip("preds[0] = GenModel.getPrediction(preds, PRIOR_CLASS_DISTRIB, data, ").p(defaultThreshold()).p(");").nl();
+    }
   }
 
 }

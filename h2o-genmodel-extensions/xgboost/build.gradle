@@ -9,9 +9,10 @@ ext {
 dependencies {
     compile project(":h2o-genmodel")
 
-    compile('ai.h2o:xgboost-predictor:0.3.8') {
-        exclude group: 'net.jafama', 'module': 'jafama'
-    }
+    compile(files("/Users/honza/Code/xgboost-predictor/xgboost-predictor/build/libs/xgboost-predictor-0.3.9-SNAPSHOT.jar"))
+//    compile('ai.h2o:xgboost-predictor:0.3.8') {
+//        exclude group: 'net.jafama', 'module': 'jafama'
+//    }
 
     // XGBoost dependencies published into Maven central by H2O
     // Versioning rules may differ for XGBoost artifacts published by H2O

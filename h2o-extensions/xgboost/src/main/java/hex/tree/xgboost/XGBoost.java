@@ -34,6 +34,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   private static final double FILL_RATIO_THRESHOLD = 0.25D;
 
   @Override public boolean haveMojo() { return true; }
+  @Override public boolean havePojo() { return true; }
 
   @Override public BuilderVisibility builderVisibility() {
     if(ExtensionManager.getInstance().isCoreExtensionsEnabled(XGBoostExtension.NAME)){
