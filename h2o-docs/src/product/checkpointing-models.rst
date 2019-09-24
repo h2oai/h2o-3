@@ -663,6 +663,9 @@ The following example demonstrates how to build a gradient boosting model that w
 .. example-code::
   .. code-block:: r
 
+   library(h2o)
+   h2o.init
+
    # import the iris dataset:
    iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 
@@ -675,45 +678,59 @@ The following example demonstrates how to build a gradient boosting model that w
    train <- splits[[1]]
    valid <- splits[[2]]
 
-   # build and train the first model:
-   iris_xgb <- h2o.xgboost(model_id='iris_xgb', y=response, training_frame=train, validation_frame=valid)
+   # build and train the first XGB model; specify the model_id
+   # so you can indicate which model to use when you want to continue
+   # training:
+   iris_xgb <- h2o.xgboost(model_id='iris_xgb', 
+                           y=response, 
+                           training_frame=train, 
+                           validation_frame=valid)
 
    # check the mse value:
    h2o.mse(iris_xgb)
 
-   # build and train the second model using a checkpoint:
-   iris_xgb_cont <- h2o.xgboost(y=response, training_frame=train, validation_frame=valid, checkpoint='iris_xgb', ntrees=51)
+   # build and train the second model using the checkpoint
+   # you established in the first model:
+   iris_xgb_cont <- h2o.xgboost(y=response, 
+                                training_frame=train, 
+                                validation_frame=valid, 
+                                checkpoint='iris_xgb', 
+                                ntrees=51)
 
-   # check the mse value:
+   # check the continued model mse value:
    h2o.mse(iris_xgb_cont)
 
 
   .. code-block:: python
 
-    # import H2oXGBoostEstimator and the cars dataset:
+    import h2o
     from h2o.estimators import H2OXGBoostEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    h2o.init()
 
-    # set the factor:
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    # import the iris dataset:
+    iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 
-    # set the predictors and response column:
-    predictors = ["displacement","power","weight","year","economy_20mpg"]
-    response = "acceleration"
+    # set the factor and response column:
+    iris["class"] = iris["class"].asfactor()
+    response = "class"
 
-    # split the validation and training sets:
-    train, valid = cars.split_frame(ratios=[.8])
+    # split the training and validation sets:
+    train, valid = iris.split_frame(ratios=[.8])
 
-    # build and train the first model:
-    cars_xgb = H2OXGBoostEstimator(seed = 1234)
-    cars_xgb.train(x = predictors, y=response, training_frame=train, validation_frame=valid)
+    # build and train the first XGB model; specify the model_id
+    # so you can indicate which model to use when you want to continue
+    # training:
+    iris_xgb = H2OXGBoostEstimator(model_id='iris_xgb', seed=1234)
+    iris_xgb.train(y=response, training_frame=train, validation_frame=valid)
 
-    # find the mse value:
-    cars_xgb.mse()
+    # check the mse value:
+    iris_xgb.mse()
 
-    # build the second model using the checkpoint:
-    cars_xgb_continued.train(x = predictors, y =response, training_frame=train, validation_frame=valid)
+    # build and train the second model using the checkpoint
+    # you established in the first model:
+    iris_xgb_cont = H2OXGBoostEstimator(ntrees=51, checkpoint='iris_xgb', seed=1234)
+    iris_xgb_cont.train(y=response, training_frame=train, validation_frame=valid)
 
-    # find the mse value for comparison:
-    cars_xgb_continued.mse()
+    # check the continued model mse value: 
+    iris_xgb_cont.mse()
 
