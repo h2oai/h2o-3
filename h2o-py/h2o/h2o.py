@@ -434,6 +434,16 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
                                         skipped_columns, custom_non_data_line_markers)
 
 
+def resume_grid_search(grid_directory, grid_id):
+    """
+    
+    :param grid_directory: Path to the Grid model file 
+    :return: Grid model
+    """
+
+    response = api("POST /3/Grid", {"grid_directory": grid_directory, "grid_id" : grid_id})
+    return get_grid(response["name"])
+
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
     """
     Import Hive table to H2OFrame in memory.

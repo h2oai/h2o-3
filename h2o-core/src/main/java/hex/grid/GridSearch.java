@@ -10,11 +10,16 @@ import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.persist.Persist;
+import water.util.FileUtils;
 import water.util.Log;
 import water.util.PojoUtils;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
+import java.io.*;
+import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Map;
 
 /**
@@ -139,6 +144,28 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         gridSearch(grid);
         tryComplete();
       }
+
+      @Override
+      public void onCompletion(CountedCompleter caller) {
+        final MP params = _hyperSpaceWalker.getParams();
+        if (params._export_checkpoints_dir != null) {
+
+          assert grid._key != null;
+          final String gridPath = params._export_checkpoints_dir + "/" + grid._key;
+          final URI gridUri = FileUtils.getURI(gridPath);
+          final Persist persist = H2O.getPM().getPersistForURI(gridUri);
+          try(final OutputStream outputStream = persist.create(gridUri.toString(), true)){
+            final AutoBuffer autoBuffer = new AutoBuffer(outputStream, true);
+            grid.writeAll(autoBuffer);
+            autoBuffer.close();
+          } catch (IOException e) {
+            Log.warn(String.format("Could not save grid '%s' to location '%s'", 
+                    grid._key.toString(), gridPath));
+            return;
+          }
+        }
+      }
+
       @Override
       public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
         Log.warn("GridSearch job "+_job._description+" completed with exception: "+ex);
