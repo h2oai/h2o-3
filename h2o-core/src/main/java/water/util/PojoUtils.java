@@ -522,9 +522,9 @@ public class PojoUtils {
           f.set(o, valuesCast);
         } else if(f.getType().getComponentType().isEnum()) {
           Object[] valuesTyped = ((Object[]) value);
-          Enum[] valuesCast = (Enum[])java.lang.reflect.Array.newInstance(f.getType().getComponentType(), ((Object[]) value).length);
+          Enum[] valuesCast = (Enum[]) Array.newInstance(f.getType().getComponentType(), valuesTyped.length);
           for (int i = 0; i < valuesTyped.length; i++) {
-            String v = (String)valuesTyped[i];
+            String v = (String) valuesTyped[i];
             try {
               valuesCast[i] = Enum.valueOf((Class<Enum>) f.getType().getComponentType(), v);
             } catch (IllegalArgumentException e) {
@@ -532,6 +532,18 @@ public class PojoUtils {
             }
           }
           f.set(o, valuesCast);
+        } else if (Schema.class.isAssignableFrom(f.getType().getComponentType())) {
+          Object[] valuesTyped = ((Object[])value);
+          Schema[] valuesCast = (Schema[]) Array.newInstance(f.getType().getComponentType(), valuesTyped.length);;
+          try {
+            for (int i = 0; i < valuesTyped.length; i++) {
+              Schema v = (Schema)f.getType().getComponentType().newInstance();
+              valuesCast[i] = v.fillFromAny(valuesTyped[i]);
+            }
+            f.set(o, valuesCast);
+          } catch (InstantiationException e) {
+            throw new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + value, e);
+          }
         } else {
           throw new IllegalArgumentException("setField can't yet convert an array of: " + value.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
         }
@@ -603,9 +615,8 @@ public class PojoUtils {
    * Take a object which potentially has default values for some fields and set
    * only those fields which are in the supplied JSON string.  NOTE: Doesn't handle array fields yet.
    */
-  public static Object fillFromJson(Object o, String json) {
+  public static <T> T fillFromJson(T o, String json) {
     Map<String, Object> setFields = (new com.google.gson.Gson()).fromJson(json, HashMap.class);
-
     return fillFromMap(o, setFields);
   }
 
@@ -613,22 +624,23 @@ public class PojoUtils {
    * Fill the fields of an Object from the corresponding fields in a Map.
    * @see #fillFromJson(Object, String)
    */
-  private static Object fillFromMap(Object o, Map<String, Object> setFields) {
+  private static <T> T fillFromMap(T o, Map<String, Object> setFields) {
     for (String key : setFields.keySet()) {
-      // TODO: doesn't handle arrays yet!
+      Field f;
+      try {
+        f = PojoUtils.getFieldEvenInherited(o, key);
+        f.setAccessible(true);
+      } catch (NoSuchFieldException e) {
+        throw new IllegalArgumentException("Field not found: '" + key + "' on object " + o);
+      }
       Object value = setFields.get(key);
       if (value instanceof Map) {
         // handle nested objects
         try {
-          Field f = PojoUtils.getFieldEvenInherited(o, key);
-          f.setAccessible(true);
-
           // In some cases, the target object has children already (e.g., defaults), while in other cases it doesn't.
           if (null == f.get(o))
             f.set(o, f.getType().newInstance());
           fillFromMap(f.get(o), (Map<String, Object>) value);
-        } catch (NoSuchFieldException e) {
-          throw new IllegalArgumentException("Field not found: '" + key + "' on object " + o);
         } catch (IllegalAccessException e) {
           throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
         } catch (InstantiationException e) {
@@ -640,27 +652,39 @@ public class PojoUtils {
             throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
           }
         }
+      } else if (value instanceof List) {
+        List values = (List)value;
+        if (f.getType().isArray() && Schema.class.isAssignableFrom(f.getType().getComponentType())
+                && values.size() > 0 && values.stream().allMatch(Map.class::isInstance)) {
+            // nested json filling
+            Schema[] valuesDest = (Schema[]) Array.newInstance(f.getType().getComponentType(), values.size());
+            try {
+              int i = 0;
+              for (Map<String, Object> valueMap : (List<Map<String, Object>>)values) {
+                Schema v = (Schema) f.getType().getComponentType().newInstance();
+                valuesDest[i++] = fillFromMap(v, valueMap);
+              }
+              f.set(o, valuesDest);
+            } catch (IllegalAccessException e) {
+              throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
+            } catch (InstantiationException e) {
+              throw new IllegalArgumentException("Field = " + key + " element cannot be set to value = " + value, e);
+            }
+        } else {
+          setField(o, key, value);
+        }
       } else {
         // Scalar or String, possibly with an automagic type conversion as copyProperties does.
-        // TODO: refactor the type conversions out of copyProperties so they all work, and remove
-        // this now-redundant code:
-        try {
-          Field f = PojoUtils.getFieldEvenInherited(o, key);
-          f.setAccessible(true);
-
-          if (f.getType().isAssignableFrom(FrameV3.ColSpecifierV3.class)) {
-            setField(o, key, new FrameV3.ColSpecifierV3((String) value));
-          } else if (KeyV3.class.isAssignableFrom(f.getType())) {
-            setField(o, key, KeyV3.make((Class<? extends KeyV3>)f.getType(), Key.make((String) value)));
-          } else {
-            setField(o, key, value);
-          }
-        } catch (NoSuchFieldException e) {
-          throw new IllegalArgumentException("Field not found: '" + key + "' on object " + o);
+        if (f.getType().isAssignableFrom(FrameV3.ColSpecifierV3.class)) {
+          setField(o, key, new FrameV3.ColSpecifierV3((String) value));
+        } else if (KeyV3.class.isAssignableFrom(f.getType())) {
+          setField(o, key, KeyV3.make((Class<? extends KeyV3>)f.getType(), Key.make((String) value)));
+        } else {
+          setField(o, key, value);
         }
       } // else not a nested object
     } // for all fields in the map
-  return o;
+    return o;
   }
 
   /**
