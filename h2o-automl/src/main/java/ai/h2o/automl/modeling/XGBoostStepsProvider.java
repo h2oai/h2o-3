@@ -1,4 +1,4 @@
-package ai.h2o.automl.training;
+package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import hex.genmodel.utils.DistributionFamily;
@@ -10,12 +10,12 @@ import water.Job;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ai.h2o.automl.TrainingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
-import static ai.h2o.automl.TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
+import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
-public class XGBoostStepsProvider implements TrainingStepsProvider<XGBoostStepsProvider.XGBoostSteps> {
+public class XGBoostStepsProvider implements ModelingStepsProvider<XGBoostStepsProvider.XGBoostSteps> {
 
-    public static class XGBoostSteps extends TrainingSteps {
+    public static class XGBoostSteps extends ModelingSteps {
 
         static XGBoostParameters prepareModelParameters(AutoML aml, boolean emulateLightGBM) {
             XGBoostParameters xgBoostParameters = new XGBoostParameters();
@@ -40,7 +40,7 @@ public class XGBoostStepsProvider implements TrainingStepsProvider<XGBoostStepsP
             return xgBoostParameters;
         }
 
-        static abstract class XGBoostModelStep extends TrainingStep.ModelStep<XGBoostModel> {
+        static abstract class XGBoostModelStep extends ModelingStep.ModelStep<XGBoostModel> {
 
             boolean _emulateLightGBM;
 
@@ -54,7 +54,7 @@ public class XGBoostStepsProvider implements TrainingStepsProvider<XGBoostStepsP
             }
         }
 
-        static abstract class XGBoostGridStep extends TrainingStep.GridStep<XGBoostModel> {
+        static abstract class XGBoostGridStep extends ModelingStep.GridStep<XGBoostModel> {
             boolean _emulateLightGBM;
 
             public XGBoostGridStep(String id, int weight, AutoML autoML, boolean emulateLightGBM) {
@@ -68,7 +68,7 @@ public class XGBoostStepsProvider implements TrainingStepsProvider<XGBoostStepsP
         }
 
 
-        private TrainingStep[] defaults = new XGBoostModelStep[] {
+        private ModelingStep[] defaults = new XGBoostModelStep[] {
                 new XGBoostModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml(),false) {
                     @Override
                     protected Job<XGBoostModel> startJob() {
@@ -134,7 +134,7 @@ public class XGBoostStepsProvider implements TrainingStepsProvider<XGBoostStepsP
                 },
         };
 
-        private TrainingStep[] grids = new XGBoostGridStep[] {
+        private ModelingStep[] grids = new XGBoostGridStep[] {
                 new XGBoostGridStep("grid_1", 5* DEFAULT_GRID_TRAINING_WEIGHT, aml(), false) {
                     @Override
                     protected Job<Grid> startJob() {
@@ -176,12 +176,12 @@ public class XGBoostStepsProvider implements TrainingStepsProvider<XGBoostStepsP
         }
 
         @Override
-        protected TrainingStep[] getDefaultModels() {
+        protected ModelingStep[] getDefaultModels() {
             return defaults;
         }
 
         @Override
-        protected TrainingStep[] getGrids() {
+        protected ModelingStep[] getGrids() {
             return grids;
         }
     }

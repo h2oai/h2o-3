@@ -7,7 +7,7 @@ import h2o.exceptions
 from tests import pyunit_utils as pu
 from h2o.automl import H2OAutoML
 
-"""This test suite checks the """
+"""This test suite checks the AutoML parameters influencing the model selection pipeline"""
 
 max_models = 2
 
@@ -68,92 +68,92 @@ def test_include_exclude_algos():
         assert "Use either include_algos or exclude_algos" in str(e)
 
 
-def test_bad_training_plan_using_full_syntax():
+def test_bad_modeling_plan_using_full_syntax():
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             dict(steps=['def_1'])
         ])
     except AssertionError as e:
         assert "each definition must have a 'name' key" in str(e)
 
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             dict(name="GBM", steps=['def_1'], alias='defaults')
         ])
     except AssertionError as e:
         assert "each definition must have only 1 or 2 keys" in str(e)
 
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             dict(name="GBM", alias='all_steps')
         ])
     except AssertionError as e:
         assert "alias must be one of ['all', 'defaults', 'grids']" in str(e)
 
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             dict(name="GBM", dummy=['def_1'])
         ])
     except AssertionError as e:
         assert "steps definitions support only the following keys: name, alias, steps" in str(e)
 
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             dict(name="GBM", steps=['def_1'])
         ])
     except AssertionError as e:
         assert "each step must be a dict" in str(e)
 
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             dict(name="GBM", steps=[dict(foo='def_1')])
         ])
     except AssertionError as e:
         assert "each step must have an 'id' key" in str(e)
 
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             dict(name="GBM", steps=[dict(id='def_1', weight=3/4)])
         ])
     except AssertionError as e:
         assert "weight must be an integer" in str(e)
 
 
-def test_bad_training_plan_using_simplified_syntax():
+def test_bad_modeling_plan_using_simplified_syntax():
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             ['GBM']
         ])
     except h2o.exceptions.H2OTypeError:
         pass
 
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             ('GBM', 'defaults', ['def_1'])
         ])
     except AssertionError:
         pass
 
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             ('GBM', 'dummy_alias')
         ])
     except h2o.exceptions.H2OTypeError:
         pass
 
     try:
-        H2OAutoML(training_plan=[
+        H2OAutoML(modeling_plan=[
             ('GBM', ('def_1', 'def_2'))
         ])
     except h2o.exceptions.H2OTypeError:
         pass
 
 
-def test_training_plan_using_full_syntax():
+def test_modeling_plan_using_full_syntax():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_training_plan_full_syntax",
+    aml = H2OAutoML(project_name="py_modeling_plan_full_syntax",
                     max_models=2,
-                    training_plan=[
+                    modeling_plan=[
                         dict(name='GLM', steps=[dict(id='def_1')]),
                         dict(name='GBM', alias='grids'),
                         dict(name='DRF', steps=[dict(id='def_1', weight=333)]),  # just testing that it is parsed correctly on backend (no model won't be build due to max_models)
@@ -167,11 +167,11 @@ def test_training_plan_using_full_syntax():
     assert any('GBM_grid' in name for name in non_se)
 
 
-def test_training_plan_using_simplified_syntax():
+def test_modeling_plan_using_simplified_syntax():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_training_plan_simple_syntax",
+    aml = H2OAutoML(project_name="py_modeling_plan_simple_syntax",
                     max_models=3,
-                    training_plan=[
+                    modeling_plan=[
                         ('DRF', ['XRT', 'def_1']),
                         ('GBM', 'grids'),
                         ('StackedEnsemble', ['best'])
@@ -187,11 +187,11 @@ def test_training_plan_using_simplified_syntax():
     assert any('BestOfFamily' in name for name in se)
 
 
-def test_training_plan_using_minimal_syntax():
+def test_modeling_plan_using_minimal_syntax():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_training_plan_minimal_syntax",
+    aml = H2OAutoML(project_name="py_modeling_plan_minimal_syntax",
                     max_models=5,
-                    training_plan=['DRF', 'GLM', ('GBM', 'grids'), 'StackedEnsemble'],
+                    modeling_plan=['DRF', 'GLM', ('GBM', 'grids'), 'StackedEnsemble'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
     _, non_se, se = get_partitioned_model_names(aml.leaderboard)
@@ -205,38 +205,38 @@ def test_training_plan_using_minimal_syntax():
     assert any('AllModels' in name for name in se)
 
 
-def test_trained_steps():
+def test_modeling_steps():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_trained_steps",
+    aml = H2OAutoML(project_name="py_modeling_steps",
                     max_models=5,
-                    training_plan=['DRF',
+                    modeling_plan=['DRF',
                                    ('GLM', 'defaults'),
                                    dict(name='GBM', steps=[dict(id='grid_1', weight=77)]),
                                    'StackedEnsemble'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
     print(aml.leaderboard)
-    assert aml.trained_steps == [
+    assert aml.modeling_steps == [
         dict(name='DRF', steps=[dict(id='def_1', weight=10), dict(id='XRT', weight=10)]),
         dict(name='GLM', steps=[dict(id='def_1', weight=10)]),
         dict(name='GBM', steps=[dict(id='grid_1', weight=77)]),
         dict(name='StackedEnsemble', steps=[dict(id='best', weight=10), dict(id='all', weight=10)]),
     ]
 
-    new_aml = H2OAutoML(project_name="py_reinject_trained_steps",
+    new_aml = H2OAutoML(project_name="py_reinject_modeling_steps",
                         max_models=5,
-                        training_plan=aml.trained_steps,
+                        modeling_plan=aml.modeling_steps,
                         seed=1)
     new_aml.train(y=ds.target, training_frame=ds.train)
     print(new_aml.leaderboard)
-    assert aml.trained_steps == new_aml.trained_steps
+    assert aml.modeling_steps == new_aml.modeling_steps
 
 
-def test_exclude_algos_is_applied_on_top_of_training_plan():
+def test_exclude_algos_is_applied_on_top_of_modeling_plan():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_training_plan_minimal_syntax",
+    aml = H2OAutoML(project_name="py_modeling_plan_minimal_syntax",
                     max_models=5,
-                    training_plan=['DRF', 'GLM', ('GBM', 'grids'), 'StackedEnsemble'],
+                    modeling_plan=['DRF', 'GLM', ('GBM', 'grids'), 'StackedEnsemble'],
                     exclude_algos=['GBM', 'StackedEnsemble'],
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
@@ -249,11 +249,11 @@ pu.run_tests([
     test_exclude_algos,
     test_include_algos,
     test_include_exclude_algos,
-    test_bad_training_plan_using_full_syntax,
-    test_bad_training_plan_using_simplified_syntax,
-    test_training_plan_using_full_syntax,
-    test_training_plan_using_simplified_syntax,
-    test_training_plan_using_minimal_syntax,
-    test_trained_steps,
-    test_exclude_algos_is_applied_on_top_of_training_plan
+    test_bad_modeling_plan_using_full_syntax,
+    test_bad_modeling_plan_using_simplified_syntax,
+    test_modeling_plan_using_full_syntax,
+    test_modeling_plan_using_simplified_syntax,
+    test_modeling_plan_using_minimal_syntax,
+    test_modeling_steps,
+    test_exclude_algos_is_applied_on_top_of_modeling_plan
 ])

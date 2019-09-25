@@ -1,4 +1,4 @@
-package ai.h2o.automl.training;
+package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import hex.deeplearning.DeepLearningModel;
@@ -9,20 +9,20 @@ import water.Job;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ai.h2o.automl.TrainingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
-import static ai.h2o.automl.TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
+import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
-public class DeepLearningStepsProvider implements TrainingStepsProvider<DeepLearningStepsProvider.DeepLearningSteps> {
+public class DeepLearningStepsProvider implements ModelingStepsProvider<DeepLearningStepsProvider.DeepLearningSteps> {
 
-    public static class DeepLearningSteps extends TrainingSteps {
+    public static class DeepLearningSteps extends ModelingSteps {
 
-        static abstract class DeepLearningModelStep extends TrainingStep.ModelStep<DeepLearningModel> {
+        static abstract class DeepLearningModelStep extends ModelingStep.ModelStep<DeepLearningModel> {
             public DeepLearningModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.DeepLearning, id, weight, autoML);
             }
         }
 
-        static abstract class DeepLearningGridStep extends TrainingStep.GridStep<DeepLearningModel> {
+        static abstract class DeepLearningGridStep extends ModelingStep.GridStep<DeepLearningModel> {
 
             DeepLearningGridStep(String id, int weight, AutoML autoML) {
                 super(Algo.DeepLearning, id, weight, autoML);
@@ -51,7 +51,7 @@ public class DeepLearningStepsProvider implements TrainingStepsProvider<DeepLear
         }
 
 
-        private TrainingStep[] defaults = new DeepLearningModelStep[] {
+        private ModelingStep[] defaults = new DeepLearningModelStep[] {
                 new DeepLearningModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<DeepLearningModel> startJob() {
@@ -62,7 +62,7 @@ public class DeepLearningStepsProvider implements TrainingStepsProvider<DeepLear
                 },
         };
 
-        private TrainingStep[] grids = new DeepLearningGridStep[] {
+        private ModelingStep[] grids = new DeepLearningGridStep[] {
                 new DeepLearningGridStep("grid_1", DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<Grid> startJob() {
@@ -138,12 +138,12 @@ public class DeepLearningStepsProvider implements TrainingStepsProvider<DeepLear
         }
 
         @Override
-        protected TrainingStep[] getDefaultModels() {
+        protected ModelingStep[] getDefaultModels() {
             return defaults;
         }
 
         @Override
-        protected TrainingStep[] getGrids() {
+        protected ModelingStep[] getGrids() {
             return grids;
         }
     }

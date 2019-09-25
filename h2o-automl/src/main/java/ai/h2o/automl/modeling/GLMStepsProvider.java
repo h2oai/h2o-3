@@ -1,18 +1,18 @@
-package ai.h2o.automl.training;
+package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.Job;
 
-import static ai.h2o.automl.TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 
-public class GLMStepsProvider implements TrainingStepsProvider<GLMStepsProvider.GLMSteps> {
+public class GLMStepsProvider implements ModelingStepsProvider<GLMStepsProvider.GLMSteps> {
 
-    public static class GLMSteps extends TrainingSteps {
+    public static class GLMSteps extends ModelingSteps {
 
-        static abstract class GLMModelStep extends TrainingStep.ModelStep<GLMModel> {
+        static abstract class GLMModelStep extends ModelingStep.ModelStep<GLMModel> {
 
             GLMModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.GLM, id, weight, autoML);
@@ -30,7 +30,7 @@ public class GLMStepsProvider implements TrainingStepsProvider<GLMStepsProvider.
         }
 
 
-        private TrainingStep[] defaults = new GLMModelStep[] {
+        private ModelingStep[] defaults = new GLMModelStep[] {
                 new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<GLMModel> startJob() {
@@ -43,7 +43,7 @@ public class GLMStepsProvider implements TrainingStepsProvider<GLMStepsProvider.
                 },
         };
 
-        private TrainingStep[] grids = new TrainingStep[] {
+        private ModelingStep[] grids = new ModelingStep[] {
                 /*
                 new GLMGridStep("grid_1", BASE_GRID_WEIGHT, aml()) {
                     @Override
@@ -69,12 +69,12 @@ public class GLMStepsProvider implements TrainingStepsProvider<GLMStepsProvider.
         }
 
         @Override
-        protected TrainingStep[] getDefaultModels() {
+        protected ModelingStep[] getDefaultModels() {
             return defaults;
         }
 
         @Override
-        protected TrainingStep[] getGrids() {
+        protected ModelingStep[] getGrids() {
             return grids;
         }
     }

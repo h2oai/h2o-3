@@ -10,11 +10,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public abstract class TrainingSteps extends Iced<TrainingSteps> {
+public abstract class ModelingSteps extends Iced<ModelingSteps> {
 
     private transient AutoML _aml;
 
-    public TrainingSteps(AutoML autoML) {
+    public ModelingSteps(AutoML autoML) {
         _aml = autoML;
     }
 
@@ -22,14 +22,14 @@ public abstract class TrainingSteps extends Iced<TrainingSteps> {
         return _aml;
     }
 
-    Optional<TrainingStep> getStep(String id) {
+    Optional<ModelingStep> getStep(String id) {
         return Stream.of(getAllSteps())
                 .filter(step -> step._id.equals(id))
                 .findFirst();
     }
 
-    TrainingStep[] getSteps(Step[] steps) {
-        List<TrainingStep> tSteps = new ArrayList<>();
+    ModelingStep[] getSteps(Step[] steps) {
+        List<ModelingStep> tSteps = new ArrayList<>();
         for (Step step : steps) {
             getStep(step._id).ifPresent(tStep -> {
                 if (step._weight != Step.DEFAULT_WEIGHT) {
@@ -38,10 +38,10 @@ public abstract class TrainingSteps extends Iced<TrainingSteps> {
                 tSteps.add(tStep);
             });
         }
-        return tSteps.toArray(new TrainingStep[0]);
+        return tSteps.toArray(new ModelingStep[0]);
     }
 
-    TrainingStep[] getSteps(Alias alias) {
+    ModelingStep[] getSteps(Alias alias) {
         switch (alias) {
             case all:
                 return getAllSteps();
@@ -50,18 +50,18 @@ public abstract class TrainingSteps extends Iced<TrainingSteps> {
             case grids:
                 return getGrids();
             default:
-                return new TrainingStep[0];
+                return new ModelingStep[0];
         }
     }
 
-    TrainingStep[] getAllSteps() {
-        TrainingStep[] all = new TrainingStep[0];  // create a fresh array to avoid type issues in arraycopy
+    ModelingStep[] getAllSteps() {
+        ModelingStep[] all = new ModelingStep[0];  // create a fresh array to avoid type issues in arraycopy
         all = ArrayUtils.append(all, getDefaultModels());
         all = ArrayUtils.append(all, getGrids());
         return all;
     }
 
-    protected TrainingStep[] getDefaultModels() { return new TrainingStep[0]; }
-    protected TrainingStep[] getGrids() { return new TrainingStep[0]; }
+    protected ModelingStep[] getDefaultModels() { return new ModelingStep[0]; }
+    protected ModelingStep[] getGrids() { return new ModelingStep[0]; }
 
 }

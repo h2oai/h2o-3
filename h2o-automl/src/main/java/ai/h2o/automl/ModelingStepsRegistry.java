@@ -7,7 +7,6 @@ import water.Iced;
 import water.nbhm.NonBlockingHashMap;
 import water.util.ArrayUtils;
 
-import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -16,34 +15,34 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * The registry responsible for loading all {@link TrainingStepsProvider} using service discovery,
- * and providing the list of {@link TrainingStep} to execute.
+ * The registry responsible for loading all {@link ModelingStepsProvider} using service discovery,
+ * and providing the list of {@link ModelingStep} to execute.
  */
-public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
+public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
 
-    static final NonBlockingHashMap<String, TrainingStepsProvider> stepsByName = new NonBlockingHashMap<>();
+    static final NonBlockingHashMap<String, ModelingStepsProvider> stepsByName = new NonBlockingHashMap<>();
 
     static {
-        ServiceLoader<TrainingStepsProvider> trainingStepsProviders = ServiceLoader.load(TrainingStepsProvider.class);
-        for (TrainingStepsProvider provider : trainingStepsProviders) {
+        ServiceLoader<ModelingStepsProvider> trainingStepsProviders = ServiceLoader.load(ModelingStepsProvider.class);
+        for (ModelingStepsProvider provider : trainingStepsProviders) {
             stepsByName.put(provider.getName(), provider);
         }
     }
 
     /**
-     * @param aml the AutoML instance responsible to execute the {@link TrainingStep}s.
-     * @return the list of {@link TrainingStep}s to execute according to the given training plan.
+     * @param aml the AutoML instance responsible to execute the {@link ModelingStep}s.
+     * @return the list of {@link ModelingStep}s to execute according to the given modeling plan.
      */
-    public TrainingStep[] getOrderedSteps(StepDefinition[] trainingPlan, AutoML aml) {
-        aml.eventLog().info(Stage.Workflow, "Loading execution steps: "+Arrays.toString(trainingPlan));
-        List<TrainingStep> orderedSteps = new ArrayList<>();
-        for (StepDefinition def : trainingPlan) {
-            TrainingStepsProvider provider = stepsByName.get(def._name);
+    public ModelingStep[] getOrderedSteps(StepDefinition[] modelingPlan, AutoML aml) {
+        aml.eventLog().info(Stage.Workflow, "Loading execution steps: "+Arrays.toString(modelingPlan));
+        List<ModelingStep> orderedSteps = new ArrayList<>();
+        for (StepDefinition def : modelingPlan) {
+            ModelingStepsProvider provider = stepsByName.get(def._name);
             if (provider == null) {
                 throw new IllegalArgumentException("Missing provider for training steps '"+def._name+"'");
             }
-            TrainingSteps steps = provider.newInstance(aml);
-            TrainingStep[] toAdd;
+            ModelingSteps steps = provider.newInstance(aml);
+            ModelingStep[] toAdd;
             if (def._alias != null) {
                 toAdd = steps.getSteps(def._alias);
             } else if (def._steps != null) {
@@ -59,18 +58,18 @@ public class TrainingStepsRegistry extends Iced<TrainingStepsRegistry> {
                 toAdd = steps.getSteps(Alias.all);
             }
             if (toAdd != null) {
-                for (TrainingStep ts : toAdd) {
+                for (ModelingStep ts : toAdd) {
                     ts._fromDef = def;
                 }
                 orderedSteps.addAll(Arrays.asList(toAdd));
             }
         }
-        return orderedSteps.toArray(new TrainingStep[0]);
+        return orderedSteps.toArray(new ModelingStep[0]);
     }
 
-    public StepDefinition[] createExecutionPlanFromSteps(TrainingStep[] steps) {
+    public StepDefinition[] createDefinitionPlanFromSteps(ModelingStep[] steps) {
         List<StepDefinition> definitions = new ArrayList<>();
-        for (TrainingStep step : steps) {
+        for (ModelingStep step : steps) {
             Step stepDesc = new Step(step._id, step._weight);
             if (definitions.size() > 0) {
                 StepDefinition lastDef = definitions.get(definitions.size() - 1);

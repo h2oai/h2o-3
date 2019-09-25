@@ -20,7 +20,7 @@ import java.util.Map;
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
  */
-public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
+public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     private transient AutoML _aml;
 
@@ -32,7 +32,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
 
     StepDefinition _fromDef;
 
-    protected TrainingStep(Algo algo, String id, int weight, AutoML autoML) {
+    protected ModelingStep(Algo algo, String id, int weight, AutoML autoML) {
         _algo = algo;
         _id = id;
         _weight = weight;
@@ -183,7 +183,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
     /**
      * Convenient base class for single/default model steps.
      */
-    public static abstract class ModelStep<M extends Model> extends TrainingStep<M> {
+    public static abstract class ModelStep<M extends Model> extends ModelingStep<M> {
 
         public static final int DEFAULT_MODEL_TRAINING_WEIGHT = 10;
 
@@ -256,7 +256,7 @@ public abstract class TrainingStep<M extends Model> extends Iced<TrainingStep> {
     /**
      * Convenient base class for steps defining a (random) grid search.
      */
-    public static abstract class GridStep<M extends Model> extends TrainingStep<M> {
+    public static abstract class GridStep<M extends Model> extends ModelingStep<M> {
 
         public static final int DEFAULT_GRID_TRAINING_WEIGHT = 20;
 

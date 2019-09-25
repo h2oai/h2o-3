@@ -338,7 +338,7 @@ public class AutoMLTest extends water.TestUtil {
       fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
-      autoMLBuildSpec.build_models.training_plan = new StepDefinition[] {
+      autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new String[]{ "def_1" }),             // 1 model
               new StepDefinition(Algo.GLM.name(), StepDefinition.Alias.all),            // 1 model
               new StepDefinition(Algo.DRF.name(), new Step[] { new Step("XRT", 20) }),  // 1 model
@@ -358,23 +358,23 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals(0, Stream.of(aml.leaderboard().getModels()).filter(DeepLearningModel.class::isInstance).count());
       assertEquals(2, Stream.of(aml.leaderboard().getModels()).filter(StackedEnsembleModel.class::isInstance).count());
 
-      assertNotNull(aml._trainedSteps);
-      Log.info(Arrays.toString(aml._trainedSteps));
+      assertNotNull(aml._actualModelingSteps);
+      Log.info(Arrays.toString(aml._actualModelingSteps));
       assertArrayEquals(new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new Step[]{
-                      new Step("def_1", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("def_1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
               new StepDefinition(Algo.GLM.name(), new Step[]{
-                      new Step("def_1", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("def_1", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
               new StepDefinition(Algo.DRF.name(), new Step[]{
                       new Step("XRT", 20),
               }),
               new StepDefinition(Algo.StackedEnsemble.name(), new Step[]{
-                      new Step("best", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
-                      new Step("all", TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("best", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
+                      new Step("all", ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT),
               }),
-      }, aml._trainedSteps);
+      }, aml._actualModelingSteps);
     } finally {
       if (aml != null) aml.delete();
       if (fr != null) fr.remove();

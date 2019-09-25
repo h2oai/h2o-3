@@ -7,7 +7,7 @@ import java.util.Objects;
 
 /**
  * Defines a step or a list of steps to be executed.
- * The steps implementations are provided by instances of (@link {@link TrainingStepsProvider}.
+ * The steps implementations are provided by instances of (@link {@link ModelingStepsProvider}.
  */
 public class StepDefinition extends Iced<StepDefinition> {
 
@@ -60,7 +60,7 @@ public class StepDefinition extends Iced<StepDefinition> {
     }
 
     /**
-     * The name of the step provider ({@link TrainingStepsProvider}): this is usually also the name of the algorithm.
+     * The name of the step provider ({@link ModelingStepsProvider}): this is usually also the name of the algorithm.
      */
     String _name;
     /**

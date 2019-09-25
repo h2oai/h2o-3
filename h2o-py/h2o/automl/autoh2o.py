@@ -63,7 +63,7 @@ class H2OAutoML(Keyed):
                  project_name=None,
                  exclude_algos=None,
                  include_algos=None,
-                 training_plan=None,
+                 modeling_plan=None,
                  keep_cross_validation_predictions=False,
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
@@ -224,29 +224,28 @@ class H2OAutoML(Keyed):
                 assert_is_type(elem, str)
             self.build_models['include_algos'] = include_algos
 
-        if training_plan is not None:
-            assert_is_type(training_plan, list)
+        if modeling_plan is not None:
+            assert_is_type(modeling_plan, list)
             supported_aliases = ['all', 'defaults', 'grids']
 
-            def is_step_def(sd):
+            def assert_is_step_def(sd):
                 assert 'name' in sd, "each definition must have a 'name' key"
                 assert 0 < len(sd) < 3, "each definition must have only 1 or 2 keys: name, name+alias or name+steps"
                 assert len(sd) == 1 or 'alias' in sd or 'steps' in sd, "steps definitions support only the following keys: name, alias, steps"
                 assert 'alias' not in sd or sd['alias'] in supported_aliases, "alias must be one of %s" % supported_aliases
-                assert 'steps' not in sd or (is_type(sd['steps'], list) and all(is_step(s) for s in sd['steps']))
-                return True
+                assert 'steps' not in sd or (is_type(sd['steps'], list) and all(assert_is_step(s) for s in sd['steps']))
 
-            def is_step(s):
+            def assert_is_step(s):
                 assert is_type(s, dict), "each step must be a dict with an 'id' key and an optional 'weight' key"
                 assert 'id' in s, "each step must have an 'id' key"
                 assert len(s) == 1 or ('weight' in s and is_type(s['weight'], int)), "weight must be an integer"
                 return True
 
             plan = []
-            for step_def in training_plan:
+            for step_def in modeling_plan:
                 assert_is_type(step_def, dict, tuple, str)
                 if is_type(step_def, dict):
-                    assert is_step_def(step_def)
+                    assert_is_step_def(step_def)
                     plan.append(step_def)
                 elif is_type(step_def, str):
                     plan.append(dict(name=step_def))
@@ -264,7 +263,7 @@ class H2OAutoML(Keyed):
                             plan.append(dict(name=name, alias=ids))
                         else:
                             plan.append(dict(name=name, steps=[dict(id=i) for i in ids]))
-            self.build_models['training_plan'] = plan
+            self.build_models['modeling_plan'] = plan
 
 
         assert_is_type(keep_cross_validation_predictions, bool)
@@ -355,16 +354,16 @@ class H2OAutoML(Keyed):
         return dict() if self._training_info is None else self._training_info
 
     @property
-    def trained_steps(self):
+    def modeling_steps(self):
         """
-        expose the effective training plan used by the AutoML run.
-        This executed plan can be directly reinjected as the `training_plan` property of a new AutoML instance
+        expose the modeling steps effectively used by the AutoML run.
+        This executed plan can be directly reinjected as the `modeling_plan` property of a new AutoML instance
          to improve reproducibility across AutoML versions.
 
-        :return: a list of dictionaries representing the effective training plan.
+        :return: a list of dictionaries representing the effective modeling plan.
         """
-        # removing alias to be able to reinject result to a new AutoML instance
-        return list(map(lambda sdef: dict(name=sdef['name'], steps=sdef['steps']), self._state_json['trained_steps']))
+        # removing alias key to be able to reinject result to a new AutoML instance
+        return list(map(lambda sdef: dict(name=sdef['name'], steps=sdef['steps']), self._state_json['modeling_steps']))
 
     #---------------------------------------------------------------------------
     # Training AutoML

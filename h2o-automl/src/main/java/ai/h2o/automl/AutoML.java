@@ -35,7 +35,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
-  private static StepDefinition[] defaultTrainingPlan = {
+  private static StepDefinition[] defaultModelingPlan = {
           new StepDefinition(Algo.XGBoost.name(), Alias.defaults),
           new StepDefinition(Algo.GLM.name(), Alias.defaults),
           new StepDefinition(Algo.DRF.name(), new String[]{ "def_1" }),
@@ -118,7 +118,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public Vec getFoldColumn() { return _foldColumn; }
   public Vec getWeightsColumn() { return _weightsColumn; }
 
-  public StepDefinition[] getTrainedSteps() { return _trainedSteps; }
+  public StepDefinition[] getActualModelingSteps() { return _actualModelingSteps; }
 
   Frame _trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
   Frame _validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
@@ -133,11 +133,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   Countdown _runCountdown;
   Job<AutoML> _job;                  // the Job object for the build of this AutoML.
   WorkAllocations _workAllocations;
-  StepDefinition[] _trainingPlan;
-  StepDefinition[] _trainedSteps;
+  StepDefinition[] _modelingPlan;  // the input definition, that we plan to use/execute
+  StepDefinition[] _actualModelingSteps; // the output definition, listing only the steps that were actually used
 
-  private TrainingStepsRegistry _trainingStepsRegistry;
-  private TrainingStepsExecutor _trainingStepsExecutor;
+  private ModelingStepsRegistry _modelingStepsRegistry;
+  private ModelingStepsExecutor _modelingStepsExecutor;
   private Leaderboard _leaderboard;
   private EventLog _eventLog;
 
@@ -146,7 +146,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private String[] _originalTrainingFrameNames;
   private long[] _originalTrainingFrameChecksums;
   private Key<Grid> _gridKeys[] = new Key[0];  // Grid key for the GridSearches
-  private transient TrainingStep[] _executionPlan;
+  private transient ModelingStep[] _executionPlan;
 
   public AutoML() {
     super(null);
@@ -157,8 +157,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     _startTime = startTime;
     _buildSpec = buildSpec;
     _runCountdown = Countdown.fromSeconds(buildSpec.build_control.stopping_criteria.max_runtime_secs());
-    _trainingPlan = buildSpec.build_models.training_plan == null ? defaultTrainingPlan : buildSpec.build_models.training_plan;
-    _trainingStepsRegistry = new TrainingStepsRegistry();
+    _modelingPlan = buildSpec.build_models.modeling_plan == null ? defaultModelingPlan : buildSpec.build_models.modeling_plan;
+    _modelingStepsRegistry = new ModelingStepsRegistry();
 
     try {
       _eventLog = EventLog.make(_key);
@@ -178,7 +178,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
       planWork();
 
-      _trainingStepsExecutor = new TrainingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
+      _modelingStepsExecutor = new ModelingStepsExecutor(_leaderboard, _eventLog, _runCountdown);
     } catch (Exception e) {
       delete(); //cleanup potentially leaked keys
       throw e;
@@ -216,10 +216,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
-  TrainingStep[] getExecutionPlan() {
-    return _executionPlan == null ? (_executionPlan = _trainingStepsRegistry.getOrderedSteps(_trainingPlan, this)) : _executionPlan;
+  ModelingStep[] getExecutionPlan() {
+    return _executionPlan == null ? (_executionPlan = _modelingStepsRegistry.getOrderedSteps(_modelingPlan, this)) : _executionPlan;
   }
-
 
   void planWork() {
     if (_buildSpec.build_models.exclude_algos != null && _buildSpec.build_models.include_algos != null) {
@@ -242,7 +241,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
 
     WorkAllocations workAllocations = new WorkAllocations();
-    for (TrainingStep step: getExecutionPlan()) {
+    for (ModelingStep step: getExecutionPlan()) {
       workAllocations.allocate(step.makeWork());
     }
     for (Algo skippedAlgo : skippedAlgos) {
@@ -255,7 +254,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   @Override
   public void run() {
-    _trainingStepsExecutor.start();
+    _modelingStepsExecutor.start();
     eventLog().info(Stage.Workflow, "AutoML build started: " + EventLogEntry.dateTimeFormat.format(_runCountdown.start_time()))
             .setNamedValue("start_epoch", _runCountdown.start_time(), EventLogEntry.epochFormat);
     learn();
@@ -264,11 +263,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   @Override
   public void stop() {
-    if (null == _trainingStepsExecutor) return; // already stopped
-    _trainingStepsExecutor.stop();
+    if (null == _modelingStepsExecutor) return; // already stopped
+    _modelingStepsExecutor.stop();
     eventLog().info(Stage.Workflow, "AutoML build stopped: " + EventLogEntry.dateTimeFormat.format(_runCountdown.stop_time()))
             .setNamedValue("stop_epoch", _runCountdown.stop_time(), EventLogEntry.epochFormat);
-    eventLog().info(Stage.Workflow, "AutoML build done: built " + _trainingStepsExecutor.modelCount() + " models");
+    eventLog().info(Stage.Workflow, "AutoML build done: built " + _modelingStepsExecutor.modelCount() + " models");
     eventLog().info(Stage.Workflow, "AutoML duration: "+ PrettyPrint.msecs(_runCountdown.duration(), true))
             .setNamedValue("duration_secs", Math.round(_runCountdown.duration() / 1000.));
 
@@ -321,7 +320,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   public int remainingModels() {
     if (_buildSpec.build_control.stopping_criteria.max_models() == 0)
       return Integer.MAX_VALUE;
-    return _buildSpec.build_control.stopping_criteria.max_models() - _trainingStepsExecutor.modelCount();
+    return _buildSpec.build_control.stopping_criteria.max_models() - _modelingStepsExecutor.modelCount();
   }
 
   @Override
@@ -463,16 +462,16 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   //*****************  Training Jobs  *****************//
 
   private void learn() {
-    List<TrainingStep> executed = new ArrayList<>();
-    for (TrainingStep step : getExecutionPlan()) {
+    List<ModelingStep> executed = new ArrayList<>();
+    for (ModelingStep step : getExecutionPlan()) {
         if (!exceededSearchLimits(step._description, step._ignoreConstraints)) {
-          if (_trainingStepsExecutor.submit(step, job())) {
+          if (_modelingStepsExecutor.submit(step, job())) {
             executed.add(step);
           }
         }
     }
-    _trainedSteps = _trainingStepsRegistry.createExecutionPlanFromSteps(executed.toArray(new TrainingStep[0]));
-    eventLog().info(Stage.Workflow, "Actual trained steps: "+Arrays.toString(_trainedSteps));
+    _actualModelingSteps = _modelingStepsRegistry.createDefinitionPlanFromSteps(executed.toArray(new ModelingStep[0]));
+    eventLog().info(Stage.Workflow, "Actual modeling steps: "+Arrays.toString(_actualModelingSteps));
   }
 
 

@@ -171,8 +171,8 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="A list of algorithms to restrict to during the model-building phase.", valuesProvider=AlgoProvider.class, direction=API.Direction.INPUT)
     public Algo[] include_algos;
 
-    @API(help="The list of training steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).", direction=API.Direction.INPUT)
-    public StepDefinitionV99[] training_plan;
+    @API(help="The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).", direction=API.Direction.INPUT)
+    public StepDefinitionV99[] modeling_plan;
 
   } // class AutoMLBuildModels
 

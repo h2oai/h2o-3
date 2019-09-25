@@ -46,7 +46,7 @@
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with exclude_algos param.
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-#' @param training_plan List. The list of training steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional.
+#' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. Defaults to FALSE.
@@ -89,7 +89,7 @@ h2o.automl <- function(x, y, training_frame,
                        project_name = NULL,
                        exclude_algos = NULL,
                        include_algos = NULL,
-                       training_plan = NULL,
+                       modeling_plan = NULL,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
@@ -207,10 +207,10 @@ h2o.automl <- function(x, y, training_frame,
     }
     build_models$include_algos <- include_algos
   }
-  if (!is.null(training_plan)) {
+  if (!is.null(modeling_plan)) {
     is.string <- function(s) is.character(s) && length(s) == 1
     is.step <- function(s) is.string(s) || is.list(s) && !is.null(s$id)
-    training_plan <- lapply(training_plan, function(step) {
+    modeling_plan <- lapply(modeling_plan, function(step) {
       if (is.string(step)) {
         list(name=step)
       } else if (!(is.list(step)
@@ -238,7 +238,7 @@ h2o.automl <- function(x, y, training_frame,
         step
       }
     })
-    build_models$training_plan <- training_plan
+    build_models$modeling_plan <- modeling_plan
   }
 
   # Update build_control with nfolds
@@ -405,12 +405,12 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
     event_log <- NULL
   }
 
-  if (should_fetch('trained_steps')) {
-    trained_steps <- lapply(automl_job$trained_steps, function(sdef) {
+  if (should_fetch('modeling_steps')) {
+    modeling_steps <- lapply(automl_job$modeling_steps, function(sdef) {
       list(name=sdef$name, steps=sdef$steps)
     })
   } else {
-    trained_steps <- NULL
+    modeling_steps <- NULL
   }
 
   project <- automl_job$project
@@ -420,7 +420,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
     leaderboard=leaderboard,
     leader=leader,
     event_log=event_log,
-    trained_steps=trained_steps
+    modeling_steps=modeling_steps
   ))
 }
 
@@ -455,7 +455,7 @@ h2o.getAutoML <- function(project_name) {
              leader = state$leader,
              leaderboard = state$leaderboard,
              event_log = state$event_log,
-             trained_steps = state$trained_steps,
+             modeling_steps = state$modeling_steps,
              training_info = training_info
   ))
 }

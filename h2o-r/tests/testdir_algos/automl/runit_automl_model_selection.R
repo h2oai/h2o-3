@@ -80,48 +80,48 @@ automl.model_selection.suite <- function() {
     )
   }
 
-  test_bad_training_plan <- function() {
+  test_bad_modeling_plan <- function() {
     ds <- import_dataset()
     expect_error(
       h2o.automl(x = ds$x, y = ds$y.idx,
         training_frame = ds$train,
-        training_plan = list("GBM", list("GLM")),
+        modeling_plan = list("GBM", list("GLM")),
       ),
       "Each steps definition must be a string or a list with a 'name' key and an optional 'alias' or 'steps' key."
     )
     expect_error(
       h2o.automl(x = ds$x, y = ds$y.idx,
         training_frame = ds$train,
-        training_plan = list("GBM", list(name="GLM", alias='all', steps=c("def_1", "def_2"))),
+        modeling_plan = list("GBM", list(name="GLM", alias='all', steps=c("def_1", "def_2"))),
       ),
       "Each steps definition must be a string or a list with a 'name' key and an optional 'alias' or 'steps' key."
     )
     expect_error(
       h2o.automl(x = ds$x, y = ds$y.idx,
         training_frame = ds$train,
-        training_plan = list("GBM", list(name="GLM", alias='wrong')),
+        modeling_plan = list("GBM", list(name="GLM", alias='wrong')),
       ),
       "alias key must be one of 'all', 'defaults', 'grids'."
     )
     expect_error(
       h2o.automl(x = ds$x, y = ds$y.idx,
         training_frame = ds$train,
-        training_plan = list("GBM", list(name="GLM", steps=list(name='def_1'))),
+        modeling_plan = list("GBM", list(name="GLM", steps=list(name='def_1'))),
       ),
       "steps key must be a vector, and each element must be a string or a list with an 'id' key."
     )
   }
 
-  test_training_plan_full_syntax <- function() {
+  test_modeling_plan_full_syntax <- function() {
     ds <- import_dataset()
     aml <- h2o.automl(x = ds$x, y = ds$y.idx,
       training_frame = ds$train,
-      training_plan = list(
+      modeling_plan = list(
         list(name="GLM", steps=c(list(id="def_1"))),
         list(name="GBM", alias='grids'),
         list(name='DRF', steps=c(list(id='def_1', weight=333)))  # just testing that it is parsed correctly on backend (no model won't be build due to max_models)
       ),
-      project_name = "r_training_plan_full_syntax",
+      project_name = "r_modeling_plan_full_syntax",
       max_models = 2,
       seed = 1,
     )
@@ -132,17 +132,17 @@ automl.model_selection.suite <- function() {
     expect_true(any(grepl("GBM_grid", models$all)))
   }
 
-  test_training_plan_minimal_syntax <- function() {
+  test_modeling_plan_minimal_syntax <- function() {
     ds <- import_dataset()
     aml <- h2o.automl(x = ds$x, y = ds$y.idx,
       training_frame = ds$train,
-      training_plan = list(
+      modeling_plan = list(
         list(name="DRF", steps=c("XRT", "def_1")),
         "GLM",
         list(name="GBM", alias="grids"),
         "StackedEnsemble"
       ),
-      project_name = "r_training_plan_minimal_syntax",
+      project_name = "r_modeling_plan_minimal_syntax",
       max_models = 5,
       seed = 1,
     )
@@ -156,22 +156,22 @@ automl.model_selection.suite <- function() {
     expect_true(any(grepl("AllModels", models$all)))
   }
 
-  test_trained_steps <- function() {
+  test_modeling_steps <- function() {
     ds <- import_dataset()
     aml <- h2o.automl(x = ds$x, y = ds$y.idx,
       training_frame = ds$train,
-      training_plan = list(
+      modeling_plan = list(
         "DRF",
         "GLM",
         list(name="GBM", steps=list(id="grid_1", weight=777)),
         "StackedEnsemble"
       ),
-      project_name = "r_trained_steps",
+      project_name = "r_modeling_steps",
       max_models = 5,
       seed = 1,
     )
     print(aml@leaderboard)
-    expect_equal(aml@trained_steps, list(
+    expect_equal(aml@modeling_steps, list(
       list(name='DRF', steps=list(list(id='def_1', weight=10), list(id='XRT', weight=10))),
       list(name='GLM', steps=list(list(id='def_1', weight=10))),
       list(name='GBM', steps=list(list(id='grid_1', weight=777))),
@@ -180,21 +180,21 @@ automl.model_selection.suite <- function() {
 
     new_aml <- h2o.automl(x=ds$x, y=ds$y.idx,
       training_frame=ds$train,
-      training_plan=aml@trained_steps,
-      project_name="r_reinject_trained_steps",
+      modeling_plan=aml@modeling_steps,
+      project_name="r_reinject_modeling_steps",
       max_models=5
     )
     print(new_aml@leaderboard)
-    expect_equal(new_aml@trained_steps, aml@trained_steps)
+    expect_equal(new_aml@modeling_steps, aml@modeling_steps)
   }
 
-  test_exclude_algos_is_applied_on_top_of_training_plan <- function() {
+  test_exclude_algos_is_applied_on_top_of_modeling_plan <- function() {
     ds <- import_dataset()
     aml <- h2o.automl(x = ds$x, y = ds$y.idx,
       training_frame = ds$train,
-      training_plan = list("DRF", "GLM", list(name="GBM", alias='grids'), "StackedEnsemble"),
+      modeling_plan = list("DRF", "GLM", list(name="GBM", alias='grids'), "StackedEnsemble"),
       exclude_algos = c("GBM", "StackedEnsemble"),
-      project_name = "r_trained_steps",
+      project_name = "r_modeling_steps",
       max_models = 5,
       seed = 1,
     )
@@ -207,11 +207,11 @@ automl.model_selection.suite <- function() {
     test_exclude_algos,
     test_include_algos,
     test_include_exclude_algos,
-    test_bad_training_plan,
-    test_training_plan_full_syntax,
-    test_training_plan_minimal_syntax,
-    test_trained_steps,
-    test_exclude_algos_is_applied_on_top_of_training_plan
+    test_bad_modeling_plan,
+    test_modeling_plan_full_syntax,
+    test_modeling_plan_minimal_syntax,
+    test_modeling_steps,
+    test_exclude_algos_is_applied_on_top_of_modeling_plan
   )
 }
 

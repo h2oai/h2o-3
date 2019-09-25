@@ -166,7 +166,7 @@ public class AutoMLBuildSpec extends Iced {
   public static final class AutoMLBuildModels extends Iced {
     public Algo[] exclude_algos;
     public Algo[] include_algos;
-    public StepDefinition[] training_plan;
+    public StepDefinition[] modeling_plan;
   }
 
   public AutoMLBuildControl build_control;

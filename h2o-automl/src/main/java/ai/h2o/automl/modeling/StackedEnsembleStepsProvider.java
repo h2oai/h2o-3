@@ -1,4 +1,4 @@
-package ai.h2o.automl.training;
+package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import ai.h2o.automl.WorkAllocations.Work;
@@ -13,13 +13,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import static ai.h2o.automl.TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
-public class StackedEnsembleStepsProvider implements TrainingStepsProvider<StackedEnsembleStepsProvider.StackedEnsembleSteps> {
+public class StackedEnsembleStepsProvider implements ModelingStepsProvider<StackedEnsembleStepsProvider.StackedEnsembleSteps> {
 
-    public static class StackedEnsembleSteps extends TrainingSteps {
+    public static class StackedEnsembleSteps extends ModelingSteps {
 
-        static abstract class StackedEnsembleModelStep extends TrainingStep.ModelStep<StackedEnsembleModel> {
+        static abstract class StackedEnsembleModelStep extends ModelingStep.ModelStep<StackedEnsembleModel> {
 
             StackedEnsembleModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.StackedEnsemble, id, weight, autoML);
@@ -79,7 +79,7 @@ public class StackedEnsembleStepsProvider implements TrainingStepsProvider<Stack
         }
 
 
-        private TrainingStep[] defaults = new StackedEnsembleModelStep[] {
+        private ModelingStep[] defaults = new StackedEnsembleModelStep[] {
                 new StackedEnsembleModelStep("best", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     { _description = _description+" (build using top model from each algorithm type)"; }
                     @Override
@@ -123,19 +123,19 @@ public class StackedEnsembleStepsProvider implements TrainingStepsProvider<Stack
                 },
         };
 
-        private TrainingStep[] grids = new TrainingStep[0];
+        private ModelingStep[] grids = new ModelingStep[0];
 
         public StackedEnsembleSteps(AutoML autoML) {
             super(autoML);
         }
 
         @Override
-        protected TrainingStep[] getDefaultModels() {
+        protected ModelingStep[] getDefaultModels() {
             return defaults;
         }
 
         @Override
-        protected TrainingStep[] getGrids() {
+        protected ModelingStep[] getGrids() {
             return grids;
         }
     }

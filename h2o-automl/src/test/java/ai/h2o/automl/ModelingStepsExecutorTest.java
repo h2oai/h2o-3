@@ -16,7 +16,7 @@ import java.util.Date;
 
 import static org.junit.Assert.*;
 
-public class TrainingStepsExecutorTest extends TestUtil {
+public class ModelingStepsExecutorTest extends TestUtil {
 
     private AutoML aml;
     private Frame fr;
@@ -45,8 +45,8 @@ public class TrainingStepsExecutorTest extends TestUtil {
         return new Job(Key.make(name), Model.class.getName(), "does nothing, not even started");
     }
 
-    private TrainingStep makeStep(Job job, boolean withWork) {
-        return new TrainingStep(Algo.GBM,"dummy", 42, aml) {
+    private ModelingStep makeStep(Job job, boolean withWork) {
+        return new ModelingStep(Algo.GBM,"dummy", 42, aml) {
             Work work = withWork ? new Work(_id, _algo, WorkAllocations.JobType.ModelBuild, _weight) : null;
             @Override
             protected Work getAllocatedWork() {
@@ -83,7 +83,7 @@ public class TrainingStepsExecutorTest extends TestUtil {
 
     @Test
     public void test_start_stop() {
-        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
+        ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         assertTrue(executor._runCountdown.running());
         executor.stop();
@@ -92,7 +92,7 @@ public class TrainingStepsExecutorTest extends TestUtil {
 
     @Test
     public void test_submit_training_step_with_no_allocated_work() {
-        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
+        ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
         boolean started = executor.submit(makeStep(makeJob("dummy"), false), parentJob);
@@ -102,7 +102,7 @@ public class TrainingStepsExecutorTest extends TestUtil {
 
     @Test
     public void test_submit_training_step_with_no_job() {
-        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
+        ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
         parentJob.start(new H2O.H2OCountedCompleter() {
@@ -123,7 +123,7 @@ public class TrainingStepsExecutorTest extends TestUtil {
 
     @Test
     public void test_submit_valid_training_step() {
-        TrainingStepsExecutor executor = new TrainingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
+        ModelingStepsExecutor executor = new ModelingStepsExecutor(aml.leaderboard(), aml.eventLog(), aml._runCountdown);
         executor.start();
         Job parentJob = makeJob("parent");
         parentJob.start(new H2O.H2OCountedCompleter() {

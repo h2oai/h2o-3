@@ -1,4 +1,4 @@
-package ai.h2o.automl.training;
+package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import hex.grid.Grid;
@@ -10,12 +10,12 @@ import water.Job;
 import java.util.HashMap;
 import java.util.Map;
 
-import static ai.h2o.automl.TrainingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
-import static ai.h2o.automl.TrainingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
+import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
+import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
-public class GBMStepsProvider implements TrainingStepsProvider<GBMStepsProvider.GBMSteps> {
+public class GBMStepsProvider implements ModelingStepsProvider<GBMStepsProvider.GBMSteps> {
 
-    public static class GBMSteps extends TrainingSteps {
+    public static class GBMSteps extends ModelingSteps {
 
         static GBMParameters prepareModelParameters() {
             GBMParameters gbmParameters = new GBMParameters();
@@ -24,7 +24,7 @@ public class GBMStepsProvider implements TrainingStepsProvider<GBMStepsProvider.
             return gbmParameters;
         }
 
-        static abstract class GBMModelStep extends TrainingStep.ModelStep<GBMModel> {
+        static abstract class GBMModelStep extends ModelingStep.ModelStep<GBMModel> {
 
             GBMModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.GBM, id, weight, autoML);
@@ -40,7 +40,7 @@ public class GBMStepsProvider implements TrainingStepsProvider<GBMStepsProvider.
             }
         }
 
-        static abstract class GBMGridStep extends TrainingStep.GridStep<GBMModel> {
+        static abstract class GBMGridStep extends ModelingStep.GridStep<GBMModel> {
             public GBMGridStep(String id, int weight, AutoML autoML) {
                 super(Algo.GBM, id, weight, autoML);
             }
@@ -51,7 +51,7 @@ public class GBMStepsProvider implements TrainingStepsProvider<GBMStepsProvider.
         }
 
 
-        private TrainingStep[] defaults = new GBMModelStep[] {
+        private ModelingStep[] defaults = new GBMModelStep[] {
                 new GBMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<GBMModel> startJob() {
@@ -104,7 +104,7 @@ public class GBMStepsProvider implements TrainingStepsProvider<GBMStepsProvider.
                 },
         };
 
-        private TrainingStep[] grids = new GBMGridStep[] {
+        private ModelingStep[] grids = new GBMGridStep[] {
                 new GBMGridStep("grid_1", 3* DEFAULT_GRID_TRAINING_WEIGHT, aml()) {
                     @Override
                     protected Job<Grid> startJob() {
@@ -130,12 +130,12 @@ public class GBMStepsProvider implements TrainingStepsProvider<GBMStepsProvider.
         }
 
         @Override
-        protected TrainingStep[] getDefaultModels() {
+        protected ModelingStep[] getDefaultModels() {
             return defaults;
         }
 
         @Override
-        protected TrainingStep[] getGrids() {
+        protected ModelingStep[] getGrids() {
             return grids;
         }
     }

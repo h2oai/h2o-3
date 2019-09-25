@@ -17,10 +17,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
- * Class responsible for starting all the {@link TrainingStep}s and monitoring their associated {@link Job},
+ * Class responsible for starting all the {@link ModelingStep}s and monitoring their associated {@link Job},
  * i.e. polling jobs and adding their result model(s) to the {@link Leaderboard}.
  */
-class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
+class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
     private static final int pollingIntervalInMillis = 1000;
 
@@ -31,7 +31,7 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
     private transient List<Job> _jobs; // subjobs
     private AtomicInteger _modelCount = new AtomicInteger();
 
-    TrainingStepsExecutor(Leaderboard leaderboard, EventLog eventLog, Countdown runCountdown) {
+    ModelingStepsExecutor(Leaderboard leaderboard, EventLog eventLog, Countdown runCountdown) {
         _leaderboardKey = leaderboard._key;
         _eventLogKey = eventLog._key;
         _runCountdown = runCountdown;
@@ -55,7 +55,7 @@ class TrainingStepsExecutor extends Iced<TrainingStepsExecutor> {
         _jobs = null;
     }
 
-    boolean submit(TrainingStep step, Job parentJob) {
+    boolean submit(ModelingStep step, Job parentJob) {
         if (step.canRun()) {
             Job job = step.startJob();
             if (job == null) {
