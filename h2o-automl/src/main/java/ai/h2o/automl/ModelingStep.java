@@ -240,8 +240,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             else
                 builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, aml().timeRemainingMs() / 1e3);
 
+            aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+key+" model training");
             builder.init(false);          // validate parameters
-
             Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
             try {
                 return builder.trainModelOnH2ONode();
@@ -287,12 +287,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
 
         /**
-         * @param gridKey optional grid key
+         * @param key optional grid key
          * @param baseParms ModelBuilder parameter values that are common across all models in the search.
          * @param searchParms hyperparameter search space,
          * @return the started hyperparameter search job.
          */
-        protected Job<Grid> hyperparameterSearch(Key<Grid> gridKey, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+        protected Job<Grid> hyperparameterSearch(Key<Grid> key, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
             Model.Parameters defaults;
             try {
                 defaults = baseParms.getClass().newInstance();
@@ -322,13 +322,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             else
                 searchCriteria.set_max_models(Math.min(searchCriteria.max_models(), maxAssignedModels));
 
-            aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+_algo+" hyperparameter search");
+            if (null == key) key = makeKey(_algo.name(), true);
+            aml().addGridKey(key);
 
-            if (null == gridKey) gridKey = makeKey(_algo.name(), true);
-            aml().addGridKey(gridKey);
+            aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+key+" hyperparameter search");
             Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+aml().timeRemainingMs());
             return GridSearch.startGridSearch(
-                    gridKey,
+                    key,
                     baseParms,
                     searchParms,
                     new GridSearch.SimpleParametersBuilderFactory<>(),
