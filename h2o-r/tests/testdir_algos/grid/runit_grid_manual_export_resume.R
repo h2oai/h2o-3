@@ -13,7 +13,7 @@ test.grid.resume <- function() {
   hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
   baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex, hyper_params = hyper_parameters)
   grid_id <- baseline_grid@grid_id
-  h2o.export_grid(grid_directory = tempdir(), grid_id = grid_id)
+  h2o.save_grid(grid_directory = tempdir(), grid_id = grid_id)
   baseline_model_count <- length(baseline_grid@model_ids)
   print(baseline_grid@model_ids)
   

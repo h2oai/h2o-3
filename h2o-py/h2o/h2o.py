@@ -449,7 +449,7 @@ def load_grid(grid_directory, grid_id):
     return get_grid(response["name"])
 
 
-def export_grid(grid_directory, grid_id):
+def save_grid(grid_directory, grid_id):
     """
     Export a Grid and it's all its models into the given folder
     :param grid_directory: A string containing the path to the folder for the grid to be saved to.

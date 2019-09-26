@@ -301,13 +301,13 @@ h2o.load_grid <- function(grid_directory, grid_id){
 #'baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex,
 #' hyper_params = hyper_parameters)
 #'
-#'h2o.export_grid(grid_directory = tempdir(), grid_id = baseline_grid@grid_id)
+#'h2o.save_grid(grid_directory = tempdir(), grid_id = baseline_grid@grid_id)
 #'# Remove everything from the cluster or restart it
 #'h2o.removeAll()
 #'grid <- h2o.load_grid(grid_directory = tempdir(), grid_id = grid_id)
 #' }
 #' @export
-h2o.export_grid <- function(grid_directory, grid_id){
+h2o.save_grid <- function(grid_directory, grid_id){
   params <- list()
   params[["grid_directory"]] <- grid_directory
   params[["grid_id"]] <- grid_id

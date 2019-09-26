@@ -28,7 +28,7 @@ def grid_resume():
     grid_id = gs.grid_id
     old_grid_model_count = len(gs.model_ids)
     print("Baseline grid has %d models" % old_grid_model_count)
-    h2o.export_grid(export_dir, grid_id)
+    h2o.save_grid(export_dir, grid_id)
     h2o.remove_all();
 
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
