@@ -466,8 +466,12 @@ public class RegisterV3Api extends AbstractRegister {
             "List of all registered Rest API capabilities");
 
     context.registerEndpoint("import_grid_search",
-            "POST /3/Grid", GridImportHandler.class, "importGrid",
+            "POST /3/Grid/import", GridImportExportHandler.class, "importGrid",
             "Import previously saved grid model");
+
+    context.registerEndpoint("export_grid_search",
+            "POST /3/Grid/export", GridImportExportHandler.class, "exportGrid",
+            "Export a Grid and its models.");
   }
 
   @Override

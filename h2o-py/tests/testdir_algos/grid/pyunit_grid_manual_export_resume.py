@@ -22,12 +22,13 @@ def grid_resume():
     print("GBM grid with the following hyper_parameters:", hyper_parameters)
     
     export_dir = tempfile.mkdtemp()
-    gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters,
-                       export_checkpoints_dir=export_dir)
+    gs = H2OGridSearch(H2OGradientBoostingEstimator,
+                       hyper_params=hyper_parameters)
     gs.train(x=list(range(4)), y=4, training_frame=train)
     grid_id = gs.grid_id
     old_grid_model_count = len(gs.model_ids)
     print("Baseline grid has %d models" % old_grid_model_count)
+    h2o.export_grid(export_dir, grid_id)
     h2o.remove_all();
 
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
@@ -35,8 +36,8 @@ def grid_resume():
     assert grid is not None
     assert len(grid.model_ids) == old_grid_model_count
     grid.train(x=list(range(4)), y=4, training_frame=train)
-    assert len(grid.model_ids) > old_grid_model_count
     print("Newly grained grid has %d models" % len(grid.model_ids))
+    assert len(grid.model_ids) > old_grid_model_count
     rmtree(export_dir)
     
     for model_id in grid.model_ids:

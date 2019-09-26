@@ -1,5 +1,6 @@
 package hex.grid;
 
+import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
@@ -11,6 +12,7 @@ import water.fvec.Frame;
 
 import java.io.*;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.HashMap;
 
 import static org.junit.Assert.*;
@@ -119,6 +121,46 @@ public class GridTest extends TestUtil {
       final Grid grid = loadGridFromFile(serializedGridFile);
       assertArrayEquals(originalGrid.getModelKeys(), grid.getModelKeys());
       Scope.track_generic(grid);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void gridSearchManualExport() throws IOException {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_ntrees", new Integer[]{5});
+        put("_max_depth", new Integer[]{2});
+        put("_learn_rate", new Double[]{.7});
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+
+      final String exportDir = temporaryFolder.newFolder().getAbsolutePath();
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Scope.track_generic(gs);
+      final Grid originalGrid = gs.get();
+      Scope.track_generic(originalGrid);
+      
+      final String originalGridPath = exportDir + "/" + originalGrid._key.toString();
+      originalGrid.export_binary(originalGridPath);
+      assertTrue(Files.exists(Paths.get(originalGridPath)));
+      
+      originalGrid.export_models_binary(exportDir);
+      
+      for(Model model : originalGrid.getModels()){
+        assertTrue(Files.exists(Paths.get(exportDir, model._key.toString())));  
+      }
     } finally {
       Scope.exit();
     }

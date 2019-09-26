@@ -436,14 +436,28 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
 
 def load_grid(grid_directory, grid_id):
     """
-    Loads previously saved grid with all it's models from the same folder
+    Loads previously saved grid with all its models from the same folder
     :param grid_directory: A string containing the path to the folder with the grid saved.
     :param grid_id: A chracter string with identification of the grid saved in the given grid_directory.
      It is expected for the grid to be saved under a name corresponding to it's id.
     :return: An instance of H2OGridSearch
     """
+    
+    assert_is_type(grid_directory, str)
+    assert_is_type(grid_id, str)
+    response = api("POST /3/Grid/import", {"grid_directory": grid_directory, "grid_id": grid_id})
+    return get_grid(response["name"])
 
-    response = api("POST /3/Grid", {"grid_directory": grid_directory, "grid_id" : grid_id})
+
+def export_grid(grid_directory, grid_id):
+    """
+    Export a Grid and it's all its models into the given folder
+    :param grid_directory: A string containing the path to the folder for the grid to be saved to.
+    :param grid_id: A chracter string with identification of the Grid in H2O. 
+    """
+    assert_is_type(grid_directory, str)
+    assert_is_type(grid_id, str)
+    response = api("POST /3/Grid/export", {"grid_directory": grid_directory, "grid_id": grid_id})
     return get_grid(response["name"])
 
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):

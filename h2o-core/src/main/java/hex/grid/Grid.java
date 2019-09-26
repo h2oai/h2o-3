@@ -4,12 +4,17 @@ import hex.*;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
+import water.persist.Persist;
 import water.util.*;
 import water.util.PojoUtils.FieldNaming;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.lang.reflect.Array;
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Objects;
 
 /**
  * A Grid of Models representing result of hyper-parameter space exploration.
@@ -486,5 +491,36 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
     ScoringInfo scoring_info = _scoring_infos != null && _scoring_infos.length > 0 ? _scoring_infos[0] : null;
     return ScoringInfo.createScoringHistoryTable(_scoring_infos, (scoring_info != null ? scoring_info.validation : false), (scoring_info != null ? scoring_info.cross_validation: false), m._output.getModelCategory(), (scoring_info != null ? scoring_info.is_autoencoder : false));
+  }
+
+  /**
+   * Exports this Grid in a binary format using {@link AutoBuffer}. Related models are not saved.
+   *
+   * @param gridFilePath Full path to the name of the file this {@link Grid} should be saved to
+   * @throws IOException Error serializing the grid.
+   */
+  public void export_binary(final String gridFilePath) throws IOException {
+    Objects.requireNonNull(gridFilePath);
+    assert _key != null;
+    final URI gridUri = FileUtils.getURI(gridFilePath);
+    final Persist persist = H2O.getPM().getPersistForURI(gridUri);
+    try (final OutputStream outputStream = persist.create(gridUri.toString(), true)) {
+      final AutoBuffer autoBuffer = new AutoBuffer(outputStream, true);
+      writeWithoutModels(autoBuffer);
+      autoBuffer.close();
+    }
+  }
+
+  /**
+   * Saves all of the models present in this Grid. Models are named by their keys.
+   *
+   * @param exportDir Directory to export all the models to.
+   * @throws IOException Error exporting the models
+   */
+  public void export_models_binary(final String exportDir) throws IOException {
+    Objects.requireNonNull(exportDir);
+    for (Model model : getModels()) {
+      model.exportBinaryModel(exportDir + "/" + model._key.toString(), true);
+    }
   }
 }
