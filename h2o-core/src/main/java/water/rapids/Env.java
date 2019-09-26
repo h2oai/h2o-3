@@ -234,6 +234,7 @@ public class Env extends Iced {
     init(new AstIsNa());
     init(new AstIsNumeric());
     init(new AstLevels());
+    init(new AstMelt());
     init(new AstMerge());
     init(new AstNaOmit());
     init(new AstColumnsByType());
