@@ -46,7 +46,11 @@ public abstract class XGBoostPojoWriter {
     protected String getFeatureAccessor(int idx) {
         if (idx >= _output._catOffsets[_output._cats]) {
             int colIdx = idx - _output._catOffsets[_output._cats] + _output._cats;
-            return "data[" + colIdx + "]";
+            if (_output._sparse) {
+                return "(data[" + colIdx + "] == 0 ? Double.NaN : data[" + colIdx + "])";
+            } else {
+                return "data[" + colIdx + "]";
+            }
         } else {
             int colIdx = 0;
             while (idx >= _output._catOffsets[colIdx + 1]) colIdx++;
@@ -126,14 +130,13 @@ public abstract class XGBoostPojoWriter {
             }
             RegTree[][] trees = booster.getGroupedTrees();
             for (int gidx = 0; gidx < trees.length; gidx++) {
-                sb.ip("preds[").p(gidx).p("] =").nl();
-                sb.ii(1);
+                sb.ip("float preds_").p(gidx).p(" = 0f;").nl();
                 for (int tidx = 0; tidx < trees[gidx].length; tidx++) {
                     String treeClassName = renderTreeClass(trees, gidx, tidx, dartBooster, fileCtx);
-                    sb.ip(treeClassName).p(".score0(data)").p(" + ").nl();
+                    sb.ip("preds_").p(gidx).p(" += ").p(treeClassName).p(".score0(data);").nl();
                 }
-                sb.ip("").pj(_p.getBaseScore()).p(";").nl();
-                sb.di(1);
+                sb.ip("preds_").p(gidx).p(" += ").pj(_p.getBaseScore()).p(";").nl();
+                sb.ip("preds[").p(gidx).p("] = preds_").p(gidx).p(";").nl();
             }
         }
 
@@ -186,7 +189,7 @@ public abstract class XGBoostPojoWriter {
                     trueChild = node.getRightChildIndex();
                     falseChild = node.getLeftChildIndex();
                 }
-                sb.ip("((Double.isNaN(").p(accessor).p(") || ").p(accessor).p(operator).pj(node.getSplitCondition()).p(") ?").nl();
+                sb.ip("((Double.isNaN(").p(accessor).p(") || ((float)").p(accessor).p(")").p(operator).pj(node.getSplitCondition()).p(") ?").nl();
                 sb.ii(1);
                 renderTree(sb, tree, trueChild);
                 sb.nl().ip(":").nl();
