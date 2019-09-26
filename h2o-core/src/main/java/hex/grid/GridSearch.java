@@ -156,7 +156,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           final Persist persist = H2O.getPM().getPersistForURI(gridUri);
           try(final OutputStream outputStream = persist.create(gridUri.toString(), true)){
             final AutoBuffer autoBuffer = new AutoBuffer(outputStream, true);
-            grid.writeAll(autoBuffer);
+            grid.writeWithoutModels(autoBuffer);
             autoBuffer.close();
           } catch (IOException e) {
             Log.warn(String.format("Could not save grid '%s' to location '%s'", 

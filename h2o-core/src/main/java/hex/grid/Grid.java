@@ -408,6 +408,11 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
       ab.putKey(k);
     return super.writeAll_impl(ab);
   }
+  
+  protected AutoBuffer writeWithoutModels(final AutoBuffer autoBuffer){
+    autoBuffer.put(this);
+    return super.writeAll_impl(autoBuffer);
+  }
 
   @Override
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {

@@ -3,10 +3,7 @@ package water.api;
 import hex.Model;
 import hex.grid.Grid;
 import jdk.internal.util.xml.impl.Input;
-import water.AutoBuffer;
-import water.Freezable;
-import water.H2O;
-import water.Key;
+import water.*;
 import water.api.schemas3.GridImportV3;
 import water.api.schemas3.KeyV3;
 import water.persist.Persist;
@@ -31,6 +28,7 @@ public class GridImportHandler extends Handler {
       final Grid grid = (Grid) freezable;
       
       loadGridModels(grid,gridImportV3);
+      DKV.put(grid);
       return new KeyV3.GridKeyV3(grid._key);
     }
 
