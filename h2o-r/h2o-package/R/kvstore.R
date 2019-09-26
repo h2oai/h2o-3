@@ -169,6 +169,10 @@ h2o.getModel <- function(model_id) {
   if (model_category %in% c("Binomial", "Multinomial", "Ordinal", "Regression")) { # add the missing metrics manually where
     model$coefficients <- model$coefficients_table[,2]
     names(model$coefficients) <- model$coefficients_table[,1]
+    if (!is.null(model$random_coefficients_table)) {
+      model$random_coefficients <- model$random_coefficients_table[,2]
+      names(model$random_coefficients) <- model$random_coefficients_table[,1]
+    }
   }
   parameters <- list()
   allparams  <- list()
@@ -219,11 +223,20 @@ h2o.getModel <- function(model_id) {
     parameters$x <- setdiff(parameters$x, parameters$y)
     allparams$x <- setdiff(allparams$x, allparams$y)
   }
-
   allparams$ignored_columns <- NULL
   allparams$response_column <- NULL
   parameters$ignored_columns <- NULL
   parameters$response_column <- NULL
+  if (identical("glm", json$algo) && allparams$HGLM) {
+    .newH2OModel(Class         = Class,
+                 model_id      = model_id,
+                 algorithm     = json$algo,
+                 parameters    = parameters,
+                 allparameters = allparams,
+                 have_pojo     = FALSE,
+                 have_mojo     = FALSE,
+                 model         = model)
+  } else {
   .newH2OModel(Class         = Class,
                model_id      = model_id,
                algorithm     = json$algo,
@@ -232,6 +245,7 @@ h2o.getModel <- function(model_id) {
                have_pojo     = json$have_pojo,
                have_mojo     = json$have_mojo,
                model         = model)
+  }
 }
 
 #'

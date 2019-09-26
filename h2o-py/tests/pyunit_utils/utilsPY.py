@@ -805,7 +805,7 @@ def write_syn_mixed_dataset_glm(csv_training_data_filename, csv_training_data_fi
     # add column count of encoded categorical predictors, if maximum value for enum is 3, it has 4 levels.
     # hence 4 bits are used to encode it with true one hot encoding.  That is why we are adding 1 bit per
     # categorical columns added to our predictors
-    new_col_count = col_count - enum_col + sum(enum_level_vec) + enum_level_vec.shape[0]
+    new_col_count = col_count - enum_col + sum(enum_level_vec)+len(enum_level_vec)
 
     # generate the weights to be applied to the training/validation/test data sets
     # this is for true one hot encoding.  For reference+one hot encoding, will skip
@@ -1178,7 +1178,7 @@ def encode_enum_dataset(dataset, enum_level_vec, enum_col, true_one_hot, include
         if include_nans and np.any(enum_arrays[:, indc]):
             enum_col_num += 1
 
-        new_temp_enum = np.zeros((num_row, enum_col_num[0]))
+        new_temp_enum = np.zeros((num_row, enum_col_num))
         one_hot_matrix = one_hot_encoding(enum_col_num)
         last_col_index = enum_col_num-1
 
@@ -1265,7 +1265,6 @@ def generate_response_glm(weight, x_mat, noise_std, family_type, class_method='p
     :return: vector representing the response
     """
     (num_row, num_col) = x_mat.shape
-
     temp_ones_col = np.asmatrix(np.ones(num_row)).transpose()
     x_mat = np.concatenate((temp_ones_col, x_mat), axis=1)
     response_y = x_mat * weight + noise_std * np.random.standard_normal([num_row, 1])

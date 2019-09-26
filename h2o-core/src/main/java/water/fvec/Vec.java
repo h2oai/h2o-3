@@ -336,7 +336,10 @@ public class Vec extends Keyed<Vec> {
   /** Make a new zero-filled vector with the given row count. 
    *  @return New zero-filled vector with the given row count. */
   public static Vec makeZero( long len ) { return makeZero(len, T_NUM); }
-
+  public static Vec makeOne( long len ) { return makeOne(len, T_NUM); }
+  public static Vec makeOne(long len, byte typeCode) {
+    return makeCon(1.0, len, true, typeCode);
+  }
   public static Vec makeZero(long len, byte typeCode) {
     return makeCon(0.0, len, true, typeCode);
   }
@@ -653,6 +656,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   public Vec [] makeZeros(int n){return makeZeros(n,null,null);}
+  public Vec [] makeOnes(int n){return makeOnes(n,null,null);}
 
   /**
    * Make a temporary work vec of double [] .
@@ -709,7 +713,7 @@ public class Vec extends Keyed<Vec> {
   }
 
   public Vec [] makeZeros(int n, String [][] domain, byte[] types){ return makeCons(n, 0, domain, types);}
-
+  public Vec [] makeOnes(int n, String [][] domain, byte[] types){ return makeCons(n, 1, domain, types);}
   // Make a bunch of compatible zero Vectors
   public Vec[] makeCons(int n, final long l, String[][] domains, byte[] types) {
     final int nchunks = nChunks();

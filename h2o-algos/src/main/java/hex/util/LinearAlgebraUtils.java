@@ -7,13 +7,20 @@ import hex.FrameTask;
 import hex.Interaction;
 import hex.ToEigenVec;
 import hex.gram.Gram;
-import water.*;
+import jsr166y.ForkJoinTask;
+import jsr166y.RecursiveAction;
+import water.DKV;
+import water.Job;
+import water.Key;
+import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
+
+import java.util.Arrays;
 
 import static java.util.Arrays.sort;
 import static org.apache.commons.lang.ArrayUtils.reverse;
@@ -35,6 +42,96 @@ public class LinearAlgebraUtils {
     return res;
   }
 
+
+  /**
+   * Given a matrix aMat as a double [][] array, this function will return an array that is the
+   * square root of the diagonals of aMat.  Note that the first index is column and the second index
+   * is row.
+   * @param aMat
+   * @return
+   */
+  public static double[] sqrtDiag(double[][] aMat) {
+    int matrixSize = aMat.length;
+    double[] answer = new double[matrixSize];
+    for (int index=0; index < matrixSize; index++)
+      answer[index] = Math.sqrt(aMat[index][index]);
+    return answer;
+  }
+
+  /**
+   * Given the cholesky decomposition of X = QR, this method will return the inverse of
+   * transpose(X)*X by attempting to solve for transpose(R)*R*XTX_inverse = Identity matrix
+   * 
+   * @param cholR
+   * @return
+   */
+  public static double[][] chol2Inv(final double[][] cholR) {
+    final int matrixSize = cholR.length;  // cholR is actuall transpose(R) from QR
+    double[][] cholL = ArrayUtils.transpose(cholR); // this is R from QR
+    final double[][] inverted = new double[matrixSize][];
+    RecursiveAction[] ras = new RecursiveAction[matrixSize];
+    for (int index=0; index<matrixSize; index++) {
+      final double[] oneColumn = new double[matrixSize];
+      oneColumn[index] = 1.0;
+      final int i = index;
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          double[] upperColumn = forwardSolve(cholL, oneColumn);
+          inverted[i] = Arrays.copyOf(upperColumn, matrixSize);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    
+    for (int index=0; index<matrixSize; index++) {
+      final double[] oneColumn = new double[matrixSize];
+      oneColumn[index] = 1.0;
+      final int i = index;
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          double[] lowerColumn = new double[matrixSize];
+          backwardSolve(cholR, inverted[i], lowerColumn);
+          inverted[i] = Arrays.copyOf(lowerColumn, matrixSize);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return inverted;
+  }
+  
+  public static double[][] matrixMultiply(double[][] A, double[][] B ) {
+    int arow = A[0].length; // number of rows of result
+    int acol = A.length;    // number columns in A
+    int bcol = B.length;    // number of columns of B
+    final double[][] result = new double[bcol][];
+    RecursiveAction[] ras = new RecursiveAction[acol];
+    for (int index = 0; index < acol; index++) {
+      final int i = index;
+      final double[] tempResult = new double[arow];
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          ArrayUtils.multArrVec(A, B[i], tempResult); 
+          result[i] = Arrays.copyOf(tempResult, arow);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return result;
+  }
+
+  public static double[] backwardSolve(double[][] L, double[] b, double[] res) {
+    assert L != null && L.length == L[0].length && L.length == b.length;
+    if (res==null)  // only allocate memory if needed
+      res = new double[b.length];
+    for (int rowIndex = b.length-1; rowIndex >= 0; rowIndex--) {
+      res[rowIndex] = b[rowIndex];
+      for (int colIndex = b.length-1; colIndex > rowIndex; colIndex--) {
+        res[rowIndex] -= L[rowIndex][colIndex]*res[colIndex];
+      }
+      res[rowIndex] /= L[rowIndex][rowIndex];
+    }
+    return res;
+  }
   /*
    * Impute missing values and transform numeric value x in col of dinfo._adaptedFrame
    */
@@ -123,6 +220,50 @@ public class LinearAlgebraUtils {
     }
     return eigenvectors;
   }
+  
+  public static class FindMaxIndex extends MRTask<FindMaxIndex> {
+    public long _maxIndex = -1;
+    int _colIndex;
+    double _maxValue;
+    
+    public FindMaxIndex(int colOfInterest, double maxValue) {
+      _colIndex = colOfInterest;
+      _maxValue = maxValue;
+    }
+    
+    @Override
+    public void map(Chunk[] cs) {
+      int rowLen = cs[0].len();
+      long startRowIndex = cs[0].start();
+      for (int rowIndex=0; rowIndex < rowLen; rowIndex++) {
+        double rowVal = cs[_colIndex].atd(rowIndex);
+        if (rowVal == _maxValue) {
+          _maxIndex = startRowIndex+rowIndex;
+        }
+      }
+    }
+    
+    @Override public void reduce(FindMaxIndex other) {
+      if (this._maxIndex < 0)
+        this._maxIndex = other._maxIndex;
+      else if (this._maxIndex > other._maxIndex)
+        this._maxIndex = other._maxIndex; 
+    }
+  }
+  
+  public static class CopyQtoQMatrix extends MRTask<CopyQtoQMatrix> {
+    @Override public void map(Chunk[] cs) {
+      int totColumn = cs.length;  // all columns in cs.
+      int halfColumn = totColumn/2; // start of Q matrix
+      int totRows = cs[0].len();
+      for (int rowIndex=0; rowIndex < totRows; rowIndex++) {
+        for (int colIndex=0; colIndex < halfColumn; colIndex++) {
+          cs[colIndex].set(rowIndex, cs[colIndex+halfColumn].atd(rowIndex));
+        }
+      }
+    }
+  }
+  
 
   /**
    * Computes B = XY where X is n by k and Y is k by p, saving result in new vecs
@@ -142,6 +283,53 @@ public class LinearAlgebraUtils {
       for(int p = 0; p < _yt.length; p++) {
         double x = row.innerProduct(_yt[p]);
         outputs[p].addNum(x);
+      }
+    }
+  }
+
+  /**
+   * Compute B = XY where where X is n by k and Y is k by p and they are both stored as Frames.  The 
+   * result will be stored in part of X as X|B.  Make sure you allocate the correct memory to your X
+   * frame.  In addition, this will only work with numerical columns.
+   * 
+   * Note that there are a size limitation on y Frame.  It needs to have row indexed by integer values only and
+   * not long.  Otherwise, the result will be jibberish.
+   */
+  public static class BMulTaskMatrices extends MRTask<BMulTaskMatrices> {
+    final Frame _y; // frame to store y
+    final int _nyChunks;  // number of chunks of y Frame
+    final int _yColNum;
+
+    public BMulTaskMatrices(Frame y) {
+      _y = y;
+      _nyChunks = _y.anyVec().nChunks();
+      _yColNum = _y.numCols();
+    }
+    
+    private void mulResultPerYChunk(Chunk[] xChunk, Chunk[] yChunk) {
+      int xChunkLen = xChunk[0].len();
+      int yColLen = yChunk.length;
+      int yChunkLen = yChunk[0].len();
+      int resultColOffset = xChunk.length-yColLen;  // start of result column in xChunk
+      int xChunkColOffset = (int) yChunk[0].start();
+      for (int colIndex=0; colIndex < yColLen; colIndex++) {
+        int resultColIndex = colIndex+resultColOffset;
+        for (int rowIndex=0; rowIndex < xChunkLen; rowIndex++) {
+          double origResult = xChunk[resultColIndex].atd(rowIndex);
+          for (int interIndex=0; interIndex < yChunkLen; interIndex++) {
+            origResult += xChunk[interIndex+xChunkColOffset].atd(rowIndex)*yChunk[colIndex].atd(interIndex);
+          }
+          xChunk[resultColIndex].set(rowIndex, origResult);
+        }
+      }
+    }
+    
+    @Override public void map(Chunk[] xChunk) {
+      Chunk[] ychunk = new Chunk[_y.numCols()];
+      for (int ychunkInd=0; ychunkInd < _nyChunks; ychunkInd++) {
+        for (int chkIndex =0 ; chkIndex < _yColNum; chkIndex++) // grab a y chunk
+          ychunk[chkIndex] = _y.vec(chkIndex).chunkForChunkIdx(ychunkInd);
+        mulResultPerYChunk(xChunk, ychunk);
       }
     }
   }
@@ -276,7 +464,7 @@ public class LinearAlgebraUtils {
    * @param transpose Should result be transposed to get L?
    * @return L or R matrix from Cholesky of Y Gram
    */
-  public static double[][] computeR(Key<Job> jobKey, DataInfo yinfo, boolean transpose, double[][] xx) {
+  public static double[][] computeR(Key<Job> jobKey, DataInfo yinfo, boolean transpose) {
     // Calculate Cholesky of Y Gram to get R' = L matrix
     Gram.GramTask gtsk = new Gram.GramTask(jobKey, yinfo);  // Gram is Y'Y/n where n = nrow(Y)
     gtsk.doAll(yinfo._adaptedFrame);
@@ -295,10 +483,17 @@ public class LinearAlgebraUtils {
    * @return l2 norm of Q - W, where W is old matrix in frame, Q is computed factorization
    */
   public static double computeQ(Key<Job> jobKey, DataInfo yinfo, Frame ywfrm, double[][] xx) {
-    double[][] cholL = computeR(jobKey, yinfo, true, xx);
-    ForwardSolve qrtsk = new ForwardSolve(yinfo, cholL);
+    xx = computeR(jobKey, yinfo, true);
+    ForwardSolve qrtsk = new ForwardSolve(yinfo, xx);
     qrtsk.doAll(ywfrm);
     return qrtsk._sse;      // \sum (Q_{i,j} - W_{i,j})^2
+  }
+
+  public static double[][] computeQ(Key<Job> jobKey, DataInfo yinfo, Frame ywfrm) {
+    double[][] xx = computeR(jobKey, yinfo, true);
+    ForwardSolve qrtsk = new ForwardSolve(yinfo, xx);
+    qrtsk.doAll(ywfrm);
+    return xx;      // \sum (Q_{i,j} - W_{i,j})^2
   }
 
   /**
@@ -306,10 +501,11 @@ public class LinearAlgebraUtils {
    * @param jobKey Job key for Gram calculation
    * @param yinfo DataInfo for Y matrix
    */
-  public static void computeQInPlace(Key<Job> jobKey, DataInfo yinfo) {
-    double[][] cholL = computeR(jobKey, yinfo, true, null);
+  public static double[][] computeQInPlace(Key<Job> jobKey, DataInfo yinfo) {
+    double[][] cholL = computeR(jobKey, yinfo, true);
     ForwardSolveInPlace qrtsk = new ForwardSolveInPlace(yinfo, cholL);
     qrtsk.doAll(yinfo._adaptedFrame);
+    return cholL;
   }
 
   /**

@@ -1352,6 +1352,21 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
   invisible(NULL)
 }
 
+#' Retrieve HGLM ModelMetrics
+#'
+#' @param object an H2OModel object or H2OModelMetrics.
+#'
+#' }
+#' @export
+h2o.HGLMMetrics <- function(object) {
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        return(model.parts$tm@metrics)
+    }
+    warning(paste0("No HGLM Metric for ",class(object)))
+    invisible(NULL)
+}
+
 #' Retrieve the GINI Coefficcient
 #'
 #' Retrieves the GINI coefficient from an \linkS4class{H2OBinomialMetrics}.

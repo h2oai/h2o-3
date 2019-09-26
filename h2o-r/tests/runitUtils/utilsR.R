@@ -752,6 +752,23 @@ compare_tables <- function(table1, table2, tol=1e-6) {
 }
 
 #----------------------------------------------------------------------
+# This function will compare two R lists and see if they are equal within tolerance
+#
+# Parameters:  array1, array2 and tolerance
+#
+# Returns:     Exception will be thrown if comparison failed
+#----------------------------------------------------------------------
+compare_arrays <- function(array1, array2, tol=1e-6) {
+    dim1 = length(array1)
+    dim2 = length(array2)
+
+    expect_equal(dim1, dim2)
+
+    for (i in 1:dim1) {
+            expect_equal(TRUE, (abs(array1[i]-array2[i]) < tol))
+    }
+}
+#----------------------------------------------------------------------
 # This function will generate a random dataset for regression/binomial
 # and multinomial.  Copied from Pasha.
 #
