@@ -1413,7 +1413,12 @@ h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000L)
 
 # Convert to Currents string-list syntax
 .quote <- function(x) paste0('"',x,'"')
-.str.list <- function(sl) paste0('[',paste0('"',sl,'"',collapse=" "),']')
+.str.list <- function(sl) {
+  if (is.na(sl))
+    "[]"
+  else
+    paste0('[',paste0('"',sl,'"',collapse=" "),']')
+}
 
 # Convert a row or column selector to zero-based numbering and return a string
 .row.col.selector <- function( sel, raw_sel=NULL, envir=NULL ) {
