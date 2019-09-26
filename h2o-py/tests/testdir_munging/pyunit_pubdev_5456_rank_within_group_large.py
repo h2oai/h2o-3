@@ -11,8 +11,7 @@ def test_rankWithGroupBy():
     answerFrame, finalDir, finalSorts, sortCols, sortDirs, newColName = generate_answerFrame(train, groupCols, sortCols) # the rank_within_group result should return this
     rankedFrame = train.rank_within_group_by(groupCols, sortCols, sortDirs, newColName)
     rankedFrame.summary()
-    pyunit_utils.compare_frames_local_onecolumn_NA(answerFrame[newColName], rankedFrame[newColName],1, tol=1e-10,
-                                                   oneLessRow=True)
+    pyunit_utils.compare_frames_local_onecolumn_NA(answerFrame[newColName], rankedFrame[newColName],1, tol=1e-10)
 
 def generate_trainingFrame():
     nrows = 1000000 # per nidhi request
