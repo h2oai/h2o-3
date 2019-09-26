@@ -3570,7 +3570,7 @@ def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6, returnResult=F
     temp2 = f2.as_data_frame(use_pandas=False)
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
     for colInd in range(f1.ncol):
-        for rowInd in range(1,f2.nrow):
+        for rowInd in range(1,f2.nrow+1):
             if (random.uniform(0,1) < prob):
                 if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
                     if returnResult:
@@ -3599,7 +3599,7 @@ def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6, returnRes
     temp2 = f2.as_data_frame(use_pandas=False)
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
     for colInd in range(f1.ncol):
-        for rowInd in range(1,f2.nrow):
+        for rowInd in range(1,f2.nrow+1):
             if (random.uniform(0,1) < prob):
                 if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
                     if returnResult:
@@ -3626,7 +3626,7 @@ def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5, returnResult=Fals
     temp2 = f2.as_data_frame(use_pandas=False)
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
     for colInd in range(f1.ncol):
-        for rowInd in range(1,f2.nrow):
+        for rowInd in range(1,f2.nrow+1):
             if (random.uniform(0,1) < prob):
                 if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
                     if returnResult:
