@@ -434,11 +434,13 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
                                         skipped_columns, custom_non_data_line_markers)
 
 
-def resume_grid_search(grid_directory, grid_id):
+def load_grid(grid_directory, grid_id):
     """
-    
-    :param grid_directory: Path to the Grid model file 
-    :return: Grid model
+    Loads previously saved grid with all it's models from the same folder
+    :param grid_directory: A string containing the path to the folder with the grid saved.
+    :param grid_id: A chracter string with identification of the grid saved in the given grid_directory.
+     It is expected for the grid to be saved under a name corresponding to it's id.
+    :return: An instance of H2OGridSearch
     """
 
     response = api("POST /3/Grid", {"grid_directory": grid_directory, "grid_id" : grid_id})

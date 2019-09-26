@@ -31,13 +31,17 @@ def grid_resume():
     h2o.remove_all();
 
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-    grid = h2o.resume_grid_search(grid_directory=export_dir, grid_id=grid_id)
+    grid = h2o.load_grid(grid_directory=export_dir, grid_id=grid_id)
     assert len(grid.model_ids) == old_grid_model_count
     assert grid is not None
     grid.train(x=list(range(4)), y=4, training_frame=train)
     assert len(grid.model_ids) > old_grid_model_count
-    
+    print("Newly grained grid has %d models" % len(grid.model_ids))
     rmtree(export_dir)
+    
+    for model_id in grid.model_ids:
+        model = h2o.get_model(model_id)
+        assert model is not None
     
 
 
