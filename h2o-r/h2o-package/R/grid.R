@@ -57,7 +57,8 @@ h2o.grid <- function(algorithm,
                      hyper_params = list(),
                      is_supervised = NULL,
                      do_hyper_params_check = FALSE,
-                     search_criteria = NULL)
+                     search_criteria = NULL,
+                     export_checkpoints_dir = NULL)
 {
   #Unsupervised algos to account for in grid (these algos do not need response)
   unsupervised_algos <- c("kmeans", "pca", "svd", "glrm")
@@ -137,6 +138,11 @@ h2o.grid <- function(algorithm,
                                                         do_hyper_params_check = do_hyper_params_check)
   # Append grid parameters in JSON form
   params$hyper_parameters <- toJSON(hyper_values, digits=99)
+  
+  # Set directory for checkpoints export
+  if(!is.null(export_checkpoints_dir)){
+    params$export_checkpoints_dir = export_checkpoints_dir
+  }
 
   if( !is.null(search_criteria)) {
       # Append grid search criteria in JSON form. 
@@ -228,3 +234,46 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing) {
       summary_table     = json$summary_table
       )
 }
+
+#' Loads previously saved grid with all it's models from the same folder
+#'
+#' Returns a reference to the loaded Grid.
+#'
+#' @param grid_directory A character string containing the path to the folder with the grid saved.
+#' @param grid_id A chracter string with identification of the grid saved in the given grid_directory.
+#'  It is expected for the grid to be saved under a name corresponding to it's id.
+#' @return Returns an object that is a subclass of \linkS4class{H2OGrid}.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#'
+#'iris.hex <- as.h2o(iris)
+#'
+#'ntrees_opts = c(1, 5)
+#'learn_rate_opts = c(0.1, 0.01)
+#'size_of_hyper_space = length(ntrees_opts) * length(learn_rate_opts)
+#'
+#'hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
+#'# Tempdir is chosen arbitrarily. May be any valid folder on an H2O-supported filesystem.
+#'baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex,
+#' hyper_params = hyper_parameters, export_checkpoints_dir = tempdir())
+#'# Remove everything from the cluster or restart it
+#'h2o.removeAll()
+#'grid <- h2o.load_grid(grid_directory = tempdir(), grid_id = grid_id)
+#' }
+#' @export
+h2o.load_grid <- function(grid_directory, grid_id){
+  params <- list()
+  params[["grid_directory"]] <- grid_directory
+  params[["grid_id"]] <- grid_id
+  
+  
+  res <- .h2o.__remoteSend(
+    "Grid",
+    method = "POST",
+    h2oRestApiVersion = 3,.params = params
+  )
+  
+  h2o.getGrid(grid_id = grid_id)
+  }
