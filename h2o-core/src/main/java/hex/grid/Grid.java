@@ -408,7 +408,14 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
       ab.putKey(k);
     return super.writeAll_impl(ab);
   }
-  
+
+  /**
+   * By default, the method writeAll_impl saves all the Grid models as well into the binary file. For some use-cases,
+   * this is undesired (Grid checkpointing).
+   *
+   * @param autoBuffer AutoBuffer to serialize this instance of {@link Grid} to
+   * @return Reference to the instance of {@link AutoBuffer} given as a method argument.
+   */
   protected AutoBuffer writeWithoutModels(final AutoBuffer autoBuffer){
     autoBuffer.put(this);
     return super.writeAll_impl(autoBuffer);

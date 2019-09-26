@@ -145,6 +145,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         tryComplete();
       }
 
+      /**
+       * If export_checkpoints_dir is defined in parameters, saves the whole Grid into that
+       * folder with checkpoints.
+       *
+       * @param caller the task invoking this method (which may
+       */
       @Override
       public void onCompletion(CountedCompleter caller) {
         final MP params = _hyperSpaceWalker.getParams();
@@ -159,7 +165,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             grid.writeWithoutModels(autoBuffer);
             autoBuffer.close();
           } catch (IOException e) {
-            Log.warn(String.format("Could not save grid '%s' to location '%s'", 
+            Log.warn(String.format("Could not save grid '%s' to location '%s'",
                     grid._key.toString(), gridPath));
             return;
           }
