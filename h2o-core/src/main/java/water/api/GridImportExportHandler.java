@@ -54,7 +54,9 @@ public class GridImportExportHandler extends Handler {
       throw new IllegalArgumentException(String.format("Grid with id '%s' has not been found.", gridExportV3.grid_id));
     }
     final Iced possibleGrid = DKV.get(gridExportV3.grid_id).get();
-    assert possibleGrid instanceof Grid;
+    if(!(possibleGrid instanceof Grid)){
+      throw new IllegalArgumentException(String.format("Given Grid Key '%s' is not a valid Grid.", gridExportV3.grid_id));
+    }
 
     final Grid serializedGrid = (Grid) possibleGrid;
     serializedGrid.export_binary(gridExportV3.grid_directory + "/" + gridExportV3.grid_id);
