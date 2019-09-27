@@ -65,6 +65,7 @@ private String getMakeTargetSuffix(final stageConfig) {
 private String getPostFailedBuildAction(final mode) {
     switch (mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
+        case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
             return """
                 if [ -f h2o_one_node ]; then
                     export YARN_APPLICATION_ID=\$(cat h2o_one_node | grep job | sed 's/job/application/g')
