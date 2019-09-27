@@ -139,28 +139,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         tryComplete();
       }
 
-      /**
-       * If export_checkpoints_dir is defined in parameters, saves the whole Grid into that
-       * folder with checkpoints.
-       *
-       * @param caller the task invoking this method (which may
-       */
-      @Override
-      public void onCompletion(CountedCompleter caller) {
-        final MP params = _hyperSpaceWalker.getParams();
-        if (params._export_checkpoints_dir != null) {
-          final String gridPath = params._export_checkpoints_dir + "/" + grid._key;
-          try {
-            grid.export_binary(gridPath);
-            // Models are exported separately when export_checkpoints_dir is defined
-          } catch (IOException e) {
-            Log.warn(String.format("Could not save grid '" + "%s' to location '%s'",
-                    grid._key.toString(), gridPath));
-            return;
-          }
-        }
-      }
-
       @Override
       public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
         Log.warn("GridSearch job "+_job._description+" completed with exception: "+ex);
@@ -267,6 +245,17 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           _job.update(1);
           // Always update grid in DKV after model building attempt
           grid.update(_job);
+          final MP generalParams = _hyperSpaceWalker.getParams();
+          if (generalParams._export_checkpoints_dir != null) {
+            final String gridPath = generalParams._export_checkpoints_dir + "/" + grid._key;
+            try {
+              grid.export_binary(gridPath);
+              // Models are exported automatically when export_checkpoints_dir is defined
+            } catch (IOException e) {
+              Log.warn(String.format("Could not save grid '" + "%s' to location '%s'",
+                      grid._key.toString(), gridPath));
+            }
+          }
         } // finally
 
         if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
