@@ -16,15 +16,15 @@ import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
+import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.JCodeGen;
 import water.util.Log;
+import water.util.SBPrintStream;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -203,7 +203,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public void dump(String format) {
     File fmFile = null;
     try {
-      Booster b = BoosterHelper.loadModel(new ByteArrayInputStream((this).model_info._boosterBytes));
+      Booster b = BoosterHelper.loadModel(new ByteArrayInputStream(this.model_info._boosterBytes));
       fmFile = File.createTempFile("xgboost-feature-map", ".bin");
       FileOutputStream os = new FileOutputStream(fmFile);
       os.write(this.model_info._featureMap.getBytes());
@@ -611,14 +611,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
 
-  private final int getXGBoostClassIndex(final String treeClass) {
+  private int getXGBoostClassIndex(final String treeClass) {
     final ModelCategory modelCategory = _output.getModelCategory();
     if(ModelCategory.Regression.equals(modelCategory) && (treeClass != null && !treeClass.isEmpty())){
       throw new IllegalArgumentException("There should be no tree class specified for regression.");
     }
-    if ((treeClass == null || treeClass.isEmpty()) && ModelCategory.Regression.equals(modelCategory)) return 0;
-    if ((treeClass == null || treeClass.isEmpty()) && !ModelCategory.Regression.equals(modelCategory)) {
-      throw new IllegalArgumentException("Non-regressional models require tree class specified.");
+    if ((treeClass == null || treeClass.isEmpty())) {
+      if (ModelCategory.Regression.equals(modelCategory)) return 0;
+      else throw new IllegalArgumentException("Non-regressional models require tree class specified.");
     }
 
     final String[] domain = _output._domains[_output._domains.length - 1];
@@ -631,6 +631,31 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     return treeClassIndex;
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Serialization into a POJO
+  //--------------------------------------------------------------------------------------------------------------------
+
+  @Override
+  protected boolean toJavaCheckTooBig() {
+    return _output == null || _output._ntrees * _parms._max_depth > 1000;
+  }
+
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    sb.nl();
+    sb.ip("public boolean isSupervised() { return true; }").nl();
+    sb.ip("public int nclasses() { return ").p(_output.nclasses()).p("; }").nl();
+    return sb;
+  }
+  
+  @Override
+  protected void toJavaPredictBody(
+      SBPrintStream sb, CodeGeneratorPipeline classCtx, CodeGeneratorPipeline fileCtx, boolean verboseCode
+  ) {
+    final String namePrefix = JCodeGen.toJavaId(_key.toString());
+    Predictor p = PredictorFactory.makePredictor(model_info._boosterBytes, false);
+    XGBoostPojoWriter.make(p, namePrefix, _output, defaultThreshold()).renderJavaPredictBody(sb, fileCtx);
   }
 
 }

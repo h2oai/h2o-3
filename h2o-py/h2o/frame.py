@@ -3975,6 +3975,25 @@ class H2OFrame(Keyed):
             raise H2OValueError("'index' argument is not type enum, time or int")
         return H2OFrame._expr(expr=ExprNode("pivot",self,index,column,value))
 
+    def melt(self, id_vars, value_vars=None, var_name="variable", value_name="value", skipna=False):
+        """
+        Converts an H2OFrame to key-value representation while optionally skipping NA values.
+        Inverse operation to pivot.
+
+        :param id_vars: Columns used as identifiers.
+        :param value_vars: What columns will be converted to key-value pairs (default: complement to id_vars).
+        :param var_name: Name of the key-column (default: "variable").
+        :param value_name: Name of the value-column (default: "value").
+        :param skipna: If enabled, do not include NAs in the result. 
+        :returns: Returns an unpivoted H2OFrame.
+        """
+        assert_is_type(id_vars, [str])
+        assert_is_type(value_vars, [str], None)
+        assert_is_type(var_name, str)
+        assert_is_type(value_name, str)
+        assert_is_type(skipna, bool)
+        return H2OFrame._expr(expr=ExprNode("melt", self, id_vars, value_vars, var_name, value_name, skipna))
+
     def rank_within_group_by(self, group_by_cols, sort_cols, ascending=[], new_col_name="New_Rank_column", sort_cols_sorted=False):
         """
         This function will add a new column rank where the ranking is produced as follows:
