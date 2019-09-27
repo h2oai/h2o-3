@@ -24,8 +24,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     private transient AutoML _aml;
 
-    protected Algo _algo;
-    protected String _id;
+    protected final Algo _algo;
+    protected final String _id;
     protected int _weight;
     protected boolean _ignoreConstraints;  // whether or not to ignore the max_models/max_runtime constraints
     protected String _description;
@@ -162,7 +162,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     private String getSortMetric() {
         //ensures that the sort metric is always updated according to the defaults set by leaderboard
         Leaderboard leaderboard = aml().leaderboard();
-        return leaderboard == null ? null : leaderboard.sort_metric;
+        return leaderboard == null ? null : leaderboard._sort_metric;
     }
 
     private static ScoreKeeper.StoppingMetric metricValueOf(String name) {

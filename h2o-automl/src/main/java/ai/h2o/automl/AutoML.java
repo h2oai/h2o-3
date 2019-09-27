@@ -32,7 +32,7 @@ import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING
  */
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
-  public static final Comparator<AutoML> byStartTime = Comparator.comparing(a -> a.startTime);
+  public static final Comparator<AutoML> byStartTime = Comparator.comparing(a -> a._startTime);
   public static final String keySeparator = "@@";
 
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
@@ -93,6 +93,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (aml._job == null || !aml._job.isRunning()) {
       H2OJob<AutoML> j = new H2OJob<>(aml, aml._key, aml._runCountdown.remainingTime());
       aml._job = j._job;
+      aml.eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.format(aml._startTime))
+              .setNamedValue("creation_epoch", aml._startTime, EventLogEntry.epochFormat);
       j.start(aml._workAllocations.remainingWork());
       DKV.put(aml);
     }
@@ -168,10 +170,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     _modelingStepsRegistry = new ModelingStepsRegistry();
 
     try {
-      _eventLog = EventLog.make(_key);
+      _eventLog = EventLog.getOrMake(_key);
       eventLog().info(Stage.Workflow, "Project: " + projectName());
-      eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.format(_startTime))
-              .setNamedValue("creation_epoch", _startTime, EventLogEntry.epochFormat);
 
       handleCVParameters(buildSpec);
 

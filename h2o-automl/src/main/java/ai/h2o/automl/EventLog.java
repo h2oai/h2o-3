@@ -18,7 +18,7 @@ import java.io.Serializable;
  */
 public class EventLog extends Keyed<EventLog> {
 
-  public Key<AutoML> _automlKey;
+  public final Key<AutoML> _automlKey;
   public EventLogEntry[] _events;
 
   public EventLog(Key<AutoML> automlKey) {
@@ -32,12 +32,6 @@ public class EventLog extends Keyed<EventLog> {
     if (null == eventLog) {
       eventLog = new EventLog(runKey);
     }
-    DKV.put(eventLog);
-    return eventLog;
-  }
-
-  static EventLog make(Key<AutoML> runKey) {
-    EventLog eventLog = new EventLog(runKey);
     DKV.put(eventLog);
     return eventLog;
   }

@@ -24,12 +24,12 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
     private static final int pollingIntervalInMillis = 1000;
 
-    Key<EventLog> _eventLogKey;
-    Key<Leaderboard> _leaderboardKey;
-    Countdown _runCountdown;
+    final Key<EventLog> _eventLogKey;
+    final Key<Leaderboard> _leaderboardKey;
+    final Countdown _runCountdown;
 
     private transient List<Job> _jobs; // subjobs
-    private AtomicInteger _modelCount = new AtomicInteger();
+    private final AtomicInteger _modelCount = new AtomicInteger();
 
     ModelingStepsExecutor(Leaderboard leaderboard, EventLog eventLog, Countdown runCountdown) {
         _leaderboardKey = leaderboard._key;
@@ -76,8 +76,9 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     }
 
     private void monitor(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
+        EventLog eventLog = eventLog();
         String jobDescription = job._result == null ? job._description : job._result.toString()+" ["+job._description+"]";
-        eventLog().debug(Stage.ModelTraining, jobDescription + " started");
+        eventLog.debug(Stage.ModelTraining, jobDescription + " started");
         _jobs.add(job);
 
         long lastWorkedSoFar = 0;
@@ -86,11 +87,11 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         while (job.isRunning()) {
             if (null != parentJob) {
                 if (parentJob.stop_requested()) {
-                    eventLog().debug(Stage.ModelTraining, "AutoML job cancelled; skipping " + jobDescription);
+                    eventLog.debug(Stage.ModelTraining, "AutoML job cancelled; skipping " + jobDescription);
                     job.stop();
                 }
                 if (!ignoreTimeout && _runCountdown.timedOut()) {
-                    eventLog().debug(Stage.ModelTraining, "AutoML: out of time; skipping " + jobDescription);
+                    eventLog.debug(Stage.ModelTraining, "AutoML: out of time; skipping " + jobDescription);
                     job.stop();
                 }
             }
@@ -104,7 +105,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 Grid<?> grid = (Grid)job._result.get();
                 int totalGridModelsBuilt = grid.getModelCount();
                 if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-                    eventLog().debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
+                    eventLog.debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
                     this.addModels(grid.getModelKeys());
                     lastTotalGridModelsBuilt = totalGridModelsBuilt;
                 }
@@ -122,25 +123,25 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         // pick up any stragglers:
         if (JobType.HyperparamSearch == work._type) {
             if (job.isCrashed()) {
-                eventLog().warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
+                eventLog.warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
             } else if (job.get() == null) {
-                eventLog().info(Stage.ModelTraining, jobDescription + " cancelled");
+                eventLog.info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
                 Grid<?> grid = (Grid) job.get();
                 int totalGridModelsBuilt = grid.getModelCount();
                 if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-                    eventLog().debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
+                    eventLog.debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
                     this.addModels(grid.getModelKeys());
                 }
-                eventLog().debug(Stage.ModelTraining, jobDescription + " complete");
+                eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
             }
         } else if (JobType.ModelBuild == work._type) {
             if (job.isCrashed()) {
-                eventLog().warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
+                eventLog.warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
             } else if (job.get() == null) {
-                eventLog().info(Stage.ModelTraining, jobDescription + " cancelled");
+                eventLog.info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
-                eventLog().debug(Stage.ModelTraining, jobDescription + " complete");
+                eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
                 this.addModel((Model) job.get());
             }
         }
@@ -154,16 +155,18 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     }
 
     private void addModels(final Key<Model>[] newModels) {
-        int before = leaderboard().getModelCount();
-        leaderboard().addModels(newModels);
-        int after = leaderboard().getModelCount();
+        Leaderboard leaderboard = leaderboard();
+        int before = leaderboard.getModelCount();
+        leaderboard.addModels(newModels);
+        int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }
 
     private void addModel(final Model newModel) {
-        int before = leaderboard().getModelCount();
-        leaderboard().addModel(newModel);
-        int after = leaderboard().getModelCount();
+        Leaderboard leaderboard = leaderboard();
+        int before = leaderboard.getModelCount();
+        leaderboard.addModel(newModel);
+        int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }
 
