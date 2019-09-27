@@ -104,6 +104,9 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/pred_noise_bandwidth
    data-science/algo-params/prior
    data-science/algo-params/quantile_alpha
+   data-science/algo-params/rate
+   data-science/algo-params/rate_annealing
+   data-science/algo-params/rate_decay
    data-science/algo-params/remove_collinear_columns
    data-science/algo-params/sample_rate
    data-science/algo-params/sample_rate_per_class
