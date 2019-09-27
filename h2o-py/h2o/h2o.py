@@ -228,7 +228,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
     check_version = True
-    verify_ssl_certificates = True
+    verify_ssl_certificates = not insecure
 
     # Apply the config file if ignore_config=False
     if not ignore_config:
@@ -248,11 +248,11 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
                 check_version = False
         else:
             check_version = strict_version_check
-        if insecure is None:
-            if "init.verify_ssl_certificates" in config:
-                verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
-            else:
-                verify_ssl_certificates = not insecure
+        # Note: `verify_ssl_certificates` is never None at this point => use `insecure` to check for None/default input)
+        if insecure is None and "init.verify_ssl_certificates" in config:
+            verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
+
+    assert_is_type(verify_ssl_certificates, bool)
 
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
@@ -274,7 +274,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
                                   port=port, name=name,
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
                                   bind_to_localhost=bind_to_localhost)
-        h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
+        h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
         version_check()
