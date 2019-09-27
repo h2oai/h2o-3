@@ -3,7 +3,6 @@ package water.rapids.ast.params;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstParameter;
-import water.rapids.vals.ValStrs;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -23,9 +22,11 @@ public class AstStrList extends AstParameter {
     _strs = strs.toArray(new String[strs.size()]);
   }
 
+
+  // This is a special syntatic form; the number-list never executes and hits the execution stack
   @Override
   public Val exec(Env env) {
-    return new ValStrs(_strs);
+    throw new IllegalArgumentException("String list not allowed here");
   }
 
   @Override

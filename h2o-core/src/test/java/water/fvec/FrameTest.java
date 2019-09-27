@@ -1,7 +1,9 @@
 package water.fvec;
 
-import org.junit.*;
-import org.junit.rules.ExpectedException;
+import org.junit.Assume;
+import org.junit.BeforeClass;
+import org.junit.Ignore;
+import org.junit.Test;
 import water.*;
 
 import java.io.ByteArrayInputStream;
@@ -16,10 +18,6 @@ import static org.junit.Assert.*;
  * Tests for Frame.java
  */
 public class FrameTest extends TestUtil {
-  
-  @Rule
-  public ExpectedException ee = ExpectedException.none();
-  
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
@@ -367,32 +365,4 @@ public class FrameTest extends TestUtil {
     assertSame(invoked, wasInvoked); // just make sure the asserts were actually called
   }
 
-  @Test
-  public void testSubframe() {
-    try {
-      Scope.enter();
-      String[] cols = new String[]{"col_1", "col_2"};
-      Frame f = TestFrameCatalog.oneChunkFewRows();
-      Frame sf = f.subframe(cols);
-      Frame expected = new Frame(cols, f.vecs(cols));
-      assertFrameEquals(expected, sf, 0);
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void testSubframe_invalidCols() {
-    try {
-      Scope.enter();
-      String[] cols = new String[]{"col_5", "col_6", "col_7", "col_8", "col_9", "Omitted_1", "Omitted_2"};
-      Frame f = TestFrameCatalog.oneChunkFewRows();
-      ee.expectMessage("Frame `" + f._key + "` doesn't contain columns: " +
-              "'col_5', 'col_6', 'col_7', 'col_8', 'col_9' (and other 2).");
-      f.subframe(cols);
-    } finally {
-      Scope.exit();
-    }
-  }
-  
 }

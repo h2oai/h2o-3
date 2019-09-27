@@ -10,7 +10,7 @@ import java.util.Arrays;
 public class ValStrs extends Val {
   private final String[] _strs;
 
-  public ValStrs(String[] strs) {
+  ValStrs(String[] strs) {
     _strs = strs;
   }
 

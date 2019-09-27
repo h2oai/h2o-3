@@ -27,7 +27,6 @@ abstract public class Val extends Iced {
   abstract public int type();
 
   // One of these methods is overridden in each subclass
-  public boolean isEmpty() { return isNums() && getNums().length == 0; }
   public boolean isNum()   { return false; }
   public boolean isNums()  { return false; }
   public boolean isStr()   { return false; }
