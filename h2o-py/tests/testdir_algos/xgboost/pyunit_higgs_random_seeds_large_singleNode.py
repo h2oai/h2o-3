@@ -1,11 +1,10 @@
 import pandas as pd
-import xgboost as xgb
+import sys
+sys.path.insert(1,"../../../")
 import random
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
-#import matplotlib.pyplot as plt
-#from xgboost import plot_tree
 
 
 '''
@@ -15,6 +14,10 @@ when run with the same random seeds.
 The same comparison is done to native XGBoost to make sure its results are repeatable with the same random seeds.
 '''
 def random_seeds_test():
+    if sys.version.startswith("2"):
+        print("native XGBoost tests only supported on python3")
+        return
+    import xgboost as xgb
     assert H2OXGBoostEstimator.available() is True
     ret = h2o.cluster()
     if len(ret.nodes) == 1:
