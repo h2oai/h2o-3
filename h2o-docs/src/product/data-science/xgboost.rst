@@ -136,6 +136,8 @@ Defining an XGBoost Model
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__ (alias: ``gamma``): The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 0.
 
+- `checkpoint <algo-params/checkpoint.html>`__: Allows you to specify a model key associated with a previously trained model. This builds a new model as a continuation of a previously generated model. If this is not specified, then a new model will be trained instead of building on a previous model
+
 -  **tree_method**: Specify the construction tree method to use. This can be one of the following: 
 
    - ``auto`` (default): Allow the algorithm to choose the best method. For small to medium dataset, ``exact``  will be used. For very large datasets, ``approx`` will be used.
