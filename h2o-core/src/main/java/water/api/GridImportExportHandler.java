@@ -40,7 +40,7 @@ public class GridImportExportHandler extends Handler {
       }
       final Grid grid = (Grid) freezable;
 
-      loadGridModels(grid,gridImportV3);
+      loadGridModels(grid, gridImportV3);
       DKV.put(grid);
       return new KeyV3.GridKeyV3(grid._key);
     }
