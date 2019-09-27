@@ -18,7 +18,7 @@ import static org.junit.Assert.*;
 public class FrameTest extends TestUtil {
   
   @Rule
-  public ExpectedException ee = ExpectedException.none();
+  public transient ExpectedException ee = ExpectedException.none();
   
   @BeforeClass
   public static void setup() {
