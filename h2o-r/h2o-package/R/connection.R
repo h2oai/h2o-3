@@ -25,6 +25,7 @@
 #' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
 #' @param proxy (Optional) A \code{character} string specifying the proxy path.
 #' @param https (Optional) Set this to TRUE to use https instead of http.
+#' @param cacert (Optional) Path to a CA bundle file with root and intermediate certificates of trusted CAs.
 #' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
 #' @param username (Optional) Username to login with.
 #' @param password (Optional) Password to login with.
@@ -63,7 +64,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
                      max_mem_size = NULL, min_mem_size = NULL,
                      ice_root = tempdir(), log_dir = NA_character_, log_level = NA_character_,
                      strict_version_check = TRUE, proxy = NA_character_,
-                     https = FALSE, insecure = FALSE, username = NA_character_, password = NA_character_,
+                     https = FALSE, cacert = NA_character_, insecure = FALSE,
+                     username = NA_character_, password = NA_character_,
                      cookies = NA_character_, context_path = NA_character_, ignore_config = FALSE,
                      extra_classpath = NULL, jvm_custom_args = NULL,
                      bind_to_localhost = TRUE) {
@@ -88,6 +90,9 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
         }
         if(insecure == FALSE && "init.verify_ssl_certificates" %in% colnames(h2oconfig)){
           insecure <- as.logical(trimws(toupper(as.character(h2oconfig$init.verify_ssl_certificates))))
+        }
+        if(is.na(cacert) && "init.cacert" %in% colnames(h2oconfig)){
+          cacert <- trimws(as.character(h2oconfig$cacert))
         }
         if(is.na(cookies) && "init.cookies" %in% colnames(h2oconfig)){
           cookies <- as.vector(trimws(strsplit(as.character(h2oconfig$init.cookies),";")[[1]]))
@@ -139,6 +144,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     stop("`proxy` must be a character string or NA_character_")
   if(!is.logical(https) || length(https) != 1L || is.na(https))
     stop("`https` must be TRUE or FALSE")
+  if(!is.character(cacert) || !nzchar(cacert))
+    stop("`cacert` must be a character string or NA_character_")
   if(!is.logical(insecure) || length(insecure) != 1L || is.na(insecure))
     stop("`insecure` must be TRUE or FALSE")
   if(!is.character(username) || !nzchar(username))
@@ -167,8 +174,9 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
   if (nchar(doc_port)) port <- as.numeric(doc_port)
 
   warnNthreads <- FALSE
-  tmpConn <- new("H2OConnection", ip = ip, port = port, name = name, proxy = proxy, https = https, insecure = insecure,
-    username = username, password = password,cookies = cookies, context_path = context_path)
+  tmpConn <- new("H2OConnection", ip = ip, port = port, name = name, proxy = proxy,
+                 https = https, cacert = cacert, insecure = insecure,
+                 username = username, password = password,cookies = cookies, context_path = context_path)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
@@ -216,8 +224,9 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
       stop("Can only start H2O launcher if IP address is localhost.")
   }
 
-  conn <- new("H2OConnection", ip = ip, port = port, name = .h2o.jar.env$name, proxy = proxy, https = https, insecure = insecure,
-    username = username, password = password,cookies = cookies, context_path = context_path)
+  conn <- new("H2OConnection", ip = ip, port = port, name = .h2o.jar.env$name, proxy = proxy,
+              https = https, cacert = cacert, insecure = insecure,
+              username = username, password = password,cookies = cookies, context_path = context_path)
   assign("SERVER", conn, .pkg.env)
   cat(" Connection successful!\n\n")
   .h2o.jar.env$port <- port #Ensure right port is called when quitting R
@@ -269,6 +278,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
 #' @param strict_version_check (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
 #' @param proxy (Optional) A \code{character} string specifying the proxy path.
 #' @param https (Optional) Set this to TRUE to use https instead of http.
+#' @param cacert Path to a CA bundle file with root and intermediate certificates of trusted CAs.
 #' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
 #' @param username (Optional) Username to login with.
 #' @param password (Optional) Password to login with.
@@ -291,8 +301,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
 #' #h2o.connect(config = c(strict_version_check = FALSE, config))
 #' }
 #' @export
-h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = TRUE,
-                        proxy = NA_character_ , https = FALSE, insecure = FALSE,
+h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = TRUE, proxy = NA_character_,
+                        https = FALSE, cacert = NA_character_, insecure = FALSE,
                         username = NA_character_, password = NA_character_,
                         cookies = NA_character_,
                         context_path = NA_character_,
@@ -307,7 +317,7 @@ h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = T
  } else {
    # Pass arguments directly
    h2o.init(ip=ip, port=port, strict_version_check=strict_version_check,
-            proxy=proxy, https=https, insecure=insecure, password=password,
+            proxy=proxy, https=https, cacert=cacert, insecure=insecure, password=password,
             username=username, cookies=cookies, context_path=context_path)
  }
 }

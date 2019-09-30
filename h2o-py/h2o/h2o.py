@@ -52,8 +52,9 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPytho
 h2oconn = None  # type: H2OConnection
 
 
-def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
-            proxy=None, cookies=None, verbose=True, config=None):
+def connect(server=None, url=None, ip=None, port=None,
+            https=None, verify_ssl_certificates=None, cacert=None,
+            auth=None, proxy=None, cookies=None, verbose=True, config=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -66,6 +67,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
     :param port: Port number that H2O service is listening to.
     :param https: Set to True to connect via https:// instead of http://.
     :param verify_ssl_certificates: When using https, setting this to False will disable SSL certificates verification.
+    :param cacert: Path to a CA bundle file or a directory with certificates of trusted CAs (optional).
     :param auth: Either a (username, password) pair for basic authentication, an instance of h2o.auth.SpnegoAuth
                  or one of the requests.auth authenticator objects.
     :param proxy: Proxy server address.
@@ -82,7 +84,7 @@ def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_ce
             h2oconn = _connect_with_conf(config)
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
-                                     auth=auth, verify_ssl_certificates=verify_ssl_certificates,
+                                     auth=auth, verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
                                      proxy=proxy, cookies=cookies,
                                      verbose=verbose)
         if verbose:
@@ -142,7 +144,7 @@ def version_check():
               "version from http://h2o.ai/download/".format(ci.build_age))
 
 
-def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, username=None, password=None,
+def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
          enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
          extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
@@ -156,6 +158,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
                  If set then will connect only if the target cluster name matches. If no instance is found and decides to start a local
                  one then this will be used as the cluster name or a random one will be generated if set to None.
     :param https: Set to True to connect via https:// instead of http://.
+    :param cacert: Path to a CA bundle file or a directory with certificates of trusted CAs (optional).
     :param insecure: When using https, setting this to True will disable SSL certificates verification.
     :param username: Username and
     :param password: Password for basic authentication.
@@ -228,7 +231,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
     mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
     check_version = True
-    verify_ssl_certificates = True
+    verify_ssl_certificates = not insecure
 
     # Apply the config file if ignore_config=False
     if not ignore_config:
@@ -248,17 +251,20 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
                 check_version = False
         else:
             check_version = strict_version_check
-        if insecure is None:
-            if "init.verify_ssl_certificates" in config:
-                verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
-            else:
-                verify_ssl_certificates = not insecure
+        # Note: `verify_ssl_certificates` is never None at this point => use `insecure` to check for None/default input)
+        if insecure is None and "init.verify_ssl_certificates" in config:
+            verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
+        if cacert is None:
+            if "init.cacert" in config:
+                cacert = config["init.cacert"]
+
+    assert_is_type(verify_ssl_certificates, bool)
 
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
-                                     verify_ssl_certificates=verify_ssl_certificates,
+                                     verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url} ",
                                             "connected.", "not found."))
@@ -274,8 +280,8 @@ def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, use
                                   port=port, name=name,
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
                                   bind_to_localhost=bind_to_localhost)
-        h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
-                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True)
+        h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
+                                     cacert=cacert, auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
         version_check()
     h2oconn.cluster.timezone = "UTC"
