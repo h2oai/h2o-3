@@ -11,7 +11,6 @@ import water.util.TwoDimTable;
 
 import java.util.*;
 
-import static water.DKV.getGet;
 
 
 /**
@@ -142,37 +141,76 @@ public class Leaderboard extends Lockable<Leaderboard> {
     return _project_name;
   }
 
+  public Frame leaderboardFrame() {
+    return _leaderboardFrameKey == null ? null : _leaderboardFrameKey.get();
+  }
+
+  /**
+   * @return list of keys of models sorted by the default metric for the model category, fetched from the DKV
+   */
+  public Key<Model>[] getModelKeys() {
+    return _modelKeys;
+  }
+
+  /** Return the number of models in this Leaderboard. */
+  int getModelCount() { return getModelKeys().length; }
+
+  /**
+   * @return list of models sorted by the default metric for the model category
+   */
+  public Model[] getModels() {
+    Key<Model>[] modelKeys = getModelKeys();
+    if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
+    return getModelsFromKeys(modelKeys);
+  }
+
+  /**
+   * @return list of models sorted by the given metric
+   */
+  public Model[] getModelsSortedByMetric(String metric, boolean decreasing) {
+    Key<Model>[] modelKeys = sortModels(metric, decreasing);
+    if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
+    return getModelsFromKeys(modelKeys);
+  }
+
+  public Model getLeader() {
+    Key<Model>[] modelKeys = getModelKeys();
+    if (modelKeys == null || 0 == modelKeys.length) return null;
+    return modelKeys[0].get();
+  }
+
   private EventLog eventLog() { return _eventLogKey.get(); }
 
   private void setMetricAndDirection(String metric, String[] otherMetrics, boolean sortDecreasing) {
-    this._sort_metric = metric;
-    this._other_metrics = otherMetrics;
-    this._sort_decreasing = sortDecreasing;
-    this._sort_metric_autoset = true;
+    _sort_metric = metric;
+    _other_metrics = otherMetrics;
+    _sort_decreasing = sortDecreasing;
+    _sort_metric_autoset = true;
   }
 
   private void setDefaultMetricAndDirection(Model m) {
-    String[] metrics;
+    final String[] metrics;
+    String sortMetric = _sort_metric;
     if (m._output.isBinomialClassifier()) { //Binomial
       metrics = new String[]{"logloss", "mean_per_class_error", "rmse", "mse"};
-      if(this._sort_metric == null) {
-        this._sort_metric = "auc";
+      if(sortMetric == null) {
+        sortMetric = "auc";
       }
     }
     else if (m._output.isMultinomialClassifier()) { //Multinomial
       metrics = new String[]{"logloss", "rmse", "mse"};
-      if(this._sort_metric == null) {
-        this._sort_metric = "mean_per_class_error";
+      if(sortMetric == null) {
+        sortMetric = "mean_per_class_error";
       }
     }
     else { //Regression
       metrics = new String[]{"rmse", "mse", "mae", "rmsle"};
-      if(this._sort_metric == null) {
-        this._sort_metric = "mean_residual_deviance";
+      if(sortMetric == null) {
+        sortMetric = "mean_residual_deviance";
       }
     }
-    boolean sortDecreasing = this._sort_metric.equals("auc");
-    setMetricAndDirection(this._sort_metric, metrics, sortDecreasing);
+    boolean sortDecreasing = sortMetric.equals("auc");
+    setMetricAndDirection(sortMetric, metrics, sortDecreasing);
   }
 
   /**
@@ -190,27 +228,19 @@ public class Leaderboard extends Lockable<Leaderboard> {
       return;
     }
 
-    write_lock(); //no job/key needed as currently the leaderboard instance can only be updated by its corresponding AutoML job (otherwise, would need to pass a job param to addModels)
-    if (! this._sort_metric_autoset) {
-      // lazily set to default for this model category
-      setDefaultMetricAndDirection(newModels[0].get());
-    }
-
-    final Key<Model> newLeader[] = new Key[1]; // only set if there's a new leader
-    final double newLeaderSortMetric[] = new double[1];
-
     final Key<Model>[] oldModelKeys = _modelKeys;
     final Key<Model> oldLeaderKey = (oldModelKeys == null || 0 == oldModelKeys.length) ? null : oldModelKeys[0];
 
     // eliminate duplicates
-    Set<Key<Model>> uniques = new HashSet<>(oldModelKeys.length + newModels.length);
+    final Set<Key<Model>> uniques = new HashSet<>(oldModelKeys.length + newModels.length);
     uniques.addAll(Arrays.asList(oldModelKeys));
     uniques.addAll(Arrays.asList(newModels));
-    _modelKeys = uniques.toArray(new Key[0]);
+    final List<Key<Model>> newModelKeys = new ArrayList<>(uniques);
 
     Model model = null;
-    Frame leaderboardFrame = leaderboardFrame();
-    for (Key<Model> modelKey : _modelKeys) {
+    final Frame leaderboardFrame = leaderboardFrame();
+    final List<ModelMetrics> modelMetrics = new ArrayList<>();
+    for (Key<Model> modelKey : newModelKeys) {
       model = modelKey.get();
       if (null == model) {
         eventLog().warn(EventLogEntry.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + modelKey);
@@ -229,25 +259,36 @@ public class Leaderboard extends Lockable<Leaderboard> {
           mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
         }
       }
-      if (mm != null) _leaderboard_set_metrics.putIfAbsent(mm._key, mm);
+      modelMetrics.add(mm);
     }
 
+    write_lock(); //no job/key needed as currently the leaderboard instance can only be updated by its corresponding AutoML job (otherwise, would need to pass a job param to addModels)
+    if (! this._sort_metric_autoset) {
+      // lazily set to default for this model category
+      setDefaultMetricAndDirection(newModels[0].get());
+    }
+
+    for (ModelMetrics mm : modelMetrics) {
+      if (mm != null) _leaderboard_set_metrics.putIfAbsent(mm._key, mm);
+    }
     // Sort by metric on the leaderboard/test set or default model metrics.
+    final List<Key<Model>> sortedModelKeys;
     try {
-      List<Key<Model>> modelsSorted;
       if (leaderboardFrame == null) {
-        modelsSorted = ModelMetrics.sortModelsByMetric(_sort_metric, _sort_decreasing, Arrays.asList(_modelKeys));
+        sortedModelKeys = ModelMetrics.sortModelsByMetric(_sort_metric, _sort_decreasing, newModelKeys);
       } else {
-        modelsSorted = ModelMetrics.sortModelsByMetric(leaderboardFrame, _sort_metric, _sort_decreasing, Arrays.asList(_modelKeys));
+        sortedModelKeys = ModelMetrics.sortModelsByMetric(leaderboardFrame, _sort_metric, _sort_decreasing, newModelKeys);
       }
-      _modelKeys = modelsSorted.toArray(new Key[0]);
     } catch (H2OIllegalArgumentException e) {
       Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
       throw e;
     }
 
-    Model[] models = getModelsFromKeys(_modelKeys);
-    sort_metrics = getMetrics(_sort_metric, models);
+    final Key<Model>[] modelKeys = sortedModelKeys.toArray(new Key[0]);
+    final Model[] models = getModelsFromKeys(modelKeys);
+    final double[] sortMetricValues = getMetrics(_sort_metric, models);
+    // now, we can update leaderboard public state
+    // (tried to narrow scope of write lock, but there are still private state mutations above: _leaderboard_set_metrics + all attributes set by setDefaultMetricAndDirection)
     if (model._output.isBinomialClassifier()) { // Binomial case
       auc = getMetrics("auc", models);
       logloss = getMetrics("logloss", models);
@@ -266,20 +307,14 @@ public class Leaderboard extends Lockable<Leaderboard> {
       mae = getMetrics("mae", models);
       rmsle = getMetrics("rmsle", models);
     }
-
-    // If we're updated leader let this know so that it can notify the user
-    // (outside the tatomic, since it can take a long time).
-    if (oldLeaderKey == null || !oldLeaderKey.equals(_modelKeys[0])) {
-      newLeader[0] = _modelKeys[0];
-      newLeaderSortMetric[0] = sort_metrics[0];
-    }
+    _modelKeys = modelKeys;
+    sort_metrics = sortMetricValues;
     update();
     unlock();
 
-    // always
-    if (null != newLeader[0]) {
+    if (oldLeaderKey == null || !oldLeaderKey.equals(modelKeys[0])) {
       eventLog().info(EventLogEntry.Stage.ModelTraining,
-              "New leader: " + newLeader[0] + ", " + _sort_metric + ": " + newLeaderSortMetric[0]);
+              "New leader: "+modelKeys[0]+", "+_sort_metric+": "+sortMetricValues[0]);
     }
   } // addModels
 
@@ -304,16 +339,8 @@ public class Leaderboard extends Lockable<Leaderboard> {
     Model[] models = new Model[modelKeys.length];
     int i = 0;
     for (Key<Model> modelKey : modelKeys)
-      models[i++] = getGet(modelKey);
+      models[i++] = DKV.getGet(modelKey);
     return models;
-  }
-
-  /**
-   * @return list of keys of models sorted by the default metric for the model category, fetched from the DKV
-   */
-  Key<Model>[] getModelKeys() {
-    Leaderboard uptodate = DKV.getGet(this._key);
-    return uptodate == null ? new Key[0] : uptodate._modelKeys;
   }
 
   /**
@@ -326,41 +353,14 @@ public class Leaderboard extends Lockable<Leaderboard> {
     return newModelsSorted.toArray(new Key[0]);
   }
 
-  /**
-   * @return list of models sorted by the default metric for the model category
-   */
-  Model[] getModels() {
-    Key<Model>[] modelKeys = getModelKeys();
-    if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
-    return getModelsFromKeys(modelKeys);
-  }
-
-  /**
-   * @return list of models sorted by the given metric
-   */
-  Model[] getSortedModels(String metric, boolean decreasing) {
-    Key<Model>[] modelKeys = sortModels(metric, decreasing);
-    if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
-    return getModelsFromKeys(modelKeys);
-  }
-
-  Model getLeader() {
-    Key<Model>[] modelKeys = getModelKeys();
-    if (modelKeys == null || 0 == modelKeys.length) return null;
-    return modelKeys[0].get();
-  }
-
-  /** Return the number of models in this Leaderboard. */
-  int getModelCount() { return getModelKeys().length; }
-
   private double[] getMetrics(String metric, Model[] models) {
-    double[] other_metrics = new double[models.length];
+    double[] metrics = new double[models.length];
     int i = 0;
     Frame leaderboardFrame = leaderboardFrame();
     for (Model m : models) {
       // If leaderboard frame exists, get metrics from there
       if (leaderboardFrame != null) {
-        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(
+        metrics[i++] = ModelMetrics.getMetricFromModelMetric(
             _leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)),
             metric
         );
@@ -369,13 +369,13 @@ public class Leaderboard extends Lockable<Leaderboard> {
         Key model_key = m._key;
         long model_checksum = m.checksum();
         ModelMetrics mm = ModelMetrics.defaultModelMetrics(m);
-        other_metrics[i++] = ModelMetrics.getMetricFromModelMetric(
+        metrics[i++] = ModelMetrics.getMetricFromModelMetric(
             _leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frame()._key, mm.frame().checksum())),
             metric
         );
       }
     }
-    return other_metrics;
+    return metrics;
   }
 
   /**
@@ -691,10 +691,6 @@ public class Leaderboard extends Lockable<Leaderboard> {
       sb.append(lineSeparator);
     }
     return sb.toString();
-  }
-
-  private Frame leaderboardFrame() {
-    return _leaderboardFrameKey == null ? null : _leaderboardFrameKey.get();
   }
 
   private String toString(String fieldSeparator, String lineSeparator) {
