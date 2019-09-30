@@ -4,14 +4,16 @@ doc = dict(
 
 examples = dict(
     categorical_encoding="""
->>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
->>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
-...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+>>> predictors = ["AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"]
+>>> train, valid = prostate.split_frame(ratios = [.8], seed = 1234)
 >>> encoding = "one_hot_explicit"
->>> airlines_km = H2OKMeansEstimator(categorical_encoding = encoding,
-...                                  seed = 1234)
->>> airlines_km.train(x = predictors, training_frame = airlines)
->>> airlines_km.scoring_history()
+>>> pros_km = H2OKMeansEstimator(categorical_encoding = encoding,
+...                              seed = 1234)
+>>> pros_km.train(x = predictors,
+...               training_frame = train,
+...               validation_frame = valid)
+>>> pros_km.scoring_history()
 """,
     estimate_k="""
 >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
@@ -39,14 +41,16 @@ examples = dict(
 >>> len(listdir(checkpoints_dir))
 """,
     fold_assignment="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> assignment_type = "Random"
->>> cars_km = H2OKMeansEstimator(fold_assignment = assignment_type,
-...                              nfolds = 5,
-...                              seed = 1234)
->>> cars_km.train(x = predictors, training_frame = cars)
->>> cars_km.scoring_history()
+>>> ozone = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/ozone.csv")
+>>> predictors = ["radiation","temperature","wind"]
+>>> train, valid = ozone.split_frame(ratios = [.8], seed = 1234)
+>>> ozone_km = H2OKMeansEstimator(fold_assignment = "Random",
+...                               nfolds = 5,
+...                               seed = 1234)
+>>> ozone_km.train(x = predictors,
+...                training_frame = train,
+...                validation_frame = valid)
+>>> ozone_km.scoring_history()
 """,
     fold_column="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
@@ -75,119 +79,120 @@ examples = dict(
 >>> cars_km.scoring_history()
 """,
     ignored_columns="""
->>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
->>> predictors = airlines.columns[:9]
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
->>> airlines_km = H2OKMeansEstimator(ignored_columns = col_list,
-...                                  seed = 1234)
->>> airlines_km.train(training_frame = train,
-...                   validation_frame = valid)
->>> airlines_km.scoring_history()
+>>> ozone = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/ozone.csv")
+>>> train, valid = ozone.split_frame(ratios = [.8], seed = 1234)
+>>> ignore_col = ["wind"]
+>>> ozone_km = H2OKMeansEstimator(ignored_columns = ignore_col,
+...                               seed = 1234)
+>>> ozone_km.train(training_frame = train,
+...                validation_frame = valid)
+>>> ozone_km.scoring_history()
 """,
     init="""
 >>> seeds = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/seeds_dataset.txt")
 >>> predictors = seeds.columns[0:7]
 >>> train, valid = seeds.split_frame(ratios = [.8], seed = 1234)
->>> seeds_kmeans = H2OKMeansEstimator(k = 3,
+>>> seeds_km = H2OKMeansEstimator(k = 3,
 ...                                   init='Furthest',
 ...                                   seed = 1234)
->>> seeds_kmeans.train(x = predictors,
+>>> seeds_km.train(x = predictors,
 ...                    training_frame = train,
 ...                    validation_frame= valid)
->>> seeds_kmeans.scoring_history()
+>>> seeds_km.scoring_history()
 """,
     k="""
 >>> seeds = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/seeds_dataset.txt")
 >>> predictors = seeds.columns[0:7]
 >>> train, valid = seeds.split_frame(ratios = [.8], seed = 1234)
->>> seeds_kmeans = H2OKMeansEstimator(k = 3, seed = 1234)
->>> seeds_kmeans.train(x = predictors,
-...                    training_frame = train,
-...                    validation_frame=valid)
->>> seeds_kmeans.totss()
+>>> seeds_km = H2OKMeansEstimator(k = 3, seed = 1234)
+>>> seeds_km.train(x = predictors,
+...                training_frame = train,
+...                validation_frame=valid)
+>>> seeds_km.scoring_history()
 """,
     keep_cross_validation_fold_assignment="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_km = H2OKMeansEstimator(keep_cross_validation_fold_assignment = True,
-...                              nfolds = 5,
-...                              seed = 1234)
->>> cars_km.train(x = predictors,
-...               training_frame = train)
->>> cars_km.scoring_history()
+>>> ozone = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/ozone.csv")
+>>> predictors = ["radiation","temperature","wind"]
+>>> train, valid = ozone.split_frame(ratios = [.8], seed = 1234)
+>>> ozone_km = H2OKMeansEstimator(keep_cross_validation_fold_assignment = True,
+...                               nfolds = 5,
+...                               seed = 1234)
+>>> ozone_km.train(x = predictors,
+...                training_frame = train)
+>>> ozone_km.scoring_history()
 """,
     keep_cross_validation_models="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_km = H2OKMeansEstimator(keep_cross_validation_models = True,
-...                              nfolds = 5,
-...                              seed = 1234)
->>> cars_km.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_km.scoring_history()
+>>> ozone = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/ozone.csv")
+>>> predictors = ["radiation","temperature","wind"]
+>>> train, valid = ozone.split_frame(ratios = [.8], seed = 1234)
+>>> ozone_km = H2OKMeansEstimator(keep_cross_validation_models = True,
+...                               nfolds = 5,
+...                               seed = 1234)
+>>> ozone_km.train(x = predictors,
+...                training_frame = train,
+...                validation_frame = valid)
+>>> ozone_km.scoring_history()
 """,
     max_iterations="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8])
->>> cars_km = H2OKMeansEstimator(max_iterations = 50)
->>> cars_km.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_km.scoring_history()
-""",
-    max_runtime_secs="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_km = H2OKMeansEstimator(max_runtime_secs = 10,
-...                              seed = 1234) 
->>> cars_km.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_km.scoring_history()
-""",
-    nfolds="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> cars_km = H2OKMeansEstimator(nfolds = 5, seed = 1234)
->>> cars_km.train(x = predictors,
-...               training_frame=train,
-...               validation_frame=valid)
->>> cars_km.train(x = predictors, training_frame = cars)
->>> cars_km.scoring_history()
-""",
-    score_each_iteration="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_km = H2OKMeansEstimator(score_each_iteration = True,
-...                              seed = 1234) 
->>> cars_km.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_km.scoring_history()
-""",
-    seed="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> km_w_seed = H2OKMeansEstimator(seed = 1234)
->>> km_w_seed.train(x = predictors,
+>>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+>>> predictors = ["AGMT","FNDX","HIGD","DEG","CHK",
+...               "AGP1","AGMN","LIV","AGLP"]
+>>> train, valid = benign.split_frame(ratios = [.8], seed = 1234)
+>>> benign_km = H2OKMeansEstimator(max_iterations = 50)
+>>> benign_km.train(x = predictors,
 ...                 training_frame = train,
 ...                 validation_frame = valid)
->>> km_wo_seed = H2OKMeansEstimator()
->>> km_wo_seed.train(x = predictors,
-...                  training_frame = train,
-...                  validation_frame = valid)
->>> km_w_seed.scoring_history()
->>> km_wo_seed.scoring_history()
+>>> benign_km.scoring_history()
+""",
+    max_runtime_secs="""
+>>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+>>> predictors = ["AGMT","FNDX","HIGD","DEG","CHK",
+...               "AGP1","AGMN","LIV","AGLP"]
+>>> train, valid = benign.split_frame(ratios = [.8], seed = 1234)
+>>> benign_km = H2OKMeansEstimator(max_runtime_secs = 10,
+...                                seed = 1234)
+>>> benign_km.train(x = predictors,
+...                 training_frame = train,
+...                 validation_frame = valid)
+>>> benign_km.scoring_history()
+""",
+    nfolds="""
+>>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+>>> predictors = ["AGMT","FNDX","HIGD","DEG","CHK",
+...               "AGP1","AGMN","LIV","AGLP"]
+>>> train, valid = benign.split_frame(ratios = [.8], seed = 1234)
+>>> benign_km = H2OKMeansEstimator(nfolds = 5, seed = 1234)
+>>> benign_km.train(x = predictors,
+...                 training_frame = train,
+...                 validation_frame = valid)
+>>> benign_km.scoring_history()
+""",
+    score_each_iteration="""
+>>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+>>> predictors = ["AGMT","FNDX","HIGD","DEG","CHK",
+...               "AGP1","AGMN","LIV","AGLP"]
+>>> train, valid = benign.split_frame(ratios = [.8], seed = 1234)
+>>> benign_km = H2OKMeansEstimator(score_each_iteration = True,
+...                                seed = 1234)
+>>> benign_km.train(x = predictors,
+...                 training_frame = train,
+...                 validation_frame = valid)
+>>> benign_km.scoring_history()
+""",
+    seed="""
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+>>> predictors = ["AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"]
+>>> train, valid = prostate.split_frame(ratios = [.8], seed = 1234)
+>>> pros_w_seed = H2OKMeansEstimator(seed = 1234)
+>>> pros_w_seed.train(x = predictors,
+...                   training_frame = train,
+...                   validation_frame = valid)
+>>> pros_wo_seed = H2OKMeansEstimator()
+>>> pros_wo_seed.train(x = predictors,
+...                    training_frame = train,
+...                    validation_frame = valid)
+>>> pros_w_seed.scoring_history()
+>>> pros_wo_seed.scoring_history()
 """,
     standardize="""
 >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
@@ -201,14 +206,15 @@ examples = dict(
 >>> boston_km.scoring_history()
 """,
     training_frame="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_km = H2OKMeansEstimator(seed = 1234)
->>> cars_km.train(x = predictors,
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+>>> predictors = ["AGE", "RACE", "DPROS", "DCAPS",
+...               "PSA", "VOL", "GLEASON"]
+>>> train, valid = prostate.split_frame(ratios = [.8], seed = 1234)
+>>> pros_km = H2OKMeansEstimator(seed = 1234)
+>>> pros_km.train(x = predictors,
 ...               training_frame = train,
 ...               validation_frame = valid)
->>> cars_km.scoring_history()
+>>> pros_km.scoring_history()
 """,
     user_points="""
 >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
@@ -228,25 +234,27 @@ examples = dict(
 >>> iris_kmeans.tot_withinss(valid = True)
 """,
     validation_frame="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_km = H2OKMeansEstimator(seed = 1234)
->>> cars_km.train(x = predictors,
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+>>> predictors = ["AGE", "RACE", "DPROS", "DCAPS",
+...               "PSA", "VOL", "GLEASON"]
+>>> train, valid = prostate.split_frame(ratios = [.8], seed = 1234)
+>>> pros_km = H2OKMeansEstimator(seed = 1234)
+>>> pros_km.train(x = predictors,
 ...               training_frame = train,
 ...               validation_frame = valid)
->>> cars_km.scoring_history()
+>>> pros_km.scoring_history()
 """,
     keep_cross_validation_predictions="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_km = H2OKMeansEstimator(keep_cross_validation_predictions = True,
+>>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+>>> predictors = ["AGE", "RACE", "DPROS", "DCAPS",
+...               "PSA", "VOL", "GLEASON"]
+>>> train, valid = prostate.split_frame(ratios = [.8], seed = 1234)
+>>> pros_km = H2OKMeansEstimator(keep_cross_validation_predictions = True,
 ...                              nfolds = 5,
 ...                              seed = 1234)
->>> cars_km.train(x = predictors,
+>>> pros_km.train(x = predictors,
 ...               training_frame = train,
 ...               validation_frame = valid)
->>> cars_km.scoring_history()
+>>> pros_km.scoring_history()
 """
 )
