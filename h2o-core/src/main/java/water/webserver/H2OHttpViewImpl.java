@@ -69,6 +69,9 @@ public class H2OHttpViewImpl implements H2OHttpView {
       return false;
     }
 
+    if (request.getUserPrincipal() == null) {
+      return false;
+    }
     final String loginName = request.getUserPrincipal().getName();
     if (loginName.equals(config.user_name)) {
       return false;
