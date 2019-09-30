@@ -75,8 +75,8 @@ def random_seeds_test():
             assert True
 
         # train multiple native XGBoost
-        nativeTrain = genDMatrix(higgs_h2o_train, myX, y)
-        nativeTest = genDMatrix(higgs_h2o_test, myX, y)
+        nativeTrain = genDMatrix(higgs_h2o_train, myX, y, xgb)
+        nativeTest = genDMatrix(higgs_h2o_test, myX, y, xgb)
         h2o.remove_all()
         nativeParam = {'eta': h2oParams["learn_rate"], 'objective': 'binary:logistic', 'booster': 'gbtree',
                        'max_depth': h2oParams["max_depth"], 'seed': h2oParams["seed"],
@@ -115,7 +115,7 @@ def random_seeds_test():
     else:
         print("********  Test skipped.  This test cannot be performed in multinode environment.")
 
-def genDMatrix(h2oFrame, xlist, yresp):
+def genDMatrix(h2oFrame, xlist, yresp, xgb):
     pandaFtrain = h2oFrame.as_data_frame(use_pandas=True, header=True)
     # need to change column 0 to categorical
     c0 = pd.get_dummies(pandaFtrain[yresp], prefix=yresp, drop_first=True)
