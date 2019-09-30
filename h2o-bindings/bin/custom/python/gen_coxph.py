@@ -19,3 +19,9 @@ doc = dict(
 Trains a Cox Proportional Hazards Model (CoxPH) on an H2O dataset.
 """
 )
+
+examples = dict(
+    export_examples_dir="""
+
+"""
+    )
