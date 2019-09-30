@@ -45,6 +45,8 @@ public class HeartBeatThread extends Thread {
   // with the membership Heartbeat, they will start a round of Paxos group
   // discovery.
   public void run() {
+    boolean benchmarkEnabled = Boolean.valueOf(
+            System.getProperty(H2O.OptArgs.SYSTEM_PROP_PREFIX + "heartbeat.benchmark.enabled", "true"));
     MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
     ObjectName os;
     try {
@@ -156,7 +158,7 @@ public class HeartBeatThread extends Thread {
       // with each other.  Stagger them using the hashcode.
       // Run this benchmark *before* testing the heap or GC, so the GC numbers
       // are current as of the send time.
-      if( (counter+Math.abs(H2O.SELF.hashCode()*0xDECAF /*spread wider than 1 apart*/)) % (300/(Float.isNaN(hb._gflops)?10:1)) == 0) {
+      if(benchmarkEnabled && (counter+Math.abs(H2O.SELF.hashCode()*0xDECAF /*spread wider than 1 apart*/)) % (300/(Float.isNaN(hb._gflops)?10:1)) == 0) {
         hb._gflops   = (float)Linpack.run(hb._cpus_allowed);
         hb._membw    = (float)MemoryBandwidth.run(hb._cpus_allowed);
       }
