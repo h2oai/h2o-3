@@ -125,6 +125,8 @@ final public class ExternalFrameWriterClient {
   }
 
   public void close() throws IOException, ExternalFrameConfirmationException {
+    // write remaining data
+    writeToChannel(ab, channel);
     waitForRequestToFinish(timeout, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
     channel.close();
   }
