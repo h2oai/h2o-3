@@ -60,6 +60,7 @@ class H2OConnectionConf(object):
         self._https = None
         self._context_path = ''
         self._verify_ssl_certificates = True
+        self._cacert = None
         self._proxy = None
         self._auth = None
         self._cookies = None
@@ -131,6 +132,15 @@ class H2OConnectionConf(object):
     def verify_ssl_certificates(self, value):
         assert_is_type(value, bool)
         self._verify_ssl_certificates = value
+
+    @property
+    def cacert(self):
+        return self._cacert
+
+    @cacert.setter
+    def cacert(self, value):
+        assert_is_type(value, None, str)
+        self._cacert = value
 
     @property
     def proxy(self):
@@ -210,7 +220,8 @@ class H2OConnection(backwards_compatible()):
     url_pattern = r"^(https?)://((?:[\w-]+\.)*[\w-]+):(\d+)/?((/[\w-]+)+)?$"
 
     @staticmethod
-    def open(server=None, url=None, ip=None, port=None, name=None, https=None, auth=None, verify_ssl_certificates=True,
+    def open(server=None, url=None, ip=None, port=None, name=None, https=None, auth=None,
+             verify_ssl_certificates=True, cacert=None,
              proxy=None, cookies=None, verbose=True, _msgs=None):
         r"""
         Establish connection to an existing H2O server.
@@ -239,6 +250,7 @@ class H2OConnection(backwards_compatible()):
         :param verify_ssl_certificates: if False then SSL certificate checking will be disabled (default True). This
             setting should rarely be disabled, as it makes your connection vulnerable to man-in-the-middle attacks. When
             used, it will generate a warning from the requests library. Has no effect when ``https`` is False.
+        :param cacert: Path to a CA bundle file or a directory with certificates of trusted CAs (optional).
         :param auth: authentication token for connecting to the remote server. This can be either a
             (username, password) tuple, or an authenticator (AuthBase) object. Please refer to the documentation in
             the ``requests.auth`` module.
@@ -293,6 +305,7 @@ class H2OConnection(backwards_compatible()):
 
         if verify_ssl_certificates is None: verify_ssl_certificates = True
         assert_is_type(verify_ssl_certificates, bool)
+        assert_is_type(cacert, str, None)
         assert_is_type(proxy, str, None)
         assert_is_type(auth, AuthBase, (str, str), None)
         assert_is_type(cookies, str, [str], None)
@@ -304,6 +317,7 @@ class H2OConnection(backwards_compatible()):
         conn._base_url = "%s://%s:%d%s" % (scheme, ip, port, context_path)
         conn._name = server.name if server else name
         conn._verify_ssl_cert = bool(verify_ssl_certificates)
+        conn._cacert = cacert
         conn._auth = auth
         conn._cookies = cookies
         conn._proxies = None
@@ -401,9 +415,10 @@ class H2OConnection(backwards_compatible()):
             headers = {"User-Agent": "H2O Python client/" + sys.version.replace("\n", ""),
                        "X-Cluster": self._cluster_id,
                        "Cookie": self._cookies}
+            verify = self._cacert if self._verify_ssl_cert and self._cacert else self._verify_ssl_cert
             resp = requests.request(method=method, url=url, data=data, json=json, files=files, params=params,
                                     headers=headers, timeout=self._timeout, stream=stream,
-                                    auth=self._auth, verify=self._verify_ssl_cert, proxies=self._proxies)
+                                    auth=self._auth, verify=verify, proxies=self._proxies)
             if isinstance(save_to, types.FunctionType):
                 save_to = save_to(resp)
             self._log_end_transaction(start_time, resp)
@@ -543,6 +558,7 @@ class H2OConnection(backwards_compatible()):
         self._base_url = None       # "{scheme}://{ip}:{port}"
         self._name = None
         self._verify_ssl_cert = None
+        self._cacert = None
         self._auth = None           # Authentication token
         self._proxies = None        # `proxies` dictionary in the format required by the requests module
         self._cluster_id = None

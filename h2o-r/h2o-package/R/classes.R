@@ -57,6 +57,7 @@ setRefClass("H2OConnectionMutableState",
 #' @slot name A \code{character} value specifying the name of the H2O cluster.
 #' @slot proxy A \code{character} specifying the proxy path of the H2O cluster.
 #' @slot https Set this to TRUE to use https instead of http.
+#' @slot cacert Path to a CA bundle file with root and intermediate certificates of trusted CAs.
 #' @slot insecure Set this to TRUE to disable SSL certificate checking.
 #' @slot username Username to login with.
 #' @slot password Password to login with.
@@ -67,7 +68,7 @@ setRefClass("H2OConnectionMutableState",
 #' @export
 setClass("H2OConnection",
          representation(ip="character", port="numeric", name="character", proxy="character",
-                        https="logical", insecure="logical",
+                        https="logical", cacert="character", insecure="logical",
                         username="character", password="character",
                         cookies="character",
                         context_path="character",
@@ -77,6 +78,7 @@ setClass("H2OConnection",
                    name         = NA_character_,
                    proxy        = NA_character_,
                    https        = FALSE,
+                   cacert       = NA_character_,
                    insecure     = FALSE,
                    username     = NA_character_,
                    password     = NA_character_,

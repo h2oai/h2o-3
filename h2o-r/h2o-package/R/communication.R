@@ -83,6 +83,8 @@
   if (conn@https) {
     if (conn@insecure) {
       opts = curlOptions(ssl.verifypeer = 0L, ssl.verifyhost=0L, .opts = opts)
+    } else if (! is.na(conn@cacert)) {
+        opts = curlOptions(cainfo = conn@cacert, .opts = opts)
     }
   }
   if (!is.na(conn@proxy)) {
