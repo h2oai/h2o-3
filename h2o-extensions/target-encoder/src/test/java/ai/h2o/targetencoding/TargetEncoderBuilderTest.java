@@ -3,9 +3,12 @@ package ai.h2o.targetencoding;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
+import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Map;
 
@@ -24,7 +27,6 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
     Map<String, Frame> encodingMapFromTargetEncoder = null;
     Map<String, Frame> targetEncodingMapFromBuilder = null;
-    TargetEncoderModel targetEncoderModel = null;
 
     Frame reference = null;
     for( int attempt = 0; attempt < 10; attempt++) {
@@ -34,13 +36,10 @@ public class TargetEncoderBuilderTest extends TestUtil {
       try {
         Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
         String foldColumnName = "fold_column";
-
-        addKFoldColumn(fr, foldColumnName, 5, 1234L);
-
-        Scope.track(fr);
         String responseColumnName = "survived";
-
         asFactor(fr, responseColumnName);
+        addKFoldColumn(fr, foldColumnName, 5, 1234L);
+        Scope.track(fr);
 
         TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
         targetEncoderParameters._blending = false;
@@ -61,27 +60,30 @@ public class TargetEncoderBuilderTest extends TestUtil {
         Frame transformedTrainWithTargetEncoder = tec.applyTargetEncoding(fr, responseColumnName, encodingMapFromTargetEncoder,
                 strategy, foldColumnName, targetEncoderParameters._blending, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, targetEncoderParameters._seed);
 
-        Frame subframe1 = transformedTrainWithTargetEncoder.subframe(new String[]{"embarked_te", "home.dest", foldColumnName, "home.dest_te"});
-        DKV.put(subframe1);
-        Frame.export(subframe1, "te_encoder" + attempt + ".csv", fr._key.toString(), true, 1)
-                .get();
-
         Scope.track(transformedTrainWithTargetEncoder);
 
         if(reference == null) {
           reference = transformedTrainWithTargetEncoder;
         } else {
+          Log.info("Checking against reference");
           assertTrue("Encodings should be consistent across all attempts. Attempt number " + attempt,
                   isBitIdentical(reference, transformedTrainWithTargetEncoder));
         }
 
       } finally {
         removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
-        Scope.exit();
+        Key[] keep = new Key[0];
+        if (reference != null) {
+          keep = ArrayUtils.append(reference.keys(), reference._key);
+        }
+        Scope.exit(keep);
       }
 
     }
 
+    if (reference != null) {
+      reference.remove();
+    }
   }
 
   @Test
@@ -125,11 +127,6 @@ public class TargetEncoderBuilderTest extends TestUtil {
         targetEncodingMapFromBuilder = targetEncoderModel._output._target_encoding_map;
         printOutFrameAsTable(targetEncodingMapFromBuilder.get("home.dest"));
 
-        Frame subframe = transformedTrainWithModelFromBuilder.subframe(new String[]{"embarked_te", "home.dest", foldColumnName, "home.dest_te"});
-        DKV.put(subframe);
-        Frame.export(subframe, "te_model.csv", fr._key.toString(), true, 1)
-                .get();
-
         if (reference == null) {
           reference = transformedTrainWithModelFromBuilder;
         } else {
@@ -139,12 +136,21 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       } finally {
         removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
-        targetEncoderModel.remove();
-        Scope.exit();
+        if (targetEncoderModel != null) {
+          targetEncoderModel.remove();
+        }
+        Key[] keep = new Key[0];
+        if (reference != null) {
+          keep = ArrayUtils.append(reference.keys(), reference._key);
+        }
+        Scope.exit(keep);
       }
 
     }
 
+    if (reference != null) {
+      reference.remove();
+    }
   }
 
 
