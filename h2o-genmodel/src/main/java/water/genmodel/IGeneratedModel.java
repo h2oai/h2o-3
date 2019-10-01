@@ -1,5 +1,7 @@
 package water.genmodel;
 
+import hex.genmodel.CategoricalEncoding;
+
 /**
  * A generic interface to access generated models.
  */
@@ -12,6 +14,9 @@ public interface IGeneratedModel {
 
     /** The names of columns used in the model. It contains names of input columns and a name of response column. */
     public String[] getNames();
+
+    /** The original names of columns used in the model. It contains names of input columns and a name of response column. */
+    public String[] getOrigNames();
 
     /** The name of the response column. */
     @Deprecated
@@ -31,6 +36,8 @@ public interface IGeneratedModel {
      * @throws java.lang.UnsupportedOperationException if called on a non-classifier model.
      */
     public int getNumResponseClasses();
+
+    public CategoricalEncoding getCategoricalEncoding();
 
     /** @return true if this model represents a classifier, else it is used for regression. */
     public boolean isClassifier();
@@ -53,6 +60,9 @@ public interface IGeneratedModel {
 
     /** Returns domain values for all columns including response column. */
     public String[][] getDomainValues();
+
+    /** Returns original domain values for all columns including response column. */
+    public String[][] getOrigDomainValues();
 
     /** Returns index of column with give name or -1 if column is not found. */
     public int getColIdx(String name);

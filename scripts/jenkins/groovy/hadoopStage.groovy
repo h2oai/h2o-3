@@ -1,4 +1,5 @@
 H2O_HADOOP_STARTUP_MODE_HADOOP='ON_HADOOP'
+H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO='ON_HADOOP_WITH_SPNEGO'
 H2O_HADOOP_STARTUP_MODE_STANDALONE='STANDALONE'
 
 def call(final pipelineContext, final stageConfig) {
@@ -48,12 +49,12 @@ def call(final pipelineContext, final stageConfig) {
     }
 }
 
-
-
 private String getMakeTargetSuffix(final stageConfig) {
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return "-hdp"
+        case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
+            return "-spnego"
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             return "-standalone"
         default:
@@ -61,10 +62,10 @@ private String getMakeTargetSuffix(final stageConfig) {
     }
 }
 
-
 private String getPostFailedBuildAction(final mode) {
     switch (mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
+        case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
             return """
                 if [ -f h2o_one_node ]; then
                     export YARN_APPLICATION_ID=\$(cat h2o_one_node | grep job | sed 's/job/application/g')

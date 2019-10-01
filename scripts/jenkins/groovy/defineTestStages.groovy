@@ -385,8 +385,7 @@ def call(final pipelineContext) {
     onHadoopStage.customData.mode = 'ON_HADOOP'
     onHadoopStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(onHadoopStage.customData.distribution, onHadoopStage.customData.version, false)
 
-    HADOOP_STAGES += standaloneStage
-    HADOOP_STAGES += onHadoopStage
+    HADOOP_STAGES += [ standaloneStage, onHadoopStage ]
   }
 
   def KERBEROS_STAGES = []
@@ -445,8 +444,12 @@ def call(final pipelineContext) {
     onHadoopStage.customData.mode = 'ON_HADOOP'
     onHadoopStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(onHadoopStage.customData.distribution, onHadoopStage.customData.version, true)
 
-    KERBEROS_STAGES += standaloneStage
-    KERBEROS_STAGES += onHadoopStage
+    def onHadoopWithSpnegoStage = evaluate(stageTemplate.inspect())
+    onHadoopWithSpnegoStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP WITH SPNEGO"
+    onHadoopWithSpnegoStage.customData.mode = 'ON_HADOOP_WITH_SPNEGO'
+    onHadoopWithSpnegoStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(onHadoopStage.customData.distribution, onHadoopStage.customData.version, true)
+
+    KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage ]
   }
 
   def XGB_STAGES = []

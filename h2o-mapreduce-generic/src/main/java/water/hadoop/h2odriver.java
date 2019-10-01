@@ -133,6 +133,8 @@ public class h2odriver extends Configured implements Tool {
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
   static boolean kerberosLogin = false;
+  static boolean spnegoLogin = false;
+  static String spnegoProperties = null;
   static boolean pamLogin = false;
   static String loginConfFileName = null;
   static boolean formAuth = false;
@@ -1225,6 +1227,13 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-kerberos_login")) {
         kerberosLogin = true;
       }
+      else if (s.equals("-spnego_login")) {
+        spnegoLogin = true;
+      }
+      else if (s.equals("-spnego_properties")) {
+        i++; if (i >= args.length) { usage(); }
+        spnegoProperties = args[i];
+      }
       else if (s.equals("-pam_login")) {
         pamLogin = true;
       }
@@ -1802,6 +1811,9 @@ public class h2odriver extends Configured implements Tool {
     if (kerberosLogin) {
       addMapperArg(conf, "-kerberos_login");
     }
+    if (spnegoLogin) {
+      addMapperArg(conf, "-spnego_login");
+    }
     if (pamLogin) {
       addMapperArg(conf, "-pam_login");
     }
@@ -1857,6 +1869,9 @@ public class h2odriver extends Configured implements Tool {
                       "};"
       );
       addMapperConf(conf, "-login_conf", "login.conf", pamConfData);
+    }
+    if (spnegoLogin && spnegoProperties != null) {
+      addMapperConf(conf, "-spnego_properties", "spnego.properties", spnegoProperties);
     }
 
     // SSL
