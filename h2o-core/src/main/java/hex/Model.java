@@ -1856,7 +1856,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
   }
 
-
+  /**
+   * Specify categorical encoding that should be applied before running score0 method of POJO/MOJO.
+   * Default: AUTO - POJO/MOJO handles encoding or no transformation of input is needed.
+   * @return instance of CategoricalEncoding supported by GenModel or null if encoding is not supported.
+   */
+  protected CategoricalEncoding getGenModelEncoding() {
+    return CategoricalEncoding.AUTO;
+  }
 
   // ==========================================================================
   /** Return a String which is a valid Java program representing a class that
@@ -1949,8 +1956,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         .getModelCategory() + "; }").nl();
     toJavaInit(sb, fileCtx).nl();
     toJavaNAMES(sb, fileCtx);
+    CategoricalEncoding encoding = getGenModelEncoding();
+    assert encoding != null;
+    boolean writeOrigs = encoding != CategoricalEncoding.AUTO; // export orig names & domains if POJO/MOJO doesn't handle encoding itself
+    if (writeOrigs && _output._origNames != null)
+      toJavaOrigNAMES(sb, fileCtx);
     toJavaNCLASSES(sb);
     toJavaDOMAINS(sb, fileCtx);
+    if (writeOrigs && _output._origDomains != null)
+      toJavaOrigDOMAINS(sb, fileCtx);
     toJavaPROB(sb);
     toJavaSuper(modelName, sb); //
     sb.p("  public String getUUID() { return Long.toString("+checksum()+"L); }").nl();
@@ -2000,6 +2014,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return sb;
   }
 
+  private SBPrintStream toJavaOrigNAMES(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    final String modelName = JCodeGen.toJavaId(_key.toString());
+    final String namesHolderClassName = "OrigNamesHolder_"+modelName;
+    sb.i().p("// ").p("Original names of columns used by model.").nl();
+    sb.i().p("public static final String[] ORIG_NAMES = "+namesHolderClassName+".VALUES;").nl();
+    // Generate class which fills the names into array
+    fileCtx.add(new CodeGenerator() {
+      @Override
+      public void generate(JCodeSB out) {
+        out.i().p("// The class representing original training column names").nl();
+        int nResponse = _output._names.length - _output.nfeatures();
+        JCodeGen.toClassWithArray(out, null, namesHolderClassName,
+                Arrays.copyOf(_output._origNames, _output._origNames.length - nResponse));
+      }
+    });
+
+    return sb;
+  }
+
   protected SBPrintStream toJavaNCLASSES(SBPrintStream sb ) {
     return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES",
                                                          _output.nclasses(),
@@ -2028,6 +2061,36 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                       @Override
                       public void generate(JCodeSB out) {
                         out.ip("// The class representing column ").p(_output._names[idx]).nl();
+                        JCodeGen.toClassWithArray(out, null, colInfoClazz, dom);
+                      }
+                    }
+        );
+      }
+    }
+    return sb.ip("};").nl();
+  }
+
+  private SBPrintStream toJavaOrigDOMAINS(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    String modelName = JCodeGen.toJavaId(_key.toString());
+    sb.nl();
+    sb.ip("// Original column domains. The last array contains domain of response column.").nl();
+    sb.ip("public static final String[][] ORIG_DOMAINS = new String[][] {").nl();
+    String [][] domains = _output._origDomains;
+    for (int i=0; i< domains.length; i++) {
+      final int idx = i;
+      final String[] dom = domains[i];
+      final String colInfoClazz = modelName+"_OrigColInfo_"+i;
+      sb.i(1).p("/* ").p(_output._origNames[i]).p(" */ ");
+      if (dom != null) sb.p(colInfoClazz).p(".VALUES"); else sb.p("null");
+      if (i!=domains.length-1) sb.p(',');
+      sb.nl();
+      // Right now do not generate the class representing column
+      // since it does not hold any interesting information except String array holding domain
+      if (dom != null) {
+        fileCtx.add(new CodeGenerator() {
+                      @Override
+                      public void generate(JCodeSB out) {
+                        out.ip("// The class representing the original column ").p(_output._names[idx]).nl();
                         JCodeGen.toClassWithArray(out, null, colInfoClazz, dom);
                       }
                     }
@@ -2228,12 +2291,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
         EasyPredictModelWrapper epmw;
         try {
-          epmw = new EasyPredictModelWrapper(
-                  config.setModel(genmodel)
-                          .setConvertUnknownCategoricalLevelsToNa(true)
-                          .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
-                          .setEnableStagedProbabilities(genmodel instanceof SharedTreeMojoModel)
-          );
+          config.setModel(genmodel)
+                  .setConvertUnknownCategoricalLevelsToNa(true)
+                  .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
+                  .setEnableStagedProbabilities(genmodel instanceof SharedTreeMojoModel)
+                  .setUseExternalEncoding(true); // input Frame is already adapted!
+          epmw = new EasyPredictModelWrapper(config);
         } catch (IOException e) {
           throw new RuntimeException(e);
         }
