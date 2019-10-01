@@ -433,6 +433,7 @@ Supported Versions
 -  CDH 6.0
 -  CDH 6.1
 -  CDH 6.2
+-  CDH 6.3
 -  HDP 2.2
 -  HDP 2.3
 -  HDP 2.4
