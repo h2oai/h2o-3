@@ -39,7 +39,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/6/index.ht
 <h4>Task</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6883'>PUBDEV-6883</a>] - Added ability for countingErrorConsumer example to accumulate counters, not just for variables, but for each variable X and for each variable's value. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6883'>PUBDEV-6883</a>] - Added ability for countingErrorConsumer example to accumulate counters, not just for variables, but for each variable X and for each variable's value.
 </li>
 </ul>
 
