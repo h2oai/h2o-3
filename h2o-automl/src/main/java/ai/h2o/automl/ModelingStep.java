@@ -162,7 +162,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     private String getSortMetric() {
         //ensures that the sort metric is always updated according to the defaults set by leaderboard
         Leaderboard leaderboard = aml().leaderboard();
-        return leaderboard == null ? null : leaderboard._sort_metric;
+        return leaderboard == null ? null : leaderboard.getSortMetric();
     }
 
     private static ScoreKeeper.StoppingMetric metricValueOf(String name) {

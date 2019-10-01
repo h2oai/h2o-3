@@ -4,13 +4,10 @@ import hex.*;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
-import water.util.IcedHashMap;
-import water.util.Log;
-import water.util.TwoDimTable;
+import water.util.*;
 
 import java.util.*;
-
+import java.util.stream.Stream;
 
 
 /**
@@ -39,76 +36,47 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * <p>
    * Updated inside addModels().
    */
-  private Key<Model>[] _modelKeys = new Key[0];
+  private Key<Model>[] _model_keys = new Key[0];
 
   /**
    * Leaderboard/test set ModelMetrics objects for the models.
    * <p>
    * Updated inside addModels().
    */
-  private final transient IcedHashMap<Key<ModelMetrics>, ModelMetrics> _leaderboard_set_metrics = new IcedHashMap<>();
+  private final transient IcedHashMap<Key<ModelMetrics>, ModelMetrics> _leaderboard_model_metrics_cache = new IcedHashMap<>();
 
   /**
-   * Sort metrics for the models in this leaderboard, in the same order as the models.
-   * <p>
-   * Updated inside addModels().
+   * Map providing for a given metric name, the list of metric values in the same order as the models
    */
-  public double[] sort_metrics = new double[0];
-
-  /**
-   * Additional metrics for the models in this leaderboard, in the same order as the models
-   * Regression metrics: rmse, mse, mae, and rmsle
-   * Binomial metrics: logloss, mean_per_class_error, rmse, & mse
-   * Multinomial metrics: logloss, mean_per_class_error, rmse, & mse
-   * <p>
-   * Updated inside addModels().
-   */
-  public double[] mean_residual_deviance = new double[0];
-  public double[] rmse = new double[0];
-  public double[] mse = new double[0];
-  public double[] mae = new double[0];
-  public double[] rmsle = new double[0];
-  public double[] logloss = new double[0];
-  public double[] auc = new double[0];
-  public double[] mean_per_class_error = new double[0];
+  private IcedHashMap<String, double[]> _metric_values = new IcedHashMap<>();
 
   /**
    * Metric used to sort this leaderboard.
    */
-  String _sort_metric;
+  private String _sort_metric;
 
   /**
-   * Other metrics reported in leaderboard
-   * Regression metrics: rmse, mse, mae, and rmsle
-   * Binomial metrics: logloss, mean_per_class_error, rmse, & mse
-   * Multinomial metrics: logloss, mean_per_class_error, rmse, & mse
+   * Metrics reported in leaderboard
+   * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
+   * Binomial metrics: auc, logloss, mean_per_class_error, rmse, mse
+   * Multinomial metrics: logloss, mean_per_class_error, rmse, mse
    */
-  private String[] _other_metrics;
-
-  /**
-   * Metric direction used in the sort.
-   */
-  private boolean _sort_decreasing;
-
-  /**
-   * Have we set the sort_metric based on a model in the leadboard?
-   */
-  private boolean _sort_metric_autoset = false;
+  private String[] _metrics;
 
   /**
    * The eventLog attached to same AutoML instance as this Leaderboard object.
    */
-  private final Key<EventLog> _eventLogKey;
+  private final Key<EventLog> _eventlog_key;
 
   /**
    * Frame for which we return the metrics, by default.
    */
-  private final Key<Frame> _leaderboardFrameKey;
+  private final Key<Frame> _leaderboard_frame_key;
 
   /**
    * Checksum for the Frame for which we return the metrics, by default.
    */
-  private final long _leaderboardFrameChecksum;
+  private final long _leaderboard_frame_checksum;
 
   /**
    *
@@ -116,18 +84,18 @@ public class Leaderboard extends Lockable<Leaderboard> {
   public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     super(Key.make(idForProject(project_name)));
     this._project_name = project_name;
-    this._eventLogKey = eventLog._key;
-    this._leaderboardFrameKey = leaderboardFrame == null ? null : leaderboardFrame._key;
-    this._leaderboardFrameChecksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
+    this._eventlog_key = eventLog._key;
+    this._leaderboard_frame_key = leaderboardFrame == null ? null : leaderboardFrame._key;
+    this._leaderboard_frame_checksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
     this._sort_metric = sort_metric == null ? null : sort_metric.toLowerCase();
   }
 
   static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(project_name)));
     if (null != leaderboard) {
-      if (leaderboardFrame != null && leaderboardFrame._key.equals(leaderboard._leaderboardFrameKey))
+      if (leaderboardFrame != null && leaderboardFrame._key.equals(leaderboard._leaderboard_frame_key))
         throw new H2OIllegalArgumentException("Cannot use leaderboard "+project_name+" with a new leaderboard frame"
-                +" (existing leaderboard frame: "+leaderboard._leaderboardFrameKey+").");
+                +" (existing leaderboard frame: "+leaderboard._leaderboard_frame_key +").");
     } else {
       leaderboard = new Leaderboard(project_name, eventLog, leaderboardFrame, sort_metric);
     }
@@ -141,15 +109,23 @@ public class Leaderboard extends Lockable<Leaderboard> {
     return _project_name;
   }
 
+  public String getSortMetric() {
+    return _sort_metric;
+  }
+
+  public String[] getMetrics() {
+    return _metrics;
+  }
+
   public Frame leaderboardFrame() {
-    return _leaderboardFrameKey == null ? null : _leaderboardFrameKey.get();
+    return _leaderboard_frame_key == null ? null : _leaderboard_frame_key.get();
   }
 
   /**
    * @return list of keys of models sorted by the default metric for the model category, fetched from the DKV
    */
   public Key<Model>[] getModelKeys() {
-    return _modelKeys;
+    return _model_keys;
   }
 
   /** Return the number of models in this Leaderboard. */
@@ -167,8 +143,8 @@ public class Leaderboard extends Lockable<Leaderboard> {
   /**
    * @return list of models sorted by the given metric
    */
-  public Model[] getModelsSortedByMetric(String metric, boolean decreasing) {
-    Key<Model>[] modelKeys = sortModels(metric, decreasing);
+  public Model[] getModelsSortedByMetric(String metric) {
+    Key<Model>[] modelKeys = sortModels(metric);
     if (modelKeys == null || 0 == modelKeys.length) return new Model[0];
     return getModelsFromKeys(modelKeys);
   }
@@ -179,38 +155,26 @@ public class Leaderboard extends Lockable<Leaderboard> {
     return modelKeys[0].get();
   }
 
-  private EventLog eventLog() { return _eventLogKey.get(); }
-
-  private void setMetricAndDirection(String metric, String[] otherMetrics, boolean sortDecreasing) {
-    _sort_metric = metric;
-    _other_metrics = otherMetrics;
-    _sort_decreasing = sortDecreasing;
-    _sort_metric_autoset = true;
+  public int getModelRank(Key<Model> modelKey) {
+    return ArrayUtils.find(_model_keys, modelKey);
   }
 
-  private void setDefaultMetricAndDirection(Model m) {
-    final String[] metrics;
-    String sortMetric = _sort_metric;
-    if (m._output.isBinomialClassifier()) { //Binomial
-      metrics = new String[]{"logloss", "mean_per_class_error", "rmse", "mse"};
-      if(sortMetric == null) {
-        sortMetric = "auc";
-      }
+  private EventLog eventLog() { return _eventlog_key.get(); }
+
+  private void setDefaultMetrics(Model m) {
+    String[] metrics = defaultMetricsForModel(m);
+    if (_sort_metric == null) {
+      _sort_metric = metrics.length > 0 ? metrics[0] : "mse"; // default to a metric "universally" available
     }
-    else if (m._output.isMultinomialClassifier()) { //Multinomial
-      metrics = new String[]{"logloss", "rmse", "mse"};
-      if(sortMetric == null) {
-        sortMetric = "mean_per_class_error";
-      }
+    // ensure metrics is ordered in such a way that sortMetric is the first metric, and without duplicates.
+    int sortMetricIdx = ArrayUtils.find(metrics, _sort_metric);
+    if (sortMetricIdx > 0) {
+      metrics = ArrayUtils.remove(metrics, sortMetricIdx);
+      metrics = ArrayUtils.prepend(metrics, _sort_metric);
+    } else if (sortMetricIdx < 0){
+      metrics = ArrayUtils.append(new String[]{_sort_metric}, metrics);
     }
-    else { //Regression
-      metrics = new String[]{"rmse", "mse", "mae", "rmsle"};
-      if(sortMetric == null) {
-        sortMetric = "mean_residual_deviance";
-      }
-    }
-    boolean sortDecreasing = sortMetric.equals("auc");
-    setMetricAndDirection(sortMetric, metrics, sortDecreasing);
+    _metrics = metrics;
   }
 
   /**
@@ -228,7 +192,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
       return;
     }
 
-    final Key<Model>[] oldModelKeys = _modelKeys;
+    final Key<Model>[] oldModelKeys = _model_keys;
     final Key<Model> oldLeaderKey = (oldModelKeys == null || 0 == oldModelKeys.length) ? null : oldModelKeys[0];
 
     // eliminate duplicates
@@ -263,21 +227,22 @@ public class Leaderboard extends Lockable<Leaderboard> {
     }
 
     write_lock(); //no job/key needed as currently the leaderboard instance can only be updated by its corresponding AutoML job (otherwise, would need to pass a job param to addModels)
-    if (! this._sort_metric_autoset) {
+    if (_metrics == null) {
       // lazily set to default for this model category
-      setDefaultMetricAndDirection(newModels[0].get());
+      setDefaultMetrics(newModels[0].get());
     }
 
     for (ModelMetrics mm : modelMetrics) {
-      if (mm != null) _leaderboard_set_metrics.putIfAbsent(mm._key, mm);
+      if (mm != null) _leaderboard_model_metrics_cache.putIfAbsent(mm._key, mm);
     }
     // Sort by metric on the leaderboard/test set or default model metrics.
     final List<Key<Model>> sortedModelKeys;
+    boolean sortDecreasing = !isLossFunction(_sort_metric);
     try {
       if (leaderboardFrame == null) {
-        sortedModelKeys = ModelMetrics.sortModelsByMetric(_sort_metric, _sort_decreasing, newModelKeys);
+        sortedModelKeys = ModelMetrics.sortModelsByMetric(_sort_metric, sortDecreasing, newModelKeys);
       } else {
-        sortedModelKeys = ModelMetrics.sortModelsByMetric(leaderboardFrame, _sort_metric, _sort_decreasing, newModelKeys);
+        sortedModelKeys = ModelMetrics.sortModelsByMetric(leaderboardFrame, _sort_metric, sortDecreasing, newModelKeys);
       }
     } catch (H2OIllegalArgumentException e) {
       Log.warn("ModelMetrics.sortModelsByMetric failed: " + e);
@@ -286,35 +251,18 @@ public class Leaderboard extends Lockable<Leaderboard> {
 
     final Key<Model>[] modelKeys = sortedModelKeys.toArray(new Key[0]);
     final Model[] models = getModelsFromKeys(modelKeys);
-    final double[] sortMetricValues = getMetrics(_sort_metric, models);
     // now, we can update leaderboard public state
     // (tried to narrow scope of write lock, but there are still private state mutations above: _leaderboard_set_metrics + all attributes set by setDefaultMetricAndDirection)
-    if (model._output.isBinomialClassifier()) { // Binomial case
-      auc = getMetrics("auc", models);
-      logloss = getMetrics("logloss", models);
-      mean_per_class_error = getMetrics("mean_per_class_error", models);
-      rmse = getMetrics("rmse", models);
-      mse = getMetrics("mse", models);
-    } else if (model._output.isMultinomialClassifier()) { //Multinomial Case
-      mean_per_class_error = getMetrics("mean_per_class_error", models);
-      logloss = getMetrics("logloss",models);
-      rmse = getMetrics("rmse", models);
-      mse = getMetrics("mse", models);
-    } else { //Regression Case
-      mean_residual_deviance= getMetrics("mean_residual_deviance", models);
-      rmse = getMetrics("rmse", models);
-      mse = getMetrics("mse", models);
-      mae = getMetrics("mae", models);
-      rmsle = getMetrics("rmsle", models);
+    for (String metric : _metrics) {
+      _metric_values.put(metric, getMetrics(metric, models));
     }
-    _modelKeys = modelKeys;
-    sort_metrics = sortMetricValues;
+    _model_keys = modelKeys;
     update();
     unlock();
 
     if (oldLeaderKey == null || !oldLeaderKey.equals(modelKeys[0])) {
       eventLog().info(EventLogEntry.Stage.ModelTraining,
-              "New leader: "+modelKeys[0]+", "+_sort_metric+": "+sortMetricValues[0]);
+              "New leader: "+modelKeys[0]+", "+ _sort_metric +": "+ _metric_values.get(_sort_metric)[0]);
     }
   } // addModels
 
@@ -346,8 +294,9 @@ public class Leaderboard extends Lockable<Leaderboard> {
   /**
    * @return list of keys of models sorted by the given metric, fetched from the DKV
    */
-  private Key<Model>[] sortModels(String metric, boolean decreasing) {
+  private Key<Model>[] sortModels(String metric) {
     Key<Model>[] models = getModelKeys();
+    boolean decreasing = !isLossFunction(metric);
     List<Key<Model>> newModelsSorted =
             ModelMetrics.sortModelsByMetric(metric, decreasing, Arrays.asList(models));
     return newModelsSorted.toArray(new Key[0]);
@@ -361,7 +310,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
       // If leaderboard frame exists, get metrics from there
       if (leaderboardFrame != null) {
         metrics[i++] = ModelMetrics.getMetricFromModelMetric(
-            _leaderboard_set_metrics.get(ModelMetrics.buildKey(m, leaderboardFrame)),
+            _leaderboard_model_metrics_cache.get(ModelMetrics.buildKey(m, leaderboardFrame)),
             metric
         );
       } else {
@@ -370,7 +319,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
         long model_checksum = m.checksum();
         ModelMetrics mm = ModelMetrics.defaultModelMetrics(m);
         metrics[i++] = ModelMetrics.getMetricFromModelMetric(
-            _leaderboard_set_metrics.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frame()._key, mm.frame().checksum())),
+            _leaderboard_model_metrics_cache.get(ModelMetrics.buildKey(model_key, model_checksum, mm.frame()._key, mm.frame().checksum())),
             metric
         );
       }
@@ -383,59 +332,40 @@ public class Leaderboard extends Lockable<Leaderboard> {
    */
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
-    Log.debug("Cleaning up leaderboard from models "+Arrays.toString(_modelKeys));
+    Log.debug("Cleaning up leaderboard from models "+Arrays.toString(_model_keys));
     if (cascade) {
-      for (Key<Model> m : _modelKeys) {
+      for (Key<Model> m : _model_keys) {
         Keyed.remove(m, fs, true);
       }
     }
-    for (Key k : _leaderboard_set_metrics.keySet())
+    for (Key k : _leaderboard_model_metrics_cache.keySet())
       Keyed.remove(k, fs, true);
     return super.remove_impl(fs, cascade);
   }
 
-  private static double[] defaultMetricForModel(Model m) {
-    return defaultMetricForModel(m, ModelMetrics.defaultModelMetrics(m));
-  }
-
-  private static double[] defaultMetricForModel(Model m, ModelMetrics mm) {
-    if (m._output.isBinomialClassifier()) {
-      return new double[] {
-          ((ModelMetricsBinomial) mm).auc(),
-          ((ModelMetricsBinomial) mm).logloss(),
-          ((ModelMetricsBinomial) mm).mean_per_class_error(),
-          mm.rmse(),
-          mm.mse()
-      };
-    } else if (m._output.isMultinomialClassifier()) {
-      return new double[] {
-          ((ModelMetricsMultinomial) mm).mean_per_class_error(),
-          ((ModelMetricsMultinomial) mm).logloss(),
-          mm.rmse(),
-          mm.mse()
-      };
-    } else if (m._output.isSupervised()) {
-      return new double[] {
-          ((ModelMetricsRegression)mm).mean_residual_deviance(),
-          mm.rmse(),
-          mm.mse(),
-          ((ModelMetricsRegression) mm).mae(),
-          ((ModelMetricsRegression) mm).rmsle()
-      };
-    }
-    Log.warn("Failed to find metric for model: " + m);
-    return new double[] {Double.NaN};
-  }
-
-  private static String[] defaultMetricNameForModel(Model m) {
-    if (m._output.isBinomialClassifier()) {
+  private static String[] defaultMetricsForModel(Model m) {
+    if (m._output.isBinomialClassifier()) { //binomial
       return new String[] {"auc", "logloss", "mean_per_class_error", "rmse", "mse"};
-    } else if (m._output.isMultinomialClassifier()) {
+    } else if (m._output.isMultinomialClassifier()) { // multinomial
       return new String[] {"mean per-class error", "logloss", "rmse", "mse"};
-    } else if (m._output.isSupervised()) {
+    } else if (m._output.isSupervised()) { // regression
       return new String[] {"mean_residual_deviance", "rmse", "mse", "mae", "rmsle"};
     }
-    return new String[] {"unknown"};
+    return new String[0];
+  }
+
+  private double[] getModelMetricValues(int rank) {
+    assert rank >= 0 && rank < getModelKeys().length: "invalid rank";
+    if (_metrics == null) return new double[0];
+    final double[] values = new double[_metrics.length];
+    for (int i=0; i < _metrics.length; i++) {
+      values[i] = _metric_values.get(_metrics[i])[rank];
+    }
+    return values;
+  }
+
+  private static boolean isLossFunction(String metric) {
+    return !"auc".equals(metric);
   }
 
   String rankTsv() {
@@ -444,152 +374,50 @@ public class Leaderboard extends Lockable<Leaderboard> {
     StringBuilder sb = new StringBuilder();
     sb.append("Error").append(lineSeparator);
 
-    Model[] models = getModels();
-    for (int i = models.length - 1; i >= 0; i--) {
+    for (int i = getModelKeys().length - 1; i >= 0; i--) {
       // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
-      Model m = models[i];
-      sb.append(Arrays.toString(defaultMetricForModel(m)));
+      sb.append(Arrays.toString(getModelMetricValues(i)));
       sb.append(lineSeparator);
     }
     return sb.toString();
   }
 
-  private static String[] colHeaders(String metric, String[] other_metric) {
-    String[] headers = ArrayUtils.append(new String[]{"model_id",metric},other_metric);
-    return headers;
-  }
+  private static final String colMetricType = "double";
+  private static final String colMetricFormat = "%.6f";
 
-  private static final String[] colTypesMultinomial= {
-          "string",
-          "double",
-          "double",
-          "double",
-          "double"
-  };
-
-  private static final String[] colFormatsMultinomial= {
-          "%s",
-          "%.6f",
-          "%.6f",
-          "%.6f",
-          "%.6f"
-  };
-
-  private static final String[] colTypesBinomial= {
-          "string",
-          "double",
-          "double",
-          "double",
-          "double",
-          "double"
-  };
-
-  private static final String[] colFormatsBinomial= {
-          "%s",
-          "%.6f",
-          "%.6f",
-          "%.6f",
-          "%.6f",
-          "%.6f"
-  };
-
-  private static final String[] colTypesRegression= {
-          "string",
-          "double",
-          "double",
-          "double",
-          "double",
-          "double"
-  };
-
-  private static final String[] colFormatsRegression= {
-          "%s",
-          "%.6f",
-          "%.6f",
-          "%.6f",
-          "%.6f",
-          "%.6f"
-  };
-
-  private static final TwoDimTable makeTwoDimTable(String tableHeader, String sort_metric, String[] other_metrics, Model[] models) {
-    assert sort_metric != null || models.length == 0 :
+  private static final TwoDimTable makeTwoDimTable(String tableHeader, String[] metrics, int nrows) {
+    assert metrics.length > 0;
+    String sort_metric = metrics[0];
+    assert sort_metric != null || nrows == 0 :
         "sort_metrics needs to be always not-null for non-empty array!";
 
-    String[] rowHeaders = new String[models.length];
-    for (int i = 0; i < models.length; i++) rowHeaders[i] = "" + i;
+    String description = nrows > 0 ? "models sorted in order of "+sort_metric+", best first"
+                        : "no models in this leaderboard";
+    String[] rowHeaders = new String[nrows];
+    for (int i = 0; i < nrows; i++) rowHeaders[i] = ""+i;
+    String[] colHeaders = ArrayUtils.append(new String[]{"model_id"}, metrics);
+    String[] colTypes = ArrayUtils.copyAndFillOf(new String[]{"string"}, colHeaders.length, colMetricType);
+    String[] colFormats = ArrayUtils.copyAndFillOf(new String[]{"%s"}, colHeaders.length, colMetricFormat);
+    String colHeaderForRowHeader = nrows > 0 ? "#" : "-";
 
-    if (models.length == 0) {
-      // empty TwoDimTable
-      return new TwoDimTable(tableHeader,
-              "no models in this leaderboard",
-              rowHeaders,
-              Leaderboard.colHeaders("auc", other_metrics),
-              Leaderboard.colTypesBinomial,
-              Leaderboard.colFormatsBinomial,
-              "-");
+    return new TwoDimTable(
+            tableHeader,
+            description,
+            rowHeaders,
+            colHeaders,
+            colTypes,
+            colFormats,
+            colHeaderForRowHeader
+    );
+  }
+
+  private void addTwoDimTableRow(TwoDimTable table, int row, String modelID, String[] metrics) {
+    int col = 0;
+    table.set(row, col++, modelID);
+    for (String metric : metrics) {
+      double value = _metric_values.get(metric)[row];
+      table.set(row, col++, value);
     }
-    if(models[0]._output.isBinomialClassifier()) {
-      //other_metrics =  new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
-      return new TwoDimTable(tableHeader,
-              "models sorted in order of " + sort_metric + ", best first",
-              rowHeaders,
-              Leaderboard.colHeaders("auc", other_metrics),
-              Leaderboard.colTypesBinomial,
-              Leaderboard.colFormatsBinomial,
-              "#");
-    } else if  (models[0]._output.isMultinomialClassifier()) {
-      //other_metrics =  new String[] {"logloss", "rmse", "mse"};
-      return new TwoDimTable(tableHeader,
-              "models sorted in order of " + sort_metric + ", best first",
-              rowHeaders,
-              Leaderboard.colHeaders("mean_per_class_error", other_metrics),
-              Leaderboard.colTypesMultinomial,
-              Leaderboard.colFormatsMultinomial,
-              "#");
-
-    } else {
-      //other_metrics = new String[] {"rmse", "mse", "mae","rmsle"};
-      return new TwoDimTable(tableHeader,
-              "models sorted in order of " + sort_metric + ", best first",
-              rowHeaders,
-              Leaderboard.colHeaders("mean_residual_deviance", other_metrics),
-              Leaderboard.colTypesRegression,
-              Leaderboard.colFormatsRegression,
-              "#");
-    }
-  }
-
-
-  private void addTwoDimTableRowMultinomial(TwoDimTable table, int row, String[] modelIDs, double[] mean_per_class_error, double[] logloss, double[] rmse, double[] mse) {
-    int col = 0;
-    table.set(row, col++, modelIDs[row]);
-    //table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
-    table.set(row, col++, mean_per_class_error[row]);
-    table.set(row, col++, logloss[row]);
-    table.set(row, col++, rmse[row]);
-    table.set(row, col++, mse[row]);
-  }
-
-  private void addTwoDimTableRowBinomial(TwoDimTable table, int row, String[] modelIDs, double[] auc, double[] logloss, double[] mean_per_class_error, double[] rmse, double[] mse) {
-    int col = 0;
-    table.set(row, col++, modelIDs[row]);
-    //table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
-    table.set(row, col++, auc[row]);
-    table.set(row, col++, logloss[row]);
-    table.set(row, col++, mean_per_class_error[row]);
-    table.set(row, col++, rmse[row]);
-    table.set(row, col++, mse[row]);
-  }
-
-  private void addTwoDimTableRowRegression(TwoDimTable table, int row, String[] modelIDs, double[] mean_residual_deviance, double[] rmse, double[] mse, double[] mae, double[] rmsle) {
-    int col = 0;
-    table.set(row, col++, modelIDs[row]);
-    //table.set(row, col++, timestampFormat.format(new Date(timestamps[row])));
-    table.set(row, col++, mean_residual_deviance[row]);
-    table.set(row, col++, rmse[row]);
-    table.set(row, col++, mse[row]);
-    table.set(row, col++, mae[row]);
-    table.set(row, col++, rmsle[row]);
   }
 
   public TwoDimTable toTwoDimTable() {
@@ -597,60 +425,35 @@ public class Leaderboard extends Lockable<Leaderboard> {
   }
 
   TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds) {
-    Model[] models = this.getModels();
-    //long[] timestamps = getTimestamps(models);
-    String[] modelIDsFormatted = new String[models.length];
+    String[] modelIDsFormatted = new String[_model_keys.length];
+    String[] metrics = _metrics == null ? (_sort_metric == null ? new String[] {"unknown"} : new String[] {_sort_metric})
+                      : _metrics;
 
-    if (models.length == 0) { //No models due to exclude algos or ran out of time
-      //Just use binomial metrics as a placeholder (no way to tell as user can pass in any metric to sort by)
-      this._other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
-    }
-    else if(models[0]._output.isBinomialClassifier()) {
-      this._other_metrics = new String[] {"logloss", "mean_per_class_error", "rmse", "mse"};
-    } else if (models[0]._output.isMultinomialClassifier()) {
-      this._other_metrics = new String[] {"logloss", "rmse", "mse"};
-    } else {
-      this._other_metrics = new String[] {"rmse", "mse", "mae","rmsle"};
-    }
+    TwoDimTable table = makeTwoDimTable(tableHeader, metrics, _model_keys.length);
 
-    TwoDimTable table = makeTwoDimTable(tableHeader, _sort_metric, _other_metrics, models);
-
-    // %-s doesn't work in TwoDimTable.toString(), so fake it here:
-    int maxModelIdLen = -1;
-    for (Model m : models)
-      maxModelIdLen = Math.max(maxModelIdLen, m._key.toString().length());
-    for (int i = 0; i < models.length; i++)
+    int maxModelIdLen = Stream.of(_model_keys).mapToInt(k -> k.toString().length()).max().orElse(0);
+    for (int i = 0; i < _model_keys.length; i++) {
+      Key<Model> key = _model_keys[i];
       if (leftJustifyModelIds) {
-        modelIDsFormatted[i] =
-                (models[i]._key.toString() +
-                        "                                                                                         ")
-                        .substring(0, maxModelIdLen);
+        // %-s doesn't work in TwoDimTable.toString(), so fake it here:
+        modelIDsFormatted[i] = (key.toString()+"                                                                                         ")
+                .substring(0, maxModelIdLen);
       } else {
-        modelIDsFormatted[i] = models[i]._key.toString();
+        modelIDsFormatted[i] = key.toString();
       }
-
-    for (int i = 0; i < models.length; i++)
-      //addTwoDimTableRow(table, i, modelIDsFormatted, timestamps, sort_metrics);
-      if(models[i]._output.isMultinomialClassifier()){ //Multinomial case
-        addTwoDimTableRowMultinomial(table, i, modelIDsFormatted, mean_per_class_error, logloss, rmse, mse);
-      }else if(models[i]._output.isBinomialClassifier()) { //Binomial case
-        addTwoDimTableRowBinomial(table, i, modelIDsFormatted, auc, logloss, mean_per_class_error, rmse, mse);
-      }else { //Regression
-        addTwoDimTableRowRegression(table, i, modelIDsFormatted, mean_residual_deviance, rmse, mse, mae, rmsle);
-      }
+      addTwoDimTableRow(table, i, modelIDsFormatted[i], metrics);
+    }
     return table;
   }
 
-  //private static final SimpleDateFormat timestampFormat = new SimpleDateFormat("HH:mm:ss.SSS");
-
-  private static String toString(String project_name, Model[] models, String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader) {
-    StringBuilder sb = new StringBuilder();
+  private String toString(String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader) {
+    final StringBuilder sb = new StringBuilder();
     if (includeTitle) {
       sb.append("Leaderboard for project_name \"")
-              .append(project_name)
+              .append(_project_name)
               .append("\": ");
 
-      if (models.length == 0) {
+      if (_model_keys.length == 0) {
         sb.append("<empty>");
         return sb.toString();
       }
@@ -658,48 +461,29 @@ public class Leaderboard extends Lockable<Leaderboard> {
     }
 
     boolean printedHeader = false;
-    for (Model m : models) {
-      // TODO: allow the metric to be passed in.  Note that this assumes the validation (or training) frame is the same.
+    for (int i = 0; i < _model_keys.length; i++) {
+      final Key<Model> key = _model_keys[i];
       if (includeHeader && ! printedHeader) {
         sb.append("model_id");
         sb.append(fieldSeparator);
-
-        sb.append(defaultMetricNameForModel(m));
-
-        /*
-        if (includeTimestamp) {
-          sb.append(fieldSeparator);
-          sb.append("timestamp");
-        }
-        */
+        String [] metrics = _metrics != null ? _metrics : new String[] {"unknown"};
+        sb.append(Arrays.toString(metrics));
         sb.append(lineSeparator);
         printedHeader = true;
       }
 
-      sb.append(m._key.toString());
+      sb.append(key.toString());
       sb.append(fieldSeparator);
-
-      sb.append(defaultMetricForModel(m));
-
-      /*
-      if (includeTimestamp) {
-        sb.append(fieldSeparator);
-        sb.append(timestampFormat.format(m._output._end_time));
-      }
-      */
-
+      double[] values = _metrics != null ? getModelMetricValues(i) : new double[] {Double.NaN};
+      sb.append(Arrays.toString(values));
       sb.append(lineSeparator);
     }
     return sb.toString();
   }
 
-  private String toString(String fieldSeparator, String lineSeparator) {
-    return toString(_project_name, getModels(), fieldSeparator, lineSeparator, true, true);
-  }
-
   @Override
   public String toString() {
-    return toString(" ; ", " | ");
+    return toString(" ; ", " | ", true, true);
   }
-  
+
 }
