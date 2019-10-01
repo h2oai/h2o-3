@@ -1,10 +1,7 @@
 package hex.genmodel.easy;
 
 import hex.ModelCategory;
-import hex.genmodel.GenModel;
-import hex.genmodel.IClusteringModel;
-import hex.genmodel.PredictContributions;
-import hex.genmodel.PredictContributionsFactory;
+import hex.genmodel.*;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
@@ -107,6 +104,7 @@ public class EasyPredictModelWrapper implements Serializable {
     private boolean enableGLRMReconstrut = false;
     private boolean enableStagedProbabilities = false;
     private boolean enableContributions = false;
+    private boolean useExternalEncoding = false;
     private int glrmIterNumber = 100; // default set to 100
 
     /**
@@ -196,6 +194,22 @@ public class EasyPredictModelWrapper implements Serializable {
     }
 
     public boolean getEnableContributions() { return enableContributions; }
+
+    /**
+     * Allows to switch on/off applying categorical encoding in EasyPredictModelWrapper.
+     * In current implementation only AUTO encoding is supported by the Wrapper, users are required to set
+     * this flag to true if they want to use POJOs/MOJOs with other encodings than AUTO.
+     * 
+     * This requirement will be removed in https://0xdata.atlassian.net/browse/PUBDEV-6929 
+     * @param val if true, user needs to provide already encoded input in the RowData structure
+     * @return self
+     */
+    public Config setUseExternalEncoding(boolean val)  {
+      useExternalEncoding = val;
+      return this;
+    }
+
+    public boolean getUseExternalEncoding() { return useExternalEncoding; }
 
     /**
      * @return Setting for unknown categorical levels handling
@@ -299,7 +313,13 @@ public class EasyPredictModelWrapper implements Serializable {
     } else {
       predictContributions = null;
     }
-    
+
+    if ((m.getCategoricalEncoding() != CategoricalEncoding.AUTO) && !config.getUseExternalEncoding()) {
+      throw new UnsupportedOperationException("Categorical Encoding `" + m.getCategoricalEncoding() + 
+              "` is currently not supported by EasyPredictModelWrapper. Instantiate the wrapper with `useExternalEncoding=true` " +
+              " and apply the encoding manually before calling the predict function. For more information please refer to https://0xdata.atlassian.net/browse/PUBDEV-6929.");
+    }
+
     domainMap = new DomainMapConstructor(m).create();
   }
 
