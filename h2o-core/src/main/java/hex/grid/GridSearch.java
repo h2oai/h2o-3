@@ -192,7 +192,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           }
         }
 
-        MP params;
+        MP params = null;
         try {
           // Get parameters for next model
           params = it.nextModelParameters(model);
@@ -249,7 +249,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           if (generalParams._export_checkpoints_dir != null) {
             final String gridPath = generalParams._export_checkpoints_dir + "/" + grid._key;
             try {
-              grid.export_binary(gridPath);
+              grid.exportBinary(gridPath);
               // Models are exported automatically when export_checkpoints_dir is defined
             } catch (IOException e) {
               Log.warn(String.format("Could not save grid '" + "%s' to location '%s'",

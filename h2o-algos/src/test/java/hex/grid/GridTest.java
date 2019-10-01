@@ -153,10 +153,10 @@ public class GridTest extends TestUtil {
       Scope.track_generic(originalGrid);
       
       final String originalGridPath = exportDir + "/" + originalGrid._key.toString();
-      originalGrid.export_binary(originalGridPath);
+      originalGrid.exportBinary(originalGridPath);
       assertTrue(Files.exists(Paths.get(originalGridPath)));
       
-      originalGrid.export_models_binary(exportDir);
+      originalGrid.exportModelsBinary(exportDir);
       
       for(Model model : originalGrid.getModels()){
         assertTrue(Files.exists(Paths.get(exportDir, model._key.toString())));  

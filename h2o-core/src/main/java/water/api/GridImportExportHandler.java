@@ -59,8 +59,8 @@ public class GridImportExportHandler extends Handler {
     }
 
     final Grid serializedGrid = (Grid) possibleGrid;
-    serializedGrid.export_binary(gridExportV3.grid_directory + "/" + gridExportV3.grid_id);
-    serializedGrid.export_models_binary(gridExportV3.grid_directory);
+    serializedGrid.exportBinary(gridExportV3.grid_directory + "/" + gridExportV3.grid_id);
+    serializedGrid.exportModelsBinary(gridExportV3.grid_directory);
 
     return new KeyV3.GridKeyV3(serializedGrid._key);
   }

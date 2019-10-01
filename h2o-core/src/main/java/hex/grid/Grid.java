@@ -422,8 +422,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @return Reference to the instance of {@link AutoBuffer} given as a method argument.
    */
   protected AutoBuffer writeWithoutModels(final AutoBuffer autoBuffer){
-    autoBuffer.put(this);
-    return super.writeAll_impl(autoBuffer);
+    return super.writeAll_impl(autoBuffer.put(this));
   }
 
   @Override
@@ -499,7 +498,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @param gridFilePath Full path to the name of the file this {@link Grid} should be saved to
    * @throws IOException Error serializing the grid.
    */
-  public void export_binary(final String gridFilePath) throws IOException {
+  public void exportBinary(final String gridFilePath) throws IOException {
     Objects.requireNonNull(gridFilePath);
     assert _key != null;
     final URI gridUri = FileUtils.getURI(gridFilePath);
@@ -517,7 +516,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @param exportDir Directory to export all the models to.
    * @throws IOException Error exporting the models
    */
-  public void export_models_binary(final String exportDir) throws IOException {
+  public void exportModelsBinary(final String exportDir) throws IOException {
     Objects.requireNonNull(exportDir);
     for (Model model : getModels()) {
       model.exportBinaryModel(exportDir + "/" + model._key.toString(), true);
