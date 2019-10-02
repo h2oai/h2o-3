@@ -14,7 +14,10 @@ import water.util.Log;
 import water.util.PojoUtils;
 
 import java.io.*;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Grid search job.
@@ -269,7 +272,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       grid.unlock(_job);
     }
   }
-
+  
+  private static final Set<String> IGNORED_FIELDS_PARAM_HASH = new HashSet(Arrays.asList("_export_checkpoints_dir"));
   /**
    * Build a model based on specified parameters and save it to resulting Grid object.
    *
@@ -292,8 +296,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     // Make sure that the model is not yet built (can be case of duplicated hyper parameters).
     // We first look in the grid _models cache, then we look in the DKV.
     // FIXME: get checksum here since model builder will modify instance of params!!!
-
-    final long checksum = params.checksum();
+    
+    // Grid search might be continued over the very exact hyperspace, but with autoexporting disabled. 
+    // To prevent 
+    final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
     Key<Model> key = grid.getModelKey(checksum);
     if (key != null) {
       if (DKV.get(key) == null) {

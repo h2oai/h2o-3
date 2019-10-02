@@ -386,12 +386,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     public boolean hasCheckpoint() { return _checkpoint != null; }
 
-    // FIXME: this is really horrible hack, Model.Parameters has method checksum_impl,
-    // but not checksum, the API is totally random :(
     public long checksum() {
-      return checksum_impl();
+      return checksum(null);
     }
-
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.
      * Sort the fields first, since reflection gives us the fields in random order and we don't want the checksum to be affected by the field order.
@@ -399,20 +396,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * a client wants backward compatibility they will need to compare parameter values explicitly.
      *
      * The method is motivated by standard hash implementation `hash = hash * P + value` but we use high prime numbers in random order.
-     * @return checksum
+     * @param ignoredFields A {@link Set} of fields to ignore. Can be empty or null.
+     * @return checksum A 64-bit long representing the checksum of the {@link Parameters} object
      */
-    protected long checksum_impl() {
+    public long checksum(final Set<String> ignoredFields) {
       long xs = 0x600DL;
       int count = 0;
       Field[] fields = Weaver.getWovenFields(this.getClass());
       Arrays.sort(fields,
-                  new Comparator<Field>() {
-                    public int compare(Field field1, Field field2) {
-                      return field1.getName().compareTo(field2.getName());
-                    }
-                  });
+              new Comparator<Field>() {
+                public int compare(Field field1, Field field2) {
+                  return field1.getName().compareTo(field2.getName());
+                }
+              });
 
       for (Field f : fields) {
+        if (ignoredFields != null && ignoredFields.contains(f.getName())) {
+          // Do not include ignored fields in the final hash
+          continue;
+        }
         final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
         Class<?> c = f.getType();
         if (c.isArray()) {
@@ -1849,7 +1851,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   @Override protected long checksum_impl() {
-    return _parms.checksum_impl() * _output.checksum_impl();
+    return _parms.checksum(null) * _output.checksum_impl();
   }
 
   /**
