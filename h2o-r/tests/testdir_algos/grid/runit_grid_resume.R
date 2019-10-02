@@ -26,8 +26,8 @@ test.grid.resume <- function() {
   # Load the dataset in once again, as it was removed as the cloud was wiped.
   iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
   #Start the grid search once again, should contain the original models and more
-  grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex, hyper_params = hyper_parameters)
-  expect_true(length(grid@model_ids) > baseline_model_count)
+  grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex, hyper_params = hyper_parameters, export_checkpoints_dir = tempdir())
+  expect_true(length(grid@model_ids) == baseline_model_count)
   print(grid@model_ids)
   
   # Check all the models for availability

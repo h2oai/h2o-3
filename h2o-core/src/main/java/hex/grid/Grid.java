@@ -522,4 +522,8 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
       model.exportBinaryModel(exportDir + "/" + model._key.toString(), true);
     }
   }
+
+  public MP getParams() {
+    return _params;
+  }
 }

@@ -299,6 +299,7 @@ class H2OGridSearch(backwards_compatible()):
         m._grid_json = grid_json
         # m._metrics_class = metrics_class
         m._parms = self._parms
+        self.export_checkpoints_dir = m._grid_json["export_checkpoints_dir"]
         H2OEstimator.mixin(self, model_class)
         self.__dict__.update(m.__dict__.copy())
 
