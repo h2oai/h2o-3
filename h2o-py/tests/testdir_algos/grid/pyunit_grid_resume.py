@@ -28,7 +28,7 @@ def grid_resume():
     h2o.remove_all();
 
     train = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
-    grid = h2o.load_grid(grid_directory=export_dir, grid_id=grid_id)
+    grid = h2o.load_grid(export_dir + "/" + grid_id)
     assert grid is not None
     assert len(grid.model_ids) == old_grid_model_count
     grid.train(x=list(range(4)), y=4, training_frame=train)

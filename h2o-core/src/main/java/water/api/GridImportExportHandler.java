@@ -3,11 +3,13 @@ package water.api;
 import hex.Model;
 import hex.grid.Grid;
 import water.*;
-import water.api.schemas3.GridImportExportV3;
+import water.api.schemas3.GridExportV3;
+import water.api.schemas3.GridImportV3;
 import water.api.schemas3.KeyV3;
 import water.persist.Persist;
 import water.util.FileUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
@@ -27,20 +29,21 @@ public class GridImportExportHandler extends Handler {
    * @throws IOException Error reading grid or related models.
    */
   @SuppressWarnings("unused")
-  public KeyV3.GridKeyV3 importGrid(final int version, final GridImportExportV3 gridImportV3) throws IOException {
-    validateGridImportExportV3(gridImportV3);
+  public KeyV3.GridKeyV3 importGrid(final int version, final GridImportV3 gridImportV3) throws IOException {
+    Objects.requireNonNull(gridImportV3);
+    validateGridImportParameters(gridImportV3);
 
-    final URI gridUri = FileUtils.getURI(gridImportV3.grid_directory + "/" + gridImportV3.grid_id);
+    final URI gridUri = FileUtils.getURI(gridImportV3.grid_path);
     final Persist persist = H2O.getPM().getPersistForURI(gridUri);
     try (final InputStream inputStream = persist.open(gridUri.toString())) {
       final AutoBuffer gridAutoBuffer = new AutoBuffer(inputStream);
       final Freezable freezable = gridAutoBuffer.get();
       if (!(freezable instanceof Grid)) {
-        throw new IllegalArgumentException(String.format("Given file '%s' is not a Grid", gridImportV3.grid_directory));
+        throw new IllegalArgumentException(String.format("Given file '%s' is not a Grid", gridImportV3.grid_path));
       }
       final Grid grid = (Grid) freezable;
 
-      loadGridModels(grid, gridImportV3);
+      loadGridModels(grid, new File(gridImportV3.grid_path).getParent());
       DKV.put(grid);
       return new KeyV3.GridKeyV3(grid._key);
     }
@@ -48,8 +51,8 @@ public class GridImportExportHandler extends Handler {
   }
 
   @SuppressWarnings("unused")
-  public KeyV3.GridKeyV3 exportGrid(final int version, final GridImportExportV3 gridExportV3) throws IOException {
-    validateGridImportExportV3(gridExportV3);
+  public KeyV3.GridKeyV3 exportGrid(final int version, final GridExportV3 gridExportV3) throws IOException {
+    validateGridExportParameters(gridExportV3);
     if(DKV.get(gridExportV3.grid_id) == null){
       throw new IllegalArgumentException(String.format("Grid with id '%s' has not been found.", gridExportV3.grid_id));
     }
@@ -67,11 +70,11 @@ public class GridImportExportHandler extends Handler {
 
 
   /**
-   * Basic sanity check for given Grid parameters (both import and export).
+   * Basic sanity check for given Grid export parameters
    *
-   * @param input An instance of {@link GridImportExportV3}
+   * @param input An instance of {@link GridExportV3}, may not be null.
    */
-  private void validateGridImportExportV3(final GridImportExportV3 input) {
+  private void validateGridExportParameters(final GridExportV3 input) {
     Objects.requireNonNull(input);
     if (input.grid_directory == null || input.grid_directory.isEmpty()) {
       throw new IllegalArgumentException(String.format("Given grid directory '%s' is not a valid directory.",
@@ -83,10 +86,23 @@ public class GridImportExportHandler extends Handler {
     }
   }
 
-  private static void loadGridModels(final Grid grid, final GridImportExportV3 gridImportV3) throws IOException {
+  /**
+   * Basic sanity check for given Grid import parameters
+   *
+   * @param input An instance of {@link GridImportV3}, may not be null.
+   */
+  private void validateGridImportParameters(final GridImportV3 input) {
+    Objects.requireNonNull(input);
+    if (input.grid_path == null || input.grid_path.isEmpty()) {
+      throw new IllegalArgumentException(String.format("Given grid directory '%s' is not a valid path.",
+              input.grid_path));
+    }
+  }
+
+  private static void loadGridModels(final Grid grid, final String gridDirectory) throws IOException {
 
     for (Key<Model> k : grid.getModelKeys()) {
-      final Model<?, ?, ?> model = Model.importBinaryModel(gridImportV3.grid_directory + "/" + k.toString());
+      final Model<?, ?, ?> model = Model.importBinaryModel(gridDirectory + "/" + k.toString());
       assert model != null;
     }
   }
