@@ -10,14 +10,12 @@ import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.CollectionUtils;
 import water.util.Log;
 import water.util.PojoUtils;
 
 import java.io.*;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Grid search job.
@@ -273,7 +271,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
   }
   
-  private static final Set<String> IGNORED_FIELDS_PARAM_HASH = new HashSet(Arrays.asList("_export_checkpoints_dir"));
+  private static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.unmodifiableSet(new HashSet(Arrays.asList("_export_checkpoints_dir")));
   /**
    * Build a model based on specified parameters and save it to resulting Grid object.
    *
