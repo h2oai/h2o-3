@@ -4,7 +4,7 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 test.grid.resume <- function() {
-  iris.hex <- h2o.uploadFile(locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
+  iris.hex <- h2o.importFile(path = locate("smalldata/iris/iris.csv"), destination_frame="iris.hex")
 
   ntrees_opts = c(1, 5)
   learn_rate_opts = c(0.1, 0.01)
