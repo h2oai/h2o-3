@@ -719,15 +719,24 @@ H2O has been built by a great many number of contributors over the years both wi
 <a name="Roadmap"></a>
 ## 11. Roadmap
 
-Next major H2O release (3.26) is planned for the end of June/beginning of July and will add these major features:
+### H2O 3.28 - Autumn 2019 (Q4/2019)
 
-* SVM
-* Customized Loss Function in GBM
-* Isolation Forest – early stopping + variable importance
-* XGBoost Upgrade and performance improvements
-* CoxPH in Python
-* MOJO Import improvements
-* MOJO for Target Encoding
+* Support for Mixed Effects/Hierarchical GLM: [PUBDEV-6509](https://0xdata.atlassian.net/browse/PUBDEV-6509)
+* Constrained k-means Clustering: [PUBDEV-6447](https://0xdata.atlassian.net/browse/PUBDEV-6447)
+* Grid Search Improvements (parallelization, crash recovery)
+* XGBoost Improvements (upgrade, Platt Scaling)
+* MOJO Import (XGBoost support, expose original model parameters)
+* Security Improvements (SPNEGO support: [PUBDEV-6899](https://0xdata.atlassian.net/browse/PUBDEV-6899))
+* Target Encoding (Flow support)
+
+### H2O 3.30 - Winter 2020 (Q1/2020)
+
+* Generalized Additive Models: [PUBDEV-6807](https://0xdata.atlassian.net/browse/PUBDEV-6807)
+* Kubernetes Support: [PUBDEV-6852](https://0xdata.atlassian.net/browse/PUBDEV-6852)
+* Automatic cluster sizing: [PUBDEV-6045](https://0xdata.atlassian.net/browse/PUBDEV-6045)
+* Out-of-memory error protection: [PUBDEV-6614](https://0xdata.atlassian.net/browse/PUBDEV-6614)
+* Target Encoding Improvements (regression, multinomial)
+* PSVM Improvements (linear kernel, MOJO)
 
 ### Team & Committers
 
