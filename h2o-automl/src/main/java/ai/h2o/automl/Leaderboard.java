@@ -79,7 +79,11 @@ public class Leaderboard extends Lockable<Leaderboard> {
   private final long _leaderboard_frame_checksum;
 
   /**
-   *
+   * Constructs a new leaderboard (doesn't put it in DKV).
+   * @param project_name
+   * @param eventLog
+   * @param leaderboardFrame
+   * @param sort_metric
    */
   public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     super(Key.make(idForProject(project_name)));
@@ -90,6 +94,14 @@ public class Leaderboard extends Lockable<Leaderboard> {
     this._sort_metric = sort_metric == null ? null : sort_metric.toLowerCase();
   }
 
+  /**
+   * Retrieves a leaderboard from DKV or creates a fresh one and add it to DKV.
+   * @param project_name
+   * @param eventLog
+   * @param leaderboardFrame
+   * @param sort_metric
+   * @return an existing leaderboard if there's already one in DKV for this project, or a new leaderboard added to DKV.
+   */
   static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(project_name)));
     if (null != leaderboard) {
@@ -103,20 +115,57 @@ public class Leaderboard extends Lockable<Leaderboard> {
     return leaderboard;
   }
 
+  /**
+   * @param project_name
+   * @return a Leaderboard id for the project name
+   */
   public static String idForProject(String project_name) { return "AutoML_Leaderboard_" + project_name; }
+
+  /**
+   * @param metric
+   * @return true iff the metric is a loss function
+   */
+  public static boolean isLossFunction(String metric) {
+    return !"auc".equals(metric);
+  }
 
   public String getProject() {
     return _project_name;
   }
 
+  /**
+   * If no sort metric is provided when creating the leaderboard,
+   * then a default sort metric will be automatically chosen based on the problem type:
+   * <li>
+   *     <ul>binomial classification: auc</ul>
+   *     <ul>multinomial classification: logloss</ul>
+   *     <ul>regression: mean_residual_deviance</ul>
+   * </li>
+   * @return the metric used to sort the models in the leaderboard.
+   */
   public String getSortMetric() {
     return _sort_metric;
   }
 
+  /**
+   * The sort metric is always the first element in the list of metrics.
+   *
+   * @return the full list of metrics available in the leaderboard.
+   */
   public String[] getMetrics() {
     return _metrics;
   }
 
+  /**
+   * Note: If no leaderboard was provided, then the models are sorted according to metrics obtained during training
+   * in the following priority order depending on availability:
+   * <li>
+   *     <ol>cross-validation metrics</ol>
+   *     <ol>validation metrics</ol>
+   *     <ol>training metrics</ol>
+   * </li>
+   * @return the frame (if any) used to score the models in the leaderboard.
+   */
   public Frame leaderboardFrame() {
     return _leaderboard_frame_key == null ? null : _leaderboard_frame_key.get();
   }
@@ -149,14 +198,31 @@ public class Leaderboard extends Lockable<Leaderboard> {
     return getModelsFromKeys(modelKeys);
   }
 
+  /**
+   * @return the model with the best sort metric value.
+   * @see #getSortMetric()
+   */
   public Model getLeader() {
     Key<Model>[] modelKeys = getModelKeys();
     if (modelKeys == null || 0 == modelKeys.length) return null;
     return modelKeys[0].get();
   }
 
+  /**
+   * @param modelKey
+   * @return the rank for the given model key, according to the sort metric ranking (leader has rank 1).
+   */
   public int getModelRank(Key<Model> modelKey) {
-    return ArrayUtils.find(_model_keys, modelKey);
+    return ArrayUtils.find(_model_keys, modelKey) + 1;
+  }
+
+  /**
+   * @return the ordered values (asc or desc depending if sort metric is a loss function or not) for the sort metric.
+   * @see #getSortMetric()
+   * @see #isLossFunction(String)
+   */
+  public double[] getSortMetricValues() {
+    return _sort_metric == null ? null : _metric_values.get(_sort_metric);
   }
 
   private EventLog eventLog() { return _eventlog_key.get(); }
@@ -347,7 +413,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
     if (m._output.isBinomialClassifier()) { //binomial
       return new String[] {"auc", "logloss", "mean_per_class_error", "rmse", "mse"};
     } else if (m._output.isMultinomialClassifier()) { // multinomial
-      return new String[] {"mean per-class error", "logloss", "rmse", "mse"};
+      return new String[] {"mean_per_class_error", "logloss", "rmse", "mse"};
     } else if (m._output.isSupervised()) { // regression
       return new String[] {"mean_residual_deviance", "rmse", "mse", "mae", "rmsle"};
     }
@@ -362,10 +428,6 @@ public class Leaderboard extends Lockable<Leaderboard> {
       values[i] = _metric_values.get(_metrics[i])[rank];
     }
     return values;
-  }
-
-  private static boolean isLossFunction(String metric) {
-    return !"auc".equals(metric);
   }
 
   String rankTsv() {

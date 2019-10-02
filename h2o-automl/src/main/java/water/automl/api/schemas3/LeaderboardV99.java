@@ -54,7 +54,7 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
 
   @Override
   public LeaderboardV99 fillFromImpl(Leaderboard leaderboard) {
-    super.fillFromImpl(leaderboard, new String[] { "models", "leaderboard_frame" });
+    super.fillFromImpl(leaderboard, new String[] { "models", "leaderboard_frame", "sort_metrics", "sort_decreasing" });
     models = Stream.of(leaderboard.getModelKeys())
             .map(KeyV3.ModelKeyV3::new)
             .toArray(KeyV3.ModelKeyV3[]::new);
@@ -62,7 +62,11 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
     if (leaderboard.leaderboardFrame() != null)
       leaderboard_frame = new KeyV3.FrameKeyV3(leaderboard.leaderboardFrame()._key);
 
+    sort_metrics = leaderboard.getSortMetricValues();
+    sort_decreasing = !Leaderboard.isLossFunction(sort_metric);
+
     return this;
   }
+
 }
 
