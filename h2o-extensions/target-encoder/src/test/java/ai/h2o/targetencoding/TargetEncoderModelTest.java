@@ -17,6 +17,11 @@ public class TargetEncoderModelTest extends TestUtil{
   }
 
   @Test
+  public void failingTest() {
+    fail("Failing to check that the tests are getting run!");
+  }
+  
+  @Test
   public void testTargetEncoderModel() {
     try {
       Scope.enter();
