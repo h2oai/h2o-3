@@ -495,11 +495,12 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   /**
    * Exports this Grid in a binary format using {@link AutoBuffer}. Related models are not saved.
    *
-   * @param gridFilePath Full path to the name of the file this {@link Grid} should be saved to
+   * @param gridExportDir Full path to the folder this {@link Grid} should be saved to
    * @throws IOException Error serializing the grid.
    */
-  public void exportBinary(final String gridFilePath) throws IOException {
-    Objects.requireNonNull(gridFilePath);
+  public void exportBinary(final String gridExportDir) throws IOException {
+    Objects.requireNonNull(gridExportDir);
+    final String gridFilePath = gridExportDir + "/" + _key.toString();
     assert _key != null;
     final URI gridUri = FileUtils.getURI(gridFilePath);
     final Persist persist = H2O.getPM().getPersistForURI(gridUri);

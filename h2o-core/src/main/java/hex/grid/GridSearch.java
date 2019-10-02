@@ -250,13 +250,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           grid.update(_job);
           final MP generalParams = _hyperSpaceWalker.getParams();
           if (generalParams._export_checkpoints_dir != null) {
-            final String gridPath = generalParams._export_checkpoints_dir + "/" + grid._key;
+
             try {
-              grid.exportBinary(gridPath);
+              grid.exportBinary(generalParams._export_checkpoints_dir);
               // Models are exported automatically when export_checkpoints_dir is defined
             } catch (IOException e) {
               Log.warn(String.format("Could not save grid '" + "%s' to location '%s'",
-                      grid._key.toString(), gridPath));
+                      grid._key.toString(), generalParams._export_checkpoints_dir));
             }
           }
         } // finally
