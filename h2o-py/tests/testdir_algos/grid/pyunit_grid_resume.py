@@ -18,7 +18,7 @@ def grid_resume():
     hyper_parameters["ntrees"] = ntrees_opts
     print("GBM grid with the following hyper_parameters:", hyper_parameters)
 
-    export_dir = tempfile.mkdtemp()
+    export_dir = pyunit_utils.locate("results")
     gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters,
                        export_checkpoints_dir=export_dir)
     gs.train(x=list(range(4)), y=4, training_frame=train)
@@ -34,7 +34,6 @@ def grid_resume():
     grid.train(x=list(range(4)), y=4, training_frame=train)
     assert len(grid.model_ids) == old_grid_model_count
     print("Newly grained grid has %d models" % len(grid.model_ids))
-    rmtree(export_dir)
     
     for model_id in grid.model_ids:
         model = h2o.get_model(model_id)
