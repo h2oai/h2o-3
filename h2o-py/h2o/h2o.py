@@ -455,7 +455,7 @@ def save_grid(grid_directory, grid_id):
     """
     assert_is_type(grid_directory, str)
     assert_is_type(grid_id, str)
-    api("POST /3/Grid/export", {"grid_directory": grid_directory, "grid_id": grid_id})
+    api("POST /3/Grid/" + grid_id + "/export", {"grid_directory": grid_directory})
     return grid_directory + "/" + grid_id
 
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):

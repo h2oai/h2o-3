@@ -470,7 +470,7 @@ public class RegisterV3Api extends AbstractRegister {
             "Import previously saved grid model");
 
     context.registerEndpoint("export_grid_search",
-            "POST /3/Grid/export", GridImportExportHandler.class, "exportGrid",
+            "POST /3/Grid/{grid_id}/export", GridImportExportHandler.class, "exportGrid",
             "Export a Grid and its models.");
   }
 

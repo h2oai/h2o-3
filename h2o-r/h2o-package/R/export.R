@@ -250,11 +250,11 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 h2o.saveGrid <- function(grid_directory, grid_id){
   params <- list()
   params[["grid_directory"]] <- grid_directory
-  params[["grid_id"]] <- grid_id
   
+  url <- paste0("Grid/", grid_id,"/export")
   
   res <- .h2o.__remoteSend(
-    "Grid/export",
+    url,
     method = "POST",
     h2oRestApiVersion = 3,.params = params
   )
