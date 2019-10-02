@@ -170,6 +170,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return mb;
   }
 
+  /**
+   * Factory method to create a ModelBuilder instance from a clone of a given {@code parms} instance of Model.Parameters.
+   */
+  public static <B extends ModelBuilder, MP extends Model.Parameters> B make(MP parms) {
+    Key<Model> mKey = ModelBuilder.defaultKey(parms.algoName());
+    Job<Model> mJob = new Job<>(mKey, parms.javaName(), parms.algoName());
+    B newMB = ModelBuilder.make(parms.algoName(), mJob, mKey);
+    newMB._parms = parms.clone();
+    return newMB;
+  }
 
   /** All the parameters required to build the model. */
   public P _parms;              // Not final, so CV can set-after-clone

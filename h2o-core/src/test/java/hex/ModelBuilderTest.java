@@ -121,8 +121,24 @@ public class ModelBuilderTest extends TestUtil {
       ModelBuilder.make("invalid", null, null);
       fail();
     } catch (IllegalStateException e) {
-      assertEquals("Algorithm 'invalid' is not registered. Available algos: []", e.getMessage()); // core doesn't have any algos
+      // core doesn't have any algos but depending on the order of tests' execution DummyModelBuilder might already be registered
+      assertTrue( e.getMessage().startsWith("Algorithm 'invalid' is not registered. Available algos: [")); 
     }
+  }
+  
+  @Test
+  public void testMakeByModelParameters() {
+    
+    String registrationAlgoName = "dummymodelbuilder"; // by default it is a lower case of the ModelBuilder's simple name
+    DummyModelParameters params = new DummyModelParameters("dummy_MSG", Key.make( "dummyGBM_key"), registrationAlgoName);
+    new DummyModelBuilder(params, true); // as a side effect DummyModelBuilder will be registered in a static field ModelBuilder.ALGOBASES
+
+    ModelBuilder modelBuilder = ModelBuilder.make(params);
+
+    assertNotNull(modelBuilder._job); 
+    assertNotNull(modelBuilder._result); 
+    assertEquals(params, params); 
+    assertNotEquals(modelBuilder._parms, params); 
   }
 
   @Test
@@ -214,10 +230,12 @@ public class ModelBuilderTest extends TestUtil {
   public static class DummyModelParameters extends Model.Parameters {
     private String _msg;
     private Key _trgt;
+    private String _registrationAlgoName;
     private boolean _makeModel;
     public DummyModelParameters(String msg, Key trgt) { _msg = msg; _trgt = trgt; }
-    @Override public String fullName() { return "dummy"; }
-    @Override public String algoName() { return "dummy"; }
+    public DummyModelParameters(String msg, Key trgt, String algoRegistrationName) { _msg = msg; _trgt = trgt; _registrationAlgoName = algoRegistrationName; }
+    @Override public String fullName() { return _registrationAlgoName == null ? "dummy": _registrationAlgoName; }
+    @Override public String algoName() { return _registrationAlgoName == null ? "dummy": _registrationAlgoName; }
     @Override public String javaName() { return DummyModelBuilder.class.getName(); }
     @Override public long progressUnits() { return 1; }
   }
@@ -243,6 +261,8 @@ public class ModelBuilderTest extends TestUtil {
       super(parms);
       init(false);
     }
+
+    public DummyModelBuilder(DummyModelParameters parms, boolean startup_once ) { super(parms,startup_once); }
 
     @Override
     protected Driver trainModelImpl() {
