@@ -316,7 +316,7 @@ class H2OConnection(backwards_compatible()):
                     warn("Proxy is defined in the environment: %s. "
                          "This may interfere with your H2O Connection." % name)
                     
-            if ("localhost" in conn._base_url or "127.0.0.1" in conn._base_url):
+            if ("localhost" in conn.ip() or "127.0.0.1" in conn.ip()):
                 # Empty list will cause requests library to respect the default behavior.
                 # Thus a non-existing proxy is inserted.
 

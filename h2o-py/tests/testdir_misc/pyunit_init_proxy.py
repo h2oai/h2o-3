@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 import sys
-sys.path.insert(1,"../../../")
+sys.path.insert(1,"../../")
 import h2o
 import socket
 from tests import pyunit_utils
