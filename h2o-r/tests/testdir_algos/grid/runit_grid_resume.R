@@ -20,7 +20,7 @@ test.grid.resume <- function() {
   h2o.removeAll()
   
   # Load the Grid back in with all the models checkpointed
-  grid <- h2o.load_grid(grid_directory = tempdir(), grid_id = grid_id)
+  grid <- h2o.loadGrid(paste0(tempdir(),"/",grid_id))
   expect_true(length(grid@model_ids) == baseline_model_count)
   
   # Load the dataset in once again, as it was removed as the cloud was wiped.

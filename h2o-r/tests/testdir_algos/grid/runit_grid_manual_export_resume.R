@@ -13,7 +13,7 @@ test.grid.resume <- function() {
   hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
   baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex, hyper_params = hyper_parameters)
   grid_id <- baseline_grid@grid_id
-  h2o.save_grid(grid_directory = tempdir(), grid_id = grid_id)
+  saved_path <- h2o.saveGrid(grid_directory = tempdir(), grid_id = grid_id)
   baseline_model_count <- length(baseline_grid@model_ids)
   print(baseline_grid@model_ids)
   
@@ -21,7 +21,7 @@ test.grid.resume <- function() {
   h2o.removeAll()
   
   # Load the Grid back in with all the models checkpointed
-  grid <- h2o.load_grid(grid_directory = tempdir(), grid_id = grid_id)
+  grid <- h2o.loadGrid(saved_path)
   expect_true(length(grid@model_ids) == baseline_model_count)
   
   # Load the dataset in once again, as it was removed as the cloud was wiped.
