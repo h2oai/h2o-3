@@ -21,7 +21,6 @@ import sys
 import tempfile
 import time
 from warnings import warn
-import socket
 
 import requests
 from requests.auth import AuthBase
@@ -317,10 +316,7 @@ class H2OConnection(backwards_compatible()):
                     warn("Proxy is defined in the environment: %s. "
                          "This may interfere with your H2O Connection." % name)
                     
-            local_if_host = socket.gethostbyname(socket.gethostname()) # Local interface
-            if ("localhost" in conn._base_url
-                or "127.0.0.1" in conn._base_url
-                or local_if_host in conn._base_url):
+            if ("localhost" in conn._base_url or "127.0.0.1" in conn._base_url):
                 # Empty list will cause requests library to respect the default behavior.
                 # Thus a non-existing proxy is inserted.
 
