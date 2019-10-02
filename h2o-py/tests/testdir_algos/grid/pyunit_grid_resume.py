@@ -17,8 +17,8 @@ def grid_resume():
     hyper_parameters = OrderedDict()
     hyper_parameters["ntrees"] = ntrees_opts
     print("GBM grid with the following hyper_parameters:", hyper_parameters)
-    
-    export_dir = "/home/pavel/ext"
+
+    export_dir = tempfile.mkdtemp()
     gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters,
                        export_checkpoints_dir=export_dir)
     gs.train(x=list(range(4)), y=4, training_frame=train)
