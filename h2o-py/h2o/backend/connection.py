@@ -331,6 +331,15 @@ class H2OConnection(backwards_compatible()):
                 if name.lower() == scheme + "_proxy":
                     warn("Proxy is defined in the environment: %s. "
                          "This may interfere with your H2O Connection." % name)
+                    
+            if ("localhost" in conn.ip() or "127.0.0.1" in conn.ip()):
+                # Empty list will cause requests library to respect the default behavior.
+                # Thus a non-existing proxy is inserted.
+
+                conn._proxies = {
+                    "http": None,
+                    "https": None,
+                }
 
         try:
             retries = 20 if server else 5
@@ -357,7 +366,6 @@ class H2OConnection(backwards_compatible()):
             conn._stage = 0
             raise
         return conn
-
 
     def request(self, endpoint, data=None, json=None, filename=None, save_to=None):
         """
@@ -513,8 +521,7 @@ class H2OConnection(backwards_compatible()):
     @property
     def proxy(self):
         """URL of the proxy server used for the connection (or None if there is no proxy)."""
-        if self._proxies is None: return None
-        return self._proxies.values()[0]
+        return self._proxies
 
     @property
     def local_server(self):
