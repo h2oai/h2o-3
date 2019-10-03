@@ -1,6 +1,7 @@
 package hex.genmodel.easy;
 
 import hex.ModelCategory;
+import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
@@ -43,6 +44,7 @@ public class EasyPredictModelWrapperTest {
     when(mockGenModel.getDomainValues(0)).thenReturn(domains[0]);
     when(mockGenModel.getDomainValues(1)).thenReturn(domains[1]);
     when(mockGenModel.getDomainValues(2)).thenReturn(domains[2]);
+    when(mockGenModel.getCategoricalEncoding()).thenReturn(CategoricalEncoding.AUTO);
   }
 
   private static class SupervisedModel extends GenModel {
