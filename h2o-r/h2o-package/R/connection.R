@@ -29,6 +29,7 @@
 #' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
 #' @param username (Optional) Username to login with.
 #' @param password (Optional) Password to login with.
+#' @param use_spnego (Optional) Set this to TRUE to enable SPNEGO authentication.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
 #' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
 #' @param ignore_config (Optional) A \code{logical} value indicating whether a search for a .h2oconfig file should be conducted or not. Default value is FALSE.
@@ -65,7 +66,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
                      ice_root = tempdir(), log_dir = NA_character_, log_level = NA_character_,
                      strict_version_check = TRUE, proxy = NA_character_,
                      https = FALSE, cacert = NA_character_, insecure = FALSE,
-                     username = NA_character_, password = NA_character_,
+                     username = NA_character_, password = NA_character_, use_spnego = FALSE,
                      cookies = NA_character_, context_path = NA_character_, ignore_config = FALSE,
                      extra_classpath = NULL, jvm_custom_args = NULL,
                      bind_to_localhost = TRUE) {
@@ -148,6 +149,10 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     stop("`cacert` must be a character string or NA_character_")
   if(!is.logical(insecure) || length(insecure) != 1L || is.na(insecure))
     stop("`insecure` must be TRUE or FALSE")
+  if(!is.logical(use_spnego) || length(use_spnego) != 1L || is.na(use_spnego))
+    stop("`use_spnego` must be TRUE or FALSE")
+  else if (!is.na(use_spnego) && !is.na(username))
+    stop("Specify either `use_spnego` or `username` and `password`")
   if(!is.character(username) || !nzchar(username))
     stop("`username` must be a character string or NA_character_")
   if (!is.character(password) || !nzchar(password))
@@ -176,7 +181,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
   warnNthreads <- FALSE
   tmpConn <- new("H2OConnection", ip = ip, port = port, name = name, proxy = proxy,
                  https = https, cacert = cacert, insecure = insecure,
-                 username = username, password = password,cookies = cookies, context_path = context_path)
+                 username = username, password = password, use_spnego = use_spnego,
+                 cookies = cookies, context_path = context_path)
   if (!h2o.clusterIsUp(tmpConn)) {
     if (!startH2O)
       stop("Cannot connect to H2O server. Please check that H2O is running at ", h2o.getBaseURL(tmpConn))
@@ -226,7 +232,8 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
 
   conn <- new("H2OConnection", ip = ip, port = port, name = .h2o.jar.env$name, proxy = proxy,
               https = https, cacert = cacert, insecure = insecure,
-              username = username, password = password,cookies = cookies, context_path = context_path)
+              username = username, password = password, use_spnego = use_spnego,
+              cookies = cookies, context_path = context_path)
   assign("SERVER", conn, .pkg.env)
   cat(" Connection successful!\n\n")
   .h2o.jar.env$port <- port #Ensure right port is called when quitting R
@@ -282,6 +289,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
 #' @param insecure (Optional) Set this to TRUE to disable SSL certificate checking.
 #' @param username (Optional) Username to login with.
 #' @param password (Optional) Password to login with.
+#' @param use_spnego (Optional) Set this to TRUE to enable SPNEGO authentication.
 #' @param cookies (Optional) Vector(or list) of cookies to add to request.
 #' @param context_path (Optional) The last part of connection URL: http://<ip>:<port>/<context_path>
 #' @param config (Optional) A \code{list} describing connection parameters. Using \code{config} makes \code{h2o.connect} ignore
@@ -303,7 +311,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
 #' @export
 h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = TRUE, proxy = NA_character_,
                         https = FALSE, cacert = NA_character_, insecure = FALSE,
-                        username = NA_character_, password = NA_character_,
+                        username = NA_character_, password = NA_character_, use_spnego = FALSE,
                         cookies = NA_character_,
                         context_path = NA_character_,
                         config = NULL) {
@@ -318,7 +326,7 @@ h2o.connect <- function(ip = "localhost", port = 54321, strict_version_check = T
    # Pass arguments directly
    h2o.init(ip=ip, port=port, strict_version_check=strict_version_check,
             proxy=proxy, https=https, cacert=cacert, insecure=insecure, password=password,
-            username=username, cookies=cookies, context_path=context_path)
+            username=username, use_spnego=use_spnego, cookies=cookies, context_path=context_path)
  }
 }
 

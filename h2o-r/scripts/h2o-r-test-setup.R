@@ -13,6 +13,7 @@ H2O.PORT                    <<- 54321
 H2O.HTTPS                   <<- FALSE
 USERNAME                    <<- NA_character_
 PASSWORD                    <<- NA_character_
+KERB.PRINCIPAL              <<- NA_character_
 ON.HADOOP                   <<- FALSE
 HADOOP.NAMENODE             <<- Sys.getenv("NAME_NODE")
 IS.RDEMO                    <<- FALSE
@@ -55,6 +56,10 @@ function(args) {
         i <- i + 1
         if (i > length(args)) usage()
         PASSWORD <<- args[i]
+      } else if (s == "--kerbPrincipal") {
+        i <- i + 1
+        if (i > length(args)) usage()
+        KERB.PRINCIPAL <<- args[i]
       } else if (s == "--onHadoop") {
         ON.HADOOP <<- TRUE
       } else if (s == "--rDemo") {
@@ -99,6 +104,8 @@ function() {
   print("    --username         username to use for authentication to the h2o instance")
   print("")
   print("    --password         password to use for authentication to the h2o instance")
+  print("")
+  print("    --kerbPrincipal    Kerberos service principal")
   print("")
   print("    --onHadoop         Indication that tests will be run on h2o multinode hadoop clusters.")
   print("                       `locate` and `sandbox` runit test utilities use this indication in order to")
@@ -208,7 +215,7 @@ function() {
     cat(sprintf("[%s] %s\n", Sys.time(), paste0("Connect to h2o on IP: ",H2O.IP,", PORT: ",H2O.PORT)))
     h2o.init(ip = H2O.IP, port = H2O.PORT, startH2O = FALSE,
              https=H2O.HTTPS, insecure=H2O.HTTPS,
-             username=USERNAME, password=PASSWORD,
+             username=USERNAME, password=PASSWORD, use_spnego=!is.na(KERB.PRINCIPAL),
              strict_version_check = strict_version_check
     )
 
