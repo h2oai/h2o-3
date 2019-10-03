@@ -87,11 +87,11 @@ public class Leaderboard extends Lockable<Leaderboard> {
    */
   public Leaderboard(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     super(Key.make(idForProject(project_name)));
-    this._project_name = project_name;
-    this._eventlog_key = eventLog._key;
-    this._leaderboard_frame_key = leaderboardFrame == null ? null : leaderboardFrame._key;
-    this._leaderboard_frame_checksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
-    this._sort_metric = sort_metric == null ? null : sort_metric.toLowerCase();
+    _project_name = project_name;
+    _eventlog_key = eventLog._key;
+    _leaderboard_frame_key = leaderboardFrame == null ? null : leaderboardFrame._key;
+    _leaderboard_frame_checksum = leaderboardFrame == null ? 0 : leaderboardFrame.checksum();
+    _sort_metric = sort_metric == null ? null : sort_metric.toLowerCase();
   }
 
   /**
@@ -105,9 +105,13 @@ public class Leaderboard extends Lockable<Leaderboard> {
   static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(project_name)));
     if (null != leaderboard) {
-      if (leaderboardFrame != null && leaderboardFrame._key.equals(leaderboard._leaderboard_frame_key))
+      if (leaderboardFrame != null && !leaderboardFrame._key.equals(leaderboard._leaderboard_frame_key))
         throw new H2OIllegalArgumentException("Cannot use leaderboard "+project_name+" with a new leaderboard frame"
                 +" (existing leaderboard frame: "+leaderboard._leaderboard_frame_key +").");
+      if (sort_metric != null && !sort_metric.equals(leaderboard._sort_metric)) {
+        leaderboard._sort_metric = sort_metric.toLowerCase();
+        if (leaderboard.getLeader() != null) leaderboard.setDefaultMetrics(leaderboard.getLeader()); //reinitialize
+      }
     } else {
       leaderboard = new Leaderboard(project_name, eventLog, leaderboardFrame, sort_metric);
     }
@@ -250,7 +254,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * @param newModels
    */
   final void addModels(final Key<Model>[] newModels) {
-    if (null == this._key)
+    if (null == _key)
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
 
     // This can happen if a grid or model build timed out:
