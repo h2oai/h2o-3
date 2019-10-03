@@ -32,6 +32,7 @@
 #'        max_models and/or max_runtime_secs, e.g. \code{list(strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800)}
 #'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", stopping_tolerance = 0.001, stopping_rounds = 10)}
 #'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.
+#' @param export_checkpoints_dir Directory to automatically export grid in binary form to.
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \dontrun{
