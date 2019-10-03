@@ -251,7 +251,7 @@ h2o.saveGrid <- function(grid_directory, grid_id){
   params <- list()
   params[["grid_directory"]] <- grid_directory
   
-  url <- paste0("Grid/", grid_id,"/export")
+  url <- paste0("Grid.bin/", grid_id,"/export")
   
   res <- .h2o.__remoteSend(
     url,

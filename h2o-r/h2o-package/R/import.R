@@ -402,7 +402,7 @@ h2o.loadGrid <- function(grid_path){
   
   
   res <- .h2o.__remoteSend(
-    "Grid/import",
+    "Grid.bin/import",
     method = "POST",
     h2oRestApiVersion = 3,.params = params
   )
