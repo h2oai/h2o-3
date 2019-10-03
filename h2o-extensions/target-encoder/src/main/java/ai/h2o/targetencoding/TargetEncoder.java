@@ -346,7 +346,8 @@ public class TargetEncoder extends Iced<TargetEncoder>{
       return fr;
     }
     
-    Frame imputeWithPosteriorForNALevelOrWithPrior(String teColumnName, Frame fr, int columnIndex, Frame encodingMapForCurrentTEColumn, double priorMean) {
+    Frame imputeWithPosteriorForNALevelOrWithPrior(String teColumnName, Frame fr, int columnIndex, Frame encodingMapForCurrentTEColumn,
+                                                   boolean useBlending, BlendingParams blendingParams, double priorMean) {
       int numberOfRowsInEncodingMap = (int) encodingMapForCurrentTEColumn.numRows();
       String lastDomain = encodingMapForCurrentTEColumn.domains()[0][numberOfRowsInEncodingMap - 1];
       boolean missingValuesWerePresent = lastDomain.equals(teColumnName + "_NA");
@@ -354,7 +355,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
       double numeratorForNALevel = encodingMapForCurrentTEColumn.vec(NUMERATOR_COL_NAME).at(numberOfRowsInEncodingMap - 1);
       double denominatorForNALevel = encodingMapForCurrentTEColumn.vec(DENOMINATOR_COL_NAME).at(numberOfRowsInEncodingMap - 1);
       double posteriorForNALevel = numeratorForNALevel / denominatorForNALevel;
-      double valueForImputation = missingValuesWerePresent ? posteriorForNALevel : priorMean;
+      double valueForImputation = missingValuesWerePresent ? (useBlending ? getBlendedValue(posteriorForNALevel, priorMean, numeratorForNALevel, blendingParams) : posteriorForNALevel) : priorMean;
       Vec vecWithEncodings = fr.vec(columnIndex);
       assert vecWithEncodings.get_type() == Vec.T_NUM : "Imputation of mean value is supported only for numerical vectors.";
       long numberOfNAs = vecWithEncodings.naCnt();
@@ -413,13 +414,17 @@ public class TargetEncoder extends Iced<TargetEncoder>{
             encodings.set(i, _priorMean);
           } else {
             double numberOfRowsInCurrentCategory = den.atd(i);
-            double lambda = 1.0 / (1 + Math.exp((_blendingParams.getK() - numberOfRowsInCurrentCategory) / _blendingParams.getF()));
             double posteriorMean = num.atd(i) / den.atd(i);
-            double blendedValue = lambda * posteriorMean + (1 - lambda) * _priorMean;
+            double blendedValue = getBlendedValue(posteriorMean, _priorMean, numberOfRowsInCurrentCategory, _blendingParams);
             encodings.set(i, blendedValue);
           }
         }
       }
+    }
+
+    private static double getBlendedValue(double posteriorMean, double priorMean, double numberOfRowsInCurrentCategory, BlendingParams blendingParams) {
+      double lambda = 1.0 / (1 + Math.exp((blendingParams.getK() - numberOfRowsInCurrentCategory) / blendingParams.getF()));
+      return lambda * posteriorMean + (1 - lambda) * priorMean;
     }
 
     Frame calculateAndAppendTEEncoding(Frame fr, Frame encodingMap, String appendedColumnName) {
@@ -730,7 +735,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                   // Maybe even choose size of holdout taking into account size of the minimal set that represents all levels.
                   // Otherwise there are higher chances to get NA's for unseen categories.
                   Frame imputedEncodingsFrameN = imputeWithPosteriorForNALevelOrWithPrior(teColumnName, withAddedNoiseEncodingsFrameN, 
-                          withAddedNoiseEncodingsFrameN.find(newEncodedColumnName), groupedTargetEncodingMapForNone, priorMeanFromTrainingDataset);
+                          withAddedNoiseEncodingsFrameN.find(newEncodedColumnName), groupedTargetEncodingMapForNone, useBlending, blendingParams, priorMeanFromTrainingDataset);
 
                   removeNumeratorAndDenominatorColumns(imputedEncodingsFrameN);
 
