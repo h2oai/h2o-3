@@ -10,12 +10,12 @@ import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.CollectionUtils;
 import water.util.Log;
 import water.util.PojoUtils;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
-import java.util.Map;
+import java.io.*;
+import java.util.*;
 
 /**
  * Grid search job.
@@ -139,6 +139,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         gridSearch(grid);
         tryComplete();
       }
+
       @Override
       public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
         Log.warn("GridSearch job "+_job._description+" completed with exception: "+ex);
@@ -192,7 +193,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           }
         }
 
-        MP params;
+        MP params = null;
         try {
           // Get parameters for next model
           params = it.nextModelParameters(model);
@@ -245,6 +246,17 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           _job.update(1);
           // Always update grid in DKV after model building attempt
           grid.update(_job);
+          final MP generalParams = _hyperSpaceWalker.getParams();
+          if (generalParams._export_checkpoints_dir != null) {
+
+            try {
+              grid.exportBinary(generalParams._export_checkpoints_dir);
+              // Models are exported automatically when export_checkpoints_dir is defined
+            } catch (IOException e) {
+              Log.warn(String.format("Could not save grid '" + "%s' to location '%s'",
+                      grid._key.toString(), generalParams._export_checkpoints_dir));
+            }
+          }
         } // finally
 
         if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
@@ -258,7 +270,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       grid.unlock(_job);
     }
   }
-
+  
+  private static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");
   /**
    * Build a model based on specified parameters and save it to resulting Grid object.
    *
@@ -281,8 +294,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     // Make sure that the model is not yet built (can be case of duplicated hyper parameters).
     // We first look in the grid _models cache, then we look in the DKV.
     // FIXME: get checksum here since model builder will modify instance of params!!!
-
-    final long checksum = params.checksum();
+    
+    // Grid search might be continued over the very exact hyperspace, but with autoexporting disabled. 
+    // To prevent 
+    final long checksum = params.checksum(IGNORED_FIELDS_PARAM_HASH);
     Key<Model> key = grid.getModelKey(checksum);
     if (key != null) {
       if (DKV.get(key) == null) {

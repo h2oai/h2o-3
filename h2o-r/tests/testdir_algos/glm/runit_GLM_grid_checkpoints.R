@@ -20,8 +20,8 @@ check.glm.grid.checkpoints <- function(conn) {
   print(saved_models)
   print(grid@model_ids)
   
-  expect_equal(num_files, 3)
-  expect_equal(num_files, length(grid@model_ids))
+  expect_equal(num_files, 4)
+  expect_equal(num_files, length(grid@model_ids) + 1) # Model IDs + 1 file for the whole grid to be saved
 }
 
 doTest("GLM Grid Search with saving checkpoints", check.glm.grid.checkpoints)

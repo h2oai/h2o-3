@@ -54,7 +54,7 @@ class H2OGridSearch(backwards_compatible()):
     """
 
 
-    def __init__(self, model, hyper_params, grid_id=None, search_criteria=None):
+    def __init__(self, model, hyper_params, grid_id=None, search_criteria=None, export_checkpoints_dir=None):
         super(H2OGridSearch, self).__init__()
         assert_is_type(model, None, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
         assert_is_type(hyper_params, dict)
@@ -65,6 +65,7 @@ class H2OGridSearch(backwards_compatible()):
         self.model = model
         self.hyper_params = dict(hyper_params)
         self.search_criteria = None if search_criteria is None else dict(search_criteria)
+        self.export_checkpoints_dir = export_checkpoints_dir
         self._grid_json = None
         self.models = None  # list of H2O Estimator instances
         self._parms = {}  # internal, for object recycle #
@@ -173,6 +174,7 @@ class H2OGridSearch(backwards_compatible()):
         parms.update({k: v for k, v in algo_params.items() if k not in ["self", "params", "algo_params", "parms"]})
         # dictionaries have special handling in grid search, avoid the implicit conversion
         parms["search_criteria"] = None if self.search_criteria is None else str(self.search_criteria)
+        parms["export_checkpoints_dir"] = self.export_checkpoints_dir
         parms["hyper_parameters"] = None if self.hyper_params  is None else str(self.hyper_params) # unique to grid search
         parms.update({k: v for k, v in list(self.model._parms.items()) if v is not None})  # unique to grid search
         parms.update(params)
@@ -297,6 +299,7 @@ class H2OGridSearch(backwards_compatible()):
         m._grid_json = grid_json
         # m._metrics_class = metrics_class
         m._parms = self._parms
+        self.export_checkpoints_dir = m._grid_json["export_checkpoints_dir"]
         H2OEstimator.mixin(self, model_class)
         self.__dict__.update(m.__dict__.copy())
 

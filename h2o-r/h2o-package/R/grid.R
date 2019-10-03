@@ -32,6 +32,7 @@
 #'        max_models and/or max_runtime_secs, e.g. \code{list(strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800)}
 #'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", stopping_tolerance = 0.001, stopping_rounds = 10)}
 #'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.
+#' @param export_checkpoints_dir Directory to automatically export grid in binary form to.
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \dontrun{
@@ -57,7 +58,8 @@ h2o.grid <- function(algorithm,
                      hyper_params = list(),
                      is_supervised = NULL,
                      do_hyper_params_check = FALSE,
-                     search_criteria = NULL)
+                     search_criteria = NULL,
+                     export_checkpoints_dir = NULL)
 {
   #Unsupervised algos to account for in grid (these algos do not need response)
   unsupervised_algos <- c("kmeans", "pca", "svd", "glrm")
@@ -137,6 +139,11 @@ h2o.grid <- function(algorithm,
                                                         do_hyper_params_check = do_hyper_params_check)
   # Append grid parameters in JSON form
   params$hyper_parameters <- toJSON(hyper_values, digits=99)
+  
+  # Set directory for checkpoints export
+  if(!is.null(export_checkpoints_dir)){
+    params$export_checkpoints_dir = export_checkpoints_dir
+  }
 
   if( !is.null(search_criteria)) {
       # Append grid search criteria in JSON form. 
