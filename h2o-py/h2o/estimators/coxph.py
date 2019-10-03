@@ -44,6 +44,20 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> train, valid = heart.split_frame(ratios = [.8])
+        >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                            stop_column = "stop")
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("training_frame")
 
@@ -58,6 +72,20 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Start Time Column.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> train, valid = heart.split_frame(ratios = [.8])
+        >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                            stop_column = "stop")
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("start_column")
 
@@ -73,6 +101,20 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Stop Time Column.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> train, valid = heart.split_frame(ratios = [.8])
+        >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                            stop_column = "stop")
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("stop_column")
 
@@ -88,6 +130,20 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Response variable column.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response_column = "event"
+        >>> train, valid = heart.split_frame(ratios = [.8])
+        >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                            stop_column = "stop")
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response_column,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("response_column")
 
@@ -103,6 +159,18 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Names of columns to ignore for training.
 
         Type: ``List[str]``.
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> response = "event"
+        >>> ignored_cols=["transplant","surgery"]
+        >>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                                  stop_column="stop",
+        ...                                                  ignored_columns=ignored_cols)
+        >>> heart_coxph.train(y = response,
+        ...                   training_frame = heart)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("ignored_columns")
 
@@ -122,6 +190,10 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
         Type: ``str``.
+
+        :examples:
+
+        
         """
         return self._parms.get("weights_column")
 
@@ -137,6 +209,19 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Offset column. This will be added to the combination of columns before applying the link function.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                            stop_column = "stop",
+        ...                                            offset_column = "transplant")
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = heart)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("offset_column")
 
@@ -152,6 +237,10 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         List of columns to use for stratification.
 
         Type: ``List[str]``.
+
+        :examples:
+
+        
         """
         return self._parms.get("stratify_by")
 
@@ -167,6 +256,21 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Method for Handling Ties.
 
         One of: ``"efron"``, ``"breslow"``  (default: ``"efron"``).
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> train, valid = heart.split_frame(ratios = [.8])
+        >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                            stop_column = "stop",
+        ...                                            ties = "breslow")
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("ties")
 
@@ -182,6 +286,19 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Coefficient starting value.
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                                  stop_column="stop",
+        ...                                                  init=2.9)
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = heart)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("init")
 
@@ -197,6 +314,19 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Minimum log-relative error.
 
         Type: ``float``  (default: ``9``).
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                                  stop_column="stop",
+        ...                                                  lre_min=9)
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = heart)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("lre_min")
 
@@ -212,6 +342,19 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Maximum number of iterations.
 
         Type: ``int``  (default: ``20``).
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                                  stop_column="stop",
+        ...                                                  max_iterations=50)
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = heart)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("max_iterations")
 
@@ -227,6 +370,20 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
 
         Type: ``List[str]``.
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> interactions = ['start','start']
+        >>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                                  stop_column="stop",
+        ...                                                  interactions=interactions)
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = heart)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("interactions")
 
@@ -242,6 +399,20 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         A list of pairwise (first order) column interactions.
 
         Type: ``List[tuple]``.
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> interaction_pairs = [("start","stop")]
+        >>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                                  stop_column="stop",
+        ...                                                  interaction_pairs=interaction_pairs)
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = heart)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("interaction_pairs")
 
@@ -258,6 +429,20 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         training.
 
         Type: ``List[str]``.
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> interactions = ['start','start']
+        >>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                                  stop_column="stop",
+        ...                                                  interactions_only=interactions)
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = heart)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("interactions_only")
 
@@ -273,6 +458,19 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         (Internal. For development only!) Indicates whether to use all factor levels.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                            stop_column = "stop",
+        ...                                            use_all_factor_levels=True)
+        >>> heart_coxph.train(x = predictor,
+        ...                   y = response,
+        ...                   training_frame = heart)
+        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("use_all_factor_levels")
 
@@ -288,6 +486,22 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> import tempfile
+        >>> from os import listdir
+        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        >>> predictor = "age"
+        >>> response = "event"
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+        ...                                            stop_column="stop",
+        ...                                            export_checkpoints_dir=checkpoints_dir)
+        >>> coxph.train(x = predictor,
+        ...             y = response,
+        ...             training_frame = heart)
+        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 
