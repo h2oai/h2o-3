@@ -498,7 +498,13 @@ and the browser will use last key acquired via kinit on the client machine.
 R Client
 ''''''''
 
-Currently SPNEGO authentication is not supported in R client.
+The following code snippet demonstrates connecting to an H2O cluster
+with SPNEGO authentication:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, use_spnego = TRUE)
+
 
 Python Client
 '''''''''''''
