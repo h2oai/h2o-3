@@ -43,7 +43,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * <p>
    * Updated inside addModels().
    */
-  private final transient IcedHashMap<Key<ModelMetrics>, ModelMetrics> _leaderboard_model_metrics_cache = new IcedHashMap<>();
+  private final IcedHashMap<Key<ModelMetrics>, ModelMetrics> _leaderboard_model_metrics_cache = new IcedHashMap<>();
 
   /**
    * Map providing for a given metric name, the list of metric values in the same order as the models
