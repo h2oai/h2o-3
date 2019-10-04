@@ -24,41 +24,36 @@ Example
 	library(h2o)
 	h2o.init()
 
-	# import the seeds dataset:
-	# this dataset looks at three different types of wheat varieties
-	# the original dataset can be found at http://archive.ics.uci.edu/ml/datasets/seeds
-	seeds <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/seeds_dataset.txt")
+	# import the heart dataset
+	heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
-	# set the predictor names 
-	# ignore the 8th column which has the prior known clusters for this dataset
-	predictors <-colnames(seeds)[-length(seeds)]
+	# set the predictor and response column
+	x <- "age"
+	y <- "event"
 
-	# split into train and validation
-	seeds_splits <- h2o.splitFrame(data = seeds, ratios = .8, seed = 1234)
-	train <- seeds_splits[[1]]
-	valid <- seeds_splits[[2]]
+	# set the start and stop columns
+	start <- "start"
+	stop <- "stop"
 
-	# try using the `init` parameter:
-	# build the model with three clusters
-	seeds_kmeans <- h2o.kmeans(x = predictors, k = 3, init='Furthest', training_frame = train, validation_frame = valid, seed = 1234)
+	# convert the age column to a factor
+	heart["age"] <- as.factor(heart["age"])
 
-	# print the total within cluster sum-of-square error for the validation dataset
-	print(paste0("Total sum-of-square error for valid dataset: ", h2o.tot_withinss(object = seeds_kmeans, valid = T)))
+	# train your model
+	coxph.h2o <- h2o.coxph(x=c("year", x), event_column=y, start_column=start, stop_column=stop, stratify_by=x, training_frame=heart)
 
+	# view the model details
+	coxph.h2o
+	Model Details:
+	==============
 
-	# select the values for `init` to grid over:
-	# Note: this dataset is too small to see significant differences between these options
-	# the purpose of the example is to show how to use grid search with `init` if desired
-	hyper_params <- list( init = c("PlusPlus", "Furthest", "Random")  )
+    H2OCoxPHModel: coxph
+    Model ID:  CoxPH_model_R_1570209287520_5 
+    Call:
+    Surv(start, stop, event) ~ year + strata(age)
 
-	# this example uses cartesian grid search because the search space is small
-	# and we want to see the performance of all models. For a larger search space use
-	# random grid search instead: list(strategy = "RandomDiscrete")
-	grid <- h2o.grid(x = predictors, k = 3, training_frame = train, validation_frame = valid,
-	                 algorithm = "kmeans", grid_id = "seeds_grid", hyper_params = hyper_params,
-	                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
+            coef    exp(coef) se(coef)  z      p
+    year    4.734   113.717   8973.421  0.001  1
 
-	## Sort the grid models by TotSS
-	sortedGrid <- h2o.getGrid("seeds_grid", sort_by  = "tot_withinss", decreasing = F)
-	sortedGrid
-	
+    Likelihood ratio test=1.39  on 1 df, p=0.239
+    n= 172, number of events= 75
+    
