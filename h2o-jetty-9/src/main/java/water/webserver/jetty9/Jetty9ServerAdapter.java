@@ -124,7 +124,9 @@ class Jetty9ServerAdapter implements WebServer {
   private class GateHandler extends AbstractHandler {
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) {
-      h2oHttpView.gateHandler(request, response);
+      if (h2oHttpView.gateHandler(request, response)) {
+        baseRequest.setHandled(true);
+      }
     }
   }
 }

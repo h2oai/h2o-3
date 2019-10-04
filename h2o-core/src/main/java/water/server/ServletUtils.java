@@ -30,6 +30,8 @@ public class ServletUtils {
    */
   private static final boolean DISABLE_CORS = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "disable.cors");
 
+  private static final String TRACE_METHOD = "TRACE";
+
   private static final ThreadLocal<Long> _startMillis = new ThreadLocal<>();
   private static final ThreadLocal<Integer> _status = new ThreadLocal<>();
   private static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
@@ -172,6 +174,10 @@ public class ServletUtils {
     return "XMLHttpRequest".equals(requestedWithHeader);
   }
 
+  public static boolean isTraceRequest(final HttpServletRequest request) {
+    return TRACE_METHOD.equalsIgnoreCase(request.getMethod());
+  }
+  
   public static void setCommonResponseHttpHeaders(HttpServletResponse response, final boolean xhrRequest) {
     if (xhrRequest) {
       response.setHeader("Cache-Control", "no-cache");
