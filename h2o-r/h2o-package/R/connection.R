@@ -104,6 +104,9 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
         if(is.na(password) && "init.password" %in% colnames(h2oconfig)){
           password <- trimws(as.character(h2oconfig$init.password))
         }
+        if(use_spnego == FALSE && "init.use_spnego" %in% colnames(h2oconfig)){
+          use_spnego <- as.logical(trimws(toupper(as.character(h2oconfig$init.use_spnego))))
+        }
       }
     }
 
