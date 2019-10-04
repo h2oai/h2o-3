@@ -736,11 +736,13 @@ class H2OConnection(backwards_compatible()):
         status_code = response.status_code
         if status_code == 200 and save_to:
             if save_to.startswith("~"): save_to = os.path.expanduser(save_to)
+            save_to = os.path.join(str(save_to), '')
             if os.path.isdir(save_to) or save_to.endswith(os.path.sep):
-                dirname = os.path.abspath(save_to)
+                dirname = os.path.join(os.path.abspath(save_to), '')
                 filename = H2OConnection._find_file_name(response)
             else:
                 dirname, filename = os.path.split(os.path.abspath(save_to))
+                dirname = os.path.join(dirname, '')
             fullname = os.path.join(dirname, filename)
             try:
                 if not os.path.exists(dirname):
