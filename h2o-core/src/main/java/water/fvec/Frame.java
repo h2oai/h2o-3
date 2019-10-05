@@ -1126,7 +1126,7 @@ public class Frame extends Lockable<Frame> {
    *  <li><em>an unordered list of positive</em> - just these, allowing dups
    *  </ul>
    *
-   *  <p>The numbering is 1-based; zero's are not allowed in the lists, nor are out-of-range values.
+   *  <p> Out-of-range values are not allowed in the lists.
    *  @return the sliced Frame
    */
   public Frame deepSlice( Object orows, Object ocols ) {

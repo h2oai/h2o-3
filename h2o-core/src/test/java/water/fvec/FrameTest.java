@@ -112,8 +112,7 @@ public class FrameTest extends TestUtil {
   }
 
   /**
-   * This test is testing deepSlice functionality and shows that we can use zero-based indexes for slicing
-   * // TODO if confirmed go and correct comments for Frame.deepSlice() method
+   * This test is testing deepSlice functionality and also shows that we can use zero-based indexes for slicing
    */
   @Test
   public void testRowDeepSlice() {
