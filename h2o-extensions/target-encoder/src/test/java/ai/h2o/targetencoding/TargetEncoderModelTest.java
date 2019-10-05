@@ -1,8 +1,10 @@
 package ai.h2o.targetencoding;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
+import water.H2O;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
@@ -16,6 +18,12 @@ public class TargetEncoderModelTest extends TestUtil{
     TestUtil.stall_till_cloudsize(1);
   }
 
+  @Test
+  public void testThatShouldFailOnlyInMultinodeEnv() {
+    Assume.assumeTrue(H2O.CLOUD.size() > 1);
+    fail("These failure is a proof that TE tests are being run in a multinode environment");
+  }
+  
   @Test
   public void testTargetEncoderModel() {
     try {
