@@ -20,19 +20,22 @@ class BroadcastJoinForTargetEncoder {
      */
     int[][] _encodingDataPerNode = null;
     
-    int _categoricalColumnIdx, _foldColumnIdx, _numeratorIdx, _denominatorIdx;
+    int _categoricalColumnIdx, _foldColumnIdx, _numeratorIdx, _denominatorIdx, _cardinalityOfCatCol, _maxFoldValue;
 
-    FrameWithEncodingDataToArray(int categoricalColumnIdx, int foldColumnId, int numeratorIdx, int denominatorIdx, int cardinalityOfCatCol, int numberOfFolds) {
+    FrameWithEncodingDataToArray(int categoricalColumnIdx, int foldColumnId, int numeratorIdx, int denominatorIdx, int cardinalityOfCatCol, int maxFoldValue) {
       _categoricalColumnIdx = categoricalColumnIdx;
       _foldColumnIdx = foldColumnId;
       _numeratorIdx = numeratorIdx;
       _denominatorIdx = denominatorIdx;
+      _cardinalityOfCatCol = cardinalityOfCatCol;
+      _maxFoldValue = maxFoldValue;
+
       if(foldColumnId == -1) {
-        _encodingDataPerNode = new int[2][cardinalityOfCatCol]; 
+        _encodingDataPerNode = new int[2][cardinalityOfCatCol];
       } else {
-        assert numberOfFolds > 0 : "Number of folds should be greater than zero";
+        assert maxFoldValue >= 1 : "There should be at leas two folds in the fold column";
         assert cardinalityOfCatCol > 0 : "Cardinality of categ. column should be greater than zero";
-        _encodingDataPerNode = new int[numberOfFolds * 2][cardinalityOfCatCol];
+        _encodingDataPerNode = new int[(maxFoldValue + 1) * 2][cardinalityOfCatCol];
       }
     }
 
@@ -46,20 +49,21 @@ class BroadcastJoinForTargetEncoder {
         int[] arrForNumerators = null;
         int[] arrForDenominators = null;
 
-        if (_foldColumnIdx != -1) {
+        synchronized (_encodingDataPerNode) { // Sync on whole array as there is no way to sync on two objects ( two rows of 2D array)
+          if (_foldColumnIdx != -1) {
           long foldValueFromVec = cs[_foldColumnIdx].at8(i);
           // We are allowed to do casting to `int` as we have validation before submitting this MRTask
-          int foldValue = (int) foldValueFromVec;
-          arrForNumerators = _encodingDataPerNode[2 * foldValue - 2];
-          arrForDenominators = _encodingDataPerNode[2 * foldValue - 1];
+          int foldValue = (int) foldValueFromVec; 
+          arrForNumerators = _encodingDataPerNode[2 * foldValue];
+          arrForDenominators = _encodingDataPerNode[2 * foldValue + 1];
         } else {
           arrForNumerators = _encodingDataPerNode[0];
           arrForDenominators = _encodingDataPerNode[1];
         }
 
-        arrForNumerators[levelValue] = (int) numeratorChunk.at8(i);
-        arrForDenominators[levelValue] = (int) denominatorChunk.at8(i);
-
+          arrForNumerators[levelValue] = (int) numeratorChunk.at8(i);
+          arrForDenominators[levelValue] = (int) denominatorChunk.at8(i);
+        }
       }
     }
 
@@ -67,10 +71,15 @@ class BroadcastJoinForTargetEncoder {
     public void reduce(FrameWithEncodingDataToArray mrt) {
       int[][] leftArr = getEncodingDataArray();
       int[][] rightArr = mrt.getEncodingDataArray();
-      // Actually left and right arrays should be of the same shape
       for(int rowIdx = 0 ; rowIdx < leftArr.length; rowIdx++) {
         for(int colIdx = 0 ; colIdx < leftArr[rowIdx].length; colIdx++) {
-          leftArr[rowIdx][colIdx] = Math.max(leftArr[rowIdx][colIdx], rightArr[rowIdx][colIdx]); 
+          synchronized (leftArr) {
+            int valueFromLeftArr = leftArr[rowIdx][colIdx];
+            int valueFromRIghtArr = rightArr[rowIdx][colIdx];
+            // Want to check what happens in a multiNode scenario
+            if(valueFromLeftArr != valueFromRIghtArr) throw new IllegalStateException("Arrays are different instances");
+            leftArr[rowIdx][colIdx] = Math.max(valueFromLeftArr, valueFromRIghtArr);
+          }
         }
       }
     }
@@ -90,7 +99,7 @@ class BroadcastJoinForTargetEncoder {
    * @param rightFoldColumnIdx index of the fold column from `broadcastedFrame` or `-1` if we don't use folds
    * @return
    */
-  static Frame join(Frame leftFrame, int[] leftCatColumnsIdxs, int leftFoldColumnIdx, Frame broadcastedFrame, int[] rightCatColumnsIdxs, int rightFoldColumnIdx, int numberOfFolds) {
+  static Frame join(Frame leftFrame, int[] leftCatColumnsIdxs, int leftFoldColumnIdx, Frame broadcastedFrame, int[] rightCatColumnsIdxs, int rightFoldColumnIdx, int maxFoldValue) {
     int numeratorIdx = broadcastedFrame.find(TargetEncoder.NUMERATOR_COL_NAME);
     int denominatorIdx = broadcastedFrame.find(TargetEncoder.DENOMINATOR_COL_NAME);
 
@@ -102,8 +111,8 @@ class BroadcastJoinForTargetEncoder {
     // Note: for our goals there is no need to store it in 2d array
     // Use `broadcastedFrame` as major frame(first argument) while computing level mappings as it contains all the levels from `training` dataset
     int[][] levelMappings = {CategoricalWrappedVec.computeMap( broadcastedFrame.vec(0).domain(), leftFrame.vec(leftCatColumnsIdxs[0]).domain())};
-    
-    int[][] encodingDataMap = new FrameWithEncodingDataToArray(rightCatColumnsIdxs[0], rightFoldColumnIdx, numeratorIdx, denominatorIdx, broadcastedFrameCatCardinality, numberOfFolds)
+
+    int[][] encodingDataMap = new FrameWithEncodingDataToArray(rightCatColumnsIdxs[0], rightFoldColumnIdx, numeratorIdx, denominatorIdx, broadcastedFrameCatCardinality, maxFoldValue)
             .doAll(broadcastedFrame)
             .getEncodingDataArray();
     new BroadcastJoiner(leftCatColumnsIdxs, leftFoldColumnIdx, encodingDataMap, levelMappings).doAll(leftFrame);
@@ -150,11 +159,11 @@ class BroadcastJoinForTargetEncoder {
           foldValue = (int) foldValueFromVec;
 
         } else {
-          foldValue = 1;
+          foldValue = 0;
         }
 
-        arrForNumerators = _encodingDataArray[2 * foldValue - 2];
-        arrForDenominators = _encodingDataArray[2 * foldValue - 1];
+        arrForNumerators = _encodingDataArray[2 * foldValue];
+        arrForDenominators = _encodingDataArray[2 * foldValue + 1];
 
         if(mappedLevelValue >= arrForDenominators.length) {
           setEncodingComponentsToNAs(num, den, i);

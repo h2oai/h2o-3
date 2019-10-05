@@ -293,11 +293,11 @@ public class TargetEncoder extends Iced<TargetEncoder>{
         }
     }
 
-    Frame mergeByTEAndFoldColumns(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex, int numberOfFolds) {
+    Frame mergeByTEAndFoldColumns(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int foldColumnIndexOriginal, int teColumnIndex, int maxFoldValue) {
       addNumeratorAndDenominatorTo(leftFrame);
 
       int foldColumnIndexInEncodingMap = holdoutEncodeMap.find("foldValueForMerge");
-      return BroadcastJoinForTargetEncoder.join(leftFrame, new int[]{teColumnIndexOriginal}, foldColumnIndexOriginal, holdoutEncodeMap, new int[]{teColumnIndex}, foldColumnIndexInEncodingMap, numberOfFolds);
+      return BroadcastJoinForTargetEncoder.join(leftFrame, new int[]{teColumnIndexOriginal}, foldColumnIndexOriginal, holdoutEncodeMap, new int[]{teColumnIndex}, foldColumnIndexInEncodingMap, maxFoldValue);
     }
 
     Frame mergeByTEColumn(Frame leftFrame, Frame holdoutEncodeMap, int teColumnIndexOriginal, int teColumnIndex) {
@@ -637,12 +637,9 @@ public class TargetEncoder extends Iced<TargetEncoder>{
                   }
                   // End of the preparation phase
 
-                  // Note: Folds might be sparse and this will cause array of encodings to be sparse/inflated as well
-                  long minFoldValue = ArrayUtils.minValue(foldValues);
-                  assert minFoldValue == 1 : "It is assumed that folds are one-based";
-                  int numberOfFolds = (int) ArrayUtils.maxValue(foldValues);
+                  int maxFoldValue = (int) ArrayUtils.maxValue(foldValues); 
 
-                  dataWithMergedAggregationsK = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap, numberOfFolds);
+                  dataWithMergedAggregationsK = mergeByTEAndFoldColumns(dataWithAllEncodings, holdoutEncodeMap, teColumnIndex, foldColumnIndex, teColumnIndexInEncodingMap, maxFoldValue);
 
                   Frame withEncodingsFrameK = calculateEncoding(dataWithMergedAggregationsK, encodingMapForCurrentTEColumn, newEncodedColumnName, useBlending, blendingParams);
 

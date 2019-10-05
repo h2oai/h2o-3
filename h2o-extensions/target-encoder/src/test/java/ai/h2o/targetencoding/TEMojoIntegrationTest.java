@@ -440,6 +440,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -491,7 +492,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(encodingsFromMojoModel[0], encodingsFromTEModelForUnseenLevel.vec("home.dest_te").at(0), 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -528,6 +528,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -577,7 +578,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(encodingsFromMojoModel[0], encodingsFromTEModelForUnseenLevel.vec("home.dest_te").at(0), 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -651,7 +651,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(predictionFromMojo, predictionFromTEModel, 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }

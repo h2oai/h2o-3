@@ -24,7 +24,7 @@ public class TargetEncodingDistributedTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Test
+  /*@Test
   public void imputeNAsForColumnTest() {
 
     Assume.assumeTrue(CLOUD.size() >= 2);
@@ -100,7 +100,7 @@ public class TargetEncodingDistributedTest extends TestUtil {
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncoding.delete();
   }
-
+*/
 
   private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
     for (Map.Entry<String, Frame> map : encodingMap.entrySet()) {

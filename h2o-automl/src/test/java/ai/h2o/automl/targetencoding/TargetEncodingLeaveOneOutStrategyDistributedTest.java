@@ -19,7 +19,7 @@ public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
 
   private Frame fr = null;
 
-  @Test
+  /*@Test
   public void naValuesWithLOOStrategyTest() {
 
     Assume.assumeTrue(CLOUD.size() >= 2);
@@ -53,7 +53,7 @@ public class TargetEncodingLeaveOneOutStrategyDistributedTest extends TestUtil {
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncodings.delete();
     
-  }
+  }*/
 
   @After
   public void afterEach() {

@@ -140,9 +140,9 @@ public class BroadcastJoinTest extends TestUtil {
             .withColNames("ColA", "fold", TargetEncoder.NUMERATOR_COL_NAME, TargetEncoder.DENOMINATOR_COL_NAME)
             .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
             .withDataForCol(0, ar("a", "b", "c"))
-            .withDataForCol(1, ar(randomInt, 33, 42))
-            .withDataForCol(2, ar(44, 66, 84))
-            .withDataForCol(3, ar(88, 132, 168))
+            .withDataForCol(1, ar(0, 1, 2))
+            .withDataForCol(2, ar(randomInt, 66, 84))
+            .withDataForCol(3, ar(88, 132, randomInt))
             .withChunkLayout(2,1)
             .build();
 
