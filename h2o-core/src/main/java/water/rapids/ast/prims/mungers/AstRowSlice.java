@@ -98,7 +98,9 @@ public class AstRowSlice extends AstPrimitive {
         }
       }.doAll(fr.types(), fr).outputFrame(fr.names(), fr.domains());
     } else if ((asts[2] instanceof AstNum)) {
-      long[] rows = new long[]{(long) (((AstNum) asts[2]).getNum())};
+      double num = ((AstNum) asts[2]).getNum();
+      if(num < 0) throw new IllegalStateException("Checking whether deepSlice with negative indices is being used "); 
+      long[] rows = new long[]{(long) num};
       returningFrame = fr.deepSlice(rows, null);
     } else if ((asts[2] instanceof AstExec) || (asts[2] instanceof AstId)) {
       Frame predVec = stk.track(asts[2].exec(env)).getFrame();
