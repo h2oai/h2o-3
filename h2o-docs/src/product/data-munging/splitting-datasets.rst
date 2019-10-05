@@ -3,7 +3,7 @@ Splitting Datasets into Training/Testing/Validating
 
 This example shows how to split a single dataset into two datasets, one used for training and the other used for testing. 
 
-Note that when splitting frames, H2O does not give an exact split. It's designed to be efficient on big data using a probabilistic splitting method rather than an exact split. For example, when specifying a 0.75/0.25 split, H2O will produce a test/train split with an expected value of 0.75/0.25 rather than exactly 0.75/0.25. On small datasets, the sizes of the resulting splits will deviate from the expected value more than on big data, where they will be very close to exact.
+Note that when splitting frames, H2O does not give an exact split. It's designed to be efficient on big data using a probabilistic splitting method rather than an exact split. For example, when specifying a 0.75/0.25 split, H2O will produce a test/train split with an expected value of 0.75/0.25 rather than exactly 0.75/0.25. On big data, the sizes of the resulting splits will deviate from the expected value more than on snall datasets, where they will be very close to exact.
 
 .. example-code::
    .. code-block:: r
