@@ -54,6 +54,18 @@ class CustomDistributionGeneric(object):
         """
         return 0
 
+    def lgradient(self, y, f, l):
+        """
+        (Negative half) Gradient of deviance function at predicted value f, for actual response y and class label l.
+        Important fot customization of a loss function for multinomial problem.
+    
+        :param y: actual response
+        :param f: predicted response in link space without offset
+        :param l : class label
+        :return: gradient
+        """
+        return 0
+
     def gamma(self, w, y, z, f):
         """
         Contribution for GBM's leaf node prediction (numerator and denominator).
@@ -121,8 +133,8 @@ class CustomDistributionMultinomial(CustomDistributionGeneric):
     def init(self, w, o, y):
         return [w * (y - o), w]
 
-    def gradient(self, y, f):
-        return y - f
+    def lgradient(self, y, f, l):
+        return 1 - f if y == l else 0 - f
 
     def gamma(self, w, y, z, f):
         import java.lang.Math as math

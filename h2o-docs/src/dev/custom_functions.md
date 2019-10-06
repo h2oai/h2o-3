@@ -168,11 +168,12 @@ via methods `custom_metric_name()` and `custom_metric_value()`.
 #### Custom Distribution Function
 
 The custom distribution function is defined in Python as a class which provides
-four methods following the semantics of Java API above:
+five methods following the semantics of Java API above:
   - `link`
   - `init`
   - `gamma`
   - `gradient`
+  - `lgradient` (for multiclass problems only)
   
 For example, custom Gaussian distribution:
 
@@ -190,7 +191,33 @@ class CustomDistributionGaussian:
     
     def gradient(self, y, f):
         return y - f
+        
+    def lgradient(self, y, f, l):
+        return None
 ```
+
+Or custom Multinomial distribution:
+   
+   ```python
+class CustomDistributionMultinomial:
+   
+    def link(self):
+        return "log"
+
+    def init(self, w, o, y):
+        return [w * (y - o), w]
+        
+    def gradient(self, y, f):
+        return None
+
+    def lgradient(self, y, f, l):
+        return 1 - f if y == l else 0 - f
+
+    def gamma(self, w, y, z, f):
+        import java.lang.Math as math
+        absz = math.abs(z)
+        return [w * z, w * (absz * (1 - absz))]
+   ```
 
 ##### Publishing custom distribution function in cluster
 The client local custom function represented as a class can be uploaded into running
