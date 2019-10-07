@@ -46,14 +46,32 @@ Example
 	Model Details:
 	==============
 
-    H2OCoxPHModel: coxph
-    Model ID:  CoxPH_model_R_1570209287520_5 
-    Call:
-    Surv(start, stop, event) ~ year + strata(age)
+	    H2OCoxPHModel: coxph
+	    Model ID:  CoxPH_model_R_1570209287520_5 
+	    Call:
+	    Surv(start, stop, event) ~ year + strata(age)
 
-            coef    exp(coef) se(coef)  z      p
-    year    4.734   113.717   8973.421  0.001  1
+	            coef    exp(coef) se(coef)  z      p
+	    year    4.734   113.717   8973.421  0.001  1
 
-    Likelihood ratio test=1.39  on 1 df, p=0.239
-    n= 172, number of events= 75
+	    Likelihood ratio test=1.39  on 1 df, p=0.239
+	    n= 172, number of events= 75
     
+
+   .. code-block:: python
+
+	import h2o
+	from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
+	h2o.init()
+
+	# import the heart dataset
+	heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+	#specify the parameter's value
+	stratify_by = "age"
+
+	#set the parameters
+	coxph = H2OCoxProportionalHazardsEstimator(start_column="start", stop_column="stop", ties="breslow", stratify_by=stratify_by)
+
+	# train your model
+	coxph.train(x="age", y="event", training_frame=heart)
