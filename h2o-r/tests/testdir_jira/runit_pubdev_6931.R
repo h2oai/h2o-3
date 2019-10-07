@@ -5,7 +5,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 test.proxy <- function() {
   Sys.setenv(http_proxy="http://fake-proxy:8080")
-  conn <- h2o.init()
+  data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
   Sys.unsetenv("http_proxy")
 }
 

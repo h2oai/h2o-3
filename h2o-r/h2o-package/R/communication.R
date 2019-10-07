@@ -90,7 +90,7 @@
   if (!is.na(conn@proxy)) {
     opts = curlOptions(proxy = conn@proxy, .opts = opts)
   } else if (conn@ip == "localhost" || conn@ip == "127.0.0.1") {
-    opts = curlOptions(proxy = NA, .opts = opts)
+    opts = curlOptions(noproxy="127.0.0.1,localhost", .opts = opts)
   }
 
   queryString = ""
