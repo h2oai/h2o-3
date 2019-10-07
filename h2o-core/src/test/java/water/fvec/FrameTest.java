@@ -55,12 +55,11 @@ public class FrameTest extends TestUtil {
   @Test
   public void testRemoveColumn() {
     Scope.enter();
-    Set<Vec> removedVecs = null;
+    Set<Vec> removedVecs = new HashSet<>();
 
     try {
       Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
       Scope.track(testData);
-      removedVecs = new HashSet<>();
 
       // dataset to split
       int initialSize = testData.numCols();
