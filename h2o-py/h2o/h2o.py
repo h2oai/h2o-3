@@ -1027,6 +1027,7 @@ def download_pojo(model, path="", get_jar=True, jar_name=""):
     if not model.have_pojo:
         raise H2OValueError("Export to POJO not supported")
 
+    path = str(os.path.join(path, ''))
     if path == "":
         java_code = api("GET /3/Models.java/%s" % model.model_id)
         print(java_code)
