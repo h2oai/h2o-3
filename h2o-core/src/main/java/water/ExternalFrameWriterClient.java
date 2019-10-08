@@ -59,7 +59,7 @@ final public class ExternalFrameWriterClient {
   private int timeout;
   private int numRows;
   private int numCols;
-  private int blockSize;
+  private long blockSize;
 
   /**
    * Initialize the External frame writer
@@ -68,14 +68,14 @@ final public class ExternalFrameWriterClient {
    *
    * @param channel communication channel to h2o node
    */
-  public ExternalFrameWriterClient(ByteChannel channel, int timeout, int blockSize) {
+  public ExternalFrameWriterClient(ByteChannel channel, int timeout, long blockSize) {
     this.ab = new AutoBuffer();
     this.channel = channel;
     this.timeout = timeout;
     this.blockSize = blockSize;
   }
 
-  public static ExternalFrameWriterClient create(String ip, int port, short timestamp, int timeout, int blockSize) throws IOException {
+  public static ExternalFrameWriterClient create(String ip, int port, short timestamp, int timeout, long blockSize) throws IOException {
     ByteChannel channel = ExternalFrameUtils.getConnection(ip, port, timestamp);
     return new ExternalFrameWriterClient(channel, timeout, blockSize);
   }
