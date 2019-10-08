@@ -245,7 +245,7 @@ def call(final pipelineContext) {
     [
       stageName: 'H2O XGB GPU Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkGPUStage.groovy',
       timeoutValue: 120, target: 'benchmark-xgb-gpu', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R, pipelineContext.getBuildConfig().COMPONENT_GPU],
       customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel()
     ],

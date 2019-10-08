@@ -30,6 +30,7 @@ class BuildConfig {
   public static final String COMPONENT_R = 'r'
   public static final String COMPONENT_JS = 'js'
   public static final String COMPONENT_JAVA = 'java'
+  public static final String COMPONENT_GPU = 'gpu'
   // Use to indicate, that the stage is not component dependent such as MOJO Compatibility Test,
   // always run
   public static final String COMPONENT_ANY = 'any'
@@ -226,6 +227,7 @@ class BuildConfig {
 
   String getStageImage(final stageConfig) {
     def component = stageConfig.component
+    def suffix = ""
     if (component == COMPONENT_ANY) {
       if (stageConfig.additionalTestPackages.contains(COMPONENT_PY)) {
         component = COMPONENT_PY
@@ -233,6 +235,10 @@ class BuildConfig {
         component = COMPONENT_R
       } else if (stageConfig.additionalTestPackages.contains(COMPONENT_JAVA)) {
         component = COMPONENT_JAVA
+      }
+      // handle gpu suffix
+      if (stageConfig.additionalTestPackages.contains(COMPONENT_GPU)) {
+        suffix = "-gpu"
       }
     }
     def imageComponentName
@@ -257,7 +263,8 @@ class BuildConfig {
       default:
         throw new IllegalArgumentException("Cannot find image for component ${component}")
     }
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
+
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}${suffix}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getStashNameForTestPackage(final String platform) {
