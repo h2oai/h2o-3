@@ -925,6 +925,8 @@ class Test(object):
             cmd += ['--username', g_ldap_username]
         if g_ldap_password:
             cmd += ['--password', g_ldap_password]
+        if g_kerb_principal:
+            cmd += ['--kerbPrincipal', g_kerb_principal]
 
         if is_runit(test_name):
             if on_hadoop: cmd += ["--onHadoop"]
