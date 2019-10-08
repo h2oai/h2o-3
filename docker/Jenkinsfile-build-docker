@@ -17,10 +17,6 @@ properties([
 ])
 
 IMAGE_NAME_PREFIX = 'harbor.h2o.ai/opsh2oai/h2o-3'
-GPU_SUFFIX = params.useGpu ? '-gpu' : ''
-
-UBUNTU_BASE_IMAGE = 'ubuntu:16.04'
-GPU_BASE_IMAGE = 'nvidia/cuda:9.0-cudnn7-devel-ubuntu16.04'
 
 JDK_VERSIONS = ['8', '10', '11', '12']
 OPENJDK_VERSIONS = ['7']
@@ -57,6 +53,7 @@ ansiColor('xterm') {
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-8/x64-linux/jdk1.8.0_171.zip"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-10/x64-linux/jdk-10.0.2_linux-x64_bin.tar.gz"
                             sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-11/x64-linux/jdk-11.0.3_linux-x64_bin.tar.gz"
+                            sh "s3cmd get s3://artifacts.h2o.ai/releases/oracle/jdk-12/x64-linux/jdk-12.0.2_linux-x64_bin.tar.gz"
                         }
                     }
                     stash name: 'docker-sources'

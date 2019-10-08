@@ -10,7 +10,8 @@ COPY scripts/install_java_version scripts/install_java_version_local scripts/jav
 RUN \
     chmod +x /tmp/install_java_version /tmp/java-${JAVA_VERSION}-vars.sh && \
     sync && \
-    if [ "${JAVA_VERSION}" = '8' ] || [ "${JAVA_VERSION}" = '10' ] || [ "${JAVA_VERSION}" = '11' ]; then \
+    if [ "${JAVA_VERSION}" = '8' ] || [ "${JAVA_VERSION}" = '10' ] || [ "${JAVA_VERSION}" = '11' ] || [ "${JAVA_VERSION}" = '12' ] \
+    then \
         /tmp/install_java_version_local ${JAVA_VERSION} /tmp/java-${JAVA_VERSION}-vars.sh; \
     else \
         /tmp/install_java_version ${JAVA_VERSION} /tmp/java-${JAVA_VERSION}-vars.sh; \
