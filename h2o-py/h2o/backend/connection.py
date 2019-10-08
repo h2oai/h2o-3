@@ -382,7 +382,7 @@ class H2OConnection(backwards_compatible()):
 
         # Prepare URL
         assert_is_type(endpoint, str)
-        match = assert_matches(str(endpoint), r"^(GET|POST|PUT|DELETE|PATCH|HEAD) (/.*)$")
+        match = assert_matches(str(endpoint), r"^(GET|POST|PUT|DELETE|PATCH|HEAD|TRACE) (/.*)$")
         method = match.group(1)
         urltail = match.group(2)
         url = self._base_url + urltail

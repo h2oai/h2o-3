@@ -216,6 +216,12 @@ public class RequestServer extends HttpServlet {
 
   //------ Handling Requests -------------------------------------------------------------------------------------------
 
+  @Override
+  protected void doTrace(HttpServletRequest req, HttpServletResponse resp) {
+    throw new UnsupportedOperationException("TRACE method is not supported");
+    // TRACE method is blocked by GateHandler, this makes sure the request doesn't accidentally sneaks in
+  }
+
   @Override protected void doGet(HttpServletRequest rq, HttpServletResponse rs)    { doGeneric("GET", rq, rs); }
   @Override protected void doPut(HttpServletRequest rq, HttpServletResponse rs)    { doGeneric("PUT", rq, rs); }
   @Override protected void doPost(HttpServletRequest rq, HttpServletResponse rs)   { doGeneric("POST", rq, rs); }

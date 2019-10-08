@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
@@ -122,13 +123,11 @@ class Jetty9Helper {
         final Constraint constraint = new Constraint();
         constraint.setName("auth");
         constraint.setAuthenticate(true);
-
         constraint.setRoles(new String[]{Constraint.ANY_AUTH});
 
         final ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/*"); // Lock down all API calls
         mapping.setConstraint(constraint);
-        security.setConstraintMappings(Collections.singletonList(mapping));
 
         // Authentication / Authorization
         final Authenticator authenticator;
