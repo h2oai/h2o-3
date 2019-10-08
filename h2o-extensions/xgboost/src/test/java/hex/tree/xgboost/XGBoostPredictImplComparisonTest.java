@@ -100,11 +100,10 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
     }
 
     private Double getRelDelta(XGBoostModel.XGBoostParameters parms) {
-        if (usesGpu(parms)) {
+        if (usesGpu(parms) || "gblinear".equals(booster)) {
             // train/predict on gpu is non-deterministic
+            // gblinear non-determinism reported as bug https://github.com/dmlc/xgboost/issues/4919
             return 1e-3;
-        } else if ("gblinear".equals(booster)) {
-            return 1e-6;
         } else {
             return null;
         }
