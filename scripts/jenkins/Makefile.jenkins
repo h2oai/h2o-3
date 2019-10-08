@@ -422,6 +422,7 @@ test-kerberos-common-standalone:
 
 test-kerberos-hadoop-2-standalone: test-kerberos-common-standalone
 	cd h2o-hadoop-2/tests/python && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
+	cd h2o-hadoop-2/tests/R && ../../../scripts/run.py --wipeall --usecloud "https://$$CLOUD_IP:$$CLOUD_PORT" --kerb.principal $$KERB_PRINCIPAL
 
 test-kerberos-hadoop-2-hdp: test-hadoop-2-smoke-standalone test-hadoop-common-smoke-hive-ldap
 
