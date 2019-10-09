@@ -54,21 +54,23 @@ class Namespace:
     """
     simplistic namespace class allowing to create bag/namespace objects that are easily extendable in a functional way
     """
-    @staticmethod
-    def add(namespace, **kwargs):
-        for k, v in kwargs.items():
-            setattr(namespace, k, v)
-        return namespace
-
     def __init__(self, **kwargs):
-        Namespace.add(self, **kwargs)
+        self.__dict__.update(**kwargs)
+
+    def __str__(self):
+        return str(self.__dict__)
+
+    def __repr__(self):
+        return repr(self.__dict__)
 
     def extend(self, **kwargs):
         """
         :param kwargs: attributes extending the current namespace
         :return: a new namespace containing same attributes as the original + the extended ones
         """
-        return Namespace.add(copy.copy(self), **kwargs)
+        clone = Namespace(**self.__dict__)
+        clone.__dict__.update(**kwargs)
+        return clone
 
 
 def ns(**kwargs):
