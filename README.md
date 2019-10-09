@@ -808,6 +808,9 @@ Leland Wilkinson
 Wendy Wong
 Nikhil Shekhar
 Pavel Pscheidl
+Michal Kurka
+Veronika Maurerova
+Jan Sterba
 ```
 
 <a name="Advisors"></a>

@@ -197,26 +197,17 @@ public class VecTest extends TestUtil {
   }
 
   @Test public void testChunkIdxWithDeletedVec() {
+    Key<Vec> k = null;
     try {
       Scope.enter();
       Vec v = Scope.track(makeConN((long) 1e6, 16));
-      new MRTask() {
-        @Override
-        protected void setupLocal() {
-          Vec v = _fr.anyVec();
-          if (v != null) {
-            v.remove(); // evil happens here
-          }
-        }
-        @Override
-        public void map(Chunk c) {
-          if (c.vec().get_type() != Vec.T_NUM)
-            throw new IllegalStateException("Expected a numeric Vec");
-        }
-      }.doAll(v);
+      k = v._key;
+      v.remove();
+      v.chunkForChunkIdx(0);
+      fail("chunkForChunkIdx didn't fail");
     } catch (Exception e) {
       String msg = e.getMessage();
-      if (msg == null || !msg.contains("Missing chunk") || !msg.contains("is not in DKV"))
+      if (msg == null || k == null || !msg.startsWith("Missing chunk 0 for vector " + k.toString() + "; Vec info: is not in DKV;"))
         throw e;
       Log.warn(e);
     } finally {
