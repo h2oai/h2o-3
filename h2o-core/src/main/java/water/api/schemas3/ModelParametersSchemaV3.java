@@ -3,6 +3,7 @@ package water.api.schemas3;
 import hex.genmodel.utils.DistributionFamily;
 import hex.Model;
 import hex.ScoreKeeper;
+import org.apache.commons.lang.ArrayUtils;
 import water.*;
 import water.api.API;
 import water.api.schemas3.KeyV3.FrameKeyV3;
@@ -271,6 +272,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
     String[] fields = parameters.fields();
 
     // Build ModelParameterSchemaV2 objects for each field, and the call writeJSON on the array
+    final ModelParameterSchemaV3[] additionalParameters = parameters.getAdditionalParameters();
     ModelParameterSchemaV3[] metadata = new ModelParameterSchemaV3[fields.length];
 
     String field_name = null;
@@ -288,9 +290,15 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
     }
 
     compute_transitive_closure_of_is_mutually_exclusive(metadata);
-
+    if (additionalParameters != null) {
+      metadata = (ModelParameterSchemaV3[]) ArrayUtils.addAll(metadata, additionalParameters);
+    }
     ab.putJSONA("parameters", metadata);
     return ab;
+  }
+
+  protected ModelParameterSchemaV3[] getAdditionalParameters() {
+    return null;
   }
 
   /**

@@ -1,6 +1,7 @@
 import h2o
 import tempfile
-import os
+import sys
+sys.path.insert(1,"../../")
 
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
 from tests import pyunit_utils
