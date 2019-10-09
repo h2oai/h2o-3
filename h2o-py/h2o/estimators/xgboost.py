@@ -17,7 +17,7 @@ class H2OXGBoostEstimator(H2OEstimator):
     """
     XGBoost
 
-    Builds a eXtreme Gradient Boosting model using the native XGBoost backend.
+    Builds an eXtreme Gradient Boosting model using the native XGBoost backend.
     """
 
     algo = "xgboost"

@@ -29,7 +29,7 @@ extensions = dict(
 
 doc = dict(
     __class__="""
-Builds a eXtreme Gradient Boosting model using the native XGBoost backend.
+Builds an eXtreme Gradient Boosting model using the native XGBoost backend.
 """,
 )
 
