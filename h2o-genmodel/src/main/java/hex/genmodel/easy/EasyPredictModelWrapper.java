@@ -53,12 +53,9 @@ import java.util.*;
 public class EasyPredictModelWrapper implements Serializable {
   // These private members are read-only after the constructor.
   public final GenModel m;
-  private final HashMap<String, Integer> modelColumnNameToIndexMap;
   public final HashMap<Integer, HashMap<String, Integer>> domainMap;
-  private final ErrorConsumer errorConsumer;
+  private final RowToRawDataConverter rowDataConverter;
 
-  private final boolean convertUnknownCategoricalLevelsToNa;
-  private final boolean convertInvalidNumbersToNa;
   private final boolean useExtendedOutput;
   private final boolean enableLeafAssignment;
   private final boolean enableGLRMReconstruct;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
@@ -284,18 +281,9 @@ public class EasyPredictModelWrapper implements Serializable {
   public EasyPredictModelWrapper(Config config) {
     m = config.getModel();
     // Ensure an error consumer is always instantiated to avoid missing null-check errors.
-    errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
-
-    // Create map of column names to index number.
-    modelColumnNameToIndexMap = new HashMap<>();
-    String[] modelColumnNames = m.getNames();
-    for (int i = 0; i < modelColumnNames.length; i++) {
-      modelColumnNameToIndexMap.put(modelColumnNames[i], i);
-    }
+    ErrorConsumer errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
 
     // How to handle unknown categorical levels.
-    convertUnknownCategoricalLevelsToNa = config.getConvertUnknownCategoricalLevelsToNa();
-    convertInvalidNumbersToNa = config.getConvertInvalidNumbersToNa();
     useExtendedOutput = config.getUseExtendedOutput();
     enableLeafAssignment = config.getEnableLeafAssignment();
     enableGLRMReconstruct = config.getEnableGLRMReconstrut();
@@ -321,6 +309,14 @@ public class EasyPredictModelWrapper implements Serializable {
     }
 
     domainMap = new DomainMapConstructor(m).create();
+    // Create map of column names to index number.
+    HashMap<String, Integer> modelColumnNameToIndexMap = new HashMap<>();
+    String[] modelColumnNames = m.getNames();
+    for (int i = 0; i < modelColumnNames.length; i++) {
+      modelColumnNameToIndexMap.put(modelColumnNames[i], i);
+    }
+
+    rowDataConverter = RowDataConverterFactory.makeConverter(m, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
   }
 
   /**
@@ -382,6 +378,10 @@ public class EasyPredictModelWrapper implements Serializable {
     return predict(data, m.getModelCategory());
   }
 
+  ErrorConsumer getErrorConsumer() {
+    return rowDataConverter.getErrorConsumer();
+  }
+  
   /**
    * Make a prediction on a new data point using an AutoEncoder model.
    * @param data A new data point.
@@ -855,8 +855,7 @@ public class EasyPredictModelWrapper implements Serializable {
   }
 
   protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {
-    return new RowToRawDataConverter(m, modelColumnNameToIndexMap, domainMap, errorConsumer, convertUnknownCategoricalLevelsToNa, convertInvalidNumbersToNa)
-            .convert(data, rawData);
+    return rowDataConverter.convert(data, rawData);
   }
 
   protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {

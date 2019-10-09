@@ -34,7 +34,7 @@ public class RowToRawDataConverterTest {
 
     // Indices for this map are based on `m.getDomainValues()` method
     HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(testMojoModel).create();
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(testMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, true, true);
+    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(testMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
 
     double[] rawData = new double[rowToPredictFor.size()];
     rowToRawDataConverter.convert(rowToPredictFor, rawData);
