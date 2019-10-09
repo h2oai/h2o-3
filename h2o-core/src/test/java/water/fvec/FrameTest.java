@@ -55,10 +55,12 @@ public class FrameTest extends TestUtil {
   @Test
   public void testRemoveColumn() {
     Scope.enter();
-    Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
     Set<Vec> removedVecs = new HashSet<>();
 
     try {
+      Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
+      Scope.track(testData);
+
       // dataset to split
       int initialSize = testData.numCols();
       removedVecs.add(testData.remove(-1));
@@ -76,8 +78,6 @@ public class FrameTest extends TestUtil {
     } finally {
       Scope.exit();
       for (Vec v : removedVecs) if (v != null) v.remove();
-      testData.delete();
-      H2O.STORE.clear();
     }
   }
 
@@ -138,20 +138,14 @@ public class FrameTest extends TestUtil {
       //checking that 0-based indexing is allowed as well
       // We are slicing here particular indexes of rows : 0 and 3
       Frame slicedRange = input.deepSlice(new long[]{0, 3}, null);
-      printOutFrameAsTable(slicedRange, false, slicedRange.numRows());
       assertEquals(2, slicedRange.numRows());
       assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
       assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);
-
-      //TODO add test for new long[]{-4} values
     } finally {
       Scope.exit();
     }
   }
 
-  // This test keeps failing locally when we run the whole suite but green if we run it alone.
-  // Vec$ESPC.rowLayout is using shared state... see jira PUBDEV-6019
-  @Ignore
   @Test
   public void testRowDeepSliceWithPredicateFrame() {
     Scope.enter();
@@ -177,8 +171,6 @@ public class FrameTest extends TestUtil {
       assertEquals(2, slicedRange.numRows());
       assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
       assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);
-
-      //TODO add test for new long[]{-4} values
     } finally {
       Scope.exit();
     }
