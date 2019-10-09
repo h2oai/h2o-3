@@ -271,7 +271,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
   }
   
-  private static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");
+  protected static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");
   /**
    * Build a model based on specified parameters and save it to resulting Grid object.
    *
@@ -320,7 +320,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         if ((m == null) || (m._parms == null))
           return false;
         try {
-          return m._parms.checksum() == checksum;
+          return m._parms.checksum(IGNORED_FIELDS_PARAM_HASH) == checksum;
         } catch (H2OConcurrentModificationException e) {
           // We are inspecting model parameters that doesn't belong to us - they might be modified (or deleted) while
           // checksum is being calculated: we skip them (see PUBDEV-5286)
