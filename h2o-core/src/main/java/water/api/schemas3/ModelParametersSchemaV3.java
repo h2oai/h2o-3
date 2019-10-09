@@ -3,12 +3,12 @@ package water.api.schemas3;
 import hex.genmodel.utils.DistributionFamily;
 import hex.Model;
 import hex.ScoreKeeper;
-import org.apache.commons.lang.ArrayUtils;
 import water.*;
 import water.api.API;
 import water.api.schemas3.KeyV3.FrameKeyV3;
 import water.api.schemas3.KeyV3.ModelKeyV3;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.PojoUtils;
 
 import java.lang.reflect.Field;
@@ -291,7 +291,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
 
     compute_transitive_closure_of_is_mutually_exclusive(metadata);
     if (additionalParameters != null) {
-      metadata = (ModelParameterSchemaV3[]) ArrayUtils.addAll(metadata, additionalParameters);
+      metadata = ArrayUtils.append(metadata, additionalParameters);
     }
     ab.putJSONA("parameters", metadata);
     return ab;
