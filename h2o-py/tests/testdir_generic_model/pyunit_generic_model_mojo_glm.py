@@ -1,6 +1,9 @@
-import h2o
 import tempfile
 import os
+import sys
+sys.path.insert(1,"../../")
+
+import h2o
 from h2o.estimators import H2OGeneralizedLinearEstimator, H2OGenericEstimator
 from tests import pyunit_utils
 from tests.testdir_generic_model import compare_output, Capturing
