@@ -170,7 +170,16 @@ public class ModelJsonReader {
                 Object value = null;
                 if (type.isAssignableFrom(Object.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null) value = convertBasedOnJsonType(jsonElement);
+                    if (jsonElement != null) {
+                        // There might be a "type" element at the same leven in the JSON tree, serving as a hint. 
+                        // Especially useful for numeric types.
+                        final JsonElement typeElement = jsonSourceObj.get("type");
+                        final TypeHint typeHint;
+                        if (type != null && !typeElement.isJsonNull()) {
+                            typeHint = TypeHint.fromStringIgnoreCase(typeElement.getAsString());
+                        } else typeHint = null;
+                        value = convertBasedOnJsonType(jsonElement, typeHint);
+                    }
                 } else if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
                     if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsDouble();
@@ -196,7 +205,31 @@ public class ModelJsonReader {
         }
     }
 
-    private static Object convertBasedOnJsonType(final JsonElement convertFrom) {
+    /**
+     * TypeHint contained in the model's JSON. There might be more types contained than listed here - these are the ones
+     * used.
+     */
+    private enum TypeHint {
+        INT, FLOAT, DOUBLE, LONG;
+
+        private static TypeHint fromStringIgnoreCase(final String from) {
+            try {
+                return valueOf(from.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                return null;
+            }
+        }
+    }
+
+    /**
+     * Convers a {@link JsonElement} to a corresponding Java class instance, covering all basic "primitive" types (String, numbers. ..)
+     * + selected Iced classes.
+     *
+     * @param convertFrom JsonElement to convert from
+     * @param typeHint    Optional {@link TypeHint} value. Might be null.
+     * @return
+     */
+    private static Object convertBasedOnJsonType(final JsonElement convertFrom, final TypeHint typeHint) {
         final Object convertTo;
 
         if (convertFrom.isJsonNull()) {
@@ -208,8 +241,27 @@ public class ModelJsonReader {
             } else if (convertedPrimitive.isString()) {
                 convertTo = convertedPrimitive.getAsString();
             } else if (convertedPrimitive.isNumber()) {
-                convertTo = convertedPrimitive.getAsDouble();
-                convertedPrimitive.getAsDouble();
+                if (typeHint == null) {
+                    convertTo = convertedPrimitive.getAsDouble();
+                } else {
+                    switch (typeHint) {
+
+                        case INT:
+                            convertTo = convertedPrimitive.getAsInt();
+                            break;
+                        case FLOAT:
+                            convertTo = convertedPrimitive.getAsFloat();
+                            break;
+                        case DOUBLE:
+                            convertTo = convertedPrimitive.getAsDouble();
+                            break;
+                        case LONG:
+                            convertTo = convertedPrimitive.getAsLong();
+                            break;
+                        default:
+                            convertTo = convertedPrimitive.getAsDouble();
+                    }
+                }
             } else {
                 convertTo = null;
             }
@@ -218,7 +270,6 @@ public class ModelJsonReader {
         } else {
             convertTo = null;
         }
-
 
         return convertTo;
 
