@@ -53,7 +53,6 @@ import java.util.*;
 public class EasyPredictModelWrapper implements Serializable {
   // These private members are read-only after the constructor.
   public final GenModel m;
-  public final HashMap<Integer, HashMap<String, Integer>> domainMap;
   private final RowToRawDataConverter rowDataConverter;
 
   private final boolean useExtendedOutput;
@@ -308,7 +307,7 @@ public class EasyPredictModelWrapper implements Serializable {
               " and apply the encoding manually before calling the predict function. For more information please refer to https://0xdata.atlassian.net/browse/PUBDEV-6929.");
     }
 
-    domainMap = new DomainMapConstructor(m).create();
+    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(m).create();
     // Create map of column names to index number.
     HashMap<String, Integer> modelColumnNameToIndexMap = new HashMap<>();
     String[] modelColumnNames = m.getNames();
@@ -381,6 +380,8 @@ public class EasyPredictModelWrapper implements Serializable {
   ErrorConsumer getErrorConsumer() {
     return rowDataConverter.getErrorConsumer();
   }
+
+  
   
   /**
    * Make a prediction on a new data point using an AutoEncoder model.

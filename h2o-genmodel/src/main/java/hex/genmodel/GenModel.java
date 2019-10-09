@@ -58,6 +58,16 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return _names.length;
   }
 
+  public int nCatFeatures() {
+    int nCat = 0;
+    String[][] domainValues = getDomainValues();
+    for (int i = 0; i < nfeatures(); i++) {
+      if (domainValues[i] != null)
+        nCat++;
+    }
+    return nCat;
+  }
+
   /** Returns names of input features. */
   @Override public String[] features() {
     return Arrays.copyOf(_names, nfeatures());

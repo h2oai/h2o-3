@@ -9,7 +9,7 @@ import java.util.HashMap;
  */
 public class DomainMapConstructor {
 
-  public final GenModel _m;
+  private final GenModel _m;
   
   public DomainMapConstructor(GenModel m) {
     _m = m;
