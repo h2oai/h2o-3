@@ -6,7 +6,7 @@ sys.path.insert(1,"../../")
 import h2o
 from h2o.estimators import H2OIsolationForestEstimator, H2OGenericEstimator
 from tests import pyunit_utils
-from tests.testdir_generic_model import compare_output, Capturing
+from tests.testdir_generic_model import compare_output, Capturing, compare_params
 
 def mojo_model_ifr_test():
 
@@ -23,6 +23,7 @@ def mojo_model_ifr_test():
     model = H2OGenericEstimator.from_file(original_model_filename)
     assert model is not None
     print(model)
+    compare_params(ifr, model)
     with Capturing() as generic_output:
         model.show()
 
