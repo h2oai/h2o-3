@@ -271,7 +271,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
   }
   
-  protected static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");
+  private static final Set<String> IGNORED_FIELDS_PARAM_HASH = Collections.singleton("_export_checkpoints_dir");
   /**
    * Build a model based on specified parameters and save it to resulting Grid object.
    *
