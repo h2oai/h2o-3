@@ -10,7 +10,6 @@ buildSummary.get().addStagesSummary(this, new StagesSummary())
 
 properties([
     parameters([
-        booleanParam(defaultValue: false, description: 'Whether to build GPU enabled images', name: 'useGPU'),
         booleanParam(defaultValue: false, description: 'Build even if the image is already present in the repository', name: 'forceBuild'),
         string(defaultValue: 'master', description: 'H2O-3 Branch used to load dependencies.', name: 'h2oBranch')
     ])
@@ -112,31 +111,39 @@ ansiColor('xterm') {
 }
 
 private buildInParallel(final pipelineContext, final targets) {
-    parallel(targets.collectEntries { target ->
+    parallel(targets.collect { target ->
         [
-            target, {
-                def buildImageStageName = "Build ${target}"
-                buildSummary.stageWithSummary(buildImageStageName) {
-                    node (DEFAULT_LABEL) {
-                        buildSummary.refreshStage(buildImageStageName)
-                        dir (target) {
-                            deleteDir()
-                            unstash 'docker-sources'
-                            pullPreviousVersionIfRequired(pipelineContext, target)
-                            sh """
+                makeStage(pipelineContext, target, false),
+                makeStage(pipelineContext, target, true)
+        ]
+    })
+}
+
+private makeStage(final pipelineContext, final target, final useGpu) {
+    {
+        def buildImageStageName = "Build $target"
+        if (useGpu) {
+            buildImageStageName = "$buildImageStageName GPU"
+        }
+        buildSummary.stageWithSummary(buildImageStageName) {
+            node (DEFAULT_LABEL) {
+                buildSummary.refreshStage(buildImageStageName)
+                dir (target) {
+                    deleteDir()
+                    unstash 'docker-sources'
+                    pullPreviousVersionIfRequired(pipelineContext, target)
+                    sh """
                                 make \
                                     H2O_BRANCH=${params.h2oBranch} \
                                     VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                                    GPU=${params.useGPU} \
+                                    GPU=${useGPU} \
                                     PUSH=true \
                                     ${target}
                             """
-                        }
-                    }
                 }
             }
-        ]
-    })
+        }
+    }
 }
 
 def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
