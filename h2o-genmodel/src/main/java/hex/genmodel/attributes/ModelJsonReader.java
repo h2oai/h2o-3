@@ -10,6 +10,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -205,16 +206,20 @@ public class ModelJsonReader {
         }
     }
 
+
+    private static final Pattern ARRAY_PATTERN = Pattern.compile("\\[\\]");
     /**
      * TypeHint contained in the model's JSON. There might be more types contained than listed here - these are the ones
      * used.
      */
     private enum TypeHint {
-        INT, FLOAT, DOUBLE, LONG;
+        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR;
 
         private static TypeHint fromStringIgnoreCase(final String from) {
             try {
-                return valueOf(from.toUpperCase());
+                final Matcher matcher = ARRAY_PATTERN.matcher(from);
+                final String transformedType = matcher.replaceAll("_ARR");
+                return valueOf(transformedType.toUpperCase());
             } catch (IllegalArgumentException e) {
                 return null;
             }
@@ -234,6 +239,38 @@ public class ModelJsonReader {
 
         if (convertFrom.isJsonNull()) {
             convertTo = null;
+        } else if (convertFrom.isJsonArray()) {
+            final JsonArray array = convertFrom.getAsJsonArray();
+            if (typeHint == null) {
+                convertTo = null;
+            } else {
+                switch (typeHint) {
+                    case DOUBLE_ARR:
+                        final double[] arrD = new double[array.size()];
+                        for (int i = 0; i < array.size(); i++) {
+                            arrD[i] = array.get(i).getAsDouble();
+                        }
+                        convertTo = arrD;
+                        break;
+                    case FLOAT_ARR:
+                        final double[] arrF = new double[array.size()];
+                        for (int i = 0; i < array.size(); i++) {
+                            arrF[i] = array.get(i).getAsDouble();
+                        }
+                        convertTo = arrF;
+                        break;
+                    case STRING_ARR:
+                        final String[] arrS = new String[array.size()];
+                        for (int i = 0; i < array.size(); i++) {
+                            arrS[i] = array.get(i).getAsString();
+                        }
+                        convertTo = arrS;
+                        break;
+                    default:
+                        convertTo = null;
+                        break;
+                }
+            }
         } else if (convertFrom.isJsonPrimitive()) {
             final JsonPrimitive convertedPrimitive = convertFrom.getAsJsonPrimitive();
             if (convertedPrimitive.isBoolean()) {
@@ -245,7 +282,6 @@ public class ModelJsonReader {
                     convertTo = convertedPrimitive.getAsDouble();
                 } else {
                     switch (typeHint) {
-
                         case INT:
                             convertTo = convertedPrimitive.getAsInt();
                             break;
