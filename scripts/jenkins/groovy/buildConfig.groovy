@@ -30,6 +30,7 @@ class BuildConfig {
   public static final String COMPONENT_R = 'r'
   public static final String COMPONENT_JS = 'js'
   public static final String COMPONENT_JAVA = 'java'
+  public static final String COMPONENT_GPU = 'gpu'
   // Use to indicate, that the stage is not component dependent such as MOJO Compatibility Test,
   // always run
   public static final String COMPONENT_ANY = 'any'
@@ -148,6 +149,10 @@ class BuildConfig {
   String getBenchmarkNodeLabel() {
     return nodeLabels.getBenchmarkNodeLabel()
   }
+  
+  String getGPUBenchmarkNodeLabel() {
+    return nodeLabels.getGPUBenchmarkNodeLabel()
+  }
 
   String getGPUNodeLabel() {
     return nodeLabels.getGPUNodeLabel()
@@ -216,12 +221,13 @@ class BuildConfig {
     return supportedXGBEnvironments
   }
 
-  String getXGBImageForEnvironment(final String osName, final xgbEnv) {
-    return "harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-${xgbEnv.targetName}:${osName}"
+  String getXGBImageForEnvironment(final String osName, final targetName) {
+    return "harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-${targetName}:${osName}"
   }
 
   String getStageImage(final stageConfig) {
     def component = stageConfig.component
+    def suffix = ""
     if (component == COMPONENT_ANY) {
       if (stageConfig.additionalTestPackages.contains(COMPONENT_PY)) {
         component = COMPONENT_PY
@@ -229,6 +235,10 @@ class BuildConfig {
         component = COMPONENT_R
       } else if (stageConfig.additionalTestPackages.contains(COMPONENT_JAVA)) {
         component = COMPONENT_JAVA
+      }
+      // handle gpu suffix
+      if (stageConfig.additionalTestPackages.contains(COMPONENT_GPU)) {
+        suffix = "-gpu"
       }
     }
     def imageComponentName
@@ -253,24 +263,8 @@ class BuildConfig {
       default:
         throw new IllegalArgumentException("Cannot find image for component ${component}")
     }
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
-  }
 
-  String getXGBNodeLabelForEnvironment(final Map xgbEnv) {
-    switch (xgbEnv.targetName) {
-      case XGB_TARGET_GPU:
-        return nodeLabels.getGPUNodeLabel()
-      case XGB_TARGET_OMP:
-        return nodeLabels.getDefaultNodeLabel()
-      case XGB_TARGET_MINIMAL:
-        return nodeLabels.getDefaultNodeLabel()
-      default:
-        throw new IllegalArgumentException("xgbEnv.targetName ${xgbEnv.targetName} not supported")
-    }
-  }
-
-  String getExpectedImageVersion(final String image) {
-    return EXPECTED_IMAGE_VERSIONS[image]
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}${suffix}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getStashNameForTestPackage(final String platform) {
@@ -354,17 +348,19 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu'),
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu')
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3'),
+    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')
 
     private final String defaultNodeLabel
     private final String benchmarkNodeLabel
     private final String gpuNodeLabel
+    private final String gpuBenchmarkNodeLabel
 
-    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel) {
+    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel, final String gpuBenchmarkNodeLabel) {
       this.defaultNodeLabel = defaultNodeLabel
       this.benchmarkNodeLabel = benchmarkNodeLabel
       this.gpuNodeLabel = gpuNodeLabel
+      this.gpuBenchmarkNodeLabel = gpuBenchmarkNodeLabel
     }
 
     String getDefaultNodeLabel() {
@@ -377,6 +373,10 @@ class BuildConfig {
 
     String getGPUNodeLabel() {
       return gpuNodeLabel
+    }
+
+    String getGPUBenchmarkNodeLabel() {
+      return gpuBenchmarkNodeLabel
     }
 
     private static findByJenkinsMaster(final JenkinsMaster master) {
