@@ -28,7 +28,6 @@ class BroadcastJoinForTargetEncoder {
       _numeratorIdx = numeratorIdx;
       _denominatorIdx = denominatorIdx;
       _cardinalityOfCatCol = cardinalityOfCatCol;
-      _maxFoldValue = maxFoldValue;
 
       if(foldColumnId == -1) {
         _encodingDataPerNode = new int[2][cardinalityOfCatCol];

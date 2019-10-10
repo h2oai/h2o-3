@@ -15,6 +15,8 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Merge;
 
+import static ai.h2o.targetencoding.TargetEncoder.DENOMINATOR_COL_NAME;
+import static ai.h2o.targetencoding.TargetEncoder.NUMERATOR_COL_NAME;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -151,6 +153,48 @@ public class BroadcastJoinTest extends TestUtil {
     new BroadcastJoinForTargetEncoder.FrameWithEncodingDataToArray(0, 1, 2, 3, cardinality, Math.max(randomInt, 42))
             .doAll(fr)
             .getEncodingDataArray();
+  }
+
+  @Test
+  public void joinWithoutFoldColumnTest() {
+
+    Frame rightFr = null;
+    Vec emptyNumerator = null;
+    Vec emptyDenominator = null;
+    try {
+
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_CAT)
+              .withDataForCol(0, ar("a", "c", "b"))
+              .build();
+
+      rightFr = new TestFrameBuilder()
+              .withName("testFrame2")
+              .withColNames("ColA", NUMERATOR_COL_NAME, DENOMINATOR_COL_NAME)
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ar("a", "b", "c"))
+              .withDataForCol(1, ar(22, 33, 42))
+              .withDataForCol(2, ar(44, 66, 84))
+              .withChunkLayout(1,1,1)
+              .build();
+
+      emptyNumerator = Vec.makeZero(fr.numRows());
+      fr.add(NUMERATOR_COL_NAME, emptyNumerator);
+      emptyDenominator = Vec.makeZero(fr.numRows());
+      fr.add(DENOMINATOR_COL_NAME, emptyDenominator);
+
+      Frame joined = BroadcastJoinForTargetEncoder.join(fr, new int[]{0}, -1, rightFr, new int[]{0}, -1, 0);
+
+      Scope.enter();
+      assertStringVecEquals(cvec("a", "c", "b"), joined.vec("ColA"));
+      assertVecEquals(vec(22, 42, 33), joined.vec(NUMERATOR_COL_NAME), 1e-5);
+      assertVecEquals(vec(44, 84, 66), joined.vec(DENOMINATOR_COL_NAME), 1e-5);
+      Scope.exit();
+    } finally {
+      if(rightFr != null) rightFr.delete();
+    }
   }
     
   @After

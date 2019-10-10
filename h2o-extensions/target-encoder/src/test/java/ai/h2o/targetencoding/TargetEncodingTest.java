@@ -1032,7 +1032,82 @@ public class TargetEncodingTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
 
+  @Test
+  public void imputeNAsForColumnDistributedTest() {
+    Scope.enter();
+    try {
+      String teColumnName = "ColA";
+      String targetColumnName = "ColB";
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, targetColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", null, null, null))
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .withChunkLayout(3, 2)
+              .build();
+
+      String nullStr = null;
+      fr.vec(0).set(2, nullStr);
+
+      String[] teColumns = {""};
+      TargetEncoder tec = new TargetEncoder(teColumns);
+
+      assertTrue(fr.vec("ColA").isCategorical());
+      assertEquals(2, fr.vec("ColA").cardinality());
+
+      Frame res = tec.imputeNAsForColumn(fr, "ColA", "ColA_NA");
+      Scope.track(res);
+
+      new MRTask() {
+        @Override
+        public void map(Chunk[] cs) {
+          for (int i = 0; i < cs[0].len(); i++) {
+            cs[0].vec().factor(2);
+          }
+        }
+      }.doAll(res);
+
+      // assumption is that domain is being properly distributed over nodes 
+      // and there will be no exception while attempting to access new domain's value in `cs[0].vec().factor(2);`
+
+      assertEquals(3, res.vec("ColA").cardinality());
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void emptyStringsAndNAsAreTreatedAsDifferentCategoriesTest() {
+    Scope.enter();
+    Map<String, Frame> targetEncodingMap = null;
+    try {
+      String teColumnName = "ColA";
+      String targetColumnName = "ColB";
+      Frame fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(teColumnName, targetColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, ar("a", "b", "", "", null)) // null and "" are different categories even though they look the same in printout
+              .withDataForCol(1, ar("2", "6", "6", "2", "6"))
+              .withChunkLayout(3, 2)
+              .build();
+
+      String[] teColumns = {teColumnName};
+      TargetEncoder tec = new TargetEncoder(teColumns);
+
+      targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, null);
+      Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, false, 0.0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
+      Scope.track(resultWithEncoding);
+
+      assertEquals(4, resultWithEncoding.vec("ColA").cardinality());
+    } finally {
+      if (targetEncodingMap != null) encodingMapCleanUp(targetEncodingMap);
+      Scope.exit();
+    }
   }
 
   private void encodingMapCleanUp(Map<String, Frame> encodingMap) {
