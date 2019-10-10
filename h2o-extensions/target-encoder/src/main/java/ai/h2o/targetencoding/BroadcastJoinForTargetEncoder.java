@@ -30,11 +30,11 @@ class BroadcastJoinForTargetEncoder {
       _cardinalityOfCatCol = cardinalityOfCatCol;
 
       if(foldColumnId == -1) {
-        _encodingDataPerNode = new int[2][cardinalityOfCatCol];
+        _encodingDataPerNode = new int[1][_cardinalityOfCatCol * 2];
       } else {
         assert maxFoldValue >= 1 : "There should be at leas two folds in the fold column";
-        assert cardinalityOfCatCol > 0 : "Cardinality of categ. column should be greater than zero";
-        _encodingDataPerNode = new int[(maxFoldValue + 1) * 2][cardinalityOfCatCol];
+        assert _cardinalityOfCatCol > 0 && _cardinalityOfCatCol < (Integer.MAX_VALUE / 2)  : "Cardinality of categ. column should be within range (0, Integer.MAX_VALUE / 2 )";
+        _encodingDataPerNode = new int[maxFoldValue + 1][_cardinalityOfCatCol * 2];
       }
     }
 
@@ -45,40 +45,20 @@ class BroadcastJoinForTargetEncoder {
       Chunk denominatorChunk = cs[_denominatorIdx];
       for (int i = 0; i < categoricalChunk.len(); i++) {
         int levelValue = (int) categoricalChunk.at8(i);
-        int[] arrForNumerators = null;
-        int[] arrForDenominators = null;
+        int[] arrForNumeratorsAndDenominators = null;
 
         synchronized (_encodingDataPerNode) { // Sync on whole array as there is no way to sync on two objects ( two rows of 2D array)
           if (_foldColumnIdx != -1) {
-          long foldValueFromVec = cs[_foldColumnIdx].at8(i);
-          // We are allowed to do casting to `int` as we have validation before submitting this MRTask
-          int foldValue = (int) foldValueFromVec; 
-          arrForNumerators = _encodingDataPerNode[2 * foldValue];
-          arrForDenominators = _encodingDataPerNode[2 * foldValue + 1];
-        } else {
-          arrForNumerators = _encodingDataPerNode[0];
-          arrForDenominators = _encodingDataPerNode[1];
-        }
-
-          arrForNumerators[levelValue] = (int) numeratorChunk.at8(i);
-          arrForDenominators[levelValue] = (int) denominatorChunk.at8(i);
-        }
-      }
-    }
-
-    @Override
-    public void reduce(FrameWithEncodingDataToArray mrt) {
-      int[][] leftArr = getEncodingDataArray();
-      int[][] rightArr = mrt.getEncodingDataArray();
-      for(int rowIdx = 0 ; rowIdx < leftArr.length; rowIdx++) {
-        for(int colIdx = 0 ; colIdx < leftArr[rowIdx].length; colIdx++) {
-          synchronized (leftArr) {
-            int valueFromLeftArr = leftArr[rowIdx][colIdx];
-            int valueFromRIghtArr = rightArr[rowIdx][colIdx];
-            // Want to check what happens in a multiNode scenario
-            if(valueFromLeftArr != valueFromRIghtArr) throw new IllegalStateException("Arrays are different instances");
-            leftArr[rowIdx][colIdx] = Math.max(valueFromLeftArr, valueFromRIghtArr);
+            long foldValueFromVec = cs[_foldColumnIdx].at8(i);
+            // We are allowed to do casting to `int` as we have validation before submitting this MRTask
+            int foldValue = (int) foldValueFromVec;
+            arrForNumeratorsAndDenominators = _encodingDataPerNode[foldValue];
+          } else {
+            arrForNumeratorsAndDenominators = _encodingDataPerNode[0];
           }
+
+          arrForNumeratorsAndDenominators[levelValue] = (int) numeratorChunk.at8(i);
+          arrForNumeratorsAndDenominators[_cardinalityOfCatCol + levelValue] = (int) denominatorChunk.at8(i);
         }
       }
     }
@@ -114,22 +94,24 @@ class BroadcastJoinForTargetEncoder {
     int[][] encodingDataMap = new FrameWithEncodingDataToArray(rightCatColumnsIdxs[0], rightFoldColumnIdx, numeratorIdx, denominatorIdx, broadcastedFrameCatCardinality, maxFoldValue)
             .doAll(broadcastedFrame)
             .getEncodingDataArray();
-    new BroadcastJoiner(leftCatColumnsIdxs, leftFoldColumnIdx, encodingDataMap, levelMappings).doAll(leftFrame);
+    new BroadcastJoiner(leftCatColumnsIdxs, leftFoldColumnIdx, encodingDataMap, levelMappings, broadcastedFrameCatCardinality)
+            .doAll(leftFrame);
     return leftFrame;
   }
 
   static class BroadcastJoiner extends MRTask<BroadcastJoiner> {
-    int _categoricalColumnIdx, _foldColumnIdx;
+    int _categoricalColumnIdx, _foldColumnIdx, _cardinalityOfCatCol;
     int[][] _encodingDataArray;
     int[][] _levelMappings;
 
-    BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, int[][] encodingDataMap, int[][] levelMappings) {
+    BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, int[][] encodingDataMap, int[][] levelMappings, int cardinalityOfCatCol) {
       assert categoricalColumnsIdxs.length == 1 : "Only single column target encoding(i.e. one categorical column is used to produce its encodings) is supported for now";
 
       _categoricalColumnIdx = categoricalColumnsIdxs[0];
       _foldColumnIdx = foldColumnIdx;
       _encodingDataArray = encodingDataMap;
       _levelMappings = levelMappings;
+      _cardinalityOfCatCol = cardinalityOfCatCol;
     }
 
     @Override
@@ -149,8 +131,7 @@ class BroadcastJoinForTargetEncoder {
           continue;
         }
 
-        int[] arrForNumerators = null;
-        int[] arrForDenominators = null;
+        int[] arrForNumeratorsAndDenominators = null;
 
         int foldValue = -1;
         if (_foldColumnIdx != -1) {
@@ -161,17 +142,16 @@ class BroadcastJoinForTargetEncoder {
           foldValue = 0;
         }
 
-        arrForNumerators = _encodingDataArray[2 * foldValue];
-        arrForDenominators = _encodingDataArray[2 * foldValue + 1];
+        arrForNumeratorsAndDenominators = _encodingDataArray[foldValue];
 
-        if(mappedLevelValue >= arrForDenominators.length) {
+        if(mappedLevelValue >= _cardinalityOfCatCol) {
           setEncodingComponentsToNAs(num, den, i);
         } else {
-          int denominator = arrForDenominators[mappedLevelValue];
+          int denominator = arrForNumeratorsAndDenominators[_cardinalityOfCatCol + mappedLevelValue];
           if (denominator == 0) {
             setEncodingComponentsToNAs(num, den, i);
           } else {
-            int numerator = arrForNumerators[mappedLevelValue];
+            int numerator = arrForNumeratorsAndDenominators[mappedLevelValue];
             num.set(i, numerator);
             den.set(i, denominator);
           }
