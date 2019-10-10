@@ -82,9 +82,9 @@ ansiColor('xterm') {
         buildInParallel(pipelineContext, componentImages)
 
         buildInParallel(pipelineContext, ["dev-build-base"])
-        buildInParallel(pipelineContext, ["dev-build-gradle-${gradleVersion}"])
-        buildInParallel(pipelineContext, [ "dev-build-hadoop-gradle-${gradleVersion}"])
-        buildInParallel(pipelineContext, ["dev-release-gradle-${gradleVersion}"])
+        buildInParallel(pipelineContext, ["dev-build-gradle"], gradleVersion)
+        buildInParallel(pipelineContext, ["dev-build-hadoop-gradle"], gradleVersion)
+        buildInParallel(pipelineContext, ["dev-release-gradle"], gradleVersion)
 
         def componentJdkImages = []
         PYTHON_VERSIONS.each {version ->
@@ -107,17 +107,20 @@ ansiColor('xterm') {
     }
 }
 
-private buildInParallel(final pipelineContext, final targets) {
+private buildInParallel(final pipelineContext, final targets, final gradleVersion = null) {
     parallel(targets.collectEntries { target ->
         [
-                (target): makeStage(pipelineContext, target, false),
-                ("$target-gpu"): makeStage(pipelineContext, target, true)
+                (target): makeStage(pipelineContext, target, false, gradleVersion),
+                ("$target-gpu"): makeStage(pipelineContext, target, true, gradleVersion)
         ]
     })
 }
 
-private Closure makeStage(final pipelineContext, final target, final useGpu) {
+private Closure makeStage(final pipelineContext, String target, final boolean useGpu, final String gradleVersion) {
     return {
+        if (gradleVersion != null) {
+            target = "$target-$gradleVersion"
+        }
         def buildImageStageName = "Build $target"
         if (useGpu) {
             buildImageStageName = "$buildImageStageName GPU"
@@ -133,6 +136,7 @@ private Closure makeStage(final pipelineContext, final target, final useGpu) {
                                 make \
                                     H2O_BRANCH=${params.h2oBranch} \
                                     VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
+                                    GRADLE_VERSION=${gradleVersion} \
                                     GPU=${useGpu} \
                                     PUSH=${params.publish} \
                                     ${target}
