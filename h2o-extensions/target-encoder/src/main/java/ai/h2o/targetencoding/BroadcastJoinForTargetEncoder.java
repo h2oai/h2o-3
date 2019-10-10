@@ -45,18 +45,12 @@ class BroadcastJoinForTargetEncoder {
       Chunk denominatorChunk = cs[_denominatorIdx];
       for (int i = 0; i < categoricalChunk.len(); i++) {
         int levelValue = (int) categoricalChunk.at8(i);
-        int[] arrForNumeratorsAndDenominators = null;
 
-        synchronized (_encodingDataPerNode) { // Sync on whole array as there is no way to sync on two objects ( two rows of 2D array)
-          if (_foldColumnIdx != -1) {
-            long foldValueFromVec = cs[_foldColumnIdx].at8(i);
-            // We are allowed to do casting to `int` as we have validation before submitting this MRTask
-            int foldValue = (int) foldValueFromVec;
-            arrForNumeratorsAndDenominators = _encodingDataPerNode[foldValue];
-          } else {
-            arrForNumeratorsAndDenominators = _encodingDataPerNode[0];
-          }
+          // We are allowed to do casting to `int` as we have validation before submitting this MRTask
+          int foldValue = _foldColumnIdx != -1 ? (int) cs[_foldColumnIdx].at8(i) : 0;
+          int[] arrForNumeratorsAndDenominators = _encodingDataPerNode[foldValue];
 
+        synchronized (arrForNumeratorsAndDenominators) { // Sync on whole array as there is no way to sync on two objects ( two rows of 2D array)
           arrForNumeratorsAndDenominators[levelValue] = (int) numeratorChunk.at8(i);
           arrForNumeratorsAndDenominators[_cardinalityOfCatCol + levelValue] = (int) denominatorChunk.at8(i);
         }
