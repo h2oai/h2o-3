@@ -53,11 +53,16 @@ public class ModelAttributes implements Serializable {
 
     if (ModelJsonReader.elementExists(modelJson, "parameters")) {
       final JsonArray jsonParameters = ModelJsonReader.findInJson(modelJson, "parameters").getAsJsonArray();
-      final ArrayList<Object> modelParameters = new ArrayList<>(jsonParameters.size());
+      final ArrayList<ModelParameter> modelParameters = new ArrayList<>(jsonParameters.size());
       for (int i = 0; i < jsonParameters.size(); i++) {
         modelParameters.add(new ModelParameter());
       }
       ModelJsonReader.fillObjects(modelParameters, jsonParameters);
+      for (int i = 0; i < modelParameters.size(); i++) {
+        if("model_id".equals(modelParameters.get(i).getName())){
+          modelParameters.remove(i);
+        }
+      }
       _model_parameters = modelParameters.toArray(new ModelParameter[modelParameters.size()]);
     } else {
       _model_parameters = new ModelParameter[0];

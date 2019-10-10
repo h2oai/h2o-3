@@ -42,7 +42,7 @@ def compare_params(original: H2OEstimator, generic: H2OEstimator):
     assert original is not None
     assert generic_params is not None
 
-    assert len(original_params) == len(generic_params) - 2  # _model_key
+    assert len(original_params) == len(generic_params) - 2  # Two more in Generic: _model_key and model_path
 
     for param_name in original_params:
         if (param_name == "model_id"):
