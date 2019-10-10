@@ -10,8 +10,8 @@ buildSummary.get().addStagesSummary(this, new StagesSummary())
 
 properties([
     parameters([
-        booleanParam(defaultValue: false, description: 'Whether to build GPU enabled images', name: 'useGPU'),
         booleanParam(defaultValue: false, description: 'Build even if the image is already present in the repository', name: 'forceBuild'),
+        booleanParam(defaultValue: false, description: 'Publish built images', name: 'publish'),
         string(defaultValue: 'master', description: 'H2O-3 Branch used to load dependencies.', name: 'h2oBranch')
     ])
 ])
@@ -39,7 +39,7 @@ ansiColor('xterm') {
                 def currentVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
                 currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
-                if (!params.forceBuild) {
+                if (params.publish && !params.forceBuild) {
                     if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai/h2o-3/dev-base', "${currentVersion}")) {
                         error "Image already exists. Use forceBuild if you wish to overwrite."
                     }
@@ -61,6 +61,7 @@ ansiColor('xterm') {
             }
         }
 
+        def gradleVersion = pipelineContext.getBuildConfig().getCurrentGradleVersion()
         buildInParallel(pipelineContext, ['dev-base'])
         buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
         buildInParallel(pipelineContext, ['dev-python-base', 'dev-r-base'])
@@ -81,14 +82,9 @@ ansiColor('xterm') {
         buildInParallel(pipelineContext, componentImages)
 
         buildInParallel(pipelineContext, ["dev-build-base"])
-        buildInParallel(pipelineContext, ["dev-build-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"])
-        buildInParallel(
-            pipelineContext,
-            [
-                "dev-build-hadoop-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"
-            ]
-        )
-        buildInParallel(pipelineContext, ["dev-release-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"])
+        buildInParallel(pipelineContext, ["dev-build-gradle"], gradleVersion)
+        buildInParallel(pipelineContext, ["dev-build-hadoop-gradle"], gradleVersion)
+        buildInParallel(pipelineContext, ["dev-release-gradle"], gradleVersion)
 
         def componentJdkImages = []
         PYTHON_VERSIONS.each {version ->
@@ -111,32 +107,44 @@ ansiColor('xterm') {
     }
 }
 
-private buildInParallel(final pipelineContext, final targets) {
+private buildInParallel(final pipelineContext, final targets, final gradleVersion = null) {
     parallel(targets.collectEntries { target ->
         [
-            target, {
-                def buildImageStageName = "Build ${target}"
-                buildSummary.stageWithSummary(buildImageStageName) {
-                    node (DEFAULT_LABEL) {
-                        buildSummary.refreshStage(buildImageStageName)
-                        dir (target) {
-                            deleteDir()
-                            unstash 'docker-sources'
-                            pullPreviousVersionIfRequired(pipelineContext, target)
-                            sh """
+                (target): makeStage(pipelineContext, target, false, gradleVersion),
+                ("$target-gpu"): makeStage(pipelineContext, target, true, gradleVersion)
+        ]
+    })
+}
+
+private Closure makeStage(final pipelineContext, String target, final boolean useGpu, final String gradleVersion) {
+    return {
+        if (gradleVersion != null) {
+            target = "$target-$gradleVersion"
+        }
+        def buildImageStageName = "Build $target"
+        if (useGpu) {
+            buildImageStageName = "$buildImageStageName GPU"
+        }
+        buildSummary.stageWithSummary(buildImageStageName) {
+            node (DEFAULT_LABEL) {
+                buildSummary.refreshStage(buildImageStageName)
+                dir (target) {
+                    deleteDir()
+                    unstash 'docker-sources'
+                    pullPreviousVersionIfRequired(pipelineContext, target)
+                    sh """
                                 make \
                                     H2O_BRANCH=${params.h2oBranch} \
                                     VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                                    GPU=${params.useGPU} \
-                                    PUSH=true \
+                                    GRADLE_VERSION=${gradleVersion} \
+                                    GPU=${useGpu} \
+                                    PUSH=${params.publish} \
                                     ${target}
                             """
-                        }
-                    }
                 }
             }
-        ]
-    })
+        }
+    }
 }
 
 def pullPreviousVersionIfRequired(final pipelineContext, final String image) {
