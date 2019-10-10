@@ -62,9 +62,9 @@ ansiColor('xterm') {
         }
 
         def gradleVersion = pipelineContext.getBuildConfig().getCurrentGradleVersion()
-        buildInParallel(pipelineContext, ['dev-base'], params.publish)
-        buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'], params.publish)
-        buildInParallel(pipelineContext, ['dev-python-base', 'dev-r-base'], params.publish)
+        buildInParallel(pipelineContext, ['dev-base'])
+        buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
+        buildInParallel(pipelineContext, ['dev-python-base', 'dev-r-base'])
 
         def componentImages = []
         PYTHON_VERSIONS.each {version ->
@@ -79,12 +79,12 @@ ansiColor('xterm') {
         OPENJDK_VERSIONS.each {version ->
             componentImages += "dev-openjdk-${version}"
         }
-        buildInParallel(pipelineContext, componentImages, params.publish)
+        buildInParallel(pipelineContext, componentImages)
 
-        buildInParallel(pipelineContext, ["dev-build-base"], params.publish)
-        buildInParallel(pipelineContext, ["dev-build-gradle-${gradleVersion}"], params.publish)
-        buildInParallel(pipelineContext, [ "dev-build-hadoop-gradle-${gradleVersion}"], params.publish)
-        buildInParallel(pipelineContext, ["dev-release-gradle-${gradleVersion}"], params.publish)
+        buildInParallel(pipelineContext, ["dev-build-base"])
+        buildInParallel(pipelineContext, ["dev-build-gradle-${gradleVersion}"])
+        buildInParallel(pipelineContext, [ "dev-build-hadoop-gradle-${gradleVersion}"])
+        buildInParallel(pipelineContext, ["dev-release-gradle-${gradleVersion}"])
 
         def componentJdkImages = []
         PYTHON_VERSIONS.each {version ->
@@ -103,20 +103,20 @@ ansiColor('xterm') {
                 componentJdkImages += "dev-r-${version}-openjdk-${jdkVersion}"
             }
         }
-        buildInParallel(pipelineContext, componentJdkImages, params.publish)
+        buildInParallel(pipelineContext, componentJdkImages)
     }
 }
 
-private buildInParallel(final pipelineContext, final targets, final publish) {
+private buildInParallel(final pipelineContext, final targets) {
     parallel(targets.collectEntries { target ->
         [
-                (target): makeStage(pipelineContext, target, publish, false),
-                ("$target-gpu"): makeStage(pipelineContext, target, publish, true)
+                (target): makeStage(pipelineContext, target, false),
+                ("$target-gpu"): makeStage(pipelineContext, target, true)
         ]
     })
 }
 
-private Closure makeStage(final pipelineContext, final target, final publish, final useGpu) {
+private Closure makeStage(final pipelineContext, final target, final useGpu) {
     return {
         def buildImageStageName = "Build $target"
         if (useGpu) {
@@ -133,8 +133,8 @@ private Closure makeStage(final pipelineContext, final target, final publish, fi
                                 make \
                                     H2O_BRANCH=${params.h2oBranch} \
                                     VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
-                                    GPU=${useGPU} \
-                                    PUSH=${publish} \
+                                    GPU=${useGpu} \
+                                    PUSH=${params.publish} \
                                     ${target}
                             """
                 }
