@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
 import sys
+import os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from h2o.exceptions import H2OServerError
