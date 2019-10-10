@@ -107,7 +107,7 @@ ansiColor('xterm') {
     }
 }
 
-private buildInParallel(final pipelineContext, final publish, final targets) {
+private buildInParallel(final pipelineContext, final targets, final publish) {
     parallel(targets.collectEntries { target ->
         [
                 (target): makeStage(pipelineContext, target, publish, false),
