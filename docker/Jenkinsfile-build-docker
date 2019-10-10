@@ -117,7 +117,7 @@ private buildInParallel(final pipelineContext, final publish, final targets) {
 }
 
 private Closure makeStage(final pipelineContext, final target, final publish, final useGpu) {
-    it -> {
+    return it -> {
         def buildImageStageName = "Build $target"
         if (useGpu) {
             buildImageStageName = "$buildImageStageName GPU"
