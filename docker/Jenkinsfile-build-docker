@@ -108,10 +108,10 @@ ansiColor('xterm') {
 }
 
 private buildInParallel(final pipelineContext, final publish, final targets) {
-    parallel(targets.collect { target ->
+    parallel(targets.collectEntries { target ->
         [
-                makeStage(pipelineContext, target, publish, false),
-                makeStage(pipelineContext, target, publish, true)
+                (target): makeStage(pipelineContext, target, publish, false),
+                ("$target-gpu"): makeStage(pipelineContext, target, publish, true)
         ]
     })
 }
