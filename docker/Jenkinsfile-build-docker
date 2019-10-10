@@ -11,6 +11,7 @@ buildSummary.get().addStagesSummary(this, new StagesSummary())
 properties([
     parameters([
         booleanParam(defaultValue: false, description: 'Build even if the image is already present in the repository', name: 'forceBuild'),
+        booleanParam(defaultValue: false, description: 'Publish built images', name: 'publish'),
         string(defaultValue: 'master', description: 'H2O-3 Branch used to load dependencies.', name: 'h2oBranch')
     ])
 ])
@@ -60,9 +61,10 @@ ansiColor('xterm') {
             }
         }
 
-        buildInParallel(pipelineContext, ['dev-base'])
-        buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'])
-        buildInParallel(pipelineContext, ['dev-python-base', 'dev-r-base'])
+        def gradleVersion = pipelineContext.getBuildConfig().getCurrentGradleVersion()
+        buildInParallel(pipelineContext, ['dev-base'], params.publish)
+        buildInParallel(pipelineContext, ['dev-jdk-8-base', 'dev-jdk-others-base'], params.publish)
+        buildInParallel(pipelineContext, ['dev-python-base', 'dev-r-base'], params.publish)
 
         def componentImages = []
         PYTHON_VERSIONS.each {version ->
@@ -77,17 +79,12 @@ ansiColor('xterm') {
         OPENJDK_VERSIONS.each {version ->
             componentImages += "dev-openjdk-${version}"
         }
-        buildInParallel(pipelineContext, componentImages)
+        buildInParallel(pipelineContext, componentImages, params.publish)
 
-        buildInParallel(pipelineContext, ["dev-build-base"])
-        buildInParallel(pipelineContext, ["dev-build-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"])
-        buildInParallel(
-            pipelineContext,
-            [
-                "dev-build-hadoop-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"
-            ]
-        )
-        buildInParallel(pipelineContext, ["dev-release-gradle-${pipelineContext.getBuildConfig().getCurrentGradleVersion()}"])
+        buildInParallel(pipelineContext, ["dev-build-base"], params.publish)
+        buildInParallel(pipelineContext, ["dev-build-gradle-${gradleVersion}"], params.publish)
+        buildInParallel(pipelineContext, [ "dev-build-hadoop-gradle-${gradleVersion}"], params.publish)
+        buildInParallel(pipelineContext, ["dev-release-gradle-${gradleVersion}"], params.publish)
 
         def componentJdkImages = []
         PYTHON_VERSIONS.each {version ->
@@ -106,20 +103,20 @@ ansiColor('xterm') {
                 componentJdkImages += "dev-r-${version}-openjdk-${jdkVersion}"
             }
         }
-        buildInParallel(pipelineContext, componentJdkImages)
+        buildInParallel(pipelineContext, componentJdkImages, params.publish)
     }
 }
 
-private buildInParallel(final pipelineContext, final targets) {
+private buildInParallel(final pipelineContext, final publish, final targets) {
     parallel(targets.collect { target ->
         [
-                makeStage(pipelineContext, target, false),
-                makeStage(pipelineContext, target, true)
+                makeStage(pipelineContext, target, publish, false),
+                makeStage(pipelineContext, target, publish, true)
         ]
     })
 }
 
-private makeStage(final pipelineContext, final target, final useGpu) {
+private makeStage(final pipelineContext, final target, final publish, final useGpu) {
     {
         def buildImageStageName = "Build $target"
         if (useGpu) {
@@ -137,7 +134,7 @@ private makeStage(final pipelineContext, final target, final useGpu) {
                                     H2O_BRANCH=${params.h2oBranch} \
                                     VERSION=${pipelineContext.getBuildConfig().getDefaultImageVersion()} \
                                     GPU=${useGPU} \
-                                    PUSH=true \
+                                    PUSH=${publish} \
                                     ${target}
                             """
                 }
