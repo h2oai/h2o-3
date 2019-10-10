@@ -29,7 +29,9 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
         super(selfKey, parms, output);
         _mojoModelSource = new MojoModelSource(mojoSource, mojoModel);
         _output = new GenericModelOutput(mojoModel._modelDescriptor, mojoModel._modelAttributes);
-        _parms._modelParameters = GenericModelParameters.convertParameters(mojoModel._modelAttributes.getModelParameters());
+        if(mojoModel._modelAttributes != null && mojoModel._modelAttributes.getModelParameters() != null) {
+            _parms._modelParameters = GenericModelParameters.convertParameters(mojoModel._modelAttributes.getModelParameters());
+        }
 
     }
 
