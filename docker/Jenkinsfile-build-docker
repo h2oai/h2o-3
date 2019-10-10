@@ -39,7 +39,7 @@ ansiColor('xterm') {
                 def currentVersion = pipelineContext.getBuildConfig().getDefaultImageVersion()
                 currentBuild.displayName = "v${currentVersion} #${currentBuild.number}"
 
-                if (!params.forceBuild) {
+                if (params.publish && !params.forceBuild) {
                     if (pipelineContext.getUtils().dockerImageExistsInRegistry(this, 'harbor.h2o.ai', 'opsh2oai/h2o-3/dev-base', "${currentVersion}")) {
                         error "Image already exists. Use forceBuild if you wish to overwrite."
                     }
