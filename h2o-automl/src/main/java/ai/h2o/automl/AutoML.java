@@ -74,12 +74,6 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       lastStartTime = startTime;
     }
 
-    // TODO: problems:
-    //   if same project_name but change validation_frame or leaderboard_frame, then the existing models from previous run are scored with a different metric.
-    //   - for change of leaderboard_frame, this is currently handled in Leaderboard.getOrMake
-    //   - where to handle change of validation_frame
-    //   - unfortunately, this can't be handled on client side
-
     // if user offers a different response column,
     //   the new models will be added to a new Leaderboard, without removing the previous one.
     // otherwise, the new models will be added to the existing leaderboard.

@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.EventLogEntry.Stage;
 import hex.*;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -96,6 +97,15 @@ public class Leaderboard extends Lockable<Leaderboard> {
 
   /**
    * Retrieves a leaderboard from DKV or creates a fresh one and add it to DKV.
+   *
+   * Note that if the leaderboard is reused to add new models, we have to use the same leaderboard frame.
+   *
+   * IMPORTANT!
+   * if the leaderboard is created without leaderboardFrame, the models will be sorted according to their default metrics
+   * (in order of availability: cross-validation metrics, validation metrics, training metrics).
+   * Therefore, if some models were trained with/without cross-validation, or with different training or validation frames,
+   * then we can't guarantee the fairness of the leaderboard ranking.
+   *
    * @param project_name
    * @param eventLog
    * @param leaderboardFrame
@@ -105,9 +115,15 @@ public class Leaderboard extends Lockable<Leaderboard> {
   static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(project_name)));
     if (null != leaderboard) {
-      if (leaderboardFrame != null && !leaderboardFrame._key.equals(leaderboard._leaderboard_frame_key))
+      if (leaderboardFrame != null
+              && (!leaderboardFrame._key.equals(leaderboard._leaderboard_frame_key)
+                  || leaderboardFrame.checksum() != leaderboard._leaderboard_frame_checksum)) {
         throw new H2OIllegalArgumentException("Cannot use leaderboard "+project_name+" with a new leaderboard frame"
-                +" (existing leaderboard frame: "+leaderboard._leaderboard_frame_key +").");
+                +" (existing leaderboard frame: "+leaderboard._leaderboard_frame_key+").");
+      } else {
+        eventLog.warn(Stage.Workflow, "New models will be added to existing leaderboard "+project_name
+                +" (leaderboard frame="+leaderboard._leaderboard_frame_key+") with already "+leaderboard.getModelKeys().length+" models.");
+      }
       if (sort_metric != null && !sort_metric.equals(leaderboard._sort_metric)) {
         leaderboard._sort_metric = sort_metric.toLowerCase();
         if (leaderboard.getLeader() != null) leaderboard.setDefaultMetrics(leaderboard.getLeader()); //reinitialize
@@ -277,7 +293,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
     for (Key<Model> modelKey : newModelKeys) {
       model = modelKey.get();
       if (null == model) {
-        eventLog().warn(EventLogEntry.Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + modelKey);
+        eventLog().warn(Stage.ModelTraining, "Model in the leaderboard has unexpectedly been deleted from H2O: " + modelKey);
         continue;
       }
 
@@ -303,7 +319,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
     }
 
     for (ModelMetrics mm : modelMetrics) {
-      if (mm != null) _leaderboard_model_metrics_cache.putIfAbsent(mm._key, mm);
+      if (mm != null) _leaderboard_model_metrics_cache.put(mm._key, mm);
     }
     // Sort by metric on the leaderboard/test set or default model metrics.
     final List<Key<Model>> sortedModelKeys;
@@ -331,7 +347,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
     unlock();
 
     if (oldLeaderKey == null || !oldLeaderKey.equals(modelKeys[0])) {
-      eventLog().info(EventLogEntry.Stage.ModelTraining,
+      eventLog().info(Stage.ModelTraining,
               "New leader: "+modelKeys[0]+", "+ _sort_metric +": "+ _metric_values.get(_sort_metric)[0]);
     }
   } // addModels
