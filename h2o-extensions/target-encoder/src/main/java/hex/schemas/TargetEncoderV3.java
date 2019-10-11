@@ -16,7 +16,7 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     @API(help = "Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
     public double k;
 
-    @API(help = "Smooothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
+    @API(help = "Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
     public double f;
 
     @API(help = "Data leakage handling strategy. Default to None.", values = {"None", "KFold", "LeaveOneOut"})
