@@ -228,7 +228,7 @@ public class RequestServer extends HttpServlet {
   @Override protected void doHead(HttpServletRequest rq, HttpServletResponse rs)   { doGeneric("HEAD", rq, rs); }
   @Override protected void doDelete(HttpServletRequest rq, HttpServletResponse rs) { doGeneric("DELETE", rq, rs); }
   @Override protected void doOptions(HttpServletRequest rq, HttpServletResponse rs) {
-    if (true) {
+    if (System.getProperty(H2O.OptArgs.SYSTEM_DEBUG_CORS) != null) {
       rs.setHeader("Access-Control-Allow-Origin", "*");
       rs.setHeader("Access-Control-Allow-Headers", "Content-Type");
       rs.setStatus(HttpServletResponse.SC_OK);
