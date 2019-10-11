@@ -1,8 +1,9 @@
 package hex.genmodel.attributes.parameters;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public class ParameterKey {
+public class ParameterKey implements Serializable {
   
   private final String name;
   private final ParameterKey.Type type;
@@ -18,7 +19,7 @@ public class ParameterKey {
     this.URL = URL;
   }
 
-  public enum Type {
+  public enum Type implements Serializable{
     MODEL, FRAME, GENERIC
   }
 
