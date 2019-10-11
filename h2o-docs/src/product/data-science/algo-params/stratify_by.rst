@@ -2,13 +2,14 @@
 ---------------
 
 - Available in: CoxPH
-- Hyperparameter: yes
+- Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-Specify a list of columns to use for stratification.
+In a CoxPH model, stratification is useful as a diagnostic for checking the proportional hazards assumption, as it allows for as many different hazard functions as there are strata. For example, when attempting to predict X, you can include a secondary categorical predictor, Z, that can be adjusted for when making inferences about X’s relationship to the time-to-event endpoint.
 
+Use the ```stratify_by`` parameter to specify a list of columns to use for stratification when building a CoxPH model. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
@@ -39,39 +40,25 @@ Example
 	heart["age"] <- as.factor(heart["age"])
 
 	# train your model
-	coxph.h2o <- h2o.coxph(x=c("year", x), event_column=y, start_column=start, stop_column=stop, stratify_by=x, training_frame=heart)
+	coxph.h2o <- h2o.coxph(x=c("year", x), 
+	                       event_column=y, 
+	                       start_column=start, 
+	                       stop_column=stop, 
+	                       stratify_by=x, 
+	                       training_frame=heart)
 
 	# view the model details
 	coxph.h2o
 	Model Details:
 	==============
 
-	    H2OCoxPHModel: coxph
-	    Model ID:  CoxPH_model_R_1570209287520_5 
-	    Call:
-	    Surv(start, stop, event) ~ year + strata(age)
+	H2OCoxPHModel: coxph
+	Model ID:  CoxPH_model_R_1570209287520_5 
+	Call:
+	Surv(start, stop, event) ~ year + strata(age)
 
-	            coef    exp(coef) se(coef)  z      p
-	    year    4.734   113.717   8973.421  0.001  1
+	        coef    exp(coef) se(coef)  z      p
+	year    4.734   113.717   8973.421  0.001  1
 
-	    Likelihood ratio test=1.39  on 1 df, p=0.239
-	    n= 172, number of events= 75
-    
-
-   .. code-block:: python
-
-	import h2o
-	from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
-	h2o.init()
-
-	# import the heart dataset
-	heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
-
-	#specify the parameter's value
-	stratify_by = "age"
-
-	#set the parameters
-	coxph = H2OCoxProportionalHazardsEstimator(start_column="start", stop_column="stop", ties="breslow", stratify_by=stratify_by)
-
-	# train your model
-	coxph.train(x="age", y="event", training_frame=heart)
+	Likelihood ratio test=1.39  on 1 df, p=0.239
+	n= 172, number of events= 75
