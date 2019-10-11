@@ -413,7 +413,7 @@ class H2OAutoML(Keyed):
 
         # Minimal required arguments are training_frame and y (response)
         if y is None:
-            raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
+            raise H2OValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
         else:
             assert_is_type(y,int,str)
             if is_type(y, int):
@@ -624,9 +624,11 @@ class H2OAutoML(Keyed):
             H2OJob.__PROGRESS_BAR__ = ori_progress_state
 
     @staticmethod
-    def _fetch_state(project_name, properties=None):
-        state_json = h2o.api("GET /99/AutoML/%s" % project_name)
+    def _fetch_state(aml_id, properties=None):
+        state_json = h2o.api("GET /99/AutoML/%s" % aml_id)
         project_name = state_json["project_name"]
+        if project_name is None:
+            raise H2OValueError("No AutoML instance with id {}.".format(aml_id))
 
         leaderboard_list = [key["name"] for key in state_json['leaderboard']['models']]
         leader_id = leaderboard_list[0] if (leaderboard_list is not None and len(leaderboard_list) > 0) else None
