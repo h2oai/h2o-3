@@ -21,6 +21,7 @@ H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H
 * [Sparkling Water](#Sparkling)
 * [Documentation](#Documentation)
 * [Citing H2O](#Citing)
+* [Roadmap](#Roadmap)
 * [Community](#Community) / [Advisors](#Advisors) / [Investors](#Investors)
 
 <a name="Downloading"></a>
@@ -710,12 +711,6 @@ Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Dee
 
 Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>.
 
-
-<a name="Community"></a>
-## 10. Community
-
-H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://0xdata.atlassian.net/projects/PUBDEV/issues).  Please join us!  
-
 <a name="Roadmap"></a>
 ## 11. Roadmap
 
@@ -737,6 +732,13 @@ H2O has been built by a great many number of contributors over the years both wi
 * Out-of-memory error protection: [PUBDEV-6614](https://0xdata.atlassian.net/browse/PUBDEV-6614)
 * Target Encoding Improvements (regression, multinomial)
 * PSVM Improvements (linear kernel, MOJO)
+
+
+<a name="Community"></a>
+## 10. Community
+
+H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://0xdata.atlassian.net/projects/PUBDEV/issues).  Please join us!  
+
 
 ### Team & Committers
 
