@@ -160,7 +160,7 @@ public abstract class Paxos {
       if(H2O.isFlatfileEnabled()){
         for(H2ONode n: H2O.getFlatfile()){
           if(!n._heartbeat._client && !PROPOSED.containsKey(n._key)){
-            Log.info("Flatile::" + n._key + " not active in this cloud. Removing it from the list.");
+            Log.warn("Flatfile entry ignored: Node " + n._key.getIpPortString() + " not active in this cloud. Removing it from the list.");
             n.removeFromCloud();
           }
         }

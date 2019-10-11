@@ -154,7 +154,7 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
     stop("`insecure` must be TRUE or FALSE")
   if(!is.logical(use_spnego) || length(use_spnego) != 1L || is.na(use_spnego))
     stop("`use_spnego` must be TRUE or FALSE")
-  else if (!is.na(use_spnego) && !is.na(username))
+  else if (!is.na(use_spnego) && use_spnego && !is.na(username))
     stop("Specify either `use_spnego` or `username` and `password`")
   if(!is.character(username) || !nzchar(username))
     stop("`username` must be a character string or NA_character_")
