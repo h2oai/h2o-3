@@ -188,7 +188,7 @@ FAQ
 
 -  **Are POJOs thread safe?**
 
-  All of H2O-3 POJOs are threadsafe except for Deep Learning POJOs. 
+  All of H2O-3 POJOs are thread safe except for Deep Learning POJOs. 
 
 -  **How do I score new cases in real-time in a production environment?**
 
