@@ -21,7 +21,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
     algo = "targetencoder"
     param_names = {"blending", "k", "f", "data_leakage_handling", "model_id", "ignored_columns", "training_frame",
-                   "fold_column"}
+                   "fold_column", "response_column"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -139,6 +139,21 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def fold_column(self, fold_column):
         assert_is_type(fold_column, None, str)
         self._parms["fold_column"] = fold_column
+
+
+    @property
+    def response_column(self):
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
+        return self._parms.get("response_column")
+
+    @response_column.setter
+    def response_column(self, response_column):
+        assert_is_type(response_column, None, str)
+        self._parms["response_column"] = response_column
 
 
     def transform(self, frame, data_leakage_handling="None", noise=-1, seed=-1):

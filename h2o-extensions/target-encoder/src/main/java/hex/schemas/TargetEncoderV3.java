@@ -29,6 +29,7 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
       params.add("ignored_columns");
       params.add("training_frame");
       params.add("fold_column");
+      params.add("response_column");
   
       return params.toArray(new String[0]);
     }
