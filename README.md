@@ -727,7 +727,7 @@ H2O has been built by a great many number of contributors over the years both wi
 * XGBoost Improvements (upgrade, Platt Scaling)
 * MOJO Import (XGBoost support, expose original model parameters)
 * Security Improvements (SPNEGO support: [PUBDEV-6899](https://0xdata.atlassian.net/browse/PUBDEV-6899))
-* Target Encoding (Flow support)
+* Target Encoding (Flow support): [PUBDEV-6837](https://0xdata.atlassian.net/browse/PUBDEV-6837)
 
 ### H2O 3.30 - Winter 2020 (Q1/2020)
 
