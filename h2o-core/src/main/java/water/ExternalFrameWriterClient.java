@@ -51,15 +51,15 @@ import static water.ExternalFrameUtils.writeToChannel;
  * </p>
  */
 final public class ExternalFrameWriterClient {
-  private AutoBuffer ab;
-  private ByteChannel channel;
+  private final AutoBuffer ab;
+  private final ByteChannel channel;
   private byte[] expectedTypes;
   private int currentColIdx = 0;
   private int currentRowIdx = 0;
-  private int timeout;
+  private final int timeout;
   private int numRows;
   private int numCols;
-  private long blockSize;
+  private final long blockSize;
 
   /**
    * Initialize the External frame writer
@@ -126,10 +126,13 @@ final public class ExternalFrameWriterClient {
   }
 
   public void close() throws IOException, ExternalFrameConfirmationException {
-    // write remaining data
-    writeToChannel(ab, channel);
-    waitForRequestToFinish(timeout, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
-    channel.close();
+    try {
+      // write remaining data
+      writeToChannel(ab, channel);
+      waitForRequestToFinish(timeout, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
+    } finally {
+      channel.close();
+    }
   }
 
   public void sendBoolean(boolean data) throws IOException {
