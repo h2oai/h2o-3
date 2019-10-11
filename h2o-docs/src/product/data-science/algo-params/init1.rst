@@ -1,5 +1,5 @@
-``init``
---------
+``init`` (GLRM, K-Means)
+------------------------
 
 - Available in: GLRM, K-means
 - Hyperparameter: yes
@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option specifies the initialization mode used in K-Means. The options are Random, Furthest, PlusPlus, and User.
+This option specifies the initialization mode used in K-Means and GLRM. The options are Random, Furthest, PlusPlus, and User.
 
 - **Random**: Choose :math:`K` clusters from the set of :math:`N` observations at random so that each observation has an equal chance of being chosen.
 
