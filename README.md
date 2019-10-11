@@ -712,7 +712,7 @@ Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Dee
 Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>.
 
 <a name="Roadmap"></a>
-## 11. Roadmap
+## 10. Roadmap
 
 ### H2O 3.28 - Autumn 2019 (Q4/2019)
 
@@ -735,7 +735,7 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 
 
 <a name="Community"></a>
-## 10. Community
+## 11. Community
 
 H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://0xdata.atlassian.net/projects/PUBDEV/issues).  Please join us!  
 
