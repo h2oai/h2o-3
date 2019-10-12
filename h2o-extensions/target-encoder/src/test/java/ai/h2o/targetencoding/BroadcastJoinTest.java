@@ -1,9 +1,11 @@
 package ai.h2o.targetencoding;
 
+import com.pholser.junit.quickcheck.Mode;
 import com.pholser.junit.quickcheck.Property;
 import com.pholser.junit.quickcheck.generator.InRange;
 import com.pholser.junit.quickcheck.runner.JUnitQuickcheck;
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -14,9 +16,13 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Merge;
+import water.util.IcedHashMapGeneric;
+
+import java.util.Random;
 
 import static ai.h2o.targetencoding.TargetEncoder.DENOMINATOR_COL_NAME;
 import static ai.h2o.targetencoding.TargetEncoder.NUMERATOR_COL_NAME;
+import static ai.h2o.targetencoding.TargetEncoderFrameHelper.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -25,47 +31,47 @@ public class BroadcastJoinTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   private Frame fr = null;
 
-  @Test
-  public void joinPerformsWithoutLoosingOriginalOrderTest() {
+  
+  @Property(trials = 2, mode = Mode.EXHAUSTIVE) 
+  public void joinPerformsWithoutLoosingOriginalOrderTest(boolean isZeroBasedFoldValues) {
 
-    Frame rightFr = null;
-    Vec emptyNumerator = null;
-    Vec emptyDenominator = null;
+    Scope.enter();
     try {
 
-      fr = new TestFrameBuilder()
+      Frame fr = new TestFrameBuilder()
               .withName("testFrame")
               .withColNames("ColA", "fold")
               .withVecTypes(Vec.T_CAT, Vec.T_NUM)
               .withDataForCol(0, ar("a", "c", "b"))
-              .withDataForCol(1, ar(2, 1, 2))
+              .withDataForCol(1, isZeroBasedFoldValues ? new long[]{1,0,1}: new long[]{2,1,2})
               .withChunkLayout(1,1,1)
               .build();
 
-      rightFr = new TestFrameBuilder()
+      Frame rightFr = new TestFrameBuilder()
               .withName("testFrame2")
               .withColNames("ColA", "fold", TargetEncoder.NUMERATOR_COL_NAME, TargetEncoder.DENOMINATOR_COL_NAME)
               .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
               .withDataForCol(0, ar("a", "b", "c"))
-              .withDataForCol(1, ar(2, 1, 1))
+              .withDataForCol(1, isZeroBasedFoldValues ? new long[]{1,0,0}: new long[]{2,1,1})
               .withDataForCol(2, ar(22, 33, 42))
               .withDataForCol(3, ar(44, 66, 84))
               .withChunkLayout(1,1,1)
               .build();
 
-      emptyNumerator = fr.anyVec().makeCon(0);
+      Vec emptyNumerator = fr.anyVec().makeCon(0);
       fr.add(TargetEncoder.NUMERATOR_COL_NAME, emptyNumerator);
-      emptyDenominator = fr.anyVec().makeCon(0);
+      Vec emptyDenominator = fr.anyVec().makeCon(0);
       fr.add(TargetEncoder.DENOMINATOR_COL_NAME, emptyDenominator);
+      Scope.track(emptyNumerator);
+      Scope.track(emptyDenominator);
       
       Frame joined = BroadcastJoinForTargetEncoder.join(fr, new int[]{0}, 1, rightFr, new int[]{0}, 1, 2);
 
-      Scope.enter();
       assertStringVecEquals(cvec("a", "c", "b"), joined.vec("ColA"));
       assertEquals(22, joined.vec(TargetEncoder.NUMERATOR_COL_NAME).at(0), 1e-5);
       assertEquals(44, joined.vec(TargetEncoder.DENOMINATOR_COL_NAME).at(0), 1e-5);
@@ -73,9 +79,73 @@ public class BroadcastJoinTest extends TestUtil {
       assertEquals(84, joined.vec(TargetEncoder.DENOMINATOR_COL_NAME).at(1), 1e-5);
       assertTrue(joined.vec(TargetEncoder.NUMERATOR_COL_NAME).isNA(2));
       assertTrue(joined.vec(TargetEncoder.DENOMINATOR_COL_NAME).isNA(2));
-      Scope.exit();
     } finally {
-      if(rightFr != null) rightFr.delete();
+      Scope.exit();
+    }
+  }
+  
+  @Property(trials = 5)
+  public void joinWorksWithoutLoosingOriginalOrderTest(@InRange(minInt = 2, maxInt = 10000)int sizeOfLeftFrame,
+                                                       @InRange(minInt = 1, maxInt = 1000) int numberOfFolds) {
+    Scope.enter();
+    long seed = 1234;
+    IcedHashMapGeneric<String, Frame> encodingMap = null;
+    try {
+
+      String responseColumnName = "response";
+      String[] randomArrOfStrings = randomArrOfStrings(sizeOfLeftFrame);
+      String catColumnName = "ColA";
+      String foldColumnName = "fold";
+
+      Frame leftFr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames(catColumnName, responseColumnName)
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .withDataForCol(0, randomArrOfStrings)
+              .withRandomBinaryDataForCol(1, sizeOfLeftFrame, seed)
+              .withChunkLayout(sizeOfLeftFrame / 2, sizeOfLeftFrame - (sizeOfLeftFrame / 2))
+              .build();
+
+      Assume.assumeTrue(leftFr.vec(responseColumnName).cardinality() == 2);
+
+      addKFoldColumn(leftFr, foldColumnName, numberOfFolds, 1234L);
+      Assume.assumeTrue(leftFr.vec(foldColumnName).clone().toCategoricalVec().cardinality() == numberOfFolds);
+
+      TargetEncoder tec = new TargetEncoder(new String[]{catColumnName});
+
+      encodingMap = tec.prepareEncodingMap(leftFr, responseColumnName, foldColumnName);
+      Frame encodingMapForColA = encodingMap.get(catColumnName);
+
+      Vec emptyNumerator = leftFr.anyVec().makeCon(0);
+      leftFr.add(TargetEncoder.NUMERATOR_COL_NAME, emptyNumerator);
+      Vec emptyDenominator = leftFr.anyVec().makeCon(0);
+      leftFr.add(TargetEncoder.DENOMINATOR_COL_NAME, emptyDenominator);
+      Scope.track(emptyNumerator);
+      Scope.track(emptyDenominator);
+
+      Frame joined = BroadcastJoinForTargetEncoder.join(leftFr, new int[]{0}, leftFr.find(foldColumnName), encodingMapForColA, new int[]{0}, encodingMapForColA.find(foldColumnName), numberOfFolds);
+      Scope.track(joined);
+      
+      // Checking that order was preserved
+      assertStringVecEquals(leftFr.vec(catColumnName), joined.vec(catColumnName));
+      
+      // Randomly selecting one row to check merged num and den values against
+      int randomIdx = new Random(seed).nextInt(sizeOfLeftFrame);
+      double randomColAValueFromLeftFr = leftFr.vec(catColumnName).at(randomIdx);
+      double randomFoldValueFromLeftFr  = leftFr.vec(foldColumnName).at(randomIdx);
+      Frame filteredByColA = filterByValue(leftFr, 0, randomColAValueFromLeftFr);
+      Frame filteredByFoldAndColAColumns = filterByValue(filteredByColA, filteredByColA.find(foldColumnName), randomFoldValueFromLeftFr);
+      
+      Frame filteredByColAFromEM = filterByValue(encodingMapForColA, 0, randomColAValueFromLeftFr);
+      Frame filteredByFoldAndColAColumnsFromEM = filterByValue(filteredByColAFromEM, filteredByColAFromEM.find(foldColumnName), randomFoldValueFromLeftFr);
+
+      Scope.track(filteredByColA, filteredByFoldAndColAColumns, filteredByColAFromEM, filteredByFoldAndColAColumnsFromEM);
+
+      assertEquals(filteredByFoldAndColAColumns.vec(TargetEncoder.NUMERATOR_COL_NAME).at(0), filteredByFoldAndColAColumnsFromEM.vec(TargetEncoder.NUMERATOR_COL_NAME).at(0), 1e-5);
+      assertEquals(filteredByFoldAndColAColumns.vec(TargetEncoder.DENOMINATOR_COL_NAME).at(0), filteredByFoldAndColAColumnsFromEM.vec(TargetEncoder.DENOMINATOR_COL_NAME).at(0), 1e-5);
+    } finally {
+      if(encodingMap != null ) encodingMapCleanUp(encodingMap);
+      Scope.exit();
     }
   }
 
@@ -196,7 +266,17 @@ public class BroadcastJoinTest extends TestUtil {
       if(rightFr != null) rightFr.delete();
     }
   }
-    
+  
+  private String[] randomArrOfStrings(int size) {
+    String[] arr = new String[size];
+    Random rg = new Random();
+    int cardinality = size / 2;
+    for (int a = 0; a < size; a++) {
+      arr[a] = Integer.toString(rg.nextInt(Math.max(1, cardinality)));
+    }
+    return arr;
+  }
+
   @After
   public void afterEach() {
     if (fr != null) fr.delete();
