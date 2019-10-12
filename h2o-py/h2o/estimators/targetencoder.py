@@ -70,7 +70,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     @property
     def f(self):
         """
-        Smooothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.
+        Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.
 
         Type: ``float``  (default: ``10``).
         """
