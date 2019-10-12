@@ -10,13 +10,12 @@ class BroadcastJoinForTargetEncoder {
   static class FrameWithEncodingDataToArray extends MRTask<FrameWithEncodingDataToArray> {
     
     /**
-     * As it is less likely that we have more folds than categorical levels It is more preferable to keep `num` and `den` in a separate (but adjacent) rows of the 2D array and not in the same row with shifting.
-     *     For _foldColumnIdx == -1
-     *        _encodingDataPerNode[0] will be storing numerators
-     *        _encodingDataPerNode[1] will be storing denominators
-     *     For _foldColumnIdx != -1
-     *        _encodingDataPerNode[2k-2] will be storing numerators, 
-     *        _encodingDataPerNode[2k-1] will be storing denominators, where k is a current fold ; folds = {1,2,3...k}
+     * Numerators and denominators are being stored in the same row-array of the 2D array.
+     * 
+     *        _encodingDataPerNode[k][0 .. numOfCatLevels -1] will be storing numerators
+     *        _encodingDataPerNode[k][numOfCatLevels .. (2*numOfCatLevels -1)] will be storing denominators,
+     *        
+     *        where k is a current fold value (folds = {0,1,2,3...k}) or 0 when _foldColumnIdx == -1; 
      */
     int[][] _encodingDataPerNode = null;
     
@@ -64,13 +63,13 @@ class BroadcastJoinForTargetEncoder {
 
   /**
    * 
-   * @param leftFrame frame that we want to keep order of
+   * @param leftFrame frame that we want to keep rows order of
    * @param leftCatColumnsIdxs indices of the categorical columns from `leftFrame` we want to use to calculate encodings
    * @param leftFoldColumnIdx index of the fold column from `leftFrame` or `-1` if we don't use folds
    * @param broadcastedFrame supposedly small frame that we will broadcast to all nodes and use it as lookup table for joining
    * @param rightCatColumnsIdxs indices of the categorical columns from `broadcastedFrame` we want to use to calculate encodings 
    * @param rightFoldColumnIdx index of the fold column from `broadcastedFrame` or `-1` if we don't use folds
-   * @return
+   * @return `leftFrame` with joined numerators and denominators
    */
   static Frame join(Frame leftFrame, int[] leftCatColumnsIdxs, int leftFoldColumnIdx, Frame broadcastedFrame, int[] rightCatColumnsIdxs, int rightFoldColumnIdx, int maxFoldValue) {
     int numeratorIdx = broadcastedFrame.find(TargetEncoder.NUMERATOR_COL_NAME);
@@ -151,7 +150,7 @@ class BroadcastJoinForTargetEncoder {
       }
     }
 
-    // Later - in `CalcEncodings` task - NAs will be imputed by prior
+    // Note: Later - in `CalcEncodings` task - NAs will be imputed by prior
     private void setEncodingComponentsToNAs(Chunk num, Chunk den, int i) {
       num.setNA(i);
       den.setNA(i);
