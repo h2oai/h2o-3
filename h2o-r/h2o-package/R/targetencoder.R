@@ -14,7 +14,7 @@
 #' @param blending \code{Logical}. Blending enabled/disabled Defaults to FALSE.
 #' @param k Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
 #'        parameter. Defaults to 20.
-#' @param f Smooothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
+#' @param f Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
 #'        parameter. Defaults to 10.
 #' @param data_leakage_handling Data leakage handling strategy. Default to None. Must be one of: "None", "KFold", "LeaveOneOut". Defaults to
 #'        None.
