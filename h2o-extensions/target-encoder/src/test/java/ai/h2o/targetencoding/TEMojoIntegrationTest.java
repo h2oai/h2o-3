@@ -71,6 +71,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderBuilder.trainModel().get();
 
       targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -116,7 +117,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], encodingForHomeEmbarked, 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -167,6 +167,7 @@ public class TEMojoIntegrationTest extends TestUtil {
         targetEncoderBuilder.trainModel().get();
 
         targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
+        Scope.track_generic(targetEncoderModel);
 
         try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)){
           targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -212,7 +213,6 @@ public class TEMojoIntegrationTest extends TestUtil {
         }
 
       } finally {
-        targetEncoderModel.remove();
         mojoFile.delete(); // As we are in the loop we need to remove tmp file manually
         Scope.exit();
       }
@@ -262,6 +262,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -305,7 +306,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(encodings[0], encodingForHomeEmbarked, 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -343,6 +343,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       testEncodingMap = targetEncoderModel._output._target_encoding_map;
 
@@ -402,7 +403,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(expectedBlendedEncodingForHomeDest, encodings[1], 1e-5);
 
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
@@ -724,6 +724,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       targetEncoderBuilder.trainModel().get();
 
       targetEncoderModel = targetEncoderBuilder.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
@@ -759,7 +760,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       assertEquals(currentEncodings[currentHomeDestPredIdx], encodingForHomeDest, 1e-5);
       assertEquals(currentEncodings[currentHomeDestPredIdx == 0 ? 1 : 0], encodingForHomeEmbarked, 1e-5);
     } finally {
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }
