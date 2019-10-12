@@ -81,9 +81,7 @@ class BroadcastJoinForTargetEncoder {
     if(rightFoldColumnIdx != -1 && broadcastedFrame.vec(rightFoldColumnIdx).max() > Integer.MAX_VALUE) 
       throw new IllegalArgumentException("Fold value should be a non-negative integer (i.e. should belong to [0, Integer.MAX_VALUE] range)");
       
-    // Note: for our goals there is no need to store it in 2d array
-    // Use `broadcastedFrame` as major frame(first argument) while computing level mappings as it contains all the levels from `training` dataset
-    int[][] levelMappings = {CategoricalWrappedVec.computeMap( broadcastedFrame.vec(0).domain(), leftFrame.vec(leftCatColumnsIdxs[0]).domain())};
+    int[][] levelMappings = {CategoricalWrappedVec.computeMap( leftFrame.vec(leftCatColumnsIdxs[0]).domain(), broadcastedFrame.vec(0).domain())};
 
     int[][] encodingDataMap = new FrameWithEncodingDataToArray(rightCatColumnsIdxs[0], rightFoldColumnIdx, numeratorIdx, denominatorIdx, broadcastedFrameCatCardinality, maxFoldValue)
             .doAll(broadcastedFrame)

@@ -598,8 +598,6 @@ public class TEMojoIntegrationTest extends TestUtil {
       asFactor(fr, responseColumnName);
       Scope.track(fr);
       
-      printOutFrameAsTable(fr);
-
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = new TargetEncoderModel.TargetEncoderParameters();
       targetEncoderParameters._response_column = responseColumnName;
       targetEncoderParameters._ignored_columns = ignoredColumns(fr, "home.dest", targetEncoderParameters._response_column);
@@ -614,6 +612,7 @@ public class TEMojoIntegrationTest extends TestUtil {
       job.trainModel().get();
 
       targetEncoderModel = job.getTargetEncoderModel();
+      Scope.track_generic(targetEncoderModel);
 
       try (FileOutputStream modelOutput = new FileOutputStream(mojoFile)) {
         targetEncoderModel.getMojo().writeTo(modelOutput);
