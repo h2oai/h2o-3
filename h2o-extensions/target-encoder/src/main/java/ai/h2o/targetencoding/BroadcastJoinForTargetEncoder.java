@@ -55,6 +55,21 @@ class BroadcastJoinForTargetEncoder {
         }
       }
     }
+
+    @Override
+    public void reduce(FrameWithEncodingDataToArray mrt) {
+      int[][] leftArr = getEncodingDataArray();
+      int[][] rightArr = mrt.getEncodingDataArray();
+      for(int rowIdx = 0 ; rowIdx < leftArr.length; rowIdx++) {
+        for(int colIdx = 0 ; colIdx < leftArr[rowIdx].length; colIdx++) {
+          synchronized (leftArr[rowIdx]) {
+            int valueFromLeftArr = leftArr[rowIdx][colIdx];
+            int valueFromRIghtArr = rightArr[rowIdx][colIdx];
+            leftArr[rowIdx][colIdx] = Math.max(valueFromLeftArr, valueFromRIghtArr);
+          }
+        }
+      }
+    }
     
     int[][] getEncodingDataArray() {
       return _encodingDataPerNode;
