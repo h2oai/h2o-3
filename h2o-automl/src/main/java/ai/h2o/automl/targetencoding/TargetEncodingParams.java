@@ -3,6 +3,7 @@ package ai.h2o.automl.targetencoding;
 import water.Iced;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Map;
 
 public class TargetEncodingParams extends Iced {
@@ -75,7 +76,7 @@ public class TargetEncodingParams extends Iced {
     String representation = null;
     if( isWithBlendedAvg()) {
       representation = "TE params: holdout_type = " + getHoldoutType() + " , blending = " + isWithBlendedAvg() + ", inflection_point = " + getBlendingParams().getK() +
-              " , smoothing = " + getBlendingParams().getF() + " , noise_level = " + getNoiseLevel();
+              " , smoothing = " + getBlendingParams().getF() + " , noise_level = " + getNoiseLevel() + " , columns_to_encode:" + Arrays.toString(getColumnsToEncode());
     }
     else {
       representation = "TE params: holdout_type = " + getHoldoutType() + " , noise_level = " + getNoiseLevel();

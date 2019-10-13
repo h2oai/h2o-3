@@ -53,7 +53,7 @@ public class GridSearchTEParamsSelectionStrategy extends GridBasedTEParamsSelect
   @Override
   public void setTESearchSpace(ModelValidationMode modelValidationMode) {
     super.setTESearchSpace(modelValidationMode);
-    int expectedNumberOfEntries = (int)( _randomGridEntrySelector.spaceSize() * _ratioOfHyperSpaceToExplore);
+    int expectedNumberOfEntries = (int)( Math.max(1, _randomGridEntrySelector.spaceSize() * _ratioOfHyperSpaceToExplore));
     _evaluatedQueue = new PriorityQueue<>(expectedNumberOfEntries, new EvaluatedComparator(_theBiggerTheBetter));
   }
 

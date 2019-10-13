@@ -281,36 +281,5 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
     return ShuffleSplitFrame.shuffleSplitFrame(fr, keys, ratios, seed);
   }
 
-  @Deprecated // TODO remove
-  static double evaluateWithGLM(Frame inputData, String responseColumn, String[] columnsToExclude) {
-        GLMModel.GLMParameters params = new GLMModel.GLMParameters(GLMModel.GLMParameters.Family.binomial); //TODO we should pass a parameter to decise which Family to use
-        GLMModel model = null;
-        double score = 0;
-        try {
-          params._nlambdas = 3;
-          params._response_column = responseColumn;
-          params._train = inputData._key;
-//          params._fold_column = foldColumnName;
-          params._nfolds = 5;
-          params._alpha = new double[]{.99};
-          params._objective_epsilon = 1e-6;
-          params._beta_epsilon = 1e-4;
-          params._max_active_predictors = 50;
-          params._max_iterations = 500;
-          params._solver = GLMModel.GLMParameters.Solver.AUTO;
-          params._lambda_search = true;
-          params._ignored_columns = columnsToExclude;
-          params._keep_cross_validation_fold_assignment = false;
-          params._keep_cross_validation_models = false;
-          model = new GLM(params).trainModel().get();
-          System.out.println(model._output._training_metrics);
-          
-          score = model.auc();
-          System.out.println(model._output._model_summary);
-        } finally{
-          if(model != null) model.delete();
-        }
-        return score;
-  }
   
 }

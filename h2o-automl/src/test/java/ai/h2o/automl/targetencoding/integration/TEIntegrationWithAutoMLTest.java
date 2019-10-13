@@ -22,6 +22,11 @@ import static org.junit.Assert.*;
 public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  
+  @Test public void testWhenGridSizeIsOne() { 
+    //TODO 
+  }
+  
 
   @Test public void TEIsNotBeingAppliedIfWeDontHaveCategoricalColumns() {
     AutoML aml=null;

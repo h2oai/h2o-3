@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.targetencoding.TargetEncodingParams;
 import ai.h2o.automl.targetencoding.integration.AutoMLBuildSpec;
 import ai.h2o.automl.targetencoding.integration.AutoMLTargetEncodingAssistant;
 import hex.Model;
@@ -296,7 +297,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     teAssistant.init();
 
     teAssistant.performAutoTargetEncoding();
+    
+    _bestTEParams = teAssistant.getBestTEParams();
   }
+
+  public TargetEncodingParams _bestTEParams; 
   
   private void handleEarlyStoppingParameters(AutoMLBuildSpec buildSpec) {
     if (buildSpec.build_control.stopping_criteria.stopping_tolerance() == AUTO_STOPPING_TOLERANCE) {

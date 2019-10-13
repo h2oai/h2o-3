@@ -99,7 +99,7 @@ public abstract class TEParamsSelectionStrategy extends Iced {
       } while (_visitedPermutationHashes.contains(hashOfIndices) && _visitedPermutationHashes.size() != _spaceSize);
       _visitedPermutationHashes.add(hashOfIndices);
 
-      if(_visitedPermutationHashes.size() == _spaceSize) {
+      if(_visitedPermutationHashes.size() == _spaceSize + 1) { // Stop when we try to visit more that size of space
         Log.info("Whole search space has been discovered (" + _visitedPermutationHashes.size() + " grid entries). Stopping search.");
         throw new GridSearchCompleted();
       }
