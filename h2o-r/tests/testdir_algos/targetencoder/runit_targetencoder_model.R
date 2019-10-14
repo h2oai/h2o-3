@@ -32,8 +32,9 @@ test.model.targetencoder <- function() {
         "home.dest", "embarked", "cabin", "sex", "pclass", "survived", "name", "age", "sibsp", "parch",
         "ticket", "fare", "boat", "body", "sex_te", "cabin_te", "embarked_te", "home.dest_te" # 4 new encoded columns
         )
-        print(h2o.colnames(encoded_data))
-        expect_true(all(h2o.colnames(encoded_data) == expected_columns))
+        actual_columns <- h2o.colnames(encoded_data)
+        print(actual_columns)
+        expect_true(all(sort(actual_columns) == sort(expected_columns)))
     }
 
     test.that.noise.could.be.specified.during.transformation <- function() {

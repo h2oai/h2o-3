@@ -587,7 +587,6 @@ public class TEMojoIntegrationTest extends TestUtil {
 
     String mojoFileName = "mojo_te.zip";
     File mojoFile = folder.newFile(mojoFileName);
-    ;
     TargetEncoderModel targetEncoderModel = null;
     Scope.enter();
     try {
