@@ -21,7 +21,7 @@ import static org.apache.commons.lang.ArrayUtils.toPrimitive;
  */
 public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, Cloneable, Serializable {
 
-  enum KeyType {
+  public enum KeyType {
     String(String.class),
     Freezable(Freezable.class),
     ;
@@ -32,7 +32,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     }
   }
 
-  enum ValueType {
+  public enum ValueType {
     String(String.class),
     Freezable(Freezable.class),
     Boolean(Boolean.class, boolean.class),
@@ -55,7 +55,7 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
     }
   }
 
-  enum ArrayType {
+  public enum ArrayType {
     None, Array, PrimitiveArray
   }
 

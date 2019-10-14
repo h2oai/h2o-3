@@ -4,7 +4,10 @@ import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.contrib.java.lang.system.ProvideSystemProperty;
+import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import water.AutoBuffer;
 import water.H2O;
 import water.Key;
@@ -23,22 +26,18 @@ import static org.junit.Assert.*;
 public class IcedHashMapTest extends TestUtil {
 
     private static final String suppress_shutdown_on_failure_property = H2O.OptArgs.SYSTEM_PROP_PREFIX+"suppress.shutdown.on.failure";
-    private static String shutdown_on_failure;
 
     @BeforeClass
     public static void setUp() {
         stall_till_cloudsize(1);  // necessary for Freezable key/values
-        shutdown_on_failure = System.getProperty(suppress_shutdown_on_failure_property);
-        System.setProperty(suppress_shutdown_on_failure_property, "true");
     }
 
-    @AfterClass
-    public static void restore() {
-        if (shutdown_on_failure == null)
-            System.clearProperty(suppress_shutdown_on_failure_property);
-        else
-            System.setProperty(suppress_shutdown_on_failure_property, shutdown_on_failure);
-    }
+    @Rule
+    public final ProvideSystemProperty provideSystemProperty =
+            new ProvideSystemProperty(suppress_shutdown_on_failure_property, "true");
+
+    @Rule
+    public final RestoreSystemProperties restoreSystemProperties = new RestoreSystemProperties();
 
     private Gson gson = new Gson();
 
