@@ -155,7 +155,16 @@ Defining an XGBoost Model
 
 -  **min_data_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
 
--  **booster**: Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree". More information about the ``booster`` parameter is available `here <https://github.com/dmlc/xgboost/blob/master/doc/tutorials/dart.rst>`__.
+-  **booster**: Specify the booster type. This can be one of the following: ``gbtree``, ``gblinear``, or ``dart``. 
+   Note that ``gbtree`` and ``dart`` use a tree-based model while ``gblinear`` uses linear function. This value 
+   defaults to ``gbtree``. Together with ``tree_method`` this will also determine the ``updater`` XGBoost parameter:
+
+    - for ``gblinear`` the ``coord_descent`` updater will be configured (``gpu_coord_descent`` for GPU backend)
+    - for ``gbtree`` and ``dart`` with GPU backend selected ``grow_gpu`` is used when ``tree_method`` is ``exact``
+      and ``grow_gpu_hist`` otherwise
+    - for other cases the ``updater`` is set automatically by XGBoost, visit the 
+      `XGBoost Documentation <https://xgboost.readthedocs.io/en/latest/parameter.html#parameters-for-tree-booster>`__
+      to learn more about updaters
 
 -  **sample_type**: When ``booster="dart"``, specify whether the sampling type should be one of the following:
 

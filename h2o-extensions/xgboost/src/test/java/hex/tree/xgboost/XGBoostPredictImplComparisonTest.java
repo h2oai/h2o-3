@@ -30,7 +30,6 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             {"gbtree", "gamma", "AGE"},
             {"gbtree", "poisson", "AGE"},
             {"gbtree", "tweedie", "AGE"},
-            {"gbtree", "gamma", "AGE"},
             {"dart", "AUTO", "AGE"},
             {"dart", "bernoulli", "CAPSULE"},
             {"dart", "multinomial", "CAPSULE"},
@@ -38,15 +37,13 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             {"dart", "gamma", "AGE"},
             {"dart", "poisson", "AGE"},
             {"dart", "tweedie", "AGE"},
-            {"dart", "gamma", "AGE"},
             {"gblinear", "AUTO", "AGE"},
             {"gblinear", "bernoulli", "CAPSULE"},
             {"gblinear", "multinomial", "CAPSULE"},
             {"gblinear", "gaussian", "AGE"},
             {"gblinear", "gamma", "AGE"},
             {"gblinear", "poisson", "AGE"},
-            {"gblinear", "tweedie", "AGE"},
-            {"gblinear", "gamma", "AGE"}
+            {"gblinear", "tweedie", "AGE"}
         });
     }
 
@@ -100,10 +97,11 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
     }
 
     private Double getRelDelta(XGBoostModel.XGBoostParameters parms) {
-        if (usesGpu(parms) || "gblinear".equals(booster)) {
+        if (usesGpu(parms)) {
             // train/predict on gpu is non-deterministic
-            // gblinear non-determinism reported as bug https://github.com/dmlc/xgboost/issues/4919
             return 1e-3;
+        } else if ("gblinear".equals(booster)) {
+            return 1e-6;
         } else {
             return null;
         }
