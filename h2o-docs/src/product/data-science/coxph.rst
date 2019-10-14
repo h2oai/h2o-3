@@ -1,8 +1,6 @@
 Cox Proportional Hazards (CoxPH)
 --------------------------------
 
-**Note** CoxPH is not yet supported in Python. It is supported in R and Flow only.
-
 Cox proportional hazards models are the most widely used approach for modeling time to event data. As the name suggests, the *hazard function*, which computes the instantaneous rate of an event occurrence and is expressed mathematically as
 
 :math:`h(t) = \lim_{\Delta t \downarrow 0} \frac{Pr[t \le T < t + \Delta t \mid T \ge t]}{\Delta t},`
