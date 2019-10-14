@@ -238,6 +238,11 @@ class AUTOMetalearner extends GLMMetalearner {
     parms._non_negative = true;
     //parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
 
+    // feature columns are already homogeneous (probabilities); when standardization is enabled,
+    // there can be information loss if some columns have very low probabilities compared with others for example (bad model)
+    // giving more weight than it should to those columns.
+    parms._standardize = false;
+
     // Enable lambda search if a validation frame is passed in to get a better GLM fit.
     // Since we are also using non_negative to true, we should also set early_stopping = false.
     if (parms._valid != null) {
