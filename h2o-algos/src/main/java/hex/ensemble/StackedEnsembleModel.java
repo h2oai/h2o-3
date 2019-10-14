@@ -279,7 +279,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       throw new H2OIllegalArgumentException("Cannot specify fold_column and nfolds at the same time.");
 
     Model aModel = null;
-    boolean beenHere = false;
+    boolean retrievedFirstModelParams = false;
     boolean blending_mode = _parms._blending != null;
     boolean cv_required_on_base_model = !blending_mode;
     boolean require_consistent_training_frames = !blending_mode && !_parms._is_cv_model;
@@ -302,7 +302,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         throw new H2OIllegalArgumentException("Base model is not supervised: "+aModel._key.toString());
       }
 
-      if (beenHere) {
+      if (retrievedFirstModelParams) {
         // check that the base models are all consistent with first based model
 
         if (modelCategory != aModel._output.getModelCategory())
@@ -311,7 +311,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         if (! responseColumn.equals(aModel._parms._response_column))
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns."
-                  +" Found: "+responseColumn+"(StackedEnsemble) and "+aModel._parms._response_column+" (model "+k+").");
+                  +" Found: "+responseColumn+" (StackedEnsemble) and "+aModel._parms._response_column+" (model "+k+").");
 
         if (require_consistent_training_frames) {
           if (trainingFrameRows < 0) trainingFrameRows = _parms.train().numRows();
@@ -362,7 +362,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // TODO: If we're set to DistributionFamily.AUTO then GLM might auto-conform the response column
         // giving us inconsistencies.
       } else {
-        // !beenHere: this is the first base_model
+        // !retrievedFirstModelParams: this is the first base_model
         this.modelCategory = aModel._output.getModelCategory();
         this._dist = DistributionFactory.getDistribution(distributionFamily(aModel));
         responseColumn = aModel._parms._response_column;
@@ -377,7 +377,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         basemodel_fold_column = aModel._parms._fold_column;
         seed = aModel._parms._seed;
         _parms._distribution = aModel._parms._distribution;
-        beenHere = true;
+        retrievedFirstModelParams = true;
       }
 
     } // for all base_models
