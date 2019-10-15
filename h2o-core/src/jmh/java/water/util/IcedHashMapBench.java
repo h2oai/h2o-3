@@ -45,7 +45,7 @@ public class IcedHashMapBench {
         @Param({"String"})
         private KeyType keyType;
 //        @Param({"String", "Boolean", "Integer", "Double", "Freezable"})
-        @Param({"String", "Boolean", "Double"})
+        @Param({"String", "Boolean", "Integer", "Double"})
         private ValueType valueType;
         @Param({"None", "Array", "PrimitiveArray"})
         private IcedHashMapBase.ArrayType arrayType;
@@ -124,9 +124,11 @@ public class IcedHashMapBench {
                 case Integer:
                     int[] iarr = new int[array_values_length];
                     for (int i=0; i < array_values_length; i++) { iarr[i] = i; }
+                    return iarr;
                 case Double:
                     double[] darr = new double[array_values_length];
                     for (int i=0; i < array_values_length; i++) { darr[i] = 17./(i+1); }
+                    return darr;
                 default:
                     throw new SkippedException("wrong value/array type combination");
             }
