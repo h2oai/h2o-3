@@ -309,10 +309,10 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     # Override train method to support blending
     def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
-        training_frame = H2OFrame._validate(training_frame, 'training_frame', required=blending_frame is None)
-        blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=training_frame is None)
+        has_training_frame = training_frame is not None or self.training_frame is not None
+        blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required= not has_training_frame)
 
-        if training_frame is None:
+        if not has_training_frame:
             training_frame = blending_frame  # used to bypass default checks in super class and backend and to guarantee default metrics
 
         def extend_parms(parms):
