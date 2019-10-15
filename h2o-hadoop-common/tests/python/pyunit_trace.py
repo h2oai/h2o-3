@@ -22,7 +22,8 @@ def trace_request():
     print("</Error Message>")
 
     # exact message depends on Jetty Version
-    assert msg.startswith("HTTP 500 TRACE method is not supported") or msg.startswith("HTTP 405 Method Not Allowed")
+    assert (msg.startswith("HTTP 500") and "TRACE method is not supported" in msg) or \
+           msg.startswith("HTTP 405 Method Not Allowed")
 
 
 if __name__ == "__main__":
