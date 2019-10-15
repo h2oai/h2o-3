@@ -1,8 +1,7 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-import sys
-import os
-sys.path.insert(1, os.path.join("..","..",".."))
+import sys, os
+sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
 import h2o
 from h2o.exceptions import H2OServerError
 from tests import pyunit_utils
@@ -15,8 +14,16 @@ def trace_request():
     except H2OServerError as e:
         err = e
 
+    msg = str(err.message)
+
     assert err is not None
-    assert str(err.message).startswith("HTTP 405 Method Not Allowed")
+    print("<Error message>")
+    print(msg)
+    print("</Error Message>")
+
+    # exact message depends on Jetty Version
+    assert (msg.startswith("HTTP 500") and "TRACE method is not supported" in msg) or \
+           msg.startswith("HTTP 405 Method Not Allowed")
 
 
 if __name__ == "__main__":
