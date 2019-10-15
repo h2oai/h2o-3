@@ -226,7 +226,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         return XGBoostParameters.Backend.gpu;
       } else {
         Log.info("No GPU (gpu_id: " + p._gpu_id + ") found. Using CPU backend.");
-        return XGBoostParameters.Backend.gpu;
+        return XGBoostParameters.Backend.cpu;
       }
     } else {
       Log.info("Using CPU backend.");
