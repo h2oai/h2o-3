@@ -20,7 +20,7 @@ class CustomDistributionGaussianWrong(CustomDistributionGaussian):
 
 class CustomDistributionMultinomialWrong(CustomDistributionMultinomial):
     
-    def lgradient(self, y, f, l):
+    def gradient(self, y, f, l):
         if y == 0 and l == 0:
             cost = 10
         elif y == 0 and l == 1:

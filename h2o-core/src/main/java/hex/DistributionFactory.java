@@ -466,7 +466,7 @@ class CustomDistribution extends Distribution {
     public double negHalfGradient(double y, double f) { return _wrapper.getFunc().gradient(y, f); }
 
     @Override
-    public double negHalfGradient(double y, double f, int l) { return _wrapper.getFunc().lgradient(y, f, l); }
+    public double negHalfGradient(double y, double f, int l) { return _wrapper.getFunc().gradient(y, f, l); }
 
     @Override
     public double initFNum(double w, double o, double y) {

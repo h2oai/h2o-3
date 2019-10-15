@@ -39,29 +39,18 @@ class CustomDistributionGeneric(object):
         :param w: weight
         :param o: offset
         :param y: response
+        :param l: class label (for multinomial classification only)
         :return: list [weighted contribution to init numerator,  weighted contribution to init denominator]
         """
         return [0, 0]
 
-    def gradient(self, y, f):
+    def gradient(self, y, f, l=None):
         """
         (Negative half) Gradient of deviance function at predicted value f, for actual response y.
         Important fot customization of a loss function.
 
         :param y: actual response
         :param f: predicted response in link space including offset
-        :return: gradient
-        """
-        return 0
-
-    def lgradient(self, y, f, l):
-        """
-        (Negative half) Gradient of deviance function at predicted value f, for actual response y and class label l.
-        Important fot customization of a loss function for multinomial problem.
-    
-        :param y: actual response
-        :param f: predicted response in link space without offset
-        :param l : class label
         :return: gradient
         """
         return 0
@@ -133,7 +122,7 @@ class CustomDistributionMultinomial(CustomDistributionGeneric):
     def init(self, w, o, y):
         return [w * (y - o), w]
 
-    def lgradient(self, y, f, l):
+    def gradient(self, y, f, l):
         return 1 - f if y == l else 0 - f
 
     def gamma(self, w, y, z, f):
