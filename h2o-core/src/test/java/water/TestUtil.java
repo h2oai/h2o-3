@@ -367,7 +367,7 @@ public class TestUtil extends Iced {
   }
 
   private static boolean runWithoutLocalFiles() {
-    return Boolean.getBoolean("H2O_JUNIT_ALLOW_NO_SMALLDATA");
+    return Boolean.valueOf(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
   }
   
   private static void downloadTestFileFromS3(String fname) throws IOException {
