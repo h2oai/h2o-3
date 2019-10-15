@@ -27,7 +27,7 @@ examples = dict(
 >>> iris_kmeans.train(x = predictors,
 ...                   training_frame = train,
 ...                   validation_frame=valid)
->>> isis_kmeans.scoring_history()
+>>> iris_kmeans.scoring_history()
 """,
     export_checkpoints_dir="""
 >>> import tempfile

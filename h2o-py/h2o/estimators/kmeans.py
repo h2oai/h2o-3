@@ -390,7 +390,7 @@ class H2OKMeansEstimator(H2OEstimator):
         >>> iris_kmeans.train(x = predictors,
         ...                   training_frame = train,
         ...                   validation_frame=valid)
-        >>> isis_kmeans.scoring_history()
+        >>> iris_kmeans.scoring_history()
         """
         return self._parms.get("estimate_k")
 
