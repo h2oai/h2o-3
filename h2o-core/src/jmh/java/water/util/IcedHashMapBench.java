@@ -17,7 +17,7 @@ import water.util.IcedHashMapBase.ValueType;
 import java.util.concurrent.TimeUnit;
 
 
-@Fork(value = 1, jvmArgsAppend = "-Xmx2g")
+@Fork(value = 1, jvmArgsAppend = "-Xmx12g")
 @Warmup(iterations = 2)
 @Measurement(iterations = 5)
 @BenchmarkMode(Mode.AverageTime)
