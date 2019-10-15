@@ -29,7 +29,7 @@ public class TestBernoulliCustomDistribution implements CDistributionFunc {
     }
 
     @Override
-    public double lgradient(double y, double f, int l) {
+    public double gradient(double y, double f, int l) {
         return gradient(y, f);
     }
 
