@@ -4,6 +4,7 @@ import water.Futures;
 import water.fvec.AppendableVec;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.util.FrameSizeMonitor;
 
 import java.util.Arrays;
 
@@ -12,8 +13,16 @@ public class SVMLightFVecParseWriter extends FVecParseWriter {
   protected final Vec.VectorGroup _vg;
   int _vecIdStart;
 
-  public SVMLightFVecParseWriter(Vec.VectorGroup vg, int vecIdStart, int cidx, int chunkSize, AppendableVec[] avs, int[] parse_columns_indices){
-    super(vg, cidx, null, null, chunkSize, avs, parse_columns_indices);
+  public SVMLightFVecParseWriter(
+      Vec.VectorGroup vg,
+      int vecIdStart,
+      int cidx,
+      int chunkSize,
+      AppendableVec[] avs,
+      int[] parse_columns_indices,
+      FrameSizeMonitor _monitor
+  ){
+    super(vg, cidx, null, null, chunkSize, avs, parse_columns_indices, _monitor);
     _vg = vg;
     _vecIdStart = vecIdStart;
     int numParseCols = parse_columns_indices.length;

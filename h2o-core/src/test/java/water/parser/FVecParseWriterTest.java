@@ -6,7 +6,6 @@ import org.junit.Test;
 import water.Key;
 import water.fvec.AppendableVec;
 import water.fvec.Chunk;
-import water.fvec.NewChunk;
 import water.fvec.Vec;
 
 import java.util.Random;

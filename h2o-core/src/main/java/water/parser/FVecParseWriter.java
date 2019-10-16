@@ -6,6 +6,7 @@ import water.fvec.AppendableVec;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.FrameSizeMonitor;
 
 import java.util.Arrays;
 import java.util.UUID;
@@ -27,17 +28,18 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   private final Vec.VectorGroup _vg;
   private long _errCnt;
   int[] _parse_columns_indices;
+  private final FrameSizeMonitor _monitor;
 
   public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize,
                          AppendableVec[] avs) {
-    this(vg, cidx, categoricals, ctypes, chunkSize, avs, null);
+    this(vg, cidx, categoricals, ctypes, chunkSize, avs, null, null);
   }
   // note that if parse_columns_indices==null, it implies all columns are parsed.
   public FVecParseWriter(Vec.VectorGroup vg, int cidx, Categorical[] categoricals, byte[] ctypes, int chunkSize,
-                         AppendableVec[] avs, int[] parse_columns_indices) {
+                         AppendableVec[] avs, int[] parse_columns_indices, FrameSizeMonitor monitor) {
 
     boolean ctypesShrunk = false;
-         // Required not-null
+    // Required not-null
     if ((parse_columns_indices!=null) && (categoricals!=null) &&
             (parse_columns_indices.length == categoricals.length)) { // for nextChunk() calls in gzip/zip parser
       _ctypes = ctypes;
@@ -83,6 +85,10 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     _cidx = cidx;
     _vg = vg;
     _chunkSize = chunkSize;
+    _monitor = monitor;
+    if (_monitor != null) {
+      _monitor.register(this);
+    }
   }
 
   @Override public FVecParseWriter reduce(StreamParseWriter sdout){
@@ -111,15 +117,20 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
   }
   @Override public FVecParseWriter close(Futures fs){
     if( _nvs == null ) return this; // Might call close twice
+    long mem = 0;
     for(int i=0; i < _nvs.length; i++) {
       _nvs[i].close(_cidx, fs);
+      mem += _nvs[i].chk2().byteSize();
       _nvs[i] = null; // free immediately, don't wait for all columns to close
+    }
+    if (_monitor != null) {
+      _monitor.closed(this, mem);
     }
     _nvs = null;  // Free for GC
     return this;
   }
   @Override public FVecParseWriter nextChunk(){
-    return  new FVecParseWriter(_vg, _cidx+1, _categoricals, _ctypes, _chunkSize, _vecs, _parse_columns_indices);
+    return new FVecParseWriter(_vg, _cidx+1, _categoricals, _ctypes, _chunkSize, _vecs, _parse_columns_indices, _monitor);
   }
 
   @Override public void newLine() {
@@ -238,5 +249,9 @@ public class FVecParseWriter extends Iced implements StreamParseWriter {
     if(_errs.length < 20)
       _errs = ArrayUtils.append(_errs,err);
     ++_errCnt;
+  }
+
+  public NewChunk[] getNvs() {
+    return _nvs;
   }
 }

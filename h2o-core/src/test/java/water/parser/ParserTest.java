@@ -9,7 +9,6 @@ import org.junit.Test;
 import water.*;
 import water.api.schemas3.ParseSetupV3;
 import water.fvec.*;
-import water.util.FileUtils;
 import water.util.Log;
 import water.util.StringUtils;
 
