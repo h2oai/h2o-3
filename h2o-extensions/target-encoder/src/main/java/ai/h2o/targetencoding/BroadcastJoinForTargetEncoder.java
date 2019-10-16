@@ -45,14 +45,12 @@ class BroadcastJoinForTargetEncoder {
       for (int i = 0; i < categoricalChunk.len(); i++) {
         int levelValue = (int) categoricalChunk.at8(i);
 
-          // We are allowed to do casting to `int` as we have validation before submitting this MRTask
-          int foldValue = _foldColumnIdx != -1 ? (int) cs[_foldColumnIdx].at8(i) : 0;
-          int[] arrForNumeratorsAndDenominators = _encodingDataPerNode[foldValue];
+        // We are allowed to do casting to `int` as we have validation before submitting this MRTask
+        int foldValue = _foldColumnIdx != -1 ? (int) cs[_foldColumnIdx].at8(i) : 0;
+        int[] arrForNumeratorsAndDenominators = _encodingDataPerNode[foldValue];
 
-        synchronized (arrForNumeratorsAndDenominators) { // Sync on whole array as there is no way to sync on two objects ( two rows of 2D array)
-          arrForNumeratorsAndDenominators[levelValue] = (int) numeratorChunk.at8(i);
-          arrForNumeratorsAndDenominators[_cardinalityOfCatCol + levelValue] = (int) denominatorChunk.at8(i);
-        }
+        arrForNumeratorsAndDenominators[levelValue] = (int) numeratorChunk.at8(i);
+        arrForNumeratorsAndDenominators[_cardinalityOfCatCol + levelValue] = (int) denominatorChunk.at8(i);
       }
     }
 
@@ -62,7 +60,7 @@ class BroadcastJoinForTargetEncoder {
       int[][] rightArr = mrt.getEncodingDataArray();
       for(int rowIdx = 0 ; rowIdx < leftArr.length; rowIdx++) {
         for(int colIdx = 0 ; colIdx < leftArr[rowIdx].length; colIdx++) {
-          synchronized (leftArr[rowIdx]) {
+          if (leftArr != rightArr) {
             int valueFromLeftArr = leftArr[rowIdx][colIdx];
             int valueFromRIghtArr = rightArr[rowIdx][colIdx];
             leftArr[rowIdx][colIdx] = Math.max(valueFromLeftArr, valueFromRIghtArr);
@@ -97,10 +95,10 @@ class BroadcastJoinForTargetEncoder {
       
     int[][] levelMappings = {CategoricalWrappedVec.computeMap( leftFrame.vec(leftCatColumnsIdxs[0]).domain(), broadcastedFrame.vec(0).domain())};
 
-    int[][] encodingDataMap = new FrameWithEncodingDataToArray(rightCatColumnsIdxs[0], rightFoldColumnIdx, numeratorIdx, denominatorIdx, broadcastedFrameCatCardinality, maxFoldValue)
+    int[][] encodingDataArray = new FrameWithEncodingDataToArray(rightCatColumnsIdxs[0], rightFoldColumnIdx, numeratorIdx, denominatorIdx, broadcastedFrameCatCardinality, maxFoldValue)
             .doAll(broadcastedFrame)
             .getEncodingDataArray();
-    new BroadcastJoiner(leftCatColumnsIdxs, leftFoldColumnIdx, encodingDataMap, levelMappings, broadcastedFrameCatCardinality)
+    new BroadcastJoiner(leftCatColumnsIdxs, leftFoldColumnIdx, encodingDataArray, levelMappings, broadcastedFrameCatCardinality)
             .doAll(leftFrame);
     return leftFrame;
   }
@@ -110,12 +108,12 @@ class BroadcastJoinForTargetEncoder {
     int[][] _encodingDataArray;
     int[][] _levelMappings;
 
-    BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, int[][] encodingDataMap, int[][] levelMappings, int cardinalityOfCatCol) {
+    BroadcastJoiner(int[] categoricalColumnsIdxs, int foldColumnIdx, int[][] encodingDataArray, int[][] levelMappings, int cardinalityOfCatCol) {
       assert categoricalColumnsIdxs.length == 1 : "Only single column target encoding(i.e. one categorical column is used to produce its encodings) is supported for now";
 
       _categoricalColumnIdx = categoricalColumnsIdxs[0];
       _foldColumnIdx = foldColumnIdx;
-      _encodingDataArray = encodingDataMap;
+      _encodingDataArray = encodingDataArray;
       _levelMappings = levelMappings;
       _cardinalityOfCatCol = cardinalityOfCatCol;
     }
