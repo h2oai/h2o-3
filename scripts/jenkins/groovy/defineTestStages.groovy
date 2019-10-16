@@ -378,7 +378,7 @@ def call(final pipelineContext) {
         kerberosPrincipal: 'HTTP/localhost@H2O.AI',
         kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
         kerberosPropertiesPath: 'scripts/jenkins/config/kerberos.properties',
-      ], pythonVersion: '2.7', nodeLabel: 'docker && micro',
+      ], pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'
     ]
@@ -437,7 +437,7 @@ def call(final pipelineContext) {
                     kerberosPrincipal: 'HTTP/localhost@H2O.AI',
                     kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
                     kerberosPropertiesPath: 'scripts/jenkins/config/kerberos.properties',
-            ], pythonVersion: '2.7', nodeLabel: 'docker && micro',
+            ], pythonVersion: '2.7',
             customDockerArgs: [ '--privileged' ],
             executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'
     ]
