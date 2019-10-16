@@ -17,6 +17,7 @@ import water.*;
 import water.fvec.Frame;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.ArrayList;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;

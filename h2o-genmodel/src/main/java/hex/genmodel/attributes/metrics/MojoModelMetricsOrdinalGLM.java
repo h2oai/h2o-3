@@ -1,6 +1,8 @@
 package hex.genmodel.attributes.metrics;
 
 
+import hex.genmodel.attributes.SerializedName;
+
 public class MojoModelMetricsOrdinalGLM extends MojoModelMetricsOrdinal {
   public long _nullDegressOfFreedom;
   public long _residualDegressOfFreedom;

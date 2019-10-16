@@ -74,6 +74,12 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
       this.column_name = column_name;
     }
 
+    public ColSpecifierV3(final String column_name, final String[] is_member_of_frames) {
+      this.column_name = column_name;
+      this.is_member_of_frames = is_member_of_frames;
+    }
+    
+
     @API(help="Name of the column", direction= API.Direction.INOUT)
     public String column_name;
 
