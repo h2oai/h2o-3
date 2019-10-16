@@ -18,7 +18,7 @@ import java.util.*;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static water.util.FileUtils.locateFile;
+import static water.util.FileUtils.getFile;
 
 // this test demonstrates that XGBoost Predictor can be used to calculate feature contributions (Tree SHAP values)
 // naive (=slow) algorithm implemented and compared to implementation in XGBoost Predictor
@@ -51,9 +51,9 @@ public class XgbPredictContribsTest {
     rabitEnv.put("DMLC_TASK_ID", "0");
     Rabit.init(rabitEnv);
 
-    trainData = parseData(locateFile("smalldata/xgboost/demo/data/agaricus.txt.train"));
-    trainMat = new DMatrix(locateFile("smalldata/xgboost/demo/data/agaricus.txt.train").getAbsolutePath());
-    testMat = new DMatrix(locateFile("smalldata/xgboost/demo/data/agaricus.txt.test").getAbsolutePath());
+    trainData = parseData(getFile("smalldata/xgboost/demo/data/agaricus.txt.train"));
+    trainMat = new DMatrix(getFile("smalldata/xgboost/demo/data/agaricus.txt.train").getAbsolutePath());
+    testMat = new DMatrix(getFile("smalldata/xgboost/demo/data/agaricus.txt.test").getAbsolutePath());
   }
 
   @After
