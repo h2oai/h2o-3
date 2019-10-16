@@ -188,12 +188,16 @@ abstract public class Log {
     return _level;
   }
 
-  public static boolean isLoggingFor(String strLevel){
-    int level = valueOf(strLevel);
-    if(level == -1){ // in case of invalid log level return false
+  public static boolean isLoggingFor(int level) {
+    if (level == -1) { // in case of invalid log level return false
       return false;
     }
     return _level >= level;
+  }
+
+  public static boolean isLoggingFor(String strLevel){
+    int level = valueOf(strLevel);
+    return isLoggingFor(level);
   }
 
   /**
