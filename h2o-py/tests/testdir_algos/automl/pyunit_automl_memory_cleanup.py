@@ -318,8 +318,9 @@ def test_suite_remove_automl():
 
         keys = list_keys_in_memory()
         # print(keys['all'].values)
-        assert contains_leaderboard(project_name, keys)
-        assert contains_event_log(project_name, keys)
+        assert aml.key.startswith(project_name)
+        assert contains_leaderboard(aml.key, keys)
+        assert contains_event_log(aml.key, keys)
         expectations = dict(
             models_base=max_models + 2,  # 2 SEs
             cv_models=0,
@@ -335,8 +336,8 @@ def test_suite_remove_automl():
         h2o.remove(aml)
         clean = list_keys_in_memory()
         print(clean['all'].values)
-        assert not contains_leaderboard(project_name, clean)
-        assert not contains_event_log(project_name, clean)
+        assert not contains_leaderboard(aml.key, clean)
+        assert not contains_event_log(aml.key, clean)
         assert len(clean['models_base']) == 0
         assert len(clean['cv_models']) == 0
         assert len(clean['models_all']) == 0
@@ -363,8 +364,9 @@ def test_suite_remove_automl():
 
         keys = list_keys_in_memory()
         # print(keys['all'].values)
-        assert contains_leaderboard(project_name, keys)
-        assert contains_event_log(project_name, keys)
+        assert aml.key.startswith(project_name)
+        assert contains_leaderboard(aml.key, keys)
+        assert contains_event_log(aml.key, keys)
         expectations = dict(
             models_base=max_models + 2,  # 2 SEs
             cv_models=(max_models+2) * nfolds,  # 1 cv model per fold for all models, incl. SEs
@@ -382,8 +384,8 @@ def test_suite_remove_automl():
         h2o.remove(aml)
         clean = list_keys_in_memory()
         print(clean['all'].values)
-        assert not contains_leaderboard(project_name, clean)
-        assert not contains_event_log(project_name, clean)
+        assert not contains_leaderboard(aml.key, clean)
+        assert not contains_event_log(aml.key, clean)
         assert len(clean['models_base']) == 0
         assert len(clean['cv_models']) == 0
         assert len(clean['models_all']) == 0
@@ -406,8 +408,9 @@ def test_suite_remove_automl():
 
         keys = list_keys_in_memory()
         # print(keys['all'].values)
-        assert contains_leaderboard(project_name, keys)
-        assert contains_event_log(project_name, keys)
+        assert aml.key.startswith(project_name)
+        assert contains_leaderboard(aml.key, keys)
+        assert contains_event_log(aml.key, keys)
         expectations = dict(
             models_base=max_models + 2,  # 2 SEs
             cv_models=0,
@@ -423,8 +426,8 @@ def test_suite_remove_automl():
         h2o.remove(aml)
         clean = list_keys_in_memory()
         print(clean['all'].values)
-        assert not contains_leaderboard(project_name, clean)
-        assert not contains_event_log(project_name, clean)
+        assert not contains_leaderboard(aml.key, clean)
+        assert not contains_event_log(aml.key, clean)
         assert len(clean['models_base']) == 0
         assert len(clean['cv_models']) == 0
         assert len(clean['models_all']) == 0
@@ -456,8 +459,9 @@ def test_suite_remove_automl():
         h2o.remove(aml)
         clean = list_keys_in_memory()
         print(clean['all'].values)
-        assert not contains_leaderboard(project_name, clean)
-        assert not contains_event_log(project_name, clean)
+        assert aml.key.startswith(project_name)
+        assert not contains_leaderboard(aml.key, clean)
+        assert not contains_event_log(aml.key, clean)
         assert len(clean['models_base']) == 0
         assert len(clean['cv_models']) == 0
         assert len(clean['models_all']) == 0

@@ -4,12 +4,19 @@ import hex.ScoreKeeper;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Iced;
 import water.Key;
+import water.api.schemas3.JobV3;
 import water.fvec.Frame;
+
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Parameters which specify the build (or extension) of an AutoML build job.
  */
 public class AutoMLBuildSpec extends Iced {
+
+  private static final DateFormat projectTimeStampFormat = new SimpleDateFormat("yyyyMMdd_HmmssSSS");
 
   /**
    * Default constructor provides the default behavior.
@@ -173,17 +180,13 @@ public class AutoMLBuildSpec extends Iced {
   public AutoMLInput input_spec;
   public AutoMLBuildSpec.AutoMLBuildModels build_models;
 
-  private transient String project_cached = null;
-  public String project() {
-    if (null != project_cached)
-      return project_cached;
+  // output
+  public JobV3 job;
 
-    // allow the user to override:
-    if (null != build_control.project_name) {
-      project_cached = build_control.project_name;
-      return project_cached;
+  public String project() {
+    if (build_control.project_name == null) {
+      build_control.project_name = "AutoML_"+ projectTimeStampFormat.format(new Date());
     }
-    project_cached = "automl_"+input_spec.training_frame+"_"+input_spec.response_column;
-    return project_cached;
+    return build_control.project_name;
   }
 }

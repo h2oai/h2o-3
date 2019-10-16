@@ -871,4 +871,4 @@ setClass("H2OAutoML", slots = c(project_name = "character",
                                 training_info = "list"),
                       contains = "Keyed")
 #' @rdname h2o.keyof
-setMethod("h2o.keyof", signature("H2OAutoML"), function(object) object@project_name)
+setMethod("h2o.keyof", signature("H2OAutoML"), function(object) attr(object, "id"))

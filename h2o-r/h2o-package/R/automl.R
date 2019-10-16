@@ -40,7 +40,7 @@
 #'        does not improve for k (stopping_rounds) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
-#' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
+#' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated.
 #' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"),
 #'        and the full list of options is: "DRF" (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble".
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
@@ -176,10 +176,7 @@ h2o.automl <- function(x, y, training_frame,
     build_control$stopping_criteria$seed <- seed
   }
 
-  # If project_name is NULL, auto-gen based on training_frame ID
-  if (is.null(project_name)) {
-    build_control$project_name <- paste0("automl_", training_frame_id)
-  } else {
+  if (!is.null(project_name)) {
     build_control$project_name <- project_name
   }
 
@@ -288,6 +285,7 @@ h2o.automl <- function(x, y, training_frame,
 
   # GET AutoML object
   aml <- h2o.getAutoML(project_name = res$job$dest$name)
+  attr(aml, "id") <- res$job$dest$name
   return(aml)
 }
 
@@ -368,10 +366,10 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   return(frame)
 }
 
-.automl.fetch_state <- function(project_name, properties=NULL) {
+.automl.fetch_state <- function(run_id, properties=NULL) {
   # GET AutoML job and leaderboard for project
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
-  #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
+  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
+  project_name = automl_job$project_name
 
   leaderboard <- as.data.frame(automl_job$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))

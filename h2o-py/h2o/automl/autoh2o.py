@@ -297,7 +297,7 @@ class H2OAutoML(Keyed):
     #---------------------------------------------------------------------------
     @property
     def key(self):
-        return self.project_name
+        return self._job.dest_key if self._job else self.project_name
 
     @property
     def leader(self):
@@ -406,11 +406,6 @@ class H2OAutoML(Keyed):
         ncols = training_frame.ncols
         names = training_frame.names
 
-        #Set project name if None
-        if self.project_name is None:
-            self.project_name = "automl_" + training_frame.frame_id
-            self.build_control["project_name"] = self.project_name
-
         # Minimal required arguments are training_frame and y (response)
         if y is None:
             raise H2OValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
@@ -494,6 +489,9 @@ class H2OAutoML(Keyed):
             print(resp)
             return
 
+        if not self.project_name:
+            self.build_control['project_name'] = self.project_name = resp['build_control']['project_name']
+
         self._job = H2OJob(resp['job'], "AutoML")
         poll_updates = ft.partial(self._poll_training_updates, verbosity=self._verbosity, state={})
         try:
@@ -573,7 +571,7 @@ class H2OAutoML(Keyed):
     # Private
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
-        state = H2OAutoML._fetch_state(self.project_name)
+        state = H2OAutoML._fetch_state(self.key)
         self._leader_id = state['leader_id']
         self._leaderboard = state['leaderboard']
         self._event_log = el = state['event_log']
@@ -596,7 +594,7 @@ class H2OAutoML(Keyed):
         try:
             if job.progress > state.get('last_job_progress', 0):
                 # print("\nbar_progress={}, job_progress={}".format(bar_progress, job.progress))
-                events = H2OAutoML._fetch_state(self.project_name, properties=['event_log'])['event_log']
+                events = H2OAutoML._fetch_state(job.dest_key, properties=['event_log'])['event_log']
                 events = events[events['level'].isin(levels), :]
                 last_nrows = state.get('last_events_nrows', 0)
                 if events.nrows > last_nrows:

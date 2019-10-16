@@ -42,7 +42,7 @@ automl.leaderboard_sort_metric.test <- function() {
                      project_name = "r_lbsm_test_aml2",
                      sort_metric = "RMSE")
   aml2@leaderboard
-  expect_equal(names(aml2@leaderboard), c("model_id", "mean_residual_deviance", "rmse", "mse", "mae", "rmsle"))
+  expect_equal(names(aml2@leaderboard), c("model_id", "rmse", "mean_residual_deviance", "mse", "mae", "rmsle"))
   # check that rmse col is sorted already
   rmse_col <- as.vector(aml2@leaderboard[,"rmse"])
   expect_equal(identical(rmse_col, sort(rmse_col, decreasing = FALSE)), TRUE)
@@ -62,7 +62,7 @@ automl.leaderboard_sort_metric.test <- function() {
                      project_name = "r_lbsm_test_aml3",
                      sort_metric = "MSE")
   aml3@leaderboard
-  expect_equal(names(aml3@leaderboard),c("model_id", "mean_per_class_error", "logloss", "rmse", "mse"))
+  expect_equal(names(aml3@leaderboard),c("model_id", "mse", "mean_per_class_error", "logloss", "rmse"))
   # check that mse col is sorted already
   mse_col <- as.vector(aml3@leaderboard[,"mse"])
   expect_equal(identical(mse_col, sort(mse_col, decreasing = FALSE)), TRUE)
