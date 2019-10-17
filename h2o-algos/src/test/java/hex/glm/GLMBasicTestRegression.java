@@ -3,7 +3,6 @@ package hex.glm;
 import hex.DataInfo;
 import hex.GLMMetrics;
 import hex.ModelMetricsRegressionGLM;
-import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -25,14 +24,12 @@ import water.util.ArrayUtils;
 
 import water.util.Log;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
 import static org.junit.Assert.*;
-import static water.util.FileUtils.getFile;
 
 /**
  * Created by tomasnykodym on 6/4/15.
@@ -50,29 +47,24 @@ public class GLMBasicTestRegression extends TestUtil {
   @BeforeClass
   public static void setup() throws IOException {
     stall_till_cloudsize(1);
-    File f = getFile("smalldata/glm_test/cancar_logIn.csv");
-    assert f.exists();
-    NFSFileVec nfs = NFSFileVec.make(f);
+    NFSFileVec nfs = makeNfsFileVec("smalldata/glm_test/cancar_logIn.csv");
     Key outputKey = Key.make("prostate_cat_train.hex");
     _canCarTrain = ParseDataset.parse(outputKey, nfs._key);
     _canCarTrain.add("Merit", (_merit = _canCarTrain.remove("Merit")).toCategoricalVec());
     _canCarTrain.add("Class", (_class = _canCarTrain.remove("Class")).toCategoricalVec());
 
     DKV.put(_canCarTrain._key, _canCarTrain);
-    f = getFile("smalldata/glm_test/earinf.txt");
-    nfs = NFSFileVec.make(f);
+    nfs = makeNfsFileVec("smalldata/glm_test/earinf.txt");
     outputKey = Key.make("earinf.hex");
     _earinf = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_earinf._key, _earinf);
 
-    f = getFile("smalldata/glm_test/weighted.csv");
-    nfs = NFSFileVec.make(f);
+    nfs = makeNfsFileVec("smalldata/glm_test/weighted.csv");
     outputKey = Key.make("weighted.hex");
     _weighted = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_weighted._key, _weighted);
 
-    f = getFile("smalldata/glm_test/upsampled.csv");
-    nfs = NFSFileVec.make(f);
+    nfs = makeNfsFileVec("smalldata/glm_test/upsampled.csv");
     outputKey = Key.make("upsampled.hex");
     _upsampled = ParseDataset.parse(outputKey, nfs._key);
     DKV.put(_upsampled._key, _upsampled);
