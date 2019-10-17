@@ -27,7 +27,7 @@ Use the ``h2o.init()`` method to initialize H2O. This method accepts the followi
 - ``password``: (Optional) The password to log in with.
 - ``cookies``: (Optional) Vector (or list) of cookies to add to request.
 - ``context_path``: (Optional) The last part of connection URL. For example, **http://<ip>:<port>/<context_path>**
-- ``use_spnego``: (Optional) Set this to TRUE to connect to a H2O cluster with SPNEGO authentication.
+- ``use_spnego``: (Optional) Set this to TRUE to connect to an H2O cluster with SPNEGO authentication. This defaults to "FALSE" and is mutually exclusive with ``username`` and ``password``. 
 
 By default, ``h2o.init()`` first checks if an H2O instance is connectible. If it cannot connect and ``start = TRUE`` with ``ip = "localhost"``, it will attempt to start an instance of H2O at localhost:54321. If an open ip and port of your choice are passed in, then this method will attempt to start an H2O instance at that specified ip and port.
 
