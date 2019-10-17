@@ -15,6 +15,9 @@ import water.util.*;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
@@ -219,6 +222,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
+    public transient Consumer<Model> callback = null;
     protected Driver(){ super(); }
     protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
     // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
@@ -238,6 +242,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.exit();
       }
       tryComplete();
+      if(callback != null) {
+        callback.accept(_job.get());
+      }
     }
     public abstract void computeImpl();
   }
@@ -308,14 +315,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _mb.trainModel();
     }
   }
-
-  /** Method to launch training of a Model, based on its parameters. */
   final public Job<M> trainModel() {
+    return trainModel(null);
+  }
+  /** Method to launch training of a Model, based on its parameters. */
+  final public Job<M> trainModel(final Consumer<Model> callback) {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
     if( !nFoldCV() )
-      return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
+      return _job.start(trainModelImpl(callback), _parms.progressUnits(), _parms._max_runtime_secs);
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
     return _job.start(new H2O.H2OCountedCompleter() {
@@ -323,6 +332,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                         public void compute2() {
                           computeCrossValidation();
                           tryComplete();
+                          if(callback != null) {
+                            callback.accept(_job.get());
+                          }
                         }
                         @Override
                         public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
@@ -395,6 +407,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Model-specific implementation of model training
    * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
   abstract protected Driver trainModelImpl();
+  protected Driver trainModelImpl(Consumer<Model> callback){
+    final Driver driver = trainModelImpl();
+    driver.callback = callback;
+    return driver;
+  }
 
   @Deprecated protected int nModelsInParallel() { return 0; }
   /**

@@ -1,6 +1,8 @@
 package hex.grid;
 
 import hex.Model;
+import hex.ModelBuilder;
+import hex.ParallelModelBuilder;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
@@ -13,8 +15,14 @@ import water.fvec.Frame;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BiConsumer;
 
+import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
 
 public class GridTest extends TestUtil {
@@ -25,6 +33,84 @@ public class GridTest extends TestUtil {
   @Before
   public void setUp() throws Exception {
     TestUtil.stall_till_cloudsize(1);
+  }
+
+  @Test
+  public void testParallelModelBuild() {
+    final List<Model> models = new ArrayList<>();
+    Scope.enter();
+    try {
+      // Create new GBM model
+      final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Scope.track(trainingFrame);
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = trainingFrame._key;
+      parms._distribution = AUTO;
+      parms._response_column = "IsDepDelayed";
+      parms._ntrees = 10;
+      final Lock lock = new ReentrantLock();
+
+      // Must be thread safe, otherwise won't work and will lock itself at the end.
+      final BiConsumer<Model, ParallelModelBuilder> modelFeder = (model, parallelModelBuilder) -> {
+        lock.lock();
+        try {
+          models.add(model);
+          if (models.size() < 3) {
+            parallelModelBuilder.run(new ModelBuilder[]{ModelBuilder.make(parms.clone())});
+          } else {
+            parallelModelBuilder.noMoreModels();
+          }
+        } finally {
+          lock.unlock();
+        }
+      };
+      
+      final ModelBuilder modelBuilder = ModelBuilder.make(parms.clone());
+      final ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeder);
+      parallelModelBuilder.run(new ModelBuilder[]{modelBuilder});
+      parallelModelBuilder.join();
+      models.forEach(Scope::track_generic);
+      assertEquals(3, models.size());
+    } finally {
+      Scope.exit();
+    }
+
+  }
+
+  @Test
+  public void testParallelGridSearch() {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Scope.track(trainingFrame);
+
+      final Integer[] ntreesArr = new Integer[]{5, 50, 7, 8, 9, 10};
+      final Integer[] maxDepthArr = new Integer[]{2, 3,4};
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_ntrees", ntreesArr);
+        put("_max_depth", maxDepthArr);
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "IsDepDelayed";
+      params._seed = 42;
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+
+      assertEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
+
+      final Job<Grid> job = GridSearch.startGridSearch(grid._key, params, hyperParms);
+      final Grid secondGrid = job.get();
+      assertEquals(ntreesArr.length * maxDepthArr.length, secondGrid.getModelCount());
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test

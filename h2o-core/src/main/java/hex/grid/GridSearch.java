@@ -1,9 +1,6 @@
 package hex.grid;
 
-import hex.Model;
-import hex.ModelBuilder;
-import hex.ModelParametersBuilderFactory;
-import hex.ScoringInfo;
+import hex.*;
 import hex.grid.HyperSpaceWalker.BaseWalker;
 import jsr166y.CountedCompleter;
 import water.*;
@@ -16,6 +13,8 @@ import water.util.PojoUtils;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Grid search job.
@@ -136,7 +135,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     // Install this as job functions
     return _job.start(new H2O.H2OCountedCompleter() {
       @Override public void compute2() {
-        gridSearch(grid);
+        parallelGridSearch(grid);
         tryComplete();
       }
 
@@ -158,6 +157,88 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    */
   public long getModelCount() {
     return _hyperSpaceWalker.getMaxHyperSpaceSize();
+  }
+
+  private class ModelFeeder<MP extends Model.Parameters> {
+
+    private final HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceWalker;
+    private final Grid grid;
+    private final Lock hyperspaceAccessLock = new ReentrantLock();
+
+    public ModelFeeder(HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceWalker, Grid grid) {
+      this.hyperSpaceWalker = hyperSpaceWalker;
+      this.grid = grid;
+    }
+
+    private void feedModel(final Model model, final ParallelModelBuilder parallelModelBuilder) {
+      hyperspaceAccessLock.lock();
+      boolean locked = true;
+      try {
+        grid.putModel(model._parms.checksum(IGNORED_FIELDS_PARAM_HASH), model._key);
+        grid.update(_job);
+        final MP nextModelParams = getNextModelParams(hyperSpaceWalker, model, grid);
+        if (nextModelParams != null) {
+          parallelModelBuilder.run(new ModelBuilder[]{ModelBuilder.make(nextModelParams)});
+        } else {
+          hyperspaceAccessLock.unlock();
+          locked = false;
+          parallelModelBuilder.noMoreModels();
+        }
+      } finally {
+        if(locked) {
+          hyperspaceAccessLock.unlock();
+        }
+      }
+    }
+
+    private MP getNextModelParams(final HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceWalker, final Model model, final Grid grid){
+      MP params = null;
+
+      while (params == null) {
+        if (hyperSpaceWalker.hasNext(model)) {
+          params = hyperSpaceWalker.nextModelParameters(model);
+          final Key modelKey = grid.getModelKey(params.checksum(IGNORED_FIELDS_PARAM_HASH));
+          if(modelKey != null){
+            params = null;
+          }
+        } else {
+          break;
+        }
+      }
+
+      return params;
+    }
+    
+
+  }
+  
+  private void parallelGridSearch(Grid<MP> grid) {
+    final HyperSpaceWalker.HyperSpaceIterator<MP> iterator = _hyperSpaceWalker.iterator();
+    final ModelFeeder modelFeeder = new ModelFeeder(iterator, grid);
+    ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeeder::feedModel);
+
+    List<ModelBuilder> startModels = new ArrayList<>();
+    // Just a showcase - test with GridTest.testParallelGridSearch method.
+    // Let's start with n models. The number of models at the beginning determines the level of parallelism kept by
+    // the model feeders. Not more, not less. Once a model is finished, another one takes it's place in the training process.
+    for (int i = 0; i < 10; i++) {
+      if (iterator.hasNext(null)) {
+        final MP nextModelParameters = iterator.nextModelParameters(null);
+        final long checksum = nextModelParameters.checksum(IGNORED_FIELDS_PARAM_HASH);
+        if(grid.getModelKey(checksum) == null) {
+          startModels.add(ModelBuilder.make(nextModelParameters));
+        } else {
+          i--;
+        }
+      }
+    }
+    
+    if(!startModels.isEmpty()) {
+      parallelModelBuilder.run(startModels.toArray(new ModelBuilder[startModels.size()]));
+      parallelModelBuilder.join();
+    }
+    grid.update(_job);
+    grid.unlock(_job);
   }
 
   /**
