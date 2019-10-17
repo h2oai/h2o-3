@@ -35,7 +35,7 @@ def compare_output(original, generic, strip_part, algo_name, generic_algo_name):
     assert generic == original
 
 
-def compare_params(original: H2OEstimator, generic: H2OEstimator):
+def compare_params(original, generic):
     original_params = original.params
     generic_params = generic.params
 
