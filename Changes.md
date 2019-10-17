@@ -2,14 +2,64 @@
 
 ## H2O
 
-### Yau (3.26.0.7) - 10/18/2019
+### Yau (3.26.0.7) - 10/17/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/7/index.html</a>
 
+<h4>Bug</h4>
 
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6019'>PUBDEV-6019</a>] - Fixed and ESPC row_layout assertion error that occurrend when run FrameTest.java.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6874'>PUBDEV-6874</a>] - In AutoML fixed an issue that resulted in poor predictions from SE on MNIST.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6893'>PUBDEV-6893</a>] - When saving files in Python, H2O now assumes the provided path is a directory even when an ending "/" is not included in the path. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6941'>PUBDEV-6941</a>] - In Target Encoding, added blending of posterior and prior during imputation of unseen values.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6949'>PUBDEV-6949</a>] - Removed H2O.STORE.clear() in FrameTest.java so that the deepSlice test could be enabled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6956'>PUBDEV-6956</a>] - Python users can now specify `verify_ssl_certificates` and `cacert` when connecting to H2O.  
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6967'>PUBDEV-6967</a>] - Target Encoding now works correctly in Flow.
+</li>
+</ul>
 
+<h4>New Feature</h4>
 
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6739'>PUBDEV-6739</a>] - Imported MOJO models now show parameters of the original model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6825'>PUBDEV-6825</a>] - Added the ability to clone ModelBuilder.
+</li>
+</ul>
 
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6899'>PUBDEV-6899</a>] - R client users can now specify the Boolean `use_spnego` parameter when starting H2O.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6263'>PUBDEV-6263</a>] - System level proxy is now bypassed when connecting to an H2O instance on localhost from R/Python.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6922'>PUBDEV-6922</a>] - Improved performance by sending data to and from external backend after a specified block size rather than by each item. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6948'>PUBDEV-6948</a>] - Disable HTTP TRACE requests.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6951'>PUBDEV-6951</a>] - Removed the "experimental" note in the AutoML chapter. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6953'>PUBDEV-6953</a>] - Fixed a broken link in XGBoost documentation.
+</li>
+</ul>
 
 ### Yau (3.26.0.6) - 10/1/2019
 
