@@ -449,9 +449,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     } else {
       eventLog().info(Stage.DataImport, "leaderboard frame: NULL");
     }
-    if (null != this.blendingFrame) {
+    if (null != _blendingFrame) {
       this.eventLog().info(Stage.DataImport,
-          "blending frame: "+this.blendingFrame.toString().replace("\n", " ")+" checksum: "+this.blendingFrame.checksum());
+          "blending frame: "+_blendingFrame.toString().replace("\n", " ")+" checksum: "+_blendingFrame.checksum());
     } else {
       this.eventLog().info(Stage.DataImport, "blending frame: NULL");
     }
