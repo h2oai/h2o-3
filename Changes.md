@@ -2,9 +2,9 @@
 
 ## H2O
 
-### Yau (3.26.0.7) - 10/17/2019
+### Yau (3.26.0.8) - 10/17/2019
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/7/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/7/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/8/index.html</a>
 
 <h4>Bug</h4>
 
@@ -14,6 +14,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/7/index.ht
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6874'>PUBDEV-6874</a>] - In AutoML fixed an issue that resulted in poor predictions from SE on MNIST.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6893'>PUBDEV-6893</a>] - When saving files in Python, H2O now assumes the provided path is a directory even when an ending "/" is not included in the path. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6936'>PUBDEV-6936</a>] - The custom distribution function in GBM now works correctly for custom multinomial distributions.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6941'>PUBDEV-6941</a>] - In Target Encoding, added blending of posterior and prior during imputation of unseen values.
 </li>
@@ -28,6 +30,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/7/index.ht
 <h4>New Feature</h4>
 
 <ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6494'>PUBDEV-6494</a>] - Base models can have different training_frames in blending mode in Stacked Ensembles.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6739'>PUBDEV-6739</a>] - Imported MOJO models now show parameters of the original model.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6825'>PUBDEV-6825</a>] - Added the ability to clone ModelBuilder.
