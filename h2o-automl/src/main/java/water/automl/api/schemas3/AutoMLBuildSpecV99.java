@@ -163,6 +163,11 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     }
   }
 
+  public static final class AutoMLCustomParametersV99 extends Schema<AutoMLBuildSpec.AutoMLCustomParameters, AutoMLCustomParametersV99> {
+
+
+  }
+
   public static final class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {
 
     @API(help="A list of algorithms to skip during the model-building phase.", valuesProvider=AlgoProvider.class, direction=API.Direction.INPUT)
@@ -174,6 +179,8 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).", direction=API.Direction.INPUT)
     public StepDefinitionV99[] modeling_plan;
 
+    @API(help="Custom algorithm parameters.", direction=API.Direction.INPUT)
+    public AutoMLCustomParametersV99 algo_parameters;
   } // class AutoMLBuildModels
 
   ////////////////

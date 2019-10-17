@@ -1,11 +1,23 @@
 package ai.h2o.automl;
 
+import hex.Model;
 import hex.ScoreKeeper;
+import hex.deeplearning.DeepLearningModel;
+import hex.ensemble.StackedEnsembleModel;
+import hex.glm.GLMModel;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.tree.drf.DRFModel;
+import hex.tree.gbm.GBMModel;
+import hex.tree.xgboost.XGBoostModel;
 import water.Iced;
 import water.Key;
 import water.api.schemas3.JobV3;
+import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
+import water.util.IcedHashMap;
+import water.util.Log;
+import water.util.PojoUtils;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -174,6 +186,77 @@ public class AutoMLBuildSpec extends Iced {
     public Algo[] exclude_algos;
     public Algo[] include_algos;
     public StepDefinition[] modeling_plan;
+    public AutoMLCustomParameters algo_parameters;
+  }
+
+  public static final class AutoMLCustomParameters extends Iced {
+
+    public boolean has(Algo algo) {
+      return algo_parameter_names.get(algo.name()) != null;
+    }
+
+    public boolean has(Algo algo, String param) {
+      return ArrayUtils.contains(algo_parameter_names.get(algo.name()), param);
+    }
+
+    public <V> void set(String param, V value) {
+      for (Algo algo : Algo.values()) {
+        set(algo, param, value);
+      }
+    }
+
+    public <V> void set(Algo algo, String param, V value) {
+      Model.Parameters customParams = getCustomParameters(algo);
+      try {
+        PojoUtils.setField(customParams, param, value, PojoUtils.FieldNaming.CONSISTENT);
+        PojoUtils.setField(customParams, param, value, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+        addParameterName(algo, param);
+      } catch (IllegalArgumentException iae) {
+        Log.debug("Could not set custom param "+param+" for algo "+algo+": "+iae.getMessage());
+      }
+    }
+
+    public String[] getCustomParameterNames(Algo algo) {
+      return algo_parameter_names.get(algo.name());
+    }
+
+    public Model.Parameters getCustomParameters(Algo algo) {
+      if (!algo_parameters.containsKey(algo.name())) algo_parameters.put(algo.name(), defaultParameters(algo));
+      return algo_parameters.get(algo.name());
+    }
+
+    public void setCustomParameters(Algo algo, Model.Parameters destParams) {
+      if (has(algo)) {
+          PojoUtils.copyProperties(destParams, getCustomParameters(algo), PojoUtils.FieldNaming.CONSISTENT, null, getCustomParameterNames(algo));
+      }
+    }
+
+    private Model.Parameters defaultParameters(Algo algo) {
+      switch (algo) {
+        case DeepLearning: return new DeepLearningModel.DeepLearningParameters();
+        case DRF: return new DRFModel.DRFParameters();
+        case GBM: return new GBMModel.GBMParameters();
+        case GLM: return new GLMModel.GLMParameters();
+        case StackedEnsemble: return new StackedEnsembleModel.StackedEnsembleParameters();
+        case XGBoost: return new XGBoostModel.XGBoostParameters();
+        default: throw new H2OIllegalArgumentException("Custom parameters are not supported for "+algo.name()+".");
+      }
+    }
+
+    private void addParameterName(Algo algo, String param) {
+      if (!algo_parameter_names.containsKey(algo.name())) {
+        algo_parameter_names.put(algo.name(), new String[] {param});
+      } else {
+        String[] names = algo_parameter_names.get(algo.name());
+        if (!ArrayUtils.contains(names, param)) {
+          algo_parameter_names.put(algo.name(), ArrayUtils.append(names, param));
+        }
+      }
+    }
+
+    public IcedHashMap<String, String[]> algo_parameter_names = new IcedHashMap<>(); // stores the parameters names overridden, by algo name
+    public IcedHashMap<String, Model.Parameters> algo_parameters = new IcedHashMap<>(); //stores the parameters values, by algo name
+
   }
 
   public AutoMLBuildControl build_control;

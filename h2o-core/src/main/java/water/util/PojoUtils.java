@@ -635,21 +635,28 @@ public class PojoUtils {
       }
       Object value = setFields.get(key);
       if (value instanceof Map) {
-        // handle nested objects
-        try {
-          // In some cases, the target object has children already (e.g., defaults), while in other cases it doesn't.
-          if (null == f.get(o))
-            f.set(o, f.getType().newInstance());
-          fillFromMap(f.get(o), (Map<String, Object>) value);
-        } catch (IllegalAccessException e) {
-          throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
-        } catch (InstantiationException e) {
+        if (f.getType().isInstance(value)) {
+          setField(o, key, value);
+        } else {
+          // handle nested objects
           try {
-            throw new IllegalArgumentException("Cannot create new child object of type: " +
-                    PojoUtils.getFieldEvenInherited(o, key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
-          } catch (NoSuchFieldException ee) {
-            // Can't happen: we've already checked for this.
-            throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
+            // In some cases, the target object has children already (e.g., defaults), while in other cases it doesn't.
+            if (null == f.get(o))
+              f.set(o, f.getType().newInstance());
+            fillFromMap(f.get(o), (Map<String, Object>) value);
+          }
+          catch (IllegalAccessException e) {
+            throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
+          }
+          catch (InstantiationException e) {
+            try {
+              throw new IllegalArgumentException("Cannot create new child object of type: " +
+                      PojoUtils.getFieldEvenInherited(o, key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
+            }
+            catch (NoSuchFieldException ee) {
+              // Can't happen: we've already checked for this.
+              throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
+            }
           }
         }
       } else if (value instanceof List) {

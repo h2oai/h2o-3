@@ -65,6 +65,7 @@ class H2OAutoML(Keyed):
                  exclude_algos=None,
                  include_algos=None,
                  modeling_plan=None,
+                 algo_parameters=None,
                  keep_cross_validation_predictions=False,
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
@@ -267,6 +268,8 @@ class H2OAutoML(Keyed):
                             plan.append(dict(name=name, steps=[dict(id=i) for i in ids]))
             self.build_models['modeling_plan'] = plan
 
+        assert_is_type(algo_parameters, None, dict)
+        self.build_models['algo_parameters_json'] = algo_parameters
 
         assert_is_type(keep_cross_validation_predictions, bool)
         self.build_control["keep_cross_validation_predictions"] = keep_cross_validation_predictions

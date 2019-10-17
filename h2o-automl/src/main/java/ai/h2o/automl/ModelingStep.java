@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
 import ai.h2o.automl.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
@@ -18,6 +19,7 @@ import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
+import water.util.PojoUtils;
 
 import java.util.Map;
 
@@ -119,6 +121,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
     }
+
+    void setCustomParams(Model.Parameters params) {
+        AutoMLCustomParameters customParams = aml().getBuildSpec().build_models.algo_parameters;
+        if (customParams == null) return;
+        customParams.setCustomParameters(_algo, params);
+    }
+
 
     /**
      * Configures early-stopping for the model or set of models to be built.
@@ -235,6 +244,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             setCommonModelBuilderParams(builder._parms);
             setStoppingCriteria(builder._parms, defaults, true);
+            setCustomParams(builder._parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
             if (_ignoreConstraints)
@@ -307,6 +317,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             setCommonModelBuilderParams(baseParms);
             setStoppingCriteria(baseParms, defaults, false);
+            setCustomParams(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             RandomDiscreteValueSearchCriteria searchCriteria =
