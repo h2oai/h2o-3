@@ -192,6 +192,26 @@ class CustomDistributionGaussian:
         return y - f
 ```
 
+Or custom Multinomial distribution:
+   
+   ```python
+class CustomDistributionMultinomial:
+   
+    def link(self):
+        return "log"
+
+    def init(self, w, o, y):
+        return [w * (y - o), w]
+        
+    def gradient(self, y, f, l):
+        return 1 - f if y == l else 0 - f
+
+    def gamma(self, w, y, z, f):
+        import java.lang.Math as math
+        absz = math.abs(z)
+        return [w * z, w * (absz * (1 - absz))]
+   ```
+
 ##### Publishing custom distribution function in cluster
 The client local custom function represented as a class can be uploaded into running
 H2O cluster by calling method `h2o.upload_custom_distribution(klazz, func_name, func_file)`:
