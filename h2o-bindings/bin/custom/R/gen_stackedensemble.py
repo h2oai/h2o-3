@@ -14,6 +14,12 @@ def update_param(name, param):
 
 extensions = dict(
     frame_params=['training_frame', 'validation_frame', 'blending_frame'],
+    validate_frames="""
+training_frame <- .validate.H2OFrame(training_frame, required=is.null(blending_frame))
+validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+blending_frame <- .validate.H2OFrame(blending_frame, required=is.null(training_frame))
+if (is.null(training_frame)) training_frame <- blending_frame  # guarantee presence of default metrics
+""",
     validate_params="""
 # Get the base models from model IDs (if any) that will be used for constructing model summary
 if(!is.list(base_models) && is.vector(x)) {

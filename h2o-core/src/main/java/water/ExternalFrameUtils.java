@@ -128,117 +128,104 @@ public class ExternalFrameUtils {
         return vecTypes;
     }
 
-    static void sendIntArray(AutoBuffer ab, ByteChannel channel, int[] data) throws IOException{
+    static void sendIntArray(AutoBuffer ab, int[] data) {
         ab.putA4(data);
-        writeToChannel(ab, channel);
     }
 
-    static void sendDoubleArray(AutoBuffer ab, ByteChannel channel, double[] data) throws IOException{
+    static void sendDoubleArray(AutoBuffer ab, double[] data) {
         ab.putA8d(data);
-        writeToChannel(ab, channel);
     }
 
-    static void sendBoolean(AutoBuffer ab, ByteChannel channel, boolean data) throws IOException{
-        sendBoolean(ab, channel, data ? (byte)1 : (byte)0);
+    static void sendBoolean(AutoBuffer ab, boolean data) {
+        sendBoolean(ab, data ? (byte)1 : (byte)0);
     }
 
-    static void sendBoolean(AutoBuffer ab, ByteChannel channel, byte boolData) throws IOException{
+    static void sendBoolean(AutoBuffer ab, byte boolData) {
         ab.put1(boolData);
-        putMarkerAndSend(ab, channel, boolData);
+        putMarker(ab, boolData);
     }
 
-    static void sendByte(AutoBuffer ab, ByteChannel channel, byte data) throws IOException{
+    static void sendByte(AutoBuffer ab, byte data) {
         ab.put1(data);
-        putMarkerAndSend(ab, channel, data);
+        putMarker(ab, data);
     }
 
-    static void sendChar(AutoBuffer ab, ByteChannel channel, char data) throws IOException{
+    static void sendChar(AutoBuffer ab, char data) {
         ab.put2(data);
-        putMarkerAndSend(ab, channel, data);
+        putMarker(ab, data);
     }
 
-    static void sendShort(AutoBuffer ab, ByteChannel channel, short data) throws IOException{
+    static void sendShort(AutoBuffer ab, short data) {
         ab.put2s(data);
-        putMarkerAndSend(ab, channel, data);
+        putMarker(ab, data);
     }
 
-    static void sendInt(AutoBuffer ab, ByteChannel channel, int data) throws IOException{
+    static void sendInt(AutoBuffer ab, int data) {
         ab.putInt(data);
-        putMarkerAndSend(ab, channel, data);
+        putMarker(ab, data);
     }
 
-    static void sendLong(AutoBuffer ab, ByteChannel channel, long data) throws IOException{
+    static void sendLong(AutoBuffer ab, long data) {
         ab.put8(data);
-        putMarkerAndSend(ab, channel, data);
+        putMarker(ab, data);
     }
 
-    static void sendFloat(AutoBuffer ab, ByteChannel channel, float data) throws IOException{
+    static void sendFloat(AutoBuffer ab, float data) {
         ab.put4f(data);
-        writeToChannel(ab, channel);
     }
 
-    static void sendDouble(AutoBuffer ab, ByteChannel channel, double data) throws IOException{
+    static void sendDouble(AutoBuffer ab, double data) {
         ab.put8d(data);
-        writeToChannel(ab, channel);
     }
 
-    static void sendString(AutoBuffer ab, ByteChannel channel, String data) throws IOException{
+    static void sendString(AutoBuffer ab, String data) {
         ab.putStr(data);
         if(data != null && data.equals(STR_MARKER_NEXT_BYTE_FOLLOWS)){
             ab.put1(MARKER_ORIGINAL_VALUE);
         }
-        writeToChannel(ab, channel);
     }
 
-    static void sendTimestamp(AutoBuffer ab, ByteChannel channel, long time) throws IOException{
-        sendLong(ab, channel, time);
+    static void sendTimestamp(AutoBuffer ab, long time) {
+        sendLong(ab, time);
     }
 
-    static void sendTimestamp(AutoBuffer ab, ByteChannel channel, Timestamp data) throws IOException{
-        sendLong(ab, channel, data.getTime());
+    static void sendTimestamp(AutoBuffer ab, Timestamp data) {
+        sendLong(ab, data.getTime());
     }
 
-    static void sendNA(AutoBuffer ab, ByteChannel channel, byte expectedType) throws IOException{
+    static void sendNA(AutoBuffer ab, byte expectedType) {
         switch (expectedType){
             case EXPECTED_BOOL: // // fall through to byte since BOOL is internally stored in frame as number (byte)
             case EXPECTED_BYTE:
                 ab.put1(NUM_MARKER_NEXT_BYTE_FOLLOWS);
                 ab.put1(MARKER_NA);
-                writeToChannel(ab, channel);
                 break;
             case EXPECTED_CHAR:
                 ab.put2(NUM_MARKER_NEXT_BYTE_FOLLOWS);
                 ab.put1(MARKER_NA);
-                writeToChannel(ab, channel);
                 break;
             case EXPECTED_SHORT:
                 ab.put2s(NUM_MARKER_NEXT_BYTE_FOLLOWS);
                 ab.put1(MARKER_NA);
-                writeToChannel(ab, channel);
                 break;
             case EXPECTED_INT:
                 ab.putInt(NUM_MARKER_NEXT_BYTE_FOLLOWS);
                 ab.put1(MARKER_NA);
-                writeToChannel(ab, channel);
                 break;
             case EXPECTED_TIMESTAMP: // fall through to long since TIMESTAMP is internally stored in frame as long
             case EXPECTED_LONG:
                 ab.put8(NUM_MARKER_NEXT_BYTE_FOLLOWS);
                 ab.put1(MARKER_NA);
-                writeToChannel(ab, channel);
                 break;
             case EXPECTED_FLOAT:
                 ab.put4f(Float.NaN);
-                writeToChannel(ab, channel);
                 break;
             case EXPECTED_DOUBLE:
                 ab.put8d(Double.NaN);
-                writeToChannel(ab, channel);
                 break;
             case EXPECTED_STRING:
                 ab.putStr(STR_MARKER_NEXT_BYTE_FOLLOWS);
                 ab.put1(MARKER_NA);
-                writeToChannel(ab, channel);
                 break;
             default:
                 throw new IllegalArgumentException("Unknown expected type " + expectedType);
@@ -300,12 +287,12 @@ public class ExternalFrameUtils {
     /**
      * Sends another byte as a marker if it's needed and send the data
      */
-    private static void putMarkerAndSend(AutoBuffer ab, ByteChannel channel, long data) throws IOException{
+    private static void putMarker(AutoBuffer ab, long data) {
         if(data == NUM_MARKER_NEXT_BYTE_FOLLOWS){
             // we need to send another byte because zero is represented as 00 ( 2 bytes )
             ab.put1(MARKER_ORIGINAL_VALUE);
         }
-        writeToChannel(ab, channel);
+
     }
 
     public static void writeToChannel(AutoBuffer ab, ByteChannel channel) throws IOException {

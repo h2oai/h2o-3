@@ -1,10 +1,12 @@
-import h2o
 import tempfile
 import os
+import sys
+sys.path.insert(1,"../../")
 
+import h2o
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
 from tests import pyunit_utils
-from tests.testdir_generic_model import Capturing, compare_output
+from tests.testdir_generic_model import Capturing, compare_output, compare_params
 
 
 def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
@@ -22,6 +24,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     fr = h2o.get_frame(key[0])
     generic_mojo_model = H2OGenericEstimator(model_key=fr)
     generic_mojo_model.train()
+    compare_params(gbm, generic_mojo_model)
     print(generic_mojo_model)
     with Capturing() as generic_output:
         generic_mojo_model.show()

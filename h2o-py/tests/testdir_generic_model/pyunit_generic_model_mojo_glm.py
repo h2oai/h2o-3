@@ -1,9 +1,12 @@
-import h2o
 import tempfile
 import os
+import sys
+sys.path.insert(1,"../../")
+
+import h2o
 from h2o.estimators import H2OGeneralizedLinearEstimator, H2OGenericEstimator
 from tests import pyunit_utils
-from tests.testdir_generic_model import compare_output, Capturing
+from tests.testdir_generic_model import compare_output, Capturing, compare_params
 
 def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
 
@@ -20,6 +23,7 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name, family):
     generic_mojo_model_from_file = H2OGenericEstimator.from_file(original_model_filename)
     assert generic_mojo_model_from_file is not None
     print(generic_mojo_model_from_file)
+    compare_params(glm, generic_mojo_model_from_file)
     with Capturing() as generic_output:
         generic_mojo_model_from_file.show()
 

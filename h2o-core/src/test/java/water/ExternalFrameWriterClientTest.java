@@ -303,8 +303,9 @@ public class ExternalFrameWriterClientTest extends TestUtil {
     static Frame createFrame(final WriteOperation op,
                              final String[] writeEndpoints) throws IOException, ExternalFrameConfirmationException {
         
+        final int blockSize = 1000 * 1000;
         ByteChannel sock = ExternalFrameUtils.getConnection(writeEndpoints[0], H2O.SELF.getTimestamp());
-        ExternalFrameWriterClient mainClient = new ExternalFrameWriterClient(sock, 10);
+        ExternalFrameWriterClient mainClient = new ExternalFrameWriterClient(sock, 10, blockSize);
         mainClient.initFrame(op.frameName(), op.colNames());
         
         final long[] rowsPerChunk = new long[writeEndpoints.length]; // number of chunks will be number of h2o nodes
@@ -317,7 +318,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                 public void run() {
                     try {
                         ByteChannel sock = ExternalFrameUtils.getConnection(writeEndpoints[0], H2O.SELF.getTimestamp());
-                        ExternalFrameWriterClient writer = new ExternalFrameWriterClient(sock, 10);
+                        ExternalFrameWriterClient writer = new ExternalFrameWriterClient(sock, 10, blockSize);
                         try {
                             writer.createChunk(op.frameName(), op.colTypes(),  currentIndex, op.nrows(), op.maxVecSizes());
         
