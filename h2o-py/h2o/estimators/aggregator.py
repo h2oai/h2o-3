@@ -43,6 +43,20 @@ class H2OAggregatorEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response_column = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_ag = H2OAggregatorEstimator()
+        >>> cars_ag.train(x = predictors,
+        ...               y = response_column,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_ag.aggregated_frame
         """
         return self._parms.get("training_frame")
 
@@ -57,6 +71,20 @@ class H2OAggregatorEstimator(H2OEstimator):
         Response variable column.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response_column = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_ag = H2OAggregatorEstimator()
+        >>> cars_ag.train(x = predictors,
+        ...               y = response_column,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_ag.aggregated_frame
         """
         return self._parms.get("response_column")
 
@@ -72,6 +100,24 @@ class H2OAggregatorEstimator(H2OEstimator):
         Names of columns to ignore for training.
 
         Type: ``List[str]``.
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = airlines.columns[:9]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
+        >>> airlines_ag = H2OAggregatorEstimator(ignored_columns = col_list)
+        >>> airlines_ag.train(y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_ag.aggregated_frame
         """
         return self._parms.get("ignored_columns")
 
@@ -87,6 +133,22 @@ class H2OAggregatorEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars["const_1"] = 6
+        >>> cars["const_2"] = 7
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_ag = H2OAggregatorEstimator(ignore_const_cols = True)
+        >>> cars_ag.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_ag.aggregated_frame
         """
         return self._parms.get("ignore_const_cols")
 
@@ -102,6 +164,20 @@ class H2OAggregatorEstimator(H2OEstimator):
         Targeted number of exemplars
 
         Type: ``int``  (default: ``5000``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response_column = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_ag = H2OAggregatorEstimator(target_num_exemplars = 5000)
+        >>> cars_ag.train(x = predictors,
+        ...               y = response_column,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_ag.aggregated_frame
         """
         return self._parms.get("target_num_exemplars")
 
@@ -117,6 +193,20 @@ class H2OAggregatorEstimator(H2OEstimator):
         Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
 
         Type: ``float``  (default: ``0.5``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_ag = H2OAggregatorEstimator(rel_tol_num_exemplars = .7)
+        >>> cars_ag.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_ag.aggregated_frame
         """
         return self._parms.get("rel_tol_num_exemplars")
 
@@ -132,6 +222,20 @@ class H2OAggregatorEstimator(H2OEstimator):
         Transformation of training data
 
         One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"normalize"``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response_column = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_ag = H2OAggregatorEstimator(transform = "demean")
+        >>> cars_ag.train(x = predictors,
+        ...               y = response_column,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_ag.aggregated_frame
         """
         return self._parms.get("transform")
 
@@ -148,6 +252,26 @@ class H2OAggregatorEstimator(H2OEstimator):
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
         ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> encoding = "one_hot_explicit"
+        >>> airlines_ag = H2OAggregatorEstimator(categorical_encoding = encoding)
+        >>> airlines_ag.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_ag.aggregated_frame
         """
         return self._parms.get("categorical_encoding")
 
@@ -163,6 +287,21 @@ class H2OAggregatorEstimator(H2OEstimator):
         Whether to export the mapping of the aggregated frame
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response_column = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_ag = H2OAggregatorEstimator(save_mapping_frame = True)
+        >>> cars_ag.train(x = predictors,
+        ...               y = response_column,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_ag.aggregated_frame
+        >>> cars_ag.save_mapping_frame
         """
         return self._parms.get("save_mapping_frame")
 
@@ -178,6 +317,24 @@ class H2OAggregatorEstimator(H2OEstimator):
         The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
 
         Type: ``int``  (default: ``500``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = airlines.columns[:9]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
+        >>> airlines_ag = H2OAggregatorEstimator(num_iteration_without_new_exemplar = 500)
+        >>> airlines_ag.train(y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_ag.aggregated_frame
         """
         return self._parms.get("num_iteration_without_new_exemplar")
 
@@ -193,6 +350,20 @@ class H2OAggregatorEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> import tempfile
+        >>> from os import listdir
+        >>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
+        >>> predictors = ["DayofMonth", "DayOfWeek"]
+        >>> response = "IsDepDelayed"
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> airlines_ag = H2OAggregatorEstimator()
+        >>> airlines_ag.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = airlines)
+        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 
