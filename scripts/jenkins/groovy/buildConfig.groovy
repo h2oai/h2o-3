@@ -293,8 +293,8 @@ class BuildConfig {
         changesMap[COMPONENT_PY] = true
       } else if (change.startsWith('h2o-r/') ||  change == 'h2o-bindings/bin/gen_R.py') {
         changesMap[COMPONENT_R] = true
-      } else if (change.endsWith('.md')) {
-        // no need to run any tests if only .md files are changed
+      } else if (change.endsWith('.md') || change.endsWith('.rst')) {
+        // no need to run any tests if only .md/.rst files are changed
       } else {
         markAllComponentsForTest()
       }
