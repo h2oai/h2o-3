@@ -19,7 +19,6 @@ import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.Log;
-import water.util.PojoUtils;
 
 import java.util.Map;
 
@@ -125,7 +124,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     void setCustomParams(Model.Parameters params) {
         AutoMLCustomParameters customParams = aml().getBuildSpec().build_models.algo_parameters;
         if (customParams == null) return;
-        customParams.setCustomParameters(_algo, params);
+        customParams.applyCustomParameters(_algo, params);
     }
 
 

@@ -164,8 +164,11 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   }
 
   public static final class AutoMLCustomParametersV99 extends Schema<AutoMLBuildSpec.AutoMLCustomParameters, AutoMLCustomParametersV99> {
-
-
+    @Override
+    public AutoMLBuildSpec.AutoMLCustomParameters fillImpl(AutoMLBuildSpec.AutoMLCustomParameters impl) {
+      // conversion logic goes here
+        return impl;
+    }
   }
 
   public static final class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {

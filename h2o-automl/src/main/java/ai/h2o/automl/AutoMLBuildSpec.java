@@ -13,11 +13,15 @@ import water.Iced;
 import water.Key;
 import water.api.schemas3.JobV3;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OIllegalValueException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.IcedHashMap;
 import water.util.Log;
 import water.util.PojoUtils;
+import water.util.PojoUtils.FieldNaming;
+
+import java.util.stream.Stream;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -31,18 +35,26 @@ public class AutoMLBuildSpec extends Iced {
   private static final DateFormat projectTimeStampFormat = new SimpleDateFormat("yyyyMMdd_HmmssSSS");
 
   /**
-   * Default constructor provides the default behavior.
-   */
-  public AutoMLBuildSpec() {
-    this.input_spec = new AutoMLInput();
-    this.build_control = new AutoMLBuildControl();
-    this.build_models = new AutoMLBuildModels();
-  }
-
-  /**
    * The specification of overall build parameters for the AutoML process.
    */
   public static final class AutoMLBuildControl extends Iced {
+
+    public final AutoMLStoppingCriteria stopping_criteria;
+    /**
+     * Identifier for models that should be grouped together in the leaderboard (e.g., "airlines" and "iris").
+     */
+    public String project_name = null;
+
+    // Pass through to all algorithms
+    public boolean balance_classes = false;
+    public float[] class_sampling_factors;
+    public float max_after_balance_size = 5.0f;
+
+    public int nfolds = 5;
+    public boolean keep_cross_validation_predictions = false;
+    public boolean keep_cross_validation_models = false;
+    public boolean keep_cross_validation_fold_assignment = false;
+    public String export_checkpoints_dir = null;
 
     public AutoMLBuildControl() {
       stopping_criteria = new AutoMLStoppingCriteria();
@@ -56,38 +68,14 @@ public class AutoMLBuildSpec extends Iced {
       stopping_criteria.set_stopping_tolerance(0.001);
       stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUTO);
     }
-
-    /**
-     * Identifier for models that should be grouped together in the leaderboard
-     * (e.g., "airlines" and "iris").  If the user doesn't set it we use the basename
-     * of the training file name.
-     */
-    public String project_name = null;
-    public AutoMLStoppingCriteria stopping_criteria;
-
-    // Pass through to all algorithms
-    public boolean balance_classes = false;
-    public float[] class_sampling_factors;
-    public float max_after_balance_size = 5.0f;
-
-    public int nfolds = 5;
-    public boolean keep_cross_validation_predictions = false;
-    public boolean keep_cross_validation_models = false;
-    public boolean keep_cross_validation_fold_assignment = false;
-    public String export_checkpoints_dir = null;
   }
 
   public static final class AutoMLStoppingCriteria extends Iced {
 
     public static final int AUTO_STOPPING_TOLERANCE = -1;
 
-    private RandomDiscreteValueSearchCriteria _searchCriteria;
+    private final RandomDiscreteValueSearchCriteria _searchCriteria = new RandomDiscreteValueSearchCriteria();
     private double _max_runtime_secs_per_model = 0;
-
-    public AutoMLStoppingCriteria() {
-      super();
-      _searchCriteria = new RandomDiscreteValueSearchCriteria();
-    }
 
     public double max_runtime_secs_per_model() {
       return _max_runtime_secs_per_model;
@@ -186,34 +174,50 @@ public class AutoMLBuildSpec extends Iced {
     public Algo[] exclude_algos;
     public Algo[] include_algos;
     public StepDefinition[] modeling_plan;
-    public AutoMLCustomParameters algo_parameters;
+    public final AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
   }
 
   public static final class AutoMLCustomParameters extends Iced {
 
-    public boolean has(Algo algo) {
+    // let's limit the list of allowed custom parameters for now: we can always decide to open this later.
+    private static final String[] ALLOWED_PARAMETERS = {
+            "monotone_constraints",
+            "ntrees",
+    };
+    private static final String ROOT_PARAM = "algo_parameters";
+
+    private final IcedHashMap<String, String[]> algo_parameter_names = new IcedHashMap<>(); // stores the parameters names overridden, by algo name
+    private final IcedHashMap<String, Model.Parameters> algo_parameters = new IcedHashMap<>(); //stores the parameters values, by algo name
+
+    public boolean hasCustomParams(Algo algo) {
       return algo_parameter_names.get(algo.name()) != null;
     }
 
-    public boolean has(Algo algo, String param) {
+    public boolean hasCustomParam(Algo algo, String param) {
       return ArrayUtils.contains(algo_parameter_names.get(algo.name()), param);
     }
 
-    public <V> void set(String param, V value) {
+    public <V> AutoMLCustomParameters add(String param, V value) {
       for (Algo algo : Algo.values()) {
-        set(algo, param, value);
+        add(algo, param, value);
       }
+      return this;
     }
 
-    public <V> void set(Algo algo, String param, V value) {
+    public <V> AutoMLCustomParameters add(Algo algo, String param, V value) {
+      assertParameterAllowed(param);
       Model.Parameters customParams = getCustomParameters(algo);
       try {
-        PojoUtils.setField(customParams, param, value, PojoUtils.FieldNaming.CONSISTENT);
-        PojoUtils.setField(customParams, param, value, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
-        addParameterName(algo, param);
+        if (setField(customParams, param, value, FieldNaming.DEST_HAS_UNDERSCORES)
+                || setField(customParams, param, value, FieldNaming.CONSISTENT)) {
+          addParameterName(algo, param);
+        } else {
+          Log.debug("Could not set custom param " + param + " for algo " + algo);
+        }
       } catch (IllegalArgumentException iae) {
-        Log.debug("Could not set custom param "+param+" for algo "+algo+": "+iae.getMessage());
+        throw new H2OIllegalValueException(param, ROOT_PARAM, value);
       }
+      return this;
     }
 
     public String[] getCustomParameterNames(Algo algo) {
@@ -225,9 +229,11 @@ public class AutoMLBuildSpec extends Iced {
       return algo_parameters.get(algo.name());
     }
 
-    public void setCustomParameters(Algo algo, Model.Parameters destParams) {
-      if (has(algo)) {
-          PojoUtils.copyProperties(destParams, getCustomParameters(algo), PojoUtils.FieldNaming.CONSISTENT, null, getCustomParameterNames(algo));
+    public void applyCustomParameters(Algo algo, Model.Parameters destParams) {
+      if (hasCustomParams(algo)) {
+        String[] paramNames = getCustomParameterNames(algo);
+        String[] onlyParamNames = ArrayUtils.append(Stream.of(paramNames).map(p -> "_"+p).toArray(String[]::new), paramNames);
+        PojoUtils.copyProperties(destParams, getCustomParameters(algo), FieldNaming.CONSISTENT, null, onlyParamNames);
       }
     }
 
@@ -243,6 +249,11 @@ public class AutoMLBuildSpec extends Iced {
       }
     }
 
+    private void assertParameterAllowed(String param) {
+      if (!ArrayUtils.contains(ALLOWED_PARAMETERS, param))
+        throw new H2OIllegalValueException(ROOT_PARAM, param);
+    }
+
     private void addParameterName(Algo algo, String param) {
       if (!algo_parameter_names.containsKey(algo.name())) {
         algo_parameter_names.put(algo.name(), new String[] {param});
@@ -254,14 +265,25 @@ public class AutoMLBuildSpec extends Iced {
       }
     }
 
-    public IcedHashMap<String, String[]> algo_parameter_names = new IcedHashMap<>(); // stores the parameters names overridden, by algo name
-    public IcedHashMap<String, Model.Parameters> algo_parameters = new IcedHashMap<>(); //stores the parameters values, by algo name
-
+    private <D, V> boolean setField(D dest, String fieldName, V value, FieldNaming naming) {
+      try {
+        PojoUtils.setField(dest, fieldName, value, naming);
+        return true;
+      } catch (IllegalArgumentException iae) {
+        // propagate exception iff the value was wrong (conversion issue), ignore if the field doesn't exist.
+        try {
+          PojoUtils.getFieldValue(dest, fieldName, naming);
+        } catch (IllegalArgumentException ignored){
+          return false;
+        }
+        throw iae;
+      }
+    }
   }
 
-  public AutoMLBuildControl build_control;
-  public AutoMLInput input_spec;
-  public AutoMLBuildSpec.AutoMLBuildModels build_models;
+  public final AutoMLBuildControl build_control = new AutoMLBuildControl();
+  public final AutoMLInput input_spec = new AutoMLInput();
+  public final AutoMLBuildModels build_models = new AutoMLBuildModels();
 
   // output
   public JobV3 job;
