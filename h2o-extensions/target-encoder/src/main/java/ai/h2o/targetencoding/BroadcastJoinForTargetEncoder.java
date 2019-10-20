@@ -1,6 +1,7 @@
 package ai.h2o.targetencoding;
 
 import water.MRTask;
+import water.MemoryManager;
 import water.fvec.CategoricalWrappedVec;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -29,11 +30,11 @@ class BroadcastJoinForTargetEncoder {
       _cardinalityOfCatCol = cardinalityOfCatCol;
 
       if(foldColumnId == -1) {
-        _encodingDataPerNode = new int[1][_cardinalityOfCatCol * 2];
+        _encodingDataPerNode = MemoryManager.malloc4(1, _cardinalityOfCatCol * 2);
       } else {
         assert maxFoldValue >= 1 : "There should be at leas two folds in the fold column";
         assert _cardinalityOfCatCol > 0 && _cardinalityOfCatCol < (Integer.MAX_VALUE / 2)  : "Cardinality of categ. column should be within range (0, Integer.MAX_VALUE / 2 )";
-        _encodingDataPerNode = new int[maxFoldValue + 1][_cardinalityOfCatCol * 2];
+        _encodingDataPerNode = MemoryManager.malloc4(maxFoldValue + 1,_cardinalityOfCatCol * 2);
       }
     }
 
@@ -58,9 +59,14 @@ class BroadcastJoinForTargetEncoder {
     public void reduce(FrameWithEncodingDataToArray mrt) {
       int[][] leftArr = getEncodingDataArray();
       int[][] rightArr = mrt.getEncodingDataArray();
-      for(int rowIdx = 0 ; rowIdx < leftArr.length; rowIdx++) {
-        for(int colIdx = 0 ; colIdx < leftArr[rowIdx].length; colIdx++) {
-          if (leftArr != rightArr) {
+      
+      // Note: we need to add this check due to the following circumstances: 
+      //       1) there is a chance that reduce phase will start before map phase is finished. 
+      //       2) MRTasks are being only shallow cloned i.e. all internal fields are references to the same objects in memory
+      //       3) MRTasks shallow copies that were also sent to other nodes will be a deep copies of the original ones ( due to serialisation/deserialisation )
+      if (leftArr != rightArr) {
+        for (int rowIdx = 0; rowIdx < leftArr.length; rowIdx++) {
+          for (int colIdx = 0; colIdx < leftArr[rowIdx].length; colIdx++) {
             int valueFromLeftArr = leftArr[rowIdx][colIdx];
             int valueFromRIghtArr = rightArr[rowIdx][colIdx];
             leftArr[rowIdx][colIdx] = Math.max(valueFromLeftArr, valueFromRIghtArr);
