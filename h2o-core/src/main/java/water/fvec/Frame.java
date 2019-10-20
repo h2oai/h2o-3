@@ -383,7 +383,10 @@ public class Frame extends Lockable<Frame> {
   }
 
   /**   Finds the matching column index, or -1 if missing
-   *  @return the matching column index, or -1 if missing */
+   *  @return the matching column index, or -1 if missing 
+   *  @deprecated as many columns in a Frame could be backed by the same Vec, we can't return single column index that corresponds to a given {@code vec}
+   */
+  @Deprecated()
   public int find( Vec vec ) {
     Vec[] vecs = vecs(); //warning: side-effect
     if (vec == null) return -1;
@@ -394,7 +397,10 @@ public class Frame extends Lockable<Frame> {
   }
 
   /**   Finds the matching column index, or -1 if missing
-   *  @return the matching column index, or -1 if missing */
+   *  @return the matching column index, or -1 if missing 
+   *  @deprecated as many columns in a Frame could be backed by the same Vec (and its key), we can't return single column index that corresponds to a given {@code key}
+   */
+  @Deprecated
   public int find( Key key ) {
     for( int i=0; i<_keys.length; i++ )
       if( key.equals(_keys[i]) )
