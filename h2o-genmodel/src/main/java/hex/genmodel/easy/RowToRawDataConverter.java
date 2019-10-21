@@ -7,27 +7,25 @@ import hex.genmodel.easy.exception.PredictUnknownCategoricalLevelException;
 import hex.genmodel.easy.exception.PredictUnknownTypeException;
 
 import java.io.Serializable;
-import java.util.HashMap;
+import java.util.Map;
 
 /**
  * This class is intended to transform a RowData instance - for which we want to get prediction to - into a raw array
  */
 public class RowToRawDataConverter implements Serializable {
 
-  private final String[][] _domainValues;
-  private final HashMap<String, Integer> _modelColumnNameToIndexMap;
-  private final HashMap<Integer, HashMap<String, Integer>> _domainMap;
+  private final Map<String, Integer> _modelColumnNameToIndexMap;
+  private final Map<Integer, CategoricalEncoder> _domainMap;
   private final EasyPredictModelWrapper.ErrorConsumer _errorConsumer;
 
   private final boolean _convertUnknownCategoricalLevelsToNa;
   private final boolean _convertInvalidNumbersToNa;
   
   public RowToRawDataConverter(GenModel m,
-                               HashMap<String, Integer> modelColumnNameToIndexMap,
-                               HashMap<Integer, HashMap<String, Integer>> domainMap,
+                               Map<String, Integer> modelColumnNameToIndexMap,
+                               Map<Integer, CategoricalEncoder> domainMap,
                                EasyPredictModelWrapper.ErrorConsumer errorConsumer,
                                EasyPredictModelWrapper.Config config) {
-    _domainValues = m.getDomainValues();
     _modelColumnNameToIndexMap = modelColumnNameToIndexMap;
     _domainMap = domainMap;
     _errorConsumer = errorConsumer;
@@ -54,16 +52,16 @@ public class RowToRawDataConverter implements Serializable {
       }
 
       Object o = data.get(dataColumnName);
-      if (convertValue(dataColumnName, o, _domainValues[index], index, rawData)) {
+      if (convertValue(dataColumnName, o, _domainMap.get(index), index, rawData)) {
         return rawData;
       }
     }
     return rawData;
   }
 
-  protected boolean convertValue(String columnName, Object o, String[] domainValues,
+  protected boolean convertValue(String columnName, Object o, CategoricalEncoder catEncoder,
                                  int targetIndex, double[] rawData) throws PredictException {
-    if (domainValues == null) {
+    if (catEncoder == null) {
       // Column is either numeric or a string (for images or text)
       double value = Double.NaN;
       if (o instanceof String) {
@@ -88,34 +86,25 @@ public class RowToRawDataConverter implements Serializable {
       rawData[targetIndex] = value;
     } else {
       // Column has categorical value.
-      double value;
       if (o instanceof String) {
         String levelName = (String) o;
-        HashMap<String, Integer> columnDomainMap = _domainMap.get(targetIndex);
-        Integer levelIndex = columnDomainMap.get(levelName);
-        if (levelIndex == null) {
-          levelIndex = columnDomainMap.get(columnName + "." + levelName);
-        }
-        if (levelIndex == null) {
+        if (! catEncoder.encodeCatValue(levelName, rawData)) {
           if (_convertUnknownCategoricalLevelsToNa) {
-            value = Double.NaN;
+            catEncoder.encodeNA(rawData);
             _errorConsumer.unseenCategorical(columnName, o, "Previously unseen categorical level detected, marking as NaN.");
           } else {
             _errorConsumer.dataTransformError(columnName, o, "Unknown categorical level detected.");
             throw new PredictUnknownCategoricalLevelException("Unknown categorical level (" + columnName + "," + levelName + ")", columnName, levelName);
           }
-        } else {
-          value = levelIndex;
         }
       } else if (o instanceof Double && Double.isNaN((double) o)) {
         _errorConsumer.dataTransformError(columnName, o, "Missing factor value detected, setting to NaN");
-        value = (double) o; //Missing factor is the only Double value allowed
+        catEncoder.encodeNA(rawData); // Missing factor is the only Double value allowed
       } else {
         _errorConsumer.dataTransformError(columnName, o, "Unknown categorical variable type.");
         throw new PredictUnknownTypeException(
                 "Unexpected object type " + o.getClass().getName() + " for categorical column " + columnName);
       }
-      rawData[targetIndex] = value;
     }
 
     return false;

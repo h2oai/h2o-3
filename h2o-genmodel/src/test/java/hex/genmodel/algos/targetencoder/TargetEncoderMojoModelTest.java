@@ -1,9 +1,6 @@
 package hex.genmodel.algos.targetencoder;
 
-import hex.genmodel.easy.DomainMapConstructor;
-import hex.genmodel.easy.EasyPredictModelWrapper;
-import hex.genmodel.easy.RowData;
-import hex.genmodel.easy.RowToRawDataConverter;
+import hex.genmodel.easy.*;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import org.junit.Test;
@@ -94,7 +91,7 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
+    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
     RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
 
 
@@ -167,7 +164,7 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
+    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
     RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
 
     RowData rowToPredictFor = new RowData();
@@ -228,7 +225,7 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
+    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
     RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
 
     //Case 1:  Unexpected value `C`
@@ -303,7 +300,7 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
+    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
     RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
 
     //Case 1:  Unexpected value `C`

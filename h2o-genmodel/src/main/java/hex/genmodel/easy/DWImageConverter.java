@@ -11,20 +11,20 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.HashMap;
+import java.util.Map;
 
 public class DWImageConverter extends RowToRawDataConverter {
 
   private final DeepwaterMojoModel _dwm;
   
-  DWImageConverter(DeepwaterMojoModel m, HashMap<String, Integer> modelColumnNameToIndexMap, HashMap<Integer, HashMap<String, Integer>> domainMap,
-                          EasyPredictModelWrapper.ErrorConsumer errorConsumer, EasyPredictModelWrapper.Config config) {
+  DWImageConverter(DeepwaterMojoModel m, Map<String, Integer> modelColumnNameToIndexMap, Map<Integer, CategoricalEncoder> domainMap,
+                   EasyPredictModelWrapper.ErrorConsumer errorConsumer, EasyPredictModelWrapper.Config config) {
     super(m, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
     _dwm = m;
   }
 
   @Override
-  protected boolean convertValue(String columnName, Object o, String[] domainValues, int targetIndex, double[] rawData) throws PredictException {
+  protected boolean convertValue(String columnName, Object o, CategoricalEncoder catEncoder, int targetIndex, double[] rawData) throws PredictException {
     BufferedImage img = null;
 
     if (o instanceof String) {
@@ -62,7 +62,7 @@ public class DWImageConverter extends RowToRawDataConverter {
         rawData[i] = _destData[i];
       return true;
     } else
-      return super.convertValue(columnName, o, domainValues, targetIndex, rawData);
+      return super.convertValue(columnName, o, catEncoder, targetIndex, rawData);
   }
 
 }

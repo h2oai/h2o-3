@@ -3,13 +3,13 @@ package hex.genmodel.easy;
 import hex.genmodel.GenModel;
 import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
 
-import java.util.HashMap;
+import java.util.Map;
 
 class RowDataConverterFactory {
 
   static RowToRawDataConverter makeConverter(GenModel m,
-                                             HashMap<String, Integer> modelColumnNameToIndexMap,
-                                             HashMap<Integer, HashMap<String, Integer>> domainMap,
+                                             Map<String, Integer> modelColumnNameToIndexMap,
+                                             Map<Integer, CategoricalEncoder> domainMap,
                                              EasyPredictModelWrapper.ErrorConsumer errorConsumer,
                                              EasyPredictModelWrapper.Config config) {
     if (m instanceof DeepwaterMojoModel) {

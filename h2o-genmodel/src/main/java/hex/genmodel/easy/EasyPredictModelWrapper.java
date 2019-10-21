@@ -307,10 +307,10 @@ public class EasyPredictModelWrapper implements Serializable {
               " and apply the encoding manually before calling the predict function. For more information please refer to https://0xdata.atlassian.net/browse/PUBDEV-6929.");
     }
 
-    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(m).create();
+    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(m).create();
     // Create map of column names to index number.
-    HashMap<String, Integer> modelColumnNameToIndexMap = new HashMap<>();
     String[] modelColumnNames = m.getNames();
+    Map<String, Integer> modelColumnNameToIndexMap = new HashMap<>(modelColumnNames.length);
     for (int i = 0; i < modelColumnNames.length; i++) {
       modelColumnNameToIndexMap.put(modelColumnNames[i], i);
     }
