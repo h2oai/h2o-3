@@ -443,23 +443,6 @@ examples = dict(
 ...               validation_frame = valid)
 >>> cars_dl.auc()
 """,
-    ignored_columns="""
->>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
->>> airlines["Year"]= airlines["Year"].asfactor()
->>> airlines["Month"]= airlines["Month"].asfactor()
->>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
->>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
->>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
->>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
->>> airlines_dl = H2ODeepLearningEstimator(ignored_columns = col_list,
-...                                        seed = 1234)
->>> airlines_dl.train(y = response,
-...                   training_frame = train,
-...                   validation_frame = valid)
->>> airlines_dl.auc()
-""",
     initial_biases="""
 >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
 >>> dl1 = H2ODeepLearningEstimator(hidden=[10,10],
@@ -1067,17 +1050,6 @@ examples = dict(
 ...                   training_frame = train,
 ...                   validation_frame = valid)
 >>> airlines_dl.auc()
-""",
-    response_column="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> response_column = "economy_20mpg"
->>> cars_dl = H2ODeepLearningEstimator(seed = 1234)
->>> cars_dl.train(x = predictors,
-...               y = response_column,
-...               training_frame = cars)
->>> cars_dl.auc()
 """,
     rho="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
