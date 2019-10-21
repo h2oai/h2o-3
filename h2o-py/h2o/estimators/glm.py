@@ -344,21 +344,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Response variable column.
 
         Type: ``str``.
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> response_column = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_glm = H2OGeneralizedLinearEstimator(seed = 1234,
-        ...                                          family = 'binomial')
-        >>> cars_glm.train(x = predictors,
-        ...                y = response_column,
-        ...                training_frame = train,
-        ...                validation_frame = valid)
-        >>> cars_glm.auc(valid=True)
         """
         return self._parms.get("response_column")
 
@@ -374,22 +359,6 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         Names of columns to ignore for training.
 
         Type: ``List[str]``.
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> response = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> ignored_col = ["cylinders","power"]
-        >>> cars_glm = H2OGeneralizedLinearEstimator(seed = 1234,
-        ...                                          family='binomial',
-        ...                                          ignored_columns=ignored_col)
-        >>> cars_glm.train(y=response,
-        ...                training_frame=train,
-        ...                validation_frame=valid)
-        >>> cars_glm.auc()
         """
         return self._parms.get("ignored_columns")
 
