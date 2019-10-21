@@ -476,32 +476,6 @@ examples = dict(
 >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
 >>> stack_blend.model_performance(blend).auc()
 """,
-    response_column="""
->>> from h2o.estimators.random_forest import H2ORandomForestEstimator
->>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
->>> from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
->>> col_types = ["numeric", "numeric", "numeric", "enum",
-...              "enum", "numeric", "numeric", "numeric", "numeric"]
->>> data = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", col_types=col_types)
->>> train, test = data.split_frame(ratios=[.8], seed=1)
->>> x = ["CAPSULE","GLEASON","RACE","DPROS","DCAPS","PSA","VOL"]
->>> response_column = "AGE"
->>> nfolds = 5
->>> gbm = H2OGradientBoostingEstimator(nfolds=nfolds,
-...                                       fold_assignment="Modulo",
-...                                       keep_cross_validation_predictions=True)
->>> gbm.train(x=x, y=response_column, training_frame=train)
->>> rf = H2ORandomForestEstimator(nfolds=nfolds,
-...                                  fold_assignment="Modulo",
-...                                  keep_cross_validation_predictions=True)
->>> rf.train(x=x, y=response_column, training_frame=train)
->>> stack = H2OStackedEnsembleEstimator(model_id="ensemble",
-...                                     training_frame=train,
-...                                     validation_frame=test,
-...                                     base_models=[gbm.model_id, rf.model_id])
->>> stack.train(x=x, y=response_column, training_frame=train, validation_frame=test)
->>> stack.model_performance()
-""",
     seed="""
 >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
 >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
