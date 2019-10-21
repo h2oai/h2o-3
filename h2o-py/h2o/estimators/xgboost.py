@@ -337,22 +337,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         Response variable column.
 
         Type: ``str``.
-
-        :examples:
-
-        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
-        >>> titanic['survived'] = titanic['survived'].asfactor()
-        >>> predictors = titanic.columns
-        >>> del predictors[1:3]
-        >>> response = 'survived'
-        >>> train, valid = titanic.split_frame(ratios = [.8],
-        ...                                    seed = 1234)
-        >>> titanic_xgb = H2OXGBoostEstimator(seed = 1234)
-        >>> titanic_xgb.train(x=predictors,
-        ...                   y=response,
-        ...                   training_frame=train,
-        ...                   validation_frame=valid)
-        >>> titanic_xgb.auc(valid=True)
         """
         return self._parms.get("response_column")
 
@@ -368,19 +352,6 @@ class H2OXGBoostEstimator(H2OEstimator):
         Names of columns to ignore for training.
 
         Type: ``List[str]``.
-
-        :examples:
-
-        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
-        >>> titanic['survived'] = titanic['survived'].asfactor()
-        >>> response = 'survived'
-        >>> train, valid = titanic.split_frame(ratios = [.8], seed = 1234)
-        >>> titanic_xgb = H2OXGBoostEstimator(seed = 1234,
-        ...                                   ignored_columns=["fare","parch"])
-        >>> titanic_xgb.train(y=response,
-        ...                   training_frame=train,
-        ...                   validation_frame=valid)
-        >>> titanic_xgb.auc(valid=True)
         """
         return self._parms.get("ignored_columns")
 
