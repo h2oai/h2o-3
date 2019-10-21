@@ -74,19 +74,6 @@ examples = dict(
 ...                   validation_frame = valid)
 >>> heart_coxph.scoring_history()
 """,
-    response_column="""
->>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
->>> predictor = "age"
->>> response_column = "event"
->>> train, valid = heart.split_frame(ratios = [.8])
->>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-...                                            stop_column = "stop")
->>> heart_coxph.train(x = predictor,
-...                   y = response_column,
-...                   training_frame = train,
-...                   validation_frame = valid)
->>> heart_coxph.scoring_history()
-""",
     use_all_factor_levels="""
 >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 >>> predictor = "age"
@@ -183,17 +170,6 @@ examples = dict(
 ...                                                  init=2.9)
 >>> heart_coxph.train(x = predictor,
 ...                   y = response,
-...                   training_frame = heart)
->>> heart_coxph.scoring_history()
-""",
-    ignored_columns="""
->>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
->>> response = "event"
->>> ignored_cols=["transplant","surgery"]
->>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-...                                                  stop_column="stop",
-...                                                  ignored_columns=ignored_cols)
->>> heart_coxph.train(y = response,
 ...                   training_frame = heart)
 >>> heart_coxph.scoring_history()
 """,

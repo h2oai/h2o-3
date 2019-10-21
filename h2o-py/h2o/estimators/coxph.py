@@ -130,20 +130,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Response variable column.
 
         Type: ``str``.
-
-        :examples:
-
-        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
-        >>> predictor = "age"
-        >>> response_column = "event"
-        >>> train, valid = heart.split_frame(ratios = [.8])
-        >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-        ...                                            stop_column = "stop")
-        >>> heart_coxph.train(x = predictor,
-        ...                   y = response_column,
-        ...                   training_frame = train,
-        ...                   validation_frame = valid)
-        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("response_column")
 
@@ -159,18 +145,6 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
         Names of columns to ignore for training.
 
         Type: ``List[str]``.
-
-        :examples:
-
-        >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
-        >>> response = "event"
-        >>> ignored_cols=["transplant","surgery"]
-        >>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-        ...                                                  stop_column="stop",
-        ...                                                  ignored_columns=ignored_cols)
-        >>> heart_coxph.train(y = response,
-        ...                   training_frame = heart)
-        >>> heart_coxph.scoring_history()
         """
         return self._parms.get("ignored_columns")
 
