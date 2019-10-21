@@ -569,7 +569,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           excludeAdditionalFiles = c['excludeAdditionalFiles']
           archiveFiles = c['archiveFiles']
           activatePythonEnv = c['activatePythonEnv']
-	      customDockerArgs = c['customDockerArgs']
+          customDockerArgs = c['customDockerArgs']
           dockerImageSuffix = c['dockerImageSuffix']
         }
       }
