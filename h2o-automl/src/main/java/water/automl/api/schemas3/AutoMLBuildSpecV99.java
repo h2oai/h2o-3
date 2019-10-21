@@ -5,11 +5,15 @@ import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
 import hex.ScoreKeeper.StoppingMetric;
+import water.Iced;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.Schema;
+import water.api.ValuesProvider;
 import water.api.schemas3.*;
 import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
+import water.util.ArrayUtils;
+import water.util.EnumUtils;
 import water.util.JSONUtils;
 
 import water.util.PojoUtils;
@@ -163,12 +167,25 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     }
   }
 
-  public static final class AutoMLCustomParametersV99 extends Schema<AutoMLBuildSpec.AutoMLCustomParameters, AutoMLCustomParametersV99> {
+  public static final class ScopeProvider implements ValuesProvider {
+    private static final String ANY_ALGO = "any";
+    private static final String[] SCOPES = ArrayUtils.append(new String[]{ANY_ALGO}, new AlgoProvider().values());
+
     @Override
-    public AutoMLBuildSpec.AutoMLCustomParameters fillImpl(AutoMLBuildSpec.AutoMLCustomParameters impl) {
-      // conversion logic goes here
-        return impl;
+    public String[] values() {
+      return SCOPES;
     }
+  }
+
+  public static final class AutoMLCustomParameterV99<V> extends Schema<Iced, AutoMLCustomParameterV99<V>> {
+    @API(help="", valuesProvider=ScopeProvider.class, direction=API.Direction.INPUT)
+    public String scope;
+
+    @API(help="", direction=API.Direction.INPUT)
+    public String name;
+
+    @API(help="", direction=API.Direction.INPUT)
+    public V value;
   }
 
   public static final class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {
@@ -183,7 +200,24 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     public StepDefinitionV99[] modeling_plan;
 
     @API(help="Custom algorithm parameters.", direction=API.Direction.INPUT)
-    public AutoMLCustomParametersV99 algo_parameters;
+    public AutoMLCustomParameterV99[] algo_parameters;
+
+    @Override
+    public AutoMLBuildSpec.AutoMLBuildModels fillImpl(AutoMLBuildSpec.AutoMLBuildModels impl) {
+      super.fillImpl(impl, new String[]{"algo_parameters"});
+      if (algo_parameters != null) {
+        for (AutoMLCustomParameterV99 param : algo_parameters) {
+          if (ScopeProvider.ANY_ALGO.equals(param.scope)) {
+            impl.algo_parameters.add(param.name, param.value);
+          } else {
+            Algo algo = EnumUtils.valueOf(Algo.class, param.name);
+            impl.algo_parameters.add(algo, param.name, param.value);
+          }
+        }
+      }
+      impl.algo_parameters.end();
+      return impl;
+    }
   } // class AutoMLBuildModels
 
   ////////////////

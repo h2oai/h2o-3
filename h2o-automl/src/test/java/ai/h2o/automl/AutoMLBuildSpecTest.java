@@ -21,7 +21,7 @@ public class AutoMLBuildSpecTest {
 
         final String paramName = "monotone_constraints";
         final KeyValue[] paramValue = new KeyValue[] {new KeyValue("AGE", 1)};
-        algoParameters.add(paramName, paramValue);
+        algoParameters.add(paramName, paramValue).end();
 
         for (Algo algo : Algo.values()) {
             boolean supportsParam = Arrays.asList(Algo.XGBoost, Algo.GBM).contains(algo);
@@ -49,7 +49,7 @@ public class AutoMLBuildSpecTest {
 
         final String paramName = "monotone_constraints";
         final KeyValue[] paramValue = new KeyValue[] {new KeyValue("AGE", 1)};
-        algoParameters.add(Algo.GBM, paramName, paramValue);
+        algoParameters.add(Algo.GBM, paramName, paramValue).end();
 
         for (Algo algo : Algo.values()) {
             boolean assignedAlgo = Algo.GBM == algo;
@@ -75,7 +75,8 @@ public class AutoMLBuildSpecTest {
         KeyValue[] monotone_constraints = new KeyValue[] {new KeyValue("AGE", 1)};
         int ntrees = 100;
         algoParameters.add("monotone_constraints", monotone_constraints)
-                      .add("ntrees", ntrees);
+                      .add("ntrees", ntrees)
+                      .end();
 
         for (Algo algo : Algo.values()) {
             boolean supportsNtrees = Arrays.asList(Algo.DRF, Algo.GBM, Algo.XGBoost).contains(algo);
@@ -108,7 +109,7 @@ public class AutoMLBuildSpecTest {
 
         final String paramName = "monotone_constraints";
         final String paramValue = "wrong";
-        algoParameters.add(Algo.GBM, paramName, paramValue);
+        algoParameters.add(Algo.GBM, paramName, paramValue).end();
     }
 
 
@@ -119,7 +120,7 @@ public class AutoMLBuildSpecTest {
 
         final String paramName = "auto_rebalance";
         final boolean paramValue = false;
-        algoParameters.add(paramName, paramValue);
+        algoParameters.add(paramName, paramValue).end();
     }
 
     @Test
@@ -130,7 +131,8 @@ public class AutoMLBuildSpecTest {
         KeyValue[] monotone_constraints = new KeyValue[] {new KeyValue("AGE", 1)};
         int ntrees = 100;
         algoParameters.add("monotone_constraints", monotone_constraints)
-                .add("ntrees", ntrees);
+                      .add("ntrees", ntrees)
+                      .end();
 
         GBMModel.GBMParameters customParameters = (GBMModel.GBMParameters) algoParameters.getCustomParameters(Algo.GBM);
         assert customParameters._monotone_constraints == monotone_constraints;
