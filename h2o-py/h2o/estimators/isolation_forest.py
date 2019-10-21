@@ -123,17 +123,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         Names of columns to ignore for training.
 
         Type: ``List[str]``.
-
-        :examples:
-
-        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> predictors = airlines.columns[:9]
-        >>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
-        >>> airlines_if = H2OIsolationForestEstimator(ignored_columns = col_list,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
-        >>> airlines_if.model_performance()
         """
         return self._parms.get("ignored_columns")
 

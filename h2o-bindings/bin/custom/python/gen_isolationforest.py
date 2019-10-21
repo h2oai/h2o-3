@@ -82,16 +82,6 @@ examples = dict(
 ...               training_frame = cars)
 >>> cars_if.model_performance()
 """,
-    ignored_columns="""
->>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
->>> predictors = airlines.columns[:9]
->>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
->>> airlines_if = H2OIsolationForestEstimator(ignored_columns = col_list,
-...                                           seed = 1234)
->>> airlines_if.train(x = predictors,
-...                   training_frame = airlines)
->>> airlines_if.model_performance()
-""",
     max_depth="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 >>> predictors = ["displacement","power","weight","acceleration","year"]
