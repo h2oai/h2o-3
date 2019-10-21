@@ -384,7 +384,8 @@ public class Frame extends Lockable<Frame> {
 
   /**   Finds the matching column index, or -1 if missing
    *  @return the matching column index, or -1 if missing 
-   *  @deprecated as many columns in a Frame could be backed by the same Vec, we can't return single column index that corresponds to a given {@code vec}
+   *  @deprecated as many columns in a Frame could be backed by the same Vec, we can't return single column index that corresponds to a given {@code vec}.
+   *  Please use {@link #find(String)} instead.
    */
   @Deprecated()
   public int find( Vec vec ) {
@@ -398,7 +399,8 @@ public class Frame extends Lockable<Frame> {
 
   /**   Finds the matching column index, or -1 if missing
    *  @return the matching column index, or -1 if missing 
-   *  @deprecated as many columns in a Frame could be backed by the same Vec (and its key), we can't return single column index that corresponds to a given {@code key}
+   *  @deprecated as many columns in a Frame could be backed by the same Vec (and its key), we can't return single column index that corresponds to a given {@code key}.
+   *  Please use {@link #find(String)} instead.
    */
   @Deprecated
   public int find( Key key ) {
