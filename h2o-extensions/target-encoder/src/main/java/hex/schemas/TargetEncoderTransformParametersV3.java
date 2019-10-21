@@ -13,7 +13,7 @@ public class TargetEncoderTransformParametersV3 extends SchemaV3<TargetEncoderTr
   public KeyV3.ModelKeyV3<TargetEncoderModel> model;
   @API(help = "Seed value")
   public long seed;
-  @API(help = "Data leakage handling strategy. Default to None.", values = {"None", "KFold", "LeaveOneOut"})
+  @API(help = "Data leakage handling strategy.", values = {"None", "KFold", "LeaveOneOut"})
   public TargetEncoder.DataLeakageHandlingStrategy data_leakage_handling;
   @API(help = "Noise")
   public double noise;
