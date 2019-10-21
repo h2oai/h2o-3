@@ -274,6 +274,12 @@ abstract public class MemoryManager {
                                              { return (byte   [])malloc(size,size*1, 1,null,0,force); }
   public static short  [] malloc2 (int size) { return (short  [])malloc(size,size*2L, 2,null,0); }
   public static int    [] malloc4 (int size) { return (int    [])malloc(size,size*4L, 4,null,0); }
+  public static int  [][] malloc4 (int m, int n) {
+    int [][] res = new int[m][];
+    for(int i = 0; i < m; ++i)
+      res[i] = malloc4(n);
+    return res;
+  }
   public static long   [] malloc8 (int size) { return (long   [])malloc(size,size*8L, 8,null,0); }
   public static float  [] malloc4f(int size) { return (float  [])malloc(size,size*4L, 5,null,0); }
   public static double [] malloc8d(int size) {
@@ -287,6 +293,13 @@ abstract public class MemoryManager {
     for(int i = 0; i < m; ++i)
       res[i] = malloc8d(n);
     return res;
+  }
+  public static double[][][] malloc8d(final int d1, final int d2, final int d3) {
+    final double[][][] array = new double[d1][d2][];
+    for (int j = 0; j < d1; ++j)
+      for (int k = 0; k < d2; ++k)
+        array[j][k] = MemoryManager.malloc8d(d3);
+    return array;
   }
   public static boolean[] mallocZ (int size) { return (boolean[])malloc(size,size  , 0,null,0); }
   public static Object [] mallocObj(int size){ return (Object [])malloc(size,size*8L,10,null,0,false); }

@@ -4,6 +4,7 @@ import hex.DataInfo;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
+import water.MemoryManager;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Chunk;
@@ -44,7 +45,7 @@ public class EfronDJKTermTaskTest extends TestUtil {
       efronDJKSetupFun._cumsumRiskTerm = new double[]{0,1,2,3,4};
       efronDJKSetupFun._riskTermT2 = new double[]{1,2,3,4,5};
       EfronDJKTermTask djkTermTask = new EfronDJKTermTask(dinfo, coxMR, efronDJKSetupFun);
-      double[][] djkTerm = CoxPHUtils.malloc2DArray(dinfo.fullN(), dinfo.fullN());
+      double[][] djkTerm = MemoryManager.malloc8d(dinfo.fullN(), dinfo.fullN());
       djkTermTask._djkTerm = djkTerm;
       djkTermTask.setupLocal();
 
@@ -52,7 +53,7 @@ public class EfronDJKTermTaskTest extends TestUtil {
       Chunk[] csNoResp = chunks(dinfoNoResp, 0);
 
       // Compare vector*vectorT products
-      double[][] expected = CoxPHUtils.malloc2DArray(dinfo.fullN(), dinfo.fullN());
+      double[][] expected = MemoryManager.malloc8d(dinfo.fullN(), dinfo.fullN());
       for (int i = 0; i < cs[0]._len; i++) {
         DataInfo.Row rowNoResp = dinfoNoResp.extractDenseRow(csNoResp, i, dinfoNoResp.newDenseRow());
         vvT(rowNoResp, expected);
