@@ -1,5 +1,6 @@
 package ai.h2o.targetencoding.strategy;
 
+import ai.h2o.targetencoding.TargetEncoderFrameHelper;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
@@ -19,7 +20,8 @@ public class ThresholdTEApplicationStrategyTest extends water.TestUtil {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
 
-      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 4);
+      String responseColumnName = "survived";
+      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, 4,  new String[]{responseColumnName});
       assertArrayEquals(new String[]{"cabin", "home.dest"}, strategy.getColumnsToEncode());
 
     } finally {
@@ -37,11 +39,37 @@ public class ThresholdTEApplicationStrategyTest extends water.TestUtil {
       
       //Cardinality of the cabin column is 186
       assertEquals(186, fr.vec("cabin").cardinality() );
-      
-      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 186);
+
+      String responseColumnName = "survived";
+      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, 186,  new String[]{responseColumnName});
       assertArrayEquals(new String[]{"cabin", "home.dest"}, strategy.getColumnsToEncode());
       
-      TEApplicationStrategy strategy2 = new ThresholdTEApplicationStrategy(fr, fr.vec("survived"), 187);
+      TEApplicationStrategy strategy2 = new ThresholdTEApplicationStrategy(fr, 187,  new String[]{responseColumnName});
+      assertArrayEquals(new String[]{"home.dest"}, strategy2.getColumnsToEncode());
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void foldColumnShouldBeExcludedTest() {
+    Scope.enter();
+
+    try {
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      String foldColumnName = "fold";
+      int threshold = 187;
+      int nfoldsHigherThanThreshold = 200;
+      TargetEncoderFrameHelper.addKFoldColumn(fr, foldColumnName, nfoldsHigherThanThreshold, 1234); 
+      fr.replace(fr.find(foldColumnName), fr.vec(foldColumnName).toCategoricalVec());
+      Scope.track(fr);
+
+      String responseColumnName = "survived";
+      TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(fr, threshold,  new String[]{responseColumnName});
+      assertArrayEquals(new String[]{"home.dest", foldColumnName}, strategy.getColumnsToEncode());
+
+      TEApplicationStrategy strategy2 = new ThresholdTEApplicationStrategy(fr, threshold,  new String[]{responseColumnName, foldColumnName});
       assertArrayEquals(new String[]{"home.dest"}, strategy2.getColumnsToEncode());
 
     } finally {

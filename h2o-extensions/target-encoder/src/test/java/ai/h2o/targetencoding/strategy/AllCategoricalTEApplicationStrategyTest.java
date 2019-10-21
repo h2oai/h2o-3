@@ -20,7 +20,8 @@ public class AllCategoricalTEApplicationStrategyTest extends water.TestUtil {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
 
-      TEApplicationStrategy strategy = new AllCategoricalTEApplicationStrategy(fr, "survived");
+      String responseColumnName = "survived";
+      TEApplicationStrategy strategy = new AllCategoricalTEApplicationStrategy(fr, new String[] {responseColumnName});
       assertArrayEquals(new String[]{"sex", "cabin", "embarked", "home.dest"}, strategy.getColumnsToEncode());
 
     } finally {
@@ -33,11 +34,12 @@ public class AllCategoricalTEApplicationStrategyTest extends water.TestUtil {
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
-      
+      String responseColumnName = "survived";
+
       List<String> alpha = Arrays.asList("sex", "cabin", "embarked", "home.dest");
       alpha.forEach(item-> fr.remove(item));
 
-      TEApplicationStrategy strategy = new AllCategoricalTEApplicationStrategy(fr, "survived");
+      TEApplicationStrategy strategy = new AllCategoricalTEApplicationStrategy(fr, new String[] {responseColumnName});
       assertArrayEquals(new String[]{}, strategy.getColumnsToEncode());
 
     } finally {

@@ -1,40 +1,38 @@
 package ai.h2o.targetencoding.strategy;
 
 import water.fvec.Frame;
-import water.fvec.Vec;
-
-import java.util.ArrayList;
+import java.util.Arrays;
 
 /**
- * Strategy that will select only categorical columns which cardinality is greater of equal than specified threshold
+ * Strategy that will select only categorical columns with cardinality of greater of equal than specified threshold
  */
 public class ThresholdTEApplicationStrategy extends TEApplicationStrategy {
   
   private Frame _frame;
-  private String _responseColumnName;
+  private String[] _excludedColumnNames;
   private long _threshold;
 
   /**
-   * 
-   * @param frame
-   * @param responseColumn
-   * @param threshold
+   *  Constructor for selection of categorical columns strategy based on threshold value
+   * @param frame the frame selection is being done from
+   * @param excludedColumnNames the column names we want to exclude from the result 
+   *                            ( i.e. response column for classification tasks , fold column in case it is categorical etc.)
+   * @param threshold categorical columns with higher cardinality than {@code threshold} value will be selected
    */
-  public ThresholdTEApplicationStrategy(Frame frame, Vec responseColumn, long threshold) {
-    _frame = frame; 
-    _responseColumnName = _frame.name(_frame.find(responseColumn)); // Question: can we add .name(Vec vec) to Frame's API?
+  public ThresholdTEApplicationStrategy(Frame frame,  long threshold, String[] excludedColumnNames) {
+    _frame = frame;
+    _excludedColumnNames = excludedColumnNames; 
     _threshold = threshold;
   }
   
-  
   public String[] getColumnsToEncode() {
-    ArrayList<String> categoricalColumnNames = new ArrayList<>();
-    for( String vecName : _frame.names()) {
-      Vec vec = _frame.vec(vecName);
-      if(vec.isCategorical() && !vecName.equals(_responseColumnName) && vec.cardinality() >= _threshold)
-        categoricalColumnNames.add(vecName);
-    }
-    return categoricalColumnNames.toArray(new String[categoricalColumnNames.size()]);
+    return Arrays.stream(_frame.names())
+            .filter(columnName ->
+                    _frame.vec(columnName).isCategorical() &&
+                    ! Arrays.asList(_excludedColumnNames).contains(columnName) && 
+                    _frame.vec(columnName).cardinality() >= _threshold
+            )
+            .toArray(String[]::new);
   }
 
 }
