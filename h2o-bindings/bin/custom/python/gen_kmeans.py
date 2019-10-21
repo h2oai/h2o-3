@@ -78,16 +78,6 @@ examples = dict(
 ...               validation_frame = valid)
 >>> cars_km.scoring_history()
 """,
-    ignored_columns="""
->>> ozone = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/ozone.csv")
->>> train, valid = ozone.split_frame(ratios = [.8], seed = 1234)
->>> ignore_col = ["wind"]
->>> ozone_km = H2OKMeansEstimator(ignored_columns = ignore_col,
-...                               seed = 1234)
->>> ozone_km.train(training_frame = train,
-...                validation_frame = valid)
->>> ozone_km.scoring_history()
-""",
     init="""
 >>> seeds = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/flow_examples/seeds_dataset.txt")
 >>> predictors = seeds.columns[0:7]
