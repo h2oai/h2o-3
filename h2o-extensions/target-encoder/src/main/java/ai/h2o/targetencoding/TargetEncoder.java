@@ -41,7 +41,7 @@ import static ai.h2o.targetencoding.TargetEncoderFrameHelper.*;
 public class TargetEncoder extends Iced<TargetEncoder>{
 
     public static final String ENCODED_COLUMN_POSTFIX = "_te";
-    public static final BlendingParams DEFAULT_BLENDING_PARAMS = new BlendingParams(20, 10);
+    public static final BlendingParams DEFAULT_BLENDING_PARAMS = new BlendingParams(10, 20);
 
     public static String NUMERATOR_COL_NAME = "numerator";
     public static String DENOMINATOR_COL_NAME = "denominator";
