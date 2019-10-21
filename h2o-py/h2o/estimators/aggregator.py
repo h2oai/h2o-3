@@ -71,20 +71,6 @@ class H2OAggregatorEstimator(H2OEstimator):
         Response variable column.
 
         Type: ``str``.
-
-        :examples:
-
-        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-        >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> response_column = "economy_20mpg"
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_ag = H2OAggregatorEstimator()
-        >>> cars_ag.train(x = predictors,
-        ...               y = response_column,
-        ...               training_frame = train,
-        ...               validation_frame = valid)
-        >>> cars_ag.aggregated_frame
         """
         return self._parms.get("response_column")
 
@@ -100,24 +86,6 @@ class H2OAggregatorEstimator(H2OEstimator):
         Names of columns to ignore for training.
 
         Type: ``List[str]``.
-
-        :examples:
-
-        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
-        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
-        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
-        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
-        >>> predictors = airlines.columns[:9]
-        >>> response = "IsDepDelayed"
-        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
-        >>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
-        >>> airlines_ag = H2OAggregatorEstimator(ignored_columns = col_list)
-        >>> airlines_ag.train(y = response,
-        ...                   training_frame = train,
-        ...                   validation_frame = valid)
-        >>> airlines_ag.aggregated_frame
         """
         return self._parms.get("ignored_columns")
 
