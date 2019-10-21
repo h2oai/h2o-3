@@ -150,39 +150,6 @@ examples = dict(
 ...                fold_column="fold_numbers")
 >>> cars_drf.auc(xval=True)
 """,
-    response_column="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> response_column = "economy_20mpg"
->>> train, valid = cars.split_frame(ratios = [.8],
-...                                 seed = 1234)
->>> cars_drf = H2ORandomForestEstimator(seed = 1234)
->>> cars_drf.train(x = predictors,
-...                y = response_column,
-...                training_frame = train,
-...                validation_frame = valid)
->>> cars_drf.auc(valid=True)
-""",
-    ignored_columns="""
->>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
->>> airlines["Year"]= airlines["Year"].asfactor()
->>> airlines["Month"]= airlines["Month"].asfactor()
->>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
->>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
->>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
->>> predictors = airlines.columns[:9]
->>> response = "IsDepDelayed"
->>> train, valid= airlines.split_frame(ratios = [.8],
-...                                   seed = 1234)
->>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
->>> airlines_drf = H2ORandomForestEstimator(ignored_columns = col_list,
-...                                         seed =1234)
->>> airlines_drf.train(y=response,
-...                    training_frame = train,
-...                    validation_frame = valid)
->>> airlines_drf.auc(valid=True)
-""",
     ignore_const_cols="""
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
