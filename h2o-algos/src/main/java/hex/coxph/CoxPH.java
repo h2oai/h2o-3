@@ -17,8 +17,6 @@ import water.util.*;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static hex.coxph.CoxPHUtils.*;
-
 /**
  * Cox Proportional Hazards Model
  */
@@ -668,7 +666,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       rcumsumXRisk     = MemoryManager.malloc8d(n_time, n_coef);
 
       if (_isBreslow) { // Breslow only
-        rcumsumXXRisk = malloc3DArray(n_time, n_coef, n_coef);
+        rcumsumXXRisk = MemoryManager.malloc8d(n_time, n_coef, n_coef);
       }
     }
 

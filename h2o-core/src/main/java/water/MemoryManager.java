@@ -294,6 +294,13 @@ abstract public class MemoryManager {
       res[i] = malloc8d(n);
     return res;
   }
+  public static double[][][] malloc8d(final int d1, final int d2, final int d3) {
+    final double[][][] array = new double[d1][d2][];
+    for (int j = 0; j < d1; ++j)
+      for (int k = 0; k < d2; ++k)
+        array[j][k] = MemoryManager.malloc8d(d3);
+    return array;
+  }
   public static boolean[] mallocZ (int size) { return (boolean[])malloc(size,size  , 0,null,0); }
   public static Object [] mallocObj(int size){ return (Object [])malloc(size,size*8L,10,null,0,false); }
   public static byte   [] arrayCopyOfRange(byte  [] orig, int from, int sz) { return (byte  []) malloc(sz,(sz-from)  ,-1,orig,from); }
