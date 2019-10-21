@@ -570,6 +570,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           archiveFiles = c['archiveFiles']
           activatePythonEnv = c['activatePythonEnv']
 	      customDockerArgs = c['customDockerArgs']
+          dockerImageSuffix = c['dockerImageSuffix']
         }
       }
     ]
