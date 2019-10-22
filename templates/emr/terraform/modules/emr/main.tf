@@ -76,6 +76,7 @@ resource "aws_emr_cluster" "h2o-cluster" {
     subnet_id = "${data.aws_subnet.main.id}"
     emr_managed_master_security_group = "${aws_security_group.master.id}"
     emr_managed_slave_security_group = "${aws_security_group.slave.id}"
+    service_access_security_group = "${aws_security_group.service.id}"
     instance_profile = "${aws_iam_instance_profile.emr_ec2_instance_profile.arn}"
   }
 
@@ -127,4 +128,70 @@ EOF
     command = "sleep 60"
   }
   service_role = "${aws_iam_role.emr_role.arn}"
+}
+
+data "aws_instance" "master" {
+  filter {
+    name = "private-dns-name"
+    values = [
+      "${aws_emr_cluster.h2o-cluster.master_public_dns}"]
+  }
+  filter {
+    name = "vpc-id"
+    values = [
+      "${var.aws_vpc_id}"
+    ]
+  }
+  depends_on = ["aws_emr_cluster.h2o-cluster"]
+}
+
+##
+## Load Balanacer
+##
+resource "aws_alb" "alb_front" {
+  name		=	"front-alb"
+  internal	=	false
+  security_groups	=	["${aws_security_group.master.id}"]
+  subnets		=	["${var.aws_subnet_public_id}", "${var.aws_subnet_public2_id}"]
+  enable_deletion_protection = false
+}
+
+resource "aws_alb_target_group" "alb_front_https" {
+  name	= "alb-front-https"
+  vpc_id	= "${var.aws_vpc_id}"
+  port	= "54321"
+  protocol	= "HTTPS"
+  health_check {
+    path = "/"
+    port = "54321"
+    protocol = "HTTP"
+    healthy_threshold = 2
+    unhealthy_threshold = 5
+    interval = 5
+    timeout = 4
+    matcher = "200,401"
+  }
+}
+
+resource "aws_alb_target_group_attachment" "alb_master_https" {
+  target_group_arn = "${aws_alb_target_group.alb_front_https.arn}"
+  target_id = "${data.aws_instance.master.id}"
+  port = 54321
+}
+
+resource "aws_alb_listener" "alb_front_https" {
+  load_balancer_arn	= "${aws_alb.alb_front.arn}"
+  port = "54321"
+  protocol = "HTTPS"
+  ssl_policy = "ELBSecurityPolicy-2016-08"
+  certificate_arn = "${var.certificate_arn}"
+  default_action {
+    target_group_arn = "${aws_alb_target_group.alb_front_https.arn}"
+    type = "forward"
+  }
+}
+
+resource "aws_lb_listener_certificate" "url2_valouille_fr" {
+  listener_arn    = "${aws_alb_listener.alb_front_https.arn}"
+  certificate_arn = "${var.certificate_arn}"
 }
