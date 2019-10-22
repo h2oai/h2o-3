@@ -328,7 +328,7 @@ FAQs
 
 -  **Why does my H2O cluster on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
 
-  XGBoost uses memory outside the Java heap, and when that memory is not available, Hadoop kills the h2o job and the h2o cluster becomes unresponsive. Please set ``-extramempercent`` argument to a much higher value (120% recommended) when starting H2O. This argument configures the extra memory for internal JVM use outside of the Java heap and is a percentage of mapperXmx. For example:
+  This is why the extramempercent option exists, and we recommend setting this to a high value, such as 120. What happens internally is that when you specify ``-node_memory 10G`` and ``-extramempercent 120``, the h2o driver will ask Hadoop for :math:`10G * (1 + 1.2) = 22G` of memory. At the same time, the h2o driver will limit the memory used by the container JVM (the h2o node) to 10G, leaving the :math:`10G*120%=12G` memory "unused." This memory can be then safely used by XGBoost outside of the JVM. Keep in mind that H2O algorithms will only have access to the JVM memory (10GB), while XGBoost will use the native memory for model training. For example:
 
   ::
 
