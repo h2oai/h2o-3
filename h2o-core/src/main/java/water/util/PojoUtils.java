@@ -646,16 +646,13 @@ public class PojoUtils {
           if (null == f.get(o))
             f.set(o, f.getType().newInstance());
           fillFromMap(f.get(o), (Map<String, Object>) value);
-        }
-        catch (IllegalAccessException e) {
+        } catch (IllegalAccessException e) {
           throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
-        }
-        catch (InstantiationException e) {
+        } catch (InstantiationException e) {
           try {
             throw new IllegalArgumentException("Cannot create new child object of type: " +
                     PojoUtils.getFieldEvenInherited(o, key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
-          }
-          catch (NoSuchFieldException ee) {
+          } catch (NoSuchFieldException ee) {
             // Can't happen: we've already checked for this.
             throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
           }
