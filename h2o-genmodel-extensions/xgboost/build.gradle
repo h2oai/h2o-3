@@ -31,19 +31,3 @@ dependencies {
     testCompile 'com.esotericsoftware.kryo:kryo:2.21'
     testCompile "junit:junit:${junitVersion}"
 }
-
-// Disable default jar
-jar {
-    enabled = false
-}
-
-shadowJar {
-    archiveName = jar.archiveName
-}
-
-artifacts {
-    archives shadowJar
-}
-jar.dependsOn shadowJar
-build.dependsOn shadowJar
-
