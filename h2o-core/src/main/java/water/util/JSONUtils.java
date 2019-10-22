@@ -3,7 +3,6 @@ package water.util;
 import com.google.gson.Gson;
 import water.nbhm.NonBlockingHashMap;
 
-import java.lang.reflect.Type;
 import java.util.Properties;
 
 public class JSONUtils {

@@ -1,7 +1,6 @@
 package water.util;
 
 import water.*;
-import water.api.API;
 import water.api.Schema;
 import water.api.SchemaServer;
 import water.api.schemas3.FrameV3;
@@ -9,12 +8,9 @@ import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
 
-import javax.management.modelmbean.InvalidTargetObjectTypeException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
