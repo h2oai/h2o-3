@@ -60,10 +60,32 @@ class BroadcastJoinForTargetEncoder {
       int[][] leftArr = getEncodingDataArray();
       int[][] rightArr = mrt.getEncodingDataArray();
       
-      // Note: we need to add this check due to the following circumstances: 
-      //       1) there is a chance that reduce phase will start before map phase is finished. 
-      //       2) MRTasks are being only shallow cloned i.e. all internal fields are references to the same objects in memory
-      //       3) MRTasks shallow copies that were also sent to other nodes will be a deep copies of the original ones ( due to serialisation/deserialisation )
+      // Note: we need to add `leftArr != rightArr` check due to the following circumstances: 
+      //       1. MRTasks are being only shallow cloned i.e. all internal fields are references to the same objects in memory
+      //       2. MRTasks' shallow copies, that were also sent to other nodes, will become a deep copies of the original shallow copies (due to serialisation/deserialisation)
+      //       3. there is a chance that reduce phase will start before map phase is finished:
+      //
+      //          In the following example we are only concerned with what is happening within a single node (due to 2.).
+      //
+      //                      T(r)
+      //                   /        \
+      //                  /          \
+      //                Tl(r)         Tr(r)
+      //              /      \       /     \
+      //            Tll(m)  Tlr(m)  Trl(m)  Trr(m)              
+      //                                                , where (r) stands for reduce phase only, (m) - map phase only
+      //
+      //        
+      //        Tll(m) and Tlr(m) manipulate the same array (due to 1.), but not the same cells -> no race condition.
+      //        The race arises because, for example, Tl(r) can  occur in parallel with Trl(m), Tr(r) or both.
+      //        Once both Tl(r) and Tr(r) are completed, T(r) itself is safe.
+      //        
+      //        Steps that led to the race in a FrameWithEncodingDataToArray.reduce without `leftArr != rightArr` check:
+      //          - Tl(r); Math.max for a particular cell Cij was computed to be 0 (not yet assigning result to Cij cell)
+      //          - Trl(m) & Trr(m); Cij was updated during map phase with non-zero value of 42
+      //          - Tr(r); Math.max for Cij was computed to be 42 and assigned to Cij cell of 2D array
+      //          - Tl(r); assigned to Cij cell of 2D array value of 0 and effectively overriding previously assigned value of 42
+      //       
       if (leftArr != rightArr) {
         for (int rowIdx = 0; rowIdx < leftArr.length; rowIdx++) {
           for (int colIdx = 0; colIdx < leftArr[rowIdx].length; colIdx++) {
