@@ -2,13 +2,13 @@ package ai.h2o.automl;
 
 import hex.Model;
 import hex.ScoreKeeper;
-import hex.deeplearning.DeepLearningModel;
-import hex.ensemble.StackedEnsembleModel;
-import hex.glm.GLMModel;
+import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
+import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
+import hex.glm.GLMModel.GLMParameters;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
-import hex.tree.drf.DRFModel;
-import hex.tree.gbm.GBMModel;
-import hex.tree.xgboost.XGBoostModel;
+import hex.tree.drf.DRFModel.DRFParameters;
+import hex.tree.gbm.GBMModel.GBMParameters;
+import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.H2O;
 import water.Iced;
 import water.Key;
@@ -277,12 +277,12 @@ public class AutoMLBuildSpec extends Iced {
 
     private Model.Parameters defaultParameters(Algo algo) {
       switch (algo) {
-        case DeepLearning: return new DeepLearningModel.DeepLearningParameters();
-        case DRF: return new DRFModel.DRFParameters();
-        case GBM: return new GBMModel.GBMParameters();
-        case GLM: return new GLMModel.GLMParameters();
-        case StackedEnsemble: return new StackedEnsembleModel.StackedEnsembleParameters();
-        case XGBoost: return new XGBoostModel.XGBoostParameters();
+        case DeepLearning: return new DeepLearningParameters();
+        case DRF: return new DRFParameters();
+        case GBM: return new GBMParameters();
+        case GLM: return new GLMParameters();
+        case StackedEnsemble: return new StackedEnsembleParameters();
+        case XGBoost: return new XGBoostParameters();
         default: throw new H2OIllegalArgumentException("Custom parameters are not supported for "+algo.name()+".");
       }
     }
