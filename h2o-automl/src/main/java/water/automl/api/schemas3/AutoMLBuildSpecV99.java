@@ -15,7 +15,6 @@ import water.api.schemas3.*;
 import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
 import water.util.*;
 
-import java.lang.reflect.Array;
 import java.util.Map;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
