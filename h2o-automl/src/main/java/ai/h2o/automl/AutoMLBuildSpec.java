@@ -12,7 +12,6 @@ import hex.tree.xgboost.XGBoostModel;
 import water.H2O;
 import water.Iced;
 import water.Key;
-import water.api.schemas3.JobV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.Frame;
@@ -348,9 +347,6 @@ public class AutoMLBuildSpec extends Iced {
   public final AutoMLBuildControl build_control = new AutoMLBuildControl();
   public final AutoMLInput input_spec = new AutoMLInput();
   public final AutoMLBuildModels build_models = new AutoMLBuildModels();
-
-  // output
-  public JobV3 job;
 
   public String project() {
     if (build_control.project_name == null) {

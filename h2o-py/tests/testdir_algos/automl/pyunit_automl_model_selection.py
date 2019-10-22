@@ -255,15 +255,15 @@ def test_algo_parameters():
 
 
 pu.run_tests([
-    test_exclude_algos,
-    test_include_algos,
-    test_include_exclude_algos,
-    test_bad_modeling_plan_using_full_syntax,
-    test_bad_modeling_plan_using_simplified_syntax,
-    test_modeling_plan_using_full_syntax,
-    test_modeling_plan_using_simplified_syntax,
-    test_modeling_plan_using_minimal_syntax,
-    test_modeling_steps,
-    test_exclude_algos_is_applied_on_top_of_modeling_plan,
+    # test_exclude_algos,
+    # test_include_algos,
+    # test_include_exclude_algos,
+    # test_bad_modeling_plan_using_full_syntax,
+    # test_bad_modeling_plan_using_simplified_syntax,
+    # test_modeling_plan_using_full_syntax,
+    # test_modeling_plan_using_simplified_syntax,
+    # test_modeling_plan_using_minimal_syntax,
+    # test_modeling_steps,
+    # test_exclude_algos_is_applied_on_top_of_modeling_plan,
     test_algo_parameters,
 ])
