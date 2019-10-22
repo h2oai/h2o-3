@@ -30,7 +30,6 @@ class BuildConfig {
   public static final String COMPONENT_R = 'r'
   public static final String COMPONENT_JS = 'js'
   public static final String COMPONENT_JAVA = 'java'
-  public static final String COMPONENT_GPU = 'gpu'
   // Use to indicate, that the stage is not component dependent such as MOJO Compatibility Test,
   // always run
   public static final String COMPONENT_ANY = 'any'
@@ -224,8 +223,8 @@ class BuildConfig {
         component = COMPONENT_JAVA
       }
       // handle gpu suffix
-      if (stageConfig.additionalTestPackages.contains(COMPONENT_GPU)) {
-        suffix = "-gpu"
+      if (stageConfig.dockerImageSuffix != null) {
+        suffix = "-" + stageConfig.dockerImageSuffix
       }
     }
     def imageComponentName

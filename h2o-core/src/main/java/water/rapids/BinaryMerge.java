@@ -1054,11 +1054,9 @@ class BinaryMerge extends DTask<BinaryMerge> {
       assert(_rows!=null);
       assert(_chk ==null);
       long t0 = System.nanoTime();
-      // System.out.print("Allocating _chk with " + _fr.numCols() +" by " + _rows.length + "...");
       _chk  = MemoryManager.malloc8d(_fr.numCols(),_rows.length);  // TODO: should this be transposed in memory?
       _chkLong = malloc8A(_fr.numCols(), _rows.length);
       _chkString = new BufferedString[_fr.numCols()][_rows.length];
-      // System.out.println("done");
       int cidx[] = MemoryManager.malloc4(_rows.length);
       int offset[] = MemoryManager.malloc4(_rows.length);
       Vec anyVec = _fr.anyVec();  assert anyVec != null;

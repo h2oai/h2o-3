@@ -194,7 +194,8 @@ def call(final pipelineContext) {
       stageName: 'H2O XGB GPU Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       customDockerArgs: ['--runtime=nvidia', '--pid=host'],
       timeoutValue: 120, target: 'benchmark-xgb-gpu', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R, pipelineContext.getBuildConfig().COMPONENT_GPU],
+      dockerImageSuffix: "gpu",
+      additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel()
     ],
@@ -582,6 +583,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           activatePythonEnv = c['activatePythonEnv']
 	      customDockerArgs = c['customDockerArgs']
           imageSpecifier = c['imageSpecifier']
+          dockerImageSuffix = c['dockerImageSuffix']
         }
       }
     ]

@@ -2,10 +2,12 @@ package water.rapids;
 
 import water.*;
 import water.fvec.*;
+import water.util.Log;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
@@ -49,7 +51,6 @@ public class Merge {
 
   public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[],
                             boolean allLeft, int[][] id_maps) {
-
     int[] ascendingL, ascendingR;
 
     if (leftCols != null && leftCols.length>0) {
@@ -70,6 +71,8 @@ public class Merge {
   // single-threaded driver logic.  Merge left and right frames based on common columns.
   public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[],
                             boolean allLeft, int[][] id_maps, int[] ascendingL, int[] ascendingR) {
+    if (allLeft && (riteFrame.numRows()==0))
+      return sortOnly(leftFrame,  leftCols, id_maps, ascendingL);
     final boolean hasRite = riteCols.length > 0;
 
     // if there are NaN or null values in the rite frames in the merge columns, it is decided by Matt Dowle to not
@@ -135,7 +138,7 @@ public class Merge {
 
     // TODO: start merging before all indexes had been created. Use callback?
 
-    System.out.print("Making BinaryMerge RPC calls ... ");
+    Log.info("Making BinaryMerge RPC calls ... ");
     long t0 = System.nanoTime();
     ArrayList<BinaryMerge> bmList = new ArrayList<>();
     Futures fs = new Futures();
@@ -238,15 +241,15 @@ public class Merge {
         fs.add(new RPC<>(node, bm).call());
       }
     }
-    System.out.println("took: " + String.format("%.3f", (System.nanoTime() - t0) / 1e9));
+    Log.debug("took: " + String.format("%.3f", (System.nanoTime() - t0) / 1e9) +" seconds.");
 
     t0 = System.nanoTime();
-    System.out.println("Sending BinaryMerge async RPC calls in a queue ... ");
+    Log.info("Sending BinaryMerge async RPC calls in a queue ... ");
     fs.blockForPending();
-    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
-
-
-    System.out.print("Removing DKV keys of left and right index.  ... ");
+    
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
+    
+    Log.debug("Removing DKV keys of left and right index.  ... ");
     // TODO: In future we won't delete but rather persist them as index on the table
     // Explicitly deleting here (rather than Arno's cleanUp) to reveal if we're not removing keys early enough elsewhere
     t0 = System.nanoTime();
@@ -263,9 +266,9 @@ public class Merge {
         }
       }
     }
-    System.out.println("took: " + (System.nanoTime() - t0)/1e9);
+    Log.debug("took: " + (System.nanoTime() - t0)/1e9+" seconds.");
 
-    System.out.print("Allocating and populating chunk info (e.g. size and batch number) ...");
+    Log.info("Allocating and populating chunk info (e.g. size and batch number) ...");
     t0 = System.nanoTime();
     long ansN = 0;
     int numChunks = 0;
@@ -290,11 +293,11 @@ public class Merge {
         k++;
       }
     }
-    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
 
     // Now we can stitch together the final frame from the raw chunks that were
     // put into the store
-    System.out.print("Allocating and populated espc ...");
+    Log.info("Allocating and populated espc ...");
     t0 = System.nanoTime();
     long espc[] = new long[chunkSizes.length+1];
     int i=0;
@@ -304,10 +307,10 @@ public class Merge {
       sum+=s;
     }
     espc[espc.length-1] = sum;
-    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
     assert(sum==ansN);
 
-    System.out.print("Allocating dummy vecs/chunks of the final frame ...");
+    Log.info("Allocating dummy vecs/chunks of the final frame ...");
     t0 = System.nanoTime();
     int numJoinCols = hasRite ? leftIndex._bytesUsed.length : 0;
     int numLeftCols = leftFrame.numCols();
@@ -327,26 +330,174 @@ public class Merge {
     }
     Key<Vec> key = Vec.newKey();
     Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
-    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
 
-    System.out.print("Finally stitch together by overwriting dummies ...");
+    Log.info("Finally stitch together by overwriting dummies ...");
     t0 = System.nanoTime();
     Frame fr = new Frame(names, vecs);
     ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
     ff.doAll(fr);
-    System.out.println("took: " + (System.nanoTime() - t0) / 1e9);
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds");
 
     //Merge.cleanUp();
     return fr;
   }
 
+  public static List<SortCombine> gatherSameMSBRows(Frame leftFrame) {
+    long t0 = System.nanoTime();
+    List<SortCombine> bmList = new ArrayList<SortCombine>();
+    Futures fs = new Futures();
+
+    for (int leftMSB=0; leftMSB<=255; leftMSB++) {  // For each MSB, gather sorted rows with same MSB into one spot
+      SingleThreadRadixOrder.OXHeader leftSortedOXHeader = DKV.getGet(getSortedOXHeaderKey(/*left=*/true, leftMSB));
+      if (leftSortedOXHeader != null) {
+        SortCombine bm = new SortCombine(new SortCombine.FFSB(leftFrame, leftMSB), leftSortedOXHeader);
+        bmList.add(bm);
+        fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
+      }
+    }
+    Log.debug("took: " + String.format("%.3f", (System.nanoTime() - t0) / 1e9)+" seconds.");
+    Log.debug("Removing DKV keys of left index.  ... "); // finished gather the sorted rows per MSB, remove used objects
+    t0 = System.nanoTime();
+    Log.info("Sending BinaryMerge async RPC calls in a queue ... ");
+    fs.blockForPending();
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
+
+    t0 = System.nanoTime();
+    // now that we have collected sorted columns for each MSB, remove info that are no longer needed
+    for (int msb=0; msb<256; msb++) {
+      for (int isLeft=0; isLeft<2; isLeft++) {
+        Key k = getSortedOXHeaderKey(isLeft!=0, msb);
+        SingleThreadRadixOrder.OXHeader oxheader = DKV.getGet(k);
+        DKV.remove(k);
+        if (oxheader != null) {
+          for (int b=0; b<oxheader._nBatch; ++b) {
+            k = SplitByMSBLocal.getSortedOXbatchKey(isLeft!=0, msb, b);
+            DKV.remove(k);
+          }
+        }
+      }
+    }
+    Log.debug("took: " + (System.nanoTime() - t0)/1e9+" seconds.");
+    return bmList;
+  }
+  
+  public static long allocateChunk(List<SortCombine> bmList, long chunkSizes[], int chunkLeftMSB[], 
+                                   int chunkRightMSB[], int chunkBatch[]) {
+    Log.info("Allocating and populating chunk info (e.g. size and batch number) ...");
+    Long t0 = System.nanoTime();
+    long ansN = 0;
+    int numChunks = 0;
+    for( SortCombine thisbm : bmList )
+      if( thisbm._numRowsInResult > 0 ) {
+        numChunks += thisbm._chunkSizes.length;
+        ansN += thisbm._numRowsInResult;
+      }
+    chunkSizes = new long[numChunks];
+    chunkLeftMSB = new int[numChunks];  // using too much space repeating the same value here, but, limited
+    chunkRightMSB = new int[numChunks]; // leave it alone so as not to re-write chunkStitcher, fill with -1
+    Arrays.fill(chunkRightMSB, -1);
+    chunkBatch = new int[numChunks];
+    int k = 0;
+    for( SortCombine thisbm : bmList ) {
+      if (thisbm._numRowsInResult == 0) continue;
+      int thisChunkSizes[] = thisbm._chunkSizes;
+      for (int j=0; j<thisChunkSizes.length; j++) {
+        chunkSizes[k] = thisChunkSizes[j];
+        chunkLeftMSB [k] = thisbm._leftSB._msb;
+        chunkBatch[k] = j;
+        k++;
+      }
+    }
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9 +" seconds.");
+    return ansN;
+  }
+  
+  public static Frame allocatePopulateChunk(List<SortCombine> bmList, Frame leftFrame, long ansN, long chunkSizes[], 
+                                            int chunkLeftMSB[], int chunkRightMSB[], int chunkBatch[]) {
+    // Now we can stitch together the final frame from the raw chunks that were
+    // put into the store
+    Log.info("Allocating and populated espc ...");
+    long t0 = System.nanoTime();
+    long espc[] = new long[chunkSizes.length+1];
+    int i=0;
+    long sum=0;
+    for (long s : chunkSizes) {
+      espc[i++] = sum;
+      sum+=s;
+    }
+    espc[espc.length-1] = sum;
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds");
+    assert(sum==ansN);
+
+    Log.info("Allocating dummy vecs/chunks of the final frame ...");
+    t0 = System.nanoTime();
+    int numLeftCols = leftFrame.numCols();
+    int numColsInResult = numLeftCols;
+    final byte[] types = new byte[numColsInResult];
+    final String[][] doms = new String[numColsInResult][];
+    final String[] names = new String[numColsInResult];
+    for (int j=0; j<numLeftCols; j++) {
+      types[j] = leftFrame.vec(j).get_type();
+      doms[j] = leftFrame.domains()[j];
+      names[j] = leftFrame.names()[j];
+    }
+
+    Key<Vec> key = Vec.newKey();
+    Vec[] vecs = new Vec(key, Vec.ESPC.rowLayout(key, espc)).makeCons(numColsInResult, 0, doms, types);
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds");
+
+    Log.info("Finally stitch together by overwriting dummies ...");
+    t0 = System.nanoTime();
+    Frame fr = new Frame(names, vecs);
+    ChunkStitcher ff = new ChunkStitcher(chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
+    ff.doAll(fr);
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9+" seconds.");
+    return fr;
+  }
+
+  public static Frame sortOnly(final Frame leftFrame, final int leftCols[], int[][] id_maps, int[] ascendingL) {
+    createIndex(true, leftFrame, leftCols, id_maps, ascendingL);  // sort the columns.
+    Log.info("Making BinaryMerge RPC calls ... ");
+    List<SortCombine> bmList = gatherSameMSBRows(leftFrame); // For each MSB, gather sorted rows with same MSB into one spot
+    Log.info("Allocating and populating chunk info (e.g. size and batch number) ...");
+    Long t0 = System.nanoTime();
+    long ansN = 0;
+    int numChunks = 0;
+    for (SortCombine thisbm : bmList)
+      if (thisbm._numRowsInResult > 0) {
+        numChunks += thisbm._chunkSizes.length;
+        ansN += thisbm._numRowsInResult;
+      }
+    long chunkSizes[] = new long[numChunks];
+    int chunkLeftMSB[] = new int[numChunks];  // using too much space repeating the same value here, but, limited
+    int chunkRightMSB[] = new int[numChunks]; // leave it alone so as not to re-write chunkStitcher, fill with -1
+    Arrays.fill(chunkRightMSB, -1);
+    int chunkBatch[] = new int[numChunks];
+    int k = 0;
+    for (SortCombine thisbm : bmList) {
+      if (thisbm._numRowsInResult == 0) continue;
+      int thisChunkSizes[] = thisbm._chunkSizes;
+      for (int j = 0; j < thisChunkSizes.length; j++) {
+        chunkSizes[k] = thisChunkSizes[j];
+        chunkLeftMSB[k] = thisbm._leftSB._msb;
+        chunkBatch[k] = j;
+        k++;
+      }
+    }
+    Log.debug("took: " + (System.nanoTime() - t0) / 1e9 + " seconds.");
+    long finalRowNumber = allocateChunk(bmList, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
+    Log.info("Populate chunks and form final sorted frame ...");
+    return allocatePopulateChunk(bmList, leftFrame, finalRowNumber, chunkSizes, chunkLeftMSB, chunkRightMSB, chunkBatch);
+  }
+  
   private static RadixOrder createIndex(boolean isLeft, Frame fr, int[] cols, int[][] id_maps, int[] ascending) {
-    System.out.println("\nCreating "+(isLeft ? "left" : "right")+" index ...");
+    Log.info("Creating "+(isLeft ? "left" : "right")+" index ...");
     long t0 = System.nanoTime();
     RadixOrder idxTask = new RadixOrder(fr, isLeft, cols, id_maps, ascending);
     H2O.submitTask(idxTask);    // each of those launches an MRTask
     idxTask.join(); 
-    System.out.println("***\n*** Creating "+(isLeft ? "left" : "right")+" index took: " + (System.nanoTime() - t0) / 1e9 + "\n***\n");
+    Log.debug("*** Creating "+(isLeft ? "left" : "right")+" index took: " + (System.nanoTime() - t0) / 1e9 + " seconds ***");
     return idxTask;
   }
 
