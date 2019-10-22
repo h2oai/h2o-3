@@ -352,7 +352,7 @@ def call(final pipelineContext) {
     }
 
     def stageTemplate = [
-      target: target, timeoutValue: 45,
+      target: target, timeoutValue: 60,
       component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [
               pipelineContext.getBuildConfig().COMPONENT_HADOOP,
@@ -363,11 +363,7 @@ def call(final pipelineContext) {
         distribution: distribution.name,
         version: distribution.version,
         commandFactory: 'h2o-3/scripts/jenkins/groovy/hadoopCommands.groovy',
-        ldapConfigPath: ldapConfigPath,
-        kerberosUserName: 'jenkins@H2O.AI',
-        kerberosPrincipal: 'HTTP/localhost@H2O.AI',
-        kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
-        kerberosPropertiesPath: 'scripts/jenkins/config/kerberos.properties',
+        ldapConfigPath: ldapConfigPath
       ], pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
       executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'
@@ -412,7 +408,7 @@ def call(final pipelineContext) {
     }
 
     def stageTemplate = [
-            target: target, timeoutValue: 45,
+            target: target, timeoutValue: 60,
             component: pipelineContext.getBuildConfig().COMPONENT_ANY,
             additionalTestPackages: [
                     pipelineContext.getBuildConfig().COMPONENT_HADOOP,
