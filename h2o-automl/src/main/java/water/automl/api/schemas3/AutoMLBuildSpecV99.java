@@ -15,6 +15,7 @@ import water.api.schemas3.*;
 import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
 import water.util.*;
 
+import java.lang.reflect.Array;
 import java.util.Map;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
@@ -188,11 +189,24 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     V getFormattedValue() {
       switch (name) {
         case "monotone_constraints":
-          final Map<String, Double> kvs = (Map)value.value();
-          return (V)kvs.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue())).toArray(KeyValue[]::new);
+          return (V)value.valueAsArray(KeyValue[].class, KeyValueV3[].class);
         default:
           return (V)value.value();
       }
+//      Class oriClazz = val.getClass();
+//      if (Schema.class.isAssignableFrom(oriClazz)) {
+//        Schema sch = (Schema)val;
+//        return (V)sch.createAndFillImpl();
+//      } else if (oriClazz.isArray() && Schema.class.isAssignableFrom(oriClazz.getComponentType())) {
+//        Schema[] sch =(Schema[])val;
+//        Class<? extends Iced> destClass = sch[0].getImplClass();
+//        Iced[] vals = (Iced[])Array.newInstance(destClass, sch.length);
+//        for (int i=0; i<sch.length; i++) {
+//          vals[i] = sch[i].createAndFillImpl();
+//        }
+//        return (V)vals;
+//      }
+//      return (V)val;
     }
   }
 

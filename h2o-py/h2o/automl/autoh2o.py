@@ -275,7 +275,8 @@ class H2OAutoML(Keyed):
                 scope, __, name = k.partition('__')
                 if len(name) == 0:
                     name, scope = scope, 'any'
-                algo_parameters_json.append(dict(scope=scope, name=name, value=v))
+                value = [dict(key=k, value=v) for k, v in v.items()] if isinstance(v, dict) else v   # we can't use stringify_dict here as this will be converted into a JSON string
+                algo_parameters_json.append(dict(scope=scope, name=name, value=value))
 
             self.build_models['algo_parameters'] = algo_parameters_json
 

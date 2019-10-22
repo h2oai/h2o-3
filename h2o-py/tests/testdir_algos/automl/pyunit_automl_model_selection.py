@@ -1,5 +1,6 @@
 from __future__ import print_function
 import sys, os
+import re
 
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
@@ -245,25 +246,95 @@ def test_exclude_algos_is_applied_on_top_of_modeling_plan():
     assert len(se) == 0
 
 
-def test_algo_parameters():
+def test_monotone_constraints_can_be_passed_as_algo_parameter():
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_monotone_constraints",
-                    algo_parameters=dict(monotone_constraints=dict(AGE=1)),
-                    max_models=2,
+                    algo_parameters=dict(
+                        monotone_constraints=dict(AGE=1, VOL=-1),  # constraints just for the sake of testing
+                        ntrees=10,
+                    ),
+                    max_models=6,
                     seed=1)
     aml.train(y=ds.target, training_frame=ds.train)
+    model_names, _, _ = get_partitioned_model_names(aml.leaderboard)
+    models_supporting_monotone_constraints = [n for n in model_names if re.match(r"GBM|XGBoost", n)]
+    assert len(models_supporting_monotone_constraints) < len(model_names), \
+        "models not supporting the constraint should not have been skipped"
+    for m in models_supporting_monotone_constraints:
+        model = h2o.get_model(m)
+        param = next(p for p in model._model_json['parameters'] if p['name'] == 'monotone_constraints')
+        # print(param)
+        value = param['actual_value']
+        assert isinstance(value, list)
+        assert len(value) == 2
+        age = next((v for v in value if v['key'] == 'AGE'), None)
+        assert age is not None
+        assert age['value'] == 1.0
+        vol = next((v for v in value if v['key'] == 'VOL'), None)
+        assert vol is not None
+        assert vol['value'] == -1.0
+
+    models_supporting_ntrees = [n for n in model_names if re.match(r"DRF|GBM|XGBoost|XRT", n)]
+    assert len(models_supporting_ntrees) > 0
+    for m in models_supporting_ntrees:
+        model = h2o.get_model(m)
+        param = next(p for p in model._model_json['parameters'] if p['name'] == 'ntrees')
+        value = param['actual_value']
+        assert value == 10
+
+
+def test_algo_parameter_can_be_applied_only_to_a_specific_algo():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_monotone_constraints",
+                    algo_parameters=dict(
+                        GBM__monotone_constraints=dict(AGE=1)
+                    ),
+                    max_models=6,
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train)
+    model_names, _, _ = get_partitioned_model_names(aml.leaderboard)
+    models_supporting_monotone_constraints = [n for n in model_names if re.match(r"GBM|XGBoost", n)]
+    assert next((m for m in models_supporting_monotone_constraints if m.startswith('GBM')), None), "There should be at least one GBM model"
+    for m in models_supporting_monotone_constraints:
+        model = h2o.get_model(m)
+        mc_param = next(p for p in model._model_json['parameters'] if p['name'] == 'monotone_constraints')
+        # print(mc_param)
+        mc_value = mc_param['actual_value']
+        if m.startswith('GBM'):
+            assert isinstance(mc_value, list)
+            age = next((v for v in mc_value if v['key'] == 'AGE'), None)
+            assert age is not None
+            assert age['value'] == 1.0
+        else:
+            assert mc_value is None
+
+
+def test_cannot_set_unauthorized_algo_parameter():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_monotone_constraints",
+                    algo_parameters=dict(
+                        score_tree_interval=7
+                    ),
+                    max_models=6,
+                    seed=1)
+    try:
+        aml.train(y=ds.target, training_frame=ds.train)
+    except h2o.exceptions.H2OResponseError as e:
+        assert "algo_parameters: score_tree_interval" in str(e)
 
 
 pu.run_tests([
-    # test_exclude_algos,
-    # test_include_algos,
-    # test_include_exclude_algos,
-    # test_bad_modeling_plan_using_full_syntax,
-    # test_bad_modeling_plan_using_simplified_syntax,
-    # test_modeling_plan_using_full_syntax,
-    # test_modeling_plan_using_simplified_syntax,
-    # test_modeling_plan_using_minimal_syntax,
-    # test_modeling_steps,
-    # test_exclude_algos_is_applied_on_top_of_modeling_plan,
-    test_algo_parameters,
+    test_exclude_algos,
+    test_include_algos,
+    test_include_exclude_algos,
+    test_bad_modeling_plan_using_full_syntax,
+    test_bad_modeling_plan_using_simplified_syntax,
+    test_modeling_plan_using_full_syntax,
+    test_modeling_plan_using_simplified_syntax,
+    test_modeling_plan_using_minimal_syntax,
+    test_modeling_steps,
+    test_exclude_algos_is_applied_on_top_of_modeling_plan,
+    test_monotone_constraints_can_be_passed_as_algo_parameter,
+    test_algo_parameter_can_be_applied_only_to_a_specific_algo,
+    test_cannot_set_unauthorized_algo_parameter,
 ])
