@@ -13,4 +13,7 @@ public class JSONUtils {
   public static Properties parseToProperties(String json) {
     return new Gson().fromJson(json, Properties.class);
   }
+  public static String toJSON(Object o) {
+    return new Gson().toJson(o);
+  }
 }

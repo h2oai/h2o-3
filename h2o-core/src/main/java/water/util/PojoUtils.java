@@ -1,6 +1,7 @@
 package water.util;
 
 import water.*;
+import water.api.API;
 import water.api.Schema;
 import water.api.SchemaServer;
 import water.api.schemas3.FrameV3;
@@ -8,8 +9,10 @@ import water.api.schemas3.KeyV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2ONotFoundArgumentException;
 
+import javax.management.modelmbean.InvalidTargetObjectTypeException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -616,7 +619,7 @@ public class PojoUtils {
    * only those fields which are in the supplied JSON string.  NOTE: Doesn't handle array fields yet.
    */
   public static <T> T fillFromJson(T o, String json) {
-    Map<String, Object> setFields = (new com.google.gson.Gson()).fromJson(json, HashMap.class);
+    Map<String, Object> setFields = JSONUtils.parse(json);
     return fillFromMap(o, setFields);
   }
 
@@ -634,29 +637,27 @@ public class PojoUtils {
         throw new IllegalArgumentException("Field not found: '" + key + "' on object " + o);
       }
       Object value = setFields.get(key);
-      if (value instanceof Map) {
-        if (f.getType().isInstance(value)) {
-          setField(o, key, value);
-        } else {
-          // handle nested objects
+      if (JSONValue.class == f.getType()) {
+        setField(o, key, JSONValue.fromValue(value));
+      } else if (value instanceof Map) {
+        // handle nested objects
+        try {
+          // In some cases, the target object has children already (e.g., defaults), while in other cases it doesn't.
+          if (null == f.get(o))
+            f.set(o, f.getType().newInstance());
+          fillFromMap(f.get(o), (Map<String, Object>) value);
+        }
+        catch (IllegalAccessException e) {
+          throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
+        }
+        catch (InstantiationException e) {
           try {
-            // In some cases, the target object has children already (e.g., defaults), while in other cases it doesn't.
-            if (null == f.get(o))
-              f.set(o, f.getType().newInstance());
-            fillFromMap(f.get(o), (Map<String, Object>) value);
+            throw new IllegalArgumentException("Cannot create new child object of type: " +
+                    PojoUtils.getFieldEvenInherited(o, key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
           }
-          catch (IllegalAccessException e) {
-            throw new IllegalArgumentException("Cannot get value of the field: '" + key + "' on object " + o);
-          }
-          catch (InstantiationException e) {
-            try {
-              throw new IllegalArgumentException("Cannot create new child object of type: " +
-                      PojoUtils.getFieldEvenInherited(o, key).getClass().getCanonicalName() + " for field: '" + key + "' on object " + o);
-            }
-            catch (NoSuchFieldException ee) {
-              // Can't happen: we've already checked for this.
-              throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
-            }
+          catch (NoSuchFieldException ee) {
+            // Can't happen: we've already checked for this.
+            throw new IllegalArgumentException("Cannot create new child object of type for field: '" + key + "' on object " + o);
           }
         }
       } else if (value instanceof List) {

@@ -4,6 +4,7 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import hex.KeyValue;
 import hex.ScoreKeeper.StoppingMetric;
 import water.Iced;
 import water.api.API;
@@ -12,11 +13,7 @@ import water.api.Schema;
 import water.api.ValuesProvider;
 import water.api.schemas3.*;
 import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
-import water.util.ArrayUtils;
-import water.util.EnumUtils;
-import water.util.JSONUtils;
-
-import water.util.PojoUtils;
+import water.util.*;
 
 import java.util.Map;
 
@@ -185,7 +182,18 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     public String name;
 
     @API(help="", direction=API.Direction.INPUT)
-    public V value;
+    public JSONValue value;
+
+    @SuppressWarnings("unchecked")
+    V getFormattedValue() {
+      switch (name) {
+        case "monotone_constraints":
+          final Map<String, Double> kvs = (Map)value.value();
+          return (V)kvs.entrySet().stream().map(e -> new KeyValue(e.getKey(), e.getValue())).toArray(KeyValue[]::new);
+        default:
+          return (V)value.value();
+      }
+    }
   }
 
   public static final class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {
@@ -208,15 +216,20 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       if (algo_parameters != null) {
         for (AutoMLCustomParameterV99 param : algo_parameters) {
           if (ScopeProvider.ANY_ALGO.equals(param.scope)) {
-            impl.algo_parameters.add(param.name, param.value);
+            impl.algo_parameters.add(param.name, param.getFormattedValue());
           } else {
-            Algo algo = EnumUtils.valueOf(Algo.class, param.name);
-            impl.algo_parameters.add(algo, param.name, param.value);
+            Algo algo = EnumUtils.valueOf(Algo.class, param.scope);
+            impl.algo_parameters.add(algo, param.name, param.getFormattedValue());
           }
         }
       }
       impl.algo_parameters.end();
       return impl;
+    }
+
+    @Override
+    public AutoMLBuildModelsV99 fillFromImpl(AutoMLBuildSpec.AutoMLBuildModels impl) {
+      return super.fillFromImpl(impl, new String[]{"algo_parameters"});
     }
   } // class AutoMLBuildModels
 

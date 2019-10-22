@@ -245,6 +245,15 @@ def test_exclude_algos_is_applied_on_top_of_modeling_plan():
     assert len(se) == 0
 
 
+def test_algo_parameters():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_monotone_constraints",
+                    algo_parameters=dict(monotone_constraints=dict(AGE=1)),
+                    max_models=2,
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train)
+
+
 pu.run_tests([
     test_exclude_algos,
     test_include_algos,
@@ -255,5 +264,6 @@ pu.run_tests([
     test_modeling_plan_using_simplified_syntax,
     test_modeling_plan_using_minimal_syntax,
     test_modeling_steps,
-    test_exclude_algos_is_applied_on_top_of_modeling_plan
+    test_exclude_algos_is_applied_on_top_of_modeling_plan,
+    test_algo_parameters,
 ])
