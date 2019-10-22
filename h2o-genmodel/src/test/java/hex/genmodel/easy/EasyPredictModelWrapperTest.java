@@ -506,9 +506,7 @@ public class EasyPredictModelWrapperTest {
     MyAutoEncoderModel model = new MyAutoEncoderModel();
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(model);
 
-    Field errorConsumerField = m.getClass().getDeclaredField("errorConsumer");
-    errorConsumerField.setAccessible(true);
-    Object errorConsumer = errorConsumerField.get(m);
+    EasyPredictModelWrapper.ErrorConsumer errorConsumer = m.getErrorConsumer();
     Assert.assertNotNull(errorConsumer);
     Assert.assertEquals(VoidErrorConsumer.class, errorConsumer.getClass());
   }
@@ -520,9 +518,7 @@ public class EasyPredictModelWrapperTest {
     EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
         .setModel(model));
 
-    Field errorConsumerField = modelWrapper.getClass().getDeclaredField("errorConsumer");
-    errorConsumerField.setAccessible(true);
-    Object errorConsumer = errorConsumerField.get(modelWrapper);
+    EasyPredictModelWrapper.ErrorConsumer errorConsumer = modelWrapper.getErrorConsumer();
     Assert.assertNotNull(errorConsumer);
     Assert.assertEquals(VoidErrorConsumer.class, errorConsumer.getClass());
   }
