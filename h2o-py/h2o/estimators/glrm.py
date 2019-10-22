@@ -89,6 +89,15 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3,
+        ...                                            ignore_const_cols=False,
+        ...                                            seed=1234)
+        >>> iris_glrm.train(x=iris.names, training_frame=iris)
+        >>> iris_glrm.show()
         """
         return self._parms.get("ignore_const_cols")
 
@@ -273,6 +282,21 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Regularization weight on X matrix
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> rank = 3
+        >>> gx = 0.5
+        >>> gy = 0.5
+        >>> trans = "standardize"
+        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=rank,
+        ...                                            loss="Quadratic",
+        ...                                            gamma_x=gx,
+        ...                                            gamma_y=gy,
+        ...                                            transform=trans)
+        >>> iris_glrm.train(x=iris.names, training_frame=iris)
+        >>> iris_glrm.show()
         """
         return self._parms.get("gamma_x")
 
@@ -288,6 +312,21 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Regularization weight on Y matrix
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> rank = 3
+        >>> gx = 0.5
+        >>> gy = 0.5
+        >>> trans = "standardize"
+        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=rank,
+        ...                                            loss="Quadratic",
+        ...                                            gamma_x=gx,
+        ...                                            gamma_y=gy,
+        ...                                            transform=trans)
+        >>> iris_glrm.train(x=iris.names, training_frame=iris)
+        >>> iris_glrm.show()
         """
         return self._parms.get("gamma_y")
 
@@ -333,6 +372,15 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Initial step size
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3,
+        ...                                            init_step_size=2.5,
+        ...                                            seed=1234) 
+        >>> iris_glrm.train(x=iris.names, training_frame=iris)
+        >>> iris_glrm.show()
         """
         return self._parms.get("init_step_size")
 
@@ -378,6 +426,15 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Initialization mode
 
         One of: ``"random"``, ``"svd"``, ``"plus_plus"``, ``"user"``  (default: ``"plus_plus"``).
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3,
+        ...                                            init="svd",
+        ...                                            seed=1234) 
+        >>> iris_glrm.train(x=iris.names, training_frame=iris)
+        >>> iris_glrm.show()
         """
         return self._parms.get("init")
 
@@ -436,6 +493,22 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Expand categorical columns in user-specified initial Y
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> rank = 3
+        >>> gx = 0.5
+        >>> gy = 0.5
+        >>> trans = "standardize"
+        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=rank,
+        ...                                            loss="Quadratic",
+        ...                                            gamma_x=gx,
+        ...                                            gamma_y=gy,
+        ...                                            transform=trans,
+        ...                                            expand_user_y=False)
+        >>> iris_glrm.train(x=iris.names, training_frame=iris)
+        >>> iris_glrm.show()
         """
         return self._parms.get("expand_user_y")
 
@@ -451,6 +524,22 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Reconstruct original training data by reversing transform
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> rank = 3
+        >>> gx = 0.5
+        >>> gy = 0.5
+        >>> trans = "standardize"
+        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=rank,
+        ...                                            loss="Quadratic",
+        ...                                            gamma_x=gx,
+        ...                                            gamma_y=gy,
+        ...                                            transform=trans
+        ...                                            impute_original=True)
+        >>> iris_glrm.train(x=iris.names, training_frame=iris)
+        >>> iris_glrm.show()
         """
         return self._parms.get("impute_original")
 
@@ -496,6 +585,18 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> import tempfile
+        >>> from os import listdir
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3,
+        ...                                            export_checkpoints_dir=checkpoints_dir,
+        ...                                            seed=1234)
+        >>> iris_glrm.train(x=iris.names, training_frame=iris)
+        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 
