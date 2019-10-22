@@ -4,6 +4,7 @@ import water.Iced;
 import water.api.Schema;
 
 import java.lang.reflect.Array;
+import java.util.Objects;
 
 public class JSONValue<V> extends Iced {
 
@@ -50,4 +51,16 @@ public class JSONValue<V> extends Iced {
         return ts;
     }
 
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        JSONValue<?> jsonValue = (JSONValue<?>) o;
+        return Objects.equals(_json, jsonValue._json) && Objects.equals(_clazz, jsonValue._clazz);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(_json, _clazz);
+    }
 }

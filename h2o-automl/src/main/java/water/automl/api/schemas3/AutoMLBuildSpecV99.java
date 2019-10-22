@@ -193,20 +193,6 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
         default:
           return (V)value.value();
       }
-//      Class oriClazz = val.getClass();
-//      if (Schema.class.isAssignableFrom(oriClazz)) {
-//        Schema sch = (Schema)val;
-//        return (V)sch.createAndFillImpl();
-//      } else if (oriClazz.isArray() && Schema.class.isAssignableFrom(oriClazz.getComponentType())) {
-//        Schema[] sch =(Schema[])val;
-//        Class<? extends Iced> destClass = sch[0].getImplClass();
-//        Iced[] vals = (Iced[])Array.newInstance(destClass, sch.length);
-//        for (int i=0; i<sch.length; i++) {
-//          vals[i] = sch[i].createAndFillImpl();
-//        }
-//        return (V)vals;
-//      }
-//      return (V)val;
     }
   }
 
