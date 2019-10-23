@@ -130,7 +130,7 @@ public abstract class Paxos {
     Paxos.print("Announcing new Cloud Membership: ", H2O.CLOUD._memary);
     Log.info("Cloud of size ", H2O.CLOUD.size(), " formed ", H2O.CLOUD.toString());
     H2Okey leader = H2O.CLOUD.leader()._key;
-    H2O.notifyAboutCloudSize(H2O.SELF_ADDRESS, H2O.API_PORT, leader.getAddress(), leader.htm_port(), H2O.CLOUD.size());
+    H2O.notifyAboutCloudSize(H2O.SELF_ADDRESS, H2O.API_PORT, leader.getAddress(), leader.getApiPort(), H2O.CLOUD.size());
     return 0;
   }
 
