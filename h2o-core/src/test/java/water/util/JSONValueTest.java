@@ -1,8 +1,12 @@
 package water.util;
 
 import hex.KeyValue;
+import hex.Model;
 import org.junit.Test;
+import water.Key;
+import water.api.schemas3.KeyV3;
 import water.api.schemas3.KeyValueV3;
+import water.fvec.Frame;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -65,6 +69,41 @@ public class JSONValueTest {
         assertEquals(expected[0].getValue(), vKVs[0].getValue(), 1e-10);
         assertEquals(expected[1].getKey(), vKVs[1].getKey());
         assertEquals(expected[1].getValue(), vKVs[1].getValue(), 1e-10);
+    }
+
+    @Test public void test_iced() {
+        Map<String, Object> mKV = new HashMap<>();
+        mKV.put("name", "foo");
+        mKV.put("type", "Frame");
+        JSONValue<Map> jKV = JSONValue.fromValue(mKV);
+
+        KeyV3.FrameKeyV3 keyV3 = jKV.valueAsSchema(KeyV3.FrameKeyV3.class);
+        assertEquals("foo", keyV3.name);
+        assertEquals("Frame", keyV3.type);
+
+        Key<Frame> expected = Key.make("foo");
+        Key<Frame> key = jKV.valueAs(Key.class, KeyV3.class);
+        assertEquals(expected, key);
+    }
+
+    @Test public void test_iced_array() {
+        Map<String, Object> mKVs[] = new HashMap[]{new HashMap(), new HashMap()};
+        mKVs[0].put("name", "foo");
+        mKVs[0].put("type", "Model");
+        mKVs[1].put("name", "bar");
+        mKVs[1].put("type", "Model");
+        JSONValue<Map[]> jKVs = JSONValue.fromValue(mKVs);
+
+        KeyV3.ModelKeyV3[] keysV3 = jKVs.valueAsSchemas(KeyV3.ModelKeyV3[].class);
+        assertEquals("foo", keysV3[0].name);
+        assertEquals("bar", keysV3[1].name);
+        assertEquals("Model", keysV3[0].type);
+        assertEquals("Model", keysV3[1].type);
+
+        Key<Model>[] expected = new Key[] { Key.make("foo"), Key.make("bar") };
+        Key<Model>[] keys = jKVs.valueAsArray(Key[].class, KeyV3[].class);
+        assertEquals(expected[0], keys[0]);
+        assertEquals(expected[1], keys[1]);
     }
 
 }

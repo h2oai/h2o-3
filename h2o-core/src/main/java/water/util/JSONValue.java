@@ -2,10 +2,16 @@ package water.util;
 
 import water.Iced;
 import water.api.Schema;
+import water.api.Schema.AutoParseable;
 
 import java.lang.reflect.Array;
+import java.util.Map;
 import java.util.Objects;
 
+/**
+ *
+ * @param <V>
+ */
 public class JSONValue<V> extends Iced {
 
     @SuppressWarnings("unchecked")
@@ -20,9 +26,9 @@ public class JSONValue<V> extends Iced {
         this(json, null);
     }
 
-    public JSONValue(String _json, Class<V> _clazz) {
-        this._json = _json;
-        this._clazz = _clazz;
+    public JSONValue(String json, Class<V> clazz) {
+        _json = json;
+        _clazz = clazz;
     }
 
     public V value() {
@@ -36,19 +42,45 @@ public class JSONValue<V> extends Iced {
     }
 
     public <T extends Iced, S extends Schema<T, S>> T valueAs(Class<T> clazz, Class<S> schema) {
-        S s = valueAs(schema);
-        return s.createAndFillImpl();
+        return valueAsSchema(schema).createAndFillImpl();
     }
 
     @SuppressWarnings("unchecked")
     public <T extends Iced, S extends Schema<T, S>> T[] valueAsArray(Class<T[]> clazz, Class<S[]> schema) {
-        S[] ss = valueAs(schema);
-        Class<T> tClazz = (Class<T>)clazz.getComponentType();
-        T[] ts = (T[])Array.newInstance(tClazz, ss.length);
-        for (int i = 0; i < ss.length; i++) {
+        final S[] ss = valueAsSchemas(schema);
+        final Class<T> tClazz = (Class<T>)clazz.getComponentType();
+        final T[] ts = (T[])Array.newInstance(tClazz, ss.length);
+        for (int i=0; i<ss.length; i++) {
             ts[i] = ss[i].createAndFillImpl();
         }
         return ts;
+    }
+
+    public <S extends Schema> S valueAsSchema(Class<S> schema) {
+        final S s;
+        if (AutoParseable.class.isAssignableFrom(schema)) {
+            s = valueAs(schema);
+        } else {
+            s = Schema.newInstance(schema);
+            PojoUtils.fillFromJson(s, _json);
+        }
+        return s;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <S extends Schema> S[] valueAsSchemas(Class<S[]> schema) {
+        final Class<S> sClazz = (Class<S>)schema.getComponentType();
+        final S[] ss;
+        if (AutoParseable.class.isAssignableFrom(sClazz)) {
+            ss = valueAs(schema);
+        } else {
+            final Map[] maps = valueAs(Map[].class);
+            ss = (S[]) Array.newInstance(sClazz, maps.length);
+            for (int i=0; i<ss.length; i++) {
+                ss[i] = JSONValue.fromValue(maps[i]).valueAsSchema(sClazz);
+            }
+        }
+        return ss;
     }
 
     @Override

@@ -46,7 +46,11 @@
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with exclude_algos param.
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-#' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional.
+#' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional (Expert usage only).
+#' @param algo_parameters List.
+#' @param algo_parameters List. A list of param_name=param_value to be passed to internal models. Defaults to none (Expert usage only).
+#'        By default, params are set only to algorithms accepting them, and ignored by others.
+#'        Only following parameters are currently allowed: "monotone_constraints", "ntrees".
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. Defaults to FALSE.
@@ -90,6 +94,7 @@ h2o.automl <- function(x, y, training_frame,
                        exclude_algos = NULL,
                        include_algos = NULL,
                        modeling_plan = NULL,
+                       algo_parameters = NULL,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
@@ -237,6 +242,26 @@ h2o.automl <- function(x, y, training_frame,
       }
     })
     build_models$modeling_plan <- modeling_plan
+  }
+  if (!is.null(algo_parameters)) {
+    keys <- names(algo_parameters)
+    algo_parameters_json <- lapply(keys, function(k) {
+      tokens <- strsplit(k, "__")[[1]]
+      if (length(tokens) == 1) {
+        scope <- "any"
+        name <- k
+      } else {
+        scope <- tokens[1]
+        name <- paste0(tokens[2:len(tokens)], collapse="__")
+      }
+      value <- algo_parameters[[k]]
+      if (is.list(value) && !is.null(names(value))) {
+        vnames <- names(value)
+        value <- lapply(vnames, function(n) list(key=n, value=value[[n]]))
+      }
+      list(scope=scope, name=name, value=value)
+    })
+    build_models$algo_parameters <- algo_parameters_json
   }
 
   # Update build_control with nfolds
