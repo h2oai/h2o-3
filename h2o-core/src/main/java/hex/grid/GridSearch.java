@@ -176,6 +176,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       boolean locked = true;
       try {
         grid.putModel(model._parms.checksum(IGNORED_FIELDS_PARAM_HASH), model._key);
+        constructScoringInfo(model);
+        _job.update(1);
         grid.update(_job);
         // Cancellation by the user handling
         if (_job.stop_requested()) throw new Job.JobCancelledException();
@@ -194,6 +196,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           hyperspaceAccessLock.unlock();
         }
       }
+    }
+
+    private void constructScoringInfo(final Model model) {
+      ScoringInfo scoringInfo = new ScoringInfo();
+      scoringInfo.time_stamp_ms = System.currentTimeMillis();
+
+      model.fillScoringInfo(scoringInfo);
+      grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
+      ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric());
     }
 
     private boolean isThereEnoughTime() {
