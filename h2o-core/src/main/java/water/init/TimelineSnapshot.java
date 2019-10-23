@@ -209,7 +209,7 @@ public final class TimelineSnapshot implements
         case i_o:                 // Shows up as I/O-completing recorded packets
           return false;
         default:
-          throw new RuntimeException("unexpected udp packet type " + e.toString());
+          throw new RuntimeException("unexpected packet type " + e.toString());
       }
 
       // Check that port numbers are compatible.  Really check that the
