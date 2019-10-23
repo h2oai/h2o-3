@@ -9,7 +9,10 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
+ * CLass providing encapsulation for json values, especially for parts of json objects with polymorphic values.
  *
+ * Idea is to store json (or part of json object) as json string + class for serialization.
+ * It can then later be parsed dynamically using the provided `value` and `valueAs` methods.
  * @param <V>
  */
 public class JSONValue<V> extends Iced {
