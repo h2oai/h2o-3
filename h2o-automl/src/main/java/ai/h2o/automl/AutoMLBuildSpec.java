@@ -5,7 +5,7 @@ import hex.ScoreKeeper;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.glm.GLMModel.GLMParameters;
-import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.grid.hyperspace.HyperSpaceSearchCriteria;
 import hex.tree.drf.DRFModel.DRFParameters;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
@@ -76,7 +76,7 @@ public class AutoMLBuildSpec extends Iced {
 
     public static final int AUTO_STOPPING_TOLERANCE = -1;
 
-    private final RandomDiscreteValueSearchCriteria _searchCriteria = new RandomDiscreteValueSearchCriteria();
+    private final HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria _searchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
     private double _max_runtime_secs_per_model = 0;
 
     public double max_runtime_secs_per_model() {
@@ -140,10 +140,10 @@ public class AutoMLBuildSpec extends Iced {
     }
 
     public static double default_stopping_tolerance_for_frame(Frame frame) {
-      return RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(frame);
+      return HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(frame);
     }
 
-    public RandomDiscreteValueSearchCriteria getSearchCriteria() {
+    public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria getSearchCriteria() {
       return _searchCriteria;
     }
 

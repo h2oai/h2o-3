@@ -1,13 +1,14 @@
 package hex.grid;
 
 import hex.*;
-import hex.grid.HyperSpaceWalker.BaseWalker;
+import hex.grid.hyperspace.HyperSpaceSearchCriteria;
+import hex.grid.hyperspace.HyperSpaceWalker;
+import hex.grid.hyperspace.HyperSpaceWalker.BaseWalker;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.CollectionUtils;
 import water.util.Log;
 import water.util.PojoUtils;
 
@@ -25,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * model builder job can fail!
  *
  * Grid search is parametrized by hyper space walk strategy ({@link
- * hex.grid.HyperSpaceWalker} which defines how the space of hyper parameters
+ * HyperSpaceWalker} which defines how the space of hyper parameters
  * is traversed.
  *
  * The job is started by the <code>startGridSearch</code> method which create a new grid search, put
@@ -64,7 +65,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Model[] models = grid.getModels()
  * }</pre>
  *
- * @see hex.grid.HyperSpaceWalker
+ * @see HyperSpaceWalker
  * @see #startGridSearch(Key, HyperSpaceWalker)
  */
 public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSearch> {
@@ -118,9 +119,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     long gridWork=0;
     if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
       int count=0;
-      while (it.hasNext(model) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
+      while (it.hasNext(Optional.ofNullable(model)) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
         try {
-          Model.Parameters parms = it.nextModelParameters(model);
+          Model.Parameters parms = it.nextModelParameters(Optional.of(model));
           gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
         } catch(Throwable ex) {
           //swallow invalid combinations
@@ -195,8 +196,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       MP params = null;
 
       while (params == null) {
-        if (hyperSpaceWalker.hasNext(model)) {
-          params = hyperSpaceWalker.nextModelParameters(model);
+        if (hyperSpaceWalker.hasNext(Optional.of(model))) {
+          params = hyperSpaceWalker.nextModelParameters(Optional.of(model));
           final Key modelKey = grid.getModelKey(params.checksum(IGNORED_FIELDS_PARAM_HASH));
           if(modelKey != null){
             params = null;
@@ -208,8 +209,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
       return params;
     }
-    
-
   }
   
   private void parallelGridSearch(Grid<MP> grid) {
@@ -218,17 +217,16 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeeder::feedModel);
 
     List<ModelBuilder> startModels = new ArrayList<>();
-    // Just a showcase - test with GridTest.testParallelGridSearch method.
-    // Let's start with n models. The number of models at the beginning determines the level of parallelism kept by
-    // the model feeders. Not more, not less. Once a model is finished, another one takes it's place in the training process.
-    for (int i = 0; i < 10; i++) {
+    final List<MP> mps = iterator.initialModelParameters(10);
+    
+    for (int i = 0; i < mps.size(); i++) {
       if (iterator.hasNext(null)) {
-        final MP nextModelParameters = iterator.nextModelParameters(null);
+        final MP nextModelParameters = mps.get(i);
         final long checksum = nextModelParameters.checksum(IGNORED_FIELDS_PARAM_HASH);
         if(grid.getModelKey(checksum) == null) {
           startModels.add(ModelBuilder.make(nextModelParameters));
         } else {
-          i--;
+          //TODO: Compensate for this scenario - we need to keep the level of paralelism at pre-set level
         }
       }
     }
@@ -261,7 +259,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
       // Number of traversed model parameters
       int counter = grid.getModelCount();
-      while (it.hasNext(model)) {
+      while (it.hasNext(Optional.of(model))) {
         if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
         double max_runtime_secs = it.max_runtime_secs();
 
@@ -277,7 +275,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         MP params = null;
         try {
           // Get parameters for next model
-          params = it.nextModelParameters(model);
+          params = it.nextModelParameters(Optional.of(model));
 
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong

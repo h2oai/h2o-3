@@ -31,7 +31,7 @@ public class GridTest extends TestUtil {
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     TestUtil.stall_till_cloudsize(1);
   }
 
@@ -114,7 +114,7 @@ public class GridTest extends TestUtil {
   }
 
   @Test
-  public void testFaileH2OdParamsCleanup() throws FileNotFoundException {
+  public void testFaileH2OdParamsCleanup() {
     try {
       Scope.enter();
       final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");

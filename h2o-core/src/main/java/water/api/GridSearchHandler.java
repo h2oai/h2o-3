@@ -5,7 +5,7 @@ import hex.ModelBuilder;
 import hex.ModelParametersBuilderFactory;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.HyperSpaceSearchCriteria;
+import hex.grid.hyperspace.HyperSpaceSearchCriteria;
 import hex.schemas.*;
 import water.H2O;
 import water.Job;

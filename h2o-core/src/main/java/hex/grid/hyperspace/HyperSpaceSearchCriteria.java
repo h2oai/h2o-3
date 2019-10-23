@@ -1,4 +1,4 @@
-package hex.grid;
+package hex.grid.hyperspace;
 
 import hex.ScoreKeeper;
 import water.Iced;
