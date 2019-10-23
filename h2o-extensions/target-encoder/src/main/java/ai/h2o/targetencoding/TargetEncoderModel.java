@@ -34,7 +34,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public boolean _blending = false;
     public BlendingParams _blending_parameters = TargetEncoder.DEFAULT_BLENDING_PARAMS;
     public TargetEncoder.DataLeakageHandlingStrategy _data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
-    
+    public double _noise_level = 0;
     @Override
     public String algoName() {
       return ALGO_NAME;

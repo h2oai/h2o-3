@@ -21,6 +21,9 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
 
     @API(help = "Data leakage handling strategy. Default to None.", values = {"None", "KFold", "LeaveOneOut"})
     public TargetEncoder.DataLeakageHandlingStrategy data_leakage_handling;
+
+    @API(help = "Noise level", required = false, direction = API.Direction.INPUT, gridable = true)
+    public double noise_level;
   
     @Override
     public String[] fields() {
