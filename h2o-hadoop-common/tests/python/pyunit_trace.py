@@ -10,20 +10,19 @@ from tests import pyunit_utils
 def trace_request():
     err = None
     try:
-        h2o.api("TRACE /")
+        h2o.api("TRACE /3/Cloud")
     except H2OServerError as e:
         err = e
 
-    msg = str(err.message)
+    msg = str(err.args[0])
 
     assert err is not None
     print("<Error message>")
     print(msg)
     print("</Error Message>")
 
-    # exact message depends on Jetty Version
-    assert (msg.startswith("HTTP 500") and "TRACE method is not supported" in msg) or \
-           msg.startswith("HTTP 405 Method Not Allowed")
+    # exact message depends on Jetty Version and security settings
+    assert msg.startswith("HTTP 500") or msg.startswith("HTTP 405 Method Not Allowed")
 
 
 if __name__ == "__main__":
