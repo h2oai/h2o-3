@@ -162,12 +162,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
   private class ModelFeeder<MP extends Model.Parameters> {
 
-    private final HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceWalker;
+    private final HyperSpaceWalker.HyperSpaceIterator<MP> hyperspaceIterator;
     private final Grid grid;
     private final Lock hyperspaceAccessLock = new ReentrantLock();
 
-    public ModelFeeder(HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceWalker, Grid grid) {
-      this.hyperSpaceWalker = hyperSpaceWalker;
+    public ModelFeeder(HyperSpaceWalker.HyperSpaceIterator<MP> hyperspaceIterator, Grid grid) {
+      this.hyperspaceIterator = hyperspaceIterator;
       this.grid = grid;
     }
 
@@ -177,8 +177,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       try {
         grid.putModel(model._parms.checksum(IGNORED_FIELDS_PARAM_HASH), model._key);
         grid.update(_job);
-        final MP nextModelParams = getNextModelParams(hyperSpaceWalker, model, grid);
-        if (nextModelParams != null) {
+        // Cancellation by the user handling
+        if (_job.stop_requested()) throw new Job.JobCancelledException();
+
+        // Attempt to train next model
+        final MP nextModelParams = getNextModelParams(hyperspaceIterator, model, grid);
+        if (nextModelParams != null && isThereEnoughTime()) {
           parallelModelBuilder.run(new ModelBuilder[]{ModelBuilder.make(nextModelParams)});
         } else {
           hyperspaceAccessLock.unlock();
@@ -190,6 +194,16 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           hyperspaceAccessLock.unlock();
         }
       }
+    }
+
+    private boolean isThereEnoughTime() {
+      final boolean enoughTime = hyperspaceIterator.max_runtime_secs() > 0 && hyperspaceIterator.time_remaining_secs() > 0;
+
+      if (!enoughTime) {
+        Log.info("Grid max_runtime_secs of " + hyperspaceIterator.max_runtime_secs() + " secs has expired; stopping early.");
+      }
+
+      return enoughTime;
     }
 
     private MP getNextModelParams(final HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceWalker, final Model model, final Grid grid){

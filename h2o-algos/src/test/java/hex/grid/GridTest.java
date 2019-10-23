@@ -4,6 +4,8 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ParallelModelBuilder;
 import hex.genmodel.utils.DistributionFamily;
+import hex.grid.hyperspace.HyperSpaceSearchCriteria;
+import hex.grid.hyperspace.HyperSpaceWalker;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
 import org.junit.Rule;
@@ -75,6 +77,43 @@ public class GridTest extends TestUtil {
       Scope.exit();
     }
 
+  }
+
+  @Test
+  public void testParallelModelTimeConstraint() {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Scope.track(trainingFrame);
+
+      final Integer[] ntreesArr = new Integer[]{5, 50, 7, 8, 9, 10};
+      final Integer[] maxDepthArr = new Integer[]{2, 3, 4};
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_ntrees", ntreesArr);
+        put("_max_depth", maxDepthArr);
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "IsDepDelayed";
+      params._seed = 42;
+      params._max_runtime_secs = 1D;
+
+      Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
+              hyperParms,
+              new GridSearch.SimpleParametersBuilderFactory(),
+              new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria());
+      Scope.track_generic(gridSearch);
+      final Grid grid = gridSearch.get();
+      Scope.track_generic(grid);
+
+      assertNotEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
+      
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test
