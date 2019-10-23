@@ -117,6 +117,43 @@ public class GridTest extends TestUtil {
   }
 
   @Test
+  public void testParallelUserStopRequest() {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Scope.track(trainingFrame);
+
+      final Integer[] ntreesArr = new Integer[]{5, 50, 7, 8, 9, 10};
+      final Integer[] maxDepthArr = new Integer[]{2, 3, 4};
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_ntrees", ntreesArr);
+        put("_max_depth", maxDepthArr);
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "IsDepDelayed";
+      params._seed = 42;
+
+      Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
+              hyperParms,
+              new GridSearch.SimpleParametersBuilderFactory(),
+              new HyperSpaceSearchCriteria.CartesianSearchCriteria());
+      Scope.track_generic(gridSearch);
+      gridSearch.stop();
+      final Grid grid = gridSearch.get();
+      Scope.track_generic(grid);
+
+      assertNotEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void testParallelGridSearch() {
     try {
       Scope.enter();

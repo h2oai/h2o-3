@@ -179,12 +179,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         constructScoringInfo(model);
         _job.update(1);
         grid.update(_job);
-        // Cancellation by the user handling
-        if (_job.stop_requested()) throw new Job.JobCancelledException();
-
+        
         // Attempt to train next model
         final MP nextModelParams = getNextModelParams(hyperspaceIterator, model, grid);
-        if (nextModelParams != null && isThereEnoughTime()) {
+        if (nextModelParams != null && isThereEnoughTime() && !_job.stop_requested()) {
           parallelModelBuilder.run(new ModelBuilder[]{ModelBuilder.make(nextModelParams)});
         } else {
           hyperspaceAccessLock.unlock();
