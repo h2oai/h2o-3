@@ -5,6 +5,17 @@ def class_extensions():
         All parameters defined in self.__params, should be input parameters in H2OPCA.__init__ method.
 
         :returns: H2OPCA object
+
+        :examples:
+
+        >>> from sklearn.pipeline import Pipeline
+        >>> from h2o.transforms.preprocessing import H2OScaler
+        >>> from h2o.estimators import H2ORandomForestEstimator
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> pipe = Pipeline([("standardize", H2OScaler()),
+        ...                  ("pca", H2OPrincipalComponentAnalysisEstimator(k=2).init_for_pipeline()),
+        ...                  ("rf", H2ORandomForestEstimator(seed=42,ntrees=5))])
+        >>> pipe.fit(iris[:4], iris[4])
         """
         import inspect
         from h2o.transforms.decomposition import H2OPCA
@@ -62,14 +73,103 @@ examples = dict(
 >>> pros_pca.train(x=prostate.names, training_frame=prostate)
 >>> pros_pca.show()
 """,
-    init_for_pipeline="""
->>> from sklearn.pipeline import Pipeline
->>> from h2o.transforms.preprocessing import H2OScaler
->>> from h2o.estimators import H2ORandomForestEstimator
->>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
->>> pipe = Pipeline([("standardize", H2OScaler()),
-...                  ("pca", H2OPrincipalComponentAnalysisEstimator(k=2).init_for_pipeline()),
-...                  ("rf", H2ORandomForestEstimator(seed=42,ntrees=5))])
->>> pipe.fit(iris[:4], iris[4])
+    k="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+...                                                   transform="standardize",
+...                                                   pca_method="power",
+...                                                   impute_missing=True,
+...                                                   max_iterations=800)
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
 """,
+    max_iterations="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+...                                                   transform="standardize",
+...                                                   pca_method="power",
+...                                                   impute_missing=True,
+...                                                   max_iterations=800)
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
+""",
+    max_runtime_secs="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+...                                                   transform="standardize",
+...                                                   pca_method="power",
+...                                                   impute_missing=True,
+...                                                   max_iterations=800
+...                                                   max_runtime_secs=15)
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
+""",
+    pca_impl="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=3,
+...                                                   pca_impl="jama",
+...                                                   impute_missing=True,
+...                                                   max_iterations=1200)
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
+""",
+    pca_method="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+...                                                   transform="standardize",
+...                                                   pca_method="power",
+...                                                   impute_missing=True,
+...                                                   max_iterations=800)
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
+""",
+    score_each_iteration="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=3,
+...                                                   score_each_iteration=True,
+...                                                   seed=1234,
+...                                                   impute_missing=True)
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
+""",
+    seed="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=3,
+...                                                   seed=1234,
+...                                                   impute_missing=True)
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
+""",
+    training_frame="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator()
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
+""",
+    transform="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+...                                                   transform="standardize",
+...                                                   pca_method="power",
+...                                                   impute_missing=True,
+...                                                   max_iterations=800)
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
+""",
+    use_all_factor_levels="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=3,
+...                                                   use_all_factor_levels=True,
+...                                                   seed=1234)
+>>> data_pca.train(x=data.names, training_frame=data)
+>>> data_pca.show()
+""",
+    validation_frame="""
+>>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+>>> data_pca = H2OPrincipalComponentAnalysisEstimator()
+>>> data_pca.train(x=data.names,
+...                training_frame=data,
+...                validation_frame=data)
+>>> data_pca.show()
+"""
 )
