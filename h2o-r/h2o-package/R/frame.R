@@ -1191,7 +1191,7 @@ h2o.pivot <- function(x, index, column, value){
 #' @param skipna if enabled, do not include NAs in the result (default: FALSE)
 #' @return an unpivoted H2OFrame
 #' @export
-h2o.melt <- function(x, id_vars, value_vars=NA_character_, var_name="variable", value_name="value", skipna=FALSE) {
+h2o.melt <- function(x, id_vars, value_vars=NULL, var_name="variable", value_name="value", skipna=FALSE) {
     .newExpr("melt", chk.H2OFrame(x), .str.list(id_vars), .str.list(value_vars), .quote(var_name), .quote(value_name), skipna)
 }
 
@@ -1433,7 +1433,7 @@ h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000L)
 # Convert to Currents string-list syntax
 .quote <- function(x) paste0('"',x,'"')
 .str.list <- function(sl) {
-  if (is.na(sl))
+  if (is.null(sl))
     "[]"
   else
     paste0('[',paste0('"',sl,'"',collapse=" "),']')
