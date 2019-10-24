@@ -249,12 +249,12 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         >>> y = "AGE"
         >>> nfolds = 5
         >>> gbm = H2OGradientBoostingEstimator(nfolds=nfolds,
-        ...                                       fold_assignment="Modulo",
-        ...                                       keep_cross_validation_predictions=True)
+        ...                                    fold_assignment="Modulo",
+        ...                                    keep_cross_validation_predictions=True)
         >>> gbm.train(x=x, y=y, training_frame=train)
         >>> rf = H2ORandomForestEstimator(nfolds=nfolds,
-        ...                                  fold_assignment="Modulo",
-        ...                                  keep_cross_validation_predictions=True)
+        ...                               fold_assignment="Modulo",
+        ...                               keep_cross_validation_predictions=True)
         >>> rf.train(x=x, y=y, training_frame=train)
         >>> stack = H2OStackedEnsembleEstimator(model_id="ensemble",
         ...                                     training_frame=train,
@@ -359,8 +359,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         ...                                  seed=1)
         >>> my_rf.train(x=x, y=y, training_frame=train)
         >>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
-                                                      seed=1,
-                                                      metalearner_nfolds=3)
+        ...                                           seed=1,
+        ...                                           metalearner_nfolds=3)
         >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
         >>> stack_blend.model_performance(blend).auc()
         """
@@ -408,8 +408,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         ...                                  seed=1)
         >>> my_rf.train(x=x, y=y, training_frame=train)
         >>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
-                                                      seed=1,
-                                                      metalearner_fold_assignment="Random")
+        ...                                           seed=1,
+        ...                                           metalearner_fold_assignment="Random")
         >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
         >>> stack_blend.model_performance(blend).auc()
         """
@@ -506,7 +506,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         ...                                  seed=1)
         >>> my_rf.train(x=x, y=y, training_frame=train)
         >>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
-        ...                                           metalearner_algorithm="gbm"
+        ...                                           metalearner_algorithm="gbm",
         ...                                           metalearner_params=gbm_params)
         >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
         >>> stack_blend.model_performance(blend).auc()
@@ -663,7 +663,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         ...                                  seed=1)
         >>> my_rf.train(x=x, y=y, training_frame=train)
         >>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
-        ...                                           seed=1
+        ...                                           seed=1,
         ...                                           export_checkpoints_dir=checkpoints_dir)
         >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
         >>> len(listdir(checkpoints_dir))
@@ -706,7 +706,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         ...                                  seed=1)
         >>> my_rf.train(x=x, y=y, training_frame=train)
         >>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
-        ...                                           seed=1
+        ...                                           seed=1,
         ...                                           keep_levelone_frame=True)
         >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
         >>> stack_blend.metalearner
@@ -745,7 +745,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         ...                                  seed=1)
         >>> my_rf.train(x=x, y=y, training_frame=train)
         >>> stack_blend = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf],
-        ...                                           seed=1
+        ...                                           seed=1,
         ...                                           keep_levelone_frame=True)
         >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
         >>> stack_blend.levelone_frame_id()
