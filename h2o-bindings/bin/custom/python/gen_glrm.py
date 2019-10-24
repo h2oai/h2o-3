@@ -144,7 +144,6 @@ examples = dict(
 ...                                               regularization_y="l1")
 >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
 >>> arrests_glrm.show()
-)
 """,
     loss_by_col_idx="""
 >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")

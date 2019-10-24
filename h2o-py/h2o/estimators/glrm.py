@@ -291,7 +291,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         ...                                               regularization_y="l1")
         >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
         >>> arrests_glrm.show()
-        )
         """
         return self._parms.get("loss_by_col")
 
