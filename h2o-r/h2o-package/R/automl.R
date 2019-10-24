@@ -47,7 +47,6 @@
 #' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with exclude_algos param.
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional (Expert usage only).
-#' @param algo_parameters List.
 #' @param algo_parameters List. A list of param_name=param_value to be passed to internal models. Defaults to none (Expert usage only).
 #'        By default, params are set only to algorithms accepting them, and ignored by others.
 #'        Only following parameters are currently allowed: "monotone_constraints", "ntrees".
