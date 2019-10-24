@@ -88,6 +88,20 @@ def check_leaderboard(aml, excluded_algos, expected_metrics, expected_sort_metri
                                                                                 actual="desc" if sorted_desc else "asc")
 
 
+def test_warn_on_empty_leaderboard():
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip"))
+    y = 'CAPSULE'
+    train[y] = train[y].asfactor()
+    aml = H2OAutoML(project_name="test_empty_leaderboard",
+                    max_runtime_secs=3,
+                    seed=1234)
+    aml.train(y=y, training_frame=train)
+    assert aml.leaderboard.nrow == 0
+    warnings = aml.event_log[aml.event_log['level'] == 'Warn','message']
+    last_warning = warnings[warnings.nrow-1,:].flatten()
+    assert "Empty leaderboard" in last_warning
+
+
 def test_leaderboard_for_binomial():
     print("Check leaderboard for Binomial with default sorting")
     ds = prepare_data('binomial')
@@ -264,6 +278,7 @@ def test_AUTO_stopping_metric_with_custom_sorting_metric():
 
 
 pyunit_utils.run_tests([
+    test_warn_on_empty_leaderboard,
     test_leaderboard_for_binomial,
     test_leaderboard_for_multinomial,
     test_leaderboard_for_regression,

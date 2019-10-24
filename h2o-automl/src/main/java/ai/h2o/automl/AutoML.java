@@ -284,6 +284,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     if (0 < leaderboard().getModelKeys().length) {
       Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
+    } else {
+      long max_runtime_secs = (long)_buildSpec.build_control.stopping_criteria.max_runtime_secs();
+      eventLog().warn(Stage.Workflow, "Empty leaderboard.\n"
+              +"AutoML was not able to build any model within a max runtime constraint of "+max_runtime_secs+" seconds, "
+              +"you may want to increase this value before retrying.");
     }
 
     possiblyVerifyImmutability();
