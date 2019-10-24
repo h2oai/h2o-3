@@ -171,13 +171,20 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       this.grid = grid;
     }
 
-    private void feedModel(final Model model, final ParallelModelBuilder parallelModelBuilder) {
+    private void feedModel(final ModelBuildingResult modelResult, final ParallelModelBuilder parallelModelBuilder) {
       hyperspaceAccessLock.lock();
       boolean locked = true;
       try {
-        grid.putModel(model._parms.checksum(IGNORED_FIELDS_PARAM_HASH), model._key);
-        constructScoringInfo(model);
-        _job.update(1);
+        final Model model = modelResult.getModel().orElse(null);
+        if (modelResult.hasModel()) {
+          grid.putModel(model._parms.checksum(IGNORED_FIELDS_PARAM_HASH), model._key);
+          constructScoringInfo(model);
+          _job.update(1);
+        } else {
+          final Key<Model> modelKey = modelResult.hasModel() ? modelResult.getModel().get()._key : null;
+          grid.appendFailedModelParameters(modelKey, modelResult.getModelBuildingParameters(),
+                  modelResult.getThrowable().get());
+        }
         grid.update(_job);
         
         // Attempt to train next model
@@ -220,7 +227,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
       while (params == null) {
         if (hyperSpaceWalker.hasNext(Optional.of(model))) {
-          params = hyperSpaceWalker.nextModelParameters(Optional.of(model));
+          params = hyperSpaceWalker.nextModelParameters(Optional.ofNullable(model));
           final Key modelKey = grid.getModelKey(params.checksum(IGNORED_FIELDS_PARAM_HASH));
           if(modelKey != null){
             params = null;

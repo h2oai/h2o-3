@@ -20,11 +20,11 @@ import java.util.function.Consumer;
  */
 public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
-  private BiConsumer<Model, ParallelModelBuilder> _modelFeeder;
+  private BiConsumer<ModelBuildingResult, ParallelModelBuilder> _modelFeeder;
   public IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
   public AtomicBoolean _completed = new AtomicBoolean(false);
 
-  public ParallelModelBuilder(BiConsumer<Model, ParallelModelBuilder> modelFeeder) {
+  public ParallelModelBuilder(BiConsumer<ModelBuildingResult, ParallelModelBuilder> modelFeeder) {
     Objects.requireNonNull(modelFeeder);
     _modelFeeder = modelFeeder;
   }
@@ -32,13 +32,13 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
   public void run(ModelBuilder[] modelBuilders) {
       for (final ModelBuilder modelBuilder : modelBuilders) {
         _modelInProgressCounter.incrementAndGet();
-        final Consumer<Model> consumer = this::modelFinished;
+        final Consumer<ModelBuildingResult> consumer = this::modelFinished;
         modelBuilder.trainModel(consumer);
       }
 
   }
 
-  private void modelFinished(final Model m) {
+  private void modelFinished(final ModelBuildingResult m) {
     _modelInProgressCounter.decrementAndGet();
     _modelFeeder.accept(m, this);
   }

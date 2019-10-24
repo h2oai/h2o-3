@@ -2,6 +2,7 @@ package hex.grid;
 
 import hex.Model;
 import hex.ModelBuilder;
+import hex.ModelBuildingResult;
 import hex.ParallelModelBuilder;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.hyperspace.HyperSpaceSearchCriteria;
@@ -53,10 +54,10 @@ public class GridTest extends TestUtil {
       final Lock lock = new ReentrantLock();
 
       // Must be thread safe, otherwise won't work and will lock itself at the end.
-      final BiConsumer<Model, ParallelModelBuilder> modelFeder = (model, parallelModelBuilder) -> {
+      final BiConsumer<ModelBuildingResult, ParallelModelBuilder> modelFeder = (result, parallelModelBuilder) -> {
         lock.lock();
         try {
-          models.add(model);
+          models.add(result.getModel().get());
           if (models.size() < 3) {
             parallelModelBuilder.run(new ModelBuilder[]{ModelBuilder.make(parms.clone())});
           } else {
