@@ -180,6 +180,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           grid.putModel(model._parms.checksum(IGNORED_FIELDS_PARAM_HASH), model._key);
           constructScoringInfo(model);
           _job.update(1);
+          saveGrid(grid, model._parms._export_checkpoints_dir);
         } else {
           final Key<Model> modelKey = modelResult.hasModel() ? modelResult.getModel().get()._key : null;
           grid.appendFailedModelParameters(modelKey, modelResult.getModelBuildingParameters(),
@@ -266,6 +267,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       parallelModelBuilder.join();
     }
     grid.update(_job);
+    
+    saveGrid(grid, _hyperSpaceWalker.getParams()._export_checkpoints_dir);
     grid.unlock(_job);
   }
 
@@ -357,14 +360,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           grid.update(_job);
           final MP generalParams = _hyperSpaceWalker.getParams();
           if (generalParams._export_checkpoints_dir != null) {
-
-            try {
-              grid.exportBinary(generalParams._export_checkpoints_dir);
-              // Models are exported automatically when export_checkpoints_dir is defined
-            } catch (IOException e) {
-              Log.warn(String.format("Could not save grid '" + "%s' to location '%s'",
-                      grid._key.toString(), generalParams._export_checkpoints_dir));
-            }
+            saveGrid(grid, generalParams._export_checkpoints_dir);
           }
         } // finally
 
@@ -377,6 +373,19 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
     } finally {
       grid.unlock(_job);
+    }
+  }
+  
+  private static void saveGrid(final Grid grid, final String whereToExport){
+    Objects.requireNonNull(grid);
+    Objects.requireNonNull(whereToExport);
+    
+    try {
+      grid.exportBinary(whereToExport);
+      // Models are exported automatically when export_checkpoints_dir is defined
+    } catch (IOException e) {
+      Log.warn(String.format("Could not save grid '" + "%s' to location '%s'",
+              grid._key.toString(), whereToExport));
     }
   }
   

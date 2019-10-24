@@ -61,6 +61,9 @@ public class RandomDiscreteValueWalker<MP extends Model.Parameters>
         List<MP> parameters = new ArrayList<>(numParams);
 
         for (int i = 0; i < numParams; i++) {
+          if(!hasNext(Optional.empty())){
+            break;
+          }
           parameters.add(nextModelParameters(Optional.empty()));
         }
 

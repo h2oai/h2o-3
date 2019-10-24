@@ -27,6 +27,9 @@ public class CartesianWalker<MP extends Model.Parameters> extends HyperSpaceWalk
         List<MP> parameters = new ArrayList<>(numParams);
 
         for (int i = 0; i < numParams; i++) {
+          if(!hasNext(Optional.empty())){
+            break;
+          }
           parameters.add(nextModelParameters(Optional.empty()));
         }
 
