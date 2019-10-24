@@ -14,6 +14,7 @@ import water.util.Log;
 
 import java.math.BigInteger;
 import java.util.Arrays;
+import static java.math.BigInteger.ONE;
 
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
@@ -74,10 +75,10 @@ class BinaryMerge extends DTask<BinaryMerge> {
     }
     
     long min() {
-      return BigInteger.valueOf(((long)_msb) << _shift).add(_base[0].subtract(BigInteger.ONE)).longValue();
+      return BigInteger.valueOf(((long)_msb) << _shift).add(_base[0].subtract(ONE)).longValue();
     }
     long max() {
-      return BigInteger.valueOf(((long)_msb+1) << _shift).add(_base[0].subtract(BigInteger.ONE).subtract(BigInteger.ONE)).longValue();
+      return BigInteger.valueOf(((long)_msb+1) << _shift).add(_base[0].subtract(ONE).subtract(ONE)).longValue();
     }
   }
 
@@ -325,7 +326,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
 
   private long updateVal(Long oldVal, BigInteger baseD) {
     // we know oldVal is not zero
-    BigInteger xInc = baseD.add(BigInteger.valueOf(oldVal).subtract(BigInteger.ONE));
+    BigInteger xInc = baseD.add(BigInteger.valueOf(oldVal).subtract(ONE));
     if (xInc.bitLength() > 64) {
       Log.warn("Overflow in BinaryMerge.java");
       return oldVal;  // should have died sooner or later
