@@ -52,7 +52,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         >>> fold_col = "kfold_column"
         >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
         >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,,
+        ...                                        f=25,
         ...                                        blending=True)
         >>> titanic_te.train(x=predictors,
         ...                  y=response,
