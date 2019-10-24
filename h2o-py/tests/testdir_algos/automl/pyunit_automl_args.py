@@ -40,6 +40,15 @@ def get_partitioned_model_names(leaderboard):
     return model_names, non_se_model_names, se_model_names
 
 
+def test_invalid_project_name():
+    print("Check constructor raises error if project name is invalid")
+    try:
+        H2OAutoML(project_name="1nvalid")
+    except Exception as e:
+        assert "H2OAutoML" in str(e)
+        assert "1nvalid" in str(e)
+
+
 def test_early_stopping_args():
     print("Check arguments to H2OAutoML class")
     ds = import_dataset()
@@ -293,6 +302,7 @@ def test_frames_cannot_be_passed_as_key():
     # Add a test that checks fold_column like in runit
 
 pyunit_utils.run_tests([
+    test_invalid_project_name,
     test_early_stopping_args,
     test_no_x_train_set_only,
     test_no_x_train_and_validation_sets,
