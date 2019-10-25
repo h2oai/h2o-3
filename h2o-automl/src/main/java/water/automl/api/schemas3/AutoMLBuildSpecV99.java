@@ -175,13 +175,13 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   }
 
   public static final class AutoMLCustomParameterV99<V> extends Schema<Iced, AutoMLCustomParameterV99<V>> {
-    @API(help="", valuesProvider=ScopeProvider.class, direction=API.Direction.INPUT)
+    @API(help="Scope of application of the parameter (specific algo, or any algo).", valuesProvider=ScopeProvider.class, direction=API.Direction.INPUT)
     public String scope;
 
-    @API(help="", direction=API.Direction.INPUT)
+    @API(help="Name of the model parameter.", direction=API.Direction.INPUT)
     public String name;
 
-    @API(help="", direction=API.Direction.INPUT)
+    @API(help="Value of the model parameter.", direction=API.Direction.INPUT)
     public JSONValue value;
 
     @SuppressWarnings("unchecked")
@@ -213,16 +213,17 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     public AutoMLBuildSpec.AutoMLBuildModels fillImpl(AutoMLBuildSpec.AutoMLBuildModels impl) {
       super.fillImpl(impl, new String[]{"algo_parameters"});
       if (algo_parameters != null) {
+         AutoMLBuildSpec.AutoMLCustomParameters.Builder builder = AutoMLBuildSpec.AutoMLCustomParameters.create();
         for (AutoMLCustomParameterV99 param : algo_parameters) {
           if (ScopeProvider.ANY_ALGO.equals(param.scope)) {
-            impl.algo_parameters.add(param.name, param.getFormattedValue());
+            builder.add(param.name, param.getFormattedValue());
           } else {
             Algo algo = EnumUtils.valueOf(Algo.class, param.scope);
-            impl.algo_parameters.add(algo, param.name, param.getFormattedValue());
+            builder.add(algo, param.name, param.getFormattedValue());
           }
         }
+        impl.algo_parameters = builder.build();
       }
-      impl.algo_parameters.end();
       return impl;
     }
 

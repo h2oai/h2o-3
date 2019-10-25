@@ -84,7 +84,7 @@ public class AutoMLBuildSpec extends Iced {
     }
 
     public void set_max_runtime_secs_per_model(double max_runtime_secs_per_model) {
-      this._max_runtime_secs_per_model = max_runtime_secs_per_model;
+      _max_runtime_secs_per_model = max_runtime_secs_per_model;
     }
 
     public long seed() {
@@ -176,103 +176,112 @@ public class AutoMLBuildSpec extends Iced {
     public Algo[] exclude_algos;
     public Algo[] include_algos;
     public StepDefinition[] modeling_plan;
-    public final AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
+    public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
   }
 
   public static final class AutoMLCustomParameters extends Iced {
 
     // convenient property to allow us to modify our model (and later grids) definitions
     // and benchmark them without having to rebuild the backend for each change.
-    private static final String ALGO_PARAMS_ALL_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "automl.algo_parameters.all.enabled";
+    static final String ALGO_PARAMS_ALL_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "automl.algo_parameters.all.enabled";
 
     // let's limit the list of allowed custom parameters by default for now: we can always decide to open this later.
     private static final String[] ALLOWED_PARAMETERS = {
             "monotone_constraints",
-            "ntrees",
+//            "ntrees",
     };
     private static final String ROOT_PARAM = "algo_parameters";
 
     public static final class AutoMLCustomParameter<V> extends Iced {
       public AutoMLCustomParameter(String name, V value) {
-        this.name = name;
-        this.value = value;
+        _name = name;
+        _value = value;
       }
 
       public AutoMLCustomParameter(Algo algo, String name, V value) {
-        this.algo = algo;
-        this.name = name;
-        this.value = value;
+        _algo = algo;
+        _name = name;
+        _value = value;
       }
 
-      private Algo algo;
-      private String name;
-      private V value;
+      private Algo _algo;
+      private String _name;
+      private V _value;
     }
 
-    private final IcedHashMap<String, String[]> algo_parameter_names = new IcedHashMap<>(); // stores the parameters names overridden, by algo name
-    private final IcedHashMap<String, Model.Parameters> algo_parameters = new IcedHashMap<>(); //stores the parameters values, by algo name
+    public static final class Builder {
+      private final transient List<AutoMLCustomParameter> _anyAlgoParams = new ArrayList<>();
+      private final transient List<AutoMLCustomParameter> _specificAlgoParams = new ArrayList<>();
 
-    // used for building phase only
-    private final transient List<AutoMLCustomParameter> any_algo_params = new ArrayList<>();
-    private final transient List<AutoMLCustomParameter> specific_algo_params = new ArrayList<>();
+      public <V> Builder add(String param, V value) {
+        assertParameterAllowed(param);
+        _anyAlgoParams.add(new AutoMLCustomParameter<>(param, value));
+        return this;
+      }
+
+      public <V> Builder add(Algo algo, String param, V value) {
+        assertParameterAllowed(param);
+        _specificAlgoParams.add(new AutoMLCustomParameter<>(algo, param, value));
+        return this;
+      }
+
+      /**
+       * Builder is necessary here as the custom parameters must be applied in a certain order,
+       * and we can't assume that the consumer of this API will add them in the right order.
+       * @return a new AutoMLCustomParameters instance with custom parameters properly assigned.
+       */
+      public AutoMLCustomParameters build() {
+        AutoMLCustomParameters instance = new AutoMLCustomParameters();
+        // apply "all" scope first, then algo-specific ones.
+        for (AutoMLCustomParameter param : _anyAlgoParams) {
+          if (!instance.addParameter(param._name, param._value))
+            throw new H2OIllegalValueException(param._name, ROOT_PARAM, param._value);
+        }
+        for (AutoMLCustomParameter param : _specificAlgoParams) {
+          if (!instance.addParameter(param._algo, param._name, param._value))
+            throw new H2OIllegalValueException(param._name, ROOT_PARAM, param._value);
+        }
+        return instance;
+      }
+
+      private void assertParameterAllowed(String param) {
+        if (!Boolean.parseBoolean(System.getProperty(ALGO_PARAMS_ALL_ENABLED, "false"))
+                && !ArrayUtils.contains(ALLOWED_PARAMETERS, param))
+          throw new H2OIllegalValueException(ROOT_PARAM, param);
+      }
+
+    }
+
+    public static Builder create() {
+      return new Builder();
+    }
+
+    private final IcedHashMap<String, String[]> _algoParameterNames = new IcedHashMap<>(); // stores the parameters names overridden, by algo name
+    private final IcedHashMap<String, Model.Parameters> _algoParameters = new IcedHashMap<>(); //stores the parameters values, by algo name
 
     public boolean hasCustomParams(Algo algo) {
-      return algo_parameter_names.get(algo.name()) != null;
+      return _algoParameterNames.get(algo.name()) != null;
     }
 
     public boolean hasCustomParam(Algo algo, String param) {
-      return ArrayUtils.contains(algo_parameter_names.get(algo.name()), param);
-    }
-
-    public <V> AutoMLCustomParameters add(String param, V value) {
-      assertParameterAllowed(param);
-      any_algo_params.add(new AutoMLCustomParameter<>(param, value));
-      return this;
-    }
-
-    public <V> AutoMLCustomParameters add(Algo algo, String param, V value) {
-      assertParameterAllowed(param);
-      specific_algo_params.add(new AutoMLCustomParameter<>(algo, param, value));
-      return this;
-    }
-
-    /**
-     * Must always be called right after adding all custom parameters with {@link #add(String, Object)} methods.
-     * This is necessary as the custom parameters must be applied in a certain order,
-     * and we can't assume that the consumer of this API will add them in the right order.
-     * @return the current instance with custom parameters properly assigned.
-     */
-    public AutoMLCustomParameters end() {
-      if (!algo_parameters.isEmpty()) {
-        throw new IllegalStateException("Cannot call `build` if AutoML algo_parameters are already assigned.");
-      }
-      // apply "all" scope first, then algo-specific ones.
-      for (AutoMLCustomParameter param : any_algo_params) {
-        if (!addParameter(param.name, param.value))
-          throw new H2OIllegalValueException(param.name, ROOT_PARAM, param.value);
-      }
-      for (AutoMLCustomParameter param : specific_algo_params) {
-        if (!addParameter(param.algo, param.name, param.value))
-          throw new H2OIllegalValueException(param.name, ROOT_PARAM, param.value);
-      }
-      return this;
-    }
-
-    public String[] getCustomParameterNames(Algo algo) {
-      return algo_parameter_names.get(algo.name());
-    }
-
-    public Model.Parameters getCustomParameters(Algo algo) {
-      if (!algo_parameters.containsKey(algo.name())) algo_parameters.put(algo.name(), defaultParameters(algo));
-      return algo_parameters.get(algo.name());
+      return ArrayUtils.contains(_algoParameterNames.get(algo.name()), param);
     }
 
     public void applyCustomParameters(Algo algo, Model.Parameters destParams) {
       if (hasCustomParams(algo)) {
         String[] paramNames = getCustomParameterNames(algo);
-        String[] onlyParamNames = ArrayUtils.append(Stream.of(paramNames).map(p -> "_"+p).toArray(String[]::new), paramNames);
-        PojoUtils.copyProperties(destParams, getCustomParameters(algo), FieldNaming.CONSISTENT, null, onlyParamNames);
+        String[] onlyParamNames = Stream.of(paramNames).map(p -> "_"+p).toArray(String[]::new);
+        PojoUtils.copyProperties(destParams, getCustomizedDefaults(algo), FieldNaming.CONSISTENT, null, onlyParamNames);
       }
+    }
+
+    String[] getCustomParameterNames(Algo algo) {
+      return _algoParameterNames.get(algo.name());
+    }
+
+    Model.Parameters getCustomizedDefaults(Algo algo) {
+      if (!_algoParameters.containsKey(algo.name())) _algoParameters.put(algo.name(), defaultParameters(algo));
+      return _algoParameters.get(algo.name());
     }
 
     private Model.Parameters defaultParameters(Algo algo) {
@@ -287,19 +296,13 @@ public class AutoMLBuildSpec extends Iced {
       }
     }
 
-    private void assertParameterAllowed(String param) {
-      if (!Boolean.parseBoolean(System.getProperty(ALGO_PARAMS_ALL_ENABLED, "false"))
-              && !ArrayUtils.contains(ALLOWED_PARAMETERS, param))
-        throw new H2OIllegalValueException(ROOT_PARAM, param);
-    }
-
     private void addParameterName(Algo algo, String param) {
-      if (!algo_parameter_names.containsKey(algo.name())) {
-        algo_parameter_names.put(algo.name(), new String[] {param});
+      if (!_algoParameterNames.containsKey(algo.name())) {
+        _algoParameterNames.put(algo.name(), new String[] {param});
       } else {
-        String[] names = algo_parameter_names.get(algo.name());
+        String[] names = _algoParameterNames.get(algo.name());
         if (!ArrayUtils.contains(names, param)) {
-          algo_parameter_names.put(algo.name(), ArrayUtils.append(names, param));
+          _algoParameterNames.put(algo.name(), ArrayUtils.append(names, param));
         }
       }
     }
@@ -313,7 +316,7 @@ public class AutoMLBuildSpec extends Iced {
     }
 
     private <V> boolean addParameter(Algo algo, String param, V value) {
-      Model.Parameters customParams = getCustomParameters(algo);
+      Model.Parameters customParams = getCustomizedDefaults(algo);
       try {
         if (setField(customParams, param, value, FieldNaming.DEST_HAS_UNDERSCORES)
                 || setField(customParams, param, value, FieldNaming.CONSISTENT)) {

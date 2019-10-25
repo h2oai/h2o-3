@@ -251,7 +251,7 @@ h2o.automl <- function(x, y, training_frame,
         name <- k
       } else {
         scope <- tokens[1]
-        name <- paste0(tokens[2:len(tokens)], collapse="__")
+        name <- paste0(tokens[2:length(tokens)], collapse="__")
       }
       value <- algo_parameters[[k]]
       if (is.list(value) && !is.null(names(value))) {

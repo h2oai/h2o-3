@@ -208,8 +208,8 @@ automl.model_selection.suite <- function() {
     aml <- h2o.automl(x = ds$x, y = ds$y.idx,
       training_frame = ds$train,
       algo_parameters = list(
-        monotone_constraints = list(AGE=1, VOL=-1),
-        ntrees = 10
+        monotone_constraints = list(AGE=1, VOL=-1)
+        # ntrees = 10
       ),
       project_name="r_monotone_constraints",
       max_models = 6,
@@ -227,11 +227,35 @@ automl.model_selection.suite <- function() {
       expect_equal(mc[[2]]$value, -1)
     }
 
-    models_supporting_ntrees <- models[grepl("^(DRF|GBM|XGBoost|XRT)", models)]
-    expect_gt(length(models_supporting_ntrees), 0)
-    for (m in models_supporting_ntrees) {
+    # models_supporting_ntrees <- models[grepl("^(DRF|GBM|XGBoost|XRT)", models)]
+    # expect_gt(length(models_supporting_ntrees), 0)
+    # for (m in models_supporting_ntrees) {
+    #   model <- h2o.getModel(m)
+    #   expect_equal(model@parameters$ntrees, 10)
+    # }
+  }
+
+  test_algo_parameter_can_be_applied_only_to_a_specific_algo <- function() {
+    ds <- import_dataset()
+    aml <- h2o.automl(x = ds$x, y = ds$y.idx,
+      training_frame = ds$train,
+      algo_parameters = list(GBM__monotone_constraints = list(AGE=1)),
+      project_name="r_specific_algo_param",
+      max_models = 6,
+      seed = 1
+    )
+    models <- get_partitioned_models(aml)$all
+    models_supporting_monotone_constraints <- models[grepl("^(GBM|XGBoost)", models)]
+    expect_lt(length(models_supporting_monotone_constraints), length(models))
+    for (m in models_supporting_monotone_constraints) {
       model <- h2o.getModel(m)
-      expect_equal(model@parameters$ntrees, 10)
+      mc <- model@parameters$monotone_constraints
+      if (grepl("^GBM", m)) {
+        expect_equal(mc[[1]]$key, "AGE")
+        expect_equal(mc[[1]]$value, 1)
+      } else {
+        expect_null(mc[[1]])
+      }
     }
   }
 
@@ -246,6 +270,7 @@ automl.model_selection.suite <- function() {
     test_modeling_steps,
     test_exclude_algos_is_applied_on_top_of_modeling_plan,
     test_monotone_constraints_can_be_passed_as_algo_parameter,
+    test_algo_parameter_can_be_applied_only_to_a_specific_algo,
   )
 }
 

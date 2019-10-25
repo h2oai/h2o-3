@@ -251,7 +251,7 @@ def test_monotone_constraints_can_be_passed_as_algo_parameter():
     aml = H2OAutoML(project_name="py_monotone_constraints",
                     algo_parameters=dict(
                         monotone_constraints=dict(AGE=1, VOL=-1),  # constraints just for the sake of testing
-                        ntrees=10,
+                        # ntrees=10,
                     ),
                     max_models=6,
                     seed=1)
@@ -262,9 +262,8 @@ def test_monotone_constraints_can_be_passed_as_algo_parameter():
         "models not supporting the constraint should not have been skipped"
     for m in models_supporting_monotone_constraints:
         model = h2o.get_model(m)
-        param = next(p for p in model._model_json['parameters'] if p['name'] == 'monotone_constraints')
+        value = next(v['actual'] for n, v in model.params.items() if n == 'monotone_constraints')
         # print(param)
-        value = param['actual_value']
         assert isinstance(value, list)
         assert len(value) == 2
         age = next((v for v in value if v['key'] == 'AGE'), None)
@@ -274,18 +273,17 @@ def test_monotone_constraints_can_be_passed_as_algo_parameter():
         assert vol is not None
         assert vol['value'] == -1.0
 
-    models_supporting_ntrees = [n for n in model_names if re.match(r"DRF|GBM|XGBoost|XRT", n)]
-    assert len(models_supporting_ntrees) > 0
-    for m in models_supporting_ntrees:
-        model = h2o.get_model(m)
-        param = next(p for p in model._model_json['parameters'] if p['name'] == 'ntrees')
-        value = param['actual_value']
-        assert value == 10
+    # models_supporting_ntrees = [n for n in model_names if re.match(r"DRF|GBM|XGBoost|XRT", n)]
+    # assert len(models_supporting_ntrees) > 0
+    # for m in models_supporting_ntrees:
+    #     model = h2o.get_model(m)
+    #     value = next(v['actual'] for n, v in model.params.items() if n == 'ntrees')
+    #     assert value == 10
 
 
 def test_algo_parameter_can_be_applied_only_to_a_specific_algo():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_monotone_constraints",
+    aml = H2OAutoML(project_name="py_specific_algo_param",
                     algo_parameters=dict(
                         GBM__monotone_constraints=dict(AGE=1)
                     ),
@@ -297,9 +295,7 @@ def test_algo_parameter_can_be_applied_only_to_a_specific_algo():
     assert next((m for m in models_supporting_monotone_constraints if m.startswith('GBM')), None), "There should be at least one GBM model"
     for m in models_supporting_monotone_constraints:
         model = h2o.get_model(m)
-        mc_param = next(p for p in model._model_json['parameters'] if p['name'] == 'monotone_constraints')
-        # print(mc_param)
-        mc_value = mc_param['actual_value']
+        mc_value = next(v['actual'] for n, v in model.params.items() if n == 'monotone_constraints')
         if m.startswith('GBM'):
             assert isinstance(mc_value, list)
             age = next((v for v in mc_value if v['key'] == 'AGE'), None)
@@ -311,7 +307,7 @@ def test_algo_parameter_can_be_applied_only_to_a_specific_algo():
 
 def test_cannot_set_unauthorized_algo_parameter():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_monotone_constraints",
+    aml = H2OAutoML(project_name="py_unauthorized_algo_param",
                     algo_parameters=dict(
                         score_tree_interval=7
                     ),
