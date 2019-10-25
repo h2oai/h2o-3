@@ -15,7 +15,7 @@ def pubdev_6339():
 
 
     # path to file
-    file_path = pyunit_utils.locate("bigdata/wa_cannabis/raw/Dashboard_Usable_Sales_w_Weight_Daily.csv")
+    file_path = pyunit_utils.locate("bigdata/server/wa_cannabis/raw/Dashboard_Usable_Sales_w_Weight_Daily.csv")
 
     data_raw = h2o.import_file(path=file_path,parse=False)
     setup = h2o.parse_setup(data_raw)
