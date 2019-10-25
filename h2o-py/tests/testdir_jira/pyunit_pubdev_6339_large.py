@@ -15,27 +15,19 @@ def pubdev_6339():
 
 
     # path to file
-    file_paths = [
-        pyunit_utils.locate("smalldata/arcene/arcene_train.data"),
-        pyunit_utils.locate("smalldata/census_income/adult_data.csv"),
-        pyunit_utils.locate("smalldata/chicago/chicagoAllWeather.csv"),
-        pyunit_utils.locate("smalldata/gbm_test/alphabet_cattest.csv"),
-    ]
+    file_path = pyunit_utils.locate("bigdata/wa_cannabis/raw/Dashboard_Usable_Sales_w_Weight_Daily.csv")
 
-    for file_path in file_paths:
-        # read data and parse setup to get number of columns 
-        data_raw = h2o.import_file(path=file_path, parse=False)
-        setup = h2o.parse_setup(data_raw)
+    data_raw = h2o.import_file(path=file_path,parse=False)
+    setup = h2o.parse_setup(data_raw)
 
-        # get number of columns from setup
-        num_cols = setup['number_columns']
-        # get the chunk size
-        chunk_size = calculate_chunk_size(file_path, num_cols, cores, cloud_size)
-    
-        # get chunk size to compare if calculation is correct
-        result_size = setup['chunk_size']
-        assert chunk_size == result_size, "Calculated chunk size is incorrect!"
-        print("chunk size for file", file_path, "is:", chunk_size)
+    num_cols = setup['number_columns']
+    # get the chunk size
+    chunk_size = calculate_chunk_size(file_path, num_cols, cores, cloud_size)
+
+    # get chunk size to compare if calculation is correct
+    result_size = setup['chunk_size']
+    assert chunk_size == result_size, "Calculated chunk size is incorrect!"
+    print("chunk size for file", file_path, "is:", chunk_size)
         
     
 def calculate_chunk_size(file_path, num_cols, cores, cloud_size):
