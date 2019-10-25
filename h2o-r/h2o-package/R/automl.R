@@ -56,7 +56,7 @@
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @param verbosity Verbosity of the backend messages printed during training; Optional.
-#'        Must be one of "debug", "info", "warn". Defaults to NULL (disable live log).
+#'        Must be one of NULL (live log disabled), "debug", "info", "warn". Defaults to "warn".
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
@@ -95,7 +95,7 @@ h2o.automl <- function(x, y, training_frame,
                        keep_cross_validation_fold_assignment = FALSE,
                        sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"),
                        export_checkpoints_dir = NULL,
-                       verbosity = NULL)
+                       verbosity = "warn")
 {
 
   tryCatch({
@@ -282,6 +282,7 @@ h2o.automl <- function(x, y, training_frame,
     poll_state <<- do.call(.automl.poll_updates, list(job, verbosity=verbosity, state=poll_state))
   }
   .h2o.__waitOnJob(res$job$key$name, pollUpdates=poll_updates)
+  .automl.poll_updates(h2o.get_job(res$job$key$name), verbosity, poll_state) # ensure the last update is retrieved
 
   # GET AutoML object
   aml <- h2o.getAutoML(project_name = res$job$dest$name)

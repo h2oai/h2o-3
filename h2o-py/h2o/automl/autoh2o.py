@@ -69,7 +69,7 @@ class H2OAutoML(Keyed):
                  keep_cross_validation_fold_assignment=False,
                  sort_metric="AUTO",
                  export_checkpoints_dir=None,
-                 verbosity=None):
+                 verbosity="warn"):
         """
         Create a new H2OAutoML instance.
         
@@ -122,7 +122,7 @@ class H2OAutoML(Keyed):
           ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
-            Available options are 'debug', 'info' or 'warn'. Defaults to None (disable live log).
+            Available options are None (live log disabled), 'debug', 'info' or 'warn'. Defaults to 'warn'.
         """
         # Check if H2O jar contains AutoML
         try:
