@@ -177,6 +177,7 @@ h2o.automl <- function(x, y, training_frame,
   }
 
   if (!is.null(project_name)) {
+    .key.validate(project_name)
     build_control$project_name <- project_name
   }
 
@@ -412,10 +413,8 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
     modeling_steps <- NULL
   }
 
-  project <- automl_job$project
-
   return(list(
-    project_name=project,
+    project_name=project_name,
     leaderboard=leaderboard,
     leader=leader,
     event_log=event_log,

@@ -46,6 +46,16 @@ automl.args.test <- function() {
 
     print("Check arguments to H2OAutoML class")
 
+    test_invalid_project_name <- function() {
+      print("Try a project name starting with a number")
+      ds <- import_dataset()
+      expect_error(h2o.automl(y = ds$y,
+                              training_frame = ds$train,
+                              max_models = max_models,
+                              project_name = "1nvalid_name"),
+                   "1nvalid_name")
+    }
+
     test_without_y <- function() {
         print("Try without a y")
         ds <- import_dataset()
@@ -416,6 +426,7 @@ automl.args.test <- function() {
 
 
     makeSuite(
+        test_invalid_project_name,
         test_without_y,
         test_without_x,
         test_y_as_index_x_as_name,
