@@ -7,6 +7,7 @@ from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.model.model_base import ModelBase
+from h2o.utils.shared_utils import check_id
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
@@ -206,6 +207,7 @@ class H2OAutoML(Keyed):
         # Set project name if provided. If None, then we set in .train() to "automl_" + training_frame.frame_id
         if project_name is not None:
             assert_is_type(project_name, str)
+            check_id(project_name, "H2OAutoML")
             self.build_control["project_name"] = project_name
             self.project_name = project_name
         else:
