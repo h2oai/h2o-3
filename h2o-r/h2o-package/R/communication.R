@@ -790,6 +790,19 @@ h2o.list_jobs <- function() {
   df
 }
 
+h2o.get_job <- function(job_key) {
+  myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
+  rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+  jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
+  jobs <- jsonObject$jobs
+  if (length(jobs) > 1) {
+    stop("Job list has more than 1 entry")
+  } else if (length(jobs) == 0) {
+    stop("Job list is empty")
+  }
+  jobs[[1]]
+}
+
 #' Check H2O Server Health
 #'
 #' Warn if there are sick nodes.
@@ -866,18 +879,8 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
   keepRunning <- TRUE
   tryCatch({
     while (keepRunning) {
-      myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
-      rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
-      jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
-      jobs <- jsonObject$jobs
-      if (length(jobs) > 1) {
-        stop("Job list has more than 1 entry")
-      } else if (length(jobs) == 0) {
-        stop("Job list is empty")
-      }
-
-      job = jobs[[1]]
-      status = job$status
+      job <- h2o.get_job(job_key)
+      status <- job$status
       stopifnot(is.character(status))
 
       # check failed up front...
