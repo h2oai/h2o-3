@@ -11,6 +11,9 @@ import water.TestUtil;
 import water.api.GridSearchHandler;
 
 import java.util.HashMap;
+import java.util.function.Function;
+
+import static org.junit.Assert.*;
 
 public class TargetEncoderRGSTest extends TestUtil {
 
@@ -28,8 +31,8 @@ public class TargetEncoderRGSTest extends TestUtil {
       hpGrid.put("blending", new Boolean[]{true, false});
       hpGrid.put("noise_level", new Double[]{0.0, 0.01,  0.1});
       // TODO figure out how to work with hierarchical parameters BlendingParams(inflection_point, smoothing) or BlendingParams(k, f)
-//      hpGrid.put("_inflection_point", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
-//      hpGrid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
+      hpGrid.put("k", new Double[]{1.0, 2.0, 3.0});
+      hpGrid.put("f", new Double[]{5.0, 10.0, 20.0});
       
       TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
 
@@ -39,11 +42,13 @@ public class TargetEncoderRGSTest extends TestUtil {
       HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(parameters, hpGrid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
 
       HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
-      
+      int count = 0;
       while (iterator.hasNext(null)) {
         TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
-        System.out.println( targetEncoderParameters._blending + ":" +  targetEncoderParameters._noise_level);
+        System.out.println( targetEncoderParameters._blending + ":" +  targetEncoderParameters._noise_level + ":" +  targetEncoderParameters._k + ":" +  targetEncoderParameters._f);
+        count++;
       }
+      assertEquals("Unexpected number of grid items", 54, count);
     } finally {
       Scope.exit();
     }

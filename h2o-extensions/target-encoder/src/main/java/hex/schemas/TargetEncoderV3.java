@@ -45,10 +45,8 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     @Override
     protected TargetEncoderParametersV3 fillFromImpl(TargetEncoderModel.TargetEncoderParameters impl, String[] fieldsToSkip) {
       final TargetEncoderParametersV3 teParamsV3 = super.fillFromImpl(impl, fieldsToSkip);
-      if (impl._blending_parameters != null) {
-        teParamsV3.f = impl._blending_parameters.getF();
-        teParamsV3.k = impl._blending_parameters.getK();
-      }
+      teParamsV3.k = impl._k;
+      teParamsV3.f = impl._f;
       return teParamsV3;
     }
   }

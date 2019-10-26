@@ -32,7 +32,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   public static class TargetEncoderParameters extends Model.Parameters {
     public boolean _blending = false;
-    public BlendingParams _blending_parameters = TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    public double _k = TargetEncoder.DEFAULT_BLENDING_PARAMS.getK();
+    public double _f = TargetEncoder.DEFAULT_BLENDING_PARAMS.getF();
     public TargetEncoder.DataLeakageHandlingStrategy _data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
     public double _noise_level = 0;
     @Override
@@ -54,7 +55,10 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public long progressUnits() {
       return 0;
     }
-    
+
+    public BlendingParams getBlendingParameters() {
+      return _k!=0 && _f!=0 ? new BlendingParams(_k, _f) : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    }
   }
 
   public static class TargetEncoderOutput extends Model.Output {
@@ -119,7 +123,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    */
   public Frame transform(Frame data, byte strategy, double noiseLevel, final boolean useBlending, BlendingParams blendingParams,
                          long seed) {
-    if(blendingParams == null) blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    if(blendingParams == null) blendingParams = _parms.getBlendingParameters();
     
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
@@ -137,7 +141,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
    * @return An instance of {@link Frame} with transformed data, registered in DKV.
    */
   public Frame transform(Frame data, byte strategy, final boolean useBlending, BlendingParams blendingParams, long seed) {
-    if(blendingParams == null) blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    if(blendingParams == null) blendingParams = _parms.getBlendingParameters();
     
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = TargetEncoder.DataLeakageHandlingStrategy.fromVal(strategy);
     return _targetEncoder.applyTargetEncoding(data, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
@@ -151,7 +155,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    final BlendingParams blendingParams = _parms._blending_parameters != null ? _parms._blending_parameters : TargetEncoder.DEFAULT_BLENDING_PARAMS;
+    final BlendingParams blendingParams = _parms.getBlendingParameters();
     final TargetEncoder.DataLeakageHandlingStrategy leakageHandlingStrategy = 
             _parms._data_leakage_handling != null ? _parms._data_leakage_handling : TargetEncoder.DataLeakageHandlingStrategy.None;
     
