@@ -8,6 +8,9 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
 import java.util.*;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static java.lang.StrictMath.min;
 
@@ -293,7 +296,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return _paramsBuilderFactory;
     }
 
-    protected MP getModelParams(MP params, Object[] hyperParams) {
+    public MP getModelParams(MP params, Object[] hyperParams) {
       ModelParametersBuilderFactory.ModelParametersBuilder<MP>
           paramsBuilder = _paramsBuilderFactory.get(params);
       for (int i = 0; i < _hyperParamNames.length; i++) {
@@ -408,6 +411,123 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         public Object[] getCurrentRawParameters() {
           Object[] hyperValues = new Object[_hyperParamNames.length];
           return hypers(_currentHyperparamIndices, hyperValues);
+        }
+      }; // anonymous HyperSpaceIterator class
+    } // iterator()
+
+    /**
+     * Cartesian iteration over the hyper-parameter space, varying one hyperparameter at a
+     * time. Mutates the indices that are passed in and returns them.  Returns NULL when
+     * the entire space has been traversed.
+     */
+    private int[] nextModelIndices(int[] hyperparamIndices) {
+      // Find the next parm to flip
+      int i;
+      for (i = 0; i < hyperparamIndices.length; i++) {
+        if (hyperparamIndices[i] + 1 < _hyperParams.get(_hyperParamNames[i]).length) {
+          break;
+        }
+      }
+      if (i == hyperparamIndices.length) {
+        return null; // All done, report null
+      }
+      // Flip indices
+      for (int j = 0; j < i; j++) {
+        hyperparamIndices[j] = 0;
+      }
+      hyperparamIndices[i]++;
+      return hyperparamIndices;
+    }
+  } // class CartesianWalker
+
+
+  /**
+   * Hyperparameter space walker which visits each combination of hyperparameters in order.
+   */
+  public static class MaterializedRandomWalker<MP extends Model.Parameters>
+          extends BaseWalker<MP, HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria> {
+
+    public MaterializedRandomWalker(MP params,
+                                    Map<String, Object[]> hyperParams,
+                                    ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                                    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria search_criteria,
+                                    ArrayList<Function<HashMap<String, Object>, HashMap<String, Object>>> filterFunctions) {
+      super(params, hyperParams, paramsBuilderFactory, search_criteria);
+    }
+
+    @Override
+    public HyperSpaceIterator<MP> iterator() {
+      ArrayList<HashMap<String, Object>> allElements = new ArrayList<>();
+
+      _hyperParams.forEach((hpKey, hpValues) -> {
+        if(allElements.isEmpty()) {
+          Arrays.stream(hpValues).forEach(hpValue -> {
+            HashMap<String, Object> newGridItem = new HashMap<>();
+            newGridItem.put(hpKey, hpValue);
+            allElements.add(newGridItem);
+          });
+        } else {
+          Stream<HashMap<String, Object>> expandedResult = allElements.stream().flatMap(existingItem -> {
+            return Arrays.stream(hpValues).map(hpValue -> {
+              HashMap<String, Object> clone = (HashMap<String, Object>) existingItem.clone();
+              clone.put(hpKey, hpValue);
+              return clone;
+            });
+          });
+          ArrayList<HashMap<String, Object>> collect = expandedResult.collect(Collectors.toCollection(ArrayList::new));
+          allElements.clear();
+          allElements.addAll(collect);
+        }
+      });
+      Collections.shuffle(allElements);
+
+      // TODO Apply `filterFunctions` here to `allElements`
+              
+      Iterator<Object[]> iterator = allElements.stream().map(item -> Arrays.stream(_hyperParamNames).map(item::get).toArray()).collect(Collectors.toCollection(ArrayList::new)).iterator();
+
+      return new HyperSpaceIterator<MP>() {
+        /** Hyper params permutation.
+         */
+
+        @Override
+        public MP nextModelParameters(Model previousModel) {
+          if (hasNext(previousModel)) { // or just iterator.hasNext()
+            // Get clone of parameters
+            MP commonModelParams = (MP) _params.clone();
+            // Fill model parameters
+            MP params = getModelParams(commonModelParams, getCurrentRawParameters()); // or just iterator.next()
+
+            return params;
+          } else {
+            throw new NoSuchElementException("No more elements to explore in hyper-space!");
+          }
+        }
+
+        @Override
+        public boolean hasNext(Model previousModel) {
+          return iterator.hasNext();
+        }
+
+        @Override public void reset() {
+          //TODO
+        }
+
+        @Override
+        public double time_remaining_secs() { return Double.MAX_VALUE; }
+
+        @Override
+        public double max_runtime_secs() { return Double.MAX_VALUE; }
+
+        public int max_models() { return _maxHyperSpaceSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)_maxHyperSpaceSize; }
+
+        @Override
+        public void modelFailed(Model failedModel) {
+          // nada
+        }
+
+        @Override
+        public Object[] getCurrentRawParameters() {
+          return iterator.next();
         }
       }; // anonymous HyperSpaceIterator class
     } // iterator()
