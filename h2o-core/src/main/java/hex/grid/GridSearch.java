@@ -311,7 +311,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
       // Number of traversed model parameters
       int counter = grid.getModelCount();
-      while (it.hasNext(Optional.of(model))) {
+      while (it.hasNext(Optional.ofNullable(model))) {
         if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
         double max_runtime_secs = it.max_runtime_secs();
 
@@ -327,7 +327,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         MP params = null;
         try {
           // Get parameters for next model
-          params = it.nextModelParameters(Optional.of(model));
+          params = it.nextModelParameters(Optional.ofNullable(model));
 
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong

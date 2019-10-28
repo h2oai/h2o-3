@@ -33,6 +33,7 @@
 #'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", stopping_tolerance = 0.001, stopping_rounds = 10)}
 #'        or  \code{list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.
 #' @param export_checkpoints_dir Directory to automatically export grid in binary form to.
+#' @param mode Regime of model building, either "PARALLEL" or "SEQUENTIAL". Parallel enables simultaneous building of multiple models at once.
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \dontrun{
@@ -59,7 +60,8 @@ h2o.grid <- function(algorithm,
                      is_supervised = NULL,
                      do_hyper_params_check = FALSE,
                      search_criteria = NULL,
-                     export_checkpoints_dir = NULL)
+                     export_checkpoints_dir = NULL,
+                     mode = "SEQUENTIAL")
 {
   #Unsupervised algos to account for in grid (these algos do not need response)
   unsupervised_algos <- c("kmeans", "pca", "svd", "glrm")
@@ -143,6 +145,11 @@ h2o.grid <- function(algorithm,
   # Set directory for checkpoints export
   if(!is.null(export_checkpoints_dir)){
     params$export_checkpoints_dir = export_checkpoints_dir
+  }
+  
+  # Set directory for checkpoints export
+  if(!is.null(mode)){
+    params$mode = mode
   }
 
   if( !is.null(search_criteria)) {
