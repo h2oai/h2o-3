@@ -266,7 +266,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeeder::feedModel);
 
     List<ModelBuilder> startModels = new ArrayList<>();
-    final List<MP> mps = iterator.initialModelParameters(10);
+    final int parallelismLevel = 2 * H2O.NUMCPUS;
+    final List<MP> mps = iterator.initialModelParameters(parallelismLevel);
     
     for (int i = 0; i < mps.size(); i++) {
         final MP nextModelParameters = mps.get(i);
