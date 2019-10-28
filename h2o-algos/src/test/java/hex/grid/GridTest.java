@@ -6,7 +6,6 @@ import hex.ModelBuildingResult;
 import hex.ParallelModelBuilder;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.hyperspace.HyperSpaceSearchCriteria;
-import hex.grid.hyperspace.HyperSpaceWalker;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
 import org.junit.Rule;
@@ -105,7 +104,7 @@ public class GridTest extends TestUtil {
       Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
               hyperParms,
               new GridSearch.SimpleParametersBuilderFactory(),
-              new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria());
+              new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria(), GridSearch.Mode.PARALLEL);
       Scope.track_generic(gridSearch);
       final Grid grid = gridSearch.get();
       Scope.track_generic(grid);
@@ -141,7 +140,7 @@ public class GridTest extends TestUtil {
       Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
               hyperParms,
               new GridSearch.SimpleParametersBuilderFactory(),
-              new HyperSpaceSearchCriteria.CartesianSearchCriteria());
+              new HyperSpaceSearchCriteria.CartesianSearchCriteria(), GridSearch.Mode.PARALLEL);
       Scope.track_generic(gridSearch);
       gridSearch.stop();
       final Grid grid = gridSearch.get();
@@ -175,14 +174,14 @@ public class GridTest extends TestUtil {
       params._response_column = "IsDepDelayed";
       params._seed = 42;
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.PARALLEL);
       Scope.track_generic(gs);
       final Grid grid = gs.get();
       Scope.track_generic(grid);
 
       assertEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
 
-      final Job<Grid> job = GridSearch.startGridSearch(grid._key, params, hyperParms);
+      final Job<Grid> job = GridSearch.startGridSearch(grid._key, params, hyperParms, GridSearch.Mode.PARALLEL);
       final Grid secondGrid = job.get();
       assertEquals(ntreesArr.length * maxDepthArr.length, secondGrid.getModelCount());
     } finally {
@@ -210,7 +209,7 @@ public class GridTest extends TestUtil {
       params._train = trainingFrame._key;
       params._response_column = "species";
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       Scope.track_generic(gs);
       final Grid errGrid = gs.get();
       Scope.track_generic(errGrid);
@@ -230,7 +229,7 @@ public class GridTest extends TestUtil {
 
       //Set the parameter to an acceptable value
       hyperParms.put("_min_rows", new Integer[]{10});
-      gs = GridSearch.startGridSearch(errGrid._key, params, hyperParms); // It is important to target the previously created grid
+      gs = GridSearch.startGridSearch(errGrid._key, params, hyperParms, GridSearch.Mode.SEQUENTIAL); // It is important to target the previously created grid
       Scope.track_generic(gs);
       final Grid grid = gs.get();
       Scope.track_generic(grid);
@@ -272,7 +271,7 @@ public class GridTest extends TestUtil {
       params._response_column = "species";
       params._export_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       Scope.track_generic(gs);
       final Grid originalGrid = gs.get();
       Scope.track_generic(originalGrid);
@@ -310,7 +309,7 @@ public class GridTest extends TestUtil {
 
       final String exportDir = temporaryFolder.newFolder().getAbsolutePath();
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       Scope.track_generic(gs);
       final Grid originalGrid = gs.get();
       Scope.track_generic(originalGrid);
@@ -363,7 +362,7 @@ public class GridTest extends TestUtil {
       params._train = trainingFrame._key;
       params._response_column = "species";
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       Scope.track_generic(gs);
       final Grid errGrid = gs.get();
       Scope.track_generic(errGrid);
@@ -380,7 +379,7 @@ public class GridTest extends TestUtil {
 
       // Train a second model with modified parameters to forcefully produce a new model
       hyperParms.put("_learn_rate", new Double[]{0.5});
-      gs = GridSearch.startGridSearch(errGrid._key, params, hyperParms);
+      gs = GridSearch.startGridSearch(errGrid._key, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       Scope.track_generic(gs);
       final Grid grid = gs.get();
       Scope.track_generic(grid);

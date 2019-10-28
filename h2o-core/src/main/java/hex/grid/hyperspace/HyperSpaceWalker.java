@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelParametersBuilderFactory;
 import hex.ScoreKeeper;
 import hex.ScoringInfo;
+import hex.grid.GridSearch;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 

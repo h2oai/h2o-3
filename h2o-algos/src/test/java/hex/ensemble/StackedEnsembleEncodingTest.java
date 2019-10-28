@@ -77,7 +77,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
             Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
                 put("_ntrees", new Integer[]{1, 2});
                 put("_max_depth", new Integer[]{2, 3});
-            }});
+            }}, GridSearch.Mode.SEQUENTIAL);
             Grid grid = gridSearch.get(); deletables.add(grid);
             Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
             assertEquals(4, gridModels.length);
@@ -155,7 +155,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
             Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
                 put("_ntrees", new Integer[]{1, 2});
                 put("_max_depth", new Integer[]{2, 3});
-            }});
+            }}, GridSearch.Mode.SEQUENTIAL);
             Grid grid = gridSearch.get();
             deletables.add(grid);
             Model[] gridModels = grid.getModels();
@@ -236,7 +236,7 @@ public class StackedEnsembleEncodingTest extends TestUtil {
             Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
                 put("_ntrees", new Integer[]{1, 2});
                 put("_max_depth", new Integer[]{2, 3});
-            }});
+            }}, GridSearch.Mode.SEQUENTIAL);
             Grid grid = gridSearch.get();
             deletables.add(grid);
             Model[] gridModels = grid.getModels();

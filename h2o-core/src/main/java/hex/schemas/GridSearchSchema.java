@@ -2,6 +2,7 @@ package hex.schemas;
 
 import hex.Model;
 import hex.grid.Grid;
+import hex.grid.GridSearch;
 import water.H2O;
 import water.Key;
 import water.api.API;
@@ -48,6 +49,9 @@ public class GridSearchSchema<G extends Grid<MP>,
   @API(help="Hyperparameter search criteria, including strategy and early stopping directives.  If it is not given, exhaustive Cartesian is used.", required = false, direction = API.Direction.INOUT)
   public HyperSpaceSearchCriteriaV99 search_criteria;
 
+  @API(help = "Grid search execution mode. Sequential by default. Parallel for multiple models built at the same time.",
+          values = {"SEQUENTIAL", "PARALLEL"})
+  public GridSearch.Mode mode;
   //
   // Outputs
   //
@@ -120,6 +124,13 @@ public class GridSearchSchema<G extends Grid<MP>,
     if (parms.containsKey("grid_id")) {
       grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id")));
       parms.remove("grid_id");
+    }
+    
+    if(parms.containsKey("mode")){
+      this.mode = GridSearch.Mode.valueOf(parms.getProperty("mode").trim().toUpperCase());
+      parms.remove("mode");
+    } else {
+      this.mode = GridSearch.Mode.SEQUENTIAL;
     }
 
     // Do not check validity of parameters, GridSearch is tolerant of bad

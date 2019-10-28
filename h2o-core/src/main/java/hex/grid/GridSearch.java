@@ -71,17 +71,19 @@ import java.util.concurrent.locks.ReentrantLock;
 public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSearch> {
   public final Key<Grid> _result;
   public final Job<Grid> _job;
+  public final Mode _mode;
 
   /** Walks hyper space and for each point produces model parameters. It is
    *  used only locally to fire new model builders.  */
   private final transient HyperSpaceWalker<MP, ?> _hyperSpaceWalker;
 
-  private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker) {
+  private GridSearch(Key<Grid> gkey, HyperSpaceWalker<MP, ?> hyperSpaceWalker, final Mode mode) {
     assert hyperSpaceWalker != null : "Grid search needs to know how to walk around hyper space!";
     _hyperSpaceWalker = hyperSpaceWalker;
     _result = gkey;
     String algoName = hyperSpaceWalker.getParams().algoName();
     _job = new Job<>(gkey, Grid.class.getName(), algoName + " Grid Search");
+    _mode = mode;
     // Note: do not validate parameters of created model builders here!
     // Leave it to launch time, and just mark the corresponding model builder job as failed.
   }
@@ -136,7 +138,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     // Install this as job functions
     return _job.start(new H2O.H2OCountedCompleter() {
       @Override public void compute2() {
-        parallelGridSearch(grid);
+        switch (_mode){
+
+          case SEQUENTIAL:
+            gridSearch(grid);
+            break;
+          case PARALLEL:
+            parallelGridSearch(grid);
+            break;
+        }
         tryComplete();
       }
 
@@ -160,6 +170,14 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     return _hyperSpaceWalker.getMaxHyperSpaceSize();
   }
 
+  /**
+   * Modes of grid search model building - sequantials builds one model at a time, while parallel introduces
+   * some arbitrary level of parallelism.
+   */
+  public enum Mode {
+    SEQUENTIAL, PARALLEL
+  }
+
   private class ModelFeeder<MP extends Model.Parameters> {
 
     private final HyperSpaceWalker.HyperSpaceIterator<MP> hyperspaceIterator;
@@ -180,7 +198,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           grid.putModel(model._parms.checksum(IGNORED_FIELDS_PARAM_HASH), model._key);
           constructScoringInfo(model);
           _job.update(1);
-          saveGrid(grid, model._parms._export_checkpoints_dir);
+          attemptGridSave(grid);
         } else {
           final Key<Model> modelKey = modelResult.hasModel() ? modelResult.getModel().get()._key : null;
           grid.appendFailedModelParameters(modelKey, modelResult.getModelBuildingParameters(),
@@ -251,7 +269,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     final List<MP> mps = iterator.initialModelParameters(10);
     
     for (int i = 0; i < mps.size(); i++) {
-      if (iterator.hasNext(null)) {
         final MP nextModelParameters = mps.get(i);
         final long checksum = nextModelParameters.checksum(IGNORED_FIELDS_PARAM_HASH);
         if(grid.getModelKey(checksum) == null) {
@@ -259,7 +276,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         } else {
           //TODO: Compensate for this scenario - we need to keep the level of paralelism at pre-set level
         }
-      }
     }
     
     if(!startModels.isEmpty()) {
@@ -267,8 +283,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       parallelModelBuilder.join();
     }
     grid.update(_job);
-    
-    saveGrid(grid, _hyperSpaceWalker.getParams()._export_checkpoints_dir);
+
+    final String export_checkpoints_dir = _hyperSpaceWalker.getParams()._export_checkpoints_dir;
+    if (export_checkpoints_dir != null) {
+      attemptGridSave(grid);
+    }
     grid.unlock(_job);
   }
 
@@ -360,7 +379,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           grid.update(_job);
           final MP generalParams = _hyperSpaceWalker.getParams();
           if (generalParams._export_checkpoints_dir != null) {
-            saveGrid(grid, generalParams._export_checkpoints_dir);
+            attemptGridSave(grid);
           }
         } // finally
 
@@ -375,10 +394,15 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       grid.unlock(_job);
     }
   }
-  
-  private static void saveGrid(final Grid grid, final String whereToExport){
-    Objects.requireNonNull(grid);
-    Objects.requireNonNull(whereToExport);
+
+  /**
+   * Saves the grid, if folder for export is defined, otherwise does nothing.
+   *
+   * @param grid Grid to save.
+   */
+  private void attemptGridSave(final Grid grid) {
+    final String whereToExport = _hyperSpaceWalker.getParams()._export_checkpoints_dir;
+    if (whereToExport == null) return;
     
     try {
       grid.exportBinary(whereToExport);
@@ -508,20 +532,22 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    *                             fully-filled-in grid search.
    * @param paramsBuilderFactory defines a strategy for creating a new model parameters based on
    *                             common parameters and list of hyper-parameters
+   * @param modelBuildingMode Regime of model building
    * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
-      final Key<Grid> destKey,
-      final MP params,
-      final Map<String, Object[]> hyperParams,
-      final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-      final HyperSpaceSearchCriteria searchCriteria) {
+          final Key<Grid> destKey,
+          final MP params,
+          final Map<String, Object[]> hyperParams,
+          final ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+          final HyperSpaceSearchCriteria searchCriteria,
+          final Mode modelBuildingMode) {
 
     return startGridSearch(
         destKey,
-        BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, searchCriteria)
+            BaseWalker.WalkerFactory.create(params, hyperParams, paramsBuilderFactory, searchCriteria), modelBuildingMode
     );
   }
 
@@ -546,14 +572,16 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Grid> destKey,
       final MP params,
-      final Map<String, Object[]> hyperParams
+      final Map<String, Object[]> hyperParams,
+      final GridSearch.Mode modelBuildingMode
   ) {
     return startGridSearch(
         destKey,
         params,
         hyperParams,
         new SimpleParametersBuilderFactory<MP>(),
-        new HyperSpaceSearchCriteria.CartesianSearchCriteria());
+        new HyperSpaceSearchCriteria.CartesianSearchCriteria(),
+            modelBuildingMode);
   }
 
   /**
@@ -569,7 +597,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
       final Key<Grid> destKey,
-      final HyperSpaceWalker<MP, ?> hyperSpaceWalker
+      final HyperSpaceWalker<MP, ?> hyperSpaceWalker,
+      final GridSearch.Mode modelBuildingMode
     ) {
     // Compute key for destination object representing grid
     MP params = hyperSpaceWalker.getParams();
@@ -577,7 +606,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             : gridKeyName(params.algoName(), params.train());
 
     // Start the search
-    return new GridSearch<>(gridKey, hyperSpaceWalker).start();
+    return new GridSearch<>(gridKey, hyperSpaceWalker, modelBuildingMode).start();
   }
 
   /**

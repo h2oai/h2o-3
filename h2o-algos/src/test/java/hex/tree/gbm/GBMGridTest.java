@@ -58,7 +58,7 @@ public class GBMGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "cylinders";
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       grid = (Grid<GBMModel.GBMParameters>) gs.get();
       final Grid.SearchFailure failures = grid.getFailures();
       // Make sure number of produced models match size of specified hyper space
@@ -140,7 +140,7 @@ public class GBMGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "economy";
 
-      Job<Grid>gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Job<Grid>gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       grid = gs.get();
 
       // Check that duplicate model have not been constructed
@@ -194,10 +194,10 @@ public class GBMGridTest extends TestUtil {
 
       Job<Grid>gs = null;
       // search once
-      gs = GridSearch.startGridSearch(accumulating_grid, params, hyperParms);
+      gs = GridSearch.startGridSearch(accumulating_grid, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       grid = gs.get();
       // search again
-      gs = GridSearch.startGridSearch(accumulating_grid, params, hyperParms);
+      gs = GridSearch.startGridSearch(accumulating_grid, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       grid = gs.get();
 
       // Check that duplicate model have not been constructed
@@ -275,7 +275,7 @@ public class GBMGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "economy (mpg)";
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
       grid = gs.get();
 
       System.out.println("ntrees search space: " + Arrays.toString(ntreesSpace));
