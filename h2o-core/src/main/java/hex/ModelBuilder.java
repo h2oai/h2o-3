@@ -1388,8 +1388,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       error("_max_runtime_secs", "Max runtime (in seconds) must be greater than 0 (or 0 for unlimited).");
     }
     if (!StringUtils.isNullOrEmpty(_parms._export_checkpoints_dir)) {
-      if(!H2O.getPM().isWritableDirectory(_parms._export_checkpoints_dir)) {
-        error("_export_checkpoints_dir", "Checpoints directory path must point to a writable path.");
+      if (!_parms._is_cv_model) {
+      // we do not need to check if the checkpoint directory is writeable on CV-models, it was already checked on the main model
+        if (!H2O.getPM().isWritableDirectory(_parms._export_checkpoints_dir)) {
+          error("_export_checkpoints_dir", "Checkpoints directory path must point to a writable path.");
+        }
       }
     }
   }
