@@ -1,10 +1,16 @@
 package water;
 
+import org.junit.Assume;
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+
+import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.assertTrue;
 
@@ -13,6 +19,9 @@ import static org.junit.Assert.assertTrue;
  */
 public class TestUtilTest extends TestUtil {
 
+  @Rule
+  public transient TemporaryFolder tmp = new TemporaryFolder();
+  
   @BeforeClass public static void setup() {
     stall_till_cloudsize(1);
   }
@@ -35,6 +44,22 @@ public class TestUtilTest extends TestUtil {
 
       assertTrue(res.vec(0).isCategorical());
       Scope.track(res);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void writeFrameToCSV() throws IOException {
+    Assume.assumeTrue(H2O.getCloudSize() == 1);
+    try {
+      Scope.enter();
+      Frame f = TestFrameCatalog.oneChunkFewRows();
+      f.remove("col_3");
+      File exportedFile = new File(tmp.getRoot(), "export.csv");
+      writeFrameToCSV(exportedFile.getAbsolutePath(), f, true, false);
+      Frame imported = Scope.track(parse_test_file(exportedFile.getAbsolutePath()));
+      assertFrameEquals(f, imported, 0);
     } finally {
       Scope.exit();
     }
