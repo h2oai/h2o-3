@@ -167,7 +167,7 @@ examples = dict(
     validation_frame="""
 >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
 >>> train, valid = data.split_frame(ratios=[.8], seed=1234)
->>> model_pca = H2OPrincipalComponentAnalysisEstimator(imput_missing=True)
+>>> model_pca = H2OPrincipalComponentAnalysisEstimator(impute_missing=True)
 >>> model_pca.train(x=data.names,
 ...                training_frame=train,
 ...                validation_frame=valid)
