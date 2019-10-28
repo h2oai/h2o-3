@@ -24,14 +24,13 @@ public class TargetEncoderRGSTest extends TestUtil {
   }
 
   @Test
-  public void traverseAllGridItemsWithRandomWalker() {
+  public void traverseAllGridItemsWithRandomDiscreteValueWalker() {
 
     Scope.enter();
     try {
       HashMap<String, Object[]> hpGrid = new HashMap<>();
       hpGrid.put("_blending", new Boolean[]{true, false});
       hpGrid.put("_noise_level", new Double[]{0.0, 0.01,  0.1});
-      // TODO figure out how to work with hierarchical parameters BlendingParams(inflection_point, smoothing) or BlendingParams(k, f)
       hpGrid.put("_k", new Double[]{1.0, 2.0, 3.0});
       hpGrid.put("_f", new Double[]{5.0, 10.0, 20.0});
       
@@ -40,68 +39,6 @@ public class TargetEncoderRGSTest extends TestUtil {
       GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
       HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
       HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(parameters, hpGrid, simpleParametersBuilderFactory, hyperSpaceSearchCriteria);
-
-      HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
-      int count = 0;
-      while (iterator.hasNext(null)) {
-        TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
-        System.out.println( targetEncoderParameters._blending + ":" +  targetEncoderParameters._noise_level + ":" +  targetEncoderParameters._k + ":" +  targetEncoderParameters._f);
-        count++;
-      }
-      assertEquals("Unexpected number of grid items", 54, count);
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void traverseAllGridItemsWithMaterialisedWalker() {
-
-    Scope.enter();
-    try {
-      HashMap<String, Object[]> hpGrid = new HashMap<>();
-      hpGrid.put("_blending", new Boolean[]{true, false});
-      hpGrid.put("_noise_level", new Double[]{0.0, 0.01,  0.1});
-      // TODO figure out how to work with hierarchical parameters BlendingParams(inflection_point, smoothing) or BlendingParams(k, f)
-      hpGrid.put("_k", new Double[]{1.0, 2.0, 3.0});
-      hpGrid.put("_f", new Double[]{5.0, 10.0, 20.0});
-
-      TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
-
-      GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
-      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
-
-      // Shadowing case: 
-      Function<HashMap<String, Object>, HashMap<String, Object>> blendingFilterFunction = gridItem -> {
-        Object mainHP = gridItem.get("blending");
-        if (mainHP instanceof Boolean && !(Boolean) mainHP) {
-          gridItem.replace("k", -1.0);
-          gridItem.replace("f", -1.0);
-          return gridItem;
-        } else {
-          return gridItem;
-        }
-      };
-
-      // Filtering case:
-      Function<HashMap<String, Object>, HashMap<String, Object>> strictFilterFunction = gridItem -> {
-        if ((double)gridItem.get("k") == 3.0 && (double)gridItem.get("f") == 1.0) {
-          return null;
-        } else {
-          return gridItem;
-        }
-      };
-
-      ArrayList<Function<HashMap<String, Object>, HashMap<String, Object>>> filterFunctions = new ArrayList<>();
-      filterFunctions.add(blendingFilterFunction);
-      filterFunctions.add(strictFilterFunction);
-      
-      HyperSpaceWalker.MaterializedRandomWalker<TargetEncoderModel.TargetEncoderParameters> walker = 
-              new HyperSpaceWalker.MaterializedRandomWalker<>(parameters, 
-                      hpGrid, 
-                      simpleParametersBuilderFactory,
-                      hyperSpaceSearchCriteria, 
-                      filterFunctions);
 
       HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
       int count = 0;
@@ -198,6 +135,103 @@ public class TargetEncoderRGSTest extends TestUtil {
   }
 
   @Test
+  public void traverseAllGridItemsWithMaterialisedWalker() {
+
+    Scope.enter();
+    try {
+      HashMap<String, Object[]> hpGrid = new HashMap<>();
+      hpGrid.put("_blending", new Boolean[]{true, false});
+      hpGrid.put("_noise_level", new Double[]{0.0, 0.01,  0.1});
+      hpGrid.put("_k", new Double[]{1.0, 2.0, 3.0});
+      hpGrid.put("_f", new Double[]{5.0, 10.0, 20.0});
+
+      TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
+
+      GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+
+      HyperSpaceWalker.MaterializedRandomWalker<TargetEncoderModel.TargetEncoderParameters> walker =
+              new HyperSpaceWalker.MaterializedRandomWalker<>(parameters,
+                      hpGrid,
+                      simpleParametersBuilderFactory,
+                      hyperSpaceSearchCriteria);
+
+      HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
+      int count = 0;
+      while (iterator.hasNext(null)) {
+        TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
+        System.out.println( targetEncoderParameters._blending + ":" +  targetEncoderParameters._noise_level + ":" +  targetEncoderParameters._k + ":" +  targetEncoderParameters._f);
+        count++;
+      }
+      assertEquals("Unexpected number of grid items", 54, count);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void randomGridSearchWithFunctionsToFilterOutUnnecessaryGridItems() {
+    HashMap<String, Object[]> hpGrid = new HashMap<>();
+    hpGrid.put("_blending", new Boolean[]{true, false});
+    hpGrid.put("_noise_level", new Double[]{0.0, 0.01, 0.1});
+    hpGrid.put("_k", new Double[]{1.0, 2.0, 3.0});
+    hpGrid.put("_f", new Double[]{1.0, 2.0, 3.0});
+
+    TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
+
+    GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
+
+    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+
+    // We need at least 2 types of functions: Shadowing(keep only one item from the group of effectively similar items), Filtering
+
+    // Shadowing case: 
+    Function<HashMap<String, Object>, HashMap<String, Object>> blendingFilterFunction = gridItem -> {
+      Object mainHP = gridItem.get("_blending");
+      if (mainHP instanceof Boolean && !(Boolean) mainHP) {
+        gridItem.replace("_k", -1.0);
+        gridItem.replace("_f", -1.0);
+        return gridItem;
+      } else {
+        return gridItem;
+      }
+    };
+
+    // Filtering case:
+    Function<HashMap<String, Object>, HashMap<String, Object>> strictFilterFunction = gridItem -> {
+      if ((double)gridItem.get("_k") == 3.0 && (double)gridItem.get("_f") == 1.0) {
+        return null;
+      } else {
+        return gridItem;
+      }
+    };
+
+    ArrayList<Function<HashMap<String, Object>, HashMap<String, Object>>> filterFunctions = new ArrayList<>();
+    filterFunctions.add(blendingFilterFunction);
+    filterFunctions.add(strictFilterFunction);
+
+    HyperSpaceWalker.MaterializedRandomWalker<TargetEncoderModel.TargetEncoderParameters> walker =
+            new HyperSpaceWalker.MaterializedRandomWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
+                    hpGrid,
+                    simpleParametersBuilderFactory,
+                    hyperSpaceSearchCriteria,
+                    filterFunctions);
+
+    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
+
+    ArrayList<TargetEncoderModel.TargetEncoderParameters> filteredGridItems = new ArrayList<>();
+    while (iterator.hasNext(null)) {
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
+      filteredGridItems.add(targetEncoderParameters);
+    }
+    
+    System.out.println("\nAll grid items after applying filtering functions:");
+    filteredGridItems.forEach(System.out::println);
+
+    assertEquals(54 - (24 - 3) - 6, filteredGridItems.size());
+  }
+
+  @Test
   public void traversingAllGridItemsWithNewRGS() {
 
     HashMap<String, Object[]> hpGrid = new HashMap<>();
@@ -244,7 +278,7 @@ public class TargetEncoderRGSTest extends TestUtil {
 
     objects.stream().forEach(hps -> {
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = walker.getModelParams(commonModelParams, hps);
-      System.out.println( targetEncoderParameters._blending + ":" +  targetEncoderParameters._noise_level + ":" +  targetEncoderParameters._k + ":" +  targetEncoderParameters._f);
+      System.out.println( targetEncoderParameters.toString());
 
     });
     

@@ -5,6 +5,7 @@ import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceWalker;
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.profile.GCProfiler;
 import org.openjdk.jmh.profile.StackProfiler;
 import org.openjdk.jmh.runner.Runner;
 import org.openjdk.jmh.runner.RunnerException;
@@ -93,6 +94,7 @@ public class NewRGSBench {
     Options opt = new OptionsBuilder()
             .include(NewRGSBench.class.getSimpleName())
             .addProfiler(StackProfiler.class)
+            .addProfiler(GCProfiler.class)
             .build();
 
     new Runner(opt).run();

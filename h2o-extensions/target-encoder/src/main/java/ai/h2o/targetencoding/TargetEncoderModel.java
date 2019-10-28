@@ -58,7 +58,11 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public long progressUnits() {
       return 0;
     }
-    
+
+    @Override
+    public String toString() {
+      return "TargetEncoderParameters: _blending = " + _blending + ", _data_leakage_handling = " + _data_leakage_handling + ", _k = " + _k + ", _f = " + _f;
+    }
   }
 
   public static class TargetEncoderOutput extends Model.Output {

@@ -442,17 +442,36 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
 
   /**
-   * Hyperparameter space walker which visits each combination of hyperparameters in order.
+   * Random iteration over the hyper-parameter space.  Does not repeat previously-visited combinations. 
+   * Implementation differs from {@link RandomDiscreteValueWalker} as we first eagerly evaluate the whole space, shuffle it and then iterate sequentially.
+   * Materialised grid might be taking considerable amount of memory so it needs to be taken into account.
    */
   public static class MaterializedRandomWalker<MP extends Model.Parameters>
           extends BaseWalker<MP, HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria> {
 
+    Random random;
+    ArrayList<Function<HashMap<String, Object>, HashMap<String, Object>>> _filterFunctions;
+
     public MaterializedRandomWalker(MP params,
                                     Map<String, Object[]> hyperParams,
                                     ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                                    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria search_criteria,
+                                    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria) {
+      this(params, hyperParams, paramsBuilderFactory, searchCriteria, null);
+    }
+    
+    public MaterializedRandomWalker(MP params,
+                                    Map<String, Object[]> hyperParams,
+                                    ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                                    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria,
                                     ArrayList<Function<HashMap<String, Object>, HashMap<String, Object>>> filterFunctions) {
-      super(params, hyperParams, paramsBuilderFactory, search_criteria);
+      super(params, hyperParams, paramsBuilderFactory, searchCriteria);
+      
+      if (-1 == searchCriteria.seed())
+        random = new Random();                       
+      else
+        random = new Random(searchCriteria.seed());
+      
+      _filterFunctions = filterFunctions;
     }
 
     @Override
@@ -479,23 +498,36 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           allElements.addAll(collect);
         }
       });
-      Collections.shuffle(allElements);
+      
+      Collections.shuffle(allElements, random);
 
-      // TODO Apply `filterFunctions` here to `allElements`
+      if(_filterFunctions != null) {
+        // unfortunately we don't have foldLeft/foldRight methods
+        _filterFunctions.forEach(filterFunction -> {
+          ArrayList<HashMap<String, Object>> filtered = allElements.stream().map(filterFunction::apply)
+                  .filter(Objects::nonNull) // TODO we actually need only one of these actions `filter`/`distinct` depending on the type of the function 
+                  .distinct()
+                  .collect(Collectors.toCollection(ArrayList::new));
+          // allElements.replaceAll(); TODO can we use UnaryOperator somehow instead of using function
+          allElements.clear();
+          allElements.addAll(filtered);
+        });
+      }
               
       Iterator<Object[]> iterator = allElements.stream().map(item -> Arrays.stream(_hyperParamNames).map(item::get).toArray()).collect(Collectors.toCollection(ArrayList::new)).iterator();
 
       return new HyperSpaceIterator<MP>() {
-        /** Hyper params permutation.
-         */
+        
+        private Object[] _currentModelParameters = null;
 
         @Override
         public MP nextModelParameters(Model previousModel) {
-          if (hasNext(previousModel)) { // or just iterator.hasNext()
+          if (hasNext(previousModel)) {
             // Get clone of parameters
             MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
-            MP params = getModelParams(commonModelParams, getCurrentRawParameters()); // or just iterator.next()
+            _currentModelParameters = iterator.next();
+            MP params = getModelParams(commonModelParams, _currentModelParameters); 
 
             return params;
           } else {
@@ -527,35 +559,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         @Override
         public Object[] getCurrentRawParameters() {
-          return iterator.next();
+          return _currentModelParameters;
         }
       }; // anonymous HyperSpaceIterator class
     } // iterator()
 
-    /**
-     * Cartesian iteration over the hyper-parameter space, varying one hyperparameter at a
-     * time. Mutates the indices that are passed in and returns them.  Returns NULL when
-     * the entire space has been traversed.
-     */
-    private int[] nextModelIndices(int[] hyperparamIndices) {
-      // Find the next parm to flip
-      int i;
-      for (i = 0; i < hyperparamIndices.length; i++) {
-        if (hyperparamIndices[i] + 1 < _hyperParams.get(_hyperParamNames[i]).length) {
-          break;
-        }
-      }
-      if (i == hyperparamIndices.length) {
-        return null; // All done, report null
-      }
-      // Flip indices
-      for (int j = 0; j < i; j++) {
-        hyperparamIndices[j] = 0;
-      }
-      hyperparamIndices[i]++;
-      return hyperparamIndices;
-    }
-  } // class CartesianWalker
+  } // class MaterializedRandomWalker
 
   /**
    * Hyperparameter space walker which visits random combinations of hyperparameters whose possible values are
