@@ -1,18 +1,26 @@
 package hex;
 
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
+
 public class ModelBuilderTest extends TestUtil {
+
+  @Rule
+  public transient TemporaryFolder tmp = new TemporaryFolder();
 
   @BeforeClass()
   public static void setup() { stall_till_cloudsize(1); }
@@ -179,6 +187,40 @@ public class ModelBuilderTest extends TestUtil {
     } finally {
       DKV.remove(key1);
       DKV.remove(key2);
+    }
+  }
+
+  @Test
+  public void testExportCheckpointsWriteCheck() throws IOException {
+    try {
+      Scope.enter();
+      File dummyFile = tmp.newFile("dummy");
+
+      Frame train = TestFrameCatalog.oneChunkFewRows();
+      
+      // 1. Validation is only down
+      DummyModelParameters failingParms = new DummyModelParameters("Failing Dummy", Key.make("dummny-failing"));
+      failingParms._export_checkpoints_dir = dummyFile.getAbsolutePath();
+      failingParms._train = train._key;
+      failingParms._response_column = train.name(0); 
+
+      DummyModelBuilder failingBuilder = new DummyModelBuilder(failingParms);
+      assertEquals(
+              "ERRR on field: _export_checkpoints_dir: Checkpoints directory path must point to a writable path.\n",
+              failingBuilder.validationErrors()
+      );
+
+      // 2. Now test that CV model will do no validation 
+      DummyModelParameters cvParams = new DummyModelParameters("Failing Dummy", Key.make("dummny-failing"));
+      cvParams._export_checkpoints_dir = dummyFile.getAbsolutePath();
+      cvParams._train = train._key;
+      cvParams._response_column = train.name(0);
+      cvParams._is_cv_model = true; // Emulate CV
+
+      DummyModelBuilder cvBuilder = new DummyModelBuilder(cvParams);
+      assertEquals("", cvBuilder.validationErrors()); // shouldn't fail
+    } finally {
+      Scope.exit();
     }
   }
 
