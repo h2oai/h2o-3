@@ -49,7 +49,8 @@ examples = dict(
 >>> prostate['DCAPS'] = prostate['DCAPS'].asfactor()
 >>> prostate['DPROS'] = prostate['DPROS'].asfactor()
 >>> checkpoints_dir = tempfile.mkdtemp()
->>> pros_pca = H2OPrincipalComponentAnalysisEstimator()
+>>> pros_pca = H2OPrincipalComponentAnalysisEstimator(impute_missing=True,
+...                                                   export_checkpoints_dir=checkpoints_dir)
 >>> pros_pca.train(x=prostate.names, training_frame=prostate)
 >>> len(listdir(checkpoints_dir))
 """,
