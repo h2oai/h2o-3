@@ -2,7 +2,10 @@ package water;
 
 import water.util.Log;
 
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -169,9 +172,12 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
      * Helper MR task used to detect clientDisconnectedConsensus on the timeout we last heard from the watchdog client
      */
     private static class WatchdogClientDisconnectedTask extends MRTask<WatchdogClientDisconnectedTask> {
-        private boolean clientDisconnectedConsensus = false;
-        private H2ONode clientNode;
-        private long watchdogClientRetryTimeout;
+        private final H2ONode clientNode;
+        private final long watchdogClientRetryTimeout;
+
+        // OUT
+        private boolean[] clientConnected;
+
         WatchdogClientDisconnectedTask(H2ONode clientNode, long  watchdogClientRetryTimeout) {
             this.clientNode = clientNode;
             this.watchdogClientRetryTimeout = watchdogClientRetryTimeout;
@@ -179,18 +185,29 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
 
         @Override
         public void reduce(WatchdogClientDisconnectedTask mrt) {
-            this.clientDisconnectedConsensus = this.clientDisconnectedConsensus && mrt.clientDisconnectedConsensus;
+            for (int i = 0; i < clientConnected.length; i++) {
+                clientConnected[i] &= mrt.clientConnected[i];
+            }
         }
 
         @Override
         protected void setupLocal() {
-            final H2ONode foundClient = H2O.getClientByIPPort(clientNode.getIpPortString());
+            clientConnected = new boolean[H2O.getCloudSize()];
+            Arrays.fill(clientConnected, true); // assume everything is okay at first
 
-            if (foundClient == null || isTimeoutExceeded(foundClient, watchdogClientRetryTimeout )) {
-                // Agree on the consensus if this node does not see the client at all or if this node sees the client
-                // however the timeout is out
-                clientDisconnectedConsensus = true;
+            final H2ONode foundClient = H2O.getClientByIPPort(clientNode.getIpPortString());
+            if (foundClient == null || isTimeoutExceeded(foundClient, watchdogClientRetryTimeout)) {
+                clientConnected[H2O.SELF.index()] = false;
             }
+        }
+
+        private List<H2ONode> getNodesWithConnectedClient() {
+            List<H2ONode> nodesWithClient = new LinkedList<>();
+            for (int i = 0; i < clientConnected.length; i++) {
+                if (clientConnected[i])
+                    nodesWithClient.add(H2O.CLOUD.members()[i]);
+            }
+            return nodesWithClient;
         }
     }
 
@@ -227,10 +244,13 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                             Log.warn("Watchdog client " + client + " disconnected!");
                             WatchdogClientDisconnectedTask tsk = new WatchdogClientDisconnectedTask(client, watchdogClientRetryTimeout);
                             Log.warn("Asking the rest of the nodes in the cloud whether watchdog client is really gone.");
-                            if((tsk.doAllNodes()).clientDisconnectedConsensus) {
+                            List<H2ONode> nodesWithClient = tsk.doAllNodes().getNodesWithConnectedClient();
+                            if(nodesWithClient.isEmpty()) {
                                 Log.fatal("Stopping H2O cloud since the watchdog client is disconnected from all nodes in the cluster!");
                                 // we should fail with negative status as this is not planned shutdown
                                 H2O.shutdown(-1);
+                            } else {
+                                Log.warn("This H2O node doesn't see client " + client + " but others do: " + nodesWithClient);
                             }
                         }
                     }
