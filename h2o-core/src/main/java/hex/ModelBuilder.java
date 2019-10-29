@@ -17,12 +17,22 @@ import java.lang.reflect.Method;
 import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
+
+  Consumer<Model> _onSuccessCallback = null;
+  BiConsumer<Throwable, Model.Parameters> _onFailCallback = null;
+
+  public void setOnFailCallback(BiConsumer<Throwable, Model.Parameters> onFailCallback) {
+    this._onFailCallback = onFailCallback;
+  }
+
+  public void setOnSuccessCallback(Consumer<Model> onSuccessCallback) {
+    this._onSuccessCallback = onSuccessCallback;
+  }
 
   public ToEigenVec getToEigenVec() { return null; }
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
@@ -222,7 +232,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
-    public transient Consumer<ModelBuildingResult> callback = null;
+
     protected Driver(){ super(); }
     protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
     // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
@@ -242,12 +252,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.exit();
       }
       tryComplete();
-      if(callback != null) {
-        final ModelBuildingResult modelBuildingResult = new ModelBuildingResult(Optional.of(_job.get()),
-                Optional.empty(), _parms);
-        callback.accept(modelBuildingResult);
+      if (_onSuccessCallback != null) {
+        _onSuccessCallback.accept(_job.get());
       }
     }
+
+    @Override
+    public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+      if (_onFailCallback != null) {
+        _onFailCallback.accept(ex, _parms);
+      }
+      return true;
+    }
+
     public abstract void computeImpl();
   }
 
@@ -317,16 +334,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _mb.trainModel();
     }
   }
-  final public Job<M> trainModel() {
-    return trainModel(null);
-  }
+
   /** Method to launch training of a Model, based on its parameters. */
-  final public Job<M> trainModel(final Consumer<ModelBuildingResult> callback) {
+  final public Job<M> trainModel() {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
     if( !nFoldCV() )
-      return _job.start(trainModelImpl(callback), _parms.progressUnits(), _parms._max_runtime_secs);
+      return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
 
     // cross-validation needs to be forked off to allow continuous (non-blocking) progress bar
     return _job.start(new H2O.H2OCountedCompleter() {
@@ -334,10 +349,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                         public void compute2() {
                           computeCrossValidation();
                           tryComplete();
-                          if(callback != null) {
-                            final ModelBuildingResult modelBuildingResult = new ModelBuildingResult(Optional.of(_job.get()),
-                                    Optional.empty(), _parms);
-                            callback.accept(modelBuildingResult);
+                          if (_onSuccessCallback != null) {
+                            _onSuccessCallback.accept(_job.get());
                           }
                         }
                         @Override
@@ -348,10 +361,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                           } catch (Exception logged) {
                             Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
                           }
-                          if (callback != null) {
-                            final ModelBuildingResult modelBuildingResult = new ModelBuildingResult(Optional.empty(),
-                                    Optional.of(ex), _parms);
-                            callback.accept(modelBuildingResult);
+                          if (_onFailCallback != null) {
+                            _onFailCallback.accept(ex, _parms);
                           }
                           return true;
                         }
@@ -416,12 +427,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Model-specific implementation of model training
    * @return A F/J Job, which, when executed, does the build.  F/J is NOT started.  */
   abstract protected Driver trainModelImpl();
-
-  protected Driver trainModelImpl(Consumer<ModelBuildingResult> callback) {
-    final Driver driver = trainModelImpl();
-    driver.callback = callback;
-    return driver;
-  }
 
   @Deprecated protected int nModelsInParallel() { return 0; }
   /**

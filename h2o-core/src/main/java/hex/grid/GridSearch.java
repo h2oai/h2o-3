@@ -177,43 +177,41 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     private final HyperSpaceWalker.HyperSpaceIterator<MP> hyperspaceIterator;
     private final Grid grid;
-    private final Lock hyperspaceAccessLock = new ReentrantLock();
+    private final Lock parallelSearchGridLock = new ReentrantLock();
 
     public ModelFeeder(HyperSpaceWalker.HyperSpaceIterator<MP> hyperspaceIterator, Grid grid) {
       this.hyperspaceIterator = hyperspaceIterator;
       this.grid = grid;
     }
 
-    private void feedModel(final ModelBuildingResult modelResult, final ParallelModelBuilder parallelModelBuilder) {
-      hyperspaceAccessLock.lock();
-      boolean locked = true;
+    private void onModelSuccessfullyBuilt(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
+      parallelSearchGridLock.lock();
       try {
-        final Model model = modelResult.getModel().orElse(null);
-        if (modelResult.hasModel()) {
-          grid.putModel(model._parms.checksum(IGNORED_FIELDS_PARAM_HASH), model._key);
-          constructScoringInfo(model);
-          _job.update(1);
-          attemptGridSave(grid);
-        } else {
-          final Key<Model> modelKey = modelResult.hasModel() ? modelResult.getModel().get()._key : null;
-          grid.appendFailedModelParameters(modelKey, modelResult.getModelBuildingParameters(),
-                  modelResult.getThrowable().get());
-        }
+        grid.putModel(finishedModel._parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
+        constructScoringInfo(finishedModel);
+        _job.update(1);
+        attemptGridSave(grid);
+
         grid.update(_job);
-        
-        // Attempt to train next model
-        final MP nextModelParams = getNextModelParams(hyperspaceIterator, model, grid);
-        if (nextModelParams != null && isThereEnoughTime() && !_job.stop_requested()) {
-          parallelModelBuilder.run(ModelBuilder.make(nextModelParams));
-        } else {
-          hyperspaceAccessLock.unlock();
-          locked = false;
-          parallelModelBuilder.noMoreModels();
-        }
+        attemptBuildNextModel(parallelModelBuilder, finishedModel);
       } finally {
-        if(locked) {
-          hyperspaceAccessLock.unlock();
-        }
+        parallelSearchGridLock.unlock();
+      }
+    }
+
+    private void onModelBuildFailed(ParallelModelBuilder.ModelBuildFailure modelBuildFailure, ParallelModelBuilder parallelModelBuilder) {
+      parallelSearchGridLock.unlock();
+      grid.appendFailedModelParameters(null, modelBuildFailure.getParameters(), modelBuildFailure.getThrowable());
+      attemptBuildNextModel(parallelModelBuilder, null);
+    }
+
+    private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
+      // Attempt to train next model
+      final MP nextModelParams = getNextModelParams(hyperspaceIterator, previousModel, grid);
+      if (nextModelParams != null && isThereEnoughTime() && !_job.stop_requested()) {
+        parallelModelBuilder.run(ModelBuilder.make(nextModelParams));
+      } else {
+        parallelModelBuilder.noMoreModels();
       }
     }
 
@@ -263,7 +261,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   private void parallelGridSearch(final Grid<MP> grid) {
     final HyperSpaceWalker.HyperSpaceIterator<MP> iterator = _hyperSpaceWalker.iterator();
     final ModelFeeder modelFeeder = new ModelFeeder(iterator, grid);
-    ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeeder::feedModel);
+    final ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeeder::onModelSuccessfullyBuilt,
+            modelFeeder::onModelBuildFailed);
 
     List<ModelBuilder> startModels = new ArrayList<>();
     final int parallelismLevel = _parallelismLevel > 1 ? _parallelismLevel : 2 * H2O.NUMCPUS;

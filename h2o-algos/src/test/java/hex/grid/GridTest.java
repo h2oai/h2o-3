@@ -2,7 +2,6 @@ package hex.grid;
 
 import hex.Model;
 import hex.ModelBuilder;
-import hex.ModelBuildingResult;
 import hex.ParallelModelBuilder;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.hyperspace.HyperSpaceSearchCriteria;
@@ -51,12 +50,12 @@ public class GridTest extends TestUtil {
       final Lock lock = new ReentrantLock();
 
       // Must be thread safe, otherwise won't work and will lock itself at the end.
-      final BiConsumer<ModelBuildingResult, ParallelModelBuilder> modelFeder = (result, parallelModelBuilder) -> {
+      final BiConsumer<Model, ParallelModelBuilder> onModelComplete = (model, parallelModelBuilder) -> {
         lock.lock();
         try {
-          models.add(result.getModel().get());
+          models.add(model);
           if (models.size() < 3) {
-            parallelModelBuilder.run(ModelBuilder.make(parms.clone()));
+            parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(parms.clone())));
           } else {
             parallelModelBuilder.noMoreModels();
           }
@@ -66,7 +65,7 @@ public class GridTest extends TestUtil {
       };
       
       final ModelBuilder modelBuilder = ModelBuilder.make(parms.clone());
-      final ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeder);
+      final ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(onModelComplete, null);
       parallelModelBuilder.run(Collections.singletonList(modelBuilder));
       parallelModelBuilder.join();
       models.forEach(Scope::track_generic);

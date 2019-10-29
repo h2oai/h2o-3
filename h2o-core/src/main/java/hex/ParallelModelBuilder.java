@@ -18,13 +18,16 @@ import java.util.function.Consumer;
  */
 public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
-  private BiConsumer<ModelBuildingResult, ParallelModelBuilder> _modelFeeder;
+  private BiConsumer<Model, ParallelModelBuilder> _onBuildSuccessCallback;
+  private BiConsumer<ModelBuildFailure, ParallelModelBuilder> _onBuildFailureCallback;
   public IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
   public AtomicBoolean _completed = new AtomicBoolean(false);
 
-  public ParallelModelBuilder(BiConsumer<ModelBuildingResult, ParallelModelBuilder> modelFeeder) {
-    Objects.requireNonNull(modelFeeder);
-    _modelFeeder = modelFeeder;
+  public ParallelModelBuilder(BiConsumer<Model, ParallelModelBuilder> onBuildSuccessCallback,
+                              BiConsumer<ModelBuildFailure, ParallelModelBuilder> onBuildFailureCallback) {
+    Objects.requireNonNull(onBuildSuccessCallback);
+    _onBuildSuccessCallback = onBuildSuccessCallback;
+    _onBuildFailureCallback = onBuildFailureCallback;
   }
 
   /**
@@ -33,17 +36,59 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
    *
    * @param modelBuilders An {@link Collection} of {@link ModelBuilder} to execute in parallel.
    */
-  public void run(Collection<ModelBuilder> modelBuilders) {
+  public void run(final Collection<ModelBuilder> modelBuilders) {
       for (final ModelBuilder modelBuilder : modelBuilders) {
         _modelInProgressCounter.incrementAndGet();
-        final Consumer<ModelBuildingResult> consumer = this::onModelFinished;
-        modelBuilder.trainModel(consumer);
+
+        // Set the callbacks
+        final Consumer<Model> onModelSuccessfulBuild = this::onModelSuccessfullBuild;
+        modelBuilder.setOnSuccessCallback(onModelSuccessfulBuild);
+        final BiConsumer<Throwable, Model.Parameters> onModelFailedWithException = this::onModelFailedWithException;
+        modelBuilder.setOnFailCallback(onModelFailedWithException);
+
+        modelBuilder.trainModel();
       }
   }
 
-  private void onModelFinished(final ModelBuildingResult m) {
+  /**
+   * Callback for successfully finished model builds
+   *
+   * @param m Model built
+   */
+  private void onModelSuccessfullBuild(final Model m) {
     _modelInProgressCounter.decrementAndGet();
-    _modelFeeder.accept(m, this);
+    _onBuildSuccessCallback.accept(m, this);
+  }
+
+  /**
+   * Callback for failed model builds
+   *
+   * @param throwable  Cause of failure
+   * @param parameters Parameters used in the attempt to build the model
+   */
+  private void onModelFailedWithException(final Throwable throwable, final Model.Parameters parameters) {
+    _modelInProgressCounter.decrementAndGet();
+
+    final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(throwable, parameters);
+    _onBuildFailureCallback.accept(modelBuildFailure, this);
+  }
+
+  public static class ModelBuildFailure {
+    private final Throwable _throwable;
+    private final Model.Parameters _parameters;
+
+    public ModelBuildFailure(Throwable throwable, Model.Parameters parameters) {
+      this._throwable = throwable;
+      this._parameters = parameters;
+    }
+
+    public Throwable getThrowable() {
+      return _throwable;
+    }
+
+    public Model.Parameters getParameters() {
+      return _parameters;
+    }
   }
 
   /**
@@ -57,14 +102,18 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     final boolean previouslyCompleted = _completed.getAndSet(true);
     if(previouslyCompleted) return;
 
-    do {
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException e) {
-        Log.err(e);
-      }
-    } while (_modelInProgressCounter.get() > 0);
-    complete(this);
+    // Do not block the caller
+    new Thread(() -> {
+      do {
+        try {
+          Thread.sleep(100);
+        } catch (InterruptedException e) {
+          Log.err(e);
+        }
+      } while (_modelInProgressCounter.get() > 0);
+      complete(this);
+    }
+    ).start();
   }
 
 
