@@ -294,7 +294,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("seed", (int)(p._seed % Integer.MAX_VALUE));
 
     // XGBoost specific options
-    params.put("tree_method", p._tree_method.toString());
     params.put("grow_policy", p._grow_policy.toString());
     if (p._grow_policy== XGBoostParameters.GrowPolicy.lossguide) {
       params.put("max_bins", p._max_bins);
@@ -317,21 +316,21 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         Log.info("Using gpu_coord_descent updater."); 
         params.put("updater", "gpu_coord_descent");
       } else if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
-        Log.info("Using grow_gpu (exact) updater.");
-        params.put("tree_method", "exact");
-        params.put("updater", "grow_gpu");
+        Log.info("Using gpu_exact tree method.");
+        params.put("tree_method", "gpu_exact");
       } else {
-        Log.info("Using grow_gpu_hist (approximate) updater.");
-        params.put("max_bins", p._max_bins);
-        params.put("tree_method", "exact");
-        params.put("updater", "grow_gpu_hist");
+        Log.info("Using gpu_hist tree method.");
+        params.put("max_bin", p._max_bins);
+        params.put("tree_method", "gpu_hist");
       }
+    } else if (p._booster == XGBoostParameters.Booster.gblinear) {
+      Log.info("Using coord_descent updater.");
+      params.put("updater", "coord_descent");
     } else {
-      if (p._booster == XGBoostParameters.Booster.gblinear) {
-        Log.info("Using coord_descent updater.");
-        params.put("updater", "coord_descent");
-      } else {
-        Log.info("Using default updater.");
+      Log.info("Using " + p._tree_method.toString() + " tree method.");
+      params.put("tree_method", p._tree_method.toString());
+      if (p._tree_method == XGBoostParameters.TreeMethod.hist) {
+        params.put("max_bin", p._max_bins);
       }
     }
     if (p._min_child_weight!=1) {
