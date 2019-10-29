@@ -1422,6 +1422,8 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
         :examples:
 
+        >>> import tempfile
+        >>> from os import listdir
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","year"]
         >>> response = "acceleration"
@@ -1434,6 +1436,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
         ...                training_frame = train,
         ...                validation_frame = valid)
         >>> cars_glm.mse()
+        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 

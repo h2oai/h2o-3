@@ -16,117 +16,159 @@ extensions = dict(
 
 examples = dict(
     categorical_encoding="""
->>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
->>> airlines["Year"]= airlines["Year"].asfactor()
->>> airlines["Month"]= airlines["Month"].asfactor()
->>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
->>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
->>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
->>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
-...               "DayOfWeek", "Month", "Distance", "FlightNum"]
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> encoding = "one_hot_explicit"
->>> airlines_ag = H2OAggregatorEstimator(categorical_encoding = encoding)
->>> airlines_ag.train(x = predictors,
-...                   training_frame = train,
-...                   validation_frame = valid)
->>> airlines_ag.aggregated_frame
+>>> df = h2o.create_frame(rows=10000,
+...                       cols=10,
+...                       categorical_fraction=0.6,
+...                       integer_fraction=0,
+...                       binary_fraction=0,
+...                       real_range=100,
+...                       integer_range=100,
+...                       missing_fraction=0,
+...                       factors=100,
+...                       seed=1234)
+>>> params = {"target_num_exemplars": 1000,
+...           "rel_tol_num_exemplars": 0.5,
+...           "categorical_encoding": "eigen"}
+>>> agg = H2OAggregatorEstimator(**params)
+>>> agg.train(training_frame=df)
+>>> new_df = agg.aggregated_frame
+>>> new_df
 """,
     export_checkpoints_dir="""
 >>> import tempfile
 >>> from os import listdir
->>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
->>> predictors = ["DayofMonth", "DayOfWeek"]
+>>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 >>> checkpoints_dir = tempfile.mkdtemp()
->>> airlines_ag = H2OAggregatorEstimator()
->>> airlines_ag.train(x = predictors,
-...                   training_frame = airlines)
+>>> model = H2OAggregatorEstimator(target_num_exemplars=500, 
+...                                rel_tol_num_exemplars=0.3,
+...                                export_checkpoints_dir=checkpoints_dir)
+>>> model.train(training_frame=df)
+>>> new_df = model.aggregated_frame
+>>> new_df
 >>> len(listdir(checkpoints_dir))
 """,
     ignore_const_cols="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> cars["const_1"] = 6
->>> cars["const_2"] = 7
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_ag = H2OAggregatorEstimator(ignore_const_cols = True)
->>> cars_ag.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_ag.aggregated_frame
+>>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+>>> params = {"ignore_const_cols": False,
+...           "target_num_exemplars": 500,
+...           "rel_tol_num_exemplars": 0.3,
+...           "transform": "standardize",
+...           "categorical_encoding": "eigen"}
+>>> model = H2OAggregatorEstimator(**params)
+>>> model.train(training_frame=df)
+>>> new_df = model.aggregated_frame
+>>> new_df
 """,
     num_iteration_without_new_exemplar="""
->>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
->>> airlines["Year"]= airlines["Year"].asfactor()
->>> airlines["Month"]= airlines["Month"].asfactor()
->>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
->>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
->>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
->>> predictors = airlines.columns[:9]
->>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
->>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
->>> airlines_ag = H2OAggregatorEstimator(num_iteration_without_new_exemplar = 500)
->>> airlines_ag.train(x=predictors,
-...                   training_frame = train,
-...                   validation_frame = valid)
->>> airlines_ag.aggregated_frame
+>>> df = h2o.create_frame(rows=10000,
+...                       cols=10,
+...                       categorical_fraction=0.6,
+...                       integer_fraction=0,
+...                       binary_fraction=0,
+...                       real_range=100,
+...                       integer_range=100,
+...                       missing_fraction=0,
+...                       factors=100,
+...                       seed=1234)
+>>> params = {"target_num_exemplars": 1000,
+...           "rel_tol_num_exemplars": 0.5,
+...           "categorical_encoding": "eigen",
+...           "num_iteration_without_new_exemplar": 400}
+>>> agg = H2OAggregatorEstimator(**params)
+>>> agg.train(training_frame=df)
+>>> new_df = agg.aggregated_frame
+>>> new_df
 """,
     rel_tol_num_exemplars="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_ag = H2OAggregatorEstimator(rel_tol_num_exemplars = .7)
->>> cars_ag.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_ag.aggregated_frame
+>>> df = h2o.create_frame(rows=10000,
+...                       cols=10,
+...                       categorical_fraction=0.6,
+...                       integer_fraction=0,
+...                       binary_fraction=0,
+...                       real_range=100,
+...                       integer_range=100,
+...                       missing_fraction=0,
+...                       factors=100,
+...                       seed=1234)
+>>> params = {"target_num_exemplars": 1000,
+...           "rel_tol_num_exemplars": 0.5,
+...           "categorical_encoding": "eigen",
+...           "num_iteration_without_new_exemplar": 400}
+>>> agg = H2OAggregatorEstimator(**params)
+>>> agg.train(training_frame=df)
+>>> new_df = agg.aggregated_frame
+>>> new_df
 """,
     save_mapping_frame="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_ag = H2OAggregatorEstimator(save_mapping_frame = True)
->>> cars_ag.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_ag.aggregated_frame
->>> cars_ag.save_mapping_frame
+>>> df = h2o.create_frame(rows=10000,
+...                       cols=10,
+...                       categorical_fraction=0.6,
+...                       integer_fraction=0,
+...                       binary_fraction=0,
+...                       real_range=100,
+...                       integer_range=100,
+...                       missing_fraction=0,
+...                       factors=100,
+...                       seed=1234)
+>>> params = {"target_num_exemplars": 1000,
+...           "rel_tol_num_exemplars": 0.5,
+...           "categorical_encoding": "eigen",
+...           "save_mapping_frame": True}
+>>> agg = H2OAggregatorEstimator(**params)
+>>> agg.train(training_frame=df)
+>>> new_df = agg.aggregated_frame
+>>> new_df
 """,
     target_num_exemplars="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_ag = H2OAggregatorEstimator(target_num_exemplars = 5000)
->>> cars_ag.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_ag.aggregated_frame
+>>> df = h2o.create_frame(rows=10000,
+...                       cols=10,
+...                       categorical_fraction=0.6,
+...                       integer_fraction=0,
+...                       binary_fraction=0,
+...                       real_range=100,
+...                       integer_range=100,
+...                       missing_fraction=0,
+...                       factors=100,
+...                       seed=1234)
+>>> params = {"target_num_exemplars": 1000,
+...           "rel_tol_num_exemplars": 0.5,
+...           "categorical_encoding": "eigen",
+...           "num_iteration_without_new_exemplar": 400}
+>>> agg = H2OAggregatorEstimator(**params)
+>>> agg.train(training_frame=df)
+>>> new_df = agg.aggregated_frame
+>>> new_df
 """,
     training_frame="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_ag = H2OAggregatorEstimator()
->>> cars_ag.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_ag.aggregated_frame
+>>> df = h2o.create_frame(rows=10000,
+...                       cols=10,
+...                       categorical_fraction=0.6,
+...                       integer_fraction=0,
+...                       binary_fraction=0,
+...                       real_range=100,
+...                       integer_range=100,
+...                       missing_fraction=0,
+...                       factors=100,
+...                       seed=1234)
+>>> params = {"target_num_exemplars": 1000,
+...           "rel_tol_num_exemplars": 0.5,
+...           "categorical_encoding": "eigen",
+...           "num_iteration_without_new_exemplar": 400}
+>>> agg = H2OAggregatorEstimator(**params)
+>>> agg.train(training_frame=df)
+>>> new_df = agg.aggregated_frame
+>>> new_df
 """,
     transform="""
->>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
->>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
->>> predictors = ["displacement","power","weight","acceleration","year"]
->>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
->>> cars_ag = H2OAggregatorEstimator(transform = "demean")
->>> cars_ag.train(x = predictors,
-...               training_frame = train,
-...               validation_frame = valid)
->>> cars_ag.aggregated_frame
+>>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+>>> params = {"ignore_const_cols": False,
+...           "target_num_exemplars": 500,
+...           "rel_tol_num_exemplars": 0.3,
+...           "transform": "standardize",
+...           "categorical_encoding": "eigen"}
+>>> model = H2OAggregatorEstimator(**params)
+>>> model.train(training_frame=df)
+>>> new_df = model.aggregated_frame
 """
 )
     
