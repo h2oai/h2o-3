@@ -87,7 +87,7 @@ public class GridTest extends TestUtil {
       final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
       Scope.track(trainingFrame);
 
-      final Integer[] ntreesArr = new Integer[]{5, 50, 7, 8, 9, 10};
+      final Integer[] ntreesArr = new Integer[]{5, 50, 7, 8, 9, 10, 500};
       final Integer[] maxDepthArr = new Integer[]{2, 3, 4};
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
         put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
@@ -104,7 +104,7 @@ public class GridTest extends TestUtil {
       Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
               hyperParms,
               new GridSearch.SimpleParametersBuilderFactory(),
-              new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria(), GridSearch.ADAPTIVE_PARALLEL_MODE);
+              new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria(), 2);
       Scope.track_generic(gridSearch);
       final Grid grid = gridSearch.get();
       Scope.track_generic(grid);
