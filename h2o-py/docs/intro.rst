@@ -17,7 +17,7 @@ out of sight in a singleton instance of :class:`H2OConnection`. In other words, 
 package does not rely on Jython, and there
 is no direct manipulation of the JVM.
 
-The H2O python module is not intended as a replacement for other popular machine learning
+The H2O Python module is not intended as a replacement for other popular machine learning
 frameworks such as scikit-learn, pylearn2, and their ilk, but is intended to bring H2O to
 a wider audience of data and machine learning devotees who work exclusively with Python.
 
@@ -52,6 +52,105 @@ The rest of this document explains a few of the client-server details and the ge
 programming model for interacting with H2O from Python.
 
 Let's get started!
+
+Installing and Starting H2O-3
+-----------------------------
+
+Run the following commands in a Terminal window to install H2O for Python. 
+
+1. Install dependencies (prepending with ``sudo`` if needed):
+
+ ::
+
+  pip install requests
+  pip install tabulate
+  pip install "colorama>=0.3.8"
+  pip install future
+
+ **Note**: These are the dependencies required to run H2O. A complete list of dependencies is maintained in the following file: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml <https://github.com/h2oai/h2o-3/blob/master/h2o-py/conda/h2o/meta.yaml>`__.
+
+2. Run the following command to remove any existing H2O module for Python.
+
+ ::
+
+  pip uninstall h2o
+
+3. Use ``pip`` to install this version of the H2O Python module.
+
+ ::
+
+  pip install -f http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Py.html h2o
+
+ **Note**: When installing H2O from ``pip`` in OS X El Capitan, users must include the ``--user`` flag. For example:
+
+ ::
+  
+   pip install -f http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Py.html h2o --user
+
+Use the ``h2o.init()`` function to start H2O. This function accepts the following options. Note that in most cases, simply using ``h2o.init()`` is all that a user is required to do.
+
+- ``url``: Full URL of the server to connect to. (This can be used instead of ``ip`` + ``port`` + ``https``.)
+- ``ip``: The ip address (or host name) of the server where H2O is running.
+- ``port``: Port number that H2O service is listening to.
+- ``https``: Set to True to connect via https:// instead of http://.
+- ``insecure``: When using https, setting this to True will disable SSL certificates verification.
+- ``username``: The username to log in with when using basic authentication.
+- ``password``: The password to log in with when using basic authentication.
+- ``cookies``: Cookie (or list of) to add to each request.
+- ``proxy``: The proxy server address.
+- ``start_h2o``: If False, do not attempt to start an H2O server when a connection to an existing one failed.
+- ``nthreads``: "Number of threads" option when launching a new H2O server.
+- ``ice_root``: The directory for temporary files for the new H2O server.
+- ``log_dir``: Directory for H2O logs to be stored if a new instance is started. Ignored if connecting to an existing node.
+- ``log_level``: The logger level for H2O if a new instance is started. One of TRACE, DEBUG, INFO (Default), WARN, ERRR, and FATA. Ignored if connecting to an existing node.
+- ``enable_assertions``: Enable assertions in Java for the new H2O server.
+- ``max_mem_size``: Maximum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
+- ``min_mem_size``: Minimum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
+- ``strict_version_check``: If True, an error will be raised if the client and server versions don't match.
+- ``ignore_config``: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
+- ``extra_classpath``: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
+- ``kwargs``: (all other deprecated attributes)
+- ``jvm_custom_args``: Customer, user-defined argumentâ€™s for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
+- ``bind_to_localhost``: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
+
+Example
++++++++
+
+  .. highlight:: none
+
+  ::
+
+    python
+    import h2o
+    h2o.init(ip="localhost", port=54323)
+
+    Checking whether there is an H2O instance running at http://localhost:54323 ..... not found.
+    Attempting to start a local H2O server...
+    Java Version: java version "1.8.0_211"; Java(TM) SE Runtime Environment (build 1.8.0_211-b12); Java HotSpot(TM) 64-Bit Server VM (build 25.211-b12, mixed mode)
+    Starting server from /Users/techwriter/Library/Python/2.7/lib/python/site-packages/h2o/backend/bin/h2o.jar
+    Ice root: /var/folders/b_/0hb_lbj56179hzk1pv2nq9bh0000gp/T/tmpBHkpVL
+    JVM stdout: /var/folders/b_/0hb_lbj56179hzk1pv2nq9bh0000gp/T/tmpBHkpVL/h2o_techwriter_started_from_python.out
+    JVM stderr: /var/folders/b_/0hb_lbj56179hzk1pv2nq9bh0000gp/T/tmpBHkpVL/h2o_techwriter_started_from_python.err
+    Server is running at http://127.0.0.1:54323
+    Connecting to H2O server at http://127.0.0.1:54323 ... successful.
+    --------------------------  ------------------------------------------------------------------
+    H2O cluster uptime:         01 secs
+    H2O cluster timezone:       America/Los_Angeles
+    H2O data parsing timezone:  UTC
+    H2O cluster version:        3.26.0.6
+    H2O cluster version age:    27 days
+    H2O cluster name:           H2O_from_python_techwriter_0b1rae
+    H2O cluster total nodes:    1
+    H2O cluster free memory:    3.556 Gb
+    H2O cluster total cores:    8
+    H2O cluster allowed cores:  8
+    H2O cluster status:         accepting new members, healthy
+    H2O connection url:         http://127.0.0.1:54323
+    H2O connection proxy:
+    H2O internal security:      False
+    H2O API Extensions:         Amazon S3, XGBoost, Algos, AutoML, Core V3, TargetEncoder, Core V4
+    Python version:             2.7.15 final
+    --------------------------  ------------------------------------------------------------------
 
 The H2O Object System
 +++++++++++++++++++++
