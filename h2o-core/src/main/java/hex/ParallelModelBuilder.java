@@ -73,6 +73,9 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     _onBuildFailureCallback.accept(modelBuildFailure, this);
   }
 
+  /**
+   * Contains all the necessary information after a model builder has failed to build the model
+   */
   public static class ModelBuildFailure {
     private final Throwable _throwable;
     private final Model.Parameters _parameters;
