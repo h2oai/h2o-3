@@ -204,7 +204,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         // Attempt to train next model
         final MP nextModelParams = getNextModelParams(hyperspaceIterator, model, grid);
         if (nextModelParams != null && isThereEnoughTime() && !_job.stop_requested()) {
-          parallelModelBuilder.run(new ModelBuilder[]{ModelBuilder.make(nextModelParams)});
+          parallelModelBuilder.run(ModelBuilder.make(nextModelParams));
         } else {
           hyperspaceAccessLock.unlock();
           locked = false;
@@ -255,6 +255,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
   }
 
+  /**
+   * Searches the hyperspace and builds models in a parallel way - building the models in parallel.
+   *
+   * @param grid Grid to add models to
+   */
   private void parallelGridSearch(final Grid<MP> grid) {
     final HyperSpaceWalker.HyperSpaceIterator<MP> iterator = _hyperSpaceWalker.iterator();
     final ModelFeeder modelFeeder = new ModelFeeder(iterator, grid);
@@ -263,19 +268,19 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     List<ModelBuilder> startModels = new ArrayList<>();
     final int parallelismLevel = _parallelismLevel > 1 ? _parallelismLevel : 2 * H2O.NUMCPUS;
     final List<MP> mps = iterator.initialModelParameters(parallelismLevel);
-    
+
     for (int i = 0; i < mps.size(); i++) {
-        final MP nextModelParameters = mps.get(i);
-        final long checksum = nextModelParameters.checksum(IGNORED_FIELDS_PARAM_HASH);
-        if(grid.getModelKey(checksum) == null) {
-          startModels.add(ModelBuilder.make(nextModelParameters));
-        } else {
-          //TODO: Compensate for this scenario - we need to keep the level of paralelism at pre-set level
-        }
+      final MP nextModelParameters = mps.get(i);
+      final long checksum = nextModelParameters.checksum(IGNORED_FIELDS_PARAM_HASH);
+      if (grid.getModelKey(checksum) == null) {
+        startModels.add(ModelBuilder.make(nextModelParameters));
+      } else {
+        //TODO: Compensate for this scenario - we need to keep the level of paralelism at pre-set level
+      }
     }
-    
+
     if(!startModels.isEmpty()) {
-      parallelModelBuilder.run(startModels.toArray(new ModelBuilder[startModels.size()]));
+      parallelModelBuilder.run(startModels);
       parallelModelBuilder.join();
     }
     grid.update(_job);

@@ -17,9 +17,7 @@ import water.fvec.Frame;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.BiConsumer;
@@ -58,7 +56,7 @@ public class GridTest extends TestUtil {
         try {
           models.add(result.getModel().get());
           if (models.size() < 3) {
-            parallelModelBuilder.run(new ModelBuilder[]{ModelBuilder.make(parms.clone())});
+            parallelModelBuilder.run(ModelBuilder.make(parms.clone()));
           } else {
             parallelModelBuilder.noMoreModels();
           }
@@ -69,7 +67,7 @@ public class GridTest extends TestUtil {
       
       final ModelBuilder modelBuilder = ModelBuilder.make(parms.clone());
       final ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeder);
-      parallelModelBuilder.run(new ModelBuilder[]{modelBuilder});
+      parallelModelBuilder.run(Collections.singletonList(modelBuilder));
       parallelModelBuilder.join();
       models.forEach(Scope::track_generic);
       assertEquals(3, models.size());
@@ -124,8 +122,8 @@ public class GridTest extends TestUtil {
       final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
       Scope.track(trainingFrame);
 
-      final Integer[] ntreesArr = new Integer[]{5, 50, 7, 8, 9, 10};
-      final Integer[] maxDepthArr = new Integer[]{2, 3, 4};
+      final Integer[] ntreesArr = new Integer[]{5, 50, 7, 8, 9, 10, 500};
+      final Integer[] maxDepthArr = new Integer[]{2, 3, 4, 50};
       HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
         put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
         put("_ntrees", ntreesArr);
@@ -140,7 +138,7 @@ public class GridTest extends TestUtil {
       Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
               hyperParms,
               new GridSearch.SimpleParametersBuilderFactory(),
-              new HyperSpaceSearchCriteria.CartesianSearchCriteria(), GridSearch.ADAPTIVE_PARALLEL_MODE);
+              new HyperSpaceSearchCriteria.CartesianSearchCriteria(), 2);
       Scope.track_generic(gridSearch);
       gridSearch.stop();
       final Grid grid = gridSearch.get();
