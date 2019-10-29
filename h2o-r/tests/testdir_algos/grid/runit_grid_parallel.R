@@ -11,7 +11,7 @@ test.grid.resume <- function() {
   size_of_hyper_space = length(ntrees_opts) * length(learn_rate_opts)
   
   hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
-  baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex, hyper_params = hyper_parameters, export_checkpoints_dir = tempdir(), mode = "PARALLEL")
+  baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex, hyper_params = hyper_parameters, export_checkpoints_dir = tempdir(), parallelism = 0)
   grid_id <- baseline_grid@grid_id
   expect_equal(length(baseline_grid@model_ids), length(ntrees_opts) * length(learn_rate_opts))
 

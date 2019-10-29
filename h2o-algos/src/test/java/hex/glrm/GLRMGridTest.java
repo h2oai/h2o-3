@@ -65,7 +65,7 @@ public class GLRMGridTest extends TestUtil {
       Key<Model>[][] modelKeys = new Key[ITER_CNT][];
       Key<Grid> gridKey = Key.make("GLRM_grid_iris" + Key.rand());
       for (int i = 0; i < ITER_CNT; i++) {
-        Job<Grid> gs = GridSearch.startGridSearch(gridKey, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
+        Job<Grid> gs = GridSearch.startGridSearch(gridKey, params, hyperParms, GridSearch.SEQUENTIAL_MODE);
         grid = (Grid<GLRMModel.GLRMParameters>) gs.get();
         modelKeys[i] = grid.getModelKeys();
         final Grid.SearchFailure failures = grid.getFailures();
@@ -128,7 +128,7 @@ public class GLRMGridTest extends TestUtil {
       Key<Grid> gridKey = Key.make("GLRM_grid_iris" + Key.rand());
 
       // 1st iteration
-      final Job<Grid> gs1 = GridSearch.startGridSearch(gridKey, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
+      final Job<Grid> gs1 = GridSearch.startGridSearch(gridKey, params, hyperParms, GridSearch.SEQUENTIAL_MODE);
       grid = (Grid<GLRMModel.GLRMParameters>) gs1.get();
       // Make sure number of produced models match size of specified hyper space
       Grid.SearchFailure failures = grid.getFailures();
@@ -146,7 +146,7 @@ public class GLRMGridTest extends TestUtil {
       Arrays.sort(hyperParamNames2);
       final int hyperSpaceSize2 = ArrayUtils.crossProductSize(hyperParms);
       Assert.assertArrayEquals("Names of hyperspaces should be same!", hyperParamNames1, hyperParamNames2);
-      final Job<Grid> gs2 = GridSearch.startGridSearch(gridKey, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
+      final Job<Grid> gs2 = GridSearch.startGridSearch(gridKey, params, hyperParms, GridSearch.SEQUENTIAL_MODE);
       grid = (Grid<GLRMModel.GLRMParameters>) gs2.get();
       // Make sure number of produced models match size of specified hyper space
       failures = grid.getFailures();

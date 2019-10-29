@@ -17,7 +17,7 @@ def grid_parallel():
     hyper_parameters["ntrees"] = ntrees_opts
     print("GBM grid with the following hyper_parameters:", hyper_parameters)
 
-    gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters, mode = "PARALLEL")
+    gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters, parallelism = 1)
     gs.train(x=list(range(4)), y=4, training_frame=train)
     assert gs is not None
     assert len(gs.model_ids) == len(ntrees_opts)

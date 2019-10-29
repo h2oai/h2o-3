@@ -49,9 +49,9 @@ public class GridSearchSchema<G extends Grid<MP>,
   @API(help="Hyperparameter search criteria, including strategy and early stopping directives.  If it is not given, exhaustive Cartesian is used.", required = false, direction = API.Direction.INOUT)
   public HyperSpaceSearchCriteriaV99 search_criteria;
 
-  @API(help = "Grid search execution mode. Sequential by default. Parallel for multiple models built at the same time.",
-          values = {"SEQUENTIAL", "PARALLEL"})
-  public GridSearch.Mode mode;
+  @API(help = "Level of parallelism during grid model building. 1 = sequential building (default). 0 for adaptive parallelism." +
+          "Any number > 1 sets the exact number of models built in parallel.")
+  public int parallelism_level;
   //
   // Outputs
   //
@@ -125,12 +125,23 @@ public class GridSearchSchema<G extends Grid<MP>,
       grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id")));
       parms.remove("grid_id");
     }
-    
-    if(parms.containsKey("mode")){
-      this.mode = GridSearch.Mode.valueOf(parms.getProperty("mode").trim().toUpperCase());
-      parms.remove("mode");
+
+    if (parms.containsKey("parallelism_level")) {
+      final String parallelismLevelProperty = parms.getProperty("parallelism_level");
+      try {
+        this.parallelism_level = Integer.parseInt(parallelismLevelProperty);
+        if (this.parallelism_level < 0) {
+          throw new IllegalArgumentException(String.format("Parallelism level must be >= 0. Given value: '%d'",
+                  parallelism_level));
+        }
+      } catch (NumberFormatException e) {
+        final String errorMessage = String.format("Could not parse given parallelism_level value: '%s' - not a number.",
+                parallelismLevelProperty);
+        throw new IllegalArgumentException(errorMessage, e);
+      }
+      parms.remove("parallelism_level");
     } else {
-      this.mode = GridSearch.Mode.SEQUENTIAL;
+      this.parallelism_level = 0; // Operate in sequential mode by default
     }
 
     // Do not check validity of parameters, GridSearch is tolerant of bad

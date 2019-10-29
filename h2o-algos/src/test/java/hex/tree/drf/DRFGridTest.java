@@ -61,7 +61,7 @@ public class DRFGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "cylinders";
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.SEQUENTIAL_MODE);
       grid = (Grid<DRFModel.DRFParameters>) gs.get();
       final Grid.SearchFailure failures = grid.getFailures();
       // Make sure number of produced models match size of specified hyper space
@@ -142,7 +142,7 @@ public class DRFGridTest extends TestUtil {
       params._response_column = "economy";
 
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.SEQUENTIAL_MODE);
       grid = gs.get();
 
       // Check that duplicate model have not been constructed
@@ -235,7 +235,7 @@ public class DRFGridTest extends TestUtil {
       params._train = fr._key;
       params._response_column = "economy (mpg)";
       // Get the Grid for this modeling class and frame
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.Mode.SEQUENTIAL);
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.SEQUENTIAL_MODE);
       grid = gs.get();
 
       System.out.println("Test seed: " + seed);
