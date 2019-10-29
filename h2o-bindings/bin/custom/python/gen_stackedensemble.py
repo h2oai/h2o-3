@@ -52,6 +52,7 @@ def class_extensions():
 
     def levelone_frame_id(self):
         """Fetch the levelone_frame_id for an H2OStackedEnsembleEstimator.
+
         :examples:
         
         >>> from h2o.estimators.random_forest import H2ORandomForestEstimator
@@ -549,7 +550,7 @@ examples = dict(
 >>> x.remove(y)
 >>> train[y] = train[y].asfactor()
 >>> blend[y] = blend[y].asfactor()
->>> nfolds = 3
+>>> nfolds = 3 
 >>> my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
 ...                                       ntrees=1,
 ...                                       nfolds=nfolds,
