@@ -283,7 +283,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         ...                  y=response,
         ...                  training_frame=titanic)
         >>> transformed = titanic_te.transform(frame=titanic,
-        ...                                    data_leakage_handling="leave_one_out"
+        ...                                    data_leakage_handling="leave_one_out",
         ...                                    seed=1234)
         """
         output = h2o.api("GET /3/TargetEncoderTransform", data={'model': self.model_id, 'frame': frame.key,
