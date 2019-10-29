@@ -65,6 +65,7 @@ class H2OAutoML(Keyed):
                  exclude_algos=None,
                  include_algos=None,
                  modeling_plan=None,
+                 algo_parameters=None,
                  keep_cross_validation_predictions=False,
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
@@ -110,6 +111,11 @@ class H2OAutoML(Keyed):
         :param include_algos: List of character strings naming the algorithms to restrict to during the model-building phase.
           This can't be used in combination with `exclude_algos` param.
           Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+        :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).
+          Defaults to None (Expert usage only).
+        :param algo_parameters: Dict of ``param_name=param_value`` to be passed to internal models. Defaults to none (Expert usage only).
+          By default, params are set only to algorithms accepting them, and ignored by others.
+          Only following parameters are currently allowed: ``"monotone_constraints"``.
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions.
           This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build 
           additional Stacked Ensemble models in AutoML. This option defaults to ``False``.
@@ -267,6 +273,17 @@ class H2OAutoML(Keyed):
                             plan.append(dict(name=name, steps=[dict(id=i) for i in ids]))
             self.build_models['modeling_plan'] = plan
 
+        if algo_parameters is not None:
+            assert_is_type(algo_parameters, dict)
+            algo_parameters_json = []
+            for k, v in algo_parameters.items():
+                scope, __, name = k.partition('__')
+                if len(name) == 0:
+                    name, scope = scope, 'any'
+                value = [dict(key=k, value=v) for k, v in v.items()] if isinstance(v, dict) else v   # we can't use stringify_dict here as this will be converted into a JSON string
+                algo_parameters_json.append(dict(scope=scope, name=name, value=value))
+
+            self.build_models['algo_parameters'] = algo_parameters_json
 
         assert_is_type(keep_cross_validation_predictions, bool)
         self.build_control["keep_cross_validation_predictions"] = keep_cross_validation_predictions
