@@ -43,6 +43,27 @@ class H2OAggregatorEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> df = h2o.create_frame(rows=10000,
+        ...                       cols=10,
+        ...                       categorical_fraction=0.6,
+        ...                       integer_fraction=0,
+        ...                       binary_fraction=0,
+        ...                       real_range=100,
+        ...                       integer_range=100,
+        ...                       missing_fraction=0,
+        ...                       factors=100,
+        ...                       seed=1234)
+        >>> params = {"target_num_exemplars": 1000,
+        ...           "rel_tol_num_exemplars": 0.5,
+        ...           "categorical_encoding": "eigen",
+        ...           "num_iteration_without_new_exemplar": 400}
+        >>> agg = H2OAggregatorEstimator(**params)
+        >>> agg.train(training_frame=df)
+        >>> new_df = agg.aggregated_frame
+        >>> new_df
         """
         return self._parms.get("training_frame")
 
@@ -87,6 +108,19 @@ class H2OAggregatorEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> params = {"ignore_const_cols": False,
+        ...           "target_num_exemplars": 500,
+        ...           "rel_tol_num_exemplars": 0.3,
+        ...           "transform": "standardize",
+        ...           "categorical_encoding": "eigen"}
+        >>> model = H2OAggregatorEstimator(**params)
+        >>> model.train(training_frame=df)
+        >>> new_df = model.aggregated_frame
+        >>> new_df
         """
         return self._parms.get("ignore_const_cols")
 
@@ -102,6 +136,27 @@ class H2OAggregatorEstimator(H2OEstimator):
         Targeted number of exemplars
 
         Type: ``int``  (default: ``5000``).
+
+        :examples:
+
+        >>> df = h2o.create_frame(rows=10000,
+        ...                       cols=10,
+        ...                       categorical_fraction=0.6,
+        ...                       integer_fraction=0,
+        ...                       binary_fraction=0,
+        ...                       real_range=100,
+        ...                       integer_range=100,
+        ...                       missing_fraction=0,
+        ...                       factors=100,
+        ...                       seed=1234)
+        >>> params = {"target_num_exemplars": 1000,
+        ...           "rel_tol_num_exemplars": 0.5,
+        ...           "categorical_encoding": "eigen",
+        ...           "num_iteration_without_new_exemplar": 400}
+        >>> agg = H2OAggregatorEstimator(**params)
+        >>> agg.train(training_frame=df)
+        >>> new_df = agg.aggregated_frame
+        >>> new_df
         """
         return self._parms.get("target_num_exemplars")
 
@@ -117,6 +172,27 @@ class H2OAggregatorEstimator(H2OEstimator):
         Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents)
 
         Type: ``float``  (default: ``0.5``).
+
+        :examples:
+
+        >>> df = h2o.create_frame(rows=10000,
+        ...                       cols=10,
+        ...                       categorical_fraction=0.6,
+        ...                       integer_fraction=0,
+        ...                       binary_fraction=0,
+        ...                       real_range=100,
+        ...                       integer_range=100,
+        ...                       missing_fraction=0,
+        ...                       factors=100,
+        ...                       seed=1234)
+        >>> params = {"target_num_exemplars": 1000,
+        ...           "rel_tol_num_exemplars": 0.5,
+        ...           "categorical_encoding": "eigen",
+        ...           "num_iteration_without_new_exemplar": 400}
+        >>> agg = H2OAggregatorEstimator(**params)
+        >>> agg.train(training_frame=df)
+        >>> new_df = agg.aggregated_frame
+        >>> new_df
         """
         return self._parms.get("rel_tol_num_exemplars")
 
@@ -132,6 +208,18 @@ class H2OAggregatorEstimator(H2OEstimator):
         Transformation of training data
 
         One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"normalize"``).
+
+        :examples:
+
+        >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> params = {"ignore_const_cols": False,
+        ...           "target_num_exemplars": 500,
+        ...           "rel_tol_num_exemplars": 0.3,
+        ...           "transform": "standardize",
+        ...           "categorical_encoding": "eigen"}
+        >>> model = H2OAggregatorEstimator(**params)
+        >>> model.train(training_frame=df)
+        >>> new_df = model.aggregated_frame
         """
         return self._parms.get("transform")
 
@@ -148,6 +236,26 @@ class H2OAggregatorEstimator(H2OEstimator):
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
         ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> df = h2o.create_frame(rows=10000,
+        ...                       cols=10,
+        ...                       categorical_fraction=0.6,
+        ...                       integer_fraction=0,
+        ...                       binary_fraction=0,
+        ...                       real_range=100,
+        ...                       integer_range=100,
+        ...                       missing_fraction=0,
+        ...                       factors=100,
+        ...                       seed=1234)
+        >>> params = {"target_num_exemplars": 1000,
+        ...           "rel_tol_num_exemplars": 0.5,
+        ...           "categorical_encoding": "eigen"}
+        >>> agg = H2OAggregatorEstimator(**params)
+        >>> agg.train(training_frame=df)
+        >>> new_df = agg.aggregated_frame
+        >>> new_df
         """
         return self._parms.get("categorical_encoding")
 
@@ -163,6 +271,27 @@ class H2OAggregatorEstimator(H2OEstimator):
         Whether to export the mapping of the aggregated frame
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> df = h2o.create_frame(rows=10000,
+        ...                       cols=10,
+        ...                       categorical_fraction=0.6,
+        ...                       integer_fraction=0,
+        ...                       binary_fraction=0,
+        ...                       real_range=100,
+        ...                       integer_range=100,
+        ...                       missing_fraction=0,
+        ...                       factors=100,
+        ...                       seed=1234)
+        >>> params = {"target_num_exemplars": 1000,
+        ...           "rel_tol_num_exemplars": 0.5,
+        ...           "categorical_encoding": "eigen",
+        ...           "save_mapping_frame": True}
+        >>> agg = H2OAggregatorEstimator(**params)
+        >>> agg.train(training_frame=df)
+        >>> new_df = agg.aggregated_frame
+        >>> new_df
         """
         return self._parms.get("save_mapping_frame")
 
@@ -178,6 +307,27 @@ class H2OAggregatorEstimator(H2OEstimator):
         The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
 
         Type: ``int``  (default: ``500``).
+
+        :examples:
+
+        >>> df = h2o.create_frame(rows=10000,
+        ...                       cols=10,
+        ...                       categorical_fraction=0.6,
+        ...                       integer_fraction=0,
+        ...                       binary_fraction=0,
+        ...                       real_range=100,
+        ...                       integer_range=100,
+        ...                       missing_fraction=0,
+        ...                       factors=100,
+        ...                       seed=1234)
+        >>> params = {"target_num_exemplars": 1000,
+        ...           "rel_tol_num_exemplars": 0.5,
+        ...           "categorical_encoding": "eigen",
+        ...           "num_iteration_without_new_exemplar": 400}
+        >>> agg = H2OAggregatorEstimator(**params)
+        >>> agg.train(training_frame=df)
+        >>> new_df = agg.aggregated_frame
+        >>> new_df
         """
         return self._parms.get("num_iteration_without_new_exemplar")
 
@@ -193,6 +343,20 @@ class H2OAggregatorEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> import tempfile
+        >>> from os import listdir
+        >>> df = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> model = H2OAggregatorEstimator(target_num_exemplars=500, 
+        ...                                rel_tol_num_exemplars=0.3,
+        ...                                export_checkpoints_dir=checkpoints_dir)
+        >>> model.train(training_frame=df)
+        >>> new_df = model.aggregated_frame
+        >>> new_df
+        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 

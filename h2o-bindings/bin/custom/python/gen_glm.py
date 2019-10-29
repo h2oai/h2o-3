@@ -552,6 +552,8 @@ examples = dict(
 >>> airlines_glm.mse()
 """,
     export_checkpoints_dir="""
+>>> import tempfile
+>>> from os import listdir
 >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 >>> predictors = ["displacement","power","weight","year"]
 >>> response = "acceleration"
@@ -564,6 +566,7 @@ examples = dict(
 ...                training_frame = train,
 ...                validation_frame = valid)
 >>> cars_glm.mse()
+>>> len(listdir(checkpoints_dir))
 """,
     gradient_epsilon="""
 >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
