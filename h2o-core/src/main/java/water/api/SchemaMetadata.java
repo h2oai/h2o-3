@@ -423,6 +423,9 @@ public final class SchemaMetadata extends Iced {
     StringBuffer sb = new StringBuffer(type.getCanonicalName());
     sb.delete(0, sb.indexOf(".")+1);
     sb.setCharAt(0, Character.toUpperCase(sb.charAt(0)));
-    return sb.toString().replace(".", "").replace("$", "");
+    return sb.toString()
+            .replaceAll("V\\d+\\.", "") // remove the version number in the middle (for internal classes)
+            .replace(".", "")
+            .replace("$", "");
   }
 }

@@ -11,7 +11,6 @@ import water.exceptions.H2ONotFoundArgumentException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -616,7 +615,7 @@ public class PojoUtils {
    * only those fields which are in the supplied JSON string.  NOTE: Doesn't handle array fields yet.
    */
   public static <T> T fillFromJson(T o, String json) {
-    Map<String, Object> setFields = (new com.google.gson.Gson()).fromJson(json, HashMap.class);
+    Map<String, Object> setFields = JSONUtils.parse(json);
     return fillFromMap(o, setFields);
   }
 
@@ -634,7 +633,9 @@ public class PojoUtils {
         throw new IllegalArgumentException("Field not found: '" + key + "' on object " + o);
       }
       Object value = setFields.get(key);
-      if (value instanceof Map) {
+      if (JSONValue.class == f.getType()) {
+        setField(o, key, JSONValue.fromValue(value));
+      } else if (value instanceof Map) {
         // handle nested objects
         try {
           // In some cases, the target object has children already (e.g., defaults), while in other cases it doesn't.
