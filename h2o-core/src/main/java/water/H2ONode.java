@@ -39,7 +39,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
   transient public int _tcp_readers;               // Count of started TCP reader threads
     
-  transient private short _timestamp = H2ONodeTimestamp.UNDEFINED;
+  transient private short _timestamp;
 
   transient private boolean _removed_from_cloud;
 
@@ -47,6 +47,20 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return _heartbeat._client;
   }
 
+  final void setTimestamp(short newTimestamp) {
+    if (!H2ONodeTimestamp.isDefined(_timestamp) && H2ONodeTimestamp.isDefined(newTimestamp)) {
+      // Note: time stamp is only known when the H2ONode actually opens a connection to this node
+      // if H2ONode is discovered another way the timestamp is Undefined
+      boolean isClient = H2ONodeTimestamp.decodeIsClient(newTimestamp);
+      if (isClient) {
+        Log.info("Client " + this + " started communicating with this H2O node.");
+      } else {
+        Log.debug("H2O Node " + this + " started communicating with this H2O node.");
+      }
+    }
+    _timestamp = newTimestamp;
+  }
+  
   public final short getTimestamp() {
     return _timestamp;
   }
@@ -219,7 +233,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     }
     //Transition the timestamp to defined state for this client
     if (!H2ONodeTimestamp.isDefined(newTimestamp)) {
-      _timestamp = newTimestamp;
+      setTimestamp(newTimestamp);
     }
     _removed_from_cloud = false;
     _last_heard_from = System.currentTimeMillis();
@@ -243,7 +257,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       }
       // Transition the timestamp to defined state for both workers & client
       if (!H2ONodeTimestamp.isDefined(h2o.getTimestamp())) {
-        h2o._timestamp = timestamp;
+        h2o.setTimestamp(timestamp);
       }
       return h2o;
     } else {
