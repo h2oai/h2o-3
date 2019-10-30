@@ -18,10 +18,10 @@ import java.util.function.Consumer;
  */
 public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
-  private BiConsumer<Model, ParallelModelBuilder> _onBuildSuccessCallback;
-  private BiConsumer<ModelBuildFailure, ParallelModelBuilder> _onBuildFailureCallback;
-  public IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
-  public AtomicBoolean _completed = new AtomicBoolean(false);
+  private final BiConsumer<Model, ParallelModelBuilder> _onBuildSuccessCallback;
+  private final BiConsumer<ModelBuildFailure, ParallelModelBuilder> _onBuildFailureCallback;
+  public final IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
+  public final AtomicBoolean _completed = new AtomicBoolean(false);
 
   public ParallelModelBuilder(BiConsumer<Model, ParallelModelBuilder> onBuildSuccessCallback,
                               BiConsumer<ModelBuildFailure, ParallelModelBuilder> onBuildFailureCallback) {
