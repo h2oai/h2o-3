@@ -15,7 +15,8 @@ def pubdev_6339():
 
 
     # path to file
-    file_path = pyunit_utils.locate("bigdata/server/wa_cannabis/raw/Dashboard_Usable_Sales_w_Weight_Daily.csv")
+    file_path = pyunit_utils.locate("smalldata/wa_cannabis/raw/Dashboard_Usable_Sales_w_Weight_Daily.csv")
+    #file_path = pyunit_utils.locate("bigdata/server/wa_cannabis/raw/Dashboard_Usable_Sales_w_Weight_Daily.csv")
 
     data_raw = h2o.import_file(path=file_path,parse=False)
     setup = h2o.parse_setup(data_raw)
@@ -26,8 +27,8 @@ def pubdev_6339():
 
     # get chunk size to compare if calculation is correct
     result_size = setup['chunk_size']
+    print("chunk size for file", file_path, "is: ", chunk_size, "should be: ", result_size)
     assert chunk_size == result_size, "Calculated chunk size is incorrect!"
-    print("chunk size for file", file_path, "is:", chunk_size)
         
     
 def calculate_chunk_size(file_path, num_cols, cores, cloud_size):
