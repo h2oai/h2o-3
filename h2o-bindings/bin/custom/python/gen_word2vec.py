@@ -24,8 +24,6 @@ def class_extensions():
         ...                               missing_fraction=0.0)
         >>> word_embeddings = words.cbind(embeddings)
         >>> w2v_model = H2OWord2vecEstimator.from_external(external=word_embeddings)
-        >>> model_id = w2v_model.model_id
-        >>> model = h2o.get_model(model_id)
         """
         w2v_model = H2OWord2vecEstimator(pre_trained=external)
         w2v_model.train()
@@ -60,53 +58,78 @@ elif pname == 'pre_trained':
 
 examples = dict(
     epochs="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
->>> w2v_model = H2OWord2vecEstimator()
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
+>>> w2v_model = H2OWord2vecEstimator(sent_sample_rate = 0.0, epochs = 10)
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("teacher", count = 5)
 >>> print(synonyms)
->>> w2v_model = H2OWord2vecEstimator(epochs=1)
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
->>> print(synonyms)
+>>>
+>>> w2v_model2 = H2OWord2vecEstimator(sent_sample_rate = 0.0, epochs = 1)
+>>> w2v_model2.train(training_frame=words)
+>>> synonyms2 = w2v_model2.find_synonyms("teacher", 3)
+>>> print(synonyms2)
 """,
     export_checkpoints_dir="""
 >>> import tempfile
 >>> from os import listdir
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
 >>> checkpoints_dir = tempfile.mkdtemp()
+>>> words = job_titles.tokenize(" ")
 >>> w2v_model = H2OWord2vecEstimator(epochs=1,
 ...                                  max_runtime_secs=10,
 ...                                  export_checkpoints_dir=checkpoints_dir)
->>> w2v_model.train(training_frame=train)
+>>> w2v_model.train(training_frame=words)
 >>> len(listdir(checkpoints_dir))
 """,
     init_learning_rate="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
->>> w2v_model = H2OWord2vecEstimator(epochs=1, init_learning_rate=0.05)
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
+>>> w2v_model = H2OWord2vecEstimator(epochs=3, init_learning_rate=0.05)
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("assistant", 3)
 >>> print(synonyms)
 """,
     max_runtime_secs="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
 >>> w2v_model = H2OWord2vecEstimator(epochs=1, max_runtime_secs=10)
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("tutor", 3)
 >>> print(synonyms)
 """,
     min_word_freq="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
->>> w2v_model = H2OWord2vecEstimator(epochs=1, max_runtime_secs=10)
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
+>>> w2v_model = H2OWord2vecEstimator(epochs=1, min_word_freq=4)
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("teacher", 3)
 >>> print(synonyms)
 """,
     norm_model="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
 >>> w2v_model = H2OWord2vecEstimator(epochs=1, norm_model="hsm")
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("teacher", 3)
 >>> print(synonyms)
 """,
     pre_trained="""
@@ -123,38 +146,58 @@ examples = dict(
 >>> model = h2o.get_model(model_id)
 """,
     sent_sample_rate="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
 >>> w2v_model = H2OWord2vecEstimator(epochs=1, sent_sample_rate=0.01)
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("teacher", 3)
 >>> print(synonyms)
 """,
     training_frame="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
 >>> w2v_model = H2OWord2vecEstimator()
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("tutor", 3)
 >>> print(synonyms)
 """,
     vec_size="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
->>> w2v_model = H2OWord2vecEstimator(epochs=1, vec_size=50)
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
+>>> w2v_model = H2OWord2vecEstimator(epochs=3, vec_size=50)
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("tutor", 3)
 >>> print(synonyms)
 """,
     window_size="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
->>> w2v_model = H2OWord2vecEstimator(epochs=1, window_size=2)
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
+>>> w2v_model = H2OWord2vecEstimator(epochs=3, window_size=2)
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("teacher", 3)
 >>> print(synonyms)
 """,
     word_model="""
->>> train = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/text8.gz"), header=1, col_types=["string"])
->>> w2v_model = H2OWord2vecEstimator(epochs=1, word_model="skip_gram")
->>> w2v_model.train(training_frame=train)
->>> synonyms = w2v_model.find_synonyms("war", 3)
+>>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+...                               col_names = ["category", "jobtitle"], 
+...                               col_types = ["string", "string"], 
+...                               header = 1)
+>>> words = job_titles.tokenize(" ")
+>>> w2v_model = H2OWord2vecEstimator(epochs=3, word_model="skip_gram")
+>>> w2v_model.train(training_frame=words)
+>>> synonyms = w2v_model.find_synonyms("assistant", 3)
 >>> print(synonyms)
 """
 )
