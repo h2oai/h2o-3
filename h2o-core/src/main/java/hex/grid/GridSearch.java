@@ -186,17 +186,17 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     private void onModelSuccessfullyBuilt(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
       try {
-      parallelSearchGridLock.lock();
-        grid.putModel(finishedModel._parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
         constructScoringInfo(finishedModel);
+        parallelSearchGridLock.lock();
+        grid.putModel(finishedModel._parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
         _job.update(1);
         attemptGridSave(grid);
-        
+
         grid.update(_job);
       } finally {
         parallelSearchGridLock.unlock();
       }
-        attemptBuildNextModel(parallelModelBuilder, finishedModel);
+      attemptBuildNextModel(parallelModelBuilder, finishedModel);
     }
 
     private void onModelBuildFailed(ParallelModelBuilder.ModelBuildFailure modelBuildFailure, ParallelModelBuilder parallelModelBuilder) {
