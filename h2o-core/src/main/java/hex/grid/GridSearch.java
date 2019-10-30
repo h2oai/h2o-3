@@ -288,10 +288,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
     grid.update(_job);
 
-    final String export_checkpoints_dir = _hyperSpaceWalker.getParams()._export_checkpoints_dir;
-    if (export_checkpoints_dir != null) {
-      attemptGridSave(grid);
-    }
+    attemptGridSave(grid);
     grid.unlock(_job);
   }
 
@@ -381,10 +378,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           _job.update(1);
           // Always update grid in DKV after model building attempt
           grid.update(_job);
-          final MP generalParams = _hyperSpaceWalker.getParams();
-          if (generalParams._export_checkpoints_dir != null) {
-            attemptGridSave(grid);
-          }
+          attemptGridSave(grid);
         } // finally
 
         if (model != null && grid.getScoringInfos() != null && // did model build and scoringInfo creation succeed?
