@@ -200,9 +200,13 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     private void onModelBuildFailed(ParallelModelBuilder.ModelBuildFailure modelBuildFailure, ParallelModelBuilder parallelModelBuilder) {
-      parallelSearchGridLock.unlock();
-      grid.appendFailedModelParameters(null, modelBuildFailure.getParameters(), modelBuildFailure.getThrowable());
-      attemptBuildNextModel(parallelModelBuilder, null);
+      parallelSearchGridLock.lock();
+      try {
+        grid.appendFailedModelParameters(null, modelBuildFailure.getParameters(), modelBuildFailure.getThrowable());
+        attemptBuildNextModel(parallelModelBuilder, null);
+      }finally {
+        parallelSearchGridLock.unlock();
+      }
     }
 
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {

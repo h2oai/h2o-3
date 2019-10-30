@@ -58,6 +58,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
   private void onModelSuccessfullBuild(final Model m) {
     _modelInProgressCounter.decrementAndGet();
     _onBuildSuccessCallback.accept(m, this);
+    attemptComplete();
   }
 
   /**
@@ -71,6 +72,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
     final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(throwable, parameters);
     _onBuildFailureCallback.accept(modelBuildFailure, this);
+    attemptComplete();
   }
 
   /**
@@ -101,22 +103,12 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
    * will be notified.
    */
   public void noMoreModels() {
-    // Prevent completing te parallel model builder twice
-    final boolean previouslyCompleted = _completed.getAndSet(true);
-    if(previouslyCompleted) return;
-
-    // Do not block the caller
-    new Thread(() -> {
-      do {
-        try {
-          Thread.sleep(100);
-        } catch (InterruptedException e) {
-          Log.err(e);
-        }
-      } while (_modelInProgressCounter.get() > 0);
-      complete(this);
-    }
-    ).start();
+    _completed.set(true);
+  }
+  
+  private void attemptComplete(){
+    if(_modelInProgressCounter.get() != 0) return;
+    complete(this);
   }
 
 

@@ -142,7 +142,11 @@ public class GridTest extends TestUtil {
       gridSearch.stop();
       final Grid grid = gridSearch.get();
       Scope.track_generic(grid);
-
+      
+      for(Model m : grid.getModels()){
+        Scope.track_generic(m);
+      }
+    
       assertNotEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
 
     } finally {
