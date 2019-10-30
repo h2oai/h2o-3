@@ -246,9 +246,15 @@ public class FailedNodeWatchdogExtension extends AbstractH2OExtension {
                             Log.warn("Asking the rest of the nodes in the cloud whether watchdog client is really gone.");
                             List<H2ONode> nodesWithClient = tsk.doAllNodes().getNodesWithConnectedClient();
                             if(nodesWithClient.isEmpty()) {
-                                Log.fatal("Stopping H2O cloud since the watchdog client is disconnected from all nodes in the cluster!");
-                                // we should fail with negative status as this is not planned shutdown
-                                H2O.shutdown(-1);
+                                // we let the leader do the work to have a single point of shutdown initialization
+                                // Note: we know leader is working properly because it responded to MRTask
+                                if (H2O.SELF == H2O.CLOUD.leader()) {
+                                    Log.fatal("Stopping H2O cloud since the watchdog client is disconnected from all nodes in the cluster!");
+                                    // we should fail with negative status as this is not planned shutdown
+                                    H2O.shutdown(-1);
+                                } else {
+                                    Log.warn("Watchdog client is disconnected - leader node " + H2O.CLOUD.leader() + " will shutdown the cluster.");
+                                }
                             } else {
                                 Log.warn("This H2O node doesn't see client " + client + " but others do: " + nodesWithClient);
                             }
