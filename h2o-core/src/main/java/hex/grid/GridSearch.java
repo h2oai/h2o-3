@@ -203,10 +203,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       parallelSearchGridLock.lock();
       try {
         grid.appendFailedModelParameters(null, modelBuildFailure.getParameters(), modelBuildFailure.getThrowable());
-        attemptBuildNextModel(parallelModelBuilder, null);
       }finally {
         parallelSearchGridLock.unlock();
       }
+      attemptBuildNextModel(parallelModelBuilder, null);
     }
 
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
