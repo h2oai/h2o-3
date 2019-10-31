@@ -68,7 +68,7 @@
 #'        Defaults to FALSE.
 #' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults to sqrt{p} for
 #'        classification and p/3 for regression (where p is the # of predictors Defaults to -1.
-#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.6320000291.
+#' @param sample_rate Row sample rate per tree (from 0.0 to 1.0) Defaults to 0.632.
 #' @param sample_rate_per_class A list of row sample rates per class (relative fraction for each class, from 0.0 to 1.0), for each tree
 #' @param binomial_double_trees \code{Logical}. For binary classification: Build 2x as many trees (one per class) - can lead to higher
 #'        accuracy. Defaults to FALSE.
@@ -127,7 +127,7 @@ h2o.randomForest <- function(x,
                              seed = -1,
                              build_tree_one_node = FALSE,
                              mtries = -1,
-                             sample_rate = 0.6320000291,
+                             sample_rate = 0.632,
                              sample_rate_per_class = NULL,
                              binomial_double_trees = FALSE,
                              checkpoint = NULL,

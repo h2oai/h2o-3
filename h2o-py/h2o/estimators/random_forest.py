@@ -1096,7 +1096,7 @@ class H2ORandomForestEstimator(H2OEstimator):
         """
         Row sample rate per tree (from 0.0 to 1.0)
 
-        Type: ``float``  (default: ``0.6320000291``).
+        Type: ``float``  (default: ``0.632``).
 
         :examples:
 
