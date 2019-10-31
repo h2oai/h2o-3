@@ -3474,7 +3474,7 @@ class H2OFrame(Keyed):
         tokenize() is similar to strsplit(), the difference between them is that tokenize() will store the tokenized
         text into a single column making it easier for additional processing (filtering stop words, word2vec algo, ...).
 
-        :param str split: The regular expression to split on.
+        :param tokenize split: The regular expression to tokenize on.
         
         :returns: An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
 
@@ -3492,6 +3492,7 @@ class H2OFrame(Keyed):
         >>> df4 = h2o.H2OFrame.from_python({'String':
         ...                                ['this is tall, this is taller']})
         >>> df4 = df4.ascharacter()
+        >>> combined = df1.rbind([df2, df3, df4])
         >>> combined
         >>> tokenized = combined.tokenize(" ")
         >>> tokenized.describe
