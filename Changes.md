@@ -2,6 +2,40 @@
 
 ## H2O
 
+### Yau (3.26.0.9) - 10/29/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/9/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/9/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6829'>PUBDEV-6829</a>] - Fixed an issue that caused sort on a multinode cluster (for example, 2 nodes) to be much slower than a single node cluster. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6934'>PUBDEV-6934</a>] - Fixed an issue that caused class conflicts between the released jars for h2o-genmodel-ext-xgboost and other Java packages. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6954'>PUBDEV-6954</a>] - Export checkpoint no longer fails to export all models created during a grid search.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7010'>PUBDEV-7010</a>] - In the Python client, H2OFrame.drop no longer modifies parameters.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7011'>PUBDEV-7011</a>] - Fixed an issue in the Python Client that caused model.actual_params to sometimes return a <property> object instead of a dict.
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6977'>PUBDEV-6977</a>] - Fixed an issue that caused XGBoost to exhaust all memory on a node (-xmx+(1.2*-xmx)) on wide datasets.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6847'>PUBDEV-6847</a>] - Created a Technical Note (TN) describing how to use MOJO Import when importing models from a different H2O version. This TN is available here: <a href="https://0xdata.atlassian.net/browse/TN-14">https://0xdata.atlassian.net/browse/TN-14</a>. 
+</li>
+</ul>
+
+
 ### Yau (3.26.0.8) - 10/17/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/8/index.html</a>
