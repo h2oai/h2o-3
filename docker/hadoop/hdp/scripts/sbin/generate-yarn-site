@@ -51,6 +51,12 @@ cat > ${HADOOP_CONF_DIR}/yarn-site.xml <<EOF
      </value>
   </property>
 
+  <property>
+     <description>Enable or disable the disk health checker service</description>
+     <name>yarn.nodemanager.disk-health-checker.enable</name>
+     <value>false</value>
+  </property>
+
 </configuration>
 EOF
 
