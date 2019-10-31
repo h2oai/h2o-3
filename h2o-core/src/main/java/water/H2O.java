@@ -338,6 +338,9 @@ final public class H2O {
     /** -disable_web; disable Jetty and REST API interface */
     public boolean disable_web = false;
 
+    /** -disable_flow; disable access to H2O Flow, keep REST API interface available to clients */
+    public boolean disable_flow = false;
+    
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
 
@@ -542,6 +545,9 @@ final public class H2O {
       }
       else if (s.matches("disable_web")) {
         trgt.disable_web = true;
+      }
+      else if (s.matches("disable_flow")) {
+        trgt.disable_flow = true;
       }
       else if (s.matches("context_path")) {
         i = s.incrementAndCheck(i, args);
