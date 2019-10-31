@@ -189,10 +189,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         constructScoringInfo(finishedModel);
         parallelSearchGridLock.lock();
         grid.putModel(finishedModel._parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
+        
         _job.update(1);
-        attemptGridSave(grid);
-
         grid.update(_job);
+        
+        attemptGridSave(grid);
       } finally {
         parallelSearchGridLock.unlock();
       }

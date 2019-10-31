@@ -329,6 +329,45 @@ public class GridTest extends TestUtil {
     }
   }
 
+  @Test
+  public void gridSearchExportCheckpointsDirParallel() throws IOException {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_ntrees", new Integer[]{5, 10, 50});
+        put("_max_depth", new Integer[]{2,3});
+        put("_learn_rate", new Double[]{.7});
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+      params._export_checkpoints_dir = temporaryFolder.newFolder().getAbsolutePath();
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, GridSearch.ADAPTIVE_PARALLEL_MODE);
+      Scope.track_generic(gs);
+      final Grid originalGrid = gs.get();
+      Scope.track_generic(originalGrid);
+
+      final File serializedGridFile = new File(params._export_checkpoints_dir, originalGrid._key.toString());
+      assertTrue(serializedGridFile.exists());
+      assertTrue(serializedGridFile.isFile());
+
+      final Grid grid = loadGridFromFile(serializedGridFile);
+      assertArrayEquals(originalGrid.getModelKeys(), grid.getModelKeys());
+      Scope.track_generic(grid);
+      
+      
+    } finally {
+      Scope.exit();
+    }
+  }
+
   private static Grid loadGridFromFile(final File file) throws IOException {
     try (final FileInputStream fileInputStream = new FileInputStream(file)) {
       final AutoBuffer autoBuffer = new AutoBuffer(fileInputStream);
