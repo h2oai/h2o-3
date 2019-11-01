@@ -106,7 +106,7 @@ public class GridSearchHandler<G extends Grid<MP>,
         sortedMap,
         new DefaultModelParametersBuilderFactory<MP, P>(),
         (HyperSpaceSearchCriteria) gss.search_criteria.createAndFillImpl(), 
-        gss.parallelism_level
+        gss.parallelism
     );
 
     // Fill schema with job parameters

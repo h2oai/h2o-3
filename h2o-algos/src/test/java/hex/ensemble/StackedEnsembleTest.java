@@ -366,7 +366,7 @@ public class StackedEnsembleTest extends TestUtil {
         Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
           put("_ntrees", new Integer[]{3, 5});
           put("_learn_rate", new Double[]{0.1, 0.2});
-        }}, GridSearch.SEQUENTIAL_MODE);
+        }});
         grid = gridSearch.get();
         Model[] models = grid.getModels();
         Assert.assertEquals(4, models.length);
@@ -463,7 +463,7 @@ public class StackedEnsembleTest extends TestUtil {
         Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
           put("_ntrees", new Integer[]{3, 5});
           put("_learn_rate", new Double[]{0.1, 0.2});
-        }}, GridSearch.SEQUENTIAL_MODE);
+        }});
         Grid grid = gridSearch.get(); deletables.add(grid);
         Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
         Assert.assertEquals(4, gridModels.length);
@@ -520,7 +520,7 @@ public class StackedEnsembleTest extends TestUtil {
         Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
           put("_ntrees", new Integer[]{3, 5});
           put("_learn_rate", new Double[]{0.1, 0.2});
-        }}, GridSearch.SEQUENTIAL_MODE);
+        }});
         Grid grid = gridSearch.get(); deletables.add(grid);
         Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
         Assert.assertEquals(4, gridModels.length);
@@ -598,7 +598,7 @@ public class StackedEnsembleTest extends TestUtil {
             Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
                 put("_ntrees", new Integer[]{3, 5});
                 put("_learn_rate", new Double[]{0.1, 0.2});
-            }}, GridSearch.SEQUENTIAL_MODE);
+            }});
             Grid grid = gridSearch.get(); deletables.add(grid);
             Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
             Assert.assertEquals(4, gridModels.length);
@@ -856,7 +856,7 @@ public class StackedEnsembleTest extends TestUtil {
             Job<Grid> gridSearch = GridSearch.startGridSearch(null, params, new HashMap<String, Object[]>() {{
                 put("_ntrees", new Integer[]{3, 5});
                 put("_learn_rate", new Double[]{0.1, 0.2});
-            }}, GridSearch.SEQUENTIAL_MODE);
+            }});
             Grid grid = gridSearch.get(); deletables.add(grid);
             Model[] gridModels = grid.getModels(); deletables.addAll(Arrays.asList(gridModels));
             Assert.assertEquals(4, gridModels.length);
