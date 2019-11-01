@@ -208,7 +208,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
       // Attempt to train next model
       final MP nextModelParams = getNextModelParams(hyperspaceIterator, previousModel, grid);
-      if (nextModelParams != null && isThereEnoughTime() && !_job.stop_requested()) {
+      if (nextModelParams != null
+              && isThereEnoughTime()
+              && !_job.stop_requested()
+              && !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos())) {
         parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
       } else {
         parallelModelBuilder.noMoreModels();

@@ -175,7 +175,7 @@ public class GridTest extends TestUtil {
       params._seed = 42;
 
       Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms,
-              GridSearch.getAdaptiveParallelism());
+              5);
       Scope.track_generic(gs);
       final Grid grid = gs.get();
       Scope.track_generic(grid);
