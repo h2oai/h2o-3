@@ -691,6 +691,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * Constant for adaptive parallelism level - number of models built in parallel is decided by H2O.
    */
   public static final int ADAPTIVE_PARALLELISM_LEVEL = 0;
+  public static final int SEQUENTIAL_MODEL_BUILDING = 1;
 
   /**
    * Converts user-given number representing parallelism level and regime to a final number, representing the number of models
