@@ -2,6 +2,8 @@ package water;
 
 import water.util.Log;
 
+import java.net.InetAddress;
+
 /**
  * A simple message which informs cluster about a new client
  * which was connected.
@@ -30,12 +32,10 @@ public class UDPClientEvent extends UDP {
         // Connect event is not sent in multicast mode
         case CONNECT:
           if (H2O.isFlatfileEnabled()) {
-            Log.info("Client reported via broadcast message " + ce.clientNode + " from " + ab._h2o);
-
-            // It is important to propagate Client's HeartBeat information to the rest of the nodes
-            ce.clientNode.setHeartBeat(ce.clientHeartBeat);
-
-            H2O.addNodeToFlatfile(ce.clientNode);
+            H2ONode client = H2ONode.intern(ce.clientIp, ce.clientPort);
+            client._heartbeat = ce.clientHeartBeat;
+            Log.info("Client " + client + " reported via broadcast message from " + ab._h2o);
+            H2O.addNodeToFlatfile(client);
           }
           break;
           default:
@@ -60,9 +60,10 @@ public class UDPClientEvent extends UDP {
 
     // Type of client event
     public Type type;
-    public H2ONode clientNode;
-    public HeartBeat senderHeartBeat;
-    public HeartBeat clientHeartBeat;
+    InetAddress clientIp;
+    int clientPort;
+    HeartBeat senderHeartBeat;
+    HeartBeat clientHeartBeat;
 
     public ClientEvent() {
     }
@@ -70,7 +71,8 @@ public class UDPClientEvent extends UDP {
     public ClientEvent(Type type, HeartBeat senderHeartBeat, H2ONode clientNode) {
       this.type = type;
       this.senderHeartBeat = senderHeartBeat;
-      this.clientNode = clientNode;
+      this.clientIp = clientNode._key.getAddress();
+      this.clientPort = clientNode._key.getApiPort();
       this.clientHeartBeat = clientNode._heartbeat;
     }
 
