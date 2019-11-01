@@ -1,7 +1,7 @@
 package hex.schemas;
 
 import hex.ScoreKeeper;
-import hex.grid.hyperspace.HyperSpaceSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;

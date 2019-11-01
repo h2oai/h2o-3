@@ -1,9 +1,7 @@
 package hex.grid;
 
 import hex.*;
-import hex.grid.hyperspace.HyperSpaceSearchCriteria;
-import hex.grid.hyperspace.HyperSpaceWalker;
-import hex.grid.hyperspace.HyperSpaceWalker.BaseWalker;
+import hex.grid.HyperSpaceWalker.BaseWalker;
 import jsr166y.CountedCompleter;
 import water.*;
 import water.exceptions.H2OConcurrentModificationException;
@@ -121,9 +119,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     long gridWork=0;
     if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
       int count=0;
-      while (it.hasNext(Optional.ofNullable(model)) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
+      while (it.hasNext(model) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
         try {
-          Model.Parameters parms = it.nextModelParameters(Optional.of(model));
+          Model.Parameters parms = it.nextModelParameters(model);
           gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
         } catch(Throwable ex) {
           //swallow invalid combinations
@@ -240,8 +238,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       MP params = null;
 
       while (params == null) {
-        if (hyperSpaceWalker.hasNext(Optional.ofNullable(model))) {
-          params = hyperSpaceWalker.nextModelParameters(Optional.ofNullable(model));
+        if (hyperSpaceWalker.hasNext(model)) {
+          params = hyperSpaceWalker.nextModelParameters(model);
           final Key modelKey = grid.getModelKey(params.checksum(IGNORED_FIELDS_PARAM_HASH));
           if(modelKey != null){
             params = null;
@@ -267,7 +265,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             modelFeeder::onModelBuildFailed);
 
     List<ModelBuilder> startModels = new ArrayList<>();
-    final List<MP> mps = iterator.initialModelParameters(_parallelism);
+    final List<MP> mps = initialModelParameters(_parallelism, iterator);
 
     for (int i = 0; i < mps.size(); i++) {
       final MP nextModelParameters = mps.get(i);
@@ -289,6 +287,19 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     grid.unlock(_job);
   }
 
+
+  public List<MP> initialModelParameters(final int numParams, final HyperSpaceWalker.HyperSpaceIterator<MP> iterator) {
+    List<MP> parameters = new ArrayList<>(numParams);
+
+    for (int i = 0; i < numParams; i++) {
+      if (!iterator.hasNext(null)) {
+        break;
+      }
+      parameters.add(iterator.nextModelParameters(null));
+    }
+
+    return parameters;
+  }
   /**
    * Invokes grid search based on specified hyper space walk strategy.
    *
@@ -309,7 +320,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
       // Number of traversed model parameters
       int counter = grid.getModelCount();
-      while (it.hasNext(Optional.ofNullable(model))) {
+      while (it.hasNext(model)) {
         if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
         double max_runtime_secs = it.max_runtime_secs();
 
@@ -325,7 +336,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         MP params = null;
         try {
           // Get parameters for next model
-          params = it.nextModelParameters(Optional.ofNullable(model));
+          params = it.nextModelParameters(model);
 
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong

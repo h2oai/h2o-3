@@ -11,7 +11,7 @@ import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.hyperspace.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Iced;
 import water.Job;
 import water.Key;

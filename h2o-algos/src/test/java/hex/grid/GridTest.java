@@ -4,7 +4,6 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ParallelModelBuilder;
 import hex.genmodel.utils.DistributionFamily;
-import hex.grid.hyperspace.HyperSpaceSearchCriteria;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
 import org.junit.Rule;
@@ -176,7 +175,7 @@ public class GridTest extends TestUtil {
       params._seed = 42;
 
       Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms,
-              GridSearch.getParallelismLevel(GridSearch.ADAPTIVE_PARALLELISM_LEVEL));
+              GridSearch.getAdaptiveParallelism());
       Scope.track_generic(gs);
       final Grid grid = gs.get();
       Scope.track_generic(grid);

@@ -5,7 +5,7 @@ import hex.ScoreKeeper;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.glm.GLMModel.GLMParameters;
-import hex.grid.hyperspace.HyperSpaceSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria;
 import hex.tree.drf.DRFModel.DRFParameters;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;

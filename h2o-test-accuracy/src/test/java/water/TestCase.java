@@ -8,7 +8,7 @@ import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.hyperspace.HyperSpaceSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria;
 import hex.tree.SharedTreeModel;
 import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
