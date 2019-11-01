@@ -17,7 +17,7 @@ def class_extensions():
         :examples:
 
         >>> from h2o.estimators import H2OIsolationForestEstimator, H2OGenericEstimator
-        >>> from tempfile
+        >>> import tempfile
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
         >>> ifr = H2OIsolationForestEstimator(ntrees=1)
         >>> ifr.train(x=["Origin","Dest"], y="Distance", training_frame=airlines)
@@ -59,7 +59,7 @@ examples = dict(
 """,
     path="""
 >>> from h2o.estimators import H2OIsolationForestEstimator, H2OGenericEstimator
->>> from tempfile
+>>> import tempfile
 >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
 >>> ifr = H2OIsolationForestEstimator(ntrees=1)
 >>> ifr.train(x=["Origin","Dest"], y="Distance", training_frame=airlines)
