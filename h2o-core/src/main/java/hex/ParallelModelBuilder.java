@@ -97,17 +97,14 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
   }
 
   /**
-   * Indicate this builder there will be no more models. After this methods i called (by whoever calls it first),
-   * it waits for all other models to finish execution and then returns, completing the job represented by the very instance of
-   * {@link ParallelModelBuilder}. Any threads waiting for the instance of {@link ParallelModelBuilder} to finish (via join)
-   * will be notified.
+   * Indicate this builder there will be no more models.
    */
   public void noMoreModels() {
     _completed.set(true);
   }
   
   private void attemptComplete(){
-    if(_modelInProgressCounter.get() != 0) return;
+    if(!_completed.get() || _modelInProgressCounter.get() != 0) return;
     complete(this);
   }
 

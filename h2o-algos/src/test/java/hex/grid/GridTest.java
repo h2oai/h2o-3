@@ -184,7 +184,7 @@ public class GridTest extends TestUtil {
       assertEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
 
       final Job<Grid> job = GridSearch.startGridSearch(grid._key, params, hyperParms,
-              GridSearch.getParallelismLevel(GridSearch.ADAPTIVE_PARALLELISM_LEVEL));
+              GridSearch.determineParallelismLevel());
       final Grid secondGrid = job.get();
       assertEquals(ntreesArr.length * maxDepthArr.length, secondGrid.getModelCount());
     } finally {

@@ -144,7 +144,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         } else if (_parallelism > 1) {
           parallelGridSearch(grid);
         } else {
-          throw new IllegalArgumentException(String.format("Grid search parallelism level must be >= 0. Give value is '%d'.",
+          throw new IllegalArgumentException(String.format("Grid search parallelism level must be >= 1. Give value is '%d'.",
                   _parallelism));
         }
         tryComplete();
@@ -717,7 +717,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   /**
    * @return An integer with dynamically calculated level of parallelism based on Cluster's properties.
    */
-  private static int determineParallelismLevel() {
+  public static int determineParallelismLevel() {
     return 2 * H2O.NUMCPUS;
   }
 }

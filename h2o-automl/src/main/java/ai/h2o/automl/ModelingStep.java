@@ -345,7 +345,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     searchParms,
                     new GridSearch.SimpleParametersBuilderFactory<>(),
                     searchCriteria,
-                    GridSearch.getParallelismLevel(GridSearch.SEQUENTIAL_MODEL_BUILDING)
+                    GridSearch.SEQUENTIAL_MODEL_BUILDING
             );
         }
     }
