@@ -180,7 +180,7 @@ class H2OGridSearch(backwards_compatible()):
         # dictionaries have special handling in grid search, avoid the implicit conversion
         parms["search_criteria"] = None if self.search_criteria is None else str(self.search_criteria)
         parms["export_checkpoints_dir"] = self.export_checkpoints_dir
-        parms["parallelism_level"] = self._parallelism
+        parms["parallelism"] = self._parallelism
         parms["hyper_parameters"] = None if self.hyper_params  is None else str(self.hyper_params) # unique to grid search
         parms.update({k: v for k, v in list(self.model._parms.items()) if v is not None})  # unique to grid search
         parms.update(params)

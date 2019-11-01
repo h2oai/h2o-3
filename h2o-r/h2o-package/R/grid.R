@@ -150,7 +150,7 @@ h2o.grid <- function(algorithm,
   
   # Set directory for checkpoints export
   if(!is.null(parallelism)){
-    params$parallelism_level = parallelism
+    params$parallelism = parallelism
   }
 
   if( !is.null(search_criteria)) {
