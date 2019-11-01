@@ -708,7 +708,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     if (parallelism == 0) {
-      return determineParallelismLevel();
+      return getAdaptiveParallelism();
     } else {
       return parallelism;
     }
@@ -717,7 +717,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   /**
    * @return An integer with dynamically calculated level of parallelism based on Cluster's properties.
    */
-  public static int determineParallelismLevel() {
+  public static int getAdaptiveParallelism() {
     return 2 * H2O.NUMCPUS;
   }
 }
