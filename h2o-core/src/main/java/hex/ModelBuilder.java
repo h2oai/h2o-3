@@ -246,7 +246,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       tryComplete();
       if (_modelBuilderListener != null) {
-        _modelBuilderListener.onModelSuccess(_job.get());
+        _modelBuilderListener.onModelSuccess(_result.get());
       }
     }
 
