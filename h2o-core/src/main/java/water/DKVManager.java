@@ -102,7 +102,7 @@ public class DKVManager {
     protected void setupLocal() {
       final Set<Key> retainedKeys = new HashSet<>(_retainedKeys.length);
       retainedKeys.addAll(Arrays.asList(_retainedKeys));
-
+      // Does not call runLocal in order to serialize only things present in this MRTask
       final Collection<Value> storeKeys = H2O.STORE.values();
       Futures removalFutures = new Futures();
       for (final Value value : storeKeys) {
@@ -121,5 +121,28 @@ public class DKVManager {
     }
 
 
+  }
+
+  /**
+   * Retains given keys locally, not cluster-wide.
+   *
+   * @param retainedKeys Keys to retain
+   */
+  public static void retainLocal(final Set<Key> retainedKeys) {
+    final Collection<Value> storeKeys = H2O.STORE.values();
+    Futures removalFutures = new Futures();
+    for (final Value value : storeKeys) {
+      if (retainedKeys.contains(value._key)) {
+        continue;
+      }
+      if (value.isNull()) continue;
+
+      if (value.isFrame()) {
+        ((Frame) value.get()).retain(removalFutures, retainedKeys);
+      } else if (value.isModel()) {
+        ((Model) value.get()).remove(removalFutures);
+      }
+    }
+    removalFutures.blockForPending();
   }
 }
