@@ -3,6 +3,7 @@ package water.runner;
 import org.junit.Ignore;
 import water.*;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.*;
 
@@ -34,7 +35,7 @@ public class CheckKeysTask extends KeysMRTask<CheckKeysTask> {
         }
         
     }
-
+    
     @Override
     public void reduce(CheckKeysTask mrt) {
         leakedKeys = ArrayUtils.append(leakedKeys, mrt.leakedKeys);

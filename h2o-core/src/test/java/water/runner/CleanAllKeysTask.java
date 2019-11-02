@@ -4,8 +4,6 @@ import org.junit.Ignore;
 import water.H2O;
 import water.MRTask;
 
-import java.io.Serializable;
-
 @Ignore
 public class CleanAllKeysTask extends MRTask<CleanAllKeysTask> {
 
