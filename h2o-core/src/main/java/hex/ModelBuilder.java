@@ -15,23 +15,16 @@ import water.util.*;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.*;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  *  Model builder parent class.  Contains the common interfaces and fields across all model builders.
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
-  Consumer<Model> _onSuccessCallback = null;
-  BiConsumer<Throwable, Model.Parameters> _onFailCallback = null;
+  private ModelBuilderListener _modelBuilderListener;
 
-  public void setOnFailCallback(BiConsumer<Throwable, Model.Parameters> onFailCallback) {
-    this._onFailCallback = onFailCallback;
-  }
-
-  public void setOnSuccessCallback(Consumer<Model> onSuccessCallback) {
-    this._onSuccessCallback = onSuccessCallback;
+  public void setModelBuilderListener(final ModelBuilderListener modelBuilderListener) {
+    this._modelBuilderListener = modelBuilderListener;
   }
 
   public ToEigenVec getToEigenVec() { return null; }
@@ -252,15 +245,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.exit();
       }
       tryComplete();
-      if (_onSuccessCallback != null) {
-        _onSuccessCallback.accept(_job.get());
+      if (_modelBuilderListener != null) {
+        _modelBuilderListener.onModelSuccess(_job.get());
       }
     }
 
     @Override
     public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-      if (_onFailCallback != null) {
-        _onFailCallback.accept(ex, _parms);
+      if (_modelBuilderListener != null) {
+        _modelBuilderListener.onModelFailure(ex, _parms);
       }
       return true;
     }
@@ -349,8 +342,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                         public void compute2() {
                           computeCrossValidation();
                           tryComplete();
-                          if (_onSuccessCallback != null) {
-                            _onSuccessCallback.accept(_job.get());
+                          if (_modelBuilderListener != null) {
+                            _modelBuilderListener.onModelSuccess(_job.get());
                           }
                         }
                         @Override
@@ -361,8 +354,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                           } catch (Exception logged) {
                             Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
                           }
-                          if (_onFailCallback != null) {
-                            _onFailCallback.accept(ex, _parms);
+                          if (_modelBuilderListener != null) {
+                            _modelBuilderListener.onModelFailure(ex, _parms);
                           }
                           return true;
                         }

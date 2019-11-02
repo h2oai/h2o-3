@@ -2,12 +2,10 @@ package hex;
 
 import jsr166y.ForkJoinTask;
 import water.util.IcedAtomicInt;
-import water.util.Log;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 /**
  * Dispatcher for parallel model building. Starts building models every time the run method is invoked.
@@ -22,12 +20,14 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
   private final BiConsumer<ModelBuildFailure, ParallelModelBuilder> _onBuildFailureCallback;
   public final IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
   public final AtomicBoolean _completed = new AtomicBoolean(false);
+  private final ParallelModelBuiltListener _parallelModelBuiltListener;
 
   public ParallelModelBuilder(BiConsumer<Model, ParallelModelBuilder> onBuildSuccessCallback,
                               BiConsumer<ModelBuildFailure, ParallelModelBuilder> onBuildFailureCallback) {
     Objects.requireNonNull(onBuildSuccessCallback);
     _onBuildSuccessCallback = onBuildSuccessCallback;
     _onBuildFailureCallback = onBuildFailureCallback;
+    _parallelModelBuiltListener = new ParallelModelBuiltListener();
   }
 
   /**
@@ -41,38 +41,30 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
         _modelInProgressCounter.incrementAndGet();
 
         // Set the callbacks
-        final Consumer<Model> onModelSuccessfulBuild = this::onModelSuccessfullBuild;
-        modelBuilder.setOnSuccessCallback(onModelSuccessfulBuild);
-        final BiConsumer<Throwable, Model.Parameters> onModelFailedWithException = this::onModelFailedWithException;
-        modelBuilder.setOnFailCallback(onModelFailedWithException);
-
+        modelBuilder.setModelBuilderListener(_parallelModelBuiltListener);
         modelBuilder.trainModel();
       }
   }
 
-  /**
-   * Callback for successfully finished model builds
-   *
-   * @param m Model built
-   */
-  private void onModelSuccessfullBuild(final Model m) {
-    _modelInProgressCounter.decrementAndGet();
-    _onBuildSuccessCallback.accept(m, this);
-    attemptComplete();
-  }
 
-  /**
-   * Callback for failed model builds
-   *
-   * @param throwable  Cause of failure
-   * @param parameters Parameters used in the attempt to build the model
-   */
-  private void onModelFailedWithException(final Throwable throwable, final Model.Parameters parameters) {
-    _modelInProgressCounter.decrementAndGet();
+  private class ParallelModelBuiltListener extends ModelBuilderListener<ParallelModelBuiltListener> {
 
-    final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(throwable, parameters);
-    _onBuildFailureCallback.accept(modelBuildFailure, this);
-    attemptComplete();
+    @Override
+    public void onModelSuccess(Model model) {
+      _modelInProgressCounter.decrementAndGet();
+      _onBuildSuccessCallback.accept(model, ParallelModelBuilder.this);
+      attemptComplete();
+    }
+
+    @Override
+    public void onModelFailure(Throwable cause, Model.Parameters parameters) {
+      _modelInProgressCounter.decrementAndGet();
+
+      final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
+      _onBuildFailureCallback.accept(modelBuildFailure, ParallelModelBuilder.this);
+      attemptComplete();
+    }
+    
   }
 
   /**
