@@ -8,9 +8,5 @@ import java.util.Set;
 
 @Ignore
 class LocalTestRuntime {
-    protected static Set<Key> initKeys;
-
-    static{
-        initKeys = new HashSet<>();
-    }
+    static Set<Key> initKeys = new HashSet<>();
 }
