@@ -34,48 +34,6 @@ public class GridTest extends TestUtil {
   }
 
   @Test
-  public void testParallelModelBuild() {
-    final List<Model> models = new ArrayList<>();
-    Scope.enter();
-    try {
-      // Create new GBM model
-      final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
-      Scope.track(trainingFrame);
-      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
-      parms._train = trainingFrame._key;
-      parms._distribution = AUTO;
-      parms._response_column = "IsDepDelayed";
-      parms._ntrees = 10;
-      final Lock lock = new ReentrantLock();
-
-      // Must be thread safe, otherwise won't work and will lock itself at the end.
-      final BiConsumer<Model, ParallelModelBuilder> onModelComplete = (model, parallelModelBuilder) -> {
-        lock.lock();
-        try {
-          models.add(model);
-          if (models.size() < 3) {
-            parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(parms.clone())));
-          } else {
-            parallelModelBuilder.noMoreModels();
-          }
-        } finally {
-          lock.unlock();
-        }
-      };
-      
-      final ModelBuilder modelBuilder = ModelBuilder.make(parms.clone());
-      final ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(onModelComplete, null);
-      parallelModelBuilder.run(Collections.singletonList(modelBuilder));
-      parallelModelBuilder.join();
-      models.forEach(Scope::track_generic);
-      assertEquals(3, models.size());
-    } finally {
-      Scope.exit();
-    }
-
-  }
-
-  @Test
   public void testParallelModelTimeConstraint() {
     try {
       Scope.enter();

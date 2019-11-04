@@ -168,7 +168,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     return _hyperSpaceWalker.getMaxHyperSpaceSize();
   }
 
-  private class ModelFeeder<MP extends Model.Parameters> {
+  private class ModelFeeder<MP extends Model.Parameters, D extends ModelFeeder> extends ParallelModelBuilder.ParallelModelBuilderCallback<D>{
 
     private final HyperSpaceWalker.HyperSpaceIterator<MP> hyperspaceIterator;
     private final Grid grid;
@@ -179,7 +179,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       this.grid = grid;
     }
 
-    private void onModelSuccessfullyBuilt(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
+    @Override
+    public void onBuildSucces(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
       try {
         constructScoringInfo(finishedModel);
         parallelSearchGridLock.lock();
@@ -195,7 +196,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       attemptBuildNextModel(parallelModelBuilder, finishedModel);
     }
 
-    private void onModelBuildFailed(ParallelModelBuilder.ModelBuildFailure modelBuildFailure, ParallelModelBuilder parallelModelBuilder) {
+    @Override
+    public void onBuildFailure(final ParallelModelBuilder.ModelBuildFailure modelBuildFailure,
+                               final ParallelModelBuilder parallelModelBuilder) {
       parallelSearchGridLock.lock();
       try {
         grid.appendFailedModelParameters(null, modelBuildFailure.getParameters(), modelBuildFailure.getThrowable());
@@ -264,8 +267,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   private void parallelGridSearch(final Grid<MP> grid) {
     final HyperSpaceWalker.HyperSpaceIterator<MP> iterator = _hyperSpaceWalker.iterator();
     final ModelFeeder modelFeeder = new ModelFeeder(iterator, grid);
-    final ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeeder::onModelSuccessfullyBuilt,
-            modelFeeder::onModelBuildFailed);
+    final ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeeder);
 
     List<ModelBuilder> startModels = new ArrayList<>();
     final List<MP> mps = initialModelParameters(_parallelism, iterator);

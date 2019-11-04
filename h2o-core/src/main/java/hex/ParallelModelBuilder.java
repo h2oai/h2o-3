@@ -1,11 +1,11 @@
 package hex;
 
 import jsr166y.ForkJoinTask;
+import water.Iced;
 import water.util.IcedAtomicInt;
 
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.BiConsumer;
 
 /**
  * Dispatcher for parallel model building. Starts building models every time the run method is invoked.
@@ -16,17 +16,21 @@ import java.util.function.BiConsumer;
  */
 public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
-  private final BiConsumer<Model, ParallelModelBuilder> _onBuildSuccessCallback;
-  private final BiConsumer<ModelBuildFailure, ParallelModelBuilder> _onBuildFailureCallback;
-  public final IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
-  public final AtomicBoolean _completed = new AtomicBoolean(false);
+  public static abstract class ParallelModelBuilderCallback<D extends ParallelModelBuilderCallback> extends Iced<D> {
+
+    public abstract void onBuildSucces(final Model model, final ParallelModelBuilder parallelModelBuilder);
+
+    public abstract void onBuildFailure(final ModelBuildFailure modelBuildFailure, final ParallelModelBuilder parallelModelBuilder);
+  }
+
+  private final ParallelModelBuilderCallback _callback;
+  private final IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
+  private final AtomicBoolean _completed = new AtomicBoolean(false);
   private final ParallelModelBuiltListener _parallelModelBuiltListener;
 
-  public ParallelModelBuilder(BiConsumer<Model, ParallelModelBuilder> onBuildSuccessCallback,
-                              BiConsumer<ModelBuildFailure, ParallelModelBuilder> onBuildFailureCallback) {
-    Objects.requireNonNull(onBuildSuccessCallback);
-    _onBuildSuccessCallback = onBuildSuccessCallback;
-    _onBuildFailureCallback = onBuildFailureCallback;
+  public ParallelModelBuilder(final ParallelModelBuilderCallback callback) {
+    Objects.requireNonNull(callback);
+    _callback = callback;
     _parallelModelBuiltListener = new ParallelModelBuiltListener();
   }
 
@@ -52,7 +56,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     @Override
     public void onModelSuccess(Model model) {
       _modelInProgressCounter.decrementAndGet();
-      _onBuildSuccessCallback.accept(model, ParallelModelBuilder.this);
+      _callback.onBuildSucces(model, ParallelModelBuilder.this);
       attemptComplete();
     }
 
@@ -61,7 +65,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
       _modelInProgressCounter.decrementAndGet();
 
       final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
-      _onBuildFailureCallback.accept(modelBuildFailure, ParallelModelBuilder.this);
+      _callback.onBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
       attemptComplete();
     }
     
