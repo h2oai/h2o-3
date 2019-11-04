@@ -4,10 +4,12 @@ import hex.Model;
 import hex.ModelParametersBuilderFactory;
 import hex.ScoreKeeper;
 import hex.ScoringInfo;
+import hex.grid.filter.KeepOnlyFirstMatchFilterFunction;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
 import java.util.*;
+import java.util.function.Function;
 
 import static java.lang.StrictMath.min;
 
@@ -449,16 +451,29 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     private List<int[]> _visitedPermutations = new ArrayList<>();
     private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // for fast dupe lookup
 
+    ArrayList<Function<Map<String, Object>, Boolean>> _filterFunctions;
+
     public RandomDiscreteValueWalker(MP params,
                                      Map<String, Object[]> hyperParams,
                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                                     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria search_criteria) {
-      super(params, hyperParams, paramsBuilderFactory, search_criteria);
+                                     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria,
+                                     ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions) {
+      super(params, hyperParams, paramsBuilderFactory, searchCriteria);
 
-      if (-1 == search_criteria.seed())
+      if (-1 == searchCriteria.seed())
         random = new Random();                       // true random
       else
-        random = new Random(search_criteria.seed()); // seeded repeatable pseudorandom
+        random = new Random(searchCriteria.seed()); // seeded repeatable pseudorandom
+      
+      _filterFunctions = filterFunctions;
+    }
+    
+    public RandomDiscreteValueWalker(MP params,
+                                     Map<String, Object[]> hyperParams,
+                                     ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                                     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria) {
+      this(params, hyperParams, paramsBuilderFactory, searchCriteria, null);
+      
     }
 
     /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
@@ -489,43 +504,90 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           // NOTE: nextModel checks _visitedHyperparamIndices and does not return a duplicate set of indices.
           // NOTE: in RandomDiscreteValueWalker nextModelIndices() returns a new array each time, rather than
           // mutating the last one.
+
           _currentHyperparamIndices = nextModelIndices();
 
           if (_currentHyperparamIndices != null) {
-            _visitedPermutations.add(_currentHyperparamIndices);
-            _visitedPermutationHashes.add(integerHash(_currentHyperparamIndices));
-            _currentPermutationNum++; // NOTE: 1-based counting
+              _visitedPermutations.add(_currentHyperparamIndices);
+              _visitedPermutationHashes.add(integerHash(_currentHyperparamIndices));
+              _currentPermutationNum++; // NOTE: 1-based counting
 
             // Fill array of hyper-values
             Object[] hypers = hypers(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
-            // Get clone of parameters
-            MP commonModelParams = (MP) _params.clone();
-            // Fill model parameters
-            MP params = getModelParams(commonModelParams, hypers);
+             
+            if (_filterFunctions == null || hyperParamsAreNotSkipped(hypers, _filterFunctions)) {
 
-            // add max_runtime_secs in search criteria into params if applicable
-            if (_search_criteria != null && _search_criteria.strategy() == HyperSpaceSearchCriteria.Strategy.RandomDiscrete) {
-              // ToDo: model seed setting will be different for parallel model building.
-              // ToDo: This implementation only works for sequential model building.
-              if (_set_model_seed_from_search_seed) {
-                // set model seed = search_criteria.seed+(0, 1, 2,..., model number)
-                params._seed = _search_criteria.seed() + (model_number++);
-              }
+              // Get clone of parameters
+              MP commonModelParams = (MP) _params.clone();
+              // Fill model parameters
+              MP params = getModelParams(commonModelParams, hypers);
 
-              // set max_runtime_secs
-              double timeleft = this.time_remaining_secs();
-              if (timeleft > 0)  {
-                if (params._max_runtime_secs > 0) {
-                  params._max_runtime_secs = min(params._max_runtime_secs, timeleft);
-                } else {
-                  params._max_runtime_secs = timeleft;
+              // add max_runtime_secs in search criteria into params if applicable
+              if (_search_criteria != null && _search_criteria.strategy() == HyperSpaceSearchCriteria.Strategy.RandomDiscrete) {
+                // ToDo: model seed setting will be different for parallel model building.
+                // ToDo: This implementation only works for sequential model building.
+                if (_set_model_seed_from_search_seed) {
+                  // set model seed = search_criteria.seed+(0, 1, 2,..., model number)
+                  params._seed = _search_criteria.seed() + (model_number++);
+                }
+
+                // set max_runtime_secs
+                double timeleft = this.time_remaining_secs();
+                if (timeleft > 0) {
+                  if (params._max_runtime_secs > 0) {
+                    params._max_runtime_secs = min(params._max_runtime_secs, timeleft);
+                  } else {
+                    params._max_runtime_secs = timeleft;
+                  }
                 }
               }
+              return params;
+            } else {
+              
+              int nextPermutationNum = _currentPermutationNum + 1;
+              if(hasNext(previousModel) && (max_models() == 0 || max_models() > 0 && nextPermutationNum < max_models())) {
+                return nextModelParameters(previousModel);
+              } else {
+                return null;
+              }
             }
-            return params;
           } else {
             throw new NoSuchElementException("No more elements to explore in hyper-space!");
           }
+        }
+        
+        private boolean hyperParamsAreNotSkipped(Object[] hypers, ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions) {
+          boolean gridItemShouldBeSkipped = false;
+          
+          // Converting ( Object[], String[] ) to Map<String, Object>
+          Map<String, Object> gridItemAsHashMap = new HashMap<>();
+          int indexOfHP = 0;
+          for(String hpName : _hyperParamNames) {
+            gridItemAsHashMap.put(hpName, hypers[indexOfHP]);
+            indexOfHP++;
+          }
+              
+          for(Function<Map<String, Object>, Boolean> fun : filterFunctions) {
+            if(!fun.apply(gridItemAsHashMap)  ) {
+              gridItemShouldBeSkipped = true;
+              break;
+            }
+          }
+
+          // Decrement counter only when we actually evaluate given grid item after taking into account all filter functions, and only for KeepOnlyFirstMatchFilterFunction functions that were matching
+          if(!gridItemShouldBeSkipped) {
+            filterFunctions.stream()
+                    .filter(fun1 -> {
+                      return fun1 instanceof KeepOnlyFirstMatchFilterFunction && ((KeepOnlyFirstMatchFilterFunction) fun1)._fun.apply(gridItemAsHashMap);
+                    })
+                    .forEach(fun -> {
+                      ((KeepOnlyFirstMatchFilterFunction) fun).decrementCounter();
+                    });
+          } else {
+            String tmp = "";
+          }
+          
+          return !gridItemShouldBeSkipped;
         }
 
         @Override
@@ -586,6 +648,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       int[] hyperparamIndices =  new int[_hyperParamNames.length];
 
       do {
+//        System.out.println("another loop inside nextModelIndices. _visitedPermutationHashes.size = " + _visitedPermutationHashes.size());
         // generate random indices
         for (int i = 0; i < _hyperParamNames.length; i++) {
           hyperparamIndices[i] = random.nextInt(_hyperParams.get(_hyperParamNames[i]).length);

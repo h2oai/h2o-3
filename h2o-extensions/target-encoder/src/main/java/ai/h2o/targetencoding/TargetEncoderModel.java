@@ -36,7 +36,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public double _f = TargetEncoder.DEFAULT_BLENDING_PARAMS.getF();
     public TargetEncoder.DataLeakageHandlingStrategy _data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
     public double _noise_level = 0.01;
-    
+
     @Override
     public String algoName() {
       return ALGO_NAME;
@@ -60,6 +60,12 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public BlendingParams getBlendingParameters() {
       return _k!=0 && _f!=0 ? new BlendingParams(_k, _f) : TargetEncoder.DEFAULT_BLENDING_PARAMS;
     }
+
+    @Override
+    public String toString() {
+      return "TargetEncoderParameters: _blending = " + _blending + ", _data_leakage_handling = " + _data_leakage_handling + ", _k = " + _k + ", _f = " + _f + ", _noise_level = " + _noise_level;
+    }
+
   }
 
   public static class TargetEncoderOutput extends Model.Output {
