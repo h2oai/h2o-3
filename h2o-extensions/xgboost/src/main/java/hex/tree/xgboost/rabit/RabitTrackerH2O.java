@@ -12,20 +12,20 @@ import java.nio.channels.SocketChannel;
 import java.util.*;
 
 public class RabitTrackerH2O implements IRabitTracker {
+
     public static final int MAGIC = 0xff99;
+
     private ServerSocketChannel sock;
     private int port = 9091;
 
-    private int workers;
+    private final int workers;
 
-    private Map<String, String> envs = new HashMap<>();
+    private final Map<String, String> envs = new HashMap<>();
 
     private volatile RabitTrackerH2OThread trackerThread;
 
     public RabitTrackerH2O(int workers) {
-        super();
-
-        if(workers < 1) {
+        if (workers < 1) {
             throw new IllegalStateException("workers must be greater than or equal to one (1).");
         }
 
@@ -47,7 +47,7 @@ public class RabitTrackerH2O implements IRabitTracker {
     @Override
     public boolean start(long timeout) {
         boolean tryToBind = true;
-        while(tryToBind) {
+        while (tryToBind) {
             try {
                 this.sock = ServerSocketChannel.open();
                 this.sock.socket().setReceiveBufferSize(64 * 1024);
@@ -61,18 +61,17 @@ public class RabitTrackerH2O implements IRabitTracker {
                 } catch (IOException socketCloseException) {
                     Log.warn("Failed to close Rabit Tracker socket on port ", sock.socket().getLocalPort());
                 }
-                if(this.port > 9999) {
+                if (this.port > 9999) {
                     throw new RuntimeException("Failed to bind Rabit tracker to a socket in range 9091-9999", e);
                 }
             }
         }
 
-        if(null != this.trackerThread) {
+        if (null != this.trackerThread) {
             throw new IllegalStateException("Rabit tracker already started.");
         }
-        RabitTrackerH2OThread trackerThread = new RabitTrackerH2OThread(this);
-        this.trackerThread = trackerThread;
-        trackerThread.start();
+        this.trackerThread = new RabitTrackerH2OThread(this);
+        this.trackerThread.start();
         return true;
     }
 
@@ -80,12 +79,12 @@ public class RabitTrackerH2O implements IRabitTracker {
     public void stop() {
         assert this.trackerThread != null;
         try {
-                this.trackerThread.interrupt();
-            } catch (SecurityException e){
-                Log.err("Could not interrupt a thread in RabitTrackerH2O: " + trackerThread.toString());
-            }
-            this.trackerThread.terminateSocketChannels();
-            this.trackerThread = null;
+            this.trackerThread.interrupt();
+        } catch (SecurityException e){
+            Log.err("Could not interrupt a thread in RabitTrackerH2O: " + trackerThread.toString());
+        }
+        this.trackerThread.terminateSocketChannels();
+        this.trackerThread = null;
 
 
         try {
@@ -96,11 +95,11 @@ public class RabitTrackerH2O implements IRabitTracker {
         }
     }
 
-    private class RabitTrackerH2OThread extends Thread {
-        private RabitTrackerH2O tracker;
+    private static class RabitTrackerH2OThread extends Thread {
 
-        private LinkMap linkMap;
-        private Map<String, Integer> jobToRankMap = new HashMap<>();
+        private final RabitTrackerH2O tracker;
+
+        private final Map<String, Integer> jobToRankMap = new HashMap<>();
         private final List<SocketChannel> socketChannels = new ArrayList<>();
 
         private RabitTrackerH2OThread(RabitTrackerH2O tracker) {
@@ -109,7 +108,7 @@ public class RabitTrackerH2O implements IRabitTracker {
             this.tracker = tracker;
         }
 
-        private final void terminateSocketChannels(){
+        private void terminateSocketChannels(){
             for (SocketChannel channel : socketChannels) {
                 try {
                     channel.close();
@@ -127,6 +126,7 @@ public class RabitTrackerH2O implements IRabitTracker {
 
         @Override
         public void run() {
+            LinkMap linkMap = null;
             Set<Integer> shutdown = new HashSet<>();
             Map<Integer, RabitWorker> waitConn = new HashMap<>();
             List<RabitWorker> pending = new ArrayList<>();
@@ -143,7 +143,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                         continue;
                     } else if (SHUTDOWN_CMD.equals(worker.cmd)) {
                         assert worker.rank >= 0 && !shutdown.contains(worker.rank);
-                        assert !waitConn.containsKey(worker);
+                        assert !waitConn.containsKey(worker.rank);
                         shutdown.add(worker.rank);
                         channel.socket().close();
                         Log.debug("Received ", worker.cmd, " signal from ", worker.rank);
