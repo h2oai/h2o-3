@@ -103,9 +103,7 @@ h2o.importFolder <- function(path, pattern = "", destination_frame = "", parse =
     }
   }
   
-  clust_stat <- h2o.clusterStatus()
-  if (nrow(clust_stat) > 0 && length(clust_stat$h2o) == 1 &&
-    grepl("^localhost/", clust_stat$h2o[[1]])) {
+  if (.h2o.startedH2O()) {
     path <- sapply(path, normalizePath, mustWork = FALSE)
   }
   
