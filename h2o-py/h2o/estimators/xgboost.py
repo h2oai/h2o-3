@@ -796,9 +796,9 @@ class H2OXGBoostEstimator(H2OEstimator):
         ...                                          ntrees=51,
         ...                                          seed=1234)
         >>> cars_xgb_continued.train(x=predictors,
-                                     y=response,
-                                     training_frame=train,
-                                     validation_frame=valid)
+        ...                          y=response,
+        ...                          training_frame=train,
+        ...                          validation_frame=valid)
         >>> cars_xgb_continued.mse()
         """
         return self._parms.get("checkpoint")
