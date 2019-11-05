@@ -83,8 +83,8 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         :examples:
 
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"]= airlines["Year"].asfactor()
-        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
         >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
         >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
         >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
@@ -277,7 +277,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
         >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
-        >>> cars_nb = H2ONaiveBayesEstimator(
+        >>> cars_nb = H2ONaiveBayesEstimator()
         >>> cars_nb.train(x=predictors,
         ...               y=response,
         ...               training_frame=train,
@@ -305,7 +305,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> response = "economy_20mpg"
         >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
-        >>> cars_nb = H2ONaiveBayesEstimator(
+        >>> cars_nb = H2ONaiveBayesEstimator()
         >>> cars_nb.train(x=predictors,
         ...               y=response,
         ...               training_frame=train,
