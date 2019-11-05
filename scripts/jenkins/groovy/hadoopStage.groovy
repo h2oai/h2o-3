@@ -22,6 +22,9 @@ def call(final pipelineContext, final stageConfig) {
             rm -f mykeystore.jks
             keytool -genkey -dname "cn=Mr. Jenkins, ou=H2O-3, o=H2O.ai, c=US" -alias h2o -keystore mykeystore.jks -storepass h2oh2o -keypass h2oh2o -keyalg RSA -keysize 2048
 
+            echo 'Building H2O'
+            BUILD_HADOOP=true H2O_TARGET=${stageConfig.customData.distribution}${stageConfig.customData.version} ./gradlew clean build -x test
+
             echo 'Starting H2O on Hadoop'
             ${commandFactory(stageConfig)}
             if [ -z \${CLOUD_IP} ]; then
@@ -39,6 +42,13 @@ def call(final pipelineContext, final stageConfig) {
         """
         
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
+
+        def healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(
+                this, env.NODE_NAME, pipelineContext.getBuildConfig().getHadoopBuildImage(), 
+                pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig()
+        )
+        def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
+        buildH2O3(pipelineContext, stageConfig)
 
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
         try {
