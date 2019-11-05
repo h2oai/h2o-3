@@ -68,7 +68,6 @@ public class RGSWithFilteringTest extends TestUtil {
         filteredGridItems.add(targetEncoderParameters);
       }
     }
-
     System.out.println("\nAll grid items after applying filtering functions:");
     filteredGridItems.forEach(System.out::println);
 
@@ -112,7 +111,7 @@ public class RGSWithFilteringTest extends TestUtil {
     ArrayList<GBMModel.GBMParameters> filteredGridItems = new ArrayList<>();
     while (iterator.hasNext(null)) {
       GBMModel.GBMParameters gbmParams = iterator.nextModelParameters(null);
-      if( gbmParams != null) { // we might have had next element but it can be filtered out by ffiltering unctions
+      if( gbmParams != null) { // we might have had next element ( iterator.hasNext) = true) but it could be filtered out by filtering functions
         filteredGridItems.add(gbmParams);
       }
     }

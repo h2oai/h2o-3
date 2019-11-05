@@ -559,14 +559,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         private boolean hyperParamsAreNotSkipped(Object[] hypers, ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions) {
           boolean gridItemShouldBeSkipped = false;
           
-          // Converting ( Object[], String[] ) to Map<String, Object>
-          Map<String, Object> gridItemAsHashMap = new HashMap<>();
-          int indexOfHP = 0;
-          for(String hpName : _hyperParamNames) {
-            gridItemAsHashMap.put(hpName, hypers[indexOfHP]);
-            indexOfHP++;
-          }
-              
+          Map<String, Object> gridItemAsHashMap = convertToMap(hypers, _hyperParamNames);
+
           for(Function<Map<String, Object>, Boolean> fun : filterFunctions) {
             if(!fun.apply(gridItemAsHashMap)  ) {
               gridItemShouldBeSkipped = true;
@@ -574,19 +568,15 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             }
           }
 
-          // Decrement counter only when we actually evaluate given grid item after taking into account all filter functions, and only for KeepOnlyFirstMatchFilterFunction functions that were matching
+          // Decrement counters only when we actually decided not to skip given grid item (after taking into account all filter functions),
+          // and only for KeepOnlyFirstMatchFilterFunction functions that were matching
           if(!gridItemShouldBeSkipped) {
             filterFunctions.stream()
                     .filter(fun1 -> {
-                      return fun1 instanceof KeepOnlyFirstMatchFilterFunction && ((KeepOnlyFirstMatchFilterFunction) fun1)._fun.apply(gridItemAsHashMap);
+                      return fun1 instanceof KeepOnlyFirstMatchFilterFunction && ((KeepOnlyFirstMatchFilterFunction) fun1)._baseMatchFunction.apply(gridItemAsHashMap);
                     })
-                    .forEach(fun -> {
-                      ((KeepOnlyFirstMatchFilterFunction) fun).decrementCounter();
-                    });
-          } else {
-            String tmp = "";
+                    .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction) fun).decrementCounter());
           }
-          
           return !gridItemShouldBeSkipped;
         }
 
@@ -639,6 +629,16 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       }; // anonymous HyperSpaceIterator class
     } // iterator()
 
+    private Map<String, Object> convertToMap(Object[] hypers, String[] hyperParamNames) {
+      Map<String, Object> gridItemAsHashMap = new HashMap<>();
+      int indexOfHP = 0;
+      for(String hpName : hyperParamNames) {
+        gridItemAsHashMap.put(hpName, hypers[indexOfHP]);
+        indexOfHP++;
+      }
+      return gridItemAsHashMap;
+    }
+
     /**
      * Random iteration over the hyper-parameter space.  Does not repeat
      * previously-visited combinations.  Returns NULL when we've hit the stopping
@@ -648,7 +648,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       int[] hyperparamIndices =  new int[_hyperParamNames.length];
 
       do {
-//        System.out.println("another loop inside nextModelIndices. _visitedPermutationHashes.size = " + _visitedPermutationHashes.size());
         // generate random indices
         for (int i = 0; i < _hyperParamNames.length; i++) {
           hyperparamIndices[i] = random.nextInt(_hyperParams.get(_hyperParamNames[i]).length);
