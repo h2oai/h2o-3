@@ -282,8 +282,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._sparse = isTrainDatasetSparse();
       }
 
-      // Single Rabit tracker per job. Manages the node graph for Rabit.
-      final IRabitTracker rt;
       XGBoostSetupTask setupTask = null;
       try {
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(_train);
@@ -292,12 +290,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // This cannot be H2O.getCloudSize() as a frame might not be distributed on all the nodes
         // In such a case we'll perform training only on a subset of nodes while XGBoost/Rabit would keep waiting
         // for H2O.getCloudSize() number of requests/responses.
-        rt = new RabitTrackerH2O(trainFrameNodes.getNumNodes());
-
-        if (!startRabitTracker(rt)) {
-          throw new IllegalArgumentException("Cannot start XGboost rabit tracker, please, "
-                                             + "make sure you have python installed!");
-        }
+        final RabitTrackerH2O rt = new RabitTrackerH2O(trainFrameNodes.getNumNodes());
+        startRabitTracker(rt);
 
         // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
         DataInfo dataInfo = model.model_info().dataInfo();
@@ -430,15 +424,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     // Don't start the tracker for 1 node clouds -> the GPU plugin fails in such a case
-    private boolean startRabitTracker(IRabitTracker rt) {
+    private void startRabitTracker(RabitTrackerH2O rt) {
       if (H2O.CLOUD.size() > 1) {
-        return rt.start(0);
+        rt.start(0);
       }
-      return true;
     }
 
     // RT should not be started for 1 node clouds
-    private void waitOnRabitWorkers(IRabitTracker rt) {
+    private void waitOnRabitWorkers(RabitTrackerH2O rt) {
       if(H2O.CLOUD.size() > 1) {
         rt.waitFor(0);
       }
@@ -448,7 +441,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
      *
      * @param rt Rabit tracker to stop
      */
-    private void stopRabitTracker(IRabitTracker rt){
+    private void stopRabitTracker(RabitTrackerH2O rt) {
       if(H2O.CLOUD.size() > 1) {
         rt.stop();
       }
@@ -456,7 +449,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way the GPU plugin can't handle
     // Therefore don't use RabitTracker envs for 1 node
-    private Map<String, String> getWorkerEnvs(IRabitTracker rt) {
+    private Map<String, String> getWorkerEnvs(RabitTrackerH2O rt) {
       if(H2O.CLOUD.size() > 1) {
         return rt.getWorkerEnvs();
       } else {
