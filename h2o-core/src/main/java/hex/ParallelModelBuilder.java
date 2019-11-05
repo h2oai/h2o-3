@@ -23,10 +23,10 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     public abstract void onBuildFailure(final ModelBuildFailure modelBuildFailure, final ParallelModelBuilder parallelModelBuilder);
   }
 
-  private final ParallelModelBuilderCallback _callback;
-  private final IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
-  private final AtomicBoolean _completed = new AtomicBoolean(false);
-  private final ParallelModelBuiltListener _parallelModelBuiltListener;
+  private final transient ParallelModelBuilderCallback _callback;
+  private final transient IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
+  private final transient AtomicBoolean _completed = new AtomicBoolean(false);
+  private final transient ParallelModelBuiltListener _parallelModelBuiltListener;
 
   public ParallelModelBuilder(final ParallelModelBuilderCallback callback) {
     Objects.requireNonNull(callback);
