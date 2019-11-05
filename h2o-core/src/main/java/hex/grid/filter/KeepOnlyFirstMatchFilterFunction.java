@@ -30,6 +30,10 @@ public class KeepOnlyFirstMatchFilterFunction implements Function<Map<String, Ob
   public void decrementCounter() {
     if(_maxNumberOfApplications > 0)_maxNumberOfApplications--;
   }
+  
+  public void reset() {
+    _maxNumberOfApplications = 1;
+  }
 
   @Override
   public <V> Function<V, Boolean> compose(Function<? super V, ? extends Map<String, Object>> before) {

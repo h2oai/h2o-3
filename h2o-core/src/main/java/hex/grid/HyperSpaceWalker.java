@@ -449,6 +449,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
     /** All visited hyper params permutations, including the current one. */
     private List<int[]> _visitedPermutations = new ArrayList<>();
+    private int _numberOfNonSkippedPermutations = 0;
     private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // for fast dupe lookup
 
     ArrayList<Function<Map<String, Object>, Boolean>> _filterFunctions;
@@ -517,6 +518,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
              
             if (_filterFunctions == null || hyperParamsAreNotSkipped(hypers, _filterFunctions)) {
 
+              _numberOfNonSkippedPermutations++;
               // Get clone of parameters
               MP commonModelParams = (MP) _params.clone();
               // Fill model parameters
@@ -587,7 +589,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           //
           // _currentPermutationNum is 1-based
           return (_visitedPermutationHashes.size() < _maxHyperSpaceSize &&
-                  (search_criteria().max_models() == 0 || _currentPermutationNum < search_criteria().max_models())
+                  (search_criteria().max_models() == 0 || _numberOfNonSkippedPermutations < search_criteria().max_models())
           );
         }
 
@@ -598,6 +600,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           _currentHyperparamIndices = null;
           _visitedPermutations.clear();
           _visitedPermutationHashes.clear();
+          _filterFunctions.stream().filter(fun -> fun instanceof KeepOnlyFirstMatchFilterFunction).forEach(fun -> ((KeepOnlyFirstMatchFilterFunction)fun).reset());
+          _numberOfNonSkippedPermutations = 0;
         }
 
         public double max_runtime_secs() {
@@ -619,6 +623,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           // so we don't revisit bad parameters. Note that if a model build fails for other reasons we
           // won't retry.
           _currentPermutationNum--;
+          _numberOfNonSkippedPermutations--;
         }
 
         @Override
