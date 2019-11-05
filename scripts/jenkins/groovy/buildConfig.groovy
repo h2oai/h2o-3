@@ -167,8 +167,7 @@ class BuildConfig {
 
   List<String> getBuildEnv() {
     return [
-      'JAVA_VERSION=8',
-      "BUILD_HADOOP=${buildHadoop}",
+      'JAVA_VERSION=8'
     ]
   }
 
