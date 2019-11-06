@@ -100,7 +100,7 @@ public class ParseTestOrc extends TestUtil {
             System.out.println("types: " + Arrays.toString(ArrayUtils.select(Vec.TYPE_STR,ps2.getColumnTypes())));
             Key k = Key.make();
             Job<Frame> j = ParseDataset.forkParseDataset(k,new Key[]{nfs._key},ps,true)._job;
-            Frame fr = j.get();
+            Frame fr = Scope.track(j.get());
             String  warns = Arrays.toString(j.warns());
             Assert.assertEquals(errs,warns);
             Assert.assertArrayEquals(new String[]{"bar", "cat", "dog", "eat", "foo", "zebra"},fr.vec(1).domain());
