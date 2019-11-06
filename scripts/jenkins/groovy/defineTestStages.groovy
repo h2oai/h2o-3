@@ -367,7 +367,6 @@ def call(final pipelineContext) {
       target: target, timeoutValue: 60,
       component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [
-              pipelineContext.getBuildConfig().COMPONENT_HADOOP,
               pipelineContext.getBuildConfig().COMPONENT_PY,
               pipelineContext.getBuildConfig().COMPONENT_R
       ],
@@ -423,7 +422,6 @@ def call(final pipelineContext) {
             target: target, timeoutValue: 60,
             component: pipelineContext.getBuildConfig().COMPONENT_ANY,
             additionalTestPackages: [
-                    pipelineContext.getBuildConfig().COMPONENT_HADOOP,
                     pipelineContext.getBuildConfig().COMPONENT_PY,
                     pipelineContext.getBuildConfig().COMPONENT_R
             ],

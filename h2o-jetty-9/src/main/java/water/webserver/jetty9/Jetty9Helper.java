@@ -139,6 +139,7 @@ class Jetty9Helper {
         }
         security.setLoginService(loginService);
         security.setAuthenticator(authenticator);
+        security.addConstraintMapping(mapping);
 
         final SessionHandler sessionHandler = new SessionHandler();
         if (config.session_timeout > 0) {

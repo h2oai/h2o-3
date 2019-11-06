@@ -19,7 +19,7 @@ class BuildConfig {
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '69'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '70'
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'
@@ -153,7 +153,7 @@ class BuildConfig {
   List<String> getBuildEnv() {
     return [
       'JAVA_VERSION=8',
-      "BUILD_HADOOP=${buildHadoop}",
+      "BUILD_HADOOP=false"
     ]
   }
 
