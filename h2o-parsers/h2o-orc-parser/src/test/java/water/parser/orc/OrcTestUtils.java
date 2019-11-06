@@ -1,4 +1,4 @@
-package water.parser;
+package water.parser.orc;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
@@ -25,6 +25,7 @@ import java.util.Set;
 
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.util.Log;
 
 import static org.junit.Assert.assertArrayEquals;
