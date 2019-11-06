@@ -43,11 +43,13 @@ public abstract class ModelMojoReader<M extends MojoModel> {
    * and model evaluation.
    *
    * @param reader      An instance of {@link MojoReaderBackend} to read from existing MOJO
-   * @param readModelDescriptor If true, 
+   * @param readModelMetadata If true, parses also model metadata (model performance metrics... {@link ModelAttributes})
+   *                          Model metadata are not required for scoring, it is advised to leave this option disabled
+   *                          if you want to use MOJO for inference only.
    * @return De-serialized {@link MojoModel}
    * @throws IOException Whenever there is an error reading the {@link MojoModel}'s data.
    */
-  public static MojoModel readFrom(MojoReaderBackend reader, final boolean readModelDescriptor) throws IOException {
+  public static MojoModel readFrom(MojoReaderBackend reader, final boolean readModelMetadata) throws IOException {
     try {
       Map<String, Object> info = parseModelInfo(reader);
       if (! info.containsKey("algorithm"))
@@ -56,7 +58,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
       ModelMojoReader mmr = ModelMojoFactory.INSTANCE.getMojoReader(algo);
       mmr._lkv = info;
       mmr._reader = reader;
-      mmr.readAll(readModelDescriptor);
+      mmr.readAll(readModelMetadata);
       return mmr._model;
     } finally {
       if (reader instanceof Closeable)
@@ -163,7 +165,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   // Private
   //--------------------------------------------------------------------------------------------------------------------
 
-  private void readAll(final boolean readModelDescriptor) throws IOException {
+  private void readAll(final boolean readModelMetadata) throws IOException {
     String[] columns = (String[]) _lkv.get("[columns]");
     String[][] domains = parseModelDomains(columns.length);
     boolean isSupervised = readkv("supervised");
@@ -182,10 +184,10 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     _model._mojo_version = ((Number) readkv("mojo_version")).doubleValue();
     checkMaxSupportedMojoVersion();
     readModelData();
-    if (readModelDescriptor) {
+    if (readModelMetadata) {
       _model._modelDescriptor = new ModelDescriptorBuilder(_model).build();
+      _model._modelAttributes = readModelSpecificAttributes();
     }
-    _model._modelAttributes = readModelSpecificAttributes();
   }
 
   protected ModelAttributes readModelSpecificAttributes() {
