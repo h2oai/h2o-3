@@ -43,7 +43,7 @@ def call(final pipelineContext, final stageConfig) {
         
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
 
-        dir('h2o-3') {
+        dir(stageConfig.stageDir) {
             retryWithTimeout(60, 3) {
                 echo "###### Checkout H2O-3 ######"
                 checkout scm
