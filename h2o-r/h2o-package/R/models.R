@@ -514,7 +514,9 @@ setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, d
                                                                         data_leakage_handling = NULL,
                                                                         use_blending = NULL,
                                                                         inflection_point = -1,
-                                                                        smoothing = -1) {
+                                                                        smoothing = -1, 
+                                                                        noise = -1, 
+                                                                        seed = -1) {
   
   params <- list()
   params[["model"]] <- model@model_id
@@ -524,6 +526,12 @@ setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, d
   }
   if(!is.null(use_blending)){
     params[["use_blending"]] <- use_blending
+  }
+  if(!is.null(noise)){
+    params[["noise"]] <- noise
+  }
+  if(!is.null(seed)){
+    params[["seed"]] <- seed
   }
   
   
