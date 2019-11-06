@@ -41,7 +41,7 @@ public class ParseTestORCCSV extends TestUtil {
         Scope.enter();
         try {
             int[] skipped_columns = new int[]{0, 1};
-            parse_test_file(orcFiles[0], skipped_columns);
+            Scope.track(parse_test_file(orcFiles[0], skipped_columns));
             fail("orc skipped all columns test failed...");
         } catch (Exception ex) {
             System.out.println("Skipped all columns test passed!");
@@ -58,11 +58,8 @@ public class ParseTestORCCSV extends TestUtil {
             try {
                 for (int f_index = 0; f_index < csvFiles.length; f_index++) {
 
-                    Frame csv_frame = parse_test_file(csvFiles[f_index], "\\N", 0, null);
-                    Frame orc_frame = parse_test_file(orcFiles[f_index], null, 0, null);
-
-                    Scope.track(csv_frame);
-                    Scope.track(orc_frame);
+                    Frame csv_frame = Scope.track(parse_test_file(csvFiles[f_index], "\\N", 0, null));
+                    Frame orc_frame = Scope.track(parse_test_file(orcFiles[f_index], null, 0, null));
 
                     assertTrue("Fails: " + csvFiles[f_index] + " != " + orcFiles[f_index],
                         TestUtil.isBitIdentical(orc_frame, csv_frame));  // both frames should equal

@@ -50,13 +50,13 @@ public class ParseTestMultiFileOrc extends TestUtil {
         };
         Scope.enter();
         try {
-            Frame csv_frame = parse_test_folder(CSV_DIR, "\\N", 0, null, pst);
+            Frame csv_frame = Scope.track(parse_test_folder(CSV_DIR, "\\N", 0, null, pst));
             byte[] types = csv_frame.types();
             for (int index = 0; index < types.length; index++) {
                 if (types[index] == 0)
                     types[index] = 4;
             }
-            Frame orc_frame = parse_test_folder(ORC_DIR, null, 0, types, pst);
+            Frame orc_frame = Scope.track(parse_test_folder(ORC_DIR, null, 0, types, pst));
             assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-5));
         } finally {
             Scope.exit();
