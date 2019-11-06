@@ -22,6 +22,10 @@ class CloudHandler extends Handler {
     // TODO: this really ought to be in the water package
     cloud.version = H2O.ABV.projectVersion();
     cloud.branch_name = H2O.ABV.branchName();
+    cloud.last_commit_hash = H2O.ABV.lastCommitHash();
+    cloud.describe = H2O.ABV.describe();
+    cloud.compiled_by = H2O.ABV.compiledBy();
+    cloud.compiled_on = H2O.ABV.compiledOn();
     cloud.build_number = H2O.ABV.buildNumber();
     cloud.build_age = PrettyPrint.toAge(H2O.ABV.compiledOnDate(), new Date());
     cloud.build_too_old = H2O.ABV.isTooOld();
