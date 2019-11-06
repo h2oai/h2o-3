@@ -43,13 +43,13 @@ def call(final pipelineContext, final stageConfig) {
         
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
 
-        def healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(
-                this, env.NODE_NAME, pipelineContext.getBuildConfig().getHadoopBuildImage(), 
-                pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig()
-        )
-        def buildH2O3 = load('h2o-3/scripts/jenkins/groovy/buildH2O3.groovy')
-        buildH2O3(pipelineContext, stageConfig)
-
+        dir('h2o-3') {
+            retryWithTimeout(60, 3) {
+                echo "###### Checkout H2O-3 ######"
+                checkout scm
+            }
+        }
+        
         def defaultStage = load('h2o-3/scripts/jenkins/groovy/defaultStage.groovy')
         try {
             defaultStage(pipelineContext, stageConfig)
