@@ -7,12 +7,10 @@ import ai.h2o.automl.WorkAllocations.Work;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
-import hex.ScoreKeeper;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Iced;
 import water.Job;
@@ -346,7 +344,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     baseParms,
                     searchParms,
                     new GridSearch.SimpleParametersBuilderFactory<>(),
-                    searchCriteria
+                    searchCriteria,
+                    GridSearch.SEQUENTIAL_MODEL_BUILDING
             );
         }
     }

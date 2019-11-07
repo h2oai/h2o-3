@@ -179,10 +179,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
        * Factory method to create an instance based on the given HyperSpaceSearchCriteria instance.
        */
       public static <MP extends Model.Parameters, C extends HyperSpaceSearchCriteria>
-        HyperSpaceWalker<MP, ? extends HyperSpaceSearchCriteria> create(MP params,
-                                                                        Map<String, Object[]> hyperParams,
-                                                                        ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                                                                        C search_criteria) {
+      HyperSpaceWalker<MP, ? extends HyperSpaceSearchCriteria> create(MP params,
+                                                                      Map<String, Object[]> hyperParams,
+                                                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                                                                      C search_criteria) {
         HyperSpaceSearchCriteria.Strategy strategy = search_criteria.strategy();
 
         if (strategy == HyperSpaceSearchCriteria.Strategy.Cartesian) {
@@ -240,13 +240,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         if (defaultVal != null && actualVal != null) {
           // both are not set to null
           if (defaultVal.getClass().isArray() &&
-              // array
-              !PojoUtils.arraysEquals(defaultVal, actualVal)) {
-              throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+                  // array
+                  !PojoUtils.arraysEquals(defaultVal, actualVal)) {
+            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
           } // array
           if (!defaultVal.getClass().isArray() &&
-              // ! array
-              !defaultVal.equals(actualVal)) {
+                  // ! array
+                  !defaultVal.equals(actualVal)) {
             throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
           } // ! array
         } // both are set: defaultVal != null && actualVal != null
@@ -254,7 +254,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         // defaultVal is null but actualVal is not, raise exception
         if (defaultVal == null && !(actualVal == null)) {
           // only actual is set
-            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+          throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
         }
       } // for all keys
 
@@ -295,7 +295,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
     protected MP getModelParams(MP params, Object[] hyperParams) {
       ModelParametersBuilderFactory.ModelParametersBuilder<MP>
-          paramsBuilder = _paramsBuilderFactory.get(params);
+              paramsBuilder = _paramsBuilderFactory.get(params);
       for (int i = 0; i < _hyperParamNames.length; i++) {
         String paramName = _hyperParamNames[i];
         Object paramValue = hyperParams[i];
@@ -442,7 +442,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    * given in explicit lists as they are with CartesianWalker.
    */
   public static class RandomDiscreteValueWalker<MP extends Model.Parameters>
-      extends BaseWalker<MP, HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria> {
+          extends BaseWalker<MP, HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria> {
     Random random;
 
     /** All visited hyper params permutations, including the current one. */
@@ -465,10 +465,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     @Override
     public boolean stopEarly(Model model, ScoringInfo[] sk) {
       return ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk),
-                                   search_criteria().stopping_rounds(),
-                                    ScoreKeeper.ProblemType.forSupervised(model._output.isClassifier()),
-                                   search_criteria().stopping_metric(),
-                                   search_criteria().stopping_tolerance(), "grid's best", true);
+              search_criteria().stopping_rounds(),
+              ScoreKeeper.ProblemType.forSupervised(model._output.isClassifier()),
+              search_criteria().stopping_metric(),
+              search_criteria().stopping_tolerance(), "grid's best", true);
     }
 
     @Override

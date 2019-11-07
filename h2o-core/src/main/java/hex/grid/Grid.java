@@ -287,10 +287,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @param params model parameters which caused model builder failure
    * @params e  exception causing a failure
    */
-  void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Exception e) {
+  void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Throwable t) {
     assert params != null : "Model parameters should be always != null !";
     String[] rawParams = ArrayUtils.toString(getHyperValues(params));
-      appendFailedModelParameters(modelKey, params, rawParams, e.getMessage(), StringUtils.toString(e));
+      appendFailedModelParameters(modelKey, params, rawParams, t.getMessage(), StringUtils.toString(t));
   }
 
   /**
