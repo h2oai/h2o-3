@@ -26,9 +26,6 @@ import water.webserver.iface.LoginType;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 
 class Jetty9Helper {
@@ -123,11 +120,13 @@ class Jetty9Helper {
         final Constraint constraint = new Constraint();
         constraint.setName("auth");
         constraint.setAuthenticate(true);
+
         constraint.setRoles(new String[]{Constraint.ANY_AUTH});
 
         final ConstraintMapping mapping = new ConstraintMapping();
         mapping.setPathSpec("/*"); // Lock down all API calls
         mapping.setConstraint(constraint);
+        security.setConstraintMappings(Collections.singletonList(mapping));
 
         // Authentication / Authorization
         final Authenticator authenticator;
@@ -139,7 +138,6 @@ class Jetty9Helper {
         }
         security.setLoginService(loginService);
         security.setAuthenticator(authenticator);
-        security.addConstraintMapping(mapping);
 
         final SessionHandler sessionHandler = new SessionHandler();
         if (config.session_timeout > 0) {
