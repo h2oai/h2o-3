@@ -74,8 +74,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/9/index.ht
 
 ### Yau (3.26.0.8) - 10/17/2019
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/8/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/8/index.html</a>
-
 <h4>Bug</h4>
 
 <ul>
