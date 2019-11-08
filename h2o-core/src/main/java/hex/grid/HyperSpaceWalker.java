@@ -158,7 +158,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     /**
      * Hyper space description - in this case only dimension and possible values.
      */
-    final protected Map<String, Object[]> _hyperParams;
+    final protected Map<String, Object[]> _hyperParamsGrid;
 
     protected boolean _set_model_seed_from_search_seed = false;  // true if model parameter seed is set to default value and false otherwise
     long model_number = 0l;   // denote model number
@@ -200,16 +200,16 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     /**
      *
      * @param paramsBuilderFactory
-     * @param hyperParams
+     * @param hyperParamsGrid
      */
     public BaseWalker(MP params,
-                      Map<String, Object[]> hyperParams,
+                      Map<String, Object[]> hyperParamsGrid,
                       ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                       C search_criteria) {
       _params = params;
-      _hyperParams = hyperParams;
+      _hyperParamsGrid = hyperParamsGrid;
       _paramsBuilderFactory = paramsBuilderFactory;
-      _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
+      _hyperParamNames = hyperParamsGrid.keySet().toArray(new String[0]);
       _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
       _search_criteria = search_criteria;
 
@@ -224,9 +224,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
       // if a parameter is specified in both model parameter and hyper-parameter, this is only allowed if the
       // parameter value is set to be default.  Otherwise, an exception will be thrown.
-      for (String key : hyperParams.keySet()) {
+      for (String key : hyperParamsGrid.keySet()) {
         // Throw if the user passed an empty value list:
-        Object[] values = hyperParams.get(key);
+        Object[] values = hyperParamsGrid.get(key);
         if (0 == values.length)
           throw new H2OIllegalArgumentException("Grid search hyperparameter value list is empty for hyperparameter: " + key);
 
@@ -313,7 +313,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
     protected long computeMaxSizeOfHyperSpace() {
       long work = 1;
-      for (Map.Entry<String, Object[]> p : _hyperParams.entrySet()) {
+      for (Map.Entry<String, Object[]> p : _hyperParamsGrid.entrySet()) {
         if (p.getValue() != null) {
           work *= p.getValue().length;
         }
@@ -321,10 +321,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return work;
     }
 
-    /** Given a list of indices for the hyperparameter values return an Object[] of the actual values. */
-    protected Object[] hypers(int[] hidx, Object[] hypers) {
+    /** Given a list of indices for the hyperparameter values return an ordered Object[] of the actual values to represent single permutation. */
+    protected Object[] permutation(int[] hidx, Object[] hypers) {
       for (int i = 0; i < hidx.length; i++) {
-        hypers[i] = _hyperParams.get(_hyperParamNames[i])[hidx[i]];
+        hypers[i] = _hyperParamsGrid.get(_hyperParamNames[i])[hidx[i]];
       }
       return hypers;
     }
@@ -332,7 +332,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     protected int integerHash(int[] ar) {
       Integer[] hashMe = new Integer[ar.length];
       for (int i = 0; i < ar.length; i++)
-        hashMe[i] = ar[i] * _hyperParams.get(_hyperParamNames[i]).length;
+        hashMe[i] = ar[i] * _hyperParamsGrid.get(_hyperParamNames[i]).length;
       return Arrays.deepHashCode(hashMe);
     }
   }
@@ -344,10 +344,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           extends BaseWalker<MP, HyperSpaceSearchCriteria.CartesianSearchCriteria> {
 
     public CartesianWalker(MP params,
-                           Map<String, Object[]> hyperParams,
+                           Map<String, Object[]> hyperParamsGrid,
                            ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                            HyperSpaceSearchCriteria.CartesianSearchCriteria search_criteria) {
-      super(params, hyperParams, paramsBuilderFactory, search_criteria);
+      super(params, hyperParamsGrid, paramsBuilderFactory, search_criteria);
     }
 
     @Override
@@ -363,11 +363,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           _currentHyperparamIndices = _currentHyperparamIndices != null ? nextModelIndices(_currentHyperparamIndices) : new int[_hyperParamNames.length];
           if (_currentHyperparamIndices != null) {
             // Fill array of hyper-values
-            Object[] hypers = hypers(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
+            Object[] permutation = permutation(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
             // Get clone of parameters
             MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
-            MP params = getModelParams(commonModelParams, hypers);
+            MP params = getModelParams(commonModelParams, permutation);
 
             return params;
           } else {
@@ -382,7 +382,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           }
           int[] hyperparamIndices = _currentHyperparamIndices;
           for (int i = 0; i < hyperparamIndices.length; i++) {
-            if (hyperparamIndices[i] + 1 < _hyperParams.get(_hyperParamNames[i]).length) {
+            if (hyperparamIndices[i] + 1 < _hyperParamsGrid.get(_hyperParamNames[i]).length) {
               return true;
             }
           }
@@ -409,7 +409,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         @Override
         public Object[] getCurrentRawParameters() {
           Object[] hyperValues = new Object[_hyperParamNames.length];
-          return hypers(_currentHyperparamIndices, hyperValues);
+          return permutation(_currentHyperparamIndices, hyperValues);
         }
       }; // anonymous HyperSpaceIterator class
     } // iterator()
@@ -423,7 +423,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       // Find the next parm to flip
       int i;
       for (i = 0; i < hyperparamIndices.length; i++) {
-        if (hyperparamIndices[i] + 1 < _hyperParams.get(_hyperParamNames[i]).length) {
+        if (hyperparamIndices[i] + 1 < _hyperParamsGrid.get(_hyperParamNames[i]).length) {
           break;
         }
       }
@@ -455,11 +455,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     ArrayList<Function<Map<String, Object>, Boolean>> _filterFunctions;
 
     public RandomDiscreteValueWalker(MP params,
-                                     Map<String, Object[]> hyperParams,
+                                     Map<String, Object[]> hyperParamsGrid,
                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria,
                                      ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions) {
-      super(params, hyperParams, paramsBuilderFactory, searchCriteria);
+      super(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria);
 
       if (-1 == searchCriteria.seed())
         random = new Random();                       // true random
@@ -470,10 +470,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     }
     
     public RandomDiscreteValueWalker(MP params,
-                                     Map<String, Object[]> hyperParams,
+                                     Map<String, Object[]> hyperParamsGrid,
                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria) {
-      this(params, hyperParams, paramsBuilderFactory, searchCriteria, null);
+      this(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria, null);
       
     }
 
@@ -514,15 +514,15 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
               _currentPermutationNum++; // NOTE: 1-based counting
 
             // Fill array of hyper-values
-            Object[] hypers = hypers(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
+            Object[] permutation = permutation(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
              
-            if (_filterFunctions == null || hyperParamsAreNotSkipped(hypers, _filterFunctions)) {
+            if (_filterFunctions == null || !permutationIsSkipped(permutation, _filterFunctions)) {
 
               _numberOfNonSkippedPermutations++;
               // Get clone of parameters
               MP commonModelParams = (MP) _params.clone();
               // Fill model parameters
-              MP params = getModelParams(commonModelParams, hypers);
+              MP params = getModelParams(commonModelParams, permutation);
 
               // add max_runtime_secs in search criteria into params if applicable
               if (_search_criteria != null && _search_criteria.strategy() == HyperSpaceSearchCriteria.Strategy.RandomDiscrete) {
@@ -558,28 +558,28 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           }
         }
         
-        private boolean hyperParamsAreNotSkipped(Object[] hypers, ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions) {
-          boolean gridItemShouldBeSkipped = false;
+        private boolean permutationIsSkipped(Object[] permutation, ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions) {
+          boolean skipPermutation = false;
           
-          Map<String, Object> gridItemAsHashMap = convertToMap(hypers, _hyperParamNames);
+          Map<String, Object> permutationAsMap = convertToMap(permutation, _hyperParamNames);
 
           for(Function<Map<String, Object>, Boolean> fun : filterFunctions) {
-            if(!fun.apply(gridItemAsHashMap)  ) {
-              gridItemShouldBeSkipped = true;
+            if(!fun.apply(permutationAsMap)  ) {
+              skipPermutation = true;
               break;
             }
           }
 
           // Decrement counters only when we actually decided not to skip given grid item (after taking into account all filter functions),
           // and only for KeepOnlyFirstMatchFilterFunction functions that were matching
-          if(!gridItemShouldBeSkipped) {
+          if(!skipPermutation) {
             filterFunctions.stream()
                     .filter(fun1 -> {
-                      return fun1 instanceof KeepOnlyFirstMatchFilterFunction && ((KeepOnlyFirstMatchFilterFunction) fun1)._baseMatchFunction.apply(gridItemAsHashMap);
+                      return fun1 instanceof KeepOnlyFirstMatchFilterFunction && ((KeepOnlyFirstMatchFilterFunction) fun1)._baseMatchFunction.apply(permutationAsMap);
                     })
                     .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction) fun).decrementCounter());
           }
-          return !gridItemShouldBeSkipped;
+          return skipPermutation;
         }
 
         @Override
@@ -629,19 +629,19 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         @Override
         public Object[] getCurrentRawParameters() {
           Object[] hyperValues = new Object[_hyperParamNames.length];
-          return hypers(_currentHyperparamIndices, hyperValues);
+          return permutation(_currentHyperparamIndices, hyperValues);
         }
       }; // anonymous HyperSpaceIterator class
     } // iterator()
 
-    private Map<String, Object> convertToMap(Object[] hypers, String[] hyperParamNames) {
-      Map<String, Object> gridItemAsHashMap = new HashMap<>();
+    private Map<String, Object> convertToMap(Object[] permutation, String[] hyperParamNames) {
+      Map<String, Object> permutationAsMap = new HashMap<>();
       int indexOfHP = 0;
       for(String hpName : hyperParamNames) {
-        gridItemAsHashMap.put(hpName, hypers[indexOfHP]);
+        permutationAsMap.put(hpName, permutation[indexOfHP]);
         indexOfHP++;
       }
-      return gridItemAsHashMap;
+      return permutationAsMap;
     }
 
     /**
@@ -655,7 +655,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       do {
         // generate random indices
         for (int i = 0; i < _hyperParamNames.length; i++) {
-          hyperparamIndices[i] = random.nextInt(_hyperParams.get(_hyperParamNames[i]).length);
+          hyperparamIndices[i] = random.nextInt(_hyperParamsGrid.get(_hyperParamNames[i]).length);
         }
         // check for aliases and loop if we've visited this combo before
       } while (_visitedPermutationHashes.contains(integerHash(hyperparamIndices)));

@@ -39,18 +39,18 @@ public class RGSWithFilteringTest extends TestUtil {
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
 
 
-    KeepOnlyFirstMatchFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
+    KeepOnlyFirstMatchFilterFunction filterFunction1 = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
       Object mainHP = gridItem.get("_blending");
       return mainHP instanceof Boolean && !(Boolean) mainHP; // TODO handle cases when type is not that expected
     });
 
-    Function<Map<String, Object>, Boolean> strictFilterFunction = gridItem -> {
+    Function<Map<String, Object>, Boolean> filterFunction2 = gridItem -> {
       return !((double) gridItem.get("_k") == 3.0 && (double) gridItem.get("_f") == 1.0);
     };
 
     ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions = new ArrayList<>();
-    filterFunctions.add(strictFilterFunction);
-    filterFunctions.add(blendingFilterFunction);
+    filterFunctions.add(filterFunction1);
+    filterFunctions.add(filterFunction2);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
@@ -71,7 +71,13 @@ public class RGSWithFilteringTest extends TestUtil {
     System.out.println("\nAll grid items after applying filtering functions:");
     evaluatedGridItems.forEach(System.out::println);
 
-    assertEquals(54 - (27 - 1) + 3 - 6, evaluatedGridItems.size());
+    // Expected number of the grid items is a result of filtering out permutations with two filtering functions 
+    // and taking into account that there are intersections of these functions 
+    //
+    //       total    filtered by filterFunction1 except first match          filtered by filterFunction2       overlap
+    //  25 = 54     - (27 - 1)                                                - 6                               + 3 
+
+    assertEquals(25, evaluatedGridItems.size());
   }
 
   @Test
@@ -230,7 +236,9 @@ public class RGSWithFilteringTest extends TestUtil {
     hpGrid.put("_sample_rate", new Double[]{0.50, 0.60, 0.70, 0.80, 0.90, 1.00}); 
     hpGrid.put("_col_sample_rate", new Double[]{ 0.4, 0.7, 1.0}); 
     hpGrid.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0}); 
-    hpGrid.put("_min_split_improvement", new Double[]{1e-4, 1e-5}); 
+    hpGrid.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
+
+    int totalNumberOfPermutationsInHPGrid = 87480;
 
     GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
 
@@ -241,6 +249,7 @@ public class RGSWithFilteringTest extends TestUtil {
     Function<Map<String, Object>, Boolean> strictFilterFunction = gridItem -> {
       return !((int) gridItem.get("_max_depth") >= 15.0 && (int) gridItem.get("_min_rows") >= 50);
     };
+    int expectedNumberOfFilteredOutPermutations = 2916;
 
     ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions = new ArrayList<>();
     filterFunctions.add(strictFilterFunction);
@@ -262,7 +271,7 @@ public class RGSWithFilteringTest extends TestUtil {
       }
     }
 
-    assertEquals(87480 - 2916, filteredGridItems.size());
+    assertEquals(totalNumberOfPermutationsInHPGrid - expectedNumberOfFilteredOutPermutations, filteredGridItems.size());
   }
 
 
