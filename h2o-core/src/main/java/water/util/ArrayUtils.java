@@ -1729,9 +1729,13 @@ public class ArrayUtils {
 
     int end=Arrays.binarySearch(sortedSplitPoints, maxEx);
     if (end<0) end=-end-1;
-    assert(end>0 && end<= sortedSplitPoints.length);
-    assert(end>=start);
-    assert(sortedSplitPoints[end-1] < maxEx);
+    String splitPointInfo = "Split points info - split points length: "+sortedSplitPoints.length + " values: ";
+    for(double value: sortedSplitPoints){
+      splitPointInfo += value+" ";
+    }
+    assert(end>0 && end<= sortedSplitPoints.length): "End index ("+end+") should be > 0 and <= split points size ("+sortedSplitPoints.length+"). "+splitPointInfo;
+    assert(end>=start): "End index ("+end+") should be >= start index ("+start+").";
+    assert(sortedSplitPoints[end-1] < maxEx): "Split valued at index end-1 ("+sortedSplitPoints[end-1]+") should be < maxEx value ("+maxEx+"). "+splitPointInfo;
 
     return Arrays.copyOfRange(sortedSplitPoints,start,end);
   }
