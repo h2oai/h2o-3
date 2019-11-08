@@ -7,10 +7,7 @@ import water.util.Log;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class RabitWorker implements Comparable<RabitWorker> {
 
@@ -104,15 +101,15 @@ public class RabitWorker implements Comparable<RabitWorker> {
 
         while (true) {
             int ngood = ab.get4();
-            Set<Integer> goodSet = new HashSet<>();
+            Set<Integer> goodSet = new LinkedHashSet<>();
             for(int i = 0; i < ngood; i++) {
                 int got = ab.get4();
                 goodSet.add(got);
             }
             assert nnset.containsAll(goodSet);
-            Set<Integer> badSet = new HashSet<>(nnset);
+            Set<Integer> badSet = new LinkedHashSet<>(nnset);
             badSet.removeAll(goodSet);
-            Set<Integer> conset = new HashSet<>();
+            Set<Integer> conset = new LinkedHashSet<>();
             for (Integer r : badSet) {
                 if(waitConn.containsKey(r)) {
                     conset.add(r);
@@ -136,7 +133,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
                 continue;
             }
             this.port = ab.get4();
-            Set<Integer> rmset = new HashSet<>();
+            Set<Integer> rmset = new LinkedHashSet<>();
             // All connections were successfully setup
             for (Integer r : conset) {
                 waitConn.get(r).waitAccept -= 1;

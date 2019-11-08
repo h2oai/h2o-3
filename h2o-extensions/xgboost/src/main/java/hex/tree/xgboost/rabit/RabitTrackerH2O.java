@@ -40,7 +40,6 @@ public class RabitTrackerH2O implements IRabitTracker {
         envs.put("DMLC_TRACKER_URI", H2O.SELF_ADDRESS.getHostAddress());
         envs.put("DMLC_TRACKER_PORT", Integer.toString(port));
         envs.put("rabit_world_size", Integer.toString(workers));
-
         return envs;
     }
 
