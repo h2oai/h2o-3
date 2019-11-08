@@ -42,7 +42,6 @@ public class XGBoostUpdater extends Thread {
   @Override
   public void run() {
     try {
-      Thread.sleep(100 * H2O.SELF.index());
       Rabit.init(_rabitEnv);
 
       while (! interrupted()) {
