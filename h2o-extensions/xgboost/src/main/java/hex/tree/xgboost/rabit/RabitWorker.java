@@ -151,6 +151,6 @@ public class RabitWorker implements Comparable<RabitWorker> {
 
     @Override
     public int compareTo(RabitWorker o) {
-        return host.compareTo(o.host);
+        return jobId.compareTo(o.jobId);
     }
 }
