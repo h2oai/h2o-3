@@ -561,7 +561,6 @@ public class TargetEncodingTest extends TestUtil {
                 .build();
         Scope.track(fr);
 
-
         Job export = Frame.export(fr, tmpFile.getAbsolutePath(), fr._key.toString(), true, 1);
         export.get();
 
@@ -580,20 +579,22 @@ public class TargetEncodingTest extends TestUtil {
         Scope.track(resultWithEncoding);
 
 //      String[] dom = resultWithEncoding.vec(1).domain();
-        // k <- 20
-        // f <- 10
+        // k <- 10
+        // f <- 20
         // global_mean <- sum(x_map$numerator)/sum(x_map$denominator)
         // lambda <- 1/(1 + exp((-1)* (te_frame$denominator - k)/f))
         // te_frame$target_encode <- ((1 - lambda) * global_mean) + (lambda * te_frame$numerator/te_frame$denominator)
 
         double globalMean = 2.0 / 3;
-        double lambda1 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
+        double k = 10.0;
+        int f = 20;
+        double lambda1 = 1.0 / (1.0 + (Math.exp((k - 2) / f)));
         double te1 = (1.0 - lambda1) * globalMean + (lambda1 * 2 / 2);
 
-        double lambda2 = 1.0 / (1 + Math.exp((20.0 - 1) / 10));
+        double lambda2 = 1.0 / (1 + Math.exp((k - 1) / f));
         double te2 = (1.0 - lambda2) * globalMean + (lambda2 * 0 / 1);
 
-        double lambda3 = 1.0 / (1.0 + (Math.exp((20.0 - 2) / 10)));
+        double lambda3 = 1.0 / (1.0 + (Math.exp((k - 2) / f)));
         double te3 = (1.0 - lambda3) * globalMean + (lambda3 * 2 / 2);
 
         assertEquals(te1, resultWithEncoding.vec(4).at(0), 1e-5);

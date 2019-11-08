@@ -57,7 +57,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
         parameter.
 
-        Type: ``float``  (default: ``20``).
+        Type: ``float``  (default: ``10``).
         """
         return self._parms.get("k")
 
@@ -72,7 +72,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         """
         Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``  (default: ``20``).
         """
         return self._parms.get("f")
 
@@ -85,7 +85,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     @property
     def data_leakage_handling(self):
         """
-        Data leakage handling strategy. Default to None.
+        Data leakage handling strategy.
 
         One of: ``"none"``, ``"k_fold"``, ``"leave_one_out"``  (default: ``"none"``).
         """
