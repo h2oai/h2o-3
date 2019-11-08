@@ -124,6 +124,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
   static boolean enableLog4jDefaultInitOverride = true;
+  static String logLevel;
   static boolean enableDebug = false;
   static boolean enableSuspend = false;
   static int debugPort = 5005;    // 5005 is the default from IDEA
@@ -973,6 +974,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-Dlog4j.defaultInitOverride=true")) {
         enableLog4jDefaultInitOverride = true;
       }
+      else if (s.equals("-log_level")) {
+        i++; if (i >= args.length) { usage(); }
+        logLevel = args[i];
+      } 
       else if (s.equals("-debug")) {
         enableDebug = true;
       }
@@ -985,7 +990,8 @@ public class h2odriver extends Configured implements Tool {
         if ((debugPort < 0) || (debugPort > 65535)) {
           error("Debug port must be between 1 and 65535");
         }
-      } else if (s.equals("-XX:+PrintGCDetails")) {
+      } 
+      else if (s.equals("-XX:+PrintGCDetails")) {
         if (!JAVA_VERSION.useUnifiedLogging()) {
           enablePrintGCDetails = true;
         } else {
@@ -1614,6 +1620,9 @@ public class h2odriver extends Configured implements Tool {
     }
     if (flowDir != null) {
       addMapperArg(conf, "-flow_dir", flowDir);
+    }
+    if (logLevel != null) {
+      addMapperArg(conf, "-log_level", logLevel);
     }
     if ((new File(".h2o_no_collect")).exists() || (new File(System.getProperty("user.home") + "/.h2o_no_collect")).exists()) {
       addMapperArg(conf, "-ga_opt_out");
