@@ -9,7 +9,7 @@ def call(final stageConfig) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return getCommandHadoop(stageConfig)
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
-            return getCommandStandalone()
+            return getCommandStandalone(stageConfig)
         default:
             error("Startup mode ${stageConfig.customData.mode} for H2O with Hadoop is not supported")
     }
@@ -45,12 +45,13 @@ private GString getCommandHadoop(final stageConfig) {
         """
 }
 
-private GString getCommandStandalone() {
+private GString getCommandStandalone(final stageConfig) {
     def defaultPort = 54321
     return """
             java -cp build/h2o.jar:\$(cat /opt/hive-jdbc-cp) water.H2OApp \\
                 -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                 -jks mykeystore.jks \\
+                -login_conf ${stageConfig.customData.ldapConfigPathStandalone} -ldap_login \\
                 > standalone_h2o.log 2>&1 & sleep 15
             export CLOUD_IP=\$(hostname --ip-address)
             export CLOUD_PORT=${defaultPort}
