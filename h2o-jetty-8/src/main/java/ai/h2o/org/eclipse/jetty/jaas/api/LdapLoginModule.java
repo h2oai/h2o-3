@@ -1,4 +1,4 @@
-package ai.h2o.org.eclipse.jetty.plus.jaas.spi;
+package ai.h2o.org.eclipse.jetty.jaas.api;
 
 /**
  * LdapLoginModule is relocated in Sparkling Water to the package ai.h2o.org.eclipse.jetty.jaas.spi
