@@ -340,10 +340,8 @@ def call(final pipelineContext) {
   for (distribution in supportedHadoopDists) {
     def target
     def ldapConfigPath
-    if (distribution.name == 'cdh' && distribution.version.startsWith('6.')) {
-      target = 'test-hadoop-3-smoke'
-      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
-    } else if (distribution.name == 'hdp' && distribution.version.startsWith('3.')) {
+    if ((distribution.name == 'cdh' && distribution.version.startsWith('6.')) ||
+            (distribution.name == 'hdp' && distribution.version.startsWith('3.'))){
       target = 'test-hadoop-3-smoke'
       ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
     } else {
@@ -366,17 +364,16 @@ def call(final pipelineContext) {
         ldapConfigPathStandalone: 'scripts/jenkins/config/ldap-jetty-8.txt'
       ], pythonVersion: '2.7',
       customDockerArgs: [ '--privileged' ],
-      executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'
+      executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
+      image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, false)
     ]
     def standaloneStage = evaluate(stageTemplate.inspect())
     standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
     standaloneStage.customData.mode = 'STANDALONE'
-    standaloneStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(standaloneStage.customData.distribution, standaloneStage.customData.version, false)
 
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
     onHadoopStage.customData.mode = 'ON_HADOOP'
-    onHadoopStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(onHadoopStage.customData.distribution, onHadoopStage.customData.version, false)
 
     HADOOP_STAGES += [ standaloneStage, onHadoopStage ]
   }
@@ -400,11 +397,14 @@ def call(final pipelineContext) {
       throw new IllegalArgumentException("Distribution ${distribution} is no longer supported. Update pipeline config.")
     }
     def target
+    def ldapConfigPath
     if ((distribution.name == 'cdh' && distribution.version.startsWith('6.')) ||
             (distribution.name == 'hdp' && distribution.version.startsWith('3.'))){
       target = 'test-kerberos-hadoop-3'
+      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-9.txt'
     } else {
       target = 'test-kerberos-hadoop-2'
+      ldapConfigPath = 'scripts/jenkins/config/ldap-jetty-8.txt'
     }
 
     def stageTemplate = [
@@ -418,28 +418,28 @@ def call(final pipelineContext) {
                     distribution: distribution.name,
                     version: distribution.version,
                     commandFactory: 'h2o-3/scripts/jenkins/groovy/kerberosCommands.groovy',
+                    ldapConfigPath: ldapConfigPath,
                     kerberosUserName: 'jenkins@H2O.AI',
                     kerberosPrincipal: 'HTTP/localhost@H2O.AI',
                     kerberosConfigPath: 'scripts/jenkins/config/kerberos.conf',
-                    kerberosPropertiesPath: 'scripts/jenkins/config/kerberos.properties',
+                    spnegoConfigPath: 'scripts/jenkins/config/spnego.conf',
+                    spnegoPropertiesPath: 'scripts/jenkins/config/spnego.properties',
             ], pythonVersion: '2.7',
             customDockerArgs: [ '--privileged' ],
-            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy'
+            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopStage.groovy',
+            image: pipelineContext.getBuildConfig().getSmokeHadoopImage(distribution.name, distribution.version, true)
     ]
     def standaloneStage = evaluate(stageTemplate.inspect())
     standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
     standaloneStage.customData.mode = 'STANDALONE'
-    standaloneStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(standaloneStage.customData.distribution, standaloneStage.customData.version, true)
 
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
     onHadoopStage.customData.mode = 'ON_HADOOP'
-    onHadoopStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(onHadoopStage.customData.distribution, onHadoopStage.customData.version, true)
 
     def onHadoopWithSpnegoStage = evaluate(stageTemplate.inspect())
     onHadoopWithSpnegoStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP WITH SPNEGO"
     onHadoopWithSpnegoStage.customData.mode = 'ON_HADOOP_WITH_SPNEGO'
-    onHadoopWithSpnegoStage.image = pipelineContext.getBuildConfig().getSmokeHadoopImage(onHadoopStage.customData.distribution, onHadoopStage.customData.version, true)
 
     KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage ]
   }

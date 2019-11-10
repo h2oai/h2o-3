@@ -322,7 +322,7 @@ class BuildConfig {
       if (useKRB) {
           krbSuffix = '-krb'
       }
-      return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${krbSuffix}:${HADOOP_IMAGE_VERSION_TAG}"
+      return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${krbSuffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
   }
 
   static enum JenkinsMaster {

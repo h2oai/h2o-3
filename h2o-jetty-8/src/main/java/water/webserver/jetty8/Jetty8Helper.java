@@ -1,5 +1,6 @@
 package water.webserver.jetty8;
 
+import ai.h2o.org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
 import org.eclipse.jetty.plus.jaas.JAASLoginService;
 import org.eclipse.jetty.security.Authenticator;
 import org.eclipse.jetty.security.ConstraintMapping;
@@ -11,7 +12,6 @@ import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.SpnegoLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
-import org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
@@ -109,6 +109,7 @@ class Jetty8Helper {
         primaryAuthenticator = new BasicAuthenticator();
         break;
       case SPNEGO:
+        System.setProperty("javax.security.auth.useSubjectCredsOnly", "false");
         loginService = new SpnegoLoginService(config.loginType.jaasRealm, config.spnego_properties);
         primaryAuthenticator = new SpnegoAuthenticator();
         break;
