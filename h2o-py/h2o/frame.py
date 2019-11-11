@@ -3986,6 +3986,19 @@ class H2OFrame(Keyed):
         :param value_name: Name of the value-column (default: "value").
         :param skipna: If enabled, do not include NAs in the result. 
         :returns: Returns an unpivoted H2OFrame.
+
+        :examples:
+
+        >>> import pandas as pd
+        >>> from h2o.frame import H2OFrame
+        >>> df = pd.DataFrame({'A': {0: 'a', 1: 'b', 2: 'c'},
+        ...                    'B': {0: 1, 2: 5},
+        ...                    'C': {0: 2, 1: 4, 2: 6}})
+        >>> df
+        >>> frozen_h2o = H2OFrame(df)
+        >>> frozen_h2o
+        >>> melted = frozen_h2o.melt(id_vars=["A"], value_vars=["B"])
+        >>> melted
         """
         assert_is_type(id_vars, [str])
         assert_is_type(value_vars, [str], None)
