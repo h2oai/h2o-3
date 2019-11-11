@@ -46,7 +46,7 @@ public class ModelJsonReader {
         Objects.requireNonNull(modelJson);
         JsonElement potentialTableJson = findInJson(modelJson, tablePath);
         if (potentialTableJson.isJsonNull()) {
-            System.out.println(String.format("Failed to extract element '%s' MojoModel dump.",
+            System.err.println(String.format("Failed to extract element '%s' MojoModel dump.",
                     tablePath));
             return null;
         }
@@ -141,7 +141,7 @@ public class ModelJsonReader {
         final JsonElement jsonSourceObject = findInJson(from, elementPath);
 
         if (jsonSourceObject instanceof JsonNull) {
-            System.out.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
+            System.err.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
                     elementPath, object.getClass().getName()));
             return;
         }
@@ -199,9 +199,9 @@ public class ModelJsonReader {
                 }
                 if (value != null) field.set(object, value);
             } catch (IllegalAccessException e) {
-                System.out.println(String.format("Field '%s' could not be accessed. Ignoring.", fieldName));
+                System.err.println(String.format("Field '%s' could not be accessed. Ignoring.", fieldName));
             } catch (ClassCastException | UnsupportedOperationException e) {
-                System.out.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
+                System.err.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
             }
         }
     }
