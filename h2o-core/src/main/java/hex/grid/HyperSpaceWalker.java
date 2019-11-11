@@ -600,7 +600,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           _currentHyperparamIndices = null;
           _visitedPermutations.clear();
           _visitedPermutationHashes.clear();
-          _filterFunctions.stream().filter(fun -> fun instanceof KeepOnlyFirstMatchFilterFunction).forEach(fun -> ((KeepOnlyFirstMatchFilterFunction)fun).reset());
+          if(_filterFunctions != null) _filterFunctions.stream()
+                  .filter(fun -> fun instanceof KeepOnlyFirstMatchFilterFunction)
+                  .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction)fun).reset());
           _numberOfNonSkippedPermutations = 0;
         }
 
