@@ -224,7 +224,7 @@ with HTTPS:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = TRUE)
+    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = FALSE)
 
 The underlying HTTPS implementation is provided by RCurl and by
 extension libcurl and OpenSSL.
@@ -237,7 +237,7 @@ with HTTPS:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = TRUE)
+    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = FALSE)
 
 The underlying HTTPS implementation is provided by RCurl and by
 extension libcurl and OpenSSL.
