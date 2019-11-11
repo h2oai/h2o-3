@@ -15,7 +15,7 @@ public class KeepOnlyFirstMatchFilterFunction implements Function<Map<String, Ob
 
   // Function that should return `true` for grid items that we want to evaluate only one representative from.
   public final Function<Map<String, Object>, Boolean> _baseMatchFunction;
-  private int _maxNumberOfApplications = 1;
+  private int _maxNumberOfMatchesToApply = 1;
   
   public KeepOnlyFirstMatchFilterFunction(Function<Map<String, Object>, Boolean> fun) {
     _baseMatchFunction = fun;
@@ -23,16 +23,19 @@ public class KeepOnlyFirstMatchFilterFunction implements Function<Map<String, Ob
 
   @Override
   public Boolean apply(Map<String, Object> stringObjectMap) {
-    Boolean applyResult = _baseMatchFunction.apply(stringObjectMap);
-    return applyResult ? !(_maxNumberOfApplications == 0) : true;
+    if(_maxNumberOfMatchesToApply == 0) {
+      return  !_baseMatchFunction.apply(stringObjectMap);
+    } else {
+      return true;
+    }
   }
   
   public void decrementCounter() {
-    if(_maxNumberOfApplications > 0)_maxNumberOfApplications--;
+    if (_maxNumberOfMatchesToApply > 0) _maxNumberOfMatchesToApply--;
   }
   
   public void reset() {
-    _maxNumberOfApplications = 1;
+    _maxNumberOfMatchesToApply = 1;
   }
 
   @Override
