@@ -2,12 +2,12 @@ package water.automl.api.schemas3;
 
 import ai.h2o.automl.Leaderboard;
 import water.api.API;
-import water.api.Schema;
 import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
 
 import java.util.stream.Stream;
 
-public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
+public class LeaderboardV99 extends SchemaV3<Leaderboard, LeaderboardV99> {
   /**
    * Identifier for models that should be grouped together in the leaderboard
    * (e.g., "airlines" and "iris").

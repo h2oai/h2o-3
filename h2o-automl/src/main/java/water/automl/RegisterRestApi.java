@@ -10,6 +10,10 @@ public class RegisterRestApi extends AbstractRegister {
 
   @Override
   public void registerEndPoints(RestApiContext context) {
+    context.registerEndpoint("automl_meta",
+            "GET /99/AutoMLBuilder", AutoMLBuilderHandler.class, "meta",
+            "Return the AutoML build metadata.");
+
     context.registerEndpoint("automl_build",
             "POST /99/AutoMLBuilder", AutoMLBuilderHandler.class, "build",
             "Start an AutoML build process.");
