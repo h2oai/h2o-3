@@ -209,6 +209,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="Custom algorithm parameters.", direction=API.Direction.INPUT)
     public AutoMLCustomParameterV99[] algo_parameters;
 
+    @API(help="A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.", direction= API.Direction.INPUT)
     public KeyValueV3[] monotone_constraints;
 
     @Override
