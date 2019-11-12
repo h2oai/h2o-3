@@ -11,7 +11,6 @@ import water.TestUtil;
 import water.api.GridSearchHandler;
 
 import java.util.HashMap;
-import java.util.function.Function;
 
 import static org.junit.Assert.*;
 
@@ -30,7 +29,6 @@ public class TargetEncoderRGSTest extends TestUtil {
       HashMap<String, Object[]> hpGrid = new HashMap<>();
       hpGrid.put("blending", new Boolean[]{true, false});
       hpGrid.put("noise_level", new Double[]{0.0, 0.01,  0.1});
-      // TODO figure out how to work with hierarchical parameters BlendingParams(inflection_point, smoothing) or BlendingParams(k, f)
       hpGrid.put("k", new Double[]{1.0, 2.0, 3.0});
       hpGrid.put("f", new Double[]{5.0, 10.0, 20.0});
       

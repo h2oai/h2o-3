@@ -150,7 +150,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
   
   @Override
   protected double[] score0(double data[], double preds[]){
-    throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring. Use `transform()` instead.");
+    throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring on raw data. Use transform() or score() instead.");
   }
 
   @Override
