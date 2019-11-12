@@ -383,7 +383,7 @@ test-package-hadoop:
 		h2o-hive/tests/python/ h2o-hive/tests/R/
 
 ifeq ($(HIVE_VERSION_MAJOR),3)
-test-hadoop-common-smoke-hive-ldap:
+test-hadoop-common-smoke-hive-basic:
 	echo "Hive version 3 installed, not running Hive tests."
 test-hadoop-common-smoke-hive-spnego:
 	echo "Hive version 3 installed, not running Hive tests."
