@@ -4,12 +4,12 @@ import hex.Model;
 import hex.ModelParametersBuilderFactory;
 import hex.ScoreKeeper;
 import hex.ScoringInfo;
+import hex.grid.filter.PermutationFilterFunction;
 import hex.grid.filter.KeepOnlyFirstMatchFilterFunction;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
 import java.util.*;
-import java.util.function.Function;
 
 import static java.lang.StrictMath.min;
 
@@ -452,13 +452,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     private int _numberOfNonSkippedPermutations = 0;
     private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // for fast dupe lookup
 
-    ArrayList<Function<Map<String, Object>, Boolean>> _filterFunctions;
+    ArrayList<PermutationFilterFunction> _filterFunctions;
 
     public RandomDiscreteValueWalker(MP params,
                                      Map<String, Object[]> hyperParamsGrid,
                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria,
-                                     ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions) {
+                                     ArrayList<PermutationFilterFunction> filterFunctions) {
       super(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria);
 
       if (-1 == searchCriteria.seed())
@@ -558,12 +558,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           }
         }
         
-        private boolean permutationIsSkipped(Object[] permutation, ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions) {
+        private boolean permutationIsSkipped(Object[] permutation, ArrayList<PermutationFilterFunction> filterFunctions) {
           boolean skipPermutation = false;
           
           Map<String, Object> permutationAsMap = convertToMap(permutation, _hyperParamNames);
 
-          for(Function<Map<String, Object>, Boolean> fun : filterFunctions) {
+          for(PermutationFilterFunction fun : filterFunctions) {
             if(!fun.apply(permutationAsMap)  ) {
               skipPermutation = true;
               break;

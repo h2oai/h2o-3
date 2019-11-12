@@ -4,6 +4,7 @@ import ai.h2o.targetencoding.TargetEncoderModel;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceWalker;
+import hex.grid.filter.PermutationFilterFunction;
 import hex.grid.filter.KeepOnlyFirstMatchFilterFunction;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
@@ -13,9 +14,9 @@ import water.TestUtil;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.function.Function;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class RGSWithFilteringTest extends TestUtil {
 
@@ -44,11 +45,11 @@ public class RGSWithFilteringTest extends TestUtil {
       return mainHP instanceof Boolean && !(Boolean) mainHP; // TODO handle cases when type is not that expected
     });
 
-    Function<Map<String, Object>, Boolean> filterFunction2 = gridItem -> {
+    PermutationFilterFunction filterFunction2 = gridItem -> {
       return !((double) gridItem.get("_k") == 3.0 && (double) gridItem.get("_f") == 1.0);
     };
 
-    ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions = new ArrayList<>();
+    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
     filterFunctions.add(filterFunction1);
     filterFunctions.add(filterFunction2);
 
@@ -100,7 +101,7 @@ public class RGSWithFilteringTest extends TestUtil {
       return mainHP instanceof Boolean && !(Boolean) mainHP;
     });
 
-    ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions = new ArrayList<>();
+    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
     filterFunctions.add(blendingFilterFunction);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
@@ -147,7 +148,7 @@ public class RGSWithFilteringTest extends TestUtil {
       return mainHP instanceof Boolean && !(Boolean) mainHP;
     });
 
-    ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions = new ArrayList<>();
+    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
     filterFunctions.add(blendingFilterFunction);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
@@ -195,7 +196,7 @@ public class RGSWithFilteringTest extends TestUtil {
       return mainHP instanceof Boolean && !(Boolean) mainHP;
     });
 
-    ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions = new ArrayList<>();
+    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
     filterFunctions.add(blendingFilterFunction);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
@@ -246,12 +247,12 @@ public class RGSWithFilteringTest extends TestUtil {
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
 
-    Function<Map<String, Object>, Boolean> strictFilterFunction = gridItem -> {
+    PermutationFilterFunction strictFilterFunction = gridItem -> {
       return !((int) gridItem.get("_max_depth") >= 15.0 && (int) gridItem.get("_min_rows") >= 50);
     };
     int expectedNumberOfFilteredOutPermutations = 2916;
 
-    ArrayList<Function<Map<String, Object>, Boolean>> filterFunctions = new ArrayList<>();
+    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
     filterFunctions.add(strictFilterFunction);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<GBMModel.GBMParameters> walker =
@@ -274,5 +275,23 @@ public class RGSWithFilteringTest extends TestUtil {
     assertEquals(totalNumberOfPermutationsInHPGrid - expectedNumberOfFilteredOutPermutations, filteredGridItems.size());
   }
 
+  @Test
+  public void test_class_KeepOnlyFirstMatchFilterFunction_was_extended_properly() {
+    KeepOnlyFirstMatchFilterFunction ff1 = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
+      Object mainHP = gridItem.get("_blending");
+      return mainHP instanceof Boolean && !(Boolean) mainHP;
+    });
 
+    KeepOnlyFirstMatchFilterFunction ff2 = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
+      Object mainHP = gridItem.get("_noise_level");
+      return mainHP instanceof Double && (Double) mainHP == 0.01;
+    });
+
+    Map<String, Object> permutation = new HashMap<>();
+    permutation.put("_blending", false);
+    permutation.put("_noise_level",  0.01);
+    
+    assertTrue(ff1.apply(permutation));
+    assertTrue(ff2.apply(permutation));
+  }
 }

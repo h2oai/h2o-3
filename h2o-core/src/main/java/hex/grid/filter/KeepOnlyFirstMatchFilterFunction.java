@@ -11,7 +11,7 @@ import java.util.function.Function;
  *  Usage: pass the function to the constructor which will return `true` for the grid items of type <Map<String, Object>
  *  that we will want to consider equal.
  */
-public class KeepOnlyFirstMatchFilterFunction implements Function<Map<String, Object>, Boolean>{
+public class KeepOnlyFirstMatchFilterFunction implements PermutationFilterFunction {
 
   // Function that should return `true` for grid items that we want to evaluate only one representative from.
   public final Function<Map<String, Object>, Boolean> _baseMatchFunction;
@@ -36,15 +36,5 @@ public class KeepOnlyFirstMatchFilterFunction implements Function<Map<String, Ob
   
   public void reset() {
     _maxNumberOfMatchesToApply = 1;
-  }
-
-  @Override
-  public <V> Function<V, Boolean> compose(Function<? super V, ? extends Map<String, Object>> before) {
-    return _baseMatchFunction.compose(before);
-  }
-
-  @Override
-  public <V> Function<Map<String, Object>, V> andThen(Function<? super Boolean, ? extends V> after) {
-    return _baseMatchFunction.andThen(after);
   }
 }
