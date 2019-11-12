@@ -24,6 +24,9 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
 
     @API(help = "Noise level", required = false, direction = API.Direction.INPUT, gridable = true)
     public double noise_level;
+    
+    @API(help = "Seed for the specified noise level", required = false, direction = API.Direction.INPUT)
+    public long seed;
   
     @Override
     public String[] fields() {

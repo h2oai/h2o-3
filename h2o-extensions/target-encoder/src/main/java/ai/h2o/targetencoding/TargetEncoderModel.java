@@ -35,7 +35,8 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     public double _k = TargetEncoder.DEFAULT_BLENDING_PARAMS.getK();
     public double _f = TargetEncoder.DEFAULT_BLENDING_PARAMS.getF();
     public TargetEncoder.DataLeakageHandlingStrategy _data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
-    public double _noise_level = 0;
+    public double _noise_level = 0.01;
+    
     @Override
     public String algoName() {
       return ALGO_NAME;
@@ -160,7 +161,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
             _parms._data_leakage_handling != null ? _parms._data_leakage_handling : TargetEncoder.DataLeakageHandlingStrategy.None;
     
     return _targetEncoder.applyTargetEncoding(fr, _parms._response_column, this._output._target_encoding_map, leakageHandlingStrategy,
-            _parms._fold_column, _parms._blending, _parms._seed,false, Key.<Frame>make(destination_key), blendingParams);
+            _parms._fold_column, _parms._blending, _parms._noise_level, _parms._seed, Key.<Frame>make(destination_key), blendingParams );
   }
   
 
