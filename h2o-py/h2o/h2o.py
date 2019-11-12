@@ -579,7 +579,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
         >>> username = "root"
         >>> password = "abc123"
         >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query,
-        ...                                          username, password, fetch_mode)
+        ...                                          username, password)
     """
     assert_is_type(connection_url, str)
     assert_is_type(select_query, str)
