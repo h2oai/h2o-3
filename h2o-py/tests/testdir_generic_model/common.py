@@ -1,3 +1,11 @@
+import os
+import sys
+
+sys.path.insert(1, "../../")
+
+import h2o
+from h2o.estimators import H2OEstimator
+
 try:
     from StringIO import StringIO
 except ImportError:
@@ -26,3 +34,20 @@ def compare_output(original, generic, strip_part, algo_name, generic_algo_name):
     generic = generic[generic.find(strip_part):].replace(generic_algo_name, '').strip()
     assert generic == original
 
+
+def compare_params(original, generic):
+    original_params = original.params
+    generic_params = generic.params
+
+    assert original is not None
+    assert generic_params is not None
+
+    assert len(original_params) == len(generic_params) - 2  # Two more in Generic: _model_key and model_path
+
+    for param_name in original_params:
+        if (param_name == "model_id"):
+            continue
+        generic_param = generic_params[param_name]
+        original_param = original_params[param_name]
+        assert generic_param is not None
+        assert original_param is not None

@@ -7,6 +7,7 @@ from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.model.model_base import ModelBase
+from h2o.utils.shared_utils import check_id
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
@@ -63,12 +64,14 @@ class H2OAutoML(Keyed):
                  project_name=None,
                  exclude_algos=None,
                  include_algos=None,
+                 modeling_plan=None,
+                 algo_parameters=None,
                  keep_cross_validation_predictions=False,
                  keep_cross_validation_models=False,
                  keep_cross_validation_fold_assignment=False,
                  sort_metric="AUTO",
                  export_checkpoints_dir=None,
-                 verbosity=None):
+                 verbosity="warn"):
         """
         Create a new H2OAutoML instance.
         
@@ -108,6 +111,11 @@ class H2OAutoML(Keyed):
         :param include_algos: List of character strings naming the algorithms to restrict to during the model-building phase.
           This can't be used in combination with `exclude_algos` param.
           Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+        :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).
+          Defaults to None (Expert usage only).
+        :param algo_parameters: Dict of ``param_name=param_value`` to be passed to internal models. Defaults to none (Expert usage only).
+          By default, params are set only to algorithms accepting them, and ignored by others.
+          Only following parameters are currently allowed: ``"monotone_constraints"``.
         :param keep_cross_validation_predictions: Whether to keep the predictions of the cross-validation predictions.
           This needs to be set to ``True`` if running the same AutoML object for repeated runs because CV predictions are required to build 
           additional Stacked Ensemble models in AutoML. This option defaults to ``False``.
@@ -121,7 +129,7 @@ class H2OAutoML(Keyed):
           ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
-            Available options are 'debug', 'info' or 'warn'. Defaults to None (disable live log).
+            Available options are None (live log disabled), 'debug', 'info' or 'warn'. Defaults to 'warn'.
         """
         # Check if H2O jar contains AutoML
         try:
@@ -205,6 +213,7 @@ class H2OAutoML(Keyed):
         # Set project name if provided. If None, then we set in .train() to "automl_" + training_frame.frame_id
         if project_name is not None:
             assert_is_type(project_name, str)
+            check_id(project_name, "H2OAutoML")
             self.build_control["project_name"] = project_name
             self.project_name = project_name
         else:
@@ -222,6 +231,59 @@ class H2OAutoML(Keyed):
             for elem in include_algos:
                 assert_is_type(elem, str)
             self.build_models['include_algos'] = include_algos
+
+        if modeling_plan is not None:
+            assert_is_type(modeling_plan, list)
+            supported_aliases = ['all', 'defaults', 'grids']
+
+            def assert_is_step_def(sd):
+                assert 'name' in sd, "each definition must have a 'name' key"
+                assert 0 < len(sd) < 3, "each definition must have only 1 or 2 keys: name, name+alias or name+steps"
+                assert len(sd) == 1 or 'alias' in sd or 'steps' in sd, "steps definitions support only the following keys: name, alias, steps"
+                assert 'alias' not in sd or sd['alias'] in supported_aliases, "alias must be one of %s" % supported_aliases
+                assert 'steps' not in sd or (is_type(sd['steps'], list) and all(assert_is_step(s) for s in sd['steps']))
+
+            def assert_is_step(s):
+                assert is_type(s, dict), "each step must be a dict with an 'id' key and an optional 'weight' key"
+                assert 'id' in s, "each step must have an 'id' key"
+                assert len(s) == 1 or ('weight' in s and is_type(s['weight'], int)), "weight must be an integer"
+                return True
+
+            plan = []
+            for step_def in modeling_plan:
+                assert_is_type(step_def, dict, tuple, str)
+                if is_type(step_def, dict):
+                    assert_is_step_def(step_def)
+                    plan.append(step_def)
+                elif is_type(step_def, str):
+                    plan.append(dict(name=step_def))
+                else:
+                    assert 0 < len(step_def) < 3
+                    assert_is_type(step_def[0], str)
+                    name = step_def[0]
+                    if len(step_def) == 1:
+                        plan.append(dict(name=name))
+                    else:
+                        assert_is_type(step_def[1], str, list)
+                        ids = step_def[1]
+                        if is_type(ids, str):
+                            assert_is_type(ids, *supported_aliases)
+                            plan.append(dict(name=name, alias=ids))
+                        else:
+                            plan.append(dict(name=name, steps=[dict(id=i) for i in ids]))
+            self.build_models['modeling_plan'] = plan
+
+        if algo_parameters is not None:
+            assert_is_type(algo_parameters, dict)
+            algo_parameters_json = []
+            for k, v in algo_parameters.items():
+                scope, __, name = k.partition('__')
+                if len(name) == 0:
+                    name, scope = scope, 'any'
+                value = [dict(key=k, value=v) for k, v in v.items()] if isinstance(v, dict) else v   # we can't use stringify_dict here as this will be converted into a JSON string
+                algo_parameters_json.append(dict(scope=scope, name=name, value=value))
+
+            self.build_models['algo_parameters'] = algo_parameters_json
 
         assert_is_type(keep_cross_validation_predictions, bool)
         self.build_control["keep_cross_validation_predictions"] = keep_cross_validation_predictions
@@ -254,7 +316,7 @@ class H2OAutoML(Keyed):
     #---------------------------------------------------------------------------
     @property
     def key(self):
-        return self.project_name
+        return self._job.dest_key if self._job else self.project_name
 
     @property
     def leader(self):
@@ -310,6 +372,18 @@ class H2OAutoML(Keyed):
         """
         return dict() if self._training_info is None else self._training_info
 
+    @property
+    def modeling_steps(self):
+        """
+        expose the modeling steps effectively used by the AutoML run.
+        This executed plan can be directly reinjected as the `modeling_plan` property of a new AutoML instance
+         to improve reproducibility across AutoML versions.
+
+        :return: a list of dictionaries representing the effective modeling plan.
+        """
+        # removing alias key to be able to reinject result to a new AutoML instance
+        return list(map(lambda sdef: dict(name=sdef['name'], steps=sdef['steps']), self._state_json['modeling_steps']))
+
     #---------------------------------------------------------------------------
     # Training AutoML
     #---------------------------------------------------------------------------
@@ -351,14 +425,9 @@ class H2OAutoML(Keyed):
         ncols = training_frame.ncols
         names = training_frame.names
 
-        #Set project name if None
-        if self.project_name is None:
-            self.project_name = "automl_" + training_frame.frame_id
-            self.build_control["project_name"] = self.project_name
-
         # Minimal required arguments are training_frame and y (response)
         if y is None:
-            raise ValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
+            raise H2OValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
         else:
             assert_is_type(y,int,str)
             if is_type(y, int):
@@ -439,6 +508,9 @@ class H2OAutoML(Keyed):
             print(resp)
             return
 
+        if not self.project_name:
+            self.build_control['project_name'] = self.project_name = resp['build_control']['project_name']
+
         self._job = H2OJob(resp['job'], "AutoML")
         poll_updates = ft.partial(self._poll_training_updates, verbosity=self._verbosity, state={})
         try:
@@ -518,7 +590,7 @@ class H2OAutoML(Keyed):
     # Private
     #-------------------------------------------------------------------------------------------------------------------
     def _fetch(self):
-        state = H2OAutoML._fetch_state(self.project_name)
+        state = H2OAutoML._fetch_state(self.key)
         self._leader_id = state['leader_id']
         self._leaderboard = state['leaderboard']
         self._event_log = el = state['event_log']
@@ -541,7 +613,7 @@ class H2OAutoML(Keyed):
         try:
             if job.progress > state.get('last_job_progress', 0):
                 # print("\nbar_progress={}, job_progress={}".format(bar_progress, job.progress))
-                events = H2OAutoML._fetch_state(self.project_name, properties=['event_log'])['event_log']
+                events = H2OAutoML._fetch_state(job.dest_key, properties=['event_log'])['event_log']
                 events = events[events['level'].isin(levels), :]
                 last_nrows = state.get('last_events_nrows', 0)
                 if events.nrows > last_nrows:
@@ -569,9 +641,11 @@ class H2OAutoML(Keyed):
             H2OJob.__PROGRESS_BAR__ = ori_progress_state
 
     @staticmethod
-    def _fetch_state(project_name, properties=None):
-        state_json = h2o.api("GET /99/AutoML/%s" % project_name)
+    def _fetch_state(aml_id, properties=None):
+        state_json = h2o.api("GET /99/AutoML/%s" % aml_id)
         project_name = state_json["project_name"]
+        if project_name is None:
+            raise H2OValueError("No AutoML instance with id {}.".format(aml_id))
 
         leaderboard_list = [key["name"] for key in state_json['leaderboard']['models']]
         leader_id = leaderboard_list[0] if (leaderboard_list is not None and len(leaderboard_list) > 0) else None

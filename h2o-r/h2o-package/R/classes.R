@@ -57,9 +57,11 @@ setRefClass("H2OConnectionMutableState",
 #' @slot name A \code{character} value specifying the name of the H2O cluster.
 #' @slot proxy A \code{character} specifying the proxy path of the H2O cluster.
 #' @slot https Set this to TRUE to use https instead of http.
+#' @slot cacert Path to a CA bundle file with root and intermediate certificates of trusted CAs.
 #' @slot insecure Set this to TRUE to disable SSL certificate checking.
 #' @slot username Username to login with.
 #' @slot password Password to login with.
+#' @slot use_spnego Set this to TRUE to use SPNEGO authentication.
 #' @slot cookies Cookies to add to request
 #' @slot context_path Context path which is appended to H2O server location.
 #' @slot mutable An \code{H2OConnectionMutableState} object to hold the mutable state for the H2O connection.
@@ -67,8 +69,8 @@ setRefClass("H2OConnectionMutableState",
 #' @export
 setClass("H2OConnection",
          representation(ip="character", port="numeric", name="character", proxy="character",
-                        https="logical", insecure="logical",
-                        username="character", password="character",
+                        https="logical", cacert="character", insecure="logical",
+                        username="character", password="character", use_spnego="logical",
                         cookies="character",
                         context_path="character",
                         mutable="H2OConnectionMutableState"),
@@ -77,9 +79,11 @@ setClass("H2OConnection",
                    name         = NA_character_,
                    proxy        = NA_character_,
                    https        = FALSE,
+                   cacert       = NA_character_,
                    insecure     = FALSE,
                    username     = NA_character_,
                    password     = NA_character_,
+                   use_spnego   = FALSE,
                    cookies      = NA_character_,
                    context_path = NA_character_,
                    mutable      = new("H2OConnectionMutableState")))
@@ -321,6 +325,9 @@ setClass("H2OWordEmbeddingModel", contains="H2OModel")
 #' @rdname H2OModel-class
 #' @export
 setClass("H2OAnomalyDetectionModel", contains="H2OModel")
+#' @rdname H2OModel-class
+#' @export
+setClass("H2OTargetEncoderModel", contains="H2OModel")
 
 #'
 #' The H2OCoxPHModel object.
@@ -738,6 +745,10 @@ setClass("H2OCoxPHMetrics", contains="H2OModelMetrics")
 #' @export
 setClass("H2OAnomalyDetectionMetrics", contains="H2OModelMetrics")
 
+#' @rdname H2OModelMetrics-class
+#' @export
+setClass("H2OTargetEncoderMetrics", contains="H2OModelMetrics")
+
 #' H2O Future Model
 #'
 #' A class to contain the information for background model jobs.
@@ -856,7 +867,8 @@ setClass("H2OAutoML", slots = c(project_name = "character",
                                 leader = "H2OModel",
                                 leaderboard = "H2OFrame",
                                 event_log = "H2OFrame",
+                                modeling_steps = "list",
                                 training_info = "list"),
                       contains = "Keyed")
 #' @rdname h2o.keyof
-setMethod("h2o.keyof", signature("H2OAutoML"), function(object) object@project_name)
+setMethod("h2o.keyof", signature("H2OAutoML"), function(object) attr(object, "id"))

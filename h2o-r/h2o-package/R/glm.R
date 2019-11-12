@@ -2,21 +2,22 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- H2O Generalized Linear Models -------------------------- #
-#' 
+#'
 #' Fit a generalized linear model
 #' 
 #' Fits a generalized linear model, specified by a response variable, a set of predictors, and a
 #' description of the error distribution.
-#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. The response must be either a numeric or a
-#'        categorical/factor variable. If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param y The name or column index of the response variable in the data. 
+#'        The response must be either a numeric or a categorical/factor variable. 
+#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
@@ -55,8 +56,10 @@
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 #'        Defaults to -1.
 #' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to TRUE.
-#' @param missing_values_handling Handling of missing values. Either MeanImputation or Skip. Must be one of: "MeanImputation", "Skip". Defaults
-#'        to MeanImputation.
+#' @param missing_values_handling Handling of missing values. Either MeanImputation, Skip or PlugValues. Must be one of: "MeanImputation",
+#'        "Skip", "PlugValues". Defaults to MeanImputation.
+#' @param plug_values Plug Values (a single row frame containing values that will be used to impute missing values of the
+#'        training/validation frame, use with conjunction missing_values_handling = PlugValues)
 #' @param compute_p_values \code{Logical}. Request p-values computation, p-values work only with IRLSM solver and no regularization
 #'        Defaults to FALSE.
 #' @param remove_collinear_columns \code{Logical}. In case of linearly dependent columns, remove some of the dependent columns Defaults to FALSE.
@@ -73,8 +76,8 @@
 #'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
-#' @param link  Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit". Defaults to
-#'        family_default.
+#' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
+#'        Defaults to family_default.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
@@ -108,7 +111,6 @@
 #'         including MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices. Please refer to the
 #'         more in-depth GLM documentation available here:
 #'         \url{https://h2o-release.s3.amazonaws.com/h2o-dev/rel-shannon/2/docs-website/h2o-docs/index.html#Data+Science+Algorithms-GLM}
-
 #' @seealso \code{\link{predict.H2OModel}} for prediction, \code{\link{h2o.mse}}, \code{\link{h2o.auc}},
 #'          \code{\link{h2o.confusionMatrix}}, \code{\link{h2o.performance}}, \code{\link{h2o.giniCoef}},
 #'          \code{\link{h2o.logloss}}, \code{\link{h2o.varimp}}, \code{\link{h2o.scoreHistory}}
@@ -120,27 +122,30 @@
 #' prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate = h2o.importFile(path = prostate_path)
 #' h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), training_frame = prostate,
-#' family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
+#'         family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' 
 #' # Run GLM of VOL ~ CAPSULE + AGE + RACE + PSA + GLEASON
 #' predictors = setdiff(colnames(prostate), c("ID", "DPROS", "DCAPS", "VOL"))
 #' h2o.glm(y = "VOL", x = predictors, training_frame = prostate, family = "gaussian",
-#' nfolds = 0, alpha = 0.1, lambda_search = FALSE)
+#'         nfolds = 0, alpha = 0.1, lambda_search = FALSE)
 #' 
 #' 
 #' # GLM variable importance
 #' # Also see:
 #' #   https://github.com/h2oai/h2o/blob/master/R/tests/testdir_demos/runit_demo_VI_all_algos.R
 #' bank = h2o.importFile(
-#' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv")
+#'   path="https://s3.amazonaws.com/h2o-public-test-data/smalldata/demos/bank-additional-full.csv"
+#' )
 #' predictors = 1:20
 #' target="y"
 #' glm = h2o.glm(x=predictors, y=target, training_frame=bank, family="binomial", standardize=TRUE,
-#' lambda_search=TRUE)
+#'               lambda_search=TRUE)
 #' h2o.std_coef_plot(glm, num_of_features = 20)
 #' }
 #' @export
-h2o.glm <- function(x, y, training_frame,
+h2o.glm <- function(x,
+                    y,
+                    training_frame,
                     model_id = NULL,
                     validation_frame = NULL,
                     nfolds = 0,
@@ -165,7 +170,8 @@ h2o.glm <- function(x, y, training_frame,
                     early_stopping = TRUE,
                     nlambdas = -1,
                     standardize = TRUE,
-                    missing_values_handling = c("MeanImputation", "Skip"),
+                    missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
+                    plug_values = NULL,
                     compute_p_values = FALSE,
                     remove_collinear_columns = FALSE,
                     intercept = TRUE,
@@ -188,12 +194,13 @@ h2o.glm <- function(x, y, training_frame,
                     max_after_balance_size = 5.0,
                     max_hit_ratio_k = 0,
                     max_runtime_secs = 0,
-                    custom_metric_func = NULL
-                    ) 
+                    custom_metric_func = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Validate other required args
   # If x is missing, then assume user wants to use all columns as features.
   if (missing(x)) {
      if (is.numeric(y)) {
@@ -202,6 +209,8 @@ h2o.glm <- function(x, y, training_frame,
          x <- setdiff(colnames(training_frame), y)
      }
   }
+
+  # Validate other args
   # if (!is.null(beta_constraints)) {
   #     if (!inherits(beta_constraints, 'data.frame') && !is.H2OFrame(beta_constraints))
   #       stop(paste('`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ', class(beta_constraints)))
@@ -213,8 +222,7 @@ h2o.glm <- function(x, y, training_frame,
     beta_constraints <- as.h2o(beta_constraints)
   }
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   args <- .verify_dataxy(training_frame, x, y)
@@ -270,6 +278,8 @@ h2o.glm <- function(x, y, training_frame,
     parms$nlambdas <- nlambdas
   if (!missing(standardize))
     parms$standardize <- standardize
+  if (!missing(plug_values))
+    parms$plug_values <- plug_values
   if (!missing(compute_p_values))
     parms$compute_p_values <- compute_p_values
   if (!missing(remove_collinear_columns))
@@ -328,12 +338,15 @@ h2o.glm <- function(x, y, training_frame,
     parms$beta_constraints <- beta_constraints
     if(!missing(missing_values_handling))
       parms$missing_values_handling <- missing_values_handling
-  m <- .h2o.modelJob('glm', parms, h2oRestApiVersion=3)
-  m@model$coefficients <- m@model$coefficients_table[,2]
-  names(m@model$coefficients) <- m@model$coefficients_table[,1]
-  m 
+
+  # Error check and build model
+  model <- .h2o.modelJob('glm', parms, h2oRestApiVersion=3, verbose=FALSE)
+
+  model@model$coefficients <- model@model$coefficients_table[,2]
+  names(model@model$coefficients) <- model@model$coefficients_table[,1]
+  return(model)
 }
-        
+
 
 #' Set betas of an existing H2O GLM Model
 #'
@@ -342,11 +355,11 @@ h2o.glm <- function(x, y, training_frame,
 #' @param beta a new set of betas (a named vector)
 #' @export
 h2o.makeGLMModel <- function(model,beta) {
-res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
-m <- h2o.getModel(model_id=res$model_id$name)
-m@model$coefficients <- m@model$coefficients_table[,2]
-names(m@model$coefficients) <- m@model$coefficients_table[,1]
-m
+  res = .h2o.__remoteSend(method="POST", .h2o.__GLMMakeModel, model=model@model_id, names = paste("[",paste(paste("\"",names(beta),"\"",sep=""), collapse=","),"]",sep=""), beta = paste("[",paste(as.vector(beta),collapse=","),"]",sep=""))
+  m <- h2o.getModel(model_id=res$model_id$name)
+  m@model$coefficients <- m@model$coefficients_table[,2]
+  names(m@model$coefficients) <- m@model$coefficients_table[,1]
+  m
 }
 
 #' Extract full regularization path from a GLM model
@@ -356,12 +369,12 @@ m
 #' @param model an \linkS4class{H2OModel} corresponding from a \code{h2o.glm} call.
 #' @export
 h2o.getGLMFullRegularizationPath <- function(model) {
-res = .h2o.__remoteSend(method="GET", .h2o.__GLMRegPath, model=model@model_id)
-colnames(res$coefficients) <- res$coefficient_names
-if(!is.null(res$coefficients_std) && length(res$coefficients_std) > 0L) {
-colnames(res$coefficients_std) <- res$coefficient_names
-}
-res
+  res = .h2o.__remoteSend(method="GET", .h2o.__GLMRegPath, model=model@model_id)
+  colnames(res$coefficients) <- res$coefficient_names
+  if(!is.null(res$coefficients_std) && length(res$coefficients_std) > 0L) {
+    colnames(res$coefficients_std) <- res$coefficient_names
+  }
+  res
 }
 
 #' Compute weighted gram matrix.
@@ -373,8 +386,8 @@ res
 #' @param skip_missing logical flag telling h2o whether skip rows with missing data or impute them with mean
 #' @export
 h2o.computeGram <- function(X,weights="", use_all_factor_levels=FALSE,standardize=TRUE,skip_missing=FALSE) {
-res = .h2o.__remoteSend(method="GET", .h2o.__ComputeGram, X=h2o.getId(X),W=weights,use_all_factor_levels=use_all_factor_levels,standardize=standardize,skip_missing=skip_missing)
-h2o.getFrame(res$destination_frame$name)
+  res = .h2o.__remoteSend(method="GET", .h2o.__ComputeGram, X=h2o.getId(X),W=weights,use_all_factor_levels=use_all_factor_levels,standardize=standardize,skip_missing=skip_missing)
+  h2o.getFrame(res$destination_frame$name)
 }
 
 ##' Start an H2O Generalized Linear Model Job

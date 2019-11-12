@@ -1,11 +1,7 @@
 package hex.generic;
 
 import hex.ModelCategory;
-import hex.ModelMetrics;
 import hex.ModelMetricsBinomial;
-import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningModel;
-import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.tree.drf.DRF;
@@ -21,6 +17,7 @@ import water.*;
 import water.fvec.Frame;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.ArrayList;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;

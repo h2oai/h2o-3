@@ -72,7 +72,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
         thresholds[i] = Double.toString(auc._ths[i]);
       AUC2.ThresholdCriterion crits[] = AUC2.ThresholdCriterion.VALUES;
       String[] colHeaders = new String[crits.length+2];
-      String[] colHeadersMax = new String[crits.length-8/*drop npr tpr etc.*/];
+      String[] colHeadersMax = new String[crits.length];
       String[] types      = new String[crits.length+2];
       String[] formats    = new String[crits.length+2];
       colHeaders[0] = "Threshold";

@@ -4,6 +4,7 @@ import water.H2O;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstParameter;
+import water.rapids.vals.ValNums;
 import water.util.ArrayUtils;
 import water.util.SB;
 
@@ -98,11 +99,9 @@ public class AstNumList extends AstParameter {
     this(ArrayUtils.copyFromIntArray(list));
   }
 
-  // This is a special syntatic form; the number-list never executes and hits
-  // the execution stack
   @Override
   public Val exec(Env env) {
-    throw new IllegalArgumentException("Number list not allowed here");
+    return new ValNums(expand());
   }
 
   @Override

@@ -12,7 +12,7 @@ buildscript {
     //noinspection GroovyAssignabilityCheck
     dependencies {
         classpath 'org.ow2.asm:asm:5.1'
-        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.2'
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
         classpath 'com.github.townsfolk:gradle-release:1.2'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
@@ -76,6 +76,7 @@ ext {
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
       project(':h2o-ext-mojo-pipeline'),
+      project(':h2o-ext-target-encoder'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),
@@ -106,6 +107,7 @@ ext {
       project(':h2o-ext-xgboost'),
       project(':h2o-ext-krbstandalone'),
       project(':h2o-ext-mojo-pipeline'),
+      project(':h2o-ext-target-encoder'),
       project(':h2o-webserver-iface'),
       project(':h2o-jetty-8'),
       project(':h2o-jetty-9'),

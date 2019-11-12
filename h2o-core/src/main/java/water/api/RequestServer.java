@@ -216,6 +216,12 @@ public class RequestServer extends HttpServlet {
 
   //------ Handling Requests -------------------------------------------------------------------------------------------
 
+  @Override
+  protected void doTrace(HttpServletRequest req, HttpServletResponse resp) {
+    throw new UnsupportedOperationException("TRACE method is not supported");
+    // TRACE method is blocked by GateHandler, this makes sure the request doesn't accidentally sneaks in
+  }
+
   @Override protected void doGet(HttpServletRequest rq, HttpServletResponse rs)    { doGeneric("GET", rq, rs); }
   @Override protected void doPut(HttpServletRequest rq, HttpServletResponse rs)    { doGeneric("PUT", rq, rs); }
   @Override protected void doPost(HttpServletRequest rq, HttpServletResponse rs)   { doGeneric("POST", rq, rs); }
@@ -454,9 +460,12 @@ public class RequestServer extends HttpServlet {
       if (route == null) {
         // if the request is not known, treat as resource request, or 404 if not found
         if (uri.isGetMethod())
-          return getResource(type, url);
+          if (H2O.ARGS.disable_flow)
+            return response404Plain(method + " " + url, "Access to H2O Flow is disabled");
+          else
+            return getResource(type, url);
         else
-          return response404(method + " " + url, type);
+          return response404(method + " " + url);
 
       } else {
         Schema response = route._handler.handle(uri.getVersion(), route, parms, post_body);
@@ -724,7 +733,13 @@ public class RequestServer extends HttpServlet {
     return null;
   }
 
-  private static NanoResponse response404(String what, RequestType type) {
+  private static NanoResponse response404Plain(String what, String description) {
+    String message = what + " not found" + (description != null ? ": " + description : "");
+    return new NanoResponse(H2OError.httpStatusHeader(
+            HttpResponseStatus.NOT_FOUND.getCode()), MIME_PLAINTEXT, message);
+  }
+  
+  private static NanoResponse response404(String what) {
     H2ONotFoundArgumentException e = new H2ONotFoundArgumentException(what + " not found", what + " not found");
     H2OError error = e.toH2OError(what);
     Log.warn(error._dev_msg);
@@ -828,7 +843,7 @@ public class RequestServer extends HttpServlet {
       } catch( IOException ignore ) { }
     }
     if (bytes == null || bytes.length == 0) // No resource found?
-      return response404("Resource " + url, request_type);
+      return response404("Resource " + url);
 
     int i = url.lastIndexOf('.');
     String mime;

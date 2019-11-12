@@ -1,6 +1,8 @@
 package hex.genmodel.attributes.metrics;
 
 
+import hex.genmodel.attributes.SerializedName;
+
 public class MojoModelMetricsMultinomialGLM extends MojoModelMetricsMultinomial {
   
   @SerializedName("null_degrees_of_freedom")

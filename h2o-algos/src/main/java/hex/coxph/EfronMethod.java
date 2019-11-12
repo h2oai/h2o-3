@@ -6,7 +6,6 @@ import water.util.ArrayUtils;
 
 import static hex.coxph.CoxPH.CoxPHTask;
 import static hex.coxph.CoxPH.ComputationState;
-import static hex.coxph.CoxPHUtils.*;
 
 class EfronMethod {
 
@@ -104,7 +103,7 @@ class EfronDJKTermTask extends CPHBaseTask<EfronDJKTermTask> {
   @Override
   protected void chunkInit() {
     final int n_coef = _beta.length;
-    _djkTerm = malloc2DArray(n_coef, n_coef);
+    _djkTerm = MemoryManager.malloc8d(n_coef, n_coef);
   }
 
   @Override

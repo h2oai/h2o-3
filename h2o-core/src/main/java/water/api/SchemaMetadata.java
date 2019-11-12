@@ -6,10 +6,7 @@ import water.IcedWrapper;
 import water.Weaver;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.util.IcedHashMapBase;
-import water.util.IcedHashMapGeneric;
-import water.util.Log;
-import water.util.ReflectionUtils;
+import water.util.*;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -267,6 +264,8 @@ public final class SchemaMetadata extends Iced {
         if (clz == SchemaV3.Meta.class) {
           // Special case where we allow an Iced in a Schema so we don't get infinite meta-regress:
           return "Schema.Meta";
+        } else if (clz == JSONValue.class) {
+          return "Polymorphic";
         } else {
           // Special cases: polymorphic metadata fields that can contain scalars, Schemas (any Iced, actually), or arrays of these:
           if (schema instanceof ModelParameterSchemaV3 && ("default_value".equals(field_name) || "actual_value".equals(field_name)))
@@ -275,7 +274,7 @@ public final class SchemaMetadata extends Iced {
           if ((schema instanceof FieldMetadataV3) && "value".equals(field_name))
             return "Polymorphic";
 
-          if (((schema instanceof TwoDimTableV3) && "data".equals(field_name))) // IcedWrapper
+          if ((schema instanceof TwoDimTableV3) && "data".equals(field_name)) // IcedWrapper
             return "Polymorphic";
 
           Log.warn("WARNING: found non-Schema Iced field: " + clz.toString() + " in Schema: " + schema.getClass() + " field: " + field_name);
@@ -423,6 +422,9 @@ public final class SchemaMetadata extends Iced {
     StringBuffer sb = new StringBuffer(type.getCanonicalName());
     sb.delete(0, sb.indexOf(".")+1);
     sb.setCharAt(0, Character.toUpperCase(sb.charAt(0)));
-    return sb.toString().replace(".", "").replace("$", "");
+    return sb.toString()
+            .replaceAll("V\\d+\\.", "") // remove the version number in the middle (for internal classes)
+            .replace(".", "")
+            .replace("$", "");
   }
 }

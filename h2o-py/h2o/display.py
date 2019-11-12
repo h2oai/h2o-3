@@ -25,7 +25,7 @@ class H2ODisplay(object):
     # True/False flag whether we are connected to a Zeppelin note. Computed on the first use.
     _zeppelin = None
 
-    def __init__(self, table=None, header=None, table_header=None, **kwargs):
+    def __init__(self, table=None, header=None, table_header=None, is_pandas=False, **kwargs):
         self.table_header = table_header
         self.header = header
         self.table = table
@@ -44,11 +44,14 @@ class H2ODisplay(object):
             print(self.table_header + ":")
             print()
         if H2ODisplay._in_zep():
-            print("%html " + H2ODisplay._html_table(self.table, self.header))
+            if is_pandas:
+                print(table)
+            else:
+                print("%html " + H2ODisplay._html_table(self.table, self.header))
             self.do_print = False
         elif H2ODisplay._in_ipy():
             from IPython.display import display
-            display(self)
+            display(table if is_pandas else self)
             self.do_print = False
         else:
             self.pprint()
@@ -72,6 +75,10 @@ class H2ODisplay(object):
                 return tabulate.tabulate(self.table, headers=self.header, **self.kwargs)
         self.do_print = True
         return ""
+
+    @staticmethod
+    def prefer_pandas():
+        return H2ODisplay._in_ipy() 
 
     @staticmethod
     def _in_ipy():  # are we in ipy? then pretty print tables with _repr_html

@@ -1,40 +1,7 @@
+source("generic_model_test_common.R")
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-compare_output <- function(original_output, generic_output){
-    removed_original <- c()
-    for (i in 1:length(original_output)) {
-        line <- original_output[i]
-        
-        if(grepl("Extract .+ frame", line)  || grepl("H2OAnomalyDetectionModel: isolationforest", line)){ # There are no frames to extract in generic
-            removed_original <- append(removed_original, i)
-        } else if(grepl("Model ID", line)){
-            removed_original <- append(removed_original, i)
-        } else if(grepl("H2OAnomalyDetectionMetrics: isolationforest", line)){
-            removed_original <- append(removed_original, i)
-        }
-    }
-    if(length(removed_original) > 0){
-        original_output <- original_output[-removed_original]        
-    }
-    
-    removed_generic <- c()
-    for (i in 1:length(generic_output)) {
-        line <- generic_output[i]
-        
-        if(grepl("H2OAnomalyDetectionModel: generic", line) || grepl("H2OAnomalyDetectionMetrics: generic", line) ){
-            removed_generic <- append(removed_generic, i)
-        } else if(grepl("Model ID", line)){
-            removed_generic <- append(removed_generic, i)
-        }
-    }
-    if(length(removed_generic) > 0){
-        generic_output <- generic_output[-removed_generic]
-    }
-    print(original_output)
-    print(generic_output)
-    expect_equal(TRUE, all.equal(original_output, generic_output))
-}
 
 test.model.generic.irf <- function() {
     data <- h2o.importFile(path = locate('smalldata/testng/airlines_train.csv'))
@@ -49,9 +16,13 @@ test.model.generic.irf <- function() {
     original_output <- capture.output(print(original_model))
     generic_model <- h2o.genericModel(mojo_original_path)
     print(generic_model)
+    compare_params(original_model, generic_model)
     
     generic_output <- capture.output(print(generic_model))
-    compare_output(original_output, generic_output)
+    compare_output(original_output, generic_output,
+    c("Extract .+ frame","H2OAnomalyDetectionModel: isolationforest", "Model ID", "H2OAnomalyDetectionMetrics: isolationforest"),
+    c("H2OAnomalyDetectionModel: generic", "Model ID", "H2OAnomalyDetectionMetrics: generic"))
+    
     generic_model_preds  <- h2o.predict(generic_model, data)
     expect_equal(length(generic_model_preds), 1)
     expect_equal(h2o.nrow(generic_model_preds), 24421)

@@ -14,12 +14,12 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 14
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 17
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '64'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '70'
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'
@@ -94,27 +94,12 @@ class BuildConfig {
     master = JenkinsMaster.findByBuildURL(context.env.BUILD_URL)
     nodeLabels = NodeLabels.findByJenkinsMaster(master)
     supportedXGBEnvironments = [
-      'centos6.5': [
-        [name: 'CentOS 6.5 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'gpmidi/centos-6.5', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
-        [name: 'CentOS 6.5 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos6.5', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
-      ],
-      'centos6.8': [
-        [name: 'CentOS 6.8 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:6.8', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
-        [name: 'CentOS 6.8 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos6.8', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
-      ],
-      'centos6.9': [
-        [name: 'CentOS 6.9 GPU', dockerfile: 'xgb/centos/Dockerfile-centos-gpu', fromImage: 'nvidia/cuda:8.0-devel-centos6', targetName: XGB_TARGET_GPU, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
-      ],
       'centos7.3': [
         [name: 'CentOS 7.3 Minimal', dockerfile: 'xgb/centos/Dockerfile-centos-minimal', fromImage: 'centos:7.3.1611', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
         [name: 'CentOS 7.3 OMP', dockerfile: 'xgb/centos/Dockerfile-centos-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:centos7.3', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel()],
       ],
       'centos7.4': [
-        [name: 'CentOS 7.4 GPU', dockerfile: 'xgb/centos/Dockerfile-centos-gpu', fromImage: 'nvidia/cuda:8.0-devel-centos7', targetName: XGB_TARGET_GPU, nodeLabel: getDefaultNodeLabel()],
-      ],
-      'ubuntu14': [
-        [name: 'Ubuntu 14.04 Minimal', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-minimal', fromImage: 'ubuntu:14.04', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true],
-        [name: 'Ubuntu 14.04 OMP', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-omp', fromImage: 'harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-minimal:ubuntu14', targetName: XGB_TARGET_OMP, nodeLabel: getDefaultNodeLabel(), runAfterMerge: true]
+        [name: 'CentOS 7.4 GPU', dockerfile: 'xgb/centos/Dockerfile-centos-gpu', fromImage: 'nvidia/cuda:8.0-devel-centos7', targetName: XGB_TARGET_GPU, nodeLabel: getGPUNodeLabel()],
       ],
       'ubuntu16': [
         [name: 'Ubuntu 16.04 Minimal', dockerfile: 'xgb/ubuntu/Dockerfile-ubuntu-minimal', fromImage: 'ubuntu:16.04', targetName: XGB_TARGET_MINIMAL, nodeLabel: getDefaultNodeLabel()],
@@ -148,6 +133,10 @@ class BuildConfig {
   String getBenchmarkNodeLabel() {
     return nodeLabels.getBenchmarkNodeLabel()
   }
+  
+  String getGPUBenchmarkNodeLabel() {
+    return nodeLabels.getGPUBenchmarkNodeLabel()
+  }
 
   String getGPUNodeLabel() {
     return nodeLabels.getGPUNodeLabel()
@@ -164,7 +153,7 @@ class BuildConfig {
   List<String> getBuildEnv() {
     return [
       'JAVA_VERSION=8',
-      "BUILD_HADOOP=${buildHadoop}",
+      "BUILD_HADOOP=false"
     ]
   }
 
@@ -216,12 +205,15 @@ class BuildConfig {
     return supportedXGBEnvironments
   }
 
-  String getXGBImageForEnvironment(final String osName, final xgbEnv) {
-    return "harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-${xgbEnv.targetName}:${osName}"
+  String getXGBImageForEnvironment(final String osName, final targetName) {
+    return "harbor.h2o.ai/opsh2oai/h2o-3-xgb-runtime-${targetName}:${osName}"
   }
 
   String getStageImage(final stageConfig) {
+    if (stageConfig.imageSpecifier)
+      return getDevImageReference(stageConfig.imageSpecifier)
     def component = stageConfig.component
+    def suffix = ""
     if (component == COMPONENT_ANY) {
       if (stageConfig.additionalTestPackages.contains(COMPONENT_PY)) {
         component = COMPONENT_PY
@@ -229,6 +221,10 @@ class BuildConfig {
         component = COMPONENT_R
       } else if (stageConfig.additionalTestPackages.contains(COMPONENT_JAVA)) {
         component = COMPONENT_JAVA
+      }
+      // handle gpu suffix
+      if (stageConfig.dockerImageSuffix != null) {
+        suffix = "-" + stageConfig.dockerImageSuffix
       }
     }
     def imageComponentName
@@ -253,24 +249,12 @@ class BuildConfig {
       default:
         throw new IllegalArgumentException("Cannot find image for component ${component}")
     }
-    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}:${DEFAULT_IMAGE_VERSION_TAG}"
+
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${imageComponentName}-${version}${suffix}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
-  String getXGBNodeLabelForEnvironment(final Map xgbEnv) {
-    switch (xgbEnv.targetName) {
-      case XGB_TARGET_GPU:
-        return nodeLabels.getGPUNodeLabel()
-      case XGB_TARGET_OMP:
-        return nodeLabels.getDefaultNodeLabel()
-      case XGB_TARGET_MINIMAL:
-        return nodeLabels.getDefaultNodeLabel()
-      default:
-        throw new IllegalArgumentException("xgbEnv.targetName ${xgbEnv.targetName} not supported")
-    }
-  }
-
-  String getExpectedImageVersion(final String image) {
-    return EXPECTED_IMAGE_VERSIONS[image]
+  String getDevImageReference(final specifier) {
+    return "${DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-${specifier}:${DEFAULT_IMAGE_VERSION_TAG}"
   }
 
   String getStashNameForTestPackage(final String platform) {
@@ -299,8 +283,8 @@ class BuildConfig {
         changesMap[COMPONENT_PY] = true
       } else if (change.startsWith('h2o-r/') ||  change == 'h2o-bindings/bin/gen_R.py') {
         changesMap[COMPONENT_R] = true
-      } else if (change.endsWith('.md')) {
-        // no need to run any tests if only .md files are changed
+      } else if (change.endsWith('.md') || change.endsWith('.rst')) {
+        // no need to run any tests if only .md/.rst files are changed
       } else {
         markAllComponentsForTest()
       }
@@ -354,17 +338,19 @@ class BuildConfig {
   }
 
   static enum NodeLabels {
-    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu'),
-    LABELS_B4('docker', 'docker', 'gpu && !2gpu')
+    LABELS_C1('docker && !mr-0xc8', 'mr-0xc9', 'gpu && !2gpu', 'mr-dl3'),
+    LABELS_B4('docker', 'docker', 'gpu && !2gpu', 'docker')
 
     private final String defaultNodeLabel
     private final String benchmarkNodeLabel
     private final String gpuNodeLabel
+    private final String gpuBenchmarkNodeLabel
 
-    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel) {
+    private NodeLabels(final String defaultNodeLabel, final String benchmarkNodeLabel, final String gpuNodeLabel, final String gpuBenchmarkNodeLabel) {
       this.defaultNodeLabel = defaultNodeLabel
       this.benchmarkNodeLabel = benchmarkNodeLabel
       this.gpuNodeLabel = gpuNodeLabel
+      this.gpuBenchmarkNodeLabel = gpuBenchmarkNodeLabel
     }
 
     String getDefaultNodeLabel() {
@@ -377,6 +363,10 @@ class BuildConfig {
 
     String getGPUNodeLabel() {
       return gpuNodeLabel
+    }
+
+    String getGPUBenchmarkNodeLabel() {
+      return gpuBenchmarkNodeLabel
     }
 
     private static findByJenkinsMaster(final JenkinsMaster master) {

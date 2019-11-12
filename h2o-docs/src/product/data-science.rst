@@ -49,11 +49,3 @@ Miscellaneous
    :maxdepth: 1
 
    data-science/word2vec
-
-MOJO Models
---------------
-
-.. toctree::
-   :maxdepth: 1
-
-   data-science/mojo_import

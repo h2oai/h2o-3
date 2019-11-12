@@ -88,6 +88,20 @@ def check_leaderboard(aml, excluded_algos, expected_metrics, expected_sort_metri
                                                                                 actual="desc" if sorted_desc else "asc")
 
 
+def test_warn_on_empty_leaderboard():
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip"))
+    y = 'CAPSULE'
+    train[y] = train[y].asfactor()
+    aml = H2OAutoML(project_name="test_empty_leaderboard",
+                    max_runtime_secs=3,
+                    seed=1234)
+    aml.train(y=y, training_frame=train)
+    assert aml.leaderboard.nrow == 0
+    warnings = aml.event_log[aml.event_log['level'] == 'Warn','message']
+    last_warning = warnings[warnings.nrow-1,:].flatten()
+    assert "Empty leaderboard" in last_warning
+
+
 def test_leaderboard_for_binomial():
     print("Check leaderboard for Binomial with default sorting")
     ds = prepare_data('binomial')
@@ -150,7 +164,7 @@ def test_leaderboard_with_no_algos():
 
     lb = aml.leaderboard
     assert lb.nrows == 0
-    check_leaderboard(aml, exclude_algos, ["auc", "logloss", "mean_per_class_error", "rmse", "mse"], None)
+    check_leaderboard(aml, exclude_algos, ["unknown"], None)
 
 
 def test_leaderboard_for_binomial_with_custom_sorting():
@@ -164,7 +178,7 @@ def test_leaderboard_for_binomial_with_custom_sorting():
                     sort_metric="logloss")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["auc", "logloss", "mean_per_class_error", "rmse", "mse"], "logloss")
+    check_leaderboard(aml, exclude_algos, ["logloss", "auc", "mean_per_class_error", "rmse", "mse"], "logloss")
 
 
 def test_leaderboard_for_multinomial_with_custom_sorting():
@@ -178,7 +192,7 @@ def test_leaderboard_for_multinomial_with_custom_sorting():
                     sort_metric="logloss")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["mean_per_class_error", "logloss", "rmse", "mse"], "logloss")
+    check_leaderboard(aml, exclude_algos, ["logloss", "mean_per_class_error", "rmse", "mse"], "logloss")
 
 
 def test_leaderboard_for_regression_with_custom_sorting():
@@ -192,7 +206,7 @@ def test_leaderboard_for_regression_with_custom_sorting():
                     sort_metric="RMSE")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "rmse")
+    check_leaderboard(aml, exclude_algos, ["rmse", "mean_residual_deviance", "mse", "mae", "rmsle"], "rmse")
 
 
 def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
@@ -258,12 +272,13 @@ def test_AUTO_stopping_metric_with_custom_sorting_metric():
                     sort_metric="rmse")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "rmse")
+    check_leaderboard(aml, exclude_algos, ["rmse", "mean_residual_deviance", "mse", "mae", "rmsle"], "rmse")
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     check_model_property(non_se, 'stopping_metric', True, "RMSE")
 
 
 pyunit_utils.run_tests([
+    test_warn_on_empty_leaderboard,
     test_leaderboard_for_binomial,
     test_leaderboard_for_multinomial,
     test_leaderboard_for_regression,

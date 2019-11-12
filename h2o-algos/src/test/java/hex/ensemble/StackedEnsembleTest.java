@@ -540,7 +540,7 @@ public class StackedEnsembleTest extends TestUtil {
         StackedEnsembleParameters seParams = new StackedEnsembleParameters();
         seParams._train = train._key;
         seParams._response_column = target;
-        seParams._base_models = ArrayUtils.append(grid.getModelKeys(), glm._key);
+        seParams._base_models = ArrayUtils.append(grid.getModelKeys(), (Key) glm._key);
         seParams._seed = seed;
         StackedEnsembleModel se = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se);
 

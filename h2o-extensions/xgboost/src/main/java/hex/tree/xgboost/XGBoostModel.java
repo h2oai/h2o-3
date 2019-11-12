@@ -16,15 +16,15 @@ import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
+import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.JCodeGen;
 import water.util.Log;
+import water.util.SBPrintStream;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,13 +34,13 @@ import static hex.tree.xgboost.XGBoost.makeDataInfo;
 import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
-        implements SharedTreeGraphConverter, Model.Contributions {
+        implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions {
 
   private XGBoostModelInfo model_info;
 
   public XGBoostModelInfo model_info() { return model_info; }
 
-  public static class XGBoostParameters extends Model.Parameters {
+  public static class XGBoostParameters extends Model.Parameters implements Model.GetNTrees {
     public enum TreeMethod {
       auto, exact, approx, hist
     }
@@ -169,6 +169,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       return constraints;
     }
 
+    @Override
+    public int getNTrees() {
+      return _ntrees;
+    }
+
+    static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { 
+        "_tree_method", "_grow_policy", "_booster", "_sample_rate", "_max_depth", "_min_rows" 
+    };
+
   }
 
   @Override
@@ -194,7 +203,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public void dump(String format) {
     File fmFile = null;
     try {
-      Booster b = BoosterHelper.loadModel(new ByteArrayInputStream((this).model_info._boosterBytes));
+      Booster b = BoosterHelper.loadModel(new ByteArrayInputStream(this.model_info._boosterBytes));
       fmFile = File.createTempFile("xgboost-feature-map", ".bin");
       FileOutputStream os = new FileOutputStream(fmFile);
       os.write(this.model_info._featureMap.getBytes());
@@ -210,6 +219,27 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       if (fmFile != null) {
         fmFile.delete();
       }
+    }
+  }
+  
+  private static XGBoostParameters.Backend findSuitableBackend(XGBoostParameters p) {
+    if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
+      if (H2O.getCloudSize() > 1) {
+        Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
+        return XGBoostParameters.Backend.cpu;
+      } else if (! p.gpuIncompatibleParams().isEmpty()) {
+        Log.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
+        return XGBoostParameters.Backend.cpu;
+      } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
+        Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
+        return XGBoostParameters.Backend.gpu;
+      } else {
+        Log.info("No GPU (gpu_id: " + p._gpu_id + ") found. Using CPU backend.");
+        return XGBoostParameters.Backend.cpu;
+      }
+    } else {
+      Log.info("Using CPU backend.");
+      return XGBoostParameters.Backend.cpu;
     }
   }
 
@@ -264,7 +294,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("seed", (int)(p._seed % Integer.MAX_VALUE));
 
     // XGBoost specific options
-    params.put("tree_method", p._tree_method.toString());
     params.put("grow_policy", p._grow_policy.toString());
     if (p._grow_policy== XGBoostParameters.GrowPolicy.lossguide) {
       params.put("max_bins", p._max_bins);
@@ -280,33 +309,29 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
-    if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (H2O.getCloudSize() > 1) {
-        Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
-      } else if (! p.gpuIncompatibleParams().isEmpty()) {
-        Log.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
-      } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
-        Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
-        params.put("gpu_id", p._gpu_id);
-        if (p._booster == XGBoostParameters.Booster.gblinear) {
-          Log.info("Using gpu_coord_descent updater."); 
-          params.put("updater", "gpu_coord_descent");
-        } else  if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
-          Log.info("Using grow_gpu (exact) updater.");
-          params.put("tree_method", "exact");
-          params.put("updater", "grow_gpu");
-        } else {
-          Log.info("Using grow_gpu_hist (approximate) updater.");
-          params.put("max_bins", p._max_bins);
-          params.put("tree_method", "exact");
-          params.put("updater", "grow_gpu_hist");
-        }
+    XGBoostParameters.Backend actualBackend = findSuitableBackend(p);
+    if (actualBackend == XGBoostParameters.Backend.gpu) {
+      params.put("gpu_id", p._gpu_id);
+      if (p._booster == XGBoostParameters.Booster.gblinear) {
+        Log.info("Using gpu_coord_descent updater."); 
+        params.put("updater", "gpu_coord_descent");
+      } else if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
+        Log.info("Using gpu_exact tree method.");
+        params.put("tree_method", "gpu_exact");
       } else {
-        Log.info("No GPU (gpu_id: "+p._gpu_id + ") found. Using CPU backend.");
+        Log.info("Using gpu_hist tree method.");
+        params.put("max_bin", p._max_bins);
+        params.put("tree_method", "gpu_hist");
       }
+    } else if (p._booster == XGBoostParameters.Booster.gblinear) {
+      Log.info("Using coord_descent updater.");
+      params.put("updater", "coord_descent");
     } else {
-      assert p._backend == XGBoostParameters.Backend.cpu;
-      Log.info("Using CPU backend.");
+      Log.info("Using " + p._tree_method.toString() + " tree method.");
+      params.put("tree_method", p._tree_method.toString());
+      if (p._tree_method == XGBoostParameters.TreeMethod.hist) {
+        params.put("max_bin", p._max_bins);
+      }
     }
     if (p._min_child_weight!=1) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
@@ -385,6 +410,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return BoosterParms.fromMap(Collections.unmodifiableMap(params));
   }
 
+  /** Performs deep clone of given model.  */
+  protected XGBoostModel deepClone(Key<XGBoostModel> result) {
+    XGBoostModel newModel = IcedUtils.deepCopy(this);
+    newModel._key = result;
+    // Do not clone model metrics
+    newModel._output.clearModelMetrics(false);
+    newModel._output._training_metrics = null;
+    newModel._output._validation_metrics = null;
+    return newModel;
+  }
+  
   private static int getMaxNThread() {
     return Integer.getInteger(SYSTEM_PROP_PREFIX + "xgboost.nthread", H2O.ARGS.nthreads);
   }
@@ -496,6 +532,16 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return approx ? new PredictContribApproxTask(_parms, model_info, _output, di) : new PredictTreeSHAPTask(di, model_info(), _output);
   }
 
+  @Override
+  public Frame scoreLeafNodeAssignment(
+      Frame frame, LeafNodeAssignmentType type, Key<Frame> destination_key
+  ) {
+    AssignLeafNodeTask task = AssignLeafNodeTask.make(model_info.scoringInfo(false), _output, model_info._boosterBytes, type);
+    Frame adaptFrm = new Frame(frame);
+    adaptTestForTrain(adaptFrm, true, false);
+    return task.execute(adaptFrm, destination_key);
+  }
+
   private void setDataInfoToOutput(DataInfo dinfo) {
     _output.setNames(dinfo._adaptedFrame.names(), dinfo._adaptedFrame.typesStr());
     _output._domains = dinfo._adaptedFrame.domains();
@@ -581,14 +627,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
 
-  private final int getXGBoostClassIndex(final String treeClass) {
+  private int getXGBoostClassIndex(final String treeClass) {
     final ModelCategory modelCategory = _output.getModelCategory();
     if(ModelCategory.Regression.equals(modelCategory) && (treeClass != null && !treeClass.isEmpty())){
       throw new IllegalArgumentException("There should be no tree class specified for regression.");
     }
-    if ((treeClass == null || treeClass.isEmpty()) && ModelCategory.Regression.equals(modelCategory)) return 0;
-    if ((treeClass == null || treeClass.isEmpty()) && !ModelCategory.Regression.equals(modelCategory)) {
-      throw new IllegalArgumentException("Non-regressional models require tree class specified.");
+    if ((treeClass == null || treeClass.isEmpty())) {
+      if (ModelCategory.Regression.equals(modelCategory)) return 0;
+      else throw new IllegalArgumentException("Non-regressional models require tree class specified.");
     }
 
     final String[] domain = _output._domains[_output._domains.length - 1];
@@ -601,6 +647,31 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
 
     return treeClassIndex;
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------
+  // Serialization into a POJO
+  //--------------------------------------------------------------------------------------------------------------------
+
+  @Override
+  protected boolean toJavaCheckTooBig() {
+    return _output == null || _output._ntrees * _parms._max_depth > 1000;
+  }
+
+  @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
+    sb.nl();
+    sb.ip("public boolean isSupervised() { return true; }").nl();
+    sb.ip("public int nclasses() { return ").p(_output.nclasses()).p("; }").nl();
+    return sb;
+  }
+  
+  @Override
+  protected void toJavaPredictBody(
+      SBPrintStream sb, CodeGeneratorPipeline classCtx, CodeGeneratorPipeline fileCtx, boolean verboseCode
+  ) {
+    final String namePrefix = JCodeGen.toJavaId(_key.toString());
+    Predictor p = PredictorFactory.makePredictor(model_info._boosterBytes, false);
+    XGBoostPojoWriter.make(p, namePrefix, _output, defaultThreshold()).renderJavaPredictBody(sb, fileCtx);
   }
 
 }

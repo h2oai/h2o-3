@@ -36,6 +36,10 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
     private double _total_norm_score = 0;
     private long _nobs = 0;
 
+    public MetricBuilderAnomaly() {
+      this("");
+    }
+    
     public MetricBuilderAnomaly(String description) {
       _work = new double[2];
       _description = description;

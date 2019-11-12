@@ -1,9 +1,8 @@
-import xgboost as xgb
-import time
+import sys
+sys.path.insert(1,"../../../")
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
-from h2o.frame import H2OFrame
 
 '''
 PUBDEV-5777: enable H2OXGBoost and native XGBoost comparison.
@@ -64,6 +63,10 @@ eval_metric default according to objective
 seed default to 0
 '''
 def comparison_test():
+    if sys.version.startswith("2"):
+        print("native XGBoost tests only supported on python3")
+        return
+    import xgboost as xgb
     assert H2OXGBoostEstimator.available() is True
     ret = h2o.cluster()
     if len(ret.nodes) == 1:

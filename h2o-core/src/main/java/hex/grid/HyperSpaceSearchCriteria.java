@@ -47,7 +47,7 @@ public class HyperSpaceSearchCriteria extends Iced {
     private double _max_runtime_secs = 0;
     private int _stopping_rounds = 0;
     private ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
-    private double _stopping_tolerance = 0.001;
+    private double _stopping_tolerance = 1e-3;  // = Model.Parameters.defaultStoppingTolerance()
 
 
     /** Seed for the random choices of hyperparameter values.  Set to a value other than -1 to get a repeatable pseudorandom sequence. */

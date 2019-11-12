@@ -3,7 +3,7 @@ package hex.glm;
 import hex.CreateFrame;
 import hex.ModelMetricsBinomialGLM;
 import hex.SplitFrame;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;

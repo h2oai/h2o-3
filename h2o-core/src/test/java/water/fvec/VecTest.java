@@ -5,6 +5,7 @@ import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;
+import water.util.Log;
 import water.util.ReflectionUtils;
 
 import static org.junit.Assert.*;
@@ -190,6 +191,25 @@ public class VecTest extends TestUtil {
             throw new IllegalStateException("Expected a time Vec");
         }
       }.doAll(v);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test public void testChunkIdxWithDeletedVec() {
+    Key<Vec> k = null;
+    try {
+      Scope.enter();
+      Vec v = Scope.track(makeConN((long) 1e6, 16));
+      k = v._key;
+      v.remove();
+      v.chunkForChunkIdx(0);
+      fail("chunkForChunkIdx didn't fail");
+    } catch (Exception e) {
+      String msg = e.getMessage();
+      if (msg == null || k == null || !msg.startsWith("Missing chunk 0 for vector " + k.toString() + "; Vec info: is not in DKV;"))
+        throw e;
+      Log.warn(e);
     } finally {
       Scope.exit();
     }

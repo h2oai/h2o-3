@@ -229,8 +229,6 @@ with HTTPS:
 The underlying HTTPS implementation is provided by RCurl and by
 extension libcurl and OpenSSL.
 
- **Caution:** Certificate checking has not been implemented yet. The insecure flag tells the client to ignore certificate checking. This means your client is exposed to a man-in-the-middle attack. We assume for the time being that in a secure corporate network such attacks are of low concern. Currently, the insecure flag must be set to TRUE so that in some future version of H2O you will confidently know when certificate checking has actually been implemented.
-
 Python Client
 '''''''''''''
 
@@ -243,8 +241,6 @@ with HTTPS:
 
 The underlying HTTPS implementation is provided by RCurl and by
 extension libcurl and OpenSSL.
-
- **Caution:** Certificate checking has not been implemented yet. The ``insecure`` flag tells the client to ignore certificate checking. This means your client is exposed to a man-in-the-middle attack. We assume for the time being that in a secure corporate network such attacks are of low concern. Currently, the ``insecure`` flag must be set to ``TRUE`` so that in some future version of H2O you will confidently know when certificate checking has actually been implemented.
 
 HTTPS Server Side
 ^^^^^^^^^^^^^^^^^
@@ -271,6 +267,9 @@ The following options are available:
     -jks_pass <password>
          (Default is 'h2oh2o')
 
+    -jks_alias <alias>
+         (Optional) Which certificate from the keystore to use
+
 Example:
 
 ::
@@ -289,6 +288,9 @@ The following options are available:
 
     -jks_pass <password>
          (Default is 'h2oh2o')
+
+    -jks_alias <alias>
+         (Optional) Which certificate from the keystore to use
 
 Example:
 
@@ -496,7 +498,13 @@ and the browser will use last key acquired via kinit on the client machine.
 R Client
 ''''''''
 
-Currently SPNEGO authentication is not supported in R client.
+The following code snippet demonstrates connecting to an H2O cluster
+with SPNEGO authentication:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, use_spnego = TRUE)
+
 
 Python Client
 '''''''''''''

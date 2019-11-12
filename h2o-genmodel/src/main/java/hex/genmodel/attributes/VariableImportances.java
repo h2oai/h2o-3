@@ -14,7 +14,7 @@ public class VariableImportances implements Serializable {
     public final double[] _importances;
 
     public VariableImportances(String[] variableNames, double[] relativeImportances) {
-        this._variables = variableNames;
-        this._importances = relativeImportances;
+        _variables = variableNames;
+        _importances = relativeImportances;
     }
 }

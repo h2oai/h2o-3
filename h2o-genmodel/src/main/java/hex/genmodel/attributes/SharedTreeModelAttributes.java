@@ -10,12 +10,12 @@ public class SharedTreeModelAttributes extends ModelAttributes {
 
   public SharedTreeModelAttributes(JsonObject modelJson, MojoModel model) {
     super(model, modelJson);
-    _variableImportances = extractVariableImportances(modelJson, model);
+    _variableImportances = extractVariableImportances(modelJson);
 
   }
 
 
-  protected VariableImportances extractVariableImportances(final JsonObject modelJson, final MojoModel model) {
+  private VariableImportances extractVariableImportances(final JsonObject modelJson) {
     final Table table = ModelJsonReader.readTable(modelJson, "output.variable_importances");
     if (table == null) return null;
     final double[] relativeVarimps = new double[table.rows()];

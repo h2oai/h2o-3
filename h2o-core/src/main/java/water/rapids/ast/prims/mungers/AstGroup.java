@@ -322,8 +322,8 @@ public class AstGroup extends AstPrimitive {
           for (j = 0; j < g._gs.length; j++) // The Group Key, as a row
             ncs[j].addNum(g._gs[j]);
           for (int a = 0; a < aggs.length; a++) {
-            if ((medianCount >=0) && g._isMedian[a])
-              ncs[j++].addNum(g._medians[a]);
+            if ((medianCount >=0) && g.medianR._isMedian[a])
+              ncs[j++].addNum(g.medianR._medians[a]);
             else
               ncs[j++].addNum(aggs[a]._fcn.postPass(g._dss[a], g._ns[a]));
           }
@@ -414,9 +414,9 @@ public class AstGroup extends AstPrimitive {
     // 3. Fill out the NewChunk for each column of each group
     int numberOfMedianActionsNeeded = 0;
     for (G g : grps) {
-      for (int index = 0; index < g._isMedian.length; index++) {
-        if (g._isMedian[index]) {
-          g._newChunkCols[index] = numberOfMedianActionsNeeded++;
+      for (int index = 0; index < g.medianR._isMedian.length; index++) {
+        if (g.medianR._isMedian[index]) {
+          g.medianR._newChunkCols[index] = numberOfMedianActionsNeeded++;
         }
       }
     }
@@ -697,6 +697,21 @@ public class AstGroup extends AstPrimitive {
     }
   }
 
+  public static class MedianResult extends Iced {
+    int[] _medianCols;
+    double[] _medians;
+    boolean[] _isMedian;
+    int[] _newChunkCols;
+    public NAHandling[] _na;
+    
+    public MedianResult(int len) {
+      _medianCols = new int[len];
+      _medians = new double[len];
+      _isMedian = new boolean[len];
+      _newChunkCols = new int[len];
+      _na = new NAHandling[len];
+    }
+  }
   // Groups!  Contains a Group Key - an array of doubles (often just 1 entry
   // long) that defines the Group.  Also contains an array of doubles for the
   // aggregate results, one per aggregate.
@@ -706,11 +721,12 @@ public class AstGroup extends AstPrimitive {
 
     public final double _dss[][];      // Aggregates: usually sum or sum*2
     public final long _ns[];         // row counts per aggregate, varies by NA handling and column
-    int[] _medianCols;    // record which columns in reference to data frame
+/*    int[] _medianCols;    // record which columns in reference to data frame
     double[] _medians;
     boolean[] _isMedian;
     int[] _newChunkCols;  // record which columns in newChunk to store group
-    public NAHandling[] _na;
+    public NAHandling[] _na;*/
+    public MedianResult medianR = null;
 
     public G(int ncols, AGG[] aggs) {
       this(ncols, aggs, false);
@@ -723,19 +739,15 @@ public class AstGroup extends AstPrimitive {
       _ns = new long[len];
 
       if (hasMedian) {
-        _medianCols = new int[len];
-        _medians = new double[len];
-        _isMedian = new boolean[len];
-        _newChunkCols = new int[len];
-        _na = new NAHandling[len];
+        medianR = new MedianResult(len);
       }
 
       for (int i = 0; i < len; i++) {
         _dss[i] = aggs[i].initVal();
         if (hasMedian && (aggs[i]._fcn.toString().equals("median"))) { // for median function only
-          _medianCols[i] = aggs[i]._col;    // which column in the data set to aggregate on
-          _isMedian[i] = true;
-          _na[i] = aggs[i]._na;
+          medianR._medianCols[i] = aggs[i]._col;    // which column in the data set to aggregate on
+          medianR._isMedian[i] = true;
+          medianR._na[i] = aggs[i]._na;
         }
       }
     }
@@ -807,11 +819,11 @@ public class AstGroup extends AstPrimitive {
       for (int row = 0; row < cs[0]._len; row++) {  // for each
         gWork.fill(row, cs, _gbCols);
         gOld = _gss.get(gWork);
-        for (int i = 0; i < gOld._isMedian.length; i++) { // Accumulate aggregate reductions
-          if (gOld._isMedian[i]) {  // median action required on column and group
-            double d1 = cs[gOld._medianCols[i]].atd(row);
-            if (!Double.isNaN(d1) || gOld._na[i] != NAHandling.RM)
-              ncs[gOld._newChunkCols[i]].addNum(d1);  // build up dataset for each group
+        for (int i = 0; i < gOld.medianR._isMedian.length; i++) { // Accumulate aggregate reductions
+          if (gOld.medianR._isMedian[i]) {  // median action required on column and group
+            double d1 = cs[gOld.medianR._medianCols[i]].atd(row);
+            if (!Double.isNaN(d1) || gOld.medianR._na[i] != NAHandling.RM)
+              ncs[gOld.medianR._newChunkCols[i]].addNum(d1);  // build up dataset for each group
           }
         }
       }
@@ -825,10 +837,10 @@ public class AstGroup extends AstPrimitive {
       int cCount = 0;
       Vec[] tempVgrps = new Vec[_medianCols];
       for (G oneG : _grps) {
-        for (int index = 0; index < oneG._isMedian.length; index++) {
-          if (oneG._isMedian[index]) {  // median action is needed
+        for (int index = 0; index < oneG.medianR._isMedian.length; index++) {
+          if (oneG.medianR._isMedian[index]) {  // median action is needed
             // make a frame out of the NewChunk vector
-            tempVgrps[cCount++] = _appendables[oneG._newChunkCols[index]].close(_appendables[oneG._newChunkCols[index]].compute_rowLayout(), fs);
+            tempVgrps[cCount++] = _appendables[oneG.medianR._newChunkCols[index]].close(_appendables[oneG.medianR._newChunkCols[index]].compute_rowLayout(), fs);
           }
         }
       }
@@ -839,8 +851,8 @@ public class AstGroup extends AstPrimitive {
     public void calcMedian(Vec[] tempVgrps) {
       int cCount = 0;
       for (G oneG : _grps) {
-        for (int index = 0; index < oneG._isMedian.length; index++) {
-          if (oneG._isMedian[index]) {
+        for (int index = 0; index < oneG.medianR._isMedian.length; index++) {
+          if (oneG.medianR._isMedian[index]) {
             Vec[] vgrps = new Vec[1];
             vgrps[0] = tempVgrps[cCount++];
             long totalRows = vgrps[0].length();
@@ -857,7 +869,7 @@ public class AstGroup extends AstPrimitive {
               tempFrame.delete();
               myFrame.delete();
             }
-            oneG._medians[index] = medianVal;
+            oneG.medianR._medians[index] = medianVal;
           }
         }
       }

@@ -40,12 +40,16 @@
 #'        does not improve for k (stopping_rounds) scoring events. Defaults to 3 and must be an non-zero integer.  Use 0 to disable early stopping.
 #' @param seed Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility if max_models or early stopping is used
 #'        because max_runtime_secs is resource limited, meaning that if the resources are not the same between runs, AutoML may be able to train more models on one run vs another.
-#' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated based on the training frame ID.
+#' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated.
 #' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"),
 #'        and the full list of options is: "DRF" (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble".
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with exclude_algos param.
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+#' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional (Expert usage only).
+#' @param algo_parameters List. A list of param_name=param_value to be passed to internal models. Defaults to none (Expert usage only).
+#'        By default, params are set only to algorithms accepting them, and ignored by others.
+#'        Only following parameters are currently allowed: "monotone_constraints".
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. Defaults to FALSE.
@@ -55,7 +59,7 @@
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
 #' @param export_checkpoints_dir (Optional) Path to a directory where every model will be stored in binary form.
 #' @param verbosity Verbosity of the backend messages printed during training; Optional.
-#'        Must be one of "debug", "info", "warn". Defaults to NULL (disable live log).
+#'        Must be one of NULL (live log disabled), "debug", "info", "warn". Defaults to "warn".
 #' @details AutoML finds the best model, given a training frame and response, and returns an H2OAutoML object,
 #'          which contains a leaderboard of all the models that were trained in the process, ranked by a default model performance metric.
 #' @return An \linkS4class{H2OAutoML} object.
@@ -88,12 +92,14 @@ h2o.automl <- function(x, y, training_frame,
                        project_name = NULL,
                        exclude_algos = NULL,
                        include_algos = NULL,
+                       modeling_plan = NULL,
+                       algo_parameters = NULL,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
                        sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"),
                        export_checkpoints_dir = NULL,
-                       verbosity = NULL)
+                       verbosity = "warn")
 {
 
   tryCatch({
@@ -174,10 +180,8 @@ h2o.automl <- function(x, y, training_frame,
     build_control$stopping_criteria$seed <- seed
   }
 
-  # If project_name is NULL, auto-gen based on training_frame ID
-  if (is.null(project_name)) {
-    build_control$project_name <- paste0("automl_", training_frame_id)
-  } else {
+  if (!is.null(project_name)) {
+    .key.validate(project_name)
     build_control$project_name <- project_name
   }
 
@@ -192,19 +196,71 @@ h2o.automl <- function(x, y, training_frame,
     }
     input_spec$sort_metric <- tolower(sort_metric)
   }
+  build_models <- list()
   if (!is.null(exclude_algos)) {
     if (!is.null(include_algos)) stop("Use either include_algos or exclude_algos, not both.")
     if (length(exclude_algos) == 1) {
       exclude_algos <- as.list(exclude_algos)
     }
-    build_models <- list(exclude_algos = exclude_algos)
+    build_models$exclude_algos = exclude_algos
   } else if (!is.null(include_algos)) {
     if (length(include_algos) == 1) {
       include_algos <- as.list(include_algos)
     }
-    build_models <- list(include_algos = include_algos)
-  } else {
-    build_models <- list()
+    build_models$include_algos <- include_algos
+  }
+  if (!is.null(modeling_plan)) {
+    is.string <- function(s) is.character(s) && length(s) == 1
+    is.step <- function(s) is.string(s) || is.list(s) && !is.null(s$id)
+    modeling_plan <- lapply(modeling_plan, function(step) {
+      if (is.string(step)) {
+        list(name=step)
+      } else if (!(is.list(step)
+                    && !is.null(step$name)
+                    && (is.null(step$alias) || is.null(step$steps)))) {
+        stop("Each steps definition must be a string or a list with a 'name' key and an optional 'alias' or 'steps' key.")
+      } else if (!(is.null(step$alias) || step$alias %in% c('all', 'defaults', 'grids'))) {
+        stop("alias key must be one of 'all', 'defaults', 'grids'.")
+      } else if (!(is.null(step$steps)
+                    || is.step(step$steps)
+                    || is.vector(step$steps) && is.null(names(step$steps)) && all(sapply(step$steps, is.step)))){
+        stop("steps key must be a vector, and each element must be a string or a list with an 'id' key.")
+      } else if (is.string(step$steps)) {
+        list(name=step$name, steps=list(list(id=step$steps)))
+      } else if (is.list(step$steps) && !is.null(step$steps$id)) {
+        list(name=step$name, steps=list(step$steps))
+      } else if (!is.null(step$steps)) {
+        list(name=step$name, steps=lapply(step$steps, function(s) {
+          if (is.string(s))
+            list(id=s)
+          else
+            s
+        }))
+      } else {
+        step
+      }
+    })
+    build_models$modeling_plan <- modeling_plan
+  }
+  if (!is.null(algo_parameters)) {
+    keys <- names(algo_parameters)
+    algo_parameters_json <- lapply(keys, function(k) {
+      tokens <- strsplit(k, "__")[[1]]
+      if (length(tokens) == 1) {
+        scope <- "any"
+        name <- k
+      } else {
+        scope <- tokens[1]
+        name <- paste0(tokens[2:length(tokens)], collapse="__")
+      }
+      value <- algo_parameters[[k]]
+      if (is.list(value) && !is.null(names(value))) {
+        vnames <- names(value)
+        value <- lapply(vnames, function(n) list(key=n, value=value[[n]]))
+      }
+      list(scope=scope, name=name, value=value)
+    })
+    build_models$algo_parameters <- algo_parameters_json
   }
 
   # Update build_control with nfolds
@@ -251,9 +307,11 @@ h2o.automl <- function(x, y, training_frame,
     poll_state <<- do.call(.automl.poll_updates, list(job, verbosity=verbosity, state=poll_state))
   }
   .h2o.__waitOnJob(res$job$key$name, pollUpdates=poll_updates)
+  .automl.poll_updates(h2o.get_job(res$job$key$name), verbosity, poll_state) # ensure the last update is retrieved
 
   # GET AutoML object
   aml <- h2o.getAutoML(project_name = res$job$dest$name)
+  attr(aml, "id") <- res$job$dest$name
   return(aml)
 }
 
@@ -334,12 +392,12 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   return(frame)
 }
 
-.automl.fetch_state <- function(project_name, properties=NULL) {
+.automl.fetch_state <- function(run_id, properties=NULL) {
   # GET AutoML job and leaderboard for project
-  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", project_name))
-  #project <- automl_job$project  # This is not functional right now, we can get project_name from user input instead
+  automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
+  project_name = automl_job$project_name
 
-  leaderboard <- as.data.frame(automl_job["leaderboard_table"]$leaderboard_table)
+  leaderboard <- as.data.frame(automl_job$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
 
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
@@ -364,20 +422,27 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   }
 
   if (should_fetch('event_log')) {
-    event_log <- as.data.frame(automl_job["event_log_table"]$event_log_table)
+    event_log <- as.data.frame(automl_job$event_log_table)
     event_log <- .automl.fetch_table(event_log, destination_frame=paste0(project_name, '_eventlog'), show_progress=FALSE)
     # row.names(event_log) <- seq(nrow(event_log))
   } else {
     event_log <- NULL
   }
 
-  project <- automl_job$project
+  if (should_fetch('modeling_steps')) {
+    modeling_steps <- lapply(automl_job$modeling_steps, function(sdef) {
+      list(name=sdef$name, steps=sdef$steps)
+    })
+  } else {
+    modeling_steps <- NULL
+  }
 
   return(list(
-    project_name=project,
+    project_name=project_name,
     leaderboard=leaderboard,
     leader=leader,
-    event_log=event_log
+    event_log=event_log,
+    modeling_steps=modeling_steps
   ))
 }
 
@@ -412,6 +477,7 @@ h2o.getAutoML <- function(project_name) {
              leader = state$leader,
              leaderboard = state$leaderboard,
              event_log = state$event_log,
+             modeling_steps = state$modeling_steps,
              training_info = training_info
   ))
 }

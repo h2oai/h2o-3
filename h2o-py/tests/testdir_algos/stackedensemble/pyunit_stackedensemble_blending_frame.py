@@ -62,7 +62,8 @@ def test_passing_blending_frame_triggers_blending_mode():
     base_models = train_base_models(ds)
     se = train_stacked_ensemble(ds, base_models)
     assert se.stacking_strategy() == 'blending'
-    
+    assert se.model_performance().mse() == se.model_performance(ds.train).mse()
+
     
 def test_blending_mode_usually_performs_worse_than_CV_stacking_mode():
     perfs = {}
@@ -79,18 +80,15 @@ def test_blending_mode_usually_performs_worse_than_CV_stacking_mode():
         "AUC (blending) = {}, AUC (CV stacking) = {}".format(perfs['blending'].auc(), perfs['cross_validation'].auc())
 
 
-def test_training_frame_is_still_required_in_blending_mode():
+def test_training_frame_is_not_required_in_blending_mode():
     ds = prepare_data(blending=True)
     base_models = train_base_models(ds)
-    try:
-        train_stacked_ensemble(ds.extend(train=None), base_models)
-        assert False, "StackedEnsemble training without training_frame should have raised an exception"
-    except Exception as e:
-        assert "'training_frame' must be a valid H2OFrame" in str(e), "Wrong error message {}".format(str(e))
+    se = train_stacked_ensemble(ds.extend(train=None), base_models)
+    assert se.model_performance().mse() == se.model_performance(ds.blend).mse()
 
 
 pu.run_tests([
     test_passing_blending_frame_triggers_blending_mode,
     test_blending_mode_usually_performs_worse_than_CV_stacking_mode,
-    test_training_frame_is_still_required_in_blending_mode
+    test_training_frame_is_not_required_in_blending_mode
 ])

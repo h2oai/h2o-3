@@ -1,9 +1,7 @@
 package water.fvec;
 
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
+import org.junit.rules.ExpectedException;
 import water.*;
 
 import java.io.ByteArrayInputStream;
@@ -18,6 +16,10 @@ import static org.junit.Assert.*;
  * Tests for Frame.java
  */
 public class FrameTest extends TestUtil {
+  
+  @Rule
+  public transient ExpectedException ee = ExpectedException.none();
+  
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
@@ -53,10 +55,12 @@ public class FrameTest extends TestUtil {
   @Test
   public void testRemoveColumn() {
     Scope.enter();
-    Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
     Set<Vec> removedVecs = new HashSet<>();
 
     try {
+      Frame testData = parse_test_file(Key.make("test_deep_select_1"), "smalldata/sparse/created_frame_binomial.svm.zip");
+      Scope.track(testData);
+
       // dataset to split
       int initialSize = testData.numCols();
       removedVecs.add(testData.remove(-1));
@@ -74,8 +78,6 @@ public class FrameTest extends TestUtil {
     } finally {
       Scope.exit();
       for (Vec v : removedVecs) if (v != null) v.remove();
-      testData.delete();
-      H2O.STORE.clear();
     }
   }
 
@@ -136,20 +138,14 @@ public class FrameTest extends TestUtil {
       //checking that 0-based indexing is allowed as well
       // We are slicing here particular indexes of rows : 0 and 3
       Frame slicedRange = input.deepSlice(new long[]{0, 3}, null);
-      printOutFrameAsTable(slicedRange, false, slicedRange.numRows());
       assertEquals(2, slicedRange.numRows());
       assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
       assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);
-
-      //TODO add test for new long[]{-4} values
     } finally {
       Scope.exit();
     }
   }
 
-  // This test keeps failing locally when we run the whole suite but green if we run it alone.
-  // Vec$ESPC.rowLayout is using shared state... see jira PUBDEV-6019
-  @Ignore
   @Test
   public void testRowDeepSliceWithPredicateFrame() {
     Scope.enter();
@@ -175,8 +171,6 @@ public class FrameTest extends TestUtil {
       assertEquals(2, slicedRange.numRows());
       assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
       assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);
-
-      //TODO add test for new long[]{-4} values
     } finally {
       Scope.exit();
     }
@@ -365,4 +359,32 @@ public class FrameTest extends TestUtil {
     assertSame(invoked, wasInvoked); // just make sure the asserts were actually called
   }
 
+  @Test
+  public void testSubframe() {
+    try {
+      Scope.enter();
+      String[] cols = new String[]{"col_1", "col_2"};
+      Frame f = TestFrameCatalog.oneChunkFewRows();
+      Frame sf = f.subframe(cols);
+      Frame expected = new Frame(cols, f.vecs(cols));
+      assertFrameEquals(expected, sf, 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testSubframe_invalidCols() {
+    try {
+      Scope.enter();
+      String[] cols = new String[]{"col_5", "col_6", "col_7", "col_8", "col_9", "Omitted_1", "Omitted_2"};
+      Frame f = TestFrameCatalog.oneChunkFewRows();
+      ee.expectMessage("Frame `" + f._key + "` doesn't contain columns: " +
+              "'col_5', 'col_6', 'col_7', 'col_8', 'col_9' (and other 2).");
+      f.subframe(cols);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }
