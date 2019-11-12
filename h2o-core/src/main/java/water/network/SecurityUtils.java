@@ -70,7 +70,7 @@ public class SecurityUtils {
         throw new IllegalStateException(errorMsg);
     }
 
-    static SSLCredentials generateSSLPair(String passwd, String name, String location) throws Exception {
+    public static SSLCredentials generateSSLPair(String passwd, String name, String location) throws Exception {
         StoreCredentials jks = generateKeystore(passwd, name, location);
         return new SSLCredentials(jks, jks);
     }
@@ -96,24 +96,15 @@ public class SecurityUtils {
         return generateSSLConfig(credentials, temp.getAbsolutePath());
     }
 
-    static String generateSSLConfig(SSLCredentials credentials, String file) throws IOException {
+    public static String generateSSLConfig(SSLCredentials credentials, String file) throws IOException {
         Properties sslConfig = new Properties();
         sslConfig.put("h2o_ssl_protocol", defaultTLSVersion());
-        sslConfig.put("h2o_ssl_jks_internal", credentials.jks.name);
+        sslConfig.put("h2o_ssl_jks_internal", credentials.jks.getLocation());
         sslConfig.put("h2o_ssl_jks_password", credentials.jks.pass);
-        sslConfig.put("h2o_ssl_jts", credentials.jts.name);
+        sslConfig.put("h2o_ssl_jts", credentials.jts.getLocation());
         sslConfig.put("h2o_ssl_jts_password", credentials.jts.pass);
         FileOutputStream output = new FileOutputStream(file);
-        try {
-            sslConfig.store(output, "");
-            output.close();
-        } finally {
-            try {
-                output.close();
-            } catch (IOException e) {
-                // ignore
-            }
-        }
+        sslConfig.store(output, "");
         return file;
     }
 

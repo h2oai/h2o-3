@@ -5,7 +5,7 @@ from builtins import range
 from past.builtins import basestring
 from functools import reduce
 from scipy.sparse import csr_matrix
-import sys, os, gc
+import sys, os
 import pandas as pd
 
 try:        # works with python 2.7 not 3
@@ -56,26 +56,19 @@ class Namespace:
     """
     @staticmethod
     def add(namespace, **kwargs):
-        namespace.__dict__.update(kwargs)
+        for k, v in kwargs.items():
+            setattr(namespace, k, v)
         return namespace
 
     def __init__(self, **kwargs):
-        self.__dict__.update(**kwargs)
-
-    def __str__(self):
-        return str(self.__dict__)
-
-    def __repr__(self):
-        return repr(self.__dict__)
+        Namespace.add(self, **kwargs)
 
     def extend(self, **kwargs):
         """
         :param kwargs: attributes extending the current namespace
         :return: a new namespace containing same attributes as the original + the extended ones
         """
-        clone = Namespace(**self.__dict__)
-        clone.__dict__.update(**kwargs)
-        return clone
+        return Namespace.add(copy.copy(self), **kwargs)
 
 
 def ns(**kwargs):
@@ -525,10 +518,8 @@ def pyunit_exec(test_name):
     exec(pyunit_c, {})
 
 def standalone_test(test):
-    if not h2o.connection() or not h2o.connection().connected:
-        print("Creating connection for test %s" % test.__name__)
+    if not h2o.h2o.connection():
         h2o.init(strict_version_check=False)
-        print("New session: %s" % h2o.connection().session_id)
 
     h2o.remove_all()
 
@@ -3313,54 +3304,6 @@ def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[T
                                                                                              "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
                                                                                                                    rowInd+1, frame1[rowInd+1,colInd])
 
-def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[True, True]):
-    for colInd in sorted_column_indices:
-        for rowInd in range(0, frame1.nrow-1):
-            if (random.uniform(0.0,1.0) < prob):
-                if colInd == sorted_column_indices[0]:
-                    if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
-                        if ascending[colInd]:
-                            assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                     "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                           rowInd+1, frame1[rowInd+1,colInd])
-                        else:
-                            assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                     "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                           rowInd+1, frame1[rowInd+1,colInd])
-                else: # for second column
-                    if not(math.isnan(frame1[rowInd, sorted_column_indices[0]])) and not(math.isnan(frame1[rowInd+1,sorted_column_indices[0]])):
-                        if (frame1[rowInd,sorted_column_indices[0]]==frame1[rowInd+1, sorted_column_indices[0]]):  # meaningful to compare row entries then
-                            if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
-                                if ascending[colInd]:
-                                    assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                             "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                                   rowInd+1, frame1[rowInd+1,colInd])
-                                else:
-                                    assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                             "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                                   rowInd+1, frame1[rowInd+1,colInd])
-
-def check_sorted_1_column(frame1, sorted_column_index, prob=0.5, ascending=True):
-    totRow = frame1.nrow * prob
-    skipRow = int(frame1.nrow/totRow)
-    for rowInd in range(0, frame1.nrow-1, skipRow):
-        if not (math.isnan(frame1[rowInd, sorted_column_index])) and not (
-            math.isnan(frame1[rowInd + 1, sorted_column_index])):
-            if ascending:
-                assert frame1[rowInd, sorted_column_index] <= frame1[
-                    rowInd + 1, sorted_column_index], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                      "row {2}: {3}".format(rowInd,
-                                                                            frame1[rowInd, sorted_column_index],
-                                                                            rowInd + 1,
-                                                                            frame1[rowInd + 1, sorted_column_index])
-            else:
-                assert frame1[rowInd, sorted_column_index] >= frame1[
-                    rowInd + 1, sorted_column_index], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                      "row {2}: {3}".format(rowInd,
-                                                                            frame1[rowInd, sorted_column_index],
-                                                                            rowInd + 1,
-                                                                            frame1[rowInd + 1, sorted_column_index])
-
 def assert_correct_frame_operation(sourceFrame, h2oResultFrame, operString):
     """
     This method checks each element of a numeric H2OFrame and throw an assert error if its value does not
@@ -3619,19 +3562,15 @@ def compare_frames_local_svm(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
 
 
 # frame compare with NAs in column
-def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6, returnResult=False, oneLessRow=False):
+def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
     if (f1.types[f1.names[0]] == u'time'):   # we have to divide by 1000 before converting back and forth between ms and time format
         tol = 10
 
     temp1 = f1.as_data_frame(use_pandas=False)
     temp2 = f2.as_data_frame(use_pandas=False)
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
-    if oneLessRow:
-        lastF2Row = f2.nrow
-    else:
-        lastF2Row = f2.nrow+1
     for colInd in range(f1.ncol):
-        for rowInd in range(1,lastF2Row):
+        for rowInd in range(1,f2.nrow):
             if (random.uniform(0,1) < prob):
                 if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
                     if returnResult:
@@ -3660,7 +3599,7 @@ def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6, returnRes
     temp2 = f2.as_data_frame(use_pandas=False)
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
     for colInd in range(f1.ncol):
-        for rowInd in range(1,f2.nrow+1):
+        for rowInd in range(1,f2.nrow):
             if (random.uniform(0,1) < prob):
                 if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
                     if returnResult:
@@ -3687,7 +3626,7 @@ def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5, returnResult=Fals
     temp2 = f2.as_data_frame(use_pandas=False)
     assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
     for colInd in range(f1.ncol):
-        for rowInd in range(1,f2.nrow+1):
+        for rowInd in range(1,f2.nrow):
             if (random.uniform(0,1) < prob):
                 if len(temp1[rowInd]) == 0 or len(temp2[rowInd]) == 0:
                     if returnResult:
@@ -3752,7 +3691,7 @@ def build_save_model_DRF(params, x, train, respName):
 
 
 # generate random dataset, copied from Pasha
-def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=15000, NTESTROWS=200, missing_fraction=0.0, seed=None):
+def random_dataset(response_type, verbose=True, NTESTROWS=200, missing_fraction=0.0, seed=None):
     """Create and return a random dataset."""
     if verbose: print("\nCreating a dataset for a %s problem:" % response_type)
     fractions = {k + "_fraction": random.random() for k in "real categorical integer time string binary".split()}
@@ -3767,7 +3706,7 @@ def random_dataset(response_type, verbose=True, ncol_upper=25000, ncol_lower=150
         response_factors = 2
     else:
         response_factors = random.randint(3, 10)
-    df = h2o.create_frame(rows=random.randint(ncol_lower, ncol_upper) + NTESTROWS, cols=random.randint(3, 20),
+    df = h2o.create_frame(rows=random.randint(15000, 25000) + NTESTROWS, cols=random.randint(3, 20),
                           missing_fraction=missing_fraction,
                           has_response=True, response_factors=response_factors, positive_response=True, factors=10,
                           seed=seed, **fractions)
@@ -4331,22 +4270,3 @@ def assertModelColNamesTypesCorrect(modelNames, modelTypes, frameNames, frameTyp
             "Expected training data types for column {0} is {1}.  Actual training data types for column {2} from " \
             "model output is {3}".format(frameNames[ind], frameTypesDict[frameNames[ind]],
                                          frameNames[ind], modelTypes[modelNames.index(frameNames[ind])])
-
-
-def saveModelMojo(model):
-    '''
-    Given a H2O model, this function will save it in a directory off the results directory.  In addition, it will
-    return the absolute path of where the mojo file is.
-    
-    :param model: 
-    :return: 
-    '''
-    # save model
-    regex = re.compile("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]")
-    MOJONAME = regex.sub("_", model._id)
-
-    print("Downloading Java prediction model code from H2O")
-    tmpdir = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-    os.makedirs(tmpdir)
-    model.download_mojo(path=tmpdir)    # save mojo
-    return tmpdir

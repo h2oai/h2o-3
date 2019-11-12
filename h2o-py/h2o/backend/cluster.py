@@ -343,6 +343,5 @@ class H2OCluster(object):
             return 'Unknown'
 
 _cloud_v3_valid_keys = {"is_client", "build_number", "cloud_name", "locked", "node_idx", "consensus", "branch_name",
-                        "version", "last_commit_hash", "describe", "compiled_by", "compiled_on", "cloud_uptime_millis",
-                        "cloud_internal_timezone", "datafile_parser_timezone", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
-                        "nodes", "build_age", "build_too_old", "internal_security_enabled", "leader_idx"}
+                        "version", "cloud_uptime_millis", "cloud_internal_timezone", "datafile_parser_timezone", "cloud_healthy", "bad_nodes", "cloud_size", "skip_ticks",
+                        "nodes", "build_age", "build_too_old", "internal_security_enabled"}

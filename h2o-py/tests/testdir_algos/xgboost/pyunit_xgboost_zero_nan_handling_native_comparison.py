@@ -1,7 +1,6 @@
-import sys
-sys.path.insert(1,"../../../")
 import pandas as pd
-import numpy as np
+import xgboost as xgb
+import numpy as np;
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
@@ -9,10 +8,6 @@ from scipy.sparse import csr_matrix
 
 
 def xgboost_categorical_zero_nan_handling_sparse_vs_native():
-    if sys.version.startswith("2"):
-        print("native XGBoost tests only supported on python3")
-        return
-    import xgboost as xgb
     assert H2OXGBoostEstimator.available() is True
 
     # Artificial data to be used throughout the test, very simple

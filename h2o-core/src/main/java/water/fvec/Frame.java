@@ -166,8 +166,8 @@ public class Frame extends Lockable<Frame> {
 
     // Require all Vecs already be installed in the K/V store
     for( Vec vec : vecs ) DKV.prefetch(vec._key);
-    for( int i = 0; i < vecs.length; i++ ) {
-      assert DKV.get(vecs[i]._key) != null : " null vec: " + vecs[i]._key + "; " + (names != null ? "name: " + names[i] : "index: " + i);
+    for( Vec vec : vecs ) {
+      assert DKV.get(vec._key) != null : " null vec: "+vec._key;
     }
 
     // Always require names
@@ -383,11 +383,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /**   Finds the matching column index, or -1 if missing
-   *  @return the matching column index, or -1 if missing 
-   *  @deprecated as many columns in a Frame could be backed by the same Vec, we can't return single column index that corresponds to a given {@code vec}.
-   *  Please use {@link #find(String)} instead.
-   */
-  @Deprecated()
+   *  @return the matching column index, or -1 if missing */
   public int find( Vec vec ) {
     Vec[] vecs = vecs(); //warning: side-effect
     if (vec == null) return -1;
@@ -398,11 +394,7 @@ public class Frame extends Lockable<Frame> {
   }
 
   /**   Finds the matching column index, or -1 if missing
-   *  @return the matching column index, or -1 if missing 
-   *  @deprecated as many columns in a Frame could be backed by the same Vec (and its key), we can't return single column index that corresponds to a given {@code key}.
-   *  Please use {@link #find(String)} instead.
-   */
-  @Deprecated
+   *  @return the matching column index, or -1 if missing */
   public int find( Key key ) {
     for( int i=0; i<_keys.length; i++ )
       if( key.equals(_keys[i]) )
@@ -443,13 +435,6 @@ public class Frame extends Lockable<Frame> {
     public Key<Frame> _frame;
     public String _column_name;
 
-    public VecSpecifier() {
-    }
-
-    public VecSpecifier(Key<Frame> frame, String column_name) {
-      _frame = frame;
-      _column_name = column_name;
-    }
 
     public Vec vec() {
       Value v = DKV.get(_frame);
@@ -457,21 +442,6 @@ public class Frame extends Lockable<Frame> {
       Frame f = v.get();
       if (null == f) return null;
       return f.vec(_column_name);
-    }
-
-    /**
-     * @param vecSpecifiers An Array of vectors specifiers to extract column names from. May not be null.
-     * @return An array of String with names of the columns represented by each given VecSpecifier. Possibly empty.
-     * @throws NullPointerException When vecSpecifiers argument is null.
-     */
-    public static String[] vecNames(final VecSpecifier[] vecSpecifiers) throws NullPointerException {
-      Objects.requireNonNull(vecSpecifiers);
-      final String[] vecNames = new String[vecSpecifiers.length];
-
-      for (int i = 0; i < vecSpecifiers.length; i++) {
-        vecNames[i] = vecSpecifiers[i]._column_name;
-      }
-      return vecNames;
     }
   }
 
@@ -763,37 +733,37 @@ public class Frame extends Lockable<Frame> {
    *  @return a new frame which collects vectors from this frame with desired names.
    *  @throws IllegalArgumentException if there is no vector with desired name in this frame.
    */
-  public Frame subframe(String[] names) {
-    Vec[] vecs = new Vec[names.length];
+  public Frame subframe(String[] names) { return subframe(names, false, 0)[0]; }
+
+  /** Create a subframe from this frame based on desired names.
+   *  Throws an exception if desired column is not in this frame and <code>replaceBy</code> is <code>false</code>.
+   *  Else replace a missing column by a constant column with given value.
+   *
+   *  @param names list of column names to extract
+   *  @param replaceBy should be missing column replaced by a constant column
+   *  @param c value for constant column
+   *  @return array of 2 frames, the first is containing a desired subframe, the second one contains newly created columns or null
+   *  @throws IllegalArgumentException if <code>replaceBy</code> is false and there is a missing column in this frame
+   */
+  private Frame[] subframe(String[] names, boolean replaceBy, double c){
+    Vec [] vecs     = new Vec[names.length];
+    Vec [] cvecs    = replaceBy ? new Vec   [names.length] : null;
+    String[] cnames = replaceBy ? new String[names.length] : null;
+    int ccv = 0; // counter of constant columns
     vecs();                     // Preload the vecs
     HashMap<String, Integer> map = new HashMap<>((int) ((names.length/0.75f)+1)); // avoid rehashing by set up initial capacity
-    for (int i = 0; i < _names.length; i++)
-      map.put(_names[i], i);
-    int missingCnt = 0;
-    for (int i = 0; i < names.length; i++)
-      if (map.containsKey(names[i])) {
-        vecs[i] = _vecs[map.get(names[i])];
-      } else
-        missingCnt++;
-    if (missingCnt > 0) {
-      StringBuilder sb = new StringBuilder();
-      final int maxReported = missingCnt <= 5 ? missingCnt : 5;
-      int reported = 0;
-      for (int i = 0; i < names.length && reported < maxReported; i++) {
-        if (vecs[i] == null) {
-          sb.append('\'').append(names[i]).append('\'');
-          reported++;
-          if (reported < maxReported) {
-            sb.append(", ");
-          }
-        }
+    for(int i = 0; i < _names.length; ++i) map.put(_names[i], i);
+    for(int i = 0; i < names.length; ++i)
+      if(map.containsKey(names[i])) vecs[i] = _vecs[map.get(names[i])];
+      else if (replaceBy) {
+        Log.warn("Column " + names[i] + " is missing, filling it in with " + c);
+        cnames[ccv] = names[i];
+        vecs[i] = cvecs[ccv++] = anyVec().makeCon(c);
       }
-      if (reported < missingCnt) {
-        sb.append(" (and other ").append(missingCnt - reported).append(")");
-      }
-      throw new IllegalArgumentException("Frame `" + _key + "` doesn't contain columns: " + sb.toString() + ".");
-    }
-    return new Frame(Key.<Frame>make("subframe" + Key.make().toString()), names, vecs);
+    return new Frame[] {
+      new Frame(Key.<Frame>make("subframe" + Key.make().toString()), names, vecs),
+      ccv > 0? new Frame(Key.<Frame>make("subframe" + Key.make().toString()), Arrays.copyOf(cnames, ccv), Arrays.copyOf(cvecs,ccv)) : null
+    };
   }
 
   /** Allow rollups for all written-into vecs; used by {@link MRTask} once

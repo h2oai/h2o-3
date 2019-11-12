@@ -1,5 +1,3 @@
-import sys, os
-sys.path.insert(1, os.path.join("..","..","..",".."))
 import h2o
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from tests import pyunit_utils

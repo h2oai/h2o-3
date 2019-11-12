@@ -8,11 +8,6 @@ public class TargetEncoderMojoModel extends MojoModel {
 
   public TargetEncoderMojoModel(String[] columns, String[][] domains, String responseName) {
     super(columns, domains, responseName);
-
-    _teColumnNameToIdx = new HashMap<>(columns.length);
-    for (int i = 0; i < columns.length - 1; i++) {
-      _teColumnNameToIdx.put(columns[i], i);
-    }
   }
 
   public EncodingMaps _targetEncodingMap;

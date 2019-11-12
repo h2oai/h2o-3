@@ -124,10 +124,7 @@ class Jetty8ServerAdapter implements WebServer {
   private class GateHandler extends AbstractHandler {
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) {
-      final boolean handled = h2oHttpView.gateHandler(request, response);
-      if (handled) {
-        baseRequest.setHandled(true);
-      }
+      h2oHttpView.gateHandler(request, response);
     }
   }
 }

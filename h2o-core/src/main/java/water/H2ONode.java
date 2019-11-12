@@ -39,7 +39,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient public volatile HeartBeat _heartbeat;  // My health info.  Changes 1/sec.
   transient public int _tcp_readers;               // Count of started TCP reader threads
     
-  transient private short _timestamp;
+  transient private short _timestamp = H2ONodeTimestamp.UNDEFINED;
 
   transient private boolean _removed_from_cloud;
 
@@ -47,20 +47,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return _heartbeat._client;
   }
 
-  final void setTimestamp(short newTimestamp) {
-    if (!H2ONodeTimestamp.isDefined(_timestamp) && H2ONodeTimestamp.isDefined(newTimestamp)) {
-      // Note: time stamp is only known when the H2ONode actually opens a connection to this node
-      // if H2ONode is discovered another way the timestamp is Undefined
-      boolean isClient = H2ONodeTimestamp.decodeIsClient(newTimestamp);
-      if (isClient) {
-        Log.info("Client " + this + " started communicating with this H2O node.");
-      } else {
-        Log.debug("H2O Node " + this + " started communicating with this H2O node.");
-      }
-    }
-    _timestamp = newTimestamp;
-  }
-  
   public final short getTimestamp() {
     return _timestamp;
   }
@@ -88,8 +74,8 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     _sendThread = null;
   }
 
-  private SmallMessagesSendThread startSendThread() {
-    SmallMessagesSendThread newSendThread = new SmallMessagesSendThread(); // Launch the send thread for small messages  
+  private UDP_TCP_SendThread startSendThread() {
+    UDP_TCP_SendThread newSendThread = new UDP_TCP_SendThread(); // Launch the UDP send thread  
     _sendThread = newSendThread;
     newSendThread.start();
     return newSendThread;
@@ -119,24 +105,16 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
         _ipLow = ArrayUtils.encodeAsLong(b, 0, 8);
       }
     }
-    /**
-     * Retrieves the public communication port on which the REST API is exposed
-     * @return port number
-     */
-    int getApiPort() { return getPort()-H2O.ARGS.port_offset; }
-    /**
-     * Retrieves the internal node-to-node communication port
-     * @return port number
-     */
-    int getInternalPort() { return getPort()  ; }
-    @Override public String toString() { return getAddress()+":"+ getApiPort(); }
+    public int htm_port() { return getPort()-H2O.ARGS.port_offset; }
+    public int udp_port() { return getPort()  ; }
+    @Override public String toString() { return getAddress()+":"+htm_port(); }
     public String getIpPortString() {
-      return getAddress().getHostAddress() + ":" + getApiPort();
+      return getAddress().getHostAddress() + ":" + htm_port();
     }
     AutoBuffer write( AutoBuffer ab ) {
       return (!H2O.IS_IPV6
               ? ab.put4((int) _ipLow)
-              : ab.put8(_ipLow).put8(_ipHigh)).put2((char) getInternalPort());
+              : ab.put8(_ipLow).put8(_ipHigh)).put2((char) udp_port());
     }
     static H2Okey read( AutoBuffer ab ) {
       try {
@@ -152,7 +130,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       H2Okey key = (H2Okey)x;
       // Must be unsigned long-arithmetic, or overflow will make a broken sort
       int res = MathUtils.compareUnsigned(_ipHigh, _ipLow, key._ipHigh, key._ipLow);
-      return res != 0 ? res : getInternalPort() - key.getInternalPort();
+      return res != 0 ? res : udp_port() - key.udp_port();
     }
 
     static int SIZE_OF_IP = H2O.IS_IPV6 ? 16 : 4;
@@ -224,7 +202,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       Log.info("Client reconnected with a new timestamp=" + newTimestamp + ", old client: " + toDebugString());
       if (_sendThread != null) {
         // We generally assume a lost client will eventually re-connect and we will want to deliver all the messages - 
-        // see the isActive() method in the SmallMessagesSendThread. However, when we detect a client was re-spawned 
+        // see the isActive() method in the UDP_TCP_SendThread. However, when we detect a client was re-spawned 
         // (and thus lost its previous state) we don't need to keep sending the old messages. That is why we kill the old 
         // thread right away by injecting a new fresh instance. The old thread will detect it is not active and will 
         // give the new one chance to start delivering messages.
@@ -233,7 +211,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     }
     //Transition the timestamp to defined state for this client
     if (!H2ONodeTimestamp.isDefined(newTimestamp)) {
-      setTimestamp(newTimestamp);
+      _timestamp = newTimestamp;
     }
     _removed_from_cloud = false;
     _last_heard_from = System.currentTimeMillis();
@@ -257,7 +235,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
       }
       // Transition the timestamp to defined state for both workers & client
       if (!H2ONodeTimestamp.isDefined(h2o.getTimestamp())) {
-        h2o.setTimestamp(timestamp);
+        h2o._timestamp = timestamp;
       }
       return h2o;
     } else {
@@ -434,15 +412,15 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   // ---------------
-  // Send a message via batched TCP.  Note: has to happen out-of-band with the
+  // Send UDP via batched TCP.  Note: has to happen out-of-band with the
   // standard AutoBuffer writing, which can hit the case of needing a TypeId
   // mapping mid-serialization.  Thus this path uses another TCP channel that
   // is specifically not any of the above channels.  This channel is limited to
   // messages which are presented in their entirety (not streamed) thus never
   // need another (nested) TCP channel.
-  private transient SmallMessagesSendThread _sendThread = null; // null if Node was removed from cloud or we didn't need to communicate with it yet
+  private transient UDP_TCP_SendThread _sendThread = null; // null if Node was removed from cloud or we didn't need to communicate with it yet
   public final void sendMessage(ByteBuffer bb, byte msg_priority) {
-    SmallMessagesSendThread sendThread = _sendThread;
+    UDP_TCP_SendThread sendThread = _sendThread;
     if (sendThread == null) {
       // Sending threads are created lazily.
       // This is because we will intern all client nodes including the ones that have nothing to do with the cluster.
@@ -513,14 +491,14 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   
   // Private thread serving (actually ships the bytes over) small msg Q.
   // Buffers the small messages together and sends the bytes over via TCP channel.
-  private static String SEND_THREAD_NAME_PREFIX = "TCP-SMALL-SEND-";
-  class SmallMessagesSendThread extends Thread {
+  private static String SEND_THREAD_NAME_PREFIX = "UDP-TCP-SEND-";
+  class UDP_TCP_SendThread extends Thread {
 
     private ByteChannel _chan;  // Lazily made on demand; closed & reopened on error
 
     private final ByteBuffer _bb; // Reusable output large buffer
 
-    SmallMessagesSendThread(){
+    UDP_TCP_SendThread(){
       super(SEND_THREAD_NAME_PREFIX + H2ONode.this);
       _bb = AutoBuffer.BBP_BIG.make();
     }
@@ -605,7 +583,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
           // booted.  Basically the ERRR log will show endless repeat attempts to
           // connect to the missing node
           if( keepSending() && !H2O.getShutdownRequested() && (Paxos._cloudLocked || retries++ > 300) ) {
-            Log.err("Got IO error when sending a batch of bytes: ",ioe);
+            Log.err("Got IO error when sending batch UDP bytes: ",ioe);
             retries = 150;      // Throttle the pace of error msgs
           }
           if( _chan != null )

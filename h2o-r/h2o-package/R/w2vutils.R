@@ -43,7 +43,7 @@ h2o.findSynonyms <- function(word2vec, word, count = 20) {
 #' h2o.transform(w2v_model, sentences, aggregate_method = "AVERAGE") # -> 2 rows
 #' }
 #' @export
-h2o.transform_word2vec <- function(word2vec, words, aggregate_method = c("NONE", "AVERAGE")) {
+h2o.transform <- function(word2vec, words, aggregate_method = c("NONE", "AVERAGE")) {
     if (!is(word2vec, "H2OModel")) stop("`word2vec` must be a word2vec model")
     if (missing(words)) stop("`words` must be specified")
     if (!is.H2OFrame(words)) stop("`words` must be an H2OFrame")

@@ -29,11 +29,6 @@ public class TestBernoulliCustomDistribution implements CDistributionFunc {
     }
 
     @Override
-    public double gradient(double y, double f, int l) {
-        return gradient(y, f);
-    }
-
-    @Override
     public double[] gamma(double w, double y, double z, double f) {
         double ff = y - z;
         return new double[]{w * z, w * ff * (1 - ff)};

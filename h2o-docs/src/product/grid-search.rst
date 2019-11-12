@@ -2,9 +2,9 @@ Grid (Hyperparameter) Search
 ============================
 
 
-H2O supports two types of grid search -- traditional (or "cartesian") grid search and random grid search.  In a cartesian grid search, users specify a set of values for each hyperparameter that they want to search over, and H2O will train a model for every combination of the hyperparameter values.  This means that if you have three hyperparameters and you specify 5, 10 and 2 values for each, your grid will contain a total of 5*10*2 = 100 models.
+H2O supports two types of grid search -- traditional (or "cartesian") grid search and random grid search.  In a cartesian grid search, users specify a set of values for each hyperparamter that they want to search over, and H2O will train a model for every combination of the hyperparameter values.  This means that if you have three hyperparameters and you specify 5, 10 and 2 values for each, your grid will contain a total of 5*10*2 = 100 models.
 
-In random grid search, the user specifies the hyperparameter space in the exact same way, except H2O will sample uniformly from the set of all possible hyperparameter value combinations.  In random grid search, the user also specifies a stopping criterion, which controls when the random grid search is completed.  The user can tell the random grid search to stop by specifying a maximum number of models or the maximum number of seconds allowed for the search.  The user may also specify a performance-metric-based stopping criterion, which will stop the random grid search when the performance stops improving by a specified amount. 
+In random grid search, the user specifies the hyperparamter space in the exact same way, except H2O will sample uniformly from the set of all possible hyperparamter value combinations.  In random grid search, the user also specifies a stopping criterion, which controls when the random grid search is completed.  The user can tell the random grid search to stop by specifying a maximum number of models or the maximum number of seconds allowed for the search.  The user may also specify a performance-metric-based stopping criterion, which will stop the random grid search when the performance stops improving by a specified amount. 
 
 Once the grid search is complete, the user can query the grid object and sort the models by a particular performance metric (for example, "AUC").  All models are stored in the H2O cluster and are accessible by model id.
 
@@ -81,7 +81,7 @@ Grid Search Example in R
     train <- ss[[1]]
     valid <- ss[[2]]
 
-    # GBM hyperparameters
+    # GBM hyperparamters
     gbm_params1 <- list(learn_rate = c(0.01, 0.1),
                         max_depth = c(3, 5, 9),
                         sample_rate = c(0.8, 1.0),
@@ -112,7 +112,7 @@ Grid Search Example in R
     h2o.auc(best_gbm_perf1)
     # 0.7781779
 
-    # Look at the hyperparameters for the best model
+    # Look at the hyperparamters for the best model
     print(best_gbm1@model[["model_summary"]])
 
 
@@ -125,7 +125,7 @@ Random Grid Search Example in R
 
     # Use same data as above
 
-    # GBM hyperparameters (bigger grid than above)
+    # GBM hyperparamters (bigger grid than above)
     gbm_params2 <- list(learn_rate = seq(0.01, 0.1, 0.01),
                         max_depth = seq(2, 10, 1),
                         sample_rate = seq(0.5, 1.0, 0.1),
@@ -157,7 +157,7 @@ Random Grid Search Example in R
     h2o.auc(best_gbm_perf2)
     # 0.7810757
 
-    # Look at the hyperparameters for the best model
+    # Look at the hyperparamters for the best model
     print(best_gbm2@model[["model_summary"]])
 
 

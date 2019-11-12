@@ -7,9 +7,7 @@
 def call(final stageConfig) {
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
-            return getCommandHadoop(stageConfig, false)
-        case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
-            return getCommandHadoop(stageConfig, true)
+            return getCommandHadoop(stageConfig)
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             return getCommandStandalone(stageConfig)
         default:
@@ -17,15 +15,7 @@ def call(final stageConfig) {
     }
 }
 
-private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
-    def loginArgs = ""
-    def loginEnvs = ""
-    if (spnegoAuth) {
-        loginArgs = """-spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
-                -login_conf ${stageConfig.customData.kerberosConfigPath} \\
-                -spnego_properties ${stageConfig.customData.kerberosPropertiesPath}"""
-        loginEnvs = """export KERB_PRINCIPAL=${stageConfig.customData.kerberosPrincipal}"""
-    }
+private GString getCommandHadoop(final stageConfig) {
     return """
             rm -fv h2o_one_node h2odriver.out
             export HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp)
@@ -35,7 +25,6 @@ private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
                 -jks mykeystore.jks \\
                 -notify h2o_one_node -ea -proxy \\
                 -jks mykeystore.jks \\
-                ${loginArgs} \\
                 &> h2odriver.out &
             for i in \$(seq 20); do
               if [ -f 'h2o_one_node' ]; then
@@ -51,7 +40,6 @@ private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
               exit 1
             fi
             IFS=":" read CLOUD_IP CLOUD_PORT < h2o_one_node
-            ${loginEnvs}
             export KRB_USE_TOKEN=true
             export CLOUD_IP=\$CLOUD_IP
             export CLOUD_PORT=\$CLOUD_PORT

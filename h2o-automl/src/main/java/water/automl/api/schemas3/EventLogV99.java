@@ -12,7 +12,11 @@ public class EventLogV99 extends Schema<EventLog, EventLogV99> {
   public EventLogEntryV99[] events;
 
   @Override public EventLogV99 fillFromImpl(EventLog eventLog) {
-    super.fillFromImpl(eventLog, new String[] { "events" });
+    super.fillFromImpl(eventLog, new String[] { "automl_id", "events" });
+
+    if (null != eventLog._automlKey) {
+      this.automl_id = new AutoMLV99.AutoMLKeyV3(eventLog._automlKey);
+    }
 
     if (null != eventLog._events) {
       this.events = new EventLogEntryV99[eventLog._events.length];

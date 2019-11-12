@@ -106,7 +106,7 @@ def pca_export():
     model = H2OPrincipalComponentAnalysisEstimator(k=3, impute_missing=True)
     model.train(x=list(range(4)), training_frame=frame)
     h2o.download_pojo(model, path=RESULT_DIR)
-    model.download_mojo(path=RESULT_DIR)    #  fixed.
+    expect_error(model.download_mojo, model="PCA", format='MOJO')
 
 
 def drf_export():

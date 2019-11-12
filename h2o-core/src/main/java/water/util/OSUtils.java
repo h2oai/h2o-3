@@ -53,10 +53,6 @@ public class OSUtils {
     return getOsName().toLowerCase().startsWith("linux");
   }
 
-  public static boolean isMac() {
-     return getOsName().toLowerCase().startsWith("mac");
-  }
-
   public static boolean isWindows() {
     return getOsName().toLowerCase().startsWith("windows");
   }

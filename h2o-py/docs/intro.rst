@@ -17,7 +17,7 @@ out of sight in a singleton instance of :class:`H2OConnection`. In other words, 
 package does not rely on Jython, and there
 is no direct manipulation of the JVM.
 
-The H2O Python module is not intended as a replacement for other popular machine learning
+The H2O python module is not intended as a replacement for other popular machine learning
 frameworks such as scikit-learn, pylearn2, and their ilk, but is intended to bring H2O to
 a wider audience of data and machine learning devotees who work exclusively with Python.
 
@@ -51,6 +51,8 @@ Last, but not least, we regularly engage the machine learning community all over
 The rest of this document explains a few of the client-server details and the general
 programming model for interacting with H2O from Python.
 
+Let's get started!
+
 The H2O Object System
 +++++++++++++++++++++
 
@@ -82,54 +84,22 @@ the objects available in this module it is helpful to understand how these objec
 objects in the JVM. After all, this module is an interface that allows the
 manipulation of a distributed system.
 
-Let's get started!
 
-Installing H2O-3
-----------------
-
-Run the following commands in a Terminal window to install H2O for Python. 
-
-1. Install dependencies (prepending with ``sudo`` if needed):
-
- ::
-
-  pip install requests
-  pip install tabulate
-  pip install "colorama>=0.3.8"
-  pip install future
-
-2. Run the following command to remove any existing H2O module for Python (append with ``--user`` if needed):
-
- ::
-
-  pip uninstall h2o
-
-3. Use ``pip`` to install this version of the H2O Python module. 
-
- ::
-
-  pip install -f http://h2o-release.s3.amazonaws.com/h2o/latest_stable_Py.html h2o
-
-Starting H2O and Inspecting the Cluster
----------------------------------------
+H2O Cluster Inspection
+----------------------
 
 There are many tools for directly interacting with user-visible objects in the H2O cluster.
 Every new python session begins by initializing a connection between the python client and
-the H2O cluster. Note that ``h2o.init()`` accepts a number of arguments that are described 
-in the `h2o.init <h2o.html#h2o.init>`__ section.
+the H2O cluster:
 
-::
+    >>> import h2o
+    >>> h2o.init()
 
-    import h2o
-    h2o.init()
-
-By default, this will attempt to discover an H2O at ``localhost:54321``. Note that If it fails to find
+By default, this will attempt to discover an H2O at ``localhost:54321``. If it fails to find
 a running H2O instance at this address, it will seek out an h2o jar at several possible
 locations. If no jar is found, then an :class:`H2OStartupError` will be raised:
 
-::
-
-    h2o.init()
+    >>> h2o.init()
     Connecting to H2O server at http://localhost:54321....... failed.
     H2OStartupError:
         Cannot start local server: h2o.jar not found. Paths searched:
@@ -143,36 +113,30 @@ locations. If no jar is found, then an :class:`H2OStartupError` will be raised:
 After making a successful connection, you can obtain a high-level summary of the cluster
 status:
 
-::
-
-    h2o.cluster_info()
+    >>> h2o.cluster_info()
     --------------------------  ---------------------------
-    H2O cluster uptime:         01 secs
-    H2O cluster timezone:       America/Los_Angeles
-    H2O data parsing timezone:  UTC
-    H2O cluster version:        3.26.0.6
-    H2O cluster version age:    27 days
+    H2O cluster uptime:         13 seconds 903 milliseconds
+    H2O cluster version:        (unknown)
     H2O cluster name:           spIdea
     H2O cluster total nodes:    1
-    H2O cluster free memory:    3.556 Gb
+    H2O cluster total memory:   12.44 GB
     H2O cluster total cores:    8
     H2O cluster allowed cores:  8
-    H2O cluster status:         accepting new members, healthy
-    H2O connection url:         http://127.0.0.1:54321
-    H2O connection proxy:
-    H2O internal security:      False
-    H2O API Extensions:         Amazon S3, XGBoost, Algos, AutoML, Core V3, TargetEncoder, Core V4
-    Python version:             2.7.15 final
+    H2O cluster healthy:        True
+    H2O Connection ip:          127.0.0.1
+    H2O Connection port:        54321
+    H2O Connection proxy:
     --------------------------  ---------------------------
+
+If pip was used to perform a versioned install of the h2o module, then the version field
+would display something other than `(unknown)`.
 
 Listing Cluster Contents
 ++++++++++++++++++++++++
 
 To list the current contents of the H2O cluster, you can use the :mod:`h2o.ls` command:
 
-::
-
-  h2o.ls()
+  >>> h2o.ls()
                                                    key
   0                   GBM_model_python_1447790800404_2
   1  modelmetrics_GBM_model_python_1447790800404_2@...
@@ -187,10 +151,8 @@ Removing Objects From the Cluster
 If you want to delete something from the DKV, you can do this with the :mod:`h2o.remove`
 method:
 
-::
-
-  h2o.remove("py_2")
-  h2o.ls()
+  >>> h2o.remove("py_2")
+  >>> h2o.ls()
                                                    key
   0                   GBM_model_python_1447790800404_2
   1  modelmetrics_GBM_model_python_1447790800404_2@...
@@ -206,14 +168,12 @@ you can attach a new python session, and pick up where you left off by using
 The usage details of these methods are spelled out elsewhere, but here's a sample
 usage of :mod:`h2o.get_frame`:
 
-::
-
-  h2o.ls()
+  >>> h2o.ls()
               key
   0  prostate.hex
   1          py_7
-  some_frame = h2o.get_frame("py_7")
-  some_frame.head()
+  >>> some_frame = h2o.get_frame("py_7")
+  >>> some_frame.head()
 
 
 Objects In This Module
@@ -230,17 +190,12 @@ that may or may not be lazy. Here's an example showing how a list comprehension
 combined with lazy expressions to compute the column means for all columns in the
 H2OFrame:
 
-::
-
-  # import the prostate data
-  df = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-  
-  # compute column means
-  colmeans = df.mean()
-  
-  # print the results
-  colmeans
-  [13074.169141456336, 0.2075591357851537, 13.715904065566173, 5.68435293299533, nan, 71915.67051974901, nan, nan, 15.881530121290117, 0.2273570060625282, 54.07917280242258, 24.579733834274638, 0.1830388994249544, 14.854273655448353, 0.6392701860513333]
+  >>> df = h2o.import_file(path="smalldata/logreg/prostate.csv")  # import prostate data
+  >>>
+  >>> colmeans = df.mean()                                        # compute column means
+  >>>
+  >>> colmeans                                                    # print the results
+  [5.843333333333335, 3.0540000000000007, 3.7586666666666693, 1.1986666666666672]
 
 Lazy expressions will be discussed briefly in the coming sections, as they are not
 necessarily going to be integral to the practicing data scientist. However, their primary
@@ -259,16 +214,12 @@ when it comes to mutating a Frame in place. For example, it's possible to assig
 occurrences of the number `0` in a column to missing (or `NA` in R parlance) as
 demonstrated in the following snippet:
 
-::
 
-  # import the prostate data
-  df = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-  
-  # select the VOL column
-  vol = df['VOL']
-  
-  # 0 VOL means 'missing'
-  vol[vol == 0] = None                                         
+  >>> df = h2o.import_file(path="smalldata/logreg/prostate.csv")   # import prostate data
+  >>>
+  >>> vol = df['VOL']                                              # select the VOL column
+  >>>
+  >>> vol[vol == 0] = None                                         # 0 VOL means 'missing'
 
 After this operation, `vol` has been permanently mutated in place (it is not a copy!).
 
@@ -279,13 +230,9 @@ the cumulative, unevaluated expressions that underpin H2OFrame objects.
 
 For example:
 
-::
-
-  # import the prostate data
-  fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-  
-  # "a" is an H2OFrame, but unevaluated
-  a = fr + 3.14159
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")   # import prostate data
+  >>>
+  >>> a = fr + 3.14159                                             # "a" is an H2OFrame, but unevaluated
 
 These objects are not as important to distinguish at the user level, and all operations
 can be performed with the mental model of operating on 2D frames (i.e. everything is an
@@ -299,16 +246,10 @@ This module relies on reference counting of python objects to dispose of
 out-of-scope objects. The ExprNode class destroys objects and their big data
 counterparts in the H2O cluster using a remove call:
 
-::
-
-  # import the prostate data
-  fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")  
-  
-  # remove prostate data
-  h2o.remove(fr)
-  
-  # attempting to use fr results in an attribute error
-  fr + 2                                                       
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")   # import prostate data
+  >>>
+  >>> h2o.remove(fr)                                               # remove prostate data
+  >>> fr + 2                                                       # attempting to use fr results in an attribute error
 
 Notice that attempting to use the object after a remove call has been issued will
 result in an :mod:`AttributeError`. Therefore, any working references may not be cleaned
@@ -333,28 +274,19 @@ methods to the following five model categories:
 
 Let's build a logistic regression using H2O's GLM:
 
-::
-
-  # import the glm estimator object
-  from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-
-  # import the prostate data
-  fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-
-  # make the 2nd column a factor
-  fr[1] = fr[1].asfactor()
-  
-  # specify the model
-  m = H2OGeneralizedLinearEstimator(family="binomial")
-
-  # <class 'h2o.estimators.glm.H2OGeneralizedLinearEstimator'>
-  m.__class__
-
-  # train the model
-  m.train(x=fr.names[2:], y="CAPSULE", training_frame=fr)
-
-  # print the model to screen
-  m                                                              
+  >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator   # import the glm estimator object
+  >>>
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")     # import prostate data
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                       # make the 2nd column a factor
+  >>>
+  >>> m = H2OGeneralizedLinearEstimator(family="binomial")           # specify the model
+  >>>
+  >>> m.__class__                                                    # <class 'h2o.estimators.glm.H2OGeneralizedLinearEstimator'>
+  >>>
+  >>> m.train(x=fr.names[2:], y="CAPSULE", training_frame=fr)        # train the model
+  >>>
+  >>> m                                                              # print the model to screen
 
 As you can see the model setup and train is akin to the scikit-learn style. The reason
 for the :mod:`train` verb over :mod:`fit` is because `x` and `y` are column references
@@ -368,37 +300,25 @@ read as a numeric column, but it must be changed to a factor by way of the opera
 `asfactor`. This is a necessary step for all model building, in fact. So let's take a look
 at this again for gradient boosting:
 
-::
-
-  # import the prostate data
-  fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-  
-  # import gbm estimator
-  from h2o.estimators.gbm import H2OGradientBoostingEstimator  
-  
-  # produces False
-  fr[1].isfactor()
-  
-  # set up the gbm
-  m = H2OGradientBoostingEstimator(ntrees=10, max_depth=5)
-
-  # train the model
-  m.train(x=fr.names[2:], y="CAPSULE", training_frame=fr)
-
-  # type is "regressor"
-  print m.type
-
-  # cast the 2nd column to a factor column
-  fr[1] = fr[1].asfactor()
-  
-  # produces True
-  fr[1].isfactor()
-  
-  # train the model
-  m.train(x=fr.names[2:], y="CAPSULE", training_frame=fr)
-
-  # type is "classifier"
-  print m.type
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")   # import prostate data
+  >>>
+  >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator  # import gbm estimator
+  >>>
+  >>> fr[1].isfactor()                                             # produces False
+  >>>
+  >>> m = H2OGradientBoostingEstimator(ntrees=10, max_depth=5)     # setup the gbm
+  >>>
+  >>> m.train(x=fr.names[2:], y="CAPSULE", training_frame=fr)      # train the model
+  >>>
+  >>> print m.type                                                 # type is "regressor"
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                     # cast the 2nd column to a factor column
+  >>>
+  >>> fr[1].isfactor()                                             # produces True
+  >>>
+  >>> m.train(x=fr.names[2:], y="CAPSULE", training_frame=fr)      # train the model
+  >>>
+  >>> print m.type                                                 # type is "classifier"
 
 The above example shows how to properly deal with numeric columns you would like to use in a
 classification setting. Additionally, H2O can perform on-the-fly scoring of validation
@@ -406,75 +326,50 @@ data and provide a host of metrics on the validation and training data. Here's a
 of this functionality, where we additionally split the data set into three pieces for training,
 validation, and finally testing. Let's use deeplearning this time:
 
-::
-
-  # import the prostate data
-  fr = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")  
-
-  # import the deeplearning estimator
-  from h2o.estimators.deeplearning import H2ODeepLearningEstimator  
-  
-  # cast to factor
-  fr[1] = fr[1].asfactor()                                          
-  
-  # Random UNIform numbers, one per row
-  r = fr[0].runif()
-  
-  # 60% for training data
-  train = fr[ r < 0.6 ]
-  
-  # 30% for validation
-  valid = fr[ (0.6 <= r) & (r < 0.9) ]
-  
-  # 10% for testing
-  test  = fr[ 0.9 <= r ]
-  
-  # default DL setup
-  m = H2ODeepLearningEstimator()
-  
-  # pass a validation frame in addition to the training frame
-  m.train(x=train.names[2:], y=train.names[1], training_frame=train, validation_frame=valid)
-
-  # display the model summary by default (can also call m.show())
-  m
-  
-  # equivalent to the above
-  m.show()
-  
-  # show the performance on the training data, (can also be m.performance(train=True)
-  m.model_performance()
-  
-  # show the performance on the validation data
-  m.model_performance(valid=True)
-  
-  # score and compute new metrics on the test data!
-  m.model_performance(test_data=test)
+  >>> fr = h2o.import_file(path="smalldata/logreg/prostate.csv")        # import prostate
+  >>>
+  >>> from h2o.estimators.deeplearning import H2ODeepLearningEstimator  # import the deeplearning estimator
+  >>>
+  >>> fr[1] = fr[1].asfactor()                                          # cast to factor
+  >>>
+  >>> r = fr[0].runif()                                                 # Random UNIform numbers, one per row
+  >>>
+  >>> train = fr[ r < 0.6 ]                                             # 60% for training data
+  >>>
+  >>> valid = fr[ (0.6 <= r) & (r < 0.9) ]                              # 30% for validation
+  >>>
+  >>> test  = fr[ 0.9 <= r ]                                            # 10% for testing
+  >>>
+  >>> m = H2ODeepLearningEstimator()                                    # default DL setup
+  >>>
+  >>> m.train(x=train.names[2:], y=train.names[1], training_frame=train, validation_frame=valid)  # pass a validation frame in addition to the training frame
+  >>>
+  >>> m                                                                 # display the model summary by default (can also call m.show())
+  >>>
+  >>> m.show()                                                          # equivalent to the above
+  >>>
+  >>> m.model_performance()                                             # show the performance on the training data, (can also be m.performance(train=True)
+  >>>
+  >>> m.model_performance(valid=True)                                   # show the performance on the validation data
+  >>>
+  >>> m.model_performance(test_data=test)                               # score and compute new metrics on the test data!
 
 Expanding on this example, there are a number of ways of querying a model for its
 attributes. Here are some examples of how to do just that:
 
-::
-
-  # MSE on the training data
-  m.mse()
-  
-  # MSE on the validation data
-  m.mse(valid=True)
-
-  # R^2 on the training data
-  m.r2()
-
-  # R^2 on the validation data
-  m.r2(valid=True)
-
-  # confusion matrix for max F1
-  m.confusion_matrix()
-
-  # confusion matrix for the maximum accuracy
-  m.confusion_matrix(metrics="accuracy")
-
-  # check out the help for more!
-  m.confusion_matrix("min_per_class_accuracy")
+  >>> m.mse()           # MSE on the training data
+  >>>
+  >>> m.mse(valid=True) # MSE on the validation data
+  >>>
+  >>> m.r2()            # R^2 on the training data
+  >>>
+  >>> m.r2(valid=True)  # R^2 on the validation data
+  >>>
+  >>> m.confusion_matrix()  # confusion matrix for max F1
+  >>>
+  >>> m.confusion_matrix(metrics="accuracy")  # confusion matrix for the maximum accuracy
+  >>>
+  >>> m.confusion_matrix("min_per_class_accuracy")   # check out the help for more!
 
 All of our models support various accessor methods such as these. The following sections
 will discuss model metrics in greater detail.
@@ -482,8 +377,8 @@ will discuss model metrics in greater detail.
 On a final note, each of H2O's algorithms handles missing (colloquially: "missing" or "NA")
 and categorical data automatically differently, depending on the algorithm. You can find
 out more about each of the individual differences at the up-to-date docs on H2O's
-algorithms under the `Algorithms <../h2o-docs/data-science.html>`__ section in the H2O-3 
-User Guide.
+algorithms under the section :mod:`Data Science Algorithms` at the following
+link: http://docs.h2o.ai/
 
 Metrics
 +++++++
@@ -499,65 +394,52 @@ produced as a result of the training (and stored in the model). Any additional d
 provided to the model post-build via the :mod:`model_performance` call will produce a set
 of metrics.
 
-::
 
-  # import iris
-  fr = iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/   
-  
-  # generate a random vector for splitting
-  r = fr[0].runif()                       
-  
-  # split out 60% for training
-  train = fr[ r < 0.6 ]                   
-  
-  # split out 30% for validation
-  valid = fr[ (0.6 <= r) & (r < 0.9) ]        
-  
-  # split out 10% for testing
-  test = fr[ 0.9 <= r ]                   
-  
-  # import the glm estimator and train the model
-  from h2o.estimators.glm import H2OGeneralizedLinearEstimator  
-  my_model = H2OGeneralizedLinearEstimator()
-  my_model.train(x=train.names[1:], y=train.names[0], training_frame=train, validation_frame=valid)
-  
-  # print the GLM coefficients, can also perform my_model.coef_norm() to get the normalized coefficients
-  my_model.coef()
-  
-  # get the null deviance from the training set metrics
-  my_model.null_deviance()
-  
-  # get the residual deviance from the training set metrics
-  my_model.residual_deviance()
-  
-  # get the null deviance from the validation set metrics (similar for residual deviance)
-  my_model.null_deviance(valid=True)
-
-  # now generate a new metrics object for the test hold-out data:
-  # create the new test set metrics
-  my_metrics = my_model.model_performance(test_data=testa0
-  
-  # returns the test null dof
-  my_metrics.null_degrees_of_freedom()
-  
-  # returns the test res. deviance
-  my_metrics.residual_deviance()
-  
-  # returns the test aic
-  my_metrics.aic()
+  >>> fr = h2o.import_file(path="smalldata/iris/iris_wheader.csv")   # import iris
+  >>>
+  >>> r = fr[0].runif()                       # generate a random vector for splitting
+  >>>
+  >>> train = fr[ r < 0.6 ]                   # split out 60% for training
+  >>>
+  >>> valid = fr[ (0.6 <= r) & (r < 0.9) ]        # split out 30% for validation
+  >>>
+  >>> test = fr[ 0.9 <= r ]                   # split out 10% for testing
+  >>>
+  >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator  # import the glm estimator
+  >>>
+  >>> my_model = H2OGeneralizedLinearEstimator()
+  >>>
+  >>> my_model.train(x=train.names[1:], y=train.names[0], training_frame=train, validation_frame=valid)
+  >>>
+  >>> my_model.coef()                         # print the GLM coefficients, can also perform my_model.coef_norm() to get the normalized coefficients
+  >>>
+  >>> my_model.null_deviance()                # get the null deviance from the training set metrics
+  >>>
+  >>> my_model.residual_deviance()            # get the residual deviance from the training set metrics
+  >>>
+  >>> my_model.null_deviance(valid=True)      # get the null deviance from the validation set metrics (similar for residual deviance)
+  >>>
+  >>> # now generate a new metrics object for the test hold-out data:
+  >>>
+  >>> my_metrics = my_model.model_performance(test_data=test) # create the new test set metrics
+  >>>
+  >>> my_metrics.null_degrees_of_freedom()    # returns the test null dof
+  >>>
+  >>> my_metrics.residual_deviance()          # returns the test res. deviance
+  >>>
+  >>> my_metrics.aic()                        # returns the test aic
 
 As you can see, the new model metrics object generated by calling :mod:`model_performance` on the
 model object supports all of the metric accessor methods as a model. For a complete list of
-the available metrics for various model categories, please refer to the `Metrics in H2O <metrics.html>`__ section
-in this document.
+the available metrics for various model categories, please refer to the "Metrics in H2O" section
+of this document.
 
 Example of H2O on Hadoop
 ------------------------
 
 Here is a brief example of H2O on Hadoop:
 
-::
-
+.. code-block:: python
 
   import h2o
   h2o.init(ip="192.168.1.10", port=54321)

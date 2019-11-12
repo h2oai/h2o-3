@@ -19,6 +19,7 @@ from .base import Keyed
 from .estimators.deeplearning import H2OAutoEncoderEstimator
 from .estimators.deeplearning import H2ODeepLearningEstimator
 from .estimators.deepwater import H2ODeepWaterEstimator
+from .estimators.estimator_base import H2OEstimator
 from .estimators.xgboost import H2OXGBoostEstimator
 from .estimators.generic import H2OGenericEstimator
 from .estimators.gbm import H2OGradientBoostingEstimator
@@ -40,7 +41,8 @@ from .model.model_base import ModelBase
 from .transforms.decomposition import H2OSVD
 from .utils.config import H2OConfigReader
 from .utils.compatibility import *  # NOQA
-from .utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted
+from .utils.compatibility import PY3
+from .utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted, urlopen
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
 logging.basicConfig()
@@ -52,9 +54,8 @@ warnings.filterwarnings('ignore', category=DeprecationWarning, module='.*/IPytho
 h2oconn = None  # type: H2OConnection
 
 
-def connect(server=None, url=None, ip=None, port=None,
-            https=None, verify_ssl_certificates=None, cacert=None,
-            auth=None, proxy=None, cookies=None, verbose=True, config=None):
+def connect(server=None, url=None, ip=None, port=None, https=None, verify_ssl_certificates=None, auth=None,
+            proxy=None, cookies=None, verbose=True, config=None):
     """
     Connect to an existing H2O server, remote or local.
 
@@ -67,7 +68,6 @@ def connect(server=None, url=None, ip=None, port=None,
     :param port: Port number that H2O service is listening to.
     :param https: Set to True to connect via https:// instead of http://.
     :param verify_ssl_certificates: When using https, setting this to False will disable SSL certificates verification.
-    :param cacert: Path to a CA bundle file or a directory with certificates of trusted CAs (optional).
     :param auth: Either a (username, password) pair for basic authentication, an instance of h2o.auth.SpnegoAuth
                  or one of the requests.auth authenticator objects.
     :param proxy: Proxy server address.
@@ -84,7 +84,7 @@ def connect(server=None, url=None, ip=None, port=None,
             h2oconn = _connect_with_conf(config)
     else:
         h2oconn = H2OConnection.open(server=server, url=url, ip=ip, port=port, https=https,
-                                     auth=auth, verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
+                                     auth=auth, verify_ssl_certificates=verify_ssl_certificates,
                                      proxy=proxy, cookies=cookies,
                                      verbose=verbose)
         if verbose:
@@ -144,7 +144,7 @@ def version_check():
               "version from http://h2o.ai/download/".format(ci.build_age))
 
 
-def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insecure=None, username=None, password=None,
+def init(url=None, ip=None, port=None, name=None, https=None, insecure=None, username=None, password=None,
          cookies=None, proxy=None, start_h2o=True, nthreads=-1, ice_root=None, log_dir=None, log_level=None,
          enable_assertions=True, max_mem_size=None, min_mem_size=None, strict_version_check=None, ignore_config=False,
          extra_classpath=None, jvm_custom_args=None, bind_to_localhost=True, **kwargs):
@@ -158,7 +158,6 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                  If set then will connect only if the target cluster name matches. If no instance is found and decides to start a local
                  one then this will be used as the cluster name or a random one will be generated if set to None.
     :param https: Set to True to connect via https:// instead of http://.
-    :param cacert: Path to a CA bundle file or a directory with certificates of trusted CAs (optional).
     :param insecure: When using https, setting this to True will disable SSL certificates verification.
     :param username: Username and
     :param password: Password for basic authentication.
@@ -177,7 +176,6 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
     :param kwargs: (all other deprecated attributes)
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
-    :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
     """
     global h2oconn
     assert_is_type(url, str, None)
@@ -231,7 +229,7 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     mmin = get_mem_size(min_mem_size, kwargs.get("min_mem_size_GB"))
     auth = (username, password) if username and password else None
     check_version = True
-    verify_ssl_certificates = not insecure
+    verify_ssl_certificates = True
 
     # Apply the config file if ignore_config=False
     if not ignore_config:
@@ -251,20 +249,17 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                 check_version = False
         else:
             check_version = strict_version_check
-        # Note: `verify_ssl_certificates` is never None at this point => use `insecure` to check for None/default input)
-        if insecure is None and "init.verify_ssl_certificates" in config:
-            verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
-        if cacert is None:
-            if "init.cacert" in config:
-                cacert = config["init.cacert"]
-
-    assert_is_type(verify_ssl_certificates, bool)
+        if insecure is None:
+            if "init.verify_ssl_certificates" in config:
+                verify_ssl_certificates = config["init.verify_ssl_certificates"].lower() != "false"
+            else:
+                verify_ssl_certificates = not insecure
 
     if not start_h2o:
         print("Warning: if you don't want to start local H2O server, then use of `h2o.connect()` is preferred.")
     try:
         h2oconn = H2OConnection.open(url=url, ip=ip, port=port, name=name, https=https,
-                                     verify_ssl_certificates=verify_ssl_certificates, cacert=cacert,
+                                     verify_ssl_certificates=verify_ssl_certificates,
                                      auth=auth, proxy=proxy,cookies=cookies, verbose=True,
                                      _msgs=("Checking whether there is an H2O instance running at {url} ",
                                             "connected.", "not found."))
@@ -280,8 +275,8 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
                                   port=port, name=name,
                                   extra_classpath=extra_classpath, jvm_custom_args=jvm_custom_args,
                                   bind_to_localhost=bind_to_localhost)
-        h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=verify_ssl_certificates,
-                                     cacert=cacert, auth=auth, proxy=proxy,cookies=cookies, verbose=True)
+        h2oconn = H2OConnection.open(server=hs, https=https, verify_ssl_certificates=not insecure,
+                                     auth=auth, proxy=proxy,cookies=cookies, verbose=True)
     if check_version:
         version_check()
     h2oconn.cluster.timezone = "UTC"
@@ -439,30 +434,6 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
         return H2OFrame()._import_parse(path, pattern, destination_frame, header, sep, col_names, col_types, na_strings,
                                         skipped_columns, custom_non_data_line_markers)
 
-
-def load_grid(grid_file_path):
-    """
-    Loads previously saved grid with all its models from the same folder
-    :param grid_file_path: A string containing the path to the file with grid saved.
-     Grid models are expected to be in the same folder.
-    :return: An instance of H2OGridSearch
-    """
-
-    assert_is_type(grid_file_path, str)
-    response = api("POST /3/Grid.bin/import", {"grid_path": grid_file_path})
-    return get_grid(response["name"])
-
-
-def save_grid(grid_directory, grid_id):
-    """
-    Export a Grid and it's all its models into the given folder
-    :param grid_directory: A string containing the path to the folder for the grid to be saved to.
-    :param grid_id: A chracter string with identification of the Grid in H2O. 
-    """
-    assert_is_type(grid_directory, str)
-    assert_is_type(grid_id, str)
-    api("POST /3/Grid.bin/" + grid_id + "/export", {"grid_directory": grid_directory})
-    return grid_directory + "/" + grid_id
 
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
     """
@@ -1027,7 +998,6 @@ def download_pojo(model, path="", get_jar=True, jar_name=""):
     if not model.have_pojo:
         raise H2OValueError("Export to POJO not supported")
 
-    path = str(os.path.join(path, ''))
     if path == "":
         java_code = api("GET /3/Models.java/%s" % model.model_id)
         print(java_code)
@@ -1054,7 +1024,9 @@ def download_csv(data, filename):
     """
     assert_is_type(data, H2OFrame)
     assert_is_type(filename, str)
-    return api("GET /3/DownloadDataset?frame_id=%s&hex_string=false" % data.frame_id, save_to=filename)
+    url = h2oconn.make_url("DownloadDataset", 3) + "?frame_id={}&hex_string=false".format(data.frame_id)
+    with open(filename, "wb") as f:
+        f.write(urlopen()(url).read())
 
 
 def download_all_logs(dirname=".", filename=None, container=None):
@@ -1078,13 +1050,27 @@ def download_all_logs(dirname=".", filename=None, container=None):
     assert_is_type(filename, str, None)
     assert_is_type(container, "ZIP", "LOG", None)
     type = "/%s" % container if container else ""
+    url = "%s/3/Logs/download%s" % (h2oconn.base_url, type)
+    opener = urlopen()
+    response = opener(url)
 
-    def save_to(resp):
-        path = os.path.join(dirname, filename if filename else h2oconn.save_to_detect(resp))
-        print("Writing H2O logs to " + path)
-        return path
+    if not os.path.exists(dirname): os.mkdir(dirname)
+    if filename is None:
+        if PY3:
+            headers = [h[1] for h in response.headers._headers]
+        else:
+            headers = response.headers.headers
+        for h in headers:
+            if "filename=" in h:
+                filename = h.split("filename=")[1].strip()
+                break
+    path = os.path.join(dirname, filename)
+    response = opener(url).read()
 
-    return api("GET /3/Logs/download%s" % type, save_to=save_to)
+    print("Writing H2O logs to " + path)
+    with open(path, "wb") as f:
+        f.write(response)
+    return path
 
 
 def save_model(model, path="", force=False):
@@ -1616,6 +1602,7 @@ class {}Wrapper({}, DistributionFunc, object):
         assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
         for method in ['link', 'init', 'gamma', 'gradient']:
             assert_satisfies(func, method in dir(func), "The class `func` needs to define method `{}`".format(method))
+
         assert_satisfies(class_name, class_name is None,
                          "If class is specified then class_name parameter needs to be None")
 

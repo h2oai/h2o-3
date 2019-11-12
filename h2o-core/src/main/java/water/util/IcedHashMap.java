@@ -25,25 +25,53 @@ public class IcedHashMap<K, V> extends IcedHashMapBase<K,V> implements Concurren
   public K getk(K key)                                  { return _map.getk(key); }
 
   // Map-writing optimized for NBHM
-  @Override protected void writeMap(AutoBuffer ab, byte mode) {
+  @Override protected void writeMap(AutoBuffer ab, int mode) {
 
     // For faster K/V store walking get the NBHM raw backing array,
     // and walk it directly.
     Object[] kvs = _map.raw_array();
 
-    KeyType keyType = keyType(mode);
-    ValueType valueType = valueType(mode);
-    ArrayType valueArrayType = arrayType(mode);
     // Start the walk at slot 2, because slots 0,1 hold meta-data
     // In the raw backing array, Keys and Values alternate in slots
     // Ignore tombstones and Primes and null's
-    for (int i=2; i < kvs.length; i+=2) {
-      K key = (K) kvs[i];
-      if (!isValidKey(key, keyType)) continue;
-      V value = (V) kvs[i+1];
-      if (!isValidValue(value, valueType, valueArrayType)) continue;
-      writeKey(ab, keyType, key);
-      writeValue(ab, valueType, valueArrayType, value);
+    switch( mode ) {
+    case 1:  // <String,String>
+      for( int i=2; i<kvs.length; i += 2 )
+        if( kvs[i] instanceof String && kvs[i+1] instanceof String )
+          ab.putStr((String)kvs[i]).putStr((String)kvs[i+1]);
+      break;
+    case 2: // <String,Freezable>
+      for( int i=2; i<kvs.length; i += 2 )
+        if( kvs[i] instanceof String && kvs[i+1] instanceof Iced   )
+          ab.putStr((String)kvs[i]).put   ((Freezable)kvs[i+1]);
+      break;
+    case 3: // <Freezable,String>
+      for( int i=2; i<kvs.length; i += 2 )
+        if( kvs[i] instanceof Iced   && kvs[i+1] instanceof String )
+          ab.put   ((Freezable  )kvs[i]).putStr((String)kvs[i+1]);
+      break;
+    case 4: // <Freezable,Freezable>
+      for( int i=2; i<kvs.length; i += 2 )
+        if( kvs[i] instanceof Freezable   && kvs[i+1] instanceof Freezable   )
+          ab.put   ((Freezable  )kvs[i]).put   ((Freezable  )kvs[i+1]);
+      break;
+    case 5:  // <String,Freezable[]>
+      for( int i=2;i<kvs.length; i+=2 )
+        if( kvs[i] instanceof String && kvs[i+1] instanceof Freezable[] ) {
+          Freezable[] vals = (Freezable[])kvs[i+1];
+          ab.putStr((String)kvs[i]).put4(vals.length);  // key len vals
+          for(Freezable v: vals) ab.put(v);
+        }
+      break;
+    case 6: // <Freezable,Freezable[]>
+      for( int i=2;i<kvs.length; i+=2 )
+        if( kvs[i] instanceof Freezable && kvs[i+1] instanceof Freezable[] ) {
+          Freezable[] vals = (Freezable[])kvs[i+1];
+          ab.put((Freezable)kvs[i]).put4(vals.length);  // key len vals
+          for(Freezable v: vals) ab.put(v);
+        }
+      break;
+    default: throw H2O.fail();
     }
   }
 }

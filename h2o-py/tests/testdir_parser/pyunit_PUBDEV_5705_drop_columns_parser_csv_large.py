@@ -26,6 +26,8 @@ def test_csv_parser_column_skip():
 
     # load in whole dataset
     skip_all = list(range(f1.ncol))
+    skip_even = list(range(0, f1.ncol, 2))
+    skip_odd = list(range(1, f1.ncol, 2))
     skip_start_end = [0, f1.ncol - 1]
     skip_except_last = list(range(0, f1.ncol - 2))
     skip_except_first = list(range(1, f1.ncol))
@@ -37,10 +39,22 @@ def test_csv_parser_column_skip():
     skip_random.sort()
 
     try:
+        loadFileSkipAll = h2o.upload_file(savefilenamewithpath, skipped_columns=skip_all)
+        sys.exit(1)  # should have failed here
+    except:
+        pass
+
+    try:
         importFileSkipAll = h2o.import_file(savefilenamewithpath, skipped_columns=skip_all)
         sys.exit(1)  # should have failed here
     except:
         pass
+
+    # skip even columns
+    pyunit_utils.checkCorrectSkips(f1, savefilenamewithpath, skip_even)
+
+    # skip odd columns
+    pyunit_utils.checkCorrectSkips(f1, savefilenamewithpath, skip_odd)
 
     # skip the very beginning and the very end.
     pyunit_utils.checkCorrectSkips(f1, savefilenamewithpath, skip_start_end)

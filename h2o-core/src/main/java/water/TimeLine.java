@@ -87,7 +87,7 @@ public class TimeLine extends UDP {
     // not record who he sent to!  With this hack the Timeline record always
     // contains the info about "the other guy": inet+port for the receiver in
     // the sender's Timeline, and vice-versa for the receiver's Timeline.
-    if( sr==0 ) b0 = (b0 & ~0xFFFF00) | (h2o._key.getInternalPort()<<8);
+    if( sr==0 ) b0 = (b0 & ~0xFFFF00) | (h2o._key.udp_port()<<8);
     tl[idx*WORDS_PER_EVENT+2+1] = b0;
     tl[idx*WORDS_PER_EVENT+3+1] = b8;
   }
@@ -119,7 +119,7 @@ public class TimeLine extends UDP {
 //    H2ONode h2o = b._h2o==null ? H2O.SELF : b._h2o;
 //    // First long word going out has sender-port and a 'bad' control packet
 //    long b0 = UDP.udp.i_o.ordinal(); // Special flag to indicate io-record and not a rpc-record
-//    b0 |= H2O.SELF._key.getInternalPort()<<8;
+//    b0 |= H2O.SELF._key.udp_port()<<8;
 //    b0 |= flavor<<24;           // I/O flavor; one of the Value.persist backends
 //    long iotime = b._time_start_ms > 0 ? (b._time_close_ms - b._time_start_ms) : 0;
 //    b0 |= iotime<<32;           // msec from start-to-finish, including non-i/o overheads
@@ -142,7 +142,7 @@ public class TimeLine extends UDP {
 //    long io_ms = System.currentTimeMillis() - start_io_ms;
 //    // First long word going out has sender-port and a 'bad' control packet
 //    long b0 = UDP.udp.i_o.ordinal(); // Special flag to indicate io-record and not a rpc-record
-//    b0 |= H2O.SELF._key.getInternalPort()<<8;
+//    b0 |= H2O.SELF._key.udp_port()<<8;
 //    b0 |= flavor<<24;           // I/O flavor; one of the Value.persist backends
 //    b0 |= io_ms<<32;            // msec from start-to-finish, including non-i/o overheads
 //    record2(H2O.SELF,block_ns,true,r_w,0,b0,size);

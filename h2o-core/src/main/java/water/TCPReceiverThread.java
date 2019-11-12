@@ -105,7 +105,7 @@ public class TCPReceiverThread extends Thread {
         // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
         case TCP_SMALL:
-          new SmallMessagesReaderThread(H2ONode.intern(inetAddress, port, timestamp), wrappedSocket).start();
+          new UDP_TCP_ReaderThread(H2ONode.intern(inetAddress, port, timestamp), wrappedSocket).start();
           break;
         case TCP_BIG:
           new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress, timestamp), inetAddress, timestamp).start();
@@ -192,13 +192,13 @@ public class TCPReceiverThread extends Thread {
    *  reads the raw bytes of a message from the channel, copies them into a
    *  byte array which is than passed on to FJQ.  Each message is expected to
    *  be MSG_SZ(2B) MSG BODY(MSG_SZ*B) EOM MARKER (1B - 0xef). */
-  static class SmallMessagesReaderThread extends Thread {
+  static class UDP_TCP_ReaderThread extends Thread {
     private final ByteChannel _chan;
     private final ByteBuffer _bb;
     private final H2ONode _h2o;
 
-    public SmallMessagesReaderThread(H2ONode h2o, ByteChannel chan) {
-      super("TCP-SMALL-READ-" + h2o);
+    public UDP_TCP_ReaderThread(H2ONode h2o, ByteChannel chan) {
+      super("UDP-TCP-READ-" + h2o);
       _h2o = h2o;
       _chan = chan;
       _bb = ByteBuffer.allocateDirect(AutoBuffer.BBP_BIG._size).order(ByteOrder.nativeOrder());
@@ -312,7 +312,7 @@ public class TCPReceiverThread extends Thread {
         // prior client was shutdown, it might see leftover trash UDP packets
         // from the servers intended for the prior client.
         if( !(H2O.ARGS.client && now-H2O.START_TIME_MILLIS.get() < HeartBeatThread.CLIENT_TIMEOUT) )
-          Log.warn("Received packets from outside the cloud: "+_unknown_packets_per_sec+"/sec, last one from "+ab._h2o+ " @ "+new Date());
+          Log.warn("UDP packets from outside the cloud: "+_unknown_packets_per_sec+"/sec, last one from "+ab._h2o+ " @ "+new Date());
         _unknown_packets_per_sec = 0;
         _unknown_packet_time = ab._h2o._last_heard_from;
       }

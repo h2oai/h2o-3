@@ -24,11 +24,11 @@ automl.cleanup.suite <- function() {
   test_remove_automl_instance <- function() {
     ds <- import_dataset()
     aml <- h2o.automl(project_name="test_remove_R_automl_instance",
-                      x=ds$x, y=ds$y,
-                      training_frame=ds$train,
-                      validation_frame=ds$valid,
-                      leaderboard_frame=ds$test,
-                      max_models=max_models)
+    x=ds$x, y=ds$y,
+    training_frame=ds$train,
+    validation_frame=ds$valid,
+    leaderboard_frame=ds$test,
+    max_models=max_models)
 
     keys <- h2o.ls()$key
     expect_gt(length(grep("_AutoML_", keys)), nrow(aml@leaderboard))

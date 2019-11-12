@@ -150,5 +150,3 @@ water.api.schemas3.CapabilityEntryV3
 water.api.schemas3.DecryptionSetupV3
 water.api.schemas3.StringPairV3
 water.api.schemas3.KeyValueV3
-water.api.schemas3.GridExportV3
-water.api.schemas3.GridImportV3

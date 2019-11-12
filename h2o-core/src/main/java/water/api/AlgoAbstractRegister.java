@@ -20,7 +20,7 @@ public abstract class AlgoAbstractRegister extends AbstractRegister {
       return; // Skip endpoint registration
     }
     String base = mbProto.getClass().getSimpleName();
-    String lbase = mbProto.getName();
+    String lbase = base.toLowerCase();
     // This is common model builder handler
 
     context.registerEndpoint(

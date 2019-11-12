@@ -216,14 +216,15 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
    * @return null if _noutputs is 0, otherwise returns a Frame.
    */
   public Frame outputFrame(Key<Frame> key, String [] names, String [][] domains){
-    Frame res = closeFrame(key, names, domains);
-    if (key != null)
-      DKV.put(res);
+    Futures fs = new Futures();
+    Frame res = closeFrame(key, names, domains, fs);
+    if( key != null ) DKV.put(res,fs);
+    fs.blockForPending();
     return res;
   }
 
   // the work-horse for the outputFrame calls
-  private Frame closeFrame(Key key, String[] names, String[][] domains) {
+  private Frame closeFrame(Key key, String[] names, String[][] domains, Futures fs) {
     if( _output_types == null ) return null;
     final int noutputs = _output_types.length;
     Vec[] vecs = new Vec[noutputs];
@@ -231,13 +232,11 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
       for( int i = 0; i < noutputs; i++ )
         vecs[i] = _fr.anyVec().makeZero();
     else {
-      Futures fs = new Futures();
       int rowLayout = _appendables[0].compute_rowLayout();
       for( int i = 0; i < noutputs; i++ ) {
         _appendables[i].setDomain(domains==null ? null : domains[i]);
         vecs[i] = _appendables[i].close(rowLayout,fs);
       }
-      fs.blockForPending(); // Vecs need to be installed in DKV _before_ we create a Frame
     }
     return new Frame(key,names,vecs);
   }

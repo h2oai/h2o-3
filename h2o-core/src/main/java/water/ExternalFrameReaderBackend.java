@@ -21,7 +21,7 @@ final class ExternalFrameReaderBackend {
      * @param channel socket channel originating from non-h2o node
      * @param initAb {@link AutoBuffer} containing information necessary for preparing backend for reading
      */
-    static void readFromChunk(ByteChannel channel, AutoBuffer initAb) throws IOException {
+    static void handleReadingFromChunk(ByteChannel channel, AutoBuffer initAb) throws IOException {
         // receive required information
         String frameKey = initAb.getStr();
         int chunkIdx = initAb.getInt();
@@ -42,45 +42,45 @@ final class ExternalFrameReaderBackend {
         for (int rowIdx = 0; rowIdx < chunks[0]._len; rowIdx++) {
             for(int i = 0; i < selectedColumnIndices.length; i++){
                 if (chunks[selectedColumnIndices[i]].isNA(rowIdx)) {
-                    ExternalFrameUtils.sendNA(ab, expectedTypes[i]);
+                    ExternalFrameUtils.sendNA(ab, channel, expectedTypes[i]);
                 } else {
                     final Chunk chnk = chunks[selectedColumnIndices[i]];
                     switch (expectedTypes[i]) {
                         case EXPECTED_BOOL:
-                            ExternalFrameUtils.sendBoolean(ab, (byte)chnk.at8(rowIdx));
+                            ExternalFrameUtils.sendBoolean(ab, channel, (byte)chnk.at8(rowIdx));
                             break;
                         case EXPECTED_BYTE:
-                            ExternalFrameUtils.sendByte(ab, (byte)chnk.at8(rowIdx));
+                            ExternalFrameUtils.sendByte(ab, channel, (byte)chnk.at8(rowIdx));
                             break;
                         case EXPECTED_CHAR:
-                            ExternalFrameUtils.sendChar(ab, (char)chnk.at8(rowIdx));
+                            ExternalFrameUtils.sendChar(ab, channel, (char)chnk.at8(rowIdx));
                             break;
                         case EXPECTED_SHORT:
-                            ExternalFrameUtils.sendShort(ab, (short)chnk.at8(rowIdx));
+                            ExternalFrameUtils.sendShort(ab, channel, (short)chnk.at8(rowIdx));
                             break;
                         case EXPECTED_INT:
-                            ExternalFrameUtils.sendInt(ab, (int)chnk.at8(rowIdx));
+                            ExternalFrameUtils.sendInt(ab, channel, (int)chnk.at8(rowIdx));
                             break;
                         case EXPECTED_FLOAT:
-                            ExternalFrameUtils.sendFloat(ab, (float)chnk.atd(rowIdx));
+                            ExternalFrameUtils.sendFloat(ab, channel, (float)chnk.atd(rowIdx));
                             break;
                         case EXPECTED_LONG:
-                            ExternalFrameUtils.sendLong(ab, chnk.at8(rowIdx));
+                            ExternalFrameUtils.sendLong(ab, channel, chnk.at8(rowIdx));
                             break;
                         case EXPECTED_DOUBLE:
-                            ExternalFrameUtils.sendDouble(ab, chnk.atd(rowIdx));
+                            ExternalFrameUtils.sendDouble(ab, channel, chnk.atd(rowIdx));
                             break;
                         case EXPECTED_TIMESTAMP:
-                            ExternalFrameUtils.sendTimestamp(ab, chnk.at8(rowIdx));
+                            ExternalFrameUtils.sendTimestamp(ab, channel, chnk.at8(rowIdx));
                             break;
                         case EXPECTED_STRING:
                             if (chnk.vec().isCategorical()) {
-                                ExternalFrameUtils.sendString(ab, chnk.vec().domain()[(int) chnk.at8(rowIdx)]);
+                                ExternalFrameUtils.sendString(ab, channel, chnk.vec().domain()[(int) chnk.at8(rowIdx)]);
                             } else if (chnk.vec().isString()) {
-                                ExternalFrameUtils.sendString(ab, chnk.atStr(valStr, rowIdx).toString());
+                                ExternalFrameUtils.sendString(ab, channel, chnk.atStr(valStr, rowIdx).toString());
                             } else if (chnk.vec().isUUID()) {
                                 UUID uuid = new UUID(chnk.at16h(rowIdx), chnk.at16l(rowIdx));
-                                ExternalFrameUtils.sendString(ab, uuid.toString());
+                                ExternalFrameUtils.sendString(ab, channel, uuid.toString());
                             } else {
                                 assert false : "Can never be here";
                             }
@@ -89,6 +89,7 @@ final class ExternalFrameReaderBackend {
                 }
             }
         }
-        ExternalFrameUtils.writeToChannel(ab, channel);
+        ab.put1(ExternalFrameHandler.CONFIRM_READING_DONE);
+        writeToChannel(ab, channel);
     }
 }

@@ -44,22 +44,19 @@ def _py_tmp_key(append):
 
 
 def check_frame_id(frame_id):
-    check_id(frame_id, "H2OFrame")
-
-
-def check_id(id, type):
-    """Check that the provided id is valid in Rapids language."""
-    if id is None:
+    """Check that the provided frame id is valid in Rapids language."""
+    if frame_id is None:
         return
-    if id.strip() == "":
-        raise H2OValueError("%s id cannot be an empty string: %r" % (type, id))
-    for i, ch in enumerate(id):
+    if frame_id.strip() == "":
+        raise H2OValueError("Frame id cannot be an empty string: %r" % frame_id)
+    for i, ch in enumerate(frame_id):
         # '$' character has special meaning at the beginning of the string; and prohibited anywhere else
         if ch == "$" and i == 0: continue
         if ch not in _id_allowed_characters:
-            raise H2OValueError("Character '%s' is illegal in %s id: %s" % (ch, type, id))
-    if re.match(r"-?[0-9]", id):
-        raise H2OValueError("%s id cannot start with a number: %s" % (type, id))
+            raise H2OValueError("Character '%s' is illegal in frame id: %s" % (ch, frame_id))
+    if re.match(r"-?[0-9]", frame_id):
+        raise H2OValueError("Frame id cannot start with a number: %s" % frame_id)
+
 
 
 def temp_ctr():
@@ -91,6 +88,15 @@ def url_encode(s):
 
 def quote(s):
     return url_encode(s)
+
+
+def urlopen():
+    if PY3:
+        from urllib import request
+        return request.urlopen
+    else:
+        import urllib2
+        return urllib2.urlopen
 
 def clamp(x, xmin, xmax):
     """Return the value of x, clamped from below by `xmin` and from above by `xmax`."""
@@ -173,7 +179,7 @@ def _handle_numpy_array(python_obj, header):
 
 def _handle_pandas_data_frame(python_obj, header):
     data = _handle_python_lists(python_obj.values.tolist(), -1)[1]
-    return list(str(c) for c in python_obj.columns), data
+    return list(python_obj.columns), data
 
 def _handle_python_dicts(python_obj, check_header):
     header = list(python_obj.keys()) if python_obj else _gen_header(1)

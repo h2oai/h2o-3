@@ -1,9 +1,9 @@
 package water;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.fvec.Frame;
+import water.fvec.ChunkUtils;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.util.ArrayUtils;
@@ -29,12 +29,12 @@ public class ExternalFrameWriterClientTest extends TestUtil {
     }
 
     @Test
-    public void testWriting() throws IOException, ExternalFrameConfirmationException {
+    public void testWriting() {
         // The api expects that empty frame has to be in the DKV before we start working with it
         final Timestamp time = new Timestamp(Calendar.getInstance().getTime().getTime());
         WriteOperation testOp = new WriteOperation() {
             @Override
-            public void doWrite(ExternalFrameWriterClient writer) throws IOException, ExternalFrameConfirmationException {
+            public void doWrite(ExternalFrameWriterClient writer) throws IOException {
 
                 for (int i = 0; i < 997; i++) {
                     writer.sendInt(i);
@@ -130,11 +130,11 @@ public class ExternalFrameWriterClientTest extends TestUtil {
     }
 
     @Test
-    public void testDenseVectorWrite() throws IOException, ExternalFrameConfirmationException {
+    public void testDenseVectorWrite() throws IOException {
         WriteOperation testOp = new WriteOperation() {
             private final static int VEC_LEN = 100;
             @Override
-            public void doWrite(ExternalFrameWriterClient writer) throws IOException, ExternalFrameConfirmationException {
+            public void doWrite(ExternalFrameWriterClient writer) throws IOException {
                 for (int i = 0; i < nrows(); i++) {
                     writer.sendDenseVector(vector(i, i, VEC_LEN));
                 }
@@ -164,11 +164,11 @@ public class ExternalFrameWriterClientTest extends TestUtil {
     }
 
     @Test
-    public void testSparseVectorWrite() throws IOException, ExternalFrameConfirmationException {
+    public void testSparseVectorWrite() throws IOException {
         WriteOperation testOp = new WriteOperation() {
             private final static int VEC_LEN = 100;
             @Override
-            public void doWrite(ExternalFrameWriterClient writer) throws IOException, ExternalFrameConfirmationException {
+            public void doWrite(ExternalFrameWriterClient writer) throws IOException {
                 for (int i = 0; i < nrows(); i++) {
                     writer.sendSparseVector(new int[] {i}, new double[]{i});
                 }
@@ -198,11 +198,11 @@ public class ExternalFrameWriterClientTest extends TestUtil {
     }
 
     @Test
-    public void testMixedVectorWrite() throws IOException, ExternalFrameConfirmationException {
+    public void testMixedVectorWrite() throws IOException {
         WriteOperation testOp = new WriteOperation() {
             private final static int VEC_LEN = 100;
             @Override
-            public void doWrite(ExternalFrameWriterClient writer) throws IOException, ExternalFrameConfirmationException {
+            public void doWrite(ExternalFrameWriterClient writer) throws IOException {
                 for (int i = 0; i < nrows(); i++) {
                     writer.sendSparseVector(new int[] {i}, new double[]{i});
                     writer.sendInt(i);
@@ -249,7 +249,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
 
 
 
-    static void assertVectorWrite(WriteOperation testOp) throws IOException, ExternalFrameConfirmationException {
+    static void assertVectorWrite(WriteOperation testOp) throws IOException {
 
         final String[] nodes = getH2ONodes();
         // we will open 2 connection per h2o node
@@ -301,13 +301,8 @@ public class ExternalFrameWriterClientTest extends TestUtil {
     }
 
     static Frame createFrame(final WriteOperation op,
-                             final String[] writeEndpoints) throws IOException, ExternalFrameConfirmationException {
-        
-        final int blockSize = 1000 * 1000;
-        ByteChannel sock = ExternalFrameUtils.getConnection(writeEndpoints[0], H2O.SELF.getTimestamp());
-        ExternalFrameWriterClient mainClient = new ExternalFrameWriterClient(sock, 10, blockSize);
-        mainClient.initFrame(op.frameName(), op.colNames());
-        
+                             final String[] writeEndpoints) {
+        ChunkUtils.initFrame(op.frameName(), op.colNames());
         final long[] rowsPerChunk = new long[writeEndpoints.length]; // number of chunks will be number of h2o nodes
         Thread[] threads = new Thread[writeEndpoints.length];
 
@@ -317,15 +312,18 @@ public class ExternalFrameWriterClientTest extends TestUtil {
                 @Override
                 public void run() {
                     try {
-                        ByteChannel sock = ExternalFrameUtils.getConnection(writeEndpoints[0], H2O.SELF.getTimestamp());
-                        ExternalFrameWriterClient writer = new ExternalFrameWriterClient(sock, 10, blockSize);
+                        ByteChannel sock = ExternalFrameUtils.getConnection(writeEndpoints[currentIndex], H2O.SELF.getTimestamp());
                         try {
-                            writer.createChunk(op.frameName(), op.colTypes(),  currentIndex, op.nrows(), op.maxVecSizes());
-        
+                            ExternalFrameWriterClient writer = new ExternalFrameWriterClient(sock);
+                            writer.createChunks(op.frameName(), op.colTypes(),  currentIndex, op.nrows(), op.maxVecSizes());
+
                             op.doWrite(writer);
+
+                            writer.waitUntilAllWritten(10);
+
                             rowsPerChunk[currentIndex] = op.nrows();
                         } finally {
-                            writer.close();
+                            sock.close();
                         }
                     } catch (Exception e) {
                         throw new RuntimeException(e);
@@ -338,7 +336,7 @@ public class ExternalFrameWriterClientTest extends TestUtil {
 
         joinThreads(threads);
 
-        mainClient.finalizeFrame(op.frameName(), rowsPerChunk,  ExternalFrameUtils.vecTypesFromExpectedTypes(op.colTypes(), op.maxVecSizes()), null);
+        ChunkUtils.finalizeFrame(op.frameName(), rowsPerChunk, ExternalFrameUtils.vecTypesFromExpectedTypes(op.colTypes(), op.maxVecSizes()), null);
 
         return DKV.getGet(op.frameName());
     }
@@ -361,7 +359,7 @@ abstract class WriteOperation {
 
     private final int idx = Math.abs(new Random().nextInt());
 
-    abstract public void doWrite(ExternalFrameWriterClient writer) throws IOException, ExternalFrameConfirmationException;
+    abstract public void doWrite(ExternalFrameWriterClient writer) throws IOException;
 
     abstract public int nrows();
 

@@ -35,8 +35,7 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where
         the keys are "train", "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param List thresholds: If None, then the thresholds in this set of metrics will be used.
         :param bool train: If True, return the F1 value for the training data.
         :param bool valid: If True, return the F1 value for the validation data.
         :param bool xval: If True, return the F1 value for each of the cross-validated splits.
@@ -54,8 +53,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the F2 value for the training data.
         :param bool valid: If valid is True, then return the F2 value for the validation data.
         :param bool xval:  If xval is True, then return the F2 value for the cross validation data.
@@ -72,8 +71,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the F0point5 value for the training data.
         :param bool valid: If valid is True, then return the F0point5 value for the validation data.
         :param bool xval:  If xval is True, then return the F0point5 value for the cross validation data.
@@ -90,8 +89,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the accuracy value for the training data.
         :param bool valid: If valid is True, then return the accuracy value for the validation data.
         :param bool xval:  If xval is True, then return the accuracy value for the cross validation data.
@@ -108,8 +107,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold minimizing the error will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the error value for the training data.
         :param bool valid: If valid is True, then return the error value for the validation data.
         :param bool xval:  If xval is True, then return the error value for the cross validation data.
@@ -126,8 +125,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the precision value for the training data.
         :param bool valid: If valid is True, then return the precision value for the validation data.
         :param bool xval:  If xval is True, then return the precision value for the cross validation data.
@@ -144,8 +143,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the TPR value for the training data.
         :param bool valid: If valid is True, then return the TPR value for the validation data.
         :param bool xval:  If xval is True, then return the TPR value for the cross validation data.
@@ -162,8 +161,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the TNR value for the training data.
         :param bool valid: If valid is True, then return the TNR value for the validation data.
         :param bool xval:  If xval is True, then return the TNR value for the cross validation data.
@@ -179,8 +178,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the FNR value for the training data.
         :param bool valid: If valid is True, then return the FNR value for the validation data.
         :param bool xval:  If xval is True, then return the FNR value for the cross validation data.
@@ -197,8 +196,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the FPR value for the training data.
         :param bool valid: If valid is True, then return the FPR value for the validation data.
         :param bool xval:  If xval is True, then return the FPR value for the cross validation data.
@@ -215,8 +214,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the recall value for the training data.
         :param bool valid: If valid is True, then return the recall value for the validation data.
         :param bool xval:  If xval is True, then return the recall value for the cross validation data.
@@ -233,8 +232,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the sensitivity value for the training data.
         :param bool valid: If valid is True, then return the sensitivity value for the validation data.
         :param bool xval:  If xval is True, then return the sensitivity value for the cross validation data.
@@ -251,8 +250,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the fallout value for the training data.
         :param bool valid: If valid is True, then return the fallout value for the validation data.
         :param bool xval:  If xval is True, then return the fallout value for the cross validation data.
@@ -269,8 +268,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the missrate value for the training data.
         :param bool valid: If valid is True, then return the missrate value for the validation data.
         :param bool xval:  If xval is True, then return the missrate value for the cross validation data.
@@ -287,8 +286,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the specificity value for the training data.
         :param bool valid: If valid is True, then return the specificity value for the validation data.
         :param bool xval:  If xval is True, then return the specificity value for the cross validation data.
@@ -305,8 +304,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the mcc value for the training data.
         :param bool valid: If valid is True, then return the mcc value for the validation data.
         :param bool xval:  If xval is True, then return the mcc value for the cross validation data.
@@ -323,8 +322,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold minimizing the error will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the max_per_class_error value for the training data.
         :param bool valid: If valid is True, then return the max_per_class_error value for the validation data.
         :param bool xval:  If xval is True, then return the max_per_class_error value for the cross validation data.
@@ -341,8 +340,8 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold minimizing the error will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the mean_per_class_error value for the training data.
         :param bool valid: If valid is True, then return the mean_per_class_error value for the validation data.
         :param bool xval:  If xval is True, then return the mean_per_class_error value for the cross validation data.
@@ -360,8 +359,8 @@ class H2OBinomialGridSearch(object):
         "valid", and "xval".
 
         :param metric: name of the metric to compute.
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
-            If None, then the threshold maximizing the metric will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the metrics for the training data.
         :param bool valid: If valid is True, then return the metrics for the validation data.
         :param bool xval:  If xval is True, then return the metrics for the cross validation data.
@@ -394,10 +393,11 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param metrics: A string (or list of strings) among metrics listed in :const:`H2OBinomialModelMetrics.maximizing_metrics`.
-            Defaults to 'f1'.
-        :param thresholds: A value (or list of values) between 0 and 1.
-            If None, then the thresholds maximizing each provided metric will be used.
+        :param metrics: A list of metrics or a single metric among ``"min_per_class_accuracy"``, ``"absolute_mcc"``,
+            ``"tnr"``, ``"fnr"``, ``"fpr"``, ``"tpr"``, ``"precision"``, ``"accuracy"``, ``"f0point5"``, ``"f2"``,
+            ``"f1"``.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the thresholds
+            in this set of metrics will be used.
         :param bool train: If train is True, then return the confusion matrix value for the training data.
         :param bool valid: If valid is True, then return the confusion matrix value for the validation data.
         :param bool xval:  If xval is True, then return the confusion matrix value for the cross validation data.
@@ -413,7 +413,7 @@ class H2OBinomialGridSearch(object):
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param str metric: A metric among the metrics listed in :const:`H2OBinomialModelMetrics.maximizing_metrics`.
+        :param str metric: The name of the metric to search for.
         :param bool train: If train is True, then return the threshold_by_max_metric value for the training data.
         :param bool valid: If valid is True, then return the threshold_by_max_metric value for the validation data.
         :param bool xval:  If xval is True, then return the threshold_by_max_metric value for the cross validation data.

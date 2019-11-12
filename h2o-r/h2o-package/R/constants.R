@@ -51,7 +51,6 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
                    data.frame(type = "character", scalar = TRUE,  row.names = "string",       stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = FALSE, row.names = "string[]",     stringsAsFactors = FALSE),
                    data.frame(type = "character", scalar = TRUE,  row.names = "VecSpecifier", stringsAsFactors = FALSE),
-                   data.frame(type = "character", scalar = FALSE,  row.names = "VecSpecifier[]", stringsAsFactors = FALSE),
                    data.frame(type = "list",      scalar = FALSE, row.names = "KeyValue[]",   stringsAsFactors = FALSE),
                    data.frame(type = "list",      scalar = FALSE, row.names = "StringPair[]", stringsAsFactors = FALSE))
 

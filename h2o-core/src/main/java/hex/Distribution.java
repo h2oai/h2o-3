@@ -102,20 +102,9 @@ public abstract class Distribution extends Iced<Distribution> {
      *
      * @param y (actual) response
      * @param f (predicted) response in link space (including offset)
-     * @return negative half gradient
+     * @return -1/2 * d/df deviance(w=1,y,f)
      */
     public double negHalfGradient(double y, double f) { throw H2O.unimpl(); }
-
-    /**
-     * (Negative half) Gradient of deviance function at predicted value f, for actual response y
-     * This assumes that the deviance(w,y,f) is w*deviance(y,f), so the gradient is w * d/df deviance(y,f)
-     *
-     * @param y (actual) response
-     * @param f (predicted) response in link space (including offset)
-     * @param l (class label) label of a class (converted lexicographically from original labels to 0-number of class - 1)      
-     * @return negative half gradient
-     */
-    public double negHalfGradient(double y, double f, int l) { throw H2O.unimpl(); }
     
     /**
      * Contribution to numerator for initial value computation

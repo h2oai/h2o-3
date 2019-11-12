@@ -26,7 +26,9 @@ class H2OClusteringModel(ModelBase):
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
-        >>> size = km.size() # <- Default: return training metrics
+        >>> size = km.size(train=False,
+        ...                valid=False,
+        ...                xval=False) # <- Default: return training metrics
         >>> size
         >>> size1 = km.size(train=False,
         ...                 valid=False,
@@ -74,7 +76,9 @@ class H2OClusteringModel(ModelBase):
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
-        >>> betweenss = km.betweenss() # <- Default: return training metrics
+        >>> betweenss = km.betweenss(train=False,
+        ...                          valid=False,
+        ...                          xval=False) # <- Default: return training metrics
         >>> betweenss
         >>> betweenss3 = km.betweenss(train=False,
         ...                           valid=False,
@@ -107,7 +111,9 @@ class H2OClusteringModel(ModelBase):
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
-        >>> totss = km.totss() # <- Default: return training metrics
+        >>> totss = km.totss(train=False,
+        ...                 valid=False,
+        ...                 xval=False) # <- Default: return training metrics
         >>> totss
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
@@ -137,7 +143,9 @@ class H2OClusteringModel(ModelBase):
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
-        >>> tot_withinss = km.tot_withinss() # <- Default: return training metrics
+        >>> tot_withinss = km.tot_withinss(train=False,
+        ...                                valid=False,
+        ...                                xval=False) # <- Default: return training metrics
         >>> tot_withinss
         >>> tot_withinss2 = km.tot_withinss(train=True,
         ...                                 valid=False,
@@ -170,7 +178,9 @@ class H2OClusteringModel(ModelBase):
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
-        >>> withinss = km.withinss() # <- Default: return training metrics
+        >>> withinss = km.withinss(train=False,
+        ...                        valid=False,
+        ...                        xval=False) # <- Default: return training metrics
         >>> withinss
         >>> withinss2 = km.withinss(train=True,
         ...                         valid=True,
@@ -203,7 +213,9 @@ class H2OClusteringModel(ModelBase):
         >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
         >>> km = H2OKMeansEstimator(k=3, nfolds=3)
         >>> km.train(x=list(range(4)), training_frame=iris)
-        >>> centroid_stats = km.centroid_stats() # <- Default: return training metrics
+        >>> centroid_stats = km.centroid_stats(train=False,
+        ...                                    valid=False,
+        ...                                    xval=False) # <- Default: return training metrics
         >>> centroid_stats
         >>> centroid_stats1 = km.centroid_stats(train=True,
         ...                                     valid=False,

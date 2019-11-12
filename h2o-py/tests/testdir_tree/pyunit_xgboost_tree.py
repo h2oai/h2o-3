@@ -46,21 +46,21 @@ def xgboost_tree_test():
     # Wrong tree class
     try:
         H2OTree(xgbModel, 0, "YES")
-        assert False
+        assert False;
     except h2o.exceptions.H2OResponseError as e:
         assert e.args[0].dev_msg == "For binomial XGBoost model, only one tree for class NO has been built."
 
     # Exceeding tree number
     try:
         H2OTree(xgbModel, 1, "NO")  # There is only one tree, tree index of 1 points to a second tree
-        assert False
+        assert False;
     except h2o.exceptions.H2OResponseError as e:
         assert e.args[0].dev_msg == "There is no such tree number for given class. Total number of trees is 1."
 
     # Negative tree number
     try:
         H2OTree(xgbModel, -1, "NO")  # There is only one tree, tree index of 1 points to a second tree
-        assert False
+        assert False;
     except h2o.exceptions.H2OResponseError as e:
         assert e.args[0].dev_msg == "Invalid tree number: -1. Tree number must be >= 0."
 

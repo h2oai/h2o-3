@@ -5,8 +5,6 @@ import water.api.API;
 import water.api.Schema;
 import water.api.schemas3.KeyV3;
 
-import java.util.stream.Stream;
-
 public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
   /**
    * Identifier for models that should be grouped together in the leaderboard
@@ -26,7 +24,7 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
    * Frame for which the metrics have been computed for this leaderboard.
    */
   @API(help="Frame for this leaderboard", direction=API.Direction.OUTPUT)
-  public KeyV3.FrameKeyV3 leaderboard_frame;
+  public KeyV3.FrameKeyV3[] leaderboard_frame;
 
   /**
    * Checksum for the Frame for which the metrics have been computed for this leaderboard.
@@ -51,22 +49,5 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
    */
   @API(help="Metric direction used in the sort", direction=API.Direction.INOUT)
   public boolean sort_decreasing;
-
-  @Override
-  public LeaderboardV99 fillFromImpl(Leaderboard leaderboard) {
-    super.fillFromImpl(leaderboard, new String[] { "models", "leaderboard_frame", "sort_metrics", "sort_decreasing" });
-    models = Stream.of(leaderboard.getModelKeys())
-            .map(KeyV3.ModelKeyV3::new)
-            .toArray(KeyV3.ModelKeyV3[]::new);
-
-    if (leaderboard.leaderboardFrame() != null)
-      leaderboard_frame = new KeyV3.FrameKeyV3(leaderboard.leaderboardFrame()._key);
-
-    sort_metrics = leaderboard.getSortMetricValues();
-    sort_decreasing = !Leaderboard.isLossFunction(sort_metric);
-
-    return this;
-  }
-
 }
 

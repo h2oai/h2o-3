@@ -308,7 +308,7 @@ def generate_proxy(classname, endpoints):
                 elif ptype.endswith("KeyV3[]"):
                     found_key_array_parameter = True
                     s = "(p.{parm} == null? null : keyArrayToStringArray(p.{parm}))".format(parm=pname)
-                elif ptype == "ColSpecifierV3":
+                elif ptype.startswith("ColSpecifier"):
                     s = "(p.{parm} == null? null : p.{parm}.columnName)".format(parm=pname)
                 else:
                     s = "p." + pname
@@ -485,7 +485,7 @@ def generate_main_class(endpoints):
                     s = "keyToString(%s)" % fname
                 elif ftype.endswith("KeyV3[]"):
                     s = "keyArrayToStringArray(%s)" % fname
-                elif ftype == "ColSpecifierV3":
+                elif ftype.startswith("ColSpecifier"):
                     s = "colToString(%s)" % fname
                 else:
                     s = fname

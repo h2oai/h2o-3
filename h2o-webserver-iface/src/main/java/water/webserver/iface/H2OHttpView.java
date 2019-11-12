@@ -30,7 +30,7 @@ public interface H2OHttpView {
 
   boolean authenticationHandler(HttpServletRequest request, HttpServletResponse response) throws IOException;
 
-  boolean gateHandler(HttpServletRequest request, HttpServletResponse response);
+  void gateHandler(HttpServletRequest request, HttpServletResponse response);
 
   boolean loginHandler(String target, HttpServletRequest request, HttpServletResponse response) throws IOException;
 

@@ -5,9 +5,8 @@ import hex.ScoreKeeper;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
-import java.util.List;
 
-public class XGBoostOutput extends Model.Output implements Model.GetNTrees {
+public class XGBoostOutput extends Model.Output {
   public XGBoostOutput(XGBoost b) {
     super(b);
     _scored_train = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
@@ -24,12 +23,12 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees {
   public ScoreKeeper[/*ntrees+1*/] _scored_train;
   public ScoreKeeper[/*ntrees+1*/] _scored_valid;
   public ScoreKeeper[] scoreKeepers() {
-    List<ScoreKeeper> skl = new ArrayList<>();
+    ArrayList<ScoreKeeper> skl = new ArrayList<>();
     ScoreKeeper[] ska = _validation_metrics != null ? _scored_valid : _scored_train;
     for( ScoreKeeper sk : ska )
       if (!sk.isEmpty())
         skl.add(sk);
-    return skl.toArray(new ScoreKeeper[0]);
+    return skl.toArray(new ScoreKeeper[skl.size()]);
   }
   public long[/*ntrees+1*/] _training_time_ms = {System.currentTimeMillis()};
   public TwoDimTable _variable_importances; // gain
@@ -37,9 +36,4 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees {
   public TwoDimTable _variable_importances_frequency;
   public XgbVarImp _varimp;
   public TwoDimTable _native_parameters;
-
-  @Override
-  public int getNTrees() {
-    return _ntrees;
-  }
 }

@@ -42,26 +42,21 @@ To publish artifacts into **local Maven** repository stored under `build/repo`:
 gradle publish
 ```
 
-### Sonatype & Public H2O Release Repository
-To publish artifacts into remote **Sonatype Release** and **Public H2O Release** repository please type:
+### Sonatype Release Repository
+To publish artifacts into remote **Sonatype Release** repository please type:
 ```
 gradle -DdoRelease publish
 ```
 
-#### Public release repository configuration
+#### Sonatype release repository configuration
 
 To upload artifacts into remote repository the file `~/.gradle/gradle.properties` has to contains your Sonatype credentials
 ```
 oss-releases.username=<your Sonatype username>
 oss-releases.password=<your Sonatype password>
 ```
-and your Public H2O repository credentials
-```
-public-release-maven.username=<your Public H2O repository username>
-public-release-maven.password=<your Public H2O repository password>
-```
 
-Publishing to public repositories requires signed artifacts.
+Sonatype release repository requires signed artifacts.
 Hence it is necessary to provide GNUPG key reference into`~/.gradle/gradle.properties` or via command line correspond `-P` options:
 
 ```

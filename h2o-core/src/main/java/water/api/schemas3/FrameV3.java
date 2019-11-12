@@ -68,17 +68,11 @@ public class FrameV3 extends FrameBaseV3<Frame, FrameV3> {
   @API(help="Distribution summary", direction=API.Direction.OUTPUT)
   public TwoDimTableV3 distribution_summary;
 
-  public static class ColSpecifierV3 extends SchemaV3<VecSpecifier, ColSpecifierV3> implements AutoParseable {
+  public static class ColSpecifierV3 extends SchemaV3<VecSpecifier, ColSpecifierV3> {
     public ColSpecifierV3() { }
     public ColSpecifierV3(String column_name) {
       this.column_name = column_name;
     }
-
-    public ColSpecifierV3(final String column_name, final String[] is_member_of_frames) {
-      this.column_name = column_name;
-      this.is_member_of_frames = is_member_of_frames;
-    }
-    
 
     @API(help="Name of the column", direction= API.Direction.INOUT)
     public String column_name;

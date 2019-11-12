@@ -40,7 +40,6 @@ test.model.generic.drf <- function() {
     
     generic_model <- h2o.genericModel(mojo_original_path)
     print(generic_model)
-    compare_params(original_model, generic_model)
     
     original_output <- capture.output(print(original_model))
     generic_output <- capture.output(print(generic_model))

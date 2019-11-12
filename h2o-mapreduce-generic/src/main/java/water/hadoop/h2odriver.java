@@ -19,10 +19,6 @@ import org.apache.hadoop.util.ToolRunner;
 import water.H2O;
 import water.H2OStarter;
 import water.ProxyStarter;
-import water.hadoop.clouding.fs.CloudingEvent;
-import water.hadoop.clouding.fs.CloudingEventType;
-import water.hadoop.clouding.fs.FileSystemBasedClouding;
-import water.hadoop.clouding.fs.FileSystemCloudingEventSource;
 import water.init.NetworkInit;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
@@ -44,8 +40,19 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Writer;
 import java.lang.reflect.Method;
-import java.net.*;
-import java.util.*;
+import java.net.BindException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.NetworkInterface;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -63,13 +70,15 @@ import static water.util.JavaVersionUtils.JAVA_VERSION;
 /**
  * Driver class to start a Hadoop mapreduce job which wraps an H2O cluster launch.
  *
+ * All mapreduce I/O is typed as <Text, Text>.
+ * The first Text is the Key (Mapper Id).
+ * The second Text is the Value (a log output).
+ *
  * Adapted from
  * https://svn.apache.org/repos/asf/hadoop/common/trunk/hadoop-mapreduce-project/hadoop-mapreduce-client/hadoop-mapreduce-client-jobclient/src/test/java/org/apache/hadoop/SleepJob.java
  */
 @SuppressWarnings("deprecation")
 public class h2odriver extends Configured implements Tool {
-
-  enum CloudingMethod { CALLBACKS, FILESYSTEM }
 
   final static String ARGS_CONFIG_FILE_PATTERN = "/etc/h2o/%s.args";
   final static String DEFAULT_ARGS_CONFIG = "h2odriver";
@@ -119,7 +128,6 @@ public class h2odriver extends Configured implements Tool {
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
   static boolean enableLog4jDefaultInitOverride = true;
-  static String logLevel;
   static boolean enableDebug = false;
   static boolean enableSuspend = false;
   static int debugPort = 5005;    // 5005 is the default from IDEA
@@ -128,14 +136,11 @@ public class h2odriver extends Configured implements Tool {
   static ArrayList<String> extraJvmArguments = new ArrayList<String>();
   static String jksFileName = null;
   static String jksPass = null;
-  static String jksAlias = null;
   static String securityConf = null;
   static boolean internal_secure_connections = false;
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
   static boolean kerberosLogin = false;
-  static boolean spnegoLogin = false;
-  static String spnegoProperties = null;
   static boolean pamLogin = false;
   static String loginConfFileName = null;
   static boolean formAuth = false;
@@ -151,27 +156,21 @@ public class h2odriver extends Configured implements Tool {
   static String hiveHost = null;
   static String hivePrincipal = null;
   static boolean refreshTokens = false;
-  static CloudingMethod cloudingMethod = CloudingMethod.CALLBACKS;
-  static String cloudingDir = null;
-  static boolean disableFlow = false;
 
   String proxyUrl = null;
-
-  // All volatile fields represent a runtime state that might be touched by different threads
+  // Runtime state that might be touched by different threads.
+  volatile ServerSocket driverCallbackSocket = null;
   volatile JobWrapper job = null;
   volatile CtrlCHandler ctrlc = null;
-  volatile CloudingManager cm = null;
-  // Modified while clouding-up
   volatile boolean clusterIsUp = false;
   volatile boolean clusterFailedToComeUp = false;
   volatile boolean clusterHasNodeWithLocalhostIp = false;
   volatile boolean shutdownRequested = false;
-  // Output of clouding
+  volatile AtomicInteger numNodesStarted = new AtomicInteger();
+  volatile AtomicInteger numNodesReportingFullCloudSize = new AtomicInteger();
   volatile String clusterIp = null;
   volatile int clusterPort = -1;
   volatile String flatfileContent = null;
-  // Only used for debugging 
-  volatile AtomicInteger numNodesStarted = new AtomicInteger();
 
   private static Credentials make(String user) {
     return new Credentials(user, SecurityUtils.passwordGenerator(GEN_PASSWORD_LENGTH));
@@ -439,15 +438,15 @@ public class h2odriver extends Configured implements Tool {
   /**
    * Read and handle one Mapper->Driver Callback message.
    */
-  static class CallbackHandlerThread extends Thread {
+  class CallbackHandlerThread extends Thread {
     private Socket _s;
     private CallbackManager _cm;
 
-    void setSocket (Socket value) {
+    public void setSocket (Socket value) {
       _s = value;
     }
 
-    void setCallbackManager (CallbackManager value) {
+    public void setCallbackManager (CallbackManager value) {
       _cm = value;
     }
 
@@ -472,17 +471,41 @@ public class h2odriver extends Configured implements Tool {
           // DO NOT close _s here!
           // Callback manager accumulates sockets to H2O nodes so it can
           // a synthesized flatfile once everyone has arrived.
-          _cm.registerNode(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort(), msg.getAttempt(), _s);
+
+          System.out.println("H2O node " + msg.getEmbeddedWebServerIp() + ":" + msg.getEmbeddedWebServerPort() + " requested flatfile");
+          if (msg.getEmbeddedWebServerIp().equals("127.0.0.1")) {
+            clusterHasNodeWithLocalhostIp = true;
+          }
+          numNodesStarted.incrementAndGet();
+          _cm.registerNode(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort(), _s);
         }
         else if (type == MapperToDriverMessage.TYPE_CLOUD_SIZE) {
           _s.close();
-          _cm.announceNodeCloudSize(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort(),
-                  msg.getLeaderWebServerIp(), msg.getLeaderWebServerPort(), msg.getCloudSize());
+          System.out.println("H2O node " + msg.getEmbeddedWebServerIp() + ":" + msg.getEmbeddedWebServerPort() +
+                  " reports H2O cluster size " + msg.getCloudSize() + " [leader is " + msg.getLeaderWebServerIp() + ":" + msg.getLeaderWebServerPort() + "]");
+          if (msg.getCloudSize() == numNodes) {
+            // Do this under a synchronized block to avoid getting multiple cluster ready notification files.
+            synchronized (h2odriver.class) {
+              if (! clusterIsUp) {
+                int n = numNodesReportingFullCloudSize.incrementAndGet();
+                if (n == numNodes) {
+                  reportClusterReady(msg.getLeaderWebServerIp(), msg.getLeaderWebServerPort());
+                  clusterIsUp = true;
+                }
+              }
+            }
+          }
         }
         else if (type == MapperToDriverMessage.TYPE_EXIT) {
-          String hostAddress = _s.getInetAddress().getHostAddress();
+          System.out.println(
+                  "H2O node " + msg.getEmbeddedWebServerIp() + ":" + msg.getEmbeddedWebServerPort() +
+                  " on host " + _s.getInetAddress().getHostAddress() +
+                  " exited with status " + msg.getExitStatus()
+          );
           _s.close();
-          _cm.announceFailedNode(msg.getEmbeddedWebServerIp(), msg.getEmbeddedWebServerPort(), hostAddress, msg.getExitStatus());
+          if (! clusterIsUp) {
+            clusterFailedToComeUp = true;
+          }
         }
         else {
           _s.close();
@@ -500,260 +523,41 @@ public class h2odriver extends Configured implements Tool {
     }
   }
 
-  abstract class CloudingManager extends Thread {
-    private final int _targetCloudSize; // desired number of nodes the cloud should eventually have
-    private volatile AtomicInteger _numNodesReportingFullCloudSize = new AtomicInteger(); // number of fully initialized nodes
-
-    CloudingManager(int targetCloudSize) {
-      _targetCloudSize = targetCloudSize;
-    }
-
-    void announceNewNode(String ip, int port) {
-      System.out.println("H2O node " + ip + ":" + port + " is joining the cluster");
-      if ("127.0.0.1".equals(ip)) {
-        clusterHasNodeWithLocalhostIp = true;
-      }
-      numNodesStarted.incrementAndGet();
-    }
-
-    void announceNodeCloudSize(String ip, int port, String leaderWebServerIp, int leaderWebServerPort, int cloudSize) throws Exception {
-      System.out.println("H2O node " + ip + ":" + port + " reports H2O cluster size " + cloudSize + " [leader is " + leaderWebServerIp + ":" + leaderWebServerIp + "]");
-      if (cloudSize == _targetCloudSize) {
-        announceCloudReadyNode(leaderWebServerIp, leaderWebServerPort);
-      }
-    }
-
-    // announces a node that has a complete information about the rest of the cloud
-    void announceCloudReadyNode(String leaderWebServerIp, int leaderWebServerPort) throws Exception {
-      // Do this under a synchronized block to avoid getting multiple cluster ready notification files.
-      synchronized (h2odriver.class) {
-        if (! clusterIsUp) {
-          int n = _numNodesReportingFullCloudSize.incrementAndGet();
-          if (n == _targetCloudSize) {
-            reportClusterReady(leaderWebServerIp, leaderWebServerPort);
-            clusterIsUp = true;
-          }
-        }
-      }
-    }
-
-    void announceFailedNode(String ip, int port, String hostAddress, int exitStatus) {
-      System.out.println("H2O node " + ip + ":" + port + (hostAddress != null ? " on host " + hostAddress : "") +
-              " exited with status " + exitStatus);
-      if (! clusterIsUp) {
-        clusterFailedToComeUp = true;
-      }
-    }
-
-    boolean cloudingInProgress() {
-      return !(clusterIsUp || clusterFailedToComeUp || getShutdownRequested());
-    }
-    
-    void setFlatfile(String flatfile) {
-      flatfileContent = flatfile;
-    }
-
-    final int targetCloudSize() {
-      return _targetCloudSize;
-    }
-
-    protected void fatalError(String message) {
-      System.out.println("ERROR: " + message);
-      System.exit(1);
-    }
-
-    abstract void close() throws Exception;
-
-    abstract void setMapperParameters(Configuration conf);
-  }
-
-  class FileSystemEventManager extends CloudingManager {
-
-    private volatile FileSystemCloudingEventSource _event_source;
-
-    FileSystemEventManager(int targetCloudSize, Configuration conf, String cloudingDir) throws IOException {
-      super(targetCloudSize);
-      _event_source = new FileSystemCloudingEventSource(conf, cloudingDir);
-    }
-
-    @Override
-    public synchronized void start() {
-      Path cloudingPath = _event_source.getPath();
-      System.out.println("Using filesystem directory to exchange information about started H2O nodes during the clouding process: " + cloudingPath);
-      System.out.println("(You can override this by adding -clouding_dir argument.)");
-      try {
-        if (! _event_source.isEmpty()) {
-          fatalError("Clouding directory `" + cloudingPath + "` already exists/is not empty.");
-        }
-      } catch (IOException e) {
-        throw new RuntimeException(e);
-      }
-      super.start();
-    }
-
-    @Override
-    void close() {
-      _event_source = null;
-    }
-
-    boolean isOpen() {
-      return _event_source != null;
-    }
-    
-    @Override
-    void setMapperParameters(Configuration conf) {
-      conf.set(h2omapper.H2O_CLOUDING_IMPL, FileSystemBasedClouding.class.getName());
-      conf.set(h2omapper.H2O_CLOUDING_DIR_KEY, _event_source.getPath().toString());
-      conf.setInt(h2omapper.H2O_CLOUD_SIZE_KEY, targetCloudSize());
-    }
-
-    private boolean sleep() {
-      try {
-        Thread.sleep(1000);
-      } catch (InterruptedException e) {
-        Thread.currentThread().interrupt();
-        maybeLogException(e);
-        return false;
-      }
-      return true;
-    }
-
-    @Override
-    public void run() {
-      FileSystemCloudingEventSource eventSource;
-      while (cloudingInProgress() && (eventSource = _event_source) != null) {
-        try {
-          for (CloudingEvent event : eventSource.fetchNewEvents()) {
-            if (processEvent(event)) {
-              close();
-              return; // stop processing events immediately
-            }
-          }
-        } catch (Exception e) {
-          maybeLogException(e);
-          close();
-          return;
-        }
-        if (! sleep()) {
-          close();
-          return;
-        }
-      }
-    }
-
-    boolean processEvent(CloudingEvent event) throws Exception {
-      CloudingEventType type = event.getType();
-      switch (type) {
-        case NODE_STARTED:
-          announceNewNode(event.getIp(), event.getPort());
-          break;
-        case NODE_FAILED:
-          int exitCode = 42;
-          try {
-            exitCode = Integer.valueOf(event.readPayload());
-          } catch (Exception e) {
-            e.printStackTrace();
-          }
-          announceFailedNode(event.getIp(), event.getPort(), null, exitCode);
-          break;
-        case NODE_CLOUDED:
-          URI leader = URI.create(event.readPayload());
-          announceNodeCloudSize(event.getIp(), event.getPort(), leader.getHost(), leader.getPort(), targetCloudSize());
-          break;
-      }
-      return type.isFatal();
-    }
-
-    private void maybeLogException(Exception e) {
-      if (cloudingInProgress() && isOpen()) { // simply ignore any exceptions that happen post-clouding
-        e.printStackTrace();
-      }
-    }
-  }
-
   /**
    * Start a long-running thread ready to handle Mapper->Driver messages.
    */
-  class CallbackManager extends CloudingManager {
-
-    private volatile ServerSocket _ss;
+  class CallbackManager extends Thread {
+    private ServerSocket _ss;
 
     // Nodes and socks
-    private final HashMap<String, Integer> _dupChecker = new HashMap<>();
-    final ArrayList<String> _nodes = new ArrayList<>();
-    final ArrayList<Socket> _socks = new ArrayList<>();
+    private final HashSet<String> _dupChecker = new HashSet<String>();
+    private final ArrayList<String> _nodes = new ArrayList<String>();
+    private final ArrayList<Socket> _socks = new ArrayList<Socket>();
 
-    CallbackManager(int targetCloudSize) {
-      super(targetCloudSize);
+    public void setServerSocket (ServerSocket value) {
+      _ss = value;
     }
 
-    void setMapperParameters(Configuration conf) {
-      conf.set(h2omapper.H2O_CLOUDING_IMPL, NetworkBasedClouding.class.getName());
-      conf.set(h2omapper.H2O_DRIVER_IP_KEY, driverCallbackPublicIp);
-      conf.set(h2omapper.H2O_DRIVER_PORT_KEY, Integer.toString(_ss.getLocalPort()));
-    } 
-
-    @Override
-    public synchronized void start() {
-      try {
-        _ss = bindCallbackSocket();
-        int actualDriverCallbackPort = _ss.getLocalPort(); 
-        System.out.println("Using mapper->driver callback IP address and port: " + driverCallbackPublicIp + ":" + actualDriverCallbackPort +
-                (!driverCallbackBindIp.equals(driverCallbackPublicIp) ? " (internal callback address: " + driverCallbackBindIp + ":" + actualDriverCallbackPort + ")" : ""));
-        System.out.println("(You can override these with -driverif and -driverport/-driverportrange and/or specify external IP using -extdriverif.)");
-      } catch (IOException e) {
-        throw new RuntimeException("Failed to start Callback Manager", e);
-      }
-      super.start();
-    }
-
-    protected ServerSocket bindCallbackSocket() throws IOException {
-      return h2odriver.bindCallbackSocket();
-    }
-
-    @Override
-    void close() throws Exception {
-      ServerSocket ss = _ss;
-      _ss = null;
-      ss.close();
-    }
-    
-    void registerNode(String ip, int port, int attempt, Socket s) {
+    public void registerNode (String ip, int port, Socket s) {
       synchronized (_dupChecker) {
-        final String entry = ip + ":" + port;
-        if (_dupChecker.containsKey(entry)) {
-          int prevAttempt = _dupChecker.get(entry);
-          if (prevAttempt == attempt) {
-            // This is bad.
-            fatalError("Duplicate node registered (" + entry + "), exiting");
-          } else if (prevAttempt > attempt) {
-            // Suspicious, we are receiving attempts out-of-order, stick with the latest attempt.
-            System.out.println("WARNING: Received out-of-order node registration attempt (" + entry + "): " +
-                    "#attempt=" + attempt + " (previous was #" + prevAttempt + ").");
-          } else { // prevAttempt < attempt
-            _dupChecker.put(entry, attempt);
-            int old = _nodes.indexOf(entry);
-            if (old < 0) {
-              fatalError("Inconsistency found: old node entry for a repeated register node attempt doesn't exist, entry: " + entry);
-            }
-            assert entry.equals(_nodes.get(old));
-            // inject a fresh socket
-            _socks.set(old, s);
-          }
-        } else {
-          announceNewNode(ip, port);
-          _dupChecker.put(entry, attempt);
-          _nodes.add(entry);
-          _socks.add(s);
+        String entry = ip + ":" + port;
+
+        if (_dupChecker.contains(entry)) {
+          // This is bad.
+          System.out.println("ERROR: Duplicate node registered (" + entry + "), exiting");
+          System.exit(1);
         }
 
-        if (_nodes.size() != targetCloudSize()) {
+        _dupChecker.add(entry);
+        _nodes.add(entry);
+        _socks.add(s);
+        if (_nodes.size() != numNodes) {
           return;
         }
 
         System.out.println("Sending flatfiles to nodes...");
 
-        assert (_nodes.size() == targetCloudSize());
+        assert (_nodes.size() == numNodes);
         assert (_nodes.size() == _socks.size());
 
         // Build the flatfile and send it to all nodes.
@@ -784,7 +588,7 @@ public class h2odriver extends Configured implements Tool {
         }
 
         // only set if everything went fine
-        setFlatfile(flatfile);
+        flatfileContent = flatfile;
       }
     }
 
@@ -834,12 +638,10 @@ public class h2odriver extends Configured implements Tool {
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
                     "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
                     "          [-refreshTokens]\n" +
-                    "          [-clouding_method <callbacks|filesystem (defaults: to 'callbacks')>]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +
                     "          [-driverport <port of mapper->driver callback interface>]\n" +
                     "          [-driverportrange <range portX-portY of mapper->driver callback interface>; eg: 50000-55000]\n" +
-                    "          [-extdriverif <external ip address of mapper->driver callback interface>]\n" +
-                    "          [-clouding_dir <hdfs directory used to exchange node information in the clouding procedure>]\n" +
+                    "          [-extdriverif <external ip address of mapper->driver callback interface>\n" +
                     "          [-network <IPv4network1Specification>[,<IPv4network2Specification> ...]\n" +
                     "          [-timeout <seconds>]\n" +
                     "          [-disown]\n" +
@@ -872,8 +674,7 @@ public class h2odriver extends Configured implements Tool {
                     "          o  -libjars with an h2o.jar is required.\n" +
                     "          o  -driverif and -driverport/-driverportrange let the user optionally\n" +
                     "             specify the network interface and port/port range (on the driver host)\n" +
-                    "             for callback messages from the mapper to the driver. These parameters are\n" +
-                    "             only used when clouding_method is set to `filesystem`.\n" +
+                    "             for callback messages from the mapper to the driver.\n" +
                     "          o  -extdriverif lets the user optionally specify external (=not present on the host)\n" +
                     "             IP address to be used for callback messages from mappers to the driver. This can be\n" +
                     "             used when driver is running in an isolated environment (eg. Docker container)\n" +
@@ -1021,7 +822,7 @@ public class h2odriver extends Configured implements Tool {
    * Parse remaining arguments after the ToolRunner args have already been removed.
    * @param args Argument list
    */
-  private String[] parseArgs(String[] args) {
+  String[] parseArgs(String[] args) {
     int i = 0;
     boolean driverArgs = true;
     while (driverArgs) {
@@ -1149,10 +950,6 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-Dlog4j.defaultInitOverride=true")) {
         enableLog4jDefaultInitOverride = true;
       }
-      else if (s.equals("-log_level")) {
-        i++; if (i >= args.length) { usage(); }
-        logLevel = args[i];
-      } 
       else if (s.equals("-debug")) {
         enableDebug = true;
       }
@@ -1165,8 +962,7 @@ public class h2odriver extends Configured implements Tool {
         if ((debugPort < 0) || (debugPort > 65535)) {
           error("Debug port must be between 1 and 65535");
         }
-      } 
-      else if (s.equals("-XX:+PrintGCDetails")) {
+      } else if (s.equals("-XX:+PrintGCDetails")) {
         if (!JAVA_VERSION.useUnifiedLogging()) {
           enablePrintGCDetails = true;
         } else {
@@ -1210,10 +1006,6 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         jksPass = args[i];
       }
-      else if (s.equals("-jks_alias")) {
-        i++; if (i >= args.length) { usage(); }
-        jksAlias = args[i];
-      }
       else if (s.equals("-internal_secure_connections")) {
         internal_secure_connections = true;
       }
@@ -1234,13 +1026,6 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-kerberos_login")) {
         kerberosLogin = true;
       }
-      else if (s.equals("-spnego_login")) {
-        spnegoLogin = true;
-      }
-      else if (s.equals("-spnego_properties")) {
-        i++; if (i >= args.length) { usage(); }
-        spnegoProperties = args[i];
-      }
       else if (s.equals("-pam_login")) {
         pamLogin = true;
       }
@@ -1250,9 +1035,6 @@ public class h2odriver extends Configured implements Tool {
       }
       else if (s.equals("-form_auth")) {
         formAuth = true;
-      }
-      else if (s.equals("-disable_flow")) {
-        disableFlow = true;
       }
       else if (s.equals("-session_timeout")) {
         i++; if (i >= args.length) { usage(); }
@@ -1290,12 +1072,6 @@ public class h2odriver extends Configured implements Tool {
         hivePrincipal = args[i];
       } else if (s.equals("-refreshTokens")) {
         refreshTokens = true;
-      } else if (s.equals("-clouding_method")) {
-        i++; if (i >= args.length) { usage(); }
-        cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase()); 
-      } else if (s.equals("-clouding_dir")) {
-        i++; if (i >= args.length) { usage(); }
-        cloudingDir = args[i];
       } else {
         error("Unrecognized option " + s);
       }
@@ -1308,7 +1084,7 @@ public class h2odriver extends Configured implements Tool {
     return otherArgs;
   }
 
-  private void validateArgs() {
+  void validateArgs() {
     // Check for mandatory arguments.
     if (numNodes < 1) {
       error("Number of H2O nodes must be greater than 0 (must specify -n)");
@@ -1469,7 +1245,7 @@ public class h2odriver extends Configured implements Tool {
           System.out.println("ERROR: Timed out waiting for H2O cluster to come up (" + cloudFormationTimeoutSeconds + " seconds)");
           System.out.println("ERROR: (Try specifying the -timeout option to increase the waiting time limit)");
           if (clusterHasNodeWithLocalhostIp) {
-            System.out.println();
+            System.out.println("");
             System.out.println("NOTE: One of the nodes chose 127.0.0.1 as its IP address, which is probably wrong.");
             System.out.println("NOTE: You may want to specify the -network option, which lets you specify the network interface the mappers bind to.");
             System.out.println("NOTE: Typical usage is:  -network a.b.c.d/24");
@@ -1487,7 +1263,11 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private void waitForClusterToShutdown() throws Exception {
-    while (! job.isComplete()) {
+    while (true) {
+      if (job.isComplete()) {
+        break;
+      }
+
       final int ONE_SECOND_MILLIS = 1000;
       Thread.sleep (ONE_SECOND_MILLIS);
     }
@@ -1512,11 +1292,8 @@ public class h2odriver extends Configured implements Tool {
 
     try {
       setShutdownRequested();
-      CloudingManager cloudingManager = cm;
-      cm = null;
-      if (cloudingManager != null) {
-        cloudingManager.close();
-      }
+      driverCallbackSocket.close();
+      driverCallbackSocket = null;
     }
     catch (Exception e) {
       System.out.println("ERROR: " + (e.getMessage() != null ? e.getMessage() : "(null)"));
@@ -1617,7 +1394,9 @@ public class h2odriver extends Configured implements Tool {
       } catch (SecurityException e) {
         permissionExceptionCount++;
         ex = e;
-      } catch (IOException | RuntimeException e) {
+      } catch (IOException e) {
+        ex = e;
+      } catch (RuntimeException e) {
         ex = e;
       }
     }
@@ -1627,10 +1406,8 @@ public class h2odriver extends Configured implements Tool {
     if (result == null)
       if (ex instanceof IOException)
         throw (IOException) ex;
-      else {
-        assert ex != null;
+      else
         throw (RuntimeException) ex;
-      }
     return result;
   }
 
@@ -1650,6 +1427,26 @@ public class h2odriver extends Configured implements Tool {
     args = ArrayUtils.append(args, getSystemArgs()); // append "system-level" args to user specified args
     String[] otherArgs = parseArgs(args);
     validateArgs();
+
+    // Set up callback address and port.
+    // ---------------------------------
+    if (driverCallbackBindIp == null) {
+      driverCallbackBindIp = calcMyIp(driverCallbackPublicIp);
+    }
+    if (driverCallbackPublicIp == null) {
+      driverCallbackPublicIp = driverCallbackBindIp;
+    }
+    if (driverCallbackPortRange == null) {
+      driverCallbackPortRange = new PortRange(driverCallbackPort, driverCallbackPort);
+    }
+    driverCallbackSocket = bindCallbackSocket();
+    int actualDriverCallbackPort = driverCallbackSocket.getLocalPort();
+    CallbackManager cm = new CallbackManager();
+    cm.setServerSocket(driverCallbackSocket);
+    cm.start();
+    System.out.println("Using mapper->driver callback IP address and port: " + driverCallbackPublicIp + ":" + actualDriverCallbackPort + 
+            (!driverCallbackBindIp.equals(driverCallbackPublicIp) ? " (internal callback address: " + driverCallbackBindIp + ":" + actualDriverCallbackPort + ")" : ""));
+    System.out.println("(You can override these with -driverif and -driverport/-driverportrange and/or specify external IP using -extdriverif.)");
 
     // Set up configuration.
     // ---------------------
@@ -1671,26 +1468,6 @@ public class h2odriver extends Configured implements Tool {
       UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser(runAsUser));
     }
 
-    if (cloudingMethod == CloudingMethod.FILESYSTEM) {
-      if (cloudingDir == null) {
-        cloudingDir = new Path(outputPath, ".clouding").toString();
-      }
-      cm = new FileSystemEventManager(numNodes, conf, cloudingDir);
-    } else {
-      // Set up callback address and port.
-      // ---------------------------------
-      if (driverCallbackBindIp == null) {
-        driverCallbackBindIp = calcMyIp(driverCallbackPublicIp);
-      }
-      if (driverCallbackPublicIp == null) {
-        driverCallbackPublicIp = driverCallbackBindIp;
-      }
-      if (driverCallbackPortRange == null) {
-        driverCallbackPortRange = new PortRange(driverCallbackPort, driverCallbackPort);
-      }
-      cm = new CallbackManager(numNodes);
-    }
-    cm.start();
 
     // Set memory parameters.
     long processTotalPhysicalMemoryMegabytes;
@@ -1773,7 +1550,8 @@ public class h2odriver extends Configured implements Tool {
       conf.set("mapred.job.reuse.jvm.num.tasks", "1");
     }
 
-    cm.setMapperParameters(conf);
+    conf.set(h2omapper.H2O_DRIVER_IP_KEY, driverCallbackPublicIp);
+    conf.set(h2omapper.H2O_DRIVER_PORT_KEY, Integer.toString(actualDriverCallbackPort));
 
     // Arguments.
     addMapperArg(conf, "-name", jobtrackerName);
@@ -1801,9 +1579,6 @@ public class h2odriver extends Configured implements Tool {
     if (flowDir != null) {
       addMapperArg(conf, "-flow_dir", flowDir);
     }
-    if (logLevel != null) {
-      addMapperArg(conf, "-log_level", logLevel);
-    }
     if ((new File(".h2o_no_collect")).exists() || (new File(System.getProperty("user.home") + "/.h2o_no_collect")).exists()) {
       addMapperArg(conf, "-ga_opt_out");
     }
@@ -1811,9 +1586,6 @@ public class h2odriver extends Configured implements Tool {
     addMapperArg(conf, "-ga_hadoop_ver", hadoopVersion);
     if (jksPass != null) {
       addMapperArg(conf, "-jks_pass", jksPass);
-    }
-    if (jksAlias != null) {
-      addMapperArg(conf, "-jks_alias", jksAlias);
     }
     if (hashLogin) {
       addMapperArg(conf, "-hash_login");
@@ -1824,9 +1596,6 @@ public class h2odriver extends Configured implements Tool {
     if (kerberosLogin) {
       addMapperArg(conf, "-kerberos_login");
     }
-    if (spnegoLogin) {
-      addMapperArg(conf, "-spnego_login");
-    }
     if (pamLogin) {
       addMapperArg(conf, "-pam_login");
     }
@@ -1835,9 +1604,6 @@ public class h2odriver extends Configured implements Tool {
     }
     if (sessionTimeout != null) {
       addMapperArg(conf, "-session_timeout", sessionTimeout);
-    }
-    if (disableFlow) {
-      addMapperArg(conf, "-disable_flow");
     }
     addMapperArg(conf, "-user_name", userName);
 
@@ -1885,9 +1651,6 @@ public class h2odriver extends Configured implements Tool {
                       "};"
       );
       addMapperConf(conf, "-login_conf", "login.conf", pamConfData);
-    }
-    if (spnegoLogin && spnegoProperties != null) {
-      addMapperConf(conf, "-spnego_properties", "spnego.properties", spnegoProperties);
     }
 
     // SSL
@@ -1984,13 +1747,18 @@ public class h2odriver extends Configured implements Tool {
       final File flatfile = File.createTempFile("h2o", "txt");
       flatfile.deleteOnExit();
 
+      Writer w = new BufferedWriter(new FileWriter(flatfile));
       boolean flatfileCreated = false;
-      try (Writer w = new BufferedWriter(new FileWriter(flatfile))) {
+      try {
         w.write(flatfileContent);
         w.close();
         flatfileCreated = true;
       } catch (IOException e) {
         e.printStackTrace();
+      } finally {
+        try {
+          w.close();
+        } catch (IOException suppressed) { /* ignore */ }
       }
 
       if (!flatfileCreated) {
@@ -2020,9 +1788,9 @@ public class h2odriver extends Configured implements Tool {
 
     if (! (client || proxy))
       System.out.println("(Note: Use the -disown option to exit the driver after cluster formation)");
-    System.out.println();
+    System.out.println("");
     System.out.println("Open H2O Flow in your web browser: " + getPublicUrl());
-    System.out.println();
+    System.out.println("");
     System.out.println("(Press Ctrl-C to kill the cluster)");
     System.out.println("Blocking until the H2O cluster shuts down...");
     waitForClusterToShutdown();
@@ -2241,12 +2009,28 @@ public class h2odriver extends Configured implements Tool {
     System.out.println(sb.toString());
   }
 
+  private static void quickTest() throws Exception {
+    byte[] byteArr = readBinaryFile("/Users/tomk/h2o.jks");
+    String payload = convertByteArrToString(byteArr);
+    byte[] byteArr2 = convertStringToByteArr(payload);
+
+    assert (byteArr.length == byteArr2.length);
+    for (int i = 0; i < byteArr.length; i++) {
+      assert byteArr[i] == byteArr2[i];
+    }
+
+    writeBinaryFile("/Users/tomk/test.jks", byteArr2);
+    System.exit(0);
+  }
+
   /**
    * Main entry point
    * @param args Full program args, including those that go to ToolRunner.
    * @throws Exception
    */
   public static void main(String[] args) throws Exception {
+    // quickTest();
+
     int exitCode = ToolRunner.run(new h2odriver(), args);
     maybePrintYarnLogsMessage();
     System.exit(exitCode);

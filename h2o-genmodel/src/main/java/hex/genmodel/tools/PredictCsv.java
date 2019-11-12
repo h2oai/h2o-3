@@ -5,7 +5,6 @@ import hex.ModelCategory;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
-import hex.genmodel.algos.pca.PCAMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -105,7 +104,7 @@ public class PredictCsv {
     switch (category) {
       case AutoEncoder:
         String[] cnames =  this.model.m.getNames();
-        int numCats = this.model.m.nCatFeatures();
+        int numCats = this.model.domainMap.size();
         int numNums = this.model.m.nfeatures()-numCats;
         String[][] domainValues = this.model.m.getDomainValues();
         int lastCatIdx = numCats-1;
@@ -179,13 +178,8 @@ public class PredictCsv {
           datawidth = ((GlrmMojoModel) model.m)._permutation.length;
           head = "reconstr_";
         } else {
-          if (model.m instanceof GlrmMojoModel) {
-            datawidth = ((GlrmMojoModel) model.m)._ncolX;
-            head = "Arch";
-          } else {  // PCA here
-            datawidth = ((PCAMojoModel) model.m)._k;
-            head = "PC";
-          }
+          datawidth = ((GlrmMojoModel) model.m)._ncolX;
+          head = "Arch";
         }
 
         int lastData = datawidth-1;
@@ -418,7 +412,7 @@ public class PredictCsv {
       if (!parsedColumnNames.contains(columnName) && !columnName.equals(model.m._responseColumn)) {
         missingColumns.add(columnName);
       } else {
-        parsedColumnNames.remove(columnName);
+        parsedColumnNames.remove(missingColumns);
       }
     }
     

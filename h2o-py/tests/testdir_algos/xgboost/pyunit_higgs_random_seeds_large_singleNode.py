@@ -1,10 +1,11 @@
 import pandas as pd
-import sys
-sys.path.insert(1,"../../../")
+import xgboost as xgb
 import random
 
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
+#import matplotlib.pyplot as plt
+#from xgboost import plot_tree
 
 
 '''
@@ -14,10 +15,6 @@ when run with the same random seeds.
 The same comparison is done to native XGBoost to make sure its results are repeatable with the same random seeds.
 '''
 def random_seeds_test():
-    if sys.version.startswith("2"):
-        print("native XGBoost tests only supported on python3")
-        return
-    import xgboost as xgb
     assert H2OXGBoostEstimator.available() is True
     ret = h2o.cluster()
     if len(ret.nodes) == 1:
@@ -75,8 +72,8 @@ def random_seeds_test():
             assert True
 
         # train multiple native XGBoost
-        nativeTrain = genDMatrix(higgs_h2o_train, myX, y, xgb)
-        nativeTest = genDMatrix(higgs_h2o_test, myX, y, xgb)
+        nativeTrain = genDMatrix(higgs_h2o_train, myX, y)
+        nativeTest = genDMatrix(higgs_h2o_test, myX, y)
         h2o.remove_all()
         nativeParam = {'eta': h2oParams["learn_rate"], 'objective': 'binary:logistic', 'booster': 'gbtree',
                        'max_depth': h2oParams["max_depth"], 'seed': h2oParams["seed"],
@@ -115,7 +112,7 @@ def random_seeds_test():
     else:
         print("********  Test skipped.  This test cannot be performed in multinode environment.")
 
-def genDMatrix(h2oFrame, xlist, yresp, xgb):
+def genDMatrix(h2oFrame, xlist, yresp):
     pandaFtrain = h2oFrame.as_data_frame(use_pandas=True, header=True)
     # need to change column 0 to categorical
     c0 = pd.get_dummies(pandaFtrain[yresp], prefix=yresp, drop_first=True)

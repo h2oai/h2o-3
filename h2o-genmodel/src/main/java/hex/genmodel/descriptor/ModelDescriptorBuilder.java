@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 
 import java.util.Arrays;
+import java.util.Map;
 
 public class ModelDescriptorBuilder {
     // Mandatory
@@ -21,13 +22,12 @@ public class ModelDescriptorBuilder {
     private final String[][] _domains;
     private final String[] _names;
     private final String _algoName;
-    private final String _fullAlgoName;
 
   /**
      * 
      * @param mojoModel A MojoModel to extract the model description from
      */
-    public ModelDescriptorBuilder(final MojoModel mojoModel, final String algorithmName, final String fullAlgorithmName) {
+    public ModelDescriptorBuilder(final MojoModel mojoModel) {
         _category = mojoModel._category;
         _uuid = mojoModel._uuid;
         _supervised = mojoModel.isSupervised();
@@ -41,8 +41,7 @@ public class ModelDescriptorBuilder {
         _offsetColumn = mojoModel._offsetColumn;
         _domains = mojoModel._domains;
         _names = mojoModel._names;
-        _algoName = algorithmName;
-        _fullAlgoName = fullAlgorithmName;
+        _algoName = mojoModel.getClass().getName();
     }
 
     /**
@@ -70,7 +69,7 @@ public class ModelDescriptorBuilder {
 
             @Override
             public String algoFullName() {
-                return _fullAlgoName;
+                return _algoName;
             }
 
             @Override

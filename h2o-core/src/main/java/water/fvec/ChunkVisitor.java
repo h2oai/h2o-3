@@ -49,7 +49,7 @@ public abstract class ChunkVisitor {
    */
   public static final class NewChunkVisitor extends ChunkVisitor {
     final NewChunk _nc;
-    public NewChunkVisitor(NewChunk nc){_nc = nc;}
+    NewChunkVisitor(NewChunk nc){_nc = nc;}
     @Override
     public boolean expandedVals(){return true;}
     @Override

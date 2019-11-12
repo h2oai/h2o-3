@@ -11,13 +11,13 @@ import java.util.Objects;
  * A graph contains subgraphs (trees).
  */
 public class SharedTreeGraph {
-
-  public final ArrayList<SharedTreeSubgraph> subgraphArray = new ArrayList<>();
+  public ArrayList<SharedTreeSubgraph> subgraphArray = new ArrayList<>();
 
   /**
    * Make a new forest.
    */
   public SharedTreeGraph() {
+    subgraphArray = new ArrayList<>();
   }
 
   /**
@@ -89,6 +89,7 @@ public class SharedTreeGraph {
 
   @Override
   public int hashCode() {
+
     return Objects.hash(subgraphArray);
   }
 

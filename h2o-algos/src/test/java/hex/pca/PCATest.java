@@ -2,14 +2,11 @@ package hex.pca;
 
 import hex.DataInfo;
 import hex.SplitFrame;
-import hex.generic.Generic;
-import hex.generic.GenericModel;
-import hex.genmodel.MojoPipelineBuilder;
-import hex.kmeans.KMeans;
-import hex.kmeans.KMeansModel;
 import hex.pca.PCAModel.PCAParameters;
-import org.junit.*;
-import org.junit.rules.TemporaryFolder;
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
@@ -22,21 +19,11 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
-import hex.CreateFrame;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.util.Random;
 
 import java.util.concurrent.ExecutionException;
 
 @RunWith(Parameterized.class)
 public class PCATest extends TestUtil {
-  
-  @Rule
-  public TemporaryFolder tmp = new TemporaryFolder();
-  
   public static final double TOLERANCE = 1e-6;
   private PCAParameters pcaParameters;
 
@@ -91,36 +78,6 @@ public class PCATest extends TestUtil {
       if (model != null) model.delete();
     }
   }
-
-  @Test public void testPCAwithNoK() throws InterruptedException, ExecutionException {
-    // Results with original training frame
-    Scope.enter();
-    PCAModel modelNok = null;
-    PCAModel modelK = null;
-    Frame train = null, score = null, scoreK = null;
-    try {
-      train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
-      Scope.track(train);
-      pcaParameters._train = train._key;
-      pcaParameters._transform = DataInfo.TransformType.NONE;
-      pcaParameters._pca_method = PCAParameters.Method.GramSVD;
-      pcaParameters._seed = 12345;
-      modelNok = new PCA(pcaParameters).trainModel().get();
-      Scope.track_generic(modelNok);
-      score = modelNok.score(train);
-      Scope.track(score);
-      
-      pcaParameters._k=1;
-      modelK = new PCA(pcaParameters).trainModel().get();
-      Scope.track_generic(modelK);
-      scoreK = modelK.score(train);
-      Scope.track(scoreK);
-      isBitIdentical(score, scoreK);
-    } finally {
-      Scope.exit();
-    }
-  }
-
 
   @Test public void testIrisSplitScoring() throws InterruptedException, ExecutionException {
     PCAModel model = null;
@@ -378,134 +335,4 @@ public class PCATest extends TestUtil {
     Assert.assertArrayEquals(xgram, xgram_glrm);
     Assert.assertArrayEquals(xtgram, xtgram_glrm);
   }
-  
-  @Test
-  public void testPCAPredMojoPojo() {
-    Scope.enter();
-    try {
-      CreateFrame cf = new CreateFrame();
-      Random generator = new Random();
-      int numRows = 8000;
-      int numCols = 8;
-      cf.rows= numRows;
-      cf.cols = numCols;
-      cf.factors=8;
-      cf.has_response=false;
-      cf.seed = 12345;
-      cf.missing_fraction = 0; // frames with NAs will be tested in Python/R unit tests
-      System.out.println("Createframe parameters: rows: "+numRows+" cols:"+numCols+" seed: "+cf.seed);
-
-      Frame trainPCA = Scope.track(cf.execImpl().get());
-      SplitFrame sf = new SplitFrame(trainPCA, new double[]{0.8,0.2}, new Key[] {Key.make("train.hex"), Key.make("test.hex")});
-      sf.exec().get();
-      Key[] ksplits = sf._destination_frames;
-      Frame tr = DKV.get(ksplits[0]).get();
-      Frame te = DKV.get(ksplits[1]).get();
-      Scope.track(tr);
-      Scope.track(te);
-
-      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
-      parms._train=tr._key;
-      parms._k = 4;
-      parms._max_iterations = 1000;
-      parms._pca_method = PCAParameters.Method.GramSVD; // will iterate through all methods in python or R unit tests
-
-      PCAModel model = new PCA(parms).trainModel().get();
-      Scope.track_generic(model);
-      
-      Frame pred = model.score(te);
-      Scope.track(pred);
-      Assert.assertTrue(model.testJavaScoring(te, pred, 1e-6)); // compare Java predict with mojo/pojo here
-      
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void testPCAPredMojoPojoNumericsOnly() {
-    Scope.enter();
-    try {
-      Frame trainPCA = generate_real_only(8, 8000, 0.0, 12345);
-      SplitFrame sf = new SplitFrame(trainPCA, new double[]{0.8,0.2}, new Key[] {Key.make("train.hex"), Key.make("test.hex")});
-      sf.exec().get();
-      Key[] ksplits = sf._destination_frames;
-      Frame tr = DKV.get(ksplits[0]).get();
-      Frame te = DKV.get(ksplits[1]).get();
-      Scope.track(tr);
-      Scope.track(te);
-      Scope.track(trainPCA);
-
-      PCAModel.PCAParameters parms = new PCAModel.PCAParameters();
-      parms._train=tr._key;
-      parms._k = 4;
-      parms._max_iterations = 1000;
-      parms._pca_method = PCAParameters.Method.GramSVD; // will iterate through all methods in python or R unit tests
-
-      PCAModel model = new PCA(parms).trainModel().get();
-      Scope.track_generic(model);
-
-      Frame pred = model.score(te);
-      Scope.track(pred);
-      Assert.assertTrue(model.testJavaScoring(te, pred, 1e-6)); // compare Java predict with mojo/pojo here
-
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
-  public void testPCAPipeline() throws IOException {
-    try {
-      Scope.enter();
-      Frame train = parse_test_file(Key.make("arrests.hex"), "smalldata/pca_test/USArrests.csv");
-      Scope.track(train);
-
-      pcaParameters._train = train._key;
-      pcaParameters._k = 4;
-      pcaParameters._transform = DataInfo.TransformType.NONE;
-      pcaParameters._pca_method = PCAParameters.Method.GramSVD;
-
-      PCAModel pca = new PCA(pcaParameters).trainModel().get();
-      Scope.track_generic(pca);
-
-      Frame reduced = pca.score(train);
-      Scope.track(reduced);
-
-      KMeansModel.KMeansParameters kmeansParameters = new KMeansModel.KMeansParameters();
-      kmeansParameters._train = reduced._key;
-      kmeansParameters._k = 2;
-
-      KMeansModel kmeans = new KMeans(kmeansParameters).trainModel().get();
-      Scope.track_generic(kmeans);
-
-      Frame clusters = kmeans.score(reduced);
-      Scope.track(clusters);
-
-      URI pcaMojoUri = pca.exportMojo(tmp.newFolder("pca").getAbsolutePath() + "/pca.zip", false);
-      URI kmeansMojoUri = kmeans.exportMojo(tmp.newFolder("kmeans").getAbsolutePath() + "/kmeans.zip", false);
-      File pipelineFile = tmp.newFile("pipeline.zip");
-
-      new MojoPipelineBuilder()
-              .addModel("pca", new File(pcaMojoUri))
-              .addMapping("PC1", "pca", 0)
-              .addMapping("PC2", "pca", 1)
-              .addMapping("PC3", "pca", 2)
-              .addMapping("PC4", "pca", 3)
-              .addMainModel("kmeans", new File(kmeansMojoUri))
-              .buildPipeline(pipelineFile);
-
-      GenericModel pipelineModel = Generic.importMojoModel(pipelineFile.getAbsolutePath(), true);
-      Scope.track_generic(pipelineModel);
-      
-      Frame pipelinePreds = pipelineModel.score(train, null, null, false);
-      Scope.track(pipelinePreds);
-
-      assertVecEquals(clusters.vec(0), pipelinePreds.vec(0), 0);
-    } finally {
-      Scope.exit();
-    }
-  }
-
-
 }

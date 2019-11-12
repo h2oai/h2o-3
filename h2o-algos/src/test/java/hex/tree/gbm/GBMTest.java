@@ -115,39 +115,6 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void testOneHotExplicitWithPOJO() {
-    try {
-      Scope.enter();
-      final String response = "CAPSULE";
-      Frame fr = parse_test_file("./smalldata/logreg/prostate.csv")
-              .toCategoricalCol("RACE")
-              .toCategoricalCol(response);
-      fr.remove("ID").remove();
-      Scope.track(fr);
-      DKV.put(fr);
-
-      GBMModel.GBMParameters parms = makeGBMParameters();
-      parms._train = fr._key;
-      parms._response_column = response;
-      parms._ntrees = 5;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
-
-      GBM job = new GBM(parms);
-      GBMModel gbm = job.trainModel().get();
-      Scope.track_generic(gbm);
-
-      // Done building model; produce a score column with predictions
-      Frame scored = Scope.track(gbm.score(fr));
-
-      // Build a POJO & MOJO, validate same results
-      Assert.assertTrue(gbm.testJavaScoring(fr, scored,1e-15));
-
-    } finally {
-      Scope.exit();
-    }
-
-  }
-  
   @Test public void testBasicGBM() {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",

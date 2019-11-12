@@ -264,11 +264,6 @@ class MultinomialDistribution extends Distribution {
         double absz = Math.abs(z);
         return w * (absz * (1 - absz));
     }
-
-    @Override
-    public double negHalfGradient(double y, double f, int l) {
-        return ((int) y == l ? 1f : 0f) - f;
-    }
 }
 
 class PoissonDistribution extends Distribution {
@@ -464,9 +459,6 @@ class CustomDistribution extends Distribution {
 
     @Override
     public double negHalfGradient(double y, double f) { return _wrapper.getFunc().gradient(y, f); }
-
-    @Override
-    public double negHalfGradient(double y, double f, int l) { return _wrapper.getFunc().gradient(y, f, l); }
 
     @Override
     public double initFNum(double w, double o, double y) {

@@ -40,15 +40,6 @@ def get_partitioned_model_names(leaderboard):
     return model_names, non_se_model_names, se_model_names
 
 
-def test_invalid_project_name():
-    print("Check constructor raises error if project name is invalid")
-    try:
-        H2OAutoML(project_name="1nvalid")
-    except Exception as e:
-        assert "H2OAutoML" in str(e)
-        assert "1nvalid" in str(e)
-
-
 def test_early_stopping_args():
     print("Check arguments to H2OAutoML class")
     ds = import_dataset()
@@ -137,6 +128,45 @@ def test_no_x_y_as_idx_train_and_validation_and_test_sets():
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
     print(aml.leaderboard)
+
+
+def test_exclude_algos():
+    print("AutoML doesn't train models for algos listed in exclude_algos")
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_exclude_algos",
+                    exclude_algos=['DRF', 'GLM'],
+                    max_models=max_models,
+                    seed=1)
+    aml.train(y=ds['target'], training_frame=ds['train'], validation_frame=ds['valid'])
+    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    assert not any(['DRF' in name or 'GLM' in name for name in non_se])
+    assert len(se) == 2
+
+
+def test_include_algos():
+    print("AutoML trains only models for algos listed in include_algos")
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_include_algos",
+                    include_algos=['GBM'],
+                    max_models=max_models,
+                    seed=1)
+    aml.train(y=ds['target'], training_frame=ds['train'], validation_frame=ds['valid'])
+    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    assert all(['GBM' in name for name in non_se])
+    assert len(se) == 0, "No StackedEnsemble should have been trained if not explicitly included to the existing include_algos"
+
+
+def test_include_exclude_algos():
+    print("include_algos and exclude_algos parameters are mutually exclusive")
+    try:
+        H2OAutoML(project_name="py_include_exclude_algos",
+                  exclude_algos=['DRF', 'XGBoost'],
+                  include_algos=['GBM'],
+                  max_models=max_models,
+                  seed=1)
+        assert False, "Should have thrown AssertionError"
+    except AssertionError as e:
+        assert "Use either include_algos or exclude_algos" in str(e)
 
 
 def test_predict_on_train_set():
@@ -302,13 +332,15 @@ def test_frames_cannot_be_passed_as_key():
     # Add a test that checks fold_column like in runit
 
 pyunit_utils.run_tests([
-    test_invalid_project_name,
     test_early_stopping_args,
     test_no_x_train_set_only,
     test_no_x_train_and_validation_sets,
     test_no_x_train_and_test_sets,
     test_no_x_train_and_validation_and_test_sets,
     test_no_x_y_as_idx_train_and_validation_and_test_sets,
+    test_exclude_algos,
+    test_include_algos,
+    test_include_exclude_algos,
     test_predict_on_train_set,
     test_nfolds_param,
     test_nfolds_eq_0,

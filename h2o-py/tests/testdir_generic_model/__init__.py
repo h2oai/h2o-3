@@ -1,1 +1,1 @@
-from .common import compare_output, Capturing, compare_params
+from .common import compare_output, Capturing

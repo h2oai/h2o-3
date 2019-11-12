@@ -4,17 +4,12 @@ import hex.*;
 import water.*;
 import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
-import water.persist.Persist;
 import water.util.*;
 import water.util.PojoUtils.FieldNaming;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.lang.reflect.Array;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Objects;
 
 /**
  * A Grid of Models representing result of hyper-parameter space exploration.
@@ -287,10 +282,10 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @param params model parameters which caused model builder failure
    * @params e  exception causing a failure
    */
-  void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Throwable t) {
+  void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Exception e) {
     assert params != null : "Model parameters should be always != null !";
     String[] rawParams = ArrayUtils.toString(getHyperValues(params));
-      appendFailedModelParameters(modelKey, params, rawParams, t.getMessage(), StringUtils.toString(t));
+      appendFailedModelParameters(modelKey, params, rawParams, e.getMessage(), StringUtils.toString(e));
   }
 
   /**
@@ -414,17 +409,6 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
     return super.writeAll_impl(ab);
   }
 
-  /**
-   * By default, the method writeAll_impl saves all the Grid models as well into the binary file. For some use-cases,
-   * this is undesired (Grid checkpointing).
-   *
-   * @param autoBuffer AutoBuffer to serialize this instance of {@link Grid} to
-   * @return Reference to the instance of {@link AutoBuffer} given as a method argument.
-   */
-  protected AutoBuffer writeWithoutModels(final AutoBuffer autoBuffer){
-    return super.writeAll_impl(autoBuffer.put(this));
-  }
-
   @Override
   protected Keyed readAll_impl(AutoBuffer ab, Futures fs) {
     throw H2O.unimpl();
@@ -490,41 +474,5 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
 
     ScoringInfo scoring_info = _scoring_infos != null && _scoring_infos.length > 0 ? _scoring_infos[0] : null;
     return ScoringInfo.createScoringHistoryTable(_scoring_infos, (scoring_info != null ? scoring_info.validation : false), (scoring_info != null ? scoring_info.cross_validation: false), m._output.getModelCategory(), (scoring_info != null ? scoring_info.is_autoencoder : false));
-  }
-
-  /**
-   * Exports this Grid in a binary format using {@link AutoBuffer}. Related models are not saved.
-   *
-   * @param gridExportDir Full path to the folder this {@link Grid} should be saved to
-   * @throws IOException Error serializing the grid.
-   */
-  public void exportBinary(final String gridExportDir) throws IOException {
-    Objects.requireNonNull(gridExportDir);
-    final String gridFilePath = gridExportDir + "/" + _key.toString();
-    assert _key != null;
-    final URI gridUri = FileUtils.getURI(gridFilePath);
-    final Persist persist = H2O.getPM().getPersistForURI(gridUri);
-    try (final OutputStream outputStream = persist.create(gridUri.toString(), true)) {
-      final AutoBuffer autoBuffer = new AutoBuffer(outputStream, true);
-      writeWithoutModels(autoBuffer);
-      autoBuffer.close();
-    }
-  }
-
-  /**
-   * Saves all of the models present in this Grid. Models are named by their keys.
-   *
-   * @param exportDir Directory to export all the models to.
-   * @throws IOException Error exporting the models
-   */
-  public void exportModelsBinary(final String exportDir) throws IOException {
-    Objects.requireNonNull(exportDir);
-    for (Model model : getModels()) {
-      model.exportBinaryModel(exportDir + "/" + model._key.toString(), true);
-    }
-  }
-
-  public MP getParams() {
-    return _params;
   }
 }

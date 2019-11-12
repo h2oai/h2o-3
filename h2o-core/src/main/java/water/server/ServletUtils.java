@@ -30,8 +30,6 @@ public class ServletUtils {
    */
   private static final boolean DISABLE_CORS = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "disable.cors");
 
-  private static final String TRACE_METHOD = "TRACE";
-
   private static final ThreadLocal<Long> _startMillis = new ThreadLocal<>();
   private static final ThreadLocal<Integer> _status = new ThreadLocal<>();
   private static final ThreadLocal<String> _userAgent = new ThreadLocal<>();
@@ -174,10 +172,6 @@ public class ServletUtils {
     return "XMLHttpRequest".equals(requestedWithHeader);
   }
 
-  public static boolean isTraceRequest(final HttpServletRequest request) {
-    return TRACE_METHOD.equalsIgnoreCase(request.getMethod());
-  }
-  
   public static void setCommonResponseHttpHeaders(HttpServletResponse response, final boolean xhrRequest) {
     if (xhrRequest) {
       response.setHeader("Cache-Control", "no-cache");
@@ -191,6 +185,7 @@ public class ServletUtils {
     response.setHeader("X-h2o-rest-api-version-max", Integer.toString(water.api.RequestServer.H2O_REST_API_VERSION));
     response.setHeader("X-h2o-cluster-id", Long.toString(H2O.CLUSTER_ID));
     response.setHeader("X-h2o-cluster-good", Boolean.toString(H2O.CLOUD.healthy()));
+    response.setHeader("X-h2o-context-path", sanatizeContextPath(H2O.ARGS.context_path));
     // Security headers
     response.setHeader("X-Frame-Options", "deny");
     response.setHeader("X-XSS-Protection", "1; mode=block");
@@ -203,7 +198,14 @@ public class ServletUtils {
       response.addHeader(header._key, header._value);
     }
   }
-  
+
+  public static String sanatizeContextPath(String context_path) {
+    if(null == context_path || context_path.isEmpty()) {
+      return "/";
+    }
+    return context_path + "/";
+  }
+
   @SuppressWarnings("unused")
   public static void logRequest(String method, HttpServletRequest request, HttpServletResponse response) {
     Log.httpd(method, request.getRequestURI(), getStatus(), System.currentTimeMillis() - getStartMillis());

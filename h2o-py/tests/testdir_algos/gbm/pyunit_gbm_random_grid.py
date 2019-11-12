@@ -37,6 +37,25 @@ def airline_gbm_random_grid():
     print(air_grid.get_grid("logloss"))
 
 
+
+    stacker = H2OStackedEnsembleEstimator(base_models=air_grid.model_ids)
+    print("created H2OStackedEnsembleEstimator")
+    stacker.train(model_id="my_ensemble", y="IsDepDelayed", training_frame=air_hex)
+    print("trained H2OStackedEnsembleEstimator")
+    predictions = stacker.predict(air_hex)  # training data
+    print("predictions for ensemble are in: " + predictions.frame_id)
+
+    # Check that the model can be retrieved
+    assert stacker.model_id == "my_ensemble"
+    modelcopy = h2o.get_model(stacker.model_id)
+    assert modelcopy is not None
+    assert modelcopy.model_id == "my_ensemble"
+
+    # golden test for ensemble predictions:
+    assert round(predictions[0, "YES"], 4) == 0.4327, "Expected prediction for row: {0} to be: {1}; got: {2} instead.".format(0, 0.4327, round(predictions[0, "YES"], 4))
+    assert round(predictions[1, "YES"], 4) == 0.5214, "Expected prediction for row: {0} to be: {1}; got: {2} instead.".format(1, 0.5214, round(predictions[1, "YES"], 4))
+    assert round(predictions[2, "YES"], 4) == 0.4666, "Expected prediction for row: {0} to be: {1}; got: {2} instead.".format(2, 0.4666, round(predictions[2, "YES"], 4))
+
     air_grid = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters, search_criteria=search_crit)
     air_grid.train(x=myX, y="IsDepDelayed", training_frame=air_hex, distribution="bernoulli")
     assert(len(air_grid.get_grid())==5)

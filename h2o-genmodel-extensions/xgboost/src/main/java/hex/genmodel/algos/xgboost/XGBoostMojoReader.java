@@ -1,9 +1,6 @@
 package hex.genmodel.algos.xgboost;
 
-import com.google.gson.JsonObject;
 import hex.genmodel.ModelMojoReader;
-import hex.genmodel.attributes.ModelJsonReader;
-import hex.genmodel.attributes.SharedTreeModelAttributes;
 
 import java.io.IOException;
 
@@ -63,16 +60,6 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
 
   @Override public String mojoVersion() {
     return "1.00";
-  }
-
-  @Override
-  protected XGBoostModelAttributes readModelSpecificAttributes() {
-    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
-    if(modelJson != null) {
-      return new XGBoostModelAttributes(modelJson, _model);
-    } else {
-      return null;
-    }
   }
 
 }

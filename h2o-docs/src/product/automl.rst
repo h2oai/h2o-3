@@ -355,10 +355,10 @@ When using Python or R clients, you can also access meta information with the fo
 
 
 Experimental Features
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 XGBoost
-~~~~~~~
+'''''''
 
 AutoML now includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
 
@@ -368,7 +368,7 @@ AutoML now includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boost
 
 
 FAQ
----
+~~~
 
 -  **Which models are trained in the AutoML process?**
 
@@ -386,17 +386,9 @@ FAQ
 
   XGBoost is turned off by default for multi-node H2O clusters.
 
--   **Can we make use of GPUs with AutoML?** 
-
-  XGBoost models in AutoML can make use of GPUs. Keep in mind that the following requirements must be met:
-
-  - NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
-  - CUDA 8
-
-  You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
 
 Resources
----------
+~~~~~~~~~
 
 - `AutoML Tutorial <https://github.com/h2oai/h2o-tutorials/tree/master/h2o-world-2017/automl>`__ (R and Python notebooks)
 - Intro to AutoML + Hands-on Lab `(1 hour video) <https://www.youtube.com/watch?v=42Oo8TOl85I>`__ `(slides) <https://www.slideshare.net/0xdata/intro-to-automl-handson-lab-erin-ledell-machine-learning-scientist-h2oai>`__
@@ -404,8 +396,8 @@ Resources
 - `AutoML Roadmap <https://0xdata.atlassian.net/issues/?filter=21603>`__
 
 
-Random Grid Search Parameters
------------------------------
+Appendix: Random Grid Search Parameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.  Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
 
@@ -455,6 +447,7 @@ AutoML performs hyperparameter search over a variety of H2O algorithms in order 
 
 
 Additional Information
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
-AutoML development is tracked `here <https://0xdata.atlassian.net/issues/?filter=20700>`__. This page lists all open or in-progress AutoML JIRA tickets.
+- AutoML development is tracked `here <https://0xdata.atlassian.net/issues/?filter=20700>`__. This page lists all open or in-progress AutoML JIRA tickets.
+- AutoML is currently in experimental mode ("V99" in the REST API).  This means that, although unlikely, the API (REST, R, Python or otherwise) may be subject to breaking changes.

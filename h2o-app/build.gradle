@@ -9,7 +9,6 @@ dependencies {
   compile project(":h2o-algos")
   compile project(":h2o-automl")
   compile project(":h2o-ext-krbstandalone")
-  compile project(":h2o-ext-target-encoder")
   runtime project(":${defaultWebserverModule}")
   if (project.hasProperty("doIncludeMojoPipeline") && project.doIncludeMojoPipeline == "true") {
     compile project(":h2o-ext-mojo-pipeline")

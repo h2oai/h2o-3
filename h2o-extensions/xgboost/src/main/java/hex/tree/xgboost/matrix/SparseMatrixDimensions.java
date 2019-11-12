@@ -33,7 +33,7 @@ public final class SparseMatrixDimensions {
             precedingNonZeroCount += nonZeroElementsCounts[i];
         }
 
-        _nonZeroElementsCount = ArrayUtils.suml(nonZeroElementsCounts);
+        _nonZeroElementsCount = ArrayUtils.sum(nonZeroElementsCounts);
         _rowHeadersCount = ArrayUtils.sum(rowIndicesCounts) + 1;
     }
 }

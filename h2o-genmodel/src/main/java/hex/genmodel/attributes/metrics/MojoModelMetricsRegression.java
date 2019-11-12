@@ -1,7 +1,5 @@
 package hex.genmodel.attributes.metrics;
 
-import hex.genmodel.attributes.SerializedName;
-
 public class MojoModelMetricsRegression extends MojoModelMetricsSupervised {
   public double _mean_residual_deviance;
   @SerializedName("rmsle")

@@ -20,7 +20,7 @@ from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from ..model.autoencoder import H2OAutoEncoderModel
 from ..model.binomial import H2OBinomialModel
 from ..model.clustering import H2OClusteringModel
-from ..model.dim_reduction import H2ODimReductionModel, H2OTargetEncoderMetrics
+from ..model.dim_reduction import H2ODimReductionModel
 from ..model.metrics_base import (H2OBinomialModelMetrics, H2OClusteringModelMetrics, H2ORegressionModelMetrics,
                                   H2OMultinomialModelMetrics, H2OAutoEncoderModelMetrics, H2ODimReductionModelMetrics,
                                   H2OWordEmbeddingModelMetrics, H2OOrdinalModelMetrics, H2OAnomalyDetectionModelMetrics,
@@ -139,8 +139,6 @@ class H2OEstimator(ModelBase):
         if verbose and algo not in ["drf", "gbm", "deeplearning", "xgboost"]:
             raise H2OValueError("Verbose should only be set to True for drf, gbm, deeplearning, and xgboost models")
         parms = self._parms.copy()
-        if algo=="pca" and "k" not in parms.keys():
-            parms["k"] = 1
         if "__class__" in parms:  # FIXME: hackt for PY3
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
@@ -245,9 +243,9 @@ class H2OEstimator(ModelBase):
         # internal hook allowing subclasses to extend train parms 
         if extend_parms_fn is not None:
             extend_parms_fn(parms)
-
+            
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
-        if "r2" in (parms.get('stopping_metric') or []):
+        if ("stopping_metric" in parms.keys()) and ("r2" in parms["stopping_metric"]):
             raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
         rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
 
@@ -354,7 +352,6 @@ class H2OEstimator(ModelBase):
 
 
     #------ Scikit-learn Interface Methods -------
-
     def fit(self, X, y=None, **params):
         """
         Fit an H2O model as part of a scikit-learn pipeline or grid search.
@@ -394,8 +391,7 @@ class H2OEstimator(ModelBase):
         :returns: A dict of parameters
         """
         out = dict()
-        for key, value in self._parms.items():
-            if key.startswith('_'): continue  # skip internal params
+        for key, value in self.parms.items():
             if deep and isinstance(value, H2OEstimator):
                 deep_items = list(value.get_params().items())
                 out.update((key + "__" + k, val) for k, val in deep_items)
@@ -465,15 +461,12 @@ class H2OEstimator(ModelBase):
         elif model_type == "CoxPH":
             metrics_class = H2OCoxPHModelMetrics
             model_class = H2OCoxPHModel
-        elif model_type == "TargetEncoder":
-            metrics_class = H2OTargetEncoderMetrics
-            model_class = h2o.estimators.H2OTargetEncoderEstimator
         else:
             raise NotImplementedError(model_type)
         return [metrics_class, model_class]
 
     def convert_H2OXGBoostParams_2_XGBoostParams(self):
-        """
+        '''
         In order to use convert_H2OXGBoostParams_2_XGBoostParams and convert_H2OFrame_2_DMatrix, you must import
         the following toolboxes: xgboost, pandas, numpy and scipy.sparse.
 
@@ -483,29 +476,25 @@ class H2OEstimator(ModelBase):
 
         Follow the steps below to compare H2OXGBoost and native XGBoost:
 
-         1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
+        1. Train the H2OXGBoost model with H2OFrame trainFile and generate a prediction:
+        h2oModelD = H2OXGBoostEstimator(**h2oParamsD) # parameters specified as a dict()
+        h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
+        h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
 
-          - h2oModelD = H2OXGBoostEstimator(\*\*h2oParamsD) # parameters specified as a dict()
-          - h2oModelD.train(x=myX, y=y, training_frame=trainFile) # train with H2OFrame trainFile
-          - h2oPredict = h2oPredictD = h2oModelD.predict(trainFile)
+        2. Derive the DMatrix from H2OFrame:
+        nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
 
-         2. Derive the DMatrix from H2OFrame:
-         
-          - nativeDMatrix = trainFile.convert_H2OFrame_2_DMatrix(myX, y, h2oModelD)
+        3. Derive the parameters for native XGBoost:
+        nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
 
-         3. Derive the parameters for native XGBoost:
-         
-          - nativeParams = h2oModelD.convert_H2OXGBoostParams_2_XGBoostParams()
+        4. Train your native XGBoost model and generate a prediction:
+        nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
+        nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1].
 
-         4. Train your native XGBoost model and generate a prediction:
-         
-          - nativeModel = xgb.train(params=nativeParams[0], dtrain=nativeDMatrix, num_boost_round=nativeParams[1])
-          - nativePredict = nativeModel.predict(data=nativeDMatrix, ntree_limit=nativeParams[1]
-
-         5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native XGBoost.
+        5. Compare the predictions h2oPredict from H2OXGBoost, nativePredict from native XGBoost.
 
         :return: nativeParams, num_boost_round
-        """
+        '''
         import xgboost as xgb
 
         nativeParams = self._model_json["output"]["native_parameters"]

@@ -7,7 +7,11 @@ import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
 import water.util.Log;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -22,15 +26,8 @@ import java.util.Properties;
  */
 public class h2omapper extends Mapper<Text, Text, Text, Text> {
 
-  public static final String H2O_CLOUDING_IMPL = "h2o.clouding.impl"; 
-
-  // for network-based clouding
   public static final String H2O_DRIVER_IP_KEY = "h2o.driver.ip";
   public static final String H2O_DRIVER_PORT_KEY = "h2o.driver.port";
-
-  // for filesystem-based clouding
-  public static final String H2O_CLOUDING_DIR_KEY = "h2o.clouding.dir";
-  public static final String H2O_CLOUD_SIZE_KEY = "h2o.clouding.cloud.size";
 
   public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
   public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
@@ -154,10 +151,14 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     // It is important to write to a directory that is in the container otherwise eg. logs can be overwriting each other
     String ice_root = System.getProperty("java.io.tmpdir");
 
+    String driverIp = conf.get(H2O_DRIVER_IP_KEY);
+    String driverPortString = conf.get(H2O_DRIVER_PORT_KEY);
+    int driverPort = Integer.parseInt(driverPortString);
+
     ServerSocket ss = new ServerSocket();
     InetSocketAddress sa = new InetSocketAddress("127.0.0.1", 0);
     ss.bind(sa);
-    final int localPort = ss.getLocalPort();
+    int localPort = ss.getLocalPort();
 
     List<String> argsList = new ArrayList<String>();
 
@@ -203,11 +204,11 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     DelegationTokenRefresher.setup(conf, ice_root);
     String[] args = argsList.toArray(new String[0]);
     try {
-      String cloudingImpl = conf.get(H2O_CLOUDING_IMPL);
-      AbstractClouding config = (AbstractClouding) Class.forName(cloudingImpl).newInstance();
-      config.setMapperCallbackPort(localPort);
-      config.init(conf);
-      H2O.setEmbeddedH2OConfig(config);
+      EmbeddedH2OConfig _embeddedH2OConfig = new EmbeddedH2OConfig();
+      _embeddedH2OConfig.setDriverCallbackIp(driverIp);
+      _embeddedH2OConfig.setDriverCallbackPort(driverPort);
+      _embeddedH2OConfig.setMapperCallbackPort(localPort);
+      H2O.setEmbeddedH2OConfig(_embeddedH2OConfig);
       Log.POST(11, "After setEmbeddedH2OConfig");
       //-------------------------------------------------------------
       repairNullArgsAndWarnIfNecessary(args);
@@ -222,7 +223,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     }
 
     Log.POST(14, "Waiting for exit");
-    // NetworkBasedClouding will send a one-byte exit status to this socket.
+    // EmbeddedH2OConfig will send a one-byte exit status to this socket.
     Socket sock = ss.accept();
     System.out.println("Wait for exit woke up from accept");
     byte[] b = new byte[1];
@@ -321,38 +322,4 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       e.printStackTrace();
     }
   }
-
-  static void exit(int callbackPort, int status) {
-    Socket s = null;
-    try {
-      Thread.sleep(1000);
-      // Wait one second to deliver the message before exiting.
-      s = new Socket("127.0.0.1", callbackPort);
-      byte[] b = new byte[] { (byte) status };
-      OutputStream os = s.getOutputStream();
-      os.write(b);
-      os.flush();
-      s.close();
-      s = null;
-      System.out.println("NetworkBasedClouding: after write to mapperCallbackPort");
-
-      Thread.sleep(60 * 1000);
-      // Should never make it this far!
-    } catch (Exception e) {
-      System.out.println("NetworkBasedClouding: exit caught an exception 2");
-      e.printStackTrace();
-    } finally {
-      if (s != null) {
-        try {
-          s.close();
-        } catch (IOException e) {
-          // ignore
-        }
-      }
-    }
-
-    System.exit(111);
-
-  }
-
 }

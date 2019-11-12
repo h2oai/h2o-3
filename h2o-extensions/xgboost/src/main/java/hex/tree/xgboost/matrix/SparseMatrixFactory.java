@@ -60,15 +60,15 @@ public class SparseMatrixFactory {
         return trainMat;
     }
     
-    static class NestedArrayPointer {
+    private static class NestedArrayPointer {
         int _row, _col;
 
         public NestedArrayPointer() {
         }
 
         public NestedArrayPointer(long pos) {
-            this._row = (int) (pos / SparseMatrix.MAX_DIM);
-            this._col = (int) (pos % SparseMatrix.MAX_DIM);
+            this._row = (int) pos / SparseMatrix.MAX_DIM;
+            this._col = (int) pos % SparseMatrix.MAX_DIM;
         }
 
         void increment() {

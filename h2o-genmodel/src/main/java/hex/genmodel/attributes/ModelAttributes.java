@@ -1,18 +1,13 @@
 package hex.genmodel.attributes;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
 import hex.genmodel.algos.glm.GlmMultinomialMojoModel;
 import hex.genmodel.algos.glm.GlmOrdinalMojoModel;
 import hex.genmodel.attributes.metrics.*;
-import hex.genmodel.attributes.parameters.ModelParameter;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 /**
  * Attributes of a MOJO model extracted from the MOJO itself.
@@ -25,7 +20,6 @@ public class ModelAttributes implements Serializable {
   private final MojoModelMetrics _validation_metrics;
   private final MojoModelMetrics _cross_validation_metrics;
   private final Table _cross_validation_metrics_summary;
-  private final ModelParameter[] _model_parameters;
 
   public ModelAttributes(MojoModel model, final JsonObject modelJson) {
     _modelSummary = ModelJsonReader.readTable(modelJson, "output.model_summary");
@@ -49,23 +43,6 @@ public class ModelAttributes implements Serializable {
     } else {
       _cross_validation_metrics = null;
       _cross_validation_metrics_summary = null;
-    }
-
-    if (ModelJsonReader.elementExists(modelJson, "parameters")) {
-      final JsonArray jsonParameters = ModelJsonReader.findInJson(modelJson, "parameters").getAsJsonArray();
-      final ArrayList<ModelParameter> modelParameters = new ArrayList<>(jsonParameters.size());
-      for (int i = 0; i < jsonParameters.size(); i++) {
-        modelParameters.add(new ModelParameter());
-      }
-      ModelJsonReader.fillObjects(modelParameters, jsonParameters);
-      for (int i = 0; i < modelParameters.size(); i++) {
-        if("model_id".equals(modelParameters.get(i).getName())){
-          modelParameters.remove(i);
-        }
-      }
-      _model_parameters = modelParameters.toArray(new ModelParameter[modelParameters.size()]);
-    } else {
-      _model_parameters = new ModelParameter[0];
     }
   }
 
@@ -145,13 +122,5 @@ public class ModelAttributes implements Serializable {
    */
   public Table getCrossValidationMetricsSummary() {
     return _cross_validation_metrics_summary;
-  }
-
-  /**
-   * @return A {@link Collection} of {@link ModelParameter}. If there are no parameters, returns an empty collection.
-   * Never null.
-   */
-  public ModelParameter[] getModelParameters() {
-    return _model_parameters;
   }
 }

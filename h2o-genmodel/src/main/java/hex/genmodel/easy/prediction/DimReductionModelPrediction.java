@@ -4,7 +4,7 @@ package hex.genmodel.easy.prediction;
  * TODO
  */
 public class DimReductionModelPrediction extends AbstractPrediction {
-    public double[] dimensions; // contains the X factor/coefficient for GLRM or PCA
+    public double[] dimensions; // contains the X factor/coefficient
     /**
      * This field is only used for GLRM and not for PCA.  Reconstructed data, the array has same length as the
      * original input. The user can use the original input and reconstructed output to easily calculate eg. the

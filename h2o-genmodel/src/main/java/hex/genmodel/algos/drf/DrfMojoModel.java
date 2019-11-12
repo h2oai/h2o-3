@@ -18,7 +18,7 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
 
     @Override
     protected ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
-        return new ContributionsPredictorDRF(this, treeSHAPPredictor);
+        return new ContributionsPredictorDRF(treeSHAPPredictor);
     }
 
     /**
@@ -62,31 +62,26 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
         return score0(row, 0.0, preds);
     }
     
-    static class ContributionsPredictorDRF extends ContributionsPredictor {
+    public class ContributionsPredictorDRF extends ContributionsPredictor {
 
-        private final float _featurePlusBiasRatio;
-        private final int _normalizer;
-        
-        private ContributionsPredictorDRF(DrfMojoModel model, TreeSHAPPredictor<double[]> treeSHAPPredictor) {
-            super(model, treeSHAPPredictor);
-            if (ModelCategory.Regression.equals(model._category)) {
-                _featurePlusBiasRatio = 0;
-                _normalizer = model._ntree_groups;
-            } else if (ModelCategory.Binomial.equals(model._category)) {
-                _featurePlusBiasRatio = 1f / (model._nfeatures + 1);
-                _normalizer = -model._ntree_groups;
-            } else 
-                throw new UnsupportedOperationException(
-                        "Model category " + model._category + " cannot be used to calculate feature contributions.");
+        public ContributionsPredictorDRF(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
+            super(treeSHAPPredictor);
         }
         
         @Override
         public float[] getContribs(float[] contribs) {
-            for (int i = 0; i < contribs.length; i++) {
-                contribs[i] = _featurePlusBiasRatio + (contribs[i] / _normalizer);
+            if (_category.equals(ModelCategory.Regression)) { // Regression
+                for (int i = 0; i < contribs.length; i++) {
+                    contribs[i] = contribs[i] / _ntree_groups;
+                }
+            } else { // Binomial
+                float featurePlusBiasRatio = (float)1/(_nfeatures + 1);
+                for (int i = 0; i < contribs.length; i++) {
+                    contribs[i] = featurePlusBiasRatio - (contribs[i] / _ntree_groups);
+                }
             }
-            return contribs;    
+            return contribs;
         }
     }
-
+    
 }

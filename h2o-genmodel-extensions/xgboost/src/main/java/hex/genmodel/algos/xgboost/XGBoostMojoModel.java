@@ -28,8 +28,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
     REG_TWEEDIE("reg:tweedie"),
     COUNT_POISSON("count:poisson"),
     REG_LINEAR("reg:linear"),
-    MULTI_SOFTPROB("multi:softprob"),
-    RANK_PAIRWISE("rank:pairwise");
+    MULTI_SOFTPROB("multi:softprob");
 
     private String _id;
 

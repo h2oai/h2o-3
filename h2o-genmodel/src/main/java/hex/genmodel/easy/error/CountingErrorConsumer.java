@@ -5,7 +5,6 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -16,26 +15,13 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
 
   private Map<String, AtomicLong> dataTransformationErrorsCountPerColumn;
   private Map<String, AtomicLong> unknownCategoricalsPerColumn;
-  private Map<String, ConcurrentMap<Object, AtomicLong>> unseenCategoricalsCollector;
 
-  private final boolean collectUnseenCategoricals;
-  
   /**
    * @param model An instance of {@link GenModel}
    */
   public CountingErrorConsumer(GenModel model) {
-    this(model, DEFAULT_CONFIG);
-  }
-
-  /**
-   * @param model An instance of {@link GenModel}
-   * @param config An instance of {@link Config}
-   */
-  public CountingErrorConsumer(GenModel model, Config config) {
-    collectUnseenCategoricals = config.isCollectUnseenCategoricals();
-
     initializeDataTransformationErrorsCount(model);
-    initializeUnknownCategoricals(model);
+    initializeUnknownCategoricalsPerColumn(model);
   }
 
   /**
@@ -62,16 +48,13 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
    *
    * @param model {@link GenModel} the unknown categorical per column map is initialized for
    */
-  private void initializeUnknownCategoricals(GenModel model) {
+  private void initializeUnknownCategoricalsPerColumn(GenModel model) {
     unknownCategoricalsPerColumn = new ConcurrentHashMap<>();
-    unseenCategoricalsCollector = new ConcurrentHashMap<>();
 
     for (int i = 0; i < model.getNumCols(); i++) {
       String[] domainValues = model.getDomainValues(i);
       if (domainValues != null) {
         unknownCategoricalsPerColumn.put(model.getNames()[i], new AtomicLong());
-        if (collectUnseenCategoricals)
-          unseenCategoricalsCollector.put(model.getNames()[i], new ConcurrentHashMap<Object, AtomicLong>());
       }
     }
 
@@ -86,19 +69,6 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
   @Override
   public void unseenCategorical(String columnName, Object value, String message) {
     unknownCategoricalsPerColumn.get(columnName).incrementAndGet();
-    if (collectUnseenCategoricals) {
-      ConcurrentMap<Object, AtomicLong> columnCollector = unseenCategoricalsCollector.get(columnName);
-      assert columnCollector != null;
-      AtomicLong counter = columnCollector.get(value);
-      if (counter != null) {
-        counter.incrementAndGet(); // best effort to avoid creating new AtomicLongs on each invocation 
-      } else {
-        counter = columnCollector.putIfAbsent(value, new AtomicLong(1));
-        if (counter != null) {
-          counter.incrementAndGet();
-        }
-      }
-    }
   }
 
   /**
@@ -128,13 +98,6 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
     return unknownCategoricalsPerColumn;
   }
 
-  public Map<Object, AtomicLong> getUnseenCategoricals(String column) {
-    if (! collectUnseenCategoricals) {
-      throw new IllegalStateException("Unseen categorical values collection was not enabled.");
-    }
-    return unseenCategoricalsCollector.get(column);
-  }
-  
   /**
    * An unmodifiable, thread-safe map of all columns with counts of data transformation errors observed.
    * The map returned is a direct reference to the backing this {@link CountingErrorConsumer}.
@@ -156,19 +119,4 @@ public class CountingErrorConsumer extends EasyPredictModelWrapper.ErrorConsumer
     }
     return total;
   }
-
-  private static final Config DEFAULT_CONFIG = new Config();
-
-  public static class Config {
-    private boolean collectUnseenCategoricals;
-
-    public boolean isCollectUnseenCategoricals() {
-      return collectUnseenCategoricals;
-    }
-
-    public void setCollectUnseenCategoricals(boolean collectUnseenCategoricals) {
-      this.collectUnseenCategoricals = collectUnseenCategoricals;
-    }
-  }
-
 }

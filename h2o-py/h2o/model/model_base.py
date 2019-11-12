@@ -88,7 +88,7 @@ class ModelBase(backwards_compatible(Keyed)):
         params = {}
         for p in self.parms:
             if p in params_to_select.keys():
-                params[p] = (self.parms[p].get("actual_value") or {}).get(params_to_select[p], None)
+                params[p] = self.parms[p]["actual_value"].get(params_to_select[p], None)
             else:
                 params[p] = self.parms[p]["actual_value"]
         return params
@@ -208,7 +208,7 @@ class ModelBase(backwards_compatible(Keyed)):
         j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
                     data={"feature_frequencies": True})
         return h2o.get_frame(j["predictions_frame"]["name"])
-    
+
     def predict(self, test_data, custom_metric = None, custom_metric_func = None):
         """
         Predict on a dataset.
@@ -926,17 +926,16 @@ class ModelBase(backwards_compatible(Keyed)):
         scoring_history = self.scoring_history()
         # Separate functionality for GLM since its output is different from other algos
         if self._model_json["algo"] == "glm":
-            # GLM has only one timestep option, which is `iterations`
-            timestep = "iterations"
+            # GLM has only one timestep option, which is `iteration`
+            timestep = "iteration"
             if metric == "AUTO":
-                metric = "objective" # this includes the negative log likelihood and the penalties.
-            elif metric not in ("negative_log_likelihood", "objective"):
-                raise H2OValueError("for GLM, metric must be one of: negative_log_likelihood, objective")
+                metric = "log_likelihood"
+            elif metric not in ("log_likelihood", "objective"):
+                raise H2OValueError("for GLM, metric must be one of: log_likelihood, objective")
             plt.xlabel(timestep)
             plt.ylabel(metric)
             plt.title("Validation Scoring History")
-            style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
-            plt.plot(scoring_history[timestep], scoring_history[metric], style)
+            plt.plot(scoring_history[timestep], scoring_history[metric])
 
         elif self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
             # Set timestep
@@ -1206,7 +1205,7 @@ class ModelBase(backwards_compatible(Keyed)):
             print("Numpy not found.  Cannot plot 2D partial plots.")
         ycol = colPairs[1]
         nBins = nbins
-        if user_cols is not None and ycol in user_cols:
+        if ycol in user_cols:
             ind = user_cols.index(ycol)
             nBins = user_num_splits[ind]
         nrow = int(len(x)/nBins)

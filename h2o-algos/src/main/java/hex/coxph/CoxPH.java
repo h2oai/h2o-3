@@ -17,6 +17,8 @@ import water.util.*;
 import java.util.Arrays;
 import java.util.Collection;
 
+import static hex.coxph.CoxPHUtils.*;
+
 /**
  * Cox Proportional Hazards Model
  */
@@ -299,7 +301,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       o._exp_neg_coef = MemoryManager.malloc8d(n_coef);
       o._se_coef = MemoryManager.malloc8d(n_coef);
       o._z_coef = MemoryManager.malloc8d(n_coef);
-      o._var_coef = MemoryManager.malloc8d(n_coef, n_coef);
+      o._var_coef = malloc2DArray(n_coef, n_coef);
       o._mean_offset = MemoryManager.malloc8d(n_offsets);
       o._offset_names = new String[n_offsets];
       System.arraycopy(coefNames, n_coef, o._offset_names, 0, n_offsets);
@@ -317,8 +319,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       o._n_missing = o._n - coxMR.n;
       o._n = coxMR.n;
-      o._x_mean_cat = MemoryManager.malloc8d(coxMR.sumWeights.length, o.data_info.numCats());
-      o._x_mean_num = MemoryManager.malloc8d(coxMR.sumWeights.length, o.data_info.numNums() - o._mean_offset.length);
+      o._x_mean_cat = malloc2DArray(coxMR.sumWeights.length, o.data_info.numCats());
+      o._x_mean_num = malloc2DArray(coxMR.sumWeights.length, o.data_info.numNums() - o._mean_offset.length);
       for (int s = 0; s < coxMR.sumWeights.length; s++) {
         System.arraycopy(coxMR.sumWeightedCatX[s], 0, o._x_mean_cat[s], 0, o._x_mean_cat[s].length);
         for (int j = 0; j < o._x_mean_cat[s].length; j++)
@@ -652,8 +654,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       final int n_coef = _beta.length;
 
       sumWeights       = MemoryManager.malloc8d(_num_strata);
-      sumWeightedCatX  = MemoryManager.malloc8d(_num_strata, _dinfo.numCats());
-      sumWeightedNumX  = MemoryManager.malloc8d(_num_strata, _dinfo.numNums());
+      sumWeightedCatX  = malloc2DArray(_num_strata, _dinfo.numCats());
+      sumWeightedNumX  = malloc2DArray(_num_strata, _dinfo.numNums());
       sizeRiskSet      = MemoryManager.malloc8d(n_time);
       sizeCensored     = MemoryManager.malloc8d(n_time);
       sizeEvents       = MemoryManager.malloc8d(n_time);
@@ -662,11 +664,11 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       sumLogRiskEvents = MemoryManager.malloc8d(n_time);
       rcumsumRisk      = MemoryManager.malloc8d(n_time);
       sumXEvents =       MemoryManager.malloc8d(n_coef);
-      sumXRiskEvents   = MemoryManager.malloc8d(n_time, n_coef);
-      rcumsumXRisk     = MemoryManager.malloc8d(n_time, n_coef);
+      sumXRiskEvents   = malloc2DArray(n_time, n_coef);
+      rcumsumXRisk     = malloc2DArray(n_time, n_coef);
 
       if (_isBreslow) { // Breslow only
-        rcumsumXXRisk = MemoryManager.malloc8d(n_time, n_coef, n_coef);
+        rcumsumXXRisk = malloc3DArray(n_time, n_coef, n_coef);
       }
     }
 
@@ -824,7 +826,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       _n_coef = n_coef;
       _logLik = 0;
       _gradient = MemoryManager.malloc8d(n_coef);
-      _hessian = MemoryManager.malloc8d(n_coef, n_coef);
+      _hessian = malloc2DArray(n_coef, n_coef);
     }
 
     void reset() {

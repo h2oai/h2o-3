@@ -18,20 +18,6 @@ class CustomDistributionGaussianWrong(CustomDistributionGaussian):
         return (y - f) * (y - f)
 
 
-class CustomDistributionMultinomialWrong(CustomDistributionMultinomial):
-    
-    def gradient(self, y, f, l):
-        if y == 0 and l == 0:
-            cost = 10
-        elif y == 0 and l == 1:
-            cost = 20
-        elif y == 1 and l == 0:
-            cost = 200
-        else:
-            cost = 1
-        return 1 - cost * f if y == l else 0 - cost * f
-
-
 class CustomDistributionGaussianNoInh(object):
 
     def link(self):
@@ -58,8 +44,7 @@ def test_custom_distribution_computation():
     test_binomial()
     test_multinomial()
     test_null()
-    test_worng_and_inherited_regression()
-    test_wrong_multinomial()
+    test_inherited_custom_distribution()
     
     
 def test_regression():
@@ -110,8 +95,8 @@ def test_null():
     print("rmse null model valid:", model.rmse(valid=True))
     
     
-# Test wrong gaussian and inheritance   
-def test_worng_and_inherited_regression():
+# Test custom distribution inheritance    
+def test_inherited_custom_distribution():
     print("Create default gaussian model")
     (model, f_test) = regression_model_default(H2OGradientBoostingEstimator, "gaussian")
     
@@ -127,21 +112,6 @@ def test_worng_and_inherited_regression():
     (model3, f_test3) = regression_model_distribution(H2OGradientBoostingEstimator,
                                                       upload_distribution(CustomDistributionGaussianNoInh, "gaussian_ni"))
     check_model_metrics(model, model3, "gaussian_ni")
-
-
-# Test wrong multinomial
-def test_wrong_multinomial():
-    print("Multinomial test")
-    name = "multinomial"
-    print("Create default", name,  "model")
-    (model, f_test) = multinomial_model_default(H2OGradientBoostingEstimator)
-    print("Create custom", name, "model")
-    (model2, f_test2) = multinomial_model_distribution(H2OGradientBoostingEstimator,
-                                                       upload_distribution(CustomDistributionMultinomialWrong, name))
-    assert model.rmse(valid=False) != model2.rmse(valid=False), \
-        "Training rmse is not different for default and custom multunomial model."
-    assert model.rmse(valid=True) != model2.rmse(valid=True), \
-        "Validation rmse is not different for default and custom multinomial model."
 
 
 if __name__ == "__main__":

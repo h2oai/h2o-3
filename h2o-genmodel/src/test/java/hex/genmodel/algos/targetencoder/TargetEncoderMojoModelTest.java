@@ -1,6 +1,8 @@
 package hex.genmodel.algos.targetencoder;
 
-import hex.genmodel.easy.*;
+import hex.genmodel.easy.DomainMapConstructor;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.RowToRawDataConverter;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import org.junit.Test;
@@ -10,10 +12,6 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 public class TargetEncoderMojoModelTest {
-  
-  private final EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
-          .setConvertInvalidNumbersToNa(true)
-          .setConvertUnknownCategoricalLevelsToNa(true);
   
   @Test
   public void computeLambda(){
@@ -91,8 +89,8 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
+    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, true, true);
 
 
     // Case when number of training examples equal to inflection point. Encoding should be between prior and posterior
@@ -164,8 +162,8 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
+    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
+    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, true, true);
 
     RowData rowToPredictFor = new RowData();
     rowToPredictFor.put(numerical_col1, 42.0);
@@ -225,8 +223,8 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
+    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, true, true);
 
     //Case 1:  Unexpected value `C`
     RowData rowToPredictFor = new RowData();
@@ -300,8 +298,8 @@ public class TargetEncoderMojoModelTest {
     modelColumnNameToIndexMap.put(numerical_col1, 0);
     modelColumnNameToIndexMap.put(numerical_col2, 2);
 
-    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(targetEncoderMojoModel).create();
+    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(targetEncoderMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, true, true);
 
     //Case 1:  Unexpected value `C`
     RowData rowToPredictFor = new RowData();
@@ -336,7 +334,7 @@ public class TargetEncoderMojoModelTest {
   // We test that order of transformation/predictions is determined by index of teColumn in the input data.
   @Test
   public void sortEncodingMapByIndex() {
-    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(new String[0], new String[0][0], null);
+    TargetEncoderMojoModel targetEncoderMojoModel = new TargetEncoderMojoModel(null, null, null);
     EncodingMaps encodingMaps = new EncodingMaps();
     EncodingMap encodingMapForCat1 = new EncodingMap();
     int factorValueForA = 0;

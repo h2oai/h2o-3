@@ -6,7 +6,6 @@ import hex.glm.GLMTask;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.util.FeatureScore;
-import hex.util.CheckpointUtils;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -35,7 +34,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   private static final double FILL_RATIO_THRESHOLD = 0.25D;
 
   @Override public boolean haveMojo() { return true; }
-  @Override public boolean havePojo() { return true; }
 
   @Override public BuilderVisibility builderVisibility() {
     if(ExtensionManager.getInstance().isCoreExtensionsEnabled(XGBoostExtension.NAME)){
@@ -58,9 +56,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   public XGBoost(XGBoostModel.XGBoostParameters parms, Key<XGBoostModel> key) { super(parms, key); init(false); }
   public XGBoost(boolean startup_once) { super(new XGBoostModel.XGBoostParameters(),startup_once); }
   public boolean isSupervised(){return true;}
-
-  // Number of trees requested, including prior trees from a checkpoint
-  private int _ntrees;
 
   @Override protected int nModelsInParallel(int folds) {
     return nModelsInParallel(folds, 2);
@@ -94,16 +89,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    if (_parms.hasCheckpoint()) {  // Asking to continue from checkpoint?
-      Value cv = DKV.get(_parms._checkpoint);
-      if (cv != null) { // Look for prior model
-        XGBoostModel checkpointModel = CheckpointUtils.getAndValidateCheckpointModel(this, XGBoostModel.XGBoostParameters.CHECKPOINT_NON_MODIFIABLE_FIELDS, cv);
-        // Compute number of trees to build for this checkpoint
-        _ntrees = _parms._ntrees - checkpointModel._output._ntrees; // Needed trees
-      }
-    } else {
-      _ntrees = _parms._ntrees;
-    }
 
     // Initialize response based on given distribution family.
     // Regression: initially predict the response mean
@@ -264,15 +249,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     final void buildModelImpl() {
-      final XGBoostModel model;
-      if (_parms.hasCheckpoint()) {
-        XGBoostModel checkpoint = DKV.get(_parms._checkpoint).<XGBoostModel>get().deepClone(_result);
-        checkpoint._parms = _parms;
-        model = checkpoint.delete_and_lock(_job);
-      } else {
-        model = new XGBoostModel(_result, _parms, new XGBoostOutput(XGBoost.this), _train, _valid);
-        model.write_lock(_job);
-      }
+      XGBoostModel model = new XGBoostModel(_result, _parms, new XGBoostOutput(XGBoost.this), _train, _valid);
+      model.write_lock(_job);
 
       if (_parms._dmatrix_type == XGBoostModel.XGBoostParameters.DMatrixType.sparse) {
         model._output._sparse = true;
@@ -282,6 +260,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._sparse = isTrainDatasetSparse();
       }
 
+      // Single Rabit tracker per job. Manages the node graph for Rabit.
+      final IRabitTracker rt;
       XGBoostSetupTask setupTask = null;
       try {
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(_train);
@@ -290,8 +270,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // This cannot be H2O.getCloudSize() as a frame might not be distributed on all the nodes
         // In such a case we'll perform training only on a subset of nodes while XGBoost/Rabit would keep waiting
         // for H2O.getCloudSize() number of requests/responses.
-        final RabitTrackerH2O rt = new RabitTrackerH2O(trainFrameNodes.getNumNodes());
-        startRabitTracker(rt);
+        rt = new RabitTrackerH2O(trainFrameNodes.getNumNodes());
+
+        if (!startRabitTracker(rt)) {
+          throw new IllegalArgumentException("Cannot start XGboost rabit tracker, please, "
+                                             + "make sure you have python installed!");
+        }
 
         // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
         DataInfo dataInfo = model.model_info().dataInfo();
@@ -303,11 +287,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = boosterParms.toTwoDimTable();
 
-        byte[] checkpointBytes = null;
-        if (_parms.hasCheckpoint()) {
-          checkpointBytes = model.model_info()._boosterBytes;
-        }
-        setupTask = new XGBoostSetupTask(model, _parms, boosterParms, checkpointBytes, getWorkerEnvs(rt), trainFrameNodes).run();
+        setupTask = new XGBoostSetupTask(model, _parms, boosterParms, getWorkerEnvs(rt), trainFrameNodes).run();
         try {
           // initial iteration
           XGBoostUpdateTask nullModelTask = new XGBoostUpdateTask(setupTask, 0).run();
@@ -392,7 +372,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     private void scoreAndBuildTrees(final XGBoostSetupTask setupTask, final BoosterProvider boosterProvider,
                                     final XGBoostModel model) throws XGBoostError {
-      for( int tid=0; tid< _ntrees; tid++) {
+      for( int tid=0; tid< _parms._ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, boosterProvider, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
@@ -424,14 +404,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     // Don't start the tracker for 1 node clouds -> the GPU plugin fails in such a case
-    private void startRabitTracker(RabitTrackerH2O rt) {
+    private boolean startRabitTracker(IRabitTracker rt) {
       if (H2O.CLOUD.size() > 1) {
-        rt.start(0);
+        return rt.start(0);
       }
+      return true;
     }
 
     // RT should not be started for 1 node clouds
-    private void waitOnRabitWorkers(RabitTrackerH2O rt) {
+    private void waitOnRabitWorkers(IRabitTracker rt) {
       if(H2O.CLOUD.size() > 1) {
         rt.waitFor(0);
       }
@@ -441,7 +422,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
      *
      * @param rt Rabit tracker to stop
      */
-    private void stopRabitTracker(RabitTrackerH2O rt) {
+    private void stopRabitTracker(IRabitTracker rt){
       if(H2O.CLOUD.size() > 1) {
         rt.stop();
       }
@@ -449,7 +430,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way the GPU plugin can't handle
     // Therefore don't use RabitTracker envs for 1 node
-    private Map<String, String> getWorkerEnvs(RabitTrackerH2O rt) {
+    private Map<String, String> getWorkerEnvs(IRabitTracker rt) {
       if(H2O.CLOUD.size() > 1) {
         return rt.getWorkerEnvs();
       } else {

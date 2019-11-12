@@ -6,13 +6,11 @@ public class TreeSHAPEnsemble<R> implements TreeSHAPPredictor<R> {
 
   private final TreeSHAPPredictor<R>[] _predictors;
   private final float _initPred;
-  private final int _wsMakerIndex;
 
   @SuppressWarnings("unchecked")
   public TreeSHAPEnsemble(Collection<TreeSHAPPredictor<R>> predictors, float initPred) {
     _predictors = predictors.toArray(new TreeSHAPPredictor[0]);
     _initPred = initPred;
-    _wsMakerIndex = findWorkspaceMaker(_predictors);
   }
 
   @Override
@@ -22,38 +20,23 @@ public class TreeSHAPEnsemble<R> implements TreeSHAPPredictor<R> {
 
   @Override
   public float[] calculateContributions(R feat, float[] out_contribs, int condition, int condition_feature, Object workspace) {
+    Object[] workspaces = (Object[]) workspace;
     if (condition == 0) {
       out_contribs[out_contribs.length - 1] += _initPred;
     }
-    for (TreeSHAPPredictor<R> predictor : _predictors) {
-      predictor.calculateContributions(feat, out_contribs, condition, condition_feature, workspace);
+    for (int i = 0; i < _predictors.length; i++) {
+      _predictors[i].calculateContributions(feat, out_contribs, condition, condition_feature, workspaces[i]);
     }
     return out_contribs; 
   }
 
   @Override
   public Object makeWorkspace() {
-    return _wsMakerIndex >= 0 ? _predictors[_wsMakerIndex].makeWorkspace() : null;
-  }
-
-  @Override
-  public int getWorkspaceSize() {
-    return _wsMakerIndex >= 0 ? _predictors[_wsMakerIndex].getWorkspaceSize() : 0;
-  }
-
-  private static int findWorkspaceMaker(TreeSHAPPredictor<?>[] predictors) {
-    if (predictors.length == 0)
-      return -1;
-    int maxSize = 0;
-    int wsMakerIndex = 0;
-    for (int i = 0; i < predictors.length; i++) {
-      int size = predictors[i].getWorkspaceSize();
-      if (size > maxSize) {
-        maxSize = size;
-        wsMakerIndex = i;
-      }
+    Object[] workspaces = new Object[_predictors.length];
+    for (int i = 0; i < workspaces.length; i++) {
+      workspaces[i] = _predictors[i].makeWorkspace();
     }
-    return wsMakerIndex;
+    return workspaces;
   }
-  
+
 }

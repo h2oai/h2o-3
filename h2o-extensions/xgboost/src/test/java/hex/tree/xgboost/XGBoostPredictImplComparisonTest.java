@@ -30,6 +30,7 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             {"gbtree", "gamma", "AGE"},
             {"gbtree", "poisson", "AGE"},
             {"gbtree", "tweedie", "AGE"},
+            {"gbtree", "gamma", "AGE"},
             {"dart", "AUTO", "AGE"},
             {"dart", "bernoulli", "CAPSULE"},
             {"dart", "multinomial", "CAPSULE"},
@@ -37,13 +38,15 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             {"dart", "gamma", "AGE"},
             {"dart", "poisson", "AGE"},
             {"dart", "tweedie", "AGE"},
+            {"dart", "gamma", "AGE"},
             {"gblinear", "AUTO", "AGE"},
             {"gblinear", "bernoulli", "CAPSULE"},
             {"gblinear", "multinomial", "CAPSULE"},
             {"gblinear", "gaussian", "AGE"},
             {"gblinear", "gamma", "AGE"},
             {"gblinear", "poisson", "AGE"},
-            {"gblinear", "tweedie", "AGE"}
+            {"gblinear", "tweedie", "AGE"},
+            {"gblinear", "gamma", "AGE"}
         });
     }
 
@@ -90,18 +93,29 @@ public class XGBoostPredictImplComparisonTest extends TestUtil {
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "false");
             Frame predsJava = Scope.track(model.score(testFrame));
 
-            assertFrameEquals(predsNative, predsJava, 1e-10, getRelDelta(parms));
+            assertFrameEquals(predsNative, predsJava, getAbsDelta(), getRelDelta(parms));
         } finally {
             Scope.exit();
         }
     }
 
+    private double getAbsDelta() {
+        if ("gbtree".equals(booster)) {
+            return 1e-10;
+        } else if ("dart".equals(booster)) {
+            return 1e-10;
+        } else {
+            // for GBlinear the results might be different on least significant
+            // digit which when converted from float to double leads to difference
+            // on 6th least significant decimal digit
+            return 1e-3;
+        }
+    }
+    
     private Double getRelDelta(XGBoostModel.XGBoostParameters parms) {
         if (usesGpu(parms)) {
             // train/predict on gpu is non-deterministic
             return 1e-3;
-        } else if ("gblinear".equals(booster)) {
-            return 1e-6;
         } else {
             return null;
         }

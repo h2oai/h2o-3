@@ -1,7 +1,6 @@
 water.automl.api.schemas3.AutoMLBuildSpecV99
 water.automl.api.schemas3.AutoMLBuildSpecV99$AutoMLBuildControlV99
 water.automl.api.schemas3.AutoMLBuildSpecV99$AutoMLBuildModelsV99
-water.automl.api.schemas3.AutoMLBuildSpecV99$AutoMLCustomParameterV99
 water.automl.api.schemas3.AutoMLBuildSpecV99$AutoMLInputV99
 water.automl.api.schemas3.AutoMLBuildSpecV99$AutoMLStoppingCriteriaV99
 water.automl.api.schemas3.AutoMLV99
@@ -10,5 +9,3 @@ water.automl.api.schemas3.LeaderboardsV99
 water.automl.api.schemas3.LeaderboardV99
 water.automl.api.schemas3.EventLogEntryV99
 water.automl.api.schemas3.EventLogV99
-water.automl.api.schemas3.StepDefinitionV99
-water.automl.api.schemas3.StepDefinitionV99$StepV99

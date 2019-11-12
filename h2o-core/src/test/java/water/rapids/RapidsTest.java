@@ -2,9 +2,7 @@ package water.rapids;
 
 import org.junit.Assert;
 import org.junit.BeforeClass;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import water.*;
 import water.fvec.*;
 import water.parser.ParseDataset;
@@ -13,13 +11,9 @@ import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
-import water.rapids.vals.ValNums;
-import water.rapids.vals.ValStr;
-import water.rapids.vals.ValStrs;
 import water.util.*;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
@@ -30,9 +24,6 @@ import static water.rapids.Rapids.IllegalASTException;
 public class RapidsTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
-  @Rule
-  public transient ExpectedException ee = ExpectedException.none(); 
-  
   @Test public void bigSlice() {
     // check that large slices do something sane
     String tree = "(rows a.hex [0:2147483647])";
@@ -556,14 +547,15 @@ public class RapidsTest extends TestUtil {
     }
   }
 
-  @Test public void testChicago() throws IOException {
+  @Test public void testChicago() {
     String oldtz = Rapids.exec("(getTimeZone)").getStr();
     Session ses = new Session();
     try {
       parse_test_file(Key.make("weather.hex"),"smalldata/chicago/chicagoAllWeather.csv");
       parse_test_file(Key.make( "crimes.hex"),"smalldata/chicago/chicagoCrimes10k.csv.zip");
       String fname = "smalldata/chicago/chicagoCensus.csv";
-      File f = FileUtils.getFile(fname);
+      File f = FileUtils.locateFile(fname);
+      assert f != null && f.exists():" file not found: " + fname;
       NFSFileVec nfs = NFSFileVec.make(f);
       ParseSetup ps = ParseSetup.guessSetup(new Key[]{nfs._key}, false, 1);
       ps.getColumnTypes()[1] = Vec.T_CAT;
@@ -879,32 +871,4 @@ public class RapidsTest extends TestUtil {
       Scope.exit();
     }
   }
-
-  @Test
-  public void testExecNumList() {
-    Val r1 = Rapids.exec("[]");
-    assertTrue(r1.isEmpty());
-
-    Val r2 = Rapids.exec("[1, 32, 3.14]");
-    assertTrue(r2 instanceof ValNums);
-    assertArrayEquals(new double[]{1, 32, 3.14}, r2.getNums(), 0);
-  }
-
-  @Test
-  public void testExecStrList() {
-    Val r1 = Rapids.exec("[]");
-    assertTrue(r1.isEmpty());
-
-    Val r2 = Rapids.exec("['A', 'B', 'something']");
-    assertTrue(r2 instanceof ValStrs);
-    assertArrayEquals(new String[]{"A", "B", "something"}, r2.getStrs());
-
-    Val r3 = Rapids.exec("['A' 'NA' 'C']");
-    assertTrue(r3 instanceof ValStrs);
-    assertArrayEquals(new String[]{"A", "NA", "C"}, r3.getStrs()); // No special handling of 'NA' string
-
-    ee.expectMessage("Expected ']'. Got: 'N");
-    Rapids.exec("['a' NA]");
-  }
-
 }

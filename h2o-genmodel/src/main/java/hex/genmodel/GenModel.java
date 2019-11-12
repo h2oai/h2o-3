@@ -58,16 +58,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return _names.length;
   }
 
-  public int nCatFeatures() {
-    int nCat = 0;
-    String[][] domainValues = getDomainValues();
-    for (int i = 0; i < nfeatures(); i++) {
-      if (domainValues[i] != null)
-        nCat++;
-    }
-    return nCat;
-  }
-
   /** Returns names of input features. */
   @Override public String[] features() {
     return Arrays.copyOf(_names, nfeatures());
@@ -103,11 +93,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return _names;
   }
 
-  /** The original names of all columns used, including response and offset columns. */
-  @Override public String[] getOrigNames() {
-    return null;
-  }
-  
   /** The name of the response column. */
   @Override public String getResponseName() {
     // Note: _responseColumn is not set when deprecated constructor GenModel(String[] names, String[][] domains) is used
@@ -136,11 +121,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return nclasses();
   }
 
-  /** Return type of encoding expected by the model implementation. */
-  @Override public CategoricalEncoding getCategoricalEncoding() {
-    return CategoricalEncoding.AUTO; // by default model handles the encoding
-  }
-
   /** Returns true if this model represents a classifier, else it is used for regression. */
   @Override public boolean isClassifier() {
     ModelCategory cat = getModelCategory();
@@ -166,11 +146,6 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   /** Returns domain values for all columns, including the response column. */
   @Override public String[][] getDomainValues() {
     return _domains;
-  }
-
-  @Override
-  public String[][] getOrigDomainValues() {
-    return null;
   }
 
   /** Returns index of a column with given name, or -1 if the column is not found. */

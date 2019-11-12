@@ -21,12 +21,8 @@ public class H2OStarter {
     // Fire up the H2O Cluster
     H2O.main(args);
 
-    if (H2O.ARGS.disable_flow) {
-      Log.info("Access to H2O Flow is disabled");
-    } else {
-      H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));
-      H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-core/src/main/resources/www"));
-    }
+    H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-web/src/main/resources/www"));
+    H2O.registerResourceRoot(new File(relativeResourcePath + File.separator + "h2o-core/src/main/resources/www"));
     ExtensionManager.getInstance().registerRestApiExtensions();
     if (!H2O.ARGS.disable_web) {
       if (finalizeRestRegistration) {
@@ -38,8 +34,7 @@ public class H2OStarter {
     Log.info("H2O started in " + (timeF - time0) + "ms");
     if (!H2O.ARGS.disable_web) {
       Log.info("");
-      String message = H2O.ARGS.disable_flow ? "Connect to H2O from your R/Python client: " : "Open H2O Flow in your web browser: ";
-      Log.info(message + H2O.getURL(NetworkInit.h2oHttpView.getScheme()));
+      Log.info("Open H2O Flow in your web browser: " + H2O.getURL(NetworkInit.h2oHttpView.getScheme()));
       Log.info("");
     }
   }

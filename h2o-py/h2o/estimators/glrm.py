@@ -20,25 +20,27 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     """
 
     algo = "glrm"
-    param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                   "score_each_iteration", "loading_name", "transform", "k", "loss", "loss_by_col", "loss_by_col_idx",
-                   "multi_loss", "period", "regularization_x", "regularization_y", "gamma_x", "gamma_y",
-                   "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed", "init", "svd_method",
-                   "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd", "max_runtime_secs",
-                   "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLowRankEstimator, self).__init__()
         self._parms = {}
+        names_list = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
+                      "score_each_iteration", "loading_name", "transform", "k", "loss", "loss_by_col",
+                      "loss_by_col_idx", "multi_loss", "period", "regularization_x", "regularization_y", "gamma_x",
+                      "gamma_y", "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed", "init",
+                      "svd_method", "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd",
+                      "max_runtime_secs", "export_checkpoints_dir"}
+        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in self.param_names:
+            elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+        self._parms["_rest_version"] = 3
 
     @property
     def training_frame(self):
@@ -46,16 +48,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
-
-        :examples:
-
-        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_cat.csv")
-        >>> prostate[0] = prostate[0].asnumeric()
-        >>> prostate[4] = prostate[4].asnumeric()
-        >>> pros_glrm = H2OGeneralizedLowRankEstimator(k=5,
-        ...                                            seed=1234)
-        >>> pros_glrm.train(x=prostate.names, training_frame=prostate)
-        >>> pros_glrm.show()
         """
         return self._parms.get("training_frame")
 
@@ -70,19 +62,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Id of the validation data frame.
 
         Type: ``H2OFrame``.
-
-        :examples:
-
-        >>> iris = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv")
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                            loss="quadratic",
-        ...                                            gamma_x=0.5,
-        ...                                            gamma_y=0.5,
-        ...                                            transform="standardize")
-        >>> iris_glrm.train(x=iris.names,
-        ...                 training_frame=iris,
-        ...                 validation_frame=iris)
-        >>> iris_glrm.show()
         """
         return self._parms.get("validation_frame")
 
@@ -112,15 +91,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
-
-        :examples:
-
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                            ignore_const_cols=False,
-        ...                                            seed=1234)
-        >>> iris_glrm.train(x=iris.names, training_frame=iris)
-        >>> iris_glrm.show()
         """
         return self._parms.get("ignore_const_cols")
 
@@ -136,21 +106,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
 
         Type: ``bool``  (default: ``False``).
-
-        :examples:
-
-        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_cat.csv")
-        >>> prostate[0] = prostate[0].asnumeric()
-        >>> prostate[4] = prostate[4].asnumeric()
-        >>> loss_all = ["Hinge", "Quadratic", "Categorical", "Categorical",
-        ...             "Hinge", "Quadratic", "Quadratic", "Quadratic"]
-        >>> pros_glrm = H2OGeneralizedLowRankEstimator(k=5,
-        ...                                            loss_by_col=loss_all,
-        ...                                            score_each_iteration=True,
-        ...                                            transform="standardize",
-        ...                                            seed=12345)
-        >>> pros_glrm.train(x=prostate.names, training_frame=prostate)
-        >>> pros_glrm.show()
         """
         return self._parms.get("score_each_iteration")
 
@@ -166,23 +121,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Frame key to save resulting X
 
         Type: ``str``.
-
-        :examples:
-
-        >>> acs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
-        >>> acs_fill = acs.drop("ZCTA5")
-        >>> acs_glrm = H2OGeneralizedLowRankEstimator(k=10,
-        ...                                           transform="standardize",
-        ...                                           loss="quadratic",
-        ...                                           regularization_x="quadratic",
-        ...                                           regularization_y="L1",
-        ...                                           gamma_x=0.25,
-        ...                                           gamma_y=0.5,
-        ...                                           max_iterations=1,
-        ...                                           loading_name="acs_full")
-        >>> acs_glrm.train(x=acs_fill.names, training_frame=acs)
-        >>> acs_glrm.loading_name
-        >>> acs_glrm.show()
         """
         return self._parms.get("loading_name")
 
@@ -198,18 +136,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Transformation of training data
 
         One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
-
-        :examples:
-
-        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_cat.csv")
-        >>> prostate[0] = prostate[0].asnumeric()
-        >>> prostate[4] = prostate[4].asnumeric()
-        >>> pros_glrm = H2OGeneralizedLowRankEstimator(k=5,
-        ...                                            score_each_iteration=True,
-        ...                                            transform="standardize",
-        ...                                            seed=12345)
-        >>> pros_glrm.train(x=prostate.names, training_frame=prostate)
-        >>> pros_glrm.show()
         """
         return self._parms.get("transform")
 
@@ -225,13 +151,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Rank of matrix approximation
 
         Type: ``int``  (default: ``1``).
-
-        :examples:
-
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3)
-        >>> iris_glrm.train(x=iris.names, training_frame=iris)
-        >>> iris_glrm.show()
         """
         return self._parms.get("k")
 
@@ -248,21 +167,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
         One of: ``"quadratic"``, ``"absolute"``, ``"huber"``, ``"poisson"``, ``"hinge"``, ``"logistic"``, ``"periodic"``
         (default: ``"quadratic"``).
-
-        :examples:
-
-        >>> acs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
-        >>> acs_fill = acs.drop("ZCTA5")
-        >>> acs_glrm = H2OGeneralizedLowRankEstimator(k=10,
-        ...                                           transform="standardize",
-        ...                                           loss="absolute",
-        ...                                           regularization_x="quadratic",
-        ...                                           regularization_y="L1",
-        ...                                           gamma_x=0.25,
-        ...                                           gamma_y=0.5,
-        ...                                           max_iterations=700)
-        >>> acs_glrm.train(x=acs_fill.names, training_frame=acs)
-        >>> acs_glrm.show()
         """
         return self._parms.get("loss")
 
@@ -279,18 +183,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
         Type: ``List[Enum["quadratic", "absolute", "huber", "poisson", "hinge", "logistic", "periodic", "categorical",
         "ordinal"]]``.
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                               loss="quadratic",
-        ...                                               loss_by_col=["absolute","huber"],
-        ...                                               loss_by_col_idx=[0,3],
-        ...                                               regularization_x="quadratic",
-        ...                                               regularization_y="l1")
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("loss_by_col")
 
@@ -306,18 +198,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Loss function by column index (override)
 
         Type: ``List[int]``.
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                               loss="quadratic",
-        ...                                               loss_by_col=["absolute","huber"],
-        ...                                               loss_by_col_idx=[0,3],
-        ...                                               regularization_x="quadratic",
-        ...                                               regularization_y="l1")
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("loss_by_col_idx")
 
@@ -333,19 +213,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Categorical loss function
 
         One of: ``"categorical"``, ``"ordinal"``  (default: ``"categorical"``).
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                               loss="quadratic",
-        ...                                               loss_by_col=["absolute","huber"],
-        ...                                               loss_by_col_idx=[0,3],
-        ...                                               regularization_x="quadratic",
-        ...                                               regularization_y="l1"
-        ...                                               multi_loss="ordinal")
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("multi_loss")
 
@@ -361,18 +228,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Length of period (only used with periodic loss function)
 
         Type: ``int``  (default: ``1``).
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                               max_runtime_secs=15,
-        ...                                               max_iterations=500,
-        ...                                               max_updates=900,
-        ...                                               min_step_size=0.005,
-        ...                                               period=5)
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("period")
 
@@ -389,18 +244,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
         One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
         ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                               loss="quadratic",
-        ...                                               loss_by_col=["absolute","huber"],
-        ...                                               loss_by_col_idx=[0,3],
-        ...                                               regularization_x="quadratic",
-        ...                                               regularization_y="l1")
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("regularization_x")
 
@@ -417,18 +260,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
         One of: ``"none"``, ``"quadratic"``, ``"l2"``, ``"l1"``, ``"non_negative"``, ``"one_sparse"``,
         ``"unit_one_sparse"``, ``"simplex"``  (default: ``"none"``).
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                               loss="quadratic",
-        ...                                               loss_by_col=["absolute","huber"],
-        ...                                               loss_by_col_idx=[0,3],
-        ...                                               regularization_x="quadratic",
-        ...                                               regularization_y="l1")
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("regularization_y")
 
@@ -444,21 +275,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Regularization weight on X matrix
 
         Type: ``float``  (default: ``0``).
-
-        :examples:
-
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> rank = 3
-        >>> gx = 0.5
-        >>> gy = 0.5
-        >>> trans = "standardize"
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=rank,
-        ...                                            loss="Quadratic",
-        ...                                            gamma_x=gx,
-        ...                                            gamma_y=gy,
-        ...                                            transform=trans)
-        >>> iris_glrm.train(x=iris.names, training_frame=iris)
-        >>> iris_glrm.show()
         """
         return self._parms.get("gamma_x")
 
@@ -474,21 +290,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Regularization weight on Y matrix
 
         Type: ``float``  (default: ``0``).
-
-        :examples:
-
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> rank = 3
-        >>> gx = 0.5
-        >>> gy = 0.5
-        >>> trans = "standardize"
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=rank,
-        ...                                            loss="Quadratic",
-        ...                                            gamma_x=gx,
-        ...                                            gamma_y=gy,
-        ...                                            transform=trans)
-        >>> iris_glrm.train(x=iris.names, training_frame=iris)
-        >>> iris_glrm.show()
         """
         return self._parms.get("gamma_y")
 
@@ -504,21 +305,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Maximum number of iterations
 
         Type: ``int``  (default: ``1000``).
-
-        :examples:
-
-        >>> acs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
-        >>> acs_fill = acs.drop("ZCTA5")
-        >>> acs_glrm = H2OGeneralizedLowRankEstimator(k=10,
-        ...                                           transform="standardize",
-        ...                                           loss="quadratic",
-        ...                                           regularization_x="quadratic",
-        ...                                           regularization_y="L1",
-        ...                                           gamma_x=0.25,
-        ...                                           gamma_y=0.5,
-        ...                                           max_iterations=700)
-        >>> acs_glrm.train(x=acs_fill.names, training_frame=acs)
-        >>> acs_glrm.show()
         """
         return self._parms.get("max_iterations")
 
@@ -534,17 +320,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Maximum number of updates, defaults to 2*max_iterations
 
         Type: ``int``  (default: ``2000``).
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                               max_runtime_secs=15,
-        ...                                               max_iterations=500,
-        ...                                               max_updates=900,
-        ...                                               min_step_size=0.005)
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("max_updates")
 
@@ -560,15 +335,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Initial step size
 
         Type: ``float``  (default: ``1``).
-
-        :examples:
-
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                            init_step_size=2.5,
-        ...                                            seed=1234) 
-        >>> iris_glrm.train(x=iris.names, training_frame=iris)
-        >>> iris_glrm.show()
         """
         return self._parms.get("init_step_size")
 
@@ -584,17 +350,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Minimum step size
 
         Type: ``float``  (default: ``0.0001``).
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                               max_runtime_secs=15,
-        ...                                               max_iterations=500,
-        ...                                               max_updates=900,
-        ...                                               min_step_size=0.005)
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("min_step_size")
 
@@ -610,18 +365,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         RNG seed for initialization
 
         Type: ``int``  (default: ``-1``).
-
-        :examples:
-
-        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_cat.csv")
-        >>> prostate[0] = prostate[0].asnumeric()
-        >>> prostate[4] = prostate[4].asnumeric()
-        >>> glrm_w_seed = H2OGeneralizedLowRankEstimator(k=5, seed=12345) 
-        >>> glrm_w_seed.train(x=prostate.names, training_frame=prostate)
-        >>> glrm_wo_seed = H2OGeneralizedLowRankEstimator(k=5, 
-        >>> glrm_wo_seed.train(x=prostate.names, training_frame=prostate)
-        >>> glrm_w_seed.show()
-        >>> glrm_wo_seed.show()
         """
         return self._parms.get("seed")
 
@@ -637,15 +380,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Initialization mode
 
         One of: ``"random"``, ``"svd"``, ``"plus_plus"``, ``"user"``  (default: ``"plus_plus"``).
-
-        :examples:
-
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                            init="svd",
-        ...                                            seed=1234) 
-        >>> iris_glrm.train(x=iris.names, training_frame=iris)
-        >>> iris_glrm.show()
         """
         return self._parms.get("init")
 
@@ -661,17 +395,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)
 
         One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"randomized"``).
-
-        :examples:
-
-        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_cat.csv")
-        >>> prostate[0] = prostate[0].asnumeric()
-        >>> prostate[4] = prostate[4].asnumeric()
-        >>> pros_glrm = H2OGeneralizedLowRankEstimator(k=5,
-        ...                                            svd_method="power",
-        ...                                            seed=1234)
-        >>> pros_glrm.train(x=prostate.names, training_frame=prostate)
-        >>> pros_glrm.show()
         """
         return self._parms.get("svd_method")
 
@@ -687,25 +410,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         User-specified initial Y
 
         Type: ``H2OFrame``.
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
-        >>> initial_y = [[5.412,  65.24,  -7.54, -0.032],
-        ...              [2.212,  92.24, -17.54, 23.268],
-        ...              [0.312, 123.24,  14.46,  9.768],
-        ...              [1.012,  19.24, -15.54, -1.732]]
-        >>> initial_y_h2o = h2o.H2OFrame(list(zip(*initial_y)))
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=4,
-        ...                                               transform="demean",
-        ...                                               loss="quadratic",
-        ...                                               gamma_x=0.5,
-        ...                                               gamma_y=0.3,
-        ...                                               init="user",
-        ...                                               user_y=initial_y_h2o,
-        ...                                               recover_svd=True)
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("user_y")
 
@@ -720,27 +424,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         User-specified initial X
 
         Type: ``H2OFrame``.
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
-        >>> initial_x = ([[5.412, 65.24, -7.54, -0.032, 2.212, 92.24, -17.54, 23.268, 0.312,
-        ...                123.24, 14.46, 9.768, 1.012, 19.24, -15.54, -1.732, 5.412, 65.24,
-        ...                -7.54, -0.032, 2.212, 92.24, -17.54, 23.268, 0.312, 123.24, 14.46,
-        ...                9.76, 1.012, 19.24, -15.54, -1.732, 5.412, 65.24, -7.54, -0.032,
-        ...                2.212, 92.24, -17.54, 23.268, 0.312, 123.24, 14.46, 9.768, 1.012,
-        ...                19.24, -15.54, -1.732, 5.412, 65.24]]*4)
-        >>> initial_x_h2o = h2o.H2OFrame(list(zip(*initial_x)))
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=4,
-        ...                                               transform="demean",
-        ...                                               loss="quadratic",
-        ...                                               gamma_x=0.5,
-        ...                                               gamma_y=0.3,
-        ...                                               init="user",
-        ...                                               user_x=initial_x_h2o,
-        ...                                               recover_svd=True)
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("user_x")
 
@@ -755,22 +438,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Expand categorical columns in user-specified initial Y
 
         Type: ``bool``  (default: ``True``).
-
-        :examples:
-
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> rank = 3
-        >>> gx = 0.5
-        >>> gy = 0.5
-        >>> trans = "standardize"
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=rank,
-        ...                                            loss="Quadratic",
-        ...                                            gamma_x=gx,
-        ...                                            gamma_y=gy,
-        ...                                            transform=trans,
-        ...                                            expand_user_y=False)
-        >>> iris_glrm.train(x=iris.names, training_frame=iris)
-        >>> iris_glrm.show()
         """
         return self._parms.get("expand_user_y")
 
@@ -786,22 +453,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Reconstruct original training data by reversing transform
 
         Type: ``bool``  (default: ``False``).
-
-        :examples:
-
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> rank = 3
-        >>> gx = 0.5
-        >>> gy = 0.5
-        >>> trans = "standardize"
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=rank,
-        ...                                            loss="Quadratic",
-        ...                                            gamma_x=gx,
-        ...                                            gamma_y=gy,
-        ...                                            transform=trans
-        ...                                            impute_original=True)
-        >>> iris_glrm.train(x=iris.names, training_frame=iris)
-        >>> iris_glrm.show()
         """
         return self._parms.get("impute_original")
 
@@ -817,21 +468,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Recover singular values and eigenvectors of XY
 
         Type: ``bool``  (default: ``False``).
-
-        :examples:
-
-        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_cat.csv")
-        >>> prostate[0] = prostate[0].asnumeric()
-        >>> prostate[4] = prostate[4].asnumeric()
-        >>> loss_all = ["Hinge", "Quadratic", "Categorical", "Categorical",
-        ...             "Hinge", "Quadratic", "Quadratic", "Quadratic"]
-        >>> pros_glrm = H2OGeneralizedLowRankEstimator(k=5,
-        ...                                            loss_by_col=loss_all,
-        ...                                            recover_svd=True,
-        ...                                            transform="standardize",
-        ...                                            seed=12345)
-        >>> pros_glrm.train(x=prostate.names, training_frame=prostate)
-        >>> pros_glrm.show()
         """
         return self._parms.get("recover_svd")
 
@@ -847,17 +483,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
         Type: ``float``  (default: ``0``).
-
-        :examples:
-
-        >>> arrestsH2O = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/pca_test/USArrests.csv")
-        >>> arrests_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                               max_runtime_secs=15,
-        ...                                               max_iterations=500,
-        ...                                               max_updates=900,
-        ...                                               min_step_size=0.005)
-        >>> arrests_glrm.train(x=arrestsH2O.names, training_frame=arrestsH2O)
-        >>> arrests_glrm.show()
         """
         return self._parms.get("max_runtime_secs")
 
@@ -873,18 +498,6 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
-
-        :examples:
-
-        >>> import tempfile
-        >>> from os import listdir
-        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> checkpoints_dir = tempfile.mkdtemp()
-        >>> iris_glrm = H2OGeneralizedLowRankEstimator(k=3,
-        ...                                            export_checkpoints_dir=checkpoints_dir,
-        ...                                            seed=1234)
-        >>> iris_glrm.train(x=iris.names, training_frame=iris)
-        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 

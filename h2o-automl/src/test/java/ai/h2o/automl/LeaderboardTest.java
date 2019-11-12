@@ -7,7 +7,6 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
 import water.fvec.Frame;
-import water.util.Log;
 import water.util.TwoDimTable;
 
 public class LeaderboardTest extends water.TestUtil {
@@ -24,7 +23,7 @@ public class LeaderboardTest extends water.TestUtil {
   @Test
   public void test_toTwoDimTable_with_empty_models_and_without_sort_metric() {
     Leaderboard lb = null;
-    EventLog eventLog = EventLog.getOrMake(dummy);
+    EventLog eventLog = EventLog.make(dummy);
     try {
       lb = Leaderboard.getOrMake("dummy_lb_no_sort_metric", eventLog, new Frame(), null);
 
@@ -40,7 +39,7 @@ public class LeaderboardTest extends water.TestUtil {
   @Test
   public void test_toTwoDimTable_with_empty_models_and_with_sort_metric() {
     Leaderboard lb = null;
-    EventLog eventLog = EventLog.getOrMake(dummy);
+    EventLog eventLog = EventLog.make(dummy);
     try {
       lb = Leaderboard.getOrMake("dummy_lb_logloss_sort_metric", eventLog, new Frame(), "logloss");
 
@@ -57,7 +56,7 @@ public class LeaderboardTest extends water.TestUtil {
   @Test
   public void test_rank_tsv() {
     Leaderboard lb = null;
-    EventLog eventLog = EventLog.getOrMake(dummy);
+    EventLog eventLog = EventLog.make(dummy);
     GBMModel model = null;
     Frame fr  = null;
     try {
@@ -72,8 +71,7 @@ public class LeaderboardTest extends water.TestUtil {
       
       lb = Leaderboard.getOrMake("dummy_rank_tsv", eventLog, null, "mae");
       lb.addModel(model);
-      Log.info(lb.rankTsv());
-      Assert.assertEquals("Error\n[0.3448260574357465, 0.19959320678410908, 0.44675855535636816, 0.19959320678410908, 0.31468498072970547]\n", lb.rankTsv());
+      Assert.assertEquals("Error\n[0.19959320678410908, 0.44675855535636816, 0.19959320678410908, 0.3448260574357465, 0.31468498072970547]\n", lb.rankTsv()); 
     } finally {
       if (lb != null){
         lb.remove();

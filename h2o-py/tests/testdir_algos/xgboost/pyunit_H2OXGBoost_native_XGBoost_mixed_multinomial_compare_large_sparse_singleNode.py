@@ -1,5 +1,4 @@
-import sys
-sys.path.insert(1,"../../../")
+import xgboost as xgb
 import time
 from h2o.estimators.xgboost import *
 from tests import pyunit_utils
@@ -9,10 +8,6 @@ The goal of this test is to compare the results of H2OXGBoost and natibve XGBoos
 The dataset contains both numerical and enum columns.
 '''
 def comparison_test_dense():
-    if sys.version.startswith("2"):
-        print("native XGBoost tests only supported on python3")
-        return
-    import xgboost as xgb
     assert H2OXGBoostEstimator.available() is True
     ret = h2o.cluster()
     if len(ret.nodes) == 1:

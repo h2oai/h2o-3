@@ -54,9 +54,3 @@ Model Categories
       :undoc-members:
       :show-inheritance:
 
-:mod:`Word Embedding`
-----------------------
-.. automodule:: h2o.model.word_embedding
-      :members:
-      :undoc-members:
-      :show-inheritance:

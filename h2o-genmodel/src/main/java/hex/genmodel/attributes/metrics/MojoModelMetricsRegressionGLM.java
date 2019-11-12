@@ -1,7 +1,5 @@
 package hex.genmodel.attributes.metrics;
 
-import hex.genmodel.attributes.SerializedName;
-
 public class MojoModelMetricsRegressionGLM extends MojoModelMetricsRegression {
   @SerializedName("null_degrees_of_freedom")
   public long _nullDegressOfFreedom;  

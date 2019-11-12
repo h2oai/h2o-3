@@ -19,7 +19,7 @@ class FJPacket extends H2OCountedCompleter {
     super(UDP.udp.UDPS[ctrl]._prior);
     _ab = ab; _ctrl = ctrl;
     assert 0 < _ctrl && _ctrl < udp.UDPS.length;
-    assert udp.UDPS[_ctrl]._udp != null:"missing message handler " + _ctrl;
+    assert udp.UDPS[_ctrl]._udp != null:"missing udp " + _ctrl;
   }
 
   @Override

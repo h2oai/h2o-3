@@ -11,7 +11,6 @@ import water.fvec.NFSFileVec;
 import water.util.FileUtils;
 
 import java.io.File;
-import java.io.IOException;
 
 public class ParseFolderTest extends TestUtil {
   @BeforeClass static public void setup() { stall_till_cloudsize(5); }
@@ -67,8 +66,8 @@ public class ParseFolderTest extends TestUtil {
     }
   }
 
-  @Test public void testSameFile() throws IOException {
-    File f = FileUtils.getFile("smalldata/iris/iris_wheader.csv");
+  @Test public void testSameFile() {
+    File f = FileUtils.locateFile("smalldata/iris/iris_wheader.csv");
     NFSFileVec nfs1 = NFSFileVec.make(f);
     NFSFileVec nfs2 = NFSFileVec.make(f);
     Frame fr = null;

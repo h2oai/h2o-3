@@ -135,22 +135,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
     Method method = null;
     Object obj = null;
     criterion = criterion.toLowerCase();
-    
-    // Constructing confusion matrix based on criterion
-    ConfusionMatrix cm;
-    if(mm instanceof ModelMetricsBinomial) {
-      AUC2.ThresholdCriterion criterionAsEnum = AUC2.ThresholdCriterion.fromString(criterion);
-      if(criterionAsEnum != null) {
-        ModelMetricsBinomial mmb = (ModelMetricsBinomial) mm;
-        cm = mmb.cm(criterionAsEnum);
-      }
-      else
-        cm = mm.cm();
-    }
-    else
-      cm = mm.cm();
-    
-    // Getting (by reflection) method that corresponds to a given criterion
+    ConfusionMatrix cm = mm.cm();
     try {
       method = mm.getClass().getMethod(criterion);
       obj = mm;

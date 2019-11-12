@@ -32,9 +32,6 @@ class H2OGridSearch(backwards_compatible()):
         "RandomDiscrete" strategy to get random search of all the combinations of your hyperparameters.
         RandomDiscrete should usually be combined with at least one early stopping criterion: max_models
         and/or max_runtime_secs, e.g::
-    :param parallelism Level of parallelism during grid model building. 1 = sequential building (default). 
-         Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models
-         built in parallel.
 
             >>> criteria = {"strategy": "RandomDiscrete", "max_models": 42,
             ...             "max_runtime_secs": 28800, "seed": 1234}
@@ -57,8 +54,7 @@ class H2OGridSearch(backwards_compatible()):
     """
 
 
-    def __init__(self, model, hyper_params, grid_id=None, search_criteria=None, export_checkpoints_dir=None,
-                 parallelism=1):
+    def __init__(self, model, hyper_params, grid_id=None, search_criteria=None):
         super(H2OGridSearch, self).__init__()
         assert_is_type(model, None, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
         assert_is_type(hyper_params, dict)
@@ -69,8 +65,6 @@ class H2OGridSearch(backwards_compatible()):
         self.model = model
         self.hyper_params = dict(hyper_params)
         self.search_criteria = None if search_criteria is None else dict(search_criteria)
-        self.export_checkpoints_dir = export_checkpoints_dir
-        self._parallelism = parallelism  # Degree of parallelism during model building
         self._grid_json = None
         self.models = None  # list of H2O Estimator instances
         self._parms = {}  # internal, for object recycle #
@@ -179,8 +173,6 @@ class H2OGridSearch(backwards_compatible()):
         parms.update({k: v for k, v in algo_params.items() if k not in ["self", "params", "algo_params", "parms"]})
         # dictionaries have special handling in grid search, avoid the implicit conversion
         parms["search_criteria"] = None if self.search_criteria is None else str(self.search_criteria)
-        parms["export_checkpoints_dir"] = self.export_checkpoints_dir
-        parms["parallelism"] = self._parallelism
         parms["hyper_parameters"] = None if self.hyper_params  is None else str(self.hyper_params) # unique to grid search
         parms.update({k: v for k, v in list(self.model._parms.items()) if v is not None})  # unique to grid search
         parms.update(params)
@@ -305,7 +297,6 @@ class H2OGridSearch(backwards_compatible()):
         m._grid_json = grid_json
         # m._metrics_class = metrics_class
         m._parms = self._parms
-        self.export_checkpoints_dir = m._grid_json["export_checkpoints_dir"]
         H2OEstimator.mixin(self, model_class)
         self.__dict__.update(m.__dict__.copy())
 
@@ -463,7 +454,7 @@ class H2OGridSearch(backwards_compatible()):
         if header:
             print('Grid Summary:')
         print()
-        H2ODisplay(table, header=['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
+        H2ODisplay(table, ['Model Id'] + model_summary.col_header[1:], numalign="left", stralign="left")
 
 
     def show(self):

@@ -18,10 +18,10 @@ import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
-import java.io.*;
+import java.io.File;
+import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.net.URL;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -355,48 +355,11 @@ public class TestUtil extends Iced {
 
   public static NFSFileVec makeNfsFileVec(String fname) {
     try {
-      if (runWithoutLocalFiles()) {
-        downloadTestFileFromS3(fname);
-      }
       return NFSFileVec.make(fname);
     } catch (IOException ioe) {
       fail(ioe.getMessage());
       return null;
     }
-  }
-
-  private static boolean runWithoutLocalFiles() {
-    return Boolean.valueOf(System.getenv("H2O_JUNIT_ALLOW_NO_SMALLDATA"));
-  }
-  
-  private static void downloadTestFileFromS3(String fname) throws IOException {
-    if (fname.startsWith("./"))
-      fname = fname.substring(2);
-    File f = new File(fname);
-    if (! f.exists()) {
-      f.getParentFile().mkdirs();
-      File tmpFile = File.createTempFile(f.getName(), "tmp", f.getParentFile());
-      org.apache.commons.io.FileUtils.copyURLToFile(
-              new URL("https://h2o-public-test-data.s3.amazonaws.com/" + fname),
-              tmpFile, 1000, 2000);
-      if (! tmpFile.renameTo(f)) {
-        Log.warn("Couldn't download " + fname + " from S3.");
-      }
-    }
-  }
-
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
-    return parse_test_file(outputKey, fname, guessSetup, null);
-  }
-
-  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
-    NFSFileVec nfs = makeNfsFileVec(fname);
-    ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
-    if (skippedColumns != null) {
-      guessParseSetup.setSkippedColumns(skippedColumns);
-      guessParseSetup.setParseColumnIndices(guessParseSetup.getNumberColumns(), skippedColumns);
-    }
-    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   public static Frame parse_test_file( Key outputKey, String fname) {
@@ -430,6 +393,20 @@ public class TestUtil extends Iced {
     if (transformer != null)
       guessedSetup = transformer.transformSetup(guessedSetup);
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
+  }
+
+  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup) {
+    return parse_test_file(outputKey, fname, guessSetup, null);
+  }
+
+  protected Frame parse_test_file( Key outputKey, String fname, boolean guessSetup, int[] skippedColumns) {
+    NFSFileVec nfs = makeNfsFileVec(fname);
+    ParseSetup guessParseSetup = ParseSetup.guessSetup(new Key[]{nfs._key},false,1);
+    if (skippedColumns != null) {
+      guessParseSetup.setSkippedColumns(skippedColumns);
+      guessParseSetup.setParseColumnIndices(guessParseSetup.getNumberColumns(), skippedColumns);
+    }
+    return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, ParseSetup.guessSetup(new Key[]{nfs._key},false,1));
   }
 
   protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
@@ -1154,12 +1131,6 @@ public class TestUtil extends Iced {
     return true;
   }
 
-  public static final String[] ignoredColumns(final Frame frame, final String... usedColumns) {
-    Set<String> ignored = new HashSet(Arrays.asList(frame.names()));
-    ignored.removeAll(Arrays.asList(usedColumns));
-    return ignored.toArray(new String[ignored.size()]);
-  }
-
   public static boolean compareFrames(final Frame f1, final Frame f2) throws IllegalStateException {
     return compareFrames(f1, f2, 0);
   }
@@ -1185,33 +1156,6 @@ public class TestUtil extends Iced {
     @Override
     protected void setupLocal() {
       Locale.setDefault(_locale);
-    }
-  }
-
-  /**
-   * Converts a H2OFrame to a csv file for debugging purposes.
-   *
-   * @param fileNameWithPath: String containing filename with path that will contain the H2O Frame
-   * @param h2oframe: H2O Frame to be saved as CSV file.
-   * @param header: boolean to decide if column names should be saved.  Set to false if don't care.
-   * @param hex_string: boolean to decide if the double values are written in hex.  Set to false if don't care.
-   * @throws IOException
-   */
-  public static void writeFrameToCSV(String fileNameWithPath, Frame h2oframe, boolean header, boolean hex_string)
-          throws IOException {
-
-    Frame.CSVStreamParams params = new Frame.CSVStreamParams()
-            .setHeaders(header)
-            .setHexString(hex_string);
-    File targetFile = new File(fileNameWithPath);
-
-    byte[] buffer = new byte[1<<20];
-    int bytesRead;
-    try (InputStream frameToStream = h2oframe.toCSV(params);
-         OutputStream outStream = new FileOutputStream(targetFile)) {
-      while((bytesRead=frameToStream.read(buffer)) > 0) { // for our toCSV stream, return 0 as EOF, not -1
-        outStream.write(buffer, 0, bytesRead);
-      }
     }
   }
 

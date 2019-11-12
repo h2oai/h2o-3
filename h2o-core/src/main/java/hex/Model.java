@@ -53,7 +53,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
 
-
   public static Model[] fetchAll() {
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
@@ -107,10 +106,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   public interface GetMostImportantFeatures {
     String[] getMostImportantFeatures(int n);
-  }
-
-  public interface GetNTrees {
-    int getNTrees();
   }
 
   /**
@@ -386,9 +381,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     public boolean hasCheckpoint() { return _checkpoint != null; }
 
+    // FIXME: this is really horrible hack, Model.Parameters has method checksum_impl,
+    // but not checksum, the API is totally random :(
     public long checksum() {
-      return checksum(null);
+      return checksum_impl();
     }
+
     /**
      * Compute a checksum based on all non-transient non-static ice-able assignable fields (incl. inherited ones) which have @API annotations.
      * Sort the fields first, since reflection gives us the fields in random order and we don't want the checksum to be affected by the field order.
@@ -396,25 +394,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * a client wants backward compatibility they will need to compare parameter values explicitly.
      *
      * The method is motivated by standard hash implementation `hash = hash * P + value` but we use high prime numbers in random order.
-     * @param ignoredFields A {@link Set} of fields to ignore. Can be empty or null.
-     * @return checksum A 64-bit long representing the checksum of the {@link Parameters} object
+     * @return checksum
      */
-    public long checksum(final Set<String> ignoredFields) {
+    protected long checksum_impl() {
       long xs = 0x600DL;
       int count = 0;
       Field[] fields = Weaver.getWovenFields(this.getClass());
       Arrays.sort(fields,
-              new Comparator<Field>() {
-                public int compare(Field field1, Field field2) {
-                  return field1.getName().compareTo(field2.getName());
-                }
-              });
+                  new Comparator<Field>() {
+                    public int compare(Field field1, Field field2) {
+                      return field1.getName().compareTo(field2.getName());
+                    }
+                  });
 
       for (Field f : fields) {
-        if (ignoredFields != null && ignoredFields.contains(f.getName())) {
-          // Do not include ignored fields in the final hash
-          continue;
-        }
         final long P = MathUtils.PRIMES[count % MathUtils.PRIMES.length];
         Class<?> c = f.getType();
         if (c.isArray()) {
@@ -1622,7 +1615,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @param predictFr
    * @return
    */
-  protected Frame postProcessPredictions(Frame adaptFrm, Frame predictFr, Job j) {  
+  protected Frame postProcessPredictions(Frame adaptFrm, Frame predictFr, Job j) {
     return predictFr;
   }
 
@@ -1751,11 +1744,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  public interface BigScorePredict {
+  protected interface BigScorePredict {
     BigScoreChunkPredict initMap(final Frame fr, final Chunk chks[]);
   }
 
-  public interface BigScoreChunkPredict extends AutoCloseable {
+  protected interface BigScoreChunkPredict extends AutoCloseable {
     double[] score0(Chunk chks[], double offset, int row_in_chunk, double[] tmp, double[] preds);
     @Override
     void close();
@@ -1810,7 +1803,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  re-used temp array, in the order the model expects.  The predictions are
    *  loaded into the re-used temp array, which is also returned.  */
   protected abstract double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/]);
-  
+
   /**Override scoring logic for models that handle weight/offset**/
   protected double[] score0(double data[/*ncols*/], double preds[/*nclasses+1*/], double offset) {
     assert (offset == 0) : "Override this method for non-trivial offset!";
@@ -1851,7 +1844,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   @Override protected long checksum_impl() {
-    return _parms.checksum(null) * _output.checksum_impl();
+    return _parms.checksum_impl() * _output.checksum_impl();
   }
 
   /**
@@ -1862,14 +1855,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
   }
 
-  /**
-   * Specify categorical encoding that should be applied before running score0 method of POJO/MOJO.
-   * Default: AUTO - POJO/MOJO handles encoding or no transformation of input is needed.
-   * @return instance of CategoricalEncoding supported by GenModel or null if encoding is not supported.
-   */
-  protected CategoricalEncoding getGenModelEncoding() {
-    return CategoricalEncoding.AUTO;
-  }
+
 
   // ==========================================================================
   /** Return a String which is a valid Java program representing a class that
@@ -1962,15 +1948,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         .getModelCategory() + "; }").nl();
     toJavaInit(sb, fileCtx).nl();
     toJavaNAMES(sb, fileCtx);
-    CategoricalEncoding encoding = getGenModelEncoding();
-    assert encoding != null;
-    boolean writeOrigs = encoding != CategoricalEncoding.AUTO; // export orig names & domains if POJO/MOJO doesn't handle encoding itself
-    if (writeOrigs && _output._origNames != null)
-      toJavaOrigNAMES(sb, fileCtx);
     toJavaNCLASSES(sb);
     toJavaDOMAINS(sb, fileCtx);
-    if (writeOrigs && _output._origDomains != null)
-      toJavaOrigDOMAINS(sb, fileCtx);
     toJavaPROB(sb);
     toJavaSuper(modelName, sb); //
     sb.p("  public String getUUID() { return Long.toString("+checksum()+"L); }").nl();
@@ -2020,25 +1999,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return sb;
   }
 
-  private SBPrintStream toJavaOrigNAMES(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
-    final String modelName = JCodeGen.toJavaId(_key.toString());
-    final String namesHolderClassName = "OrigNamesHolder_"+modelName;
-    sb.i().p("// ").p("Original names of columns used by model.").nl();
-    sb.i().p("public static final String[] ORIG_NAMES = "+namesHolderClassName+".VALUES;").nl();
-    // Generate class which fills the names into array
-    fileCtx.add(new CodeGenerator() {
-      @Override
-      public void generate(JCodeSB out) {
-        out.i().p("// The class representing original training column names").nl();
-        int nResponse = _output._names.length - _output.nfeatures();
-        JCodeGen.toClassWithArray(out, null, namesHolderClassName,
-                Arrays.copyOf(_output._origNames, _output._origNames.length - nResponse));
-      }
-    });
-
-    return sb;
-  }
-
   protected SBPrintStream toJavaNCLASSES(SBPrintStream sb ) {
     return _output.isClassifier() ? JCodeGen.toStaticVar(sb, "NCLASSES",
                                                          _output.nclasses(),
@@ -2067,36 +2027,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                       @Override
                       public void generate(JCodeSB out) {
                         out.ip("// The class representing column ").p(_output._names[idx]).nl();
-                        JCodeGen.toClassWithArray(out, null, colInfoClazz, dom);
-                      }
-                    }
-        );
-      }
-    }
-    return sb.ip("};").nl();
-  }
-
-  private SBPrintStream toJavaOrigDOMAINS(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
-    String modelName = JCodeGen.toJavaId(_key.toString());
-    sb.nl();
-    sb.ip("// Original column domains. The last array contains domain of response column.").nl();
-    sb.ip("public static final String[][] ORIG_DOMAINS = new String[][] {").nl();
-    String [][] domains = _output._origDomains;
-    for (int i=0; i< domains.length; i++) {
-      final int idx = i;
-      final String[] dom = domains[i];
-      final String colInfoClazz = modelName+"_OrigColInfo_"+i;
-      sb.i(1).p("/* ").p(_output._origNames[i]).p(" */ ");
-      if (dom != null) sb.p(colInfoClazz).p(".VALUES"); else sb.p("null");
-      if (i!=domains.length-1) sb.p(',');
-      sb.nl();
-      // Right now do not generate the class representing column
-      // since it does not hold any interesting information except String array holding domain
-      if (dom != null) {
-        fileCtx.add(new CodeGenerator() {
-                      @Override
-                      public void generate(JCodeSB out) {
-                        out.ip("// The class representing the original column ").p(_output._names[idx]).nl();
                         JCodeGen.toClassWithArray(out, null, colInfoClazz, dom);
                       }
                     }
@@ -2297,12 +2227,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
         EasyPredictModelWrapper epmw;
         try {
-          config.setModel(genmodel)
-                  .setConvertUnknownCategoricalLevelsToNa(true)
-                  .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
-                  .setEnableStagedProbabilities(genmodel instanceof SharedTreeMojoModel)
-                  .setUseExternalEncoding(true); // input Frame is already adapted!
-          epmw = new EasyPredictModelWrapper(config);
+          epmw = new EasyPredictModelWrapper(
+                  config.setModel(genmodel)
+                          .setConvertUnknownCategoricalLevelsToNa(true)
+                          .setEnableLeafAssignment(genmodel instanceof SharedTreeMojoModel)
+                          .setEnableStagedProbabilities(genmodel instanceof SharedTreeMojoModel)
+          );
         } catch (IOException e) {
           throw new RuntimeException(e);
         }

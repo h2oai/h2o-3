@@ -957,7 +957,7 @@ assertCorrectSkipColumns <-
           # only tests half of the columns to save time
           print(paste0("testing column ", ind))
           if (allFrameTypes[ind] == "uuid")
-            next
+            continue
           for (rind in c(1:rowNum)) {
             if (is.na(f1R[rind, ind]))
               expect_true(
@@ -1122,23 +1122,6 @@ buildModelSaveMojoGLM <- function(params) {
   h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
   return(list("model"=model, "dirName"=tmpdir_name))
-}
-
-buildModelSaveMojoPCA <- function(params) {
-model <- do.call("h2o.prcomp", params)
-model_key <- model@model_id
-tmpdir_name <- sprintf("%s/tmp_model_%s", sandbox(), as.character(Sys.getpid()))
-if (.Platform$OS.type == "windows") {
-shell(sprintf("C:\\cygwin64\\bin\\rm.exe -fr %s", normalizePath(tmpdir_name)))
-shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
-} else {
-safeSystem(sprintf("rm -fr %s", tmpdir_name))
-safeSystem(sprintf("mkdir -p %s", tmpdir_name))
-}
-h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
-h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
-
-return(list("model"=model, "dirName"=tmpdir_name))
 }
 
 buildModelSaveMojoGLRM <- function(params) {
@@ -1319,7 +1302,7 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
     for (ind in c(1:length(cfullnames))) {
         if (cfullnames[ind] == cskipnames[skipcount]) {
             if (allFrameTypes[ind] == "uuid")
-              next
+            continue
             for (rind in c(1:rowNum)) {
                 if (is.na(originalR[rind, ind])) {
                     expect_true(

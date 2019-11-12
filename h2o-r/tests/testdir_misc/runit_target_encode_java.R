@@ -105,7 +105,7 @@ testIndexesToNames <- function() {
 testNoiseParameter <- function() {
     .check_vector_is_within_range <- function(vectorFrame, range) {
         for(i in length(vectorFrame)){
-            expect_true(vectorFrame[i,1] < range)
+            expect_lt(vectorFrame[i,1], range)
         }
     }
     data <- getTitanicData()

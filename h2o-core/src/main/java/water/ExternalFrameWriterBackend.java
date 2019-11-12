@@ -9,28 +9,15 @@ import java.nio.channels.ByteChannel;
 import static water.ExternalFrameUtils.*;
 
 /**
- * This class contains methods used on the H2O backend to store incoming data as H2O Frame
- * from non-H2O environment
+ * This class contains methods used on the h2o backend to store incoming data as H2O Frame
  */
 final class ExternalFrameWriterBackend {
-
-  static void initFrame(ByteChannel sock, AutoBuffer ab) throws IOException {
-    String frameKey = ab.getStr();
-    String[] names = ab.getAStr();
-    ChunkUtils.initFrame(frameKey, names);
-    notifyRequestFinished(sock, ExternalBackendRequestType.INIT_FRAME.getByte());
-  }
-
-  static void finalizeFrame(ByteChannel sock, AutoBuffer ab) throws IOException {
-    String keyName = ab.getStr();
-    long[] rowsPerChunk = ab.getA8();
-    byte[] colTypes = ab.getA1();
-    String[][] colDomains = ab.getAAStr();
-    ChunkUtils.finalizeFrame(keyName, rowsPerChunk, colTypes, colDomains);
-    notifyRequestFinished(sock, ExternalBackendRequestType.FINALIZE_FRAME.getByte());
-  }
-  
-    static void writeToChunk(ByteChannel sock, AutoBuffer ab) throws IOException {
+    /**
+     * Internal method use on the h2o backend side to handle writing to the chunk from non-h2o environment
+     * @param sock socket channel originating from non-h2o node
+     * @param ab {@link AutoBuffer} containing information necessary for preparing backend for writing
+     */
+    static void handleWriteToChunk(ByteChannel sock, AutoBuffer ab) throws IOException {
         String frameKey = ab.getStr();
         byte[] expectedTypes = ab.getA1();
         if( expectedTypes == null){
@@ -84,8 +71,18 @@ final class ExternalFrameWriterBackend {
             }
             currentRowIdx++;
         }
+        // close chunks at the end
         ChunkUtils.closeNewChunks(nchnk);
-        notifyRequestFinished(sock, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
+
+        // Flag informing sender that all work is done and
+        // chunks are ready to be finalized.
+        //
+        // This also needs to be sent because in the sender we have to
+        // wait for all chunks to be written to DKV; otherwise we get race during finalizing and
+        // it happens that we try to finalize frame with chunks not ready yet
+        AutoBuffer outputAb = new AutoBuffer();
+        outputAb.put1(ExternalFrameHandler.CONFIRM_WRITING_DONE);
+        writeToChannel(outputAb, sock);
     }
 
     private static void storeVector(AutoBuffer ab, NewChunk[] nchnk, int maxVecSize, int startPos){
@@ -155,10 +152,4 @@ final class ExternalFrameWriterBackend {
             chunk.addStr(data);
         }
     }
-
-  private static void notifyRequestFinished(ByteChannel sock, byte confirmation) throws IOException {
-    AutoBuffer ab = new AutoBuffer();
-    ab.put1(confirmation);
-    writeToChannel(ab, sock);
-  }
 }

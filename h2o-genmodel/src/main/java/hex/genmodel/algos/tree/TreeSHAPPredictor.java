@@ -12,6 +12,4 @@ public interface TreeSHAPPredictor<R> extends Serializable  {
 
   Object makeWorkspace();
 
-  int getWorkspaceSize();
-
 }

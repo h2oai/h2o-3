@@ -33,30 +33,19 @@ public abstract class SharedTreeMojoModelWithContributions extends SharedTreeMoj
     
     protected abstract ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor);
     
-    protected static class ContributionsPredictor implements PredictContributions {
-        private final int _nfeatures;
+    public class ContributionsPredictor implements PredictContributions {
         private final TreeSHAPPredictor<double[]> _treeSHAPPredictor;
+        private final Object _workspace;
 
-        private static ThreadLocal<Object> _workspace = new ThreadLocal<>();
-        
-        public ContributionsPredictor(SharedTreeMojoModel model, TreeSHAPPredictor<double[]> treeSHAPPredictor) {
-            _nfeatures = model._nfeatures;
+        public ContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
             _treeSHAPPredictor = treeSHAPPredictor;
+            _workspace = _treeSHAPPredictor.makeWorkspace();
         }
         
-        public final float[] calculateContributions(double[] input) {
-            float[] contribs = new float[_nfeatures + 1];
-            _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, getWorkspace());
+        public float[] calculateContributions(double[] input) {
+            float[] contribs = new float[nfeatures() + 1];
+            _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, _workspace);
             return getContribs(contribs);
-        }
-        
-        private Object getWorkspace() {
-            Object workspace = _workspace.get();
-            if (workspace == null) {
-                workspace = _treeSHAPPredictor.makeWorkspace();
-                _workspace.set(workspace);
-            }
-            return workspace;
         }
         
         public float[] getContribs(float[] contribs) {

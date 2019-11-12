@@ -25,12 +25,11 @@ class GroupBy(object):
 
     Sample usage:
 
-    >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-    >>> grouped = my_frame.group_by(by=["sepal_len",
-    ...                                 "sepal_wid"])
-    >>> grouped.sum(col="sepal_len",
-    ...             na="all").mean(col="class", na="all").max()
+    >>> my_frame = ...  # some existing H2OFrame
+    >>> grouped = my_frame.group_by(by=["C1", "C2"])
+    >>> grouped.sum(col="X1", na="all").mean(col="X5", na="all").max()
     >>> grouped.get_frame()
+
 
     Any number of aggregations may be chained together in this manner.  Note that once the aggregation operations
     are complete, calling the GroupBy object with a new set of aggregations will yield no effect.  You must generate
@@ -94,13 +93,6 @@ class GroupBy(object):
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
 
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.sum(col="sepal_len",
-        ...             na="all").mean(col="class", na="all").min()
-        >>> grouped.get_frame()
         """
         return self._add_agg("min", col, na)
 
@@ -114,14 +106,6 @@ class GroupBy(object):
             list for multiple columns
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.sum(col="sepal_len",
-        ...             na="all").mean(col="class", na="all").max()
-        >>> grouped.get_frame()
         """
         return self._add_agg("max", col, na)
 
@@ -135,14 +119,6 @@ class GroupBy(object):
             list for multiple columns
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.sum(col="sepal_len",
-        ...             na="all").mean(col="class", na="all").max()
-        >>> grouped.get_frame()
         """
         return self._add_agg("mean", col, na)
 
@@ -153,14 +129,6 @@ class GroupBy(object):
 
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len",
-        ...                                 "sepal_wid"])
-        >>> grouped.count
-        >>> grouped.get_frame()
         """
         return self._add_agg("nrow", None, na)
 
@@ -174,14 +142,6 @@ class GroupBy(object):
             list for multiple columns
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.sum(col="sepal_len",
-        ...             na="all").mean(col="class", na="all").max()
-        >>> grouped.get_frame()
         """
         return self._add_agg("sum", col, na)
 
@@ -195,14 +155,6 @@ class GroupBy(object):
             list for multiple columns
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.sd(col="sepal_len",
-        ...             na="all").mean(col="class", na="all").max()
-        >>> grouped.get_frame()
         """
         return self._add_agg("sdev", col, na)
 
@@ -216,14 +168,6 @@ class GroupBy(object):
             list for multiple columns
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.var(col="sepal_len",
-        ...             na="all").mean(col="class", na="all").max()
-        >>> grouped.get_frame()
         """
         return self._add_agg("var", col, na)
 
@@ -237,14 +181,6 @@ class GroupBy(object):
             list for multiple columns
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.ss(col="sepal_len",
-        ...             na="all").mean(col="class", na="all").max()
-        >>> grouped.get_frame()
         """
         return self._add_agg("sumSquares", col, na)
 
@@ -258,14 +194,6 @@ class GroupBy(object):
             list for multiple columns
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.sum(col="sepal_len",
-        ...             na="all").mode(col="class", na="all").max()
-        >>> grouped.get_frame()
         """
         return self._add_agg("mode", col, na)
 
@@ -279,14 +207,6 @@ class GroupBy(object):
             list for multiple columns
         :param str na:  one of 'rm', 'ignore' or 'all' (default).
         :return: the original GroupBy object (self), for ease of constructing chained operations.
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.sum(col="sepal_len",
-        ...             na="all").median(col="class", na="all").max()
-        >>> grouped.get_frame()
         """
         return self._add_agg("median", col, na)
 
@@ -295,12 +215,6 @@ class GroupBy(object):
     def frame(self):
         """
         same as get_frame().
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.frame
         """
         return self.get_frame()
 
@@ -320,14 +234,6 @@ class GroupBy(object):
         Note:
             - the count aggregation only generates one column;
             - if col is a str or int, len(col) = 1.
-
-        :returns: GroupBy H2OFrame
-
-        :examples:
-
-        >>> my_frame = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
-        >>> grouped = my_frame.group_by(by=["sepal_len", "sepal_wid"])
-        >>> grouped.get_frame()
         """
         if self._res is None:
             aggs = []

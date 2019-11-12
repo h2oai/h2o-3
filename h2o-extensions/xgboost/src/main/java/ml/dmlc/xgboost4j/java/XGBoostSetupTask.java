@@ -21,20 +21,16 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
   private final XGBoostModel.XGBoostParameters _parms;
   private final boolean _sparse;
   private final BoosterParms _boosterParms;
-  private final byte[] _checkpoint;
   private final IcedHashMapGeneric.IcedHashMapStringString _rabitEnv;
   private final Frame _trainFrame;
 
-  public XGBoostSetupTask(
-      XGBoostModel model, XGBoostModel.XGBoostParameters parms, BoosterParms boosterParms,
-      byte[] checkpointToResume, Map<String, String> rabitEnv, FrameNodes trainFrame
-  ) {
+  public XGBoostSetupTask(XGBoostModel model, XGBoostModel.XGBoostParameters parms, BoosterParms boosterParms,
+                          Map<String, String> rabitEnv, FrameNodes trainFrame) {
     super(model._key, trainFrame._nodes);
     _sharedModel = model.model_info();
     _parms = parms;
     _sparse = model._output._sparse;
     _boosterParms = boosterParms;
-    _checkpoint = checkpointToResume;
     (_rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString()).putAll(rabitEnv);
     _trainFrame = trainFrame._fr;
   }
@@ -63,7 +59,7 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
 
     _rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
-    XGBoostUpdater thread = XGBoostUpdater.make(_modelKey, matrix, _boosterParms, _checkpoint, _rabitEnv);
+    XGBoostUpdater thread = XGBoostUpdater.make(_modelKey, matrix, _boosterParms, _rabitEnv);
     thread.start(); // we do not need to wait for the Updater to init Rabit - subsequent tasks will wait
   }
 

@@ -17,7 +17,6 @@ def pyunit_drop():
     nc = pros.ncol
     nr = pros.nrow
 
-
     #There are two ways to drop a single column: Pass in an int index or a string column,i.e., 1 or "C1"
     dropped_col_int = pros.drop(0)
     frame_checker(dropped_col_int) #call on frame_checker()
@@ -27,10 +26,8 @@ def pyunit_drop():
     #There are two ways to drop a set of columns: Pass in an int array or a string array, i.e., [1,2] or ["C1", "C2"]
     dropped_col_int_array = pros.drop([0,1])
     frame_checker(dropped_col_int_array) #call on frame_checker()
-    to_drop = ["ID","CAPSULE"]
-    dropped_col_string_array = pros.drop(to_drop)
+    dropped_col_string_array = pros.drop(["ID","CAPSULE"])
     frame_checker(dropped_col_string_array) #call on frame_checker()
-    assert to_drop == ["ID","CAPSULE"]
 
     #Drop a first few rows from the frame (0 based)
     dropped_row_array_0 = pros.drop([0],axis=0)

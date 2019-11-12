@@ -46,7 +46,7 @@ public class LeaderboardsHandler extends Handler {
     if (null == s.project_name)
       throw new H2OKeyNotFoundArgumentException("Client must specify a project_name.");
 
-    return new LeaderboardV99().fillFromImpl(getFromDKV("project_name", Leaderboard.idForProject(s.project_name)));
+      return new LeaderboardV99().fillFromImpl(getFromDKV("project_name", Leaderboard.idForProject(s.project_name)));
   }
 
   // TODO: almost identical to ModelsHandler; refactor

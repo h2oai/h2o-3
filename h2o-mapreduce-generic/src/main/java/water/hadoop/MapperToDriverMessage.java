@@ -15,7 +15,6 @@ class MapperToDriverMessage extends AbstractMessage {
   private String _driverCallbackIp = null;
   private int _driverCallbackPort = -1;
   private char _type = TYPE_UNKNOWN;
-  private int _attempt = 0;
 
   private String _embeddedWebServerIp = "";
   private int _embeddedWebServerPort = -1;
@@ -25,17 +24,11 @@ class MapperToDriverMessage extends AbstractMessage {
   private int _exitStatus = -1;
 
   public MapperToDriverMessage() {
-    this(0);
-  }
-
-  public MapperToDriverMessage(int attempt) {
-    _attempt = attempt;
   }
 
   // Readers
   // -------
   public char getType() { return _type; }
-  public int getAttempt() { return _attempt; }
   public String getEmbeddedWebServerIp() { return _embeddedWebServerIp; }
   public int getEmbeddedWebServerPort() { return _embeddedWebServerPort; }
   public String getLeaderWebServerIp() { return _leaderWebServerIp; }
@@ -51,7 +44,6 @@ class MapperToDriverMessage extends AbstractMessage {
       _embeddedWebServerPort = readInt(s);
     }
     else if (_type == TYPE_FETCH_FLATFILE) {
-      _attempt = readInt(s);
       _embeddedWebServerIp = readString(s);
       _embeddedWebServerPort = readInt(s);
     }
@@ -144,7 +136,6 @@ class MapperToDriverMessage extends AbstractMessage {
 
   private void writeMessageFetchFlatfile(Socket s) throws Exception {
     writeType(s, TYPE_FETCH_FLATFILE);
-    writeInt(s, _attempt);
     writeString(s, _embeddedWebServerIp);
     writeInt(s, _embeddedWebServerPort);
   }

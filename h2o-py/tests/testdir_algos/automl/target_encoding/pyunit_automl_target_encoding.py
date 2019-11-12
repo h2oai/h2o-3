@@ -1,10 +1,9 @@
 from __future__ import print_function
 import sys, os, time, warnings
-sys.path.insert(1, os.path.join("..","..","..",".."))
+sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
 from h2o.targetencoder import TargetEncoder
-from collections import Counter
 
 """
 This test is used to check Rapids wrapper for java TargetEncoder
@@ -31,9 +30,8 @@ def test_target_encoding_fit_method():
     trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
 
     encodingMap = targetEncoder.fit(frame=trainingFrame)
-    assert Counter(encodingMap.map_keys['string']) == Counter(teColumns)
-    home_dest_index = encodingMap.map_keys['string'].index('home.dest')
-    assert encodingMap.frames[home_dest_index]['num_rows'] == 583
+    assert encodingMap.map_keys['string'] == teColumns
+    assert encodingMap.frames[0]['num_rows'] == 583
 
 
 def test_target_encoding_transform_kfold():

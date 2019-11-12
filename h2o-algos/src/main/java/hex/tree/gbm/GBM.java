@@ -811,13 +811,13 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
           if (Double.isInfinite(sum)) {  // Overflow (happens for constant responses)
             for (int k = 0; k < nclass; k++) {
               wk = (C8DVolatileChunk) chks[fm.work0Index + k];
-              wk.getValues()[row] = ((float) dist.negHalfGradient(y, (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f), k));
+              wk.getValues()[row] = ((int) y == k ? 1f : 0f) - (Double.isInfinite(fs[k + 1]) ? 1.0f : 0.0f);
             }
           } else {
             for (int k = 0; k < nclass; k++) { // Save as a probability distribution
               if (out[k]) {
                 wk = (C8DVolatileChunk) chks[fm.work0Index + k];
-                wk.getValues()[row] = ((float) dist.negHalfGradient(y, (float) (fs[k + 1] / sum), k));
+                wk.getValues()[row] = (((int) y == k ? 1f : 0f) - (float) (fs[k + 1] / sum));
               }
             }
           }

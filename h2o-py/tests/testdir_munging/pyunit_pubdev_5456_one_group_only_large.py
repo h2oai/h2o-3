@@ -10,8 +10,7 @@ def test_rankWithGroupBy():
     rankedFrame = train.rank_within_group_by(groupCols, sortCols, sortDirs) if randint(1,10)>5 \
          else train.rank_within_group_by(groupCols, sortCols, new_col_name=newColName)
     rankedFrame.summary()
-    pyunit_utils.compare_frames_local_onecolumn_NA(answerFrame[newColName], rankedFrame[newColName],1, tol=1e-10, 
-                                                   oneLessRow=True)    # compare rank column
+    pyunit_utils.compare_frames_local_onecolumn_NA(answerFrame[newColName], rankedFrame[newColName],1, tol=1e-10)    # compare rank column
 
 def generate_trainingFrame():
     nrows = 1000000 # per Michalk request

@@ -761,7 +761,6 @@ class Test(object):
         self.output_file_name = \
             os.path.join(self.output_dir, test_short_dir_with_no_slashes + self.test_name + ".out.txt")
         f = open(self.output_file_name, "w")
-        print("Running test %s against server %s:%s" % (self.test_name, self.ip, self.port))
         self.child = subprocess.Popen(args=cmd, stdout=f, stderr=subprocess.STDOUT, cwd=self.test_dir)
         self.pid = self.child.pid
 
@@ -926,8 +925,6 @@ class Test(object):
             cmd += ['--username', g_ldap_username]
         if g_ldap_password:
             cmd += ['--password', g_ldap_password]
-        if g_kerb_principal:
-            cmd += ['--kerbPrincipal', g_kerb_principal]
 
         if is_runit(test_name):
             if on_hadoop: cmd += ["--onHadoop"]

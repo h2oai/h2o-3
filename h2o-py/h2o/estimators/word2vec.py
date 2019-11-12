@@ -19,13 +19,14 @@ class H2OWord2vecEstimator(H2OEstimator):
     """
 
     algo = "word2vec"
-    param_names = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size", "window_size",
-                   "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained", "max_runtime_secs",
-                   "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OWord2vecEstimator, self).__init__()
         self._parms = {}
+        names_list = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size",
+                      "window_size", "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained",
+                      "max_runtime_secs", "export_checkpoints_dir"}
+        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
@@ -34,7 +35,7 @@ class H2OWord2vecEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
                 self._determine_vec_size();
                 setattr(self, 'vec_size', self.vec_size)
-            elif pname in self.param_names:
+            elif pname in names_list:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
@@ -46,18 +47,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator()
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("tutor", 3)
-        >>> print(synonyms)
         """
         return self._parms.get("training_frame")
 
@@ -72,18 +61,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         This will discard words that appear less than <int> times
 
         Type: ``int``  (default: ``5``).
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(epochs=1, min_word_freq=4)
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("teacher", 3)
-        >>> print(synonyms)
         """
         return self._parms.get("min_word_freq")
 
@@ -99,18 +76,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Use the Skip-Gram model
 
         One of: ``"skip_gram"``  (default: ``"skip_gram"``).
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(epochs=3, word_model="skip_gram")
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("assistant", 3)
-        >>> print(synonyms)
         """
         return self._parms.get("word_model")
 
@@ -126,18 +91,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Use Hierarchical Softmax
 
         One of: ``"hsm"``  (default: ``"hsm"``).
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(epochs=1, norm_model="hsm")
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("teacher", 3)
-        >>> print(synonyms)
         """
         return self._parms.get("norm_model")
 
@@ -153,18 +106,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Set size of word vectors
 
         Type: ``int``  (default: ``100``).
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(epochs=3, vec_size=50)
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("tutor", 3)
-        >>> print(synonyms)
         """
         return self._parms.get("vec_size")
 
@@ -180,18 +121,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Set max skip length between words
 
         Type: ``int``  (default: ``5``).
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(epochs=3, window_size=2)
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("teacher", 3)
-        >>> print(synonyms)
         """
         return self._parms.get("window_size")
 
@@ -208,18 +137,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         will be randomly down-sampled; useful range is (0, 1e-5)
 
         Type: ``float``  (default: ``0.001``).
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(epochs=1, sent_sample_rate=0.01)
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("teacher", 3)
-        >>> print(synonyms)
         """
         return self._parms.get("sent_sample_rate")
 
@@ -235,18 +152,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Set the starting learning rate
 
         Type: ``float``  (default: ``0.025``).
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(epochs=3, init_learning_rate=0.05)
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("assistant", 3)
-        >>> print(synonyms)
         """
         return self._parms.get("init_learning_rate")
 
@@ -262,23 +167,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Number of training iterations to run
 
         Type: ``int``  (default: ``5``).
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(sent_sample_rate = 0.0, epochs = 10)
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("teacher", count = 5)
-        >>> print(synonyms)
-        >>>
-        >>> w2v_model2 = H2OWord2vecEstimator(sent_sample_rate = 0.0, epochs = 1)
-        >>> w2v_model2.train(training_frame=words)
-        >>> synonyms2 = w2v_model2.find_synonyms("teacher", 3)
-        >>> print(synonyms2)
         """
         return self._parms.get("epochs")
 
@@ -294,20 +182,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Id of a data frame that contains a pre-trained (external) word2vec model
 
         Type: ``H2OFrame``.
-
-        :examples:
-
-        >>> words = h2o.create_frame(rows=1000,cols=1,
-        ...                          string_fraction=1.0,
-        ...                          missing_fraction=0.0)
-        >>> embeddings = h2o.create_frame(rows=1000,cols=100,
-        ...                               real_fraction=1.0,
-        ...                               missing_fraction=0.0)
-        >>> word_embeddings = words.cbind(embeddings)
-        >>> w2v_model = H2OWord2vecEstimator(pre_trained=word_embeddings)
-        >>> w2v_model.train(training_frame=word_embeddings)
-        >>> model_id = w2v_model.model_id
-        >>> model = h2o.get_model(model_id)
         """
         return self._parms.get("pre_trained")
 
@@ -322,18 +196,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
         Type: ``float``  (default: ``0``).
-
-        :examples:
-
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(epochs=1, max_runtime_secs=10)
-        >>> w2v_model.train(training_frame=words)
-        >>> synonyms = w2v_model.find_synonyms("tutor", 3)
-        >>> print(synonyms)
         """
         return self._parms.get("max_runtime_secs")
 
@@ -349,22 +211,6 @@ class H2OWord2vecEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
-
-        :examples:
-
-        >>> import tempfile
-        >>> from os import listdir
-        >>> job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
-        ...                               col_names = ["category", "jobtitle"], 
-        ...                               col_types = ["string", "string"], 
-        ...                               header = 1)
-        >>> checkpoints_dir = tempfile.mkdtemp()
-        >>> words = job_titles.tokenize(" ")
-        >>> w2v_model = H2OWord2vecEstimator(epochs=1,
-        ...                                  max_runtime_secs=10,
-        ...                                  export_checkpoints_dir=checkpoints_dir)
-        >>> w2v_model.train(training_frame=words)
-        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 
@@ -372,6 +218,7 @@ class H2OWord2vecEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
 
 
     def _requires_training_frame(self):
@@ -385,20 +232,8 @@ class H2OWord2vecEstimator(H2OEstimator):
     def from_external(external=H2OFrame):
         """
         Creates new H2OWord2vecEstimator based on an external model.
-
         :param external: H2OFrame with an external model
         :return: H2OWord2vecEstimator instance representing the external model
-
-        :examples:
-
-        >>> words = h2o.create_frame(rows=10, cols=1,
-        ...                          string_fraction=1.0,
-        ...                          missing_fraction=0.0)
-        >>> embeddings = h2o.create_frame(rows=10, cols=100,
-        ...                               real_fraction=1.0,
-        ...                               missing_fraction=0.0)
-        >>> word_embeddings = words.cbind(embeddings)
-        >>> w2v_model = H2OWord2vecEstimator.from_external(external=word_embeddings)
         """
         w2v_model = H2OWord2vecEstimator(pre_trained=external)
         w2v_model.train()

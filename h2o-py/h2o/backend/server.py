@@ -18,7 +18,6 @@ import subprocess
 import sys
 import tempfile
 import time
-import re
 from random import choice
 from sysconfig import get_config_var
 from warnings import warn
@@ -60,7 +59,6 @@ class H2OLocalServer(object):
     _TIME_TO_START = 60  # Maximum time we wait for the server to start up (in seconds)
     _TIME_TO_KILL = 3    # Maximum time we wait for the server to shut down until we kill it (in seconds)
 
-    _BAD_JAVA_VERSION_RETURN_CODE_ = 3
 
     @staticmethod
     def start(jar_path=None, nthreads=-1, enable_assertions=True, max_mem_size=None, min_mem_size=None,
@@ -345,15 +343,7 @@ class H2OLocalServer(object):
         giveup_time = time.time() + self._TIME_TO_START
         while True:
             if proc.poll() is not None:
-                if proc.returncode == self._BAD_JAVA_VERSION_RETURN_CODE_:
-                    error_message = "Server process terminated because of unsupported Java version" 
-                else:
-                    error_message = "Server process terminated with error code %d" % proc.returncode 
-                if os.stat(self._stderr).st_size > 0:
-                    error_message += ": %s" % open(self._stderr).read()
-                else:
-                    error_message += "."
-                raise H2OServerError(error_message)
+                raise H2OServerError("Server process terminated with error code %d" % proc.returncode)
             ret = self._get_server_info_from_logs()
             if ret:
                 self._scheme = ret[0]
@@ -377,14 +367,7 @@ class H2OLocalServer(object):
                                   "Please download the latest 64-bit Java SE JDK from Oracle.")
         if "Client VM" in jver:
             warn("  You have a 32-bit version of Java. H2O works best with 64-bit Java.\n"
-                 "  Please download the latest 64-bit Java SE JDK from Oracle.\n") 
-        H2OLocalServer._has_compatible_version(jver)
-
-    @staticmethod
-    def _has_compatible_version(java_version):
-        pattern = re.compile("1\\.[1-7]\\.")
-        if pattern.search(java_version):
-            raise H2OStartupError("Your java is not supported: " + java_version.strip().replace("\n", "; "))
+                 "  Please download the latest 64-bit Java SE JDK from Oracle.\n")
 
     @staticmethod
     def _find_java():
@@ -395,16 +378,8 @@ class H2OLocalServer(object):
         :return: Path to the java executable.
         :raises H2OStartupError: if java cannot be found.
         """
-        java = "java.exe" if sys.platform == "win32" else "java"
-
-        h2o_java = os.getenv("H2O_JAVA_HOME")
-        if h2o_java:
-            full_path = os.path.join(h2o_java, "bin", java)
-            if not os.path.exists(full_path):
-                raise H2OStartupError("Environment variable H2O_JAVA_HOME is set to '%d' but this location doesn't appear to be a valid Java Home directory, unset environment variable or provide valid path to Java Home." % h2o_java)
-            return full_path
-
         # is java callable directly (doesn't work on windows it seems)?
+        java = "java.exe" if sys.platform == "win32" else "java"
         if os.access(java, os.X_OK):
             return java
 

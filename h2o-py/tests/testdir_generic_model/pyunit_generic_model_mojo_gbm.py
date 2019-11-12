@@ -1,12 +1,10 @@
+import h2o
 import tempfile
 import os
-import sys
-sys.path.insert(1,"../../")
 
-import h2o
 from h2o.estimators import H2OGradientBoostingEstimator, H2OGenericEstimator
 from tests import pyunit_utils
-from tests.testdir_generic_model import Capturing, compare_output, compare_params
+from tests.testdir_generic_model import Capturing, compare_output
 
 
 def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
@@ -22,36 +20,35 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     
     key = h2o.lazy_import(original_model_filename)
     fr = h2o.get_frame(key[0])
-    generic_mojo_model = H2OGenericEstimator(model_key=fr)
-    generic_mojo_model.train()
-    compare_params(gbm, generic_mojo_model)
-    print(generic_mojo_model)
+    model = H2OGenericEstimator(model_key=fr)
+    model.train()
+    print(model)
     with Capturing() as generic_output:
-        generic_mojo_model.show()
+        model.show()
 
     output_test(str(original_output), str(generic_output), strip_part, algo_name, generic_algo_name)
     
-    predictions = generic_mojo_model.predict(airlines)
+    predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
-    assert generic_mojo_model._model_json["output"]["variable_importances"] is not None
-    assert len(generic_mojo_model._model_json["output"]["variable_importances"]._cell_values) > 0
-    assert generic_mojo_model._model_json["output"]["model_summary"] is not None
-    assert len(generic_mojo_model._model_json["output"]["model_summary"]._cell_values) > 0
+    assert model._model_json["output"]["variable_importances"] is not None
+    assert len(model._model_json["output"]["variable_importances"]._cell_values) > 0
+    assert model._model_json["output"]["model_summary"] is not None
+    assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
     
     # Test constructor generating the model from existing MOJO file
-    generic_mojo_model_from_file = H2OGenericEstimator.from_file(original_model_filename)
-    assert generic_mojo_model_from_file is not None
-    predictions = generic_mojo_model_from_file.predict(airlines)
+    model = H2OGenericEstimator.from_file(original_model_filename)
+    assert model is not None
+    predictions = model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
-    assert generic_mojo_model_from_file._model_json["output"]["variable_importances"] is not None
-    assert len(generic_mojo_model_from_file._model_json["output"]["variable_importances"]._cell_values) > 0
-    assert generic_mojo_model_from_file._model_json["output"]["model_summary"] is not None
-    assert len(generic_mojo_model_from_file._model_json["output"]["model_summary"]._cell_values) > 0
+    assert model._model_json["output"]["variable_importances"] is not None
+    assert len(model._model_json["output"]["variable_importances"]._cell_values) > 0
+    assert model._model_json["output"]["model_summary"] is not None
+    assert len(model._model_json["output"]["model_summary"]._cell_values) > 0
     
-    generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo")
-    generic_mojo_filename = generic_mojo_model_from_file.download_mojo(path=generic_mojo_filename)
+    generic_mojo_filename = tempfile.mkdtemp("zip", "genericMojo");
+    generic_mojo_filename = model.download_mojo(path=generic_mojo_filename)
     assert os.path.getsize(generic_mojo_filename) == os.path.getsize(original_model_filename)
     
 def mojo_model_test_regression():

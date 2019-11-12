@@ -19,6 +19,8 @@ public class DRFModel extends SharedTreeModelWithContributions<DRFModel, DRFMode
     public DRFParameters() {
       super();
       // Set DRF-specific defaults (can differ from SharedTreeModel's defaults)
+      _mtries = -1;
+      _sample_rate = 0.632f;
       _max_depth = 20;
       _min_rows = 1;
     }

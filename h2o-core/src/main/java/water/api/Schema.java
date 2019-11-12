@@ -352,16 +352,8 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * @return the filled schema
    */
   public S fillFromBody(String body) {
-    return (S) PojoUtils.fillFromJson(this, body);
-  }
-
-  /**
-   *
-   * @param o
-   * @return
-   */
-  public S fillFromAny(Object o) {
-    throw new IllegalArgumentException("can't convert object of type " + o.getClass() + " to schema " + this.getSchemaType());
+    PojoUtils.fillFromJson(this, body);
+    return (S) this;
   }
 
   /**

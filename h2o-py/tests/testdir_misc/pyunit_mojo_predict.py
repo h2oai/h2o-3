@@ -181,7 +181,7 @@ def mojo_predict_csv_test(target_dir):
 
     download_mojo(multi_gbm, mojo_zip_path)
 
-    print("\nPerforming Multinomial Prediction using MOJO @... " + target_dir)
+    print("\nPerforming Binomial Prediction using MOJO @... " + target_dir)
     prediction_result = h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=mojo_zip_path,
                                                    output_csv_path=output_csv)
 

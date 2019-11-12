@@ -99,11 +99,9 @@ def test_suite_stackedensemble_training_frame(blending=False):
                          drf=ds.extend(x=None, train=ds.train[0:ds.train.nrows//2,:]))
         bm = train_base_models(datasets)
         try:
-            se = train_stacked_ensemble(ds, bm)
-            assert blending, "Stacked Ensembles of models with different training frame sizes should fail in non-blending mode"
-            se.predict(ds.train)
+            train_stacked_ensemble(ds, bm)
+            assert False, "Stacked Ensembles of models with different training frame sizes should fail"
         except Exception as e:
-            assert not blending, "No Exception should have been raised in blending mode"
             assert "Base models are inconsistent: they use different size (number of rows) training frames" in str(e), "wrong error message: {}".format(str(e))
             # raise e
     

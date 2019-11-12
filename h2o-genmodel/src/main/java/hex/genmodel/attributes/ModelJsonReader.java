@@ -2,15 +2,12 @@ package hex.genmodel.attributes;
 
 import com.google.gson.*;
 import hex.genmodel.*;
-import hex.genmodel.attributes.parameters.ColumnSpecifier;
-import hex.genmodel.attributes.parameters.ParameterKey;
+import hex.genmodel.attributes.metrics.SerializedName;
 
 import java.io.BufferedReader;
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
-import java.util.List;
 import java.util.Objects;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -46,7 +43,7 @@ public class ModelJsonReader {
         Objects.requireNonNull(modelJson);
         JsonElement potentialTableJson = findInJson(modelJson, tablePath);
         if (potentialTableJson.isJsonNull()) {
-            System.err.println(String.format("Failed to extract element '%s' MojoModel dump.",
+            System.out.println(String.format("Failed to extract element '%s' MojoModel dump.",
                     tablePath));
             return null;
         }
@@ -127,13 +124,6 @@ public class ModelJsonReader {
                 new String[rowCount], columnHeaders, columnTypes, null, columnFormats, data);
     }
 
-    public static <T> void fillObjects(final List<T> objects, final JsonArray from) {
-        for (int i = 0; i < from.size(); i++) {
-            final JsonElement jsonElement = from.get(i);
-            fillObject(objects.get(i), jsonElement, "");
-        }
-    }
-
     public static void fillObject(final Object object, final JsonElement from, final String elementPath) {
         Objects.requireNonNull(object);
         Objects.requireNonNull(elementPath);
@@ -141,7 +131,7 @@ public class ModelJsonReader {
         final JsonElement jsonSourceObject = findInJson(from, elementPath);
 
         if (jsonSourceObject instanceof JsonNull) {
-            System.err.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
+            System.out.println(String.format("Element '%s' not found in JSON. Skipping. Object '%s' is not populated by values.",
                     elementPath, object.getClass().getName()));
             return;
         }
@@ -169,19 +159,7 @@ public class ModelJsonReader {
                 field.setAccessible(true);
                 assert field.isAccessible();
                 Object value = null;
-                if (type.isAssignableFrom(Object.class)) {
-                    final JsonElement jsonElement = jsonSourceObj.get(fieldName);
-                    if (jsonElement != null) {
-                        // There might be a "type" element at the same leven in the JSON tree, serving as a hint. 
-                        // Especially useful for numeric types.
-                        final JsonElement typeElement = jsonSourceObj.get("type");
-                        final TypeHint typeHint;
-                        if (type != null && !typeElement.isJsonNull()) {
-                            typeHint = TypeHint.fromStringIgnoreCase(typeElement.getAsString());
-                        } else typeHint = null;
-                        value = convertBasedOnJsonType(jsonElement, typeHint);
-                    }
-                } else if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
+                if (type.isAssignableFrom(double.class) || type.isAssignableFrom(Double.class)) {
                     final JsonElement jsonElement = jsonSourceObj.get(fieldName);
                     if (jsonElement != null && !jsonElement.isJsonNull()) value = jsonElement.getAsDouble();
                 } else if (type.isAssignableFrom(int.class) || type.isAssignableFrom(Integer.class)) {
@@ -199,176 +177,13 @@ public class ModelJsonReader {
                 }
                 if (value != null) field.set(object, value);
             } catch (IllegalAccessException e) {
-                System.err.println(String.format("Field '%s' could not be accessed. Ignoring.", fieldName));
+                System.out.println(String.format("Field '%s' could not be accessed. Ignoring.", fieldName));
             } catch (ClassCastException | UnsupportedOperationException e) {
-                System.err.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
-            }
-        }
-    }
-
-
-    private static final Pattern ARRAY_PATTERN = Pattern.compile("\\[\\]");
-    /**
-     * TypeHint contained in the model's JSON. There might be more types contained than listed here - these are the ones
-     * used.
-     */
-    private enum TypeHint {
-        INT, FLOAT, DOUBLE, LONG, DOUBLE_ARR, FLOAT_ARR, STRING_ARR;
-
-        private static TypeHint fromStringIgnoreCase(final String from) {
-            try {
-                final Matcher matcher = ARRAY_PATTERN.matcher(from);
-                final String transformedType = matcher.replaceAll("_ARR");
-                return valueOf(transformedType.toUpperCase());
-            } catch (IllegalArgumentException e) {
-                return null;
-            }
-        }
-    }
-
-    /**
-     * Convers a {@link JsonElement} to a corresponding Java class instance, covering all basic "primitive" types (String, numbers. ..)
-     * + selected Iced classes.
-     *
-     * @param convertFrom JsonElement to convert from
-     * @param typeHint    Optional {@link TypeHint} value. Might be null.
-     * @return
-     */
-    private static Object convertBasedOnJsonType(final JsonElement convertFrom, final TypeHint typeHint) {
-        final Object convertTo;
-
-        if (convertFrom.isJsonNull()) {
-            convertTo = null;
-        } else if (convertFrom.isJsonArray()) {
-            final JsonArray array = convertFrom.getAsJsonArray();
-            if (typeHint == null) {
-                convertTo = null;
-            } else {
-                switch (typeHint) {
-                    case DOUBLE_ARR:
-                        final double[] arrD = new double[array.size()];
-                        for (int i = 0; i < array.size(); i++) {
-                            arrD[i] = array.get(i).getAsDouble();
-                        }
-                        convertTo = arrD;
-                        break;
-                    case FLOAT_ARR:
-                        final double[] arrF = new double[array.size()];
-                        for (int i = 0; i < array.size(); i++) {
-                            arrF[i] = array.get(i).getAsDouble();
-                        }
-                        convertTo = arrF;
-                        break;
-                    case STRING_ARR:
-                        final String[] arrS = new String[array.size()];
-                        for (int i = 0; i < array.size(); i++) {
-                            arrS[i] = array.get(i).getAsString();
-                        }
-                        convertTo = arrS;
-                        break;
-                    default:
-                        convertTo = null;
-                        break;
-                }
-            }
-        } else if (convertFrom.isJsonPrimitive()) {
-            final JsonPrimitive convertedPrimitive = convertFrom.getAsJsonPrimitive();
-            if (convertedPrimitive.isBoolean()) {
-                convertTo = convertedPrimitive.getAsBoolean();
-            } else if (convertedPrimitive.isString()) {
-                convertTo = convertedPrimitive.getAsString();
-            } else if (convertedPrimitive.isNumber()) {
-                if (typeHint == null) {
-                    convertTo = convertedPrimitive.getAsDouble();
-                } else {
-                    switch (typeHint) {
-                        case INT:
-                            convertTo = convertedPrimitive.getAsInt();
-                            break;
-                        case FLOAT:
-                            convertTo = convertedPrimitive.getAsFloat();
-                            break;
-                        case DOUBLE:
-                            convertTo = convertedPrimitive.getAsDouble();
-                            break;
-                        case LONG:
-                            convertTo = convertedPrimitive.getAsLong();
-                            break;
-                        default:
-                            convertTo = convertedPrimitive.getAsDouble();
-                    }
-                }
-            } else {
-                convertTo = null;
-            }
-        } else if (convertFrom.isJsonObject()) {
-            convertTo = convertJsonObject(convertFrom.getAsJsonObject());
-        } else {
-            convertTo = null;
-        }
-
-        return convertTo;
-
-    }
-
-    private static Object convertJsonObject(final JsonObject convertFrom) {
-        final JsonElement meta = convertFrom.get("__meta");
-        if (meta == null || meta.isJsonNull()) return null;
-
-        final String schemaName = findInJson(meta, "schema_name").getAsString();
-
-        if ("FrameKeyV3".equals(schemaName) || "ModelKeyV3".equals(schemaName)) {
-            final String name = convertFrom.get("name").getAsString();
-            final String type = convertFrom.get("type").getAsString();
-            final ParameterKey.Type convertedType = convertKeyType(type);
-            final String url = convertFrom.get("URL").getAsString();
-
-            return new ParameterKey(name, convertedType, url);
-        } else if ("ColSpecifierV3".equals(schemaName)) {
-            final String columnName = convertFrom.get("column_name").getAsString();
-            final JsonElement is_member_of_frames = convertFrom.get("is_member_of_frames");
-            final String[] memberOfFrames;
-            if (is_member_of_frames.isJsonArray()) {
-                memberOfFrames = convertStringJsonArray(convertFrom.get("is_member_of_frames").getAsJsonArray());
-            } else {
-                memberOfFrames = null;
-            }
-            return new ColumnSpecifier(columnName, memberOfFrames);
-        } else {
-            throw new UnsupportedOperationException(String.format("Object not supported: \n %s ", convertFrom.toString()));
-        }
-
-    }
-
-    private static String[] convertStringJsonArray(final JsonArray jsonArray) {
-        Objects.requireNonNull(jsonArray);
-
-        if (jsonArray.isJsonNull()) return null;
-        final String[] strings = new String[jsonArray.size()];
-
-        for (int i = 0; i < jsonArray.size(); i++) {
-            final JsonElement potentialStringMember = jsonArray.get(i);
-            if (!potentialStringMember.isJsonNull()) {
-                strings[i] = jsonArray.get(i).getAsString();
+                System.out.println(String.format("Field '%s' could not be casted to '%s'. Ignoring.", fieldName, type.toString()));
             }
         }
 
-        return strings;
-    }
 
-    /**
-     * Converts a string key type to enum representation. All unknown keys are considered to be
-     * Type.Generic.
-     *
-     * @param type A Key type in String representation to be converted
-     * @return An instance of {@link ParameterKey.Type} enum
-     */
-    private static final ParameterKey.Type convertKeyType(final String type) {
-        if ("Key<Frame>".equals(type)) {
-            return ParameterKey.Type.FRAME;
-        } else if ("Key<Model>".equals(type)) {
-            return ParameterKey.Type.MODEL;
-        } else return ParameterKey.Type.GENERIC;
     }
 
 
@@ -382,7 +197,7 @@ public class ModelJsonReader {
      *                    E.g. 'model._output.variable_importances'.
      * @return JsonElement, if found. Otherwise {@link JsonNull}.
      */
-    protected static JsonElement findInJson(final JsonElement jsonElement, final String jsonPath) {
+    private static JsonElement findInJson(final JsonElement jsonElement, final String jsonPath) {
 
         final String[] route = JSON_PATH_PATTERN.split(jsonPath);
         JsonElement result = jsonElement;

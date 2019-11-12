@@ -46,16 +46,6 @@ automl.args.test <- function() {
 
     print("Check arguments to H2OAutoML class")
 
-    test_invalid_project_name <- function() {
-      print("Try a project name starting with a number")
-      ds <- import_dataset()
-      expect_error(h2o.automl(y = ds$y,
-                              training_frame = ds$train,
-                              max_models = max_models,
-                              project_name = "1nvalid_name"),
-                   "1nvalid_name")
-    }
-
     test_without_y <- function() {
         print("Try without a y")
         ds <- import_dataset()
@@ -80,6 +70,48 @@ automl.args.test <- function() {
                     training_frame = ds$train,
                     max_models = max_models,
                     project_name = "aml2",
+        )
+    }
+
+    test_exclude_algos <- function() {
+        print("AutoML doesn't train models for algos listed in exclude_algos")
+        ds <- import_dataset()
+        aml <- h2o.automl(x = ds$x, y = ds$y.idx,
+                          training_frame = ds$train,
+                          project_name = "aml_exclude_algos",
+                          max_models = max_models,
+                          exclude_algos = c('DRF', 'GLM'),
+        )
+        models <- get_partitioned_models(aml)
+        expect_false(any(grepl("DRF", models$all)) || any(grepl("GLM", models$all)))
+        expect_equal(length(models$se), 2)
+    }
+
+    test_include_algos <- function() {
+        print("AutoML trains only models for algos listed in include_algos")
+        ds <- import_dataset()
+        aml <- h2o.automl(x = ds$x, y = ds$y.idx,
+                          training_frame = ds$train,
+                          project_name = "aml_include_algos",
+                          max_models = max_models,
+                          include_algos = c('GBM'),
+        )
+        models <- get_partitioned_models(aml)
+        expect_true(all(grepl("GBM", models$all)))
+        expect_equal(length(models$se), 0, info="No StackedEnsemble should have been trained if not explicitly included to the existing include_algos")
+    }
+
+    test_include_exclude_algos <- function() {
+        print("include_algos and exclude_algos parameters are mutually exclusive")
+        ds <- import_dataset()
+        expect_error(
+            h2o.automl(x = ds$x, y = ds$y.idx,
+                        training_frame = ds$train,
+                        project_name = "aml_include_exclude_algos",
+                        max_models = max_models,
+                        exclude_algos = c('DRF', 'GLM'),
+                        include_algos = c('XGBoost', 'GBM'),
+            ), message = "Use either include_algos or exclude_algos, not both."
         )
     }
 
@@ -426,10 +458,12 @@ automl.args.test <- function() {
 
 
     makeSuite(
-        test_invalid_project_name,
         test_without_y,
         test_without_x,
         test_y_as_index_x_as_name,
+        test_exclude_algos,
+        test_include_algos,
+        test_include_exclude_algos,
         test_single_training_frame,
         test_training_with_validation_frame,
         test_training_with_leaderboard_frame,

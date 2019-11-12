@@ -72,34 +72,23 @@ stackedensemble.blending_frame.suite <- function() {
         se <- train_stackedensemble(ds, base_models, keep_levelone_frame=TRUE)
 
         expect_false(is.null(se@model$levelone_frame_id))
-        expected_cols <- nrow(h2o.unique(ds$blend[ds$y])) * length(base_models) + 1 # = count_predictions_probabilities * count_models + 1 (target)
+        expected_cols <- nrow(h2o.unique(ds$blend[ds$y])) * length(base_models) + 1 # = count_predictions_probabilites * count_models + 1 (target) 
         expected_rows <- nrow(ds$blend)
         level_one_frame = h2o.getFrame(se@model$levelone_frame_id$name)
         expect_equal(ncol(level_one_frame), expected_cols)
         expect_equal(nrow(level_one_frame), expected_rows) 
     }
 
-    test.base_models_can_be_trained_with_different_training_frames_in_blending_mode <- function() {
-        ds <- prepare_data()
-        cut <- nrow(ds$train) %/% 2
-        ds1 <- ds
-        ds1$train <- ds$train[1:cut,]
-        ds2 <- ds
-        ds2$train <- ds$train[cut:nrow(ds$train),]
-        base_models_1 <- train_base_models(ds1)
-        base_models_2 <- train_base_models(ds2)
-        base_models <- c(base_models_1, base_models_2)
-        se <- train_stackedensemble(ds, base_models)
-        expect_true(h2o.mse(h2o.performance(se)) == h2o.mse(h2o.performance(se, ds$train)))
-    }
-
-    test.training_frame_is_not_required_in_blending_mode <- function() {
+    test.training_frame_is_still_required_in_blending_mode <- function() {
         ds <- prepare_data()
         base_models <- train_base_models(ds)
         ds_notrain <- ds
         ds_notrain$train <- NULL
-        se = train_stackedensemble(ds_notrain, base_models)
-        expect_true(h2o.mse(h2o.performance(se)) == h2o.mse(h2o.performance(se, ds$blend)))
+        tryCatch({
+              train_stackedensemble(ds_notrain, base_models)
+              fail(message = "training Stackedensemble model with NULL training_frame should have raised error")
+            }, error = function(e) expect_match(e$message, "argument 'training_frame' is NULL or missing")
+        )
     }
 
     test.blending_mode_usually_performs_worse_than_CV_stacking_mode <- function() {
@@ -123,8 +112,7 @@ stackedensemble.blending_frame.suite <- function() {
     makeSuite(
         test.passing_blending_frame_triggers_blending_mode,
         test.level_one_frame_format_in_blending_mode,
-        test.base_models_can_be_trained_with_different_training_frames_in_blending_mode,
-        test.training_frame_is_not_required_in_blending_mode,
+        test.training_frame_is_still_required_in_blending_mode,
         test.blending_mode_usually_performs_worse_than_CV_stacking_mode
     )
 }

@@ -1,12 +1,9 @@
+import h2o
 import tempfile
 import os
-import sys
-sys.path.insert(1,"../../")
-
-import h2o
 from h2o.estimators import H2ORandomForestEstimator, H2OGenericEstimator
 from tests import pyunit_utils
-from tests.testdir_generic_model import compare_output, Capturing, compare_params
+from tests.testdir_generic_model import compare_output, Capturing
 
 
 def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
@@ -24,7 +21,6 @@ def test(x, y, output_test, strip_part, algo_name, generic_algo_name):
     model = H2OGenericEstimator.from_file(original_model_filename)
     assert model is not None
     print(model)
-    compare_params(drf, model)
     with Capturing() as generic_output:
         model.show()
 
