@@ -1,6 +1,5 @@
 package hex.schemas;
 
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.glm.GLM;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -46,6 +45,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "nlambdas",
             "standardize",
             "missing_values_handling",
+            "plug_values",
             "compute_p_values",
             "remove_collinear_columns",
             "intercept",
@@ -114,9 +114,12 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical)
     public boolean standardize;
 
-    @API(help = "Handling of missing values. Either MeanImputation or Skip.", values = { "MeanImputation", "Skip" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
-    public DeepLearningParameters.MissingValuesHandling missing_values_handling;
+    @API(help = "Handling of missing values. Either MeanImputation, Skip or PlugValues.", values = { "MeanImputation", "Skip", "PlugValues" }, level = API.Level.expert, direction=API.Direction.INOUT, gridable = true)
+    public GLMParameters.MissingValuesHandling missing_values_handling;
 
+    @API(help = "Plug Values (a single row frame containing values that will be used to impute missing values of the training/validation frame, use with conjunction missing_values_handling = PlugValues)", direction = API.Direction.INPUT)
+    public FrameKeyV3 plug_values;
+    
     @API(help = "Restrict coefficients (not intercept) to be non-negative")
     public boolean non_negative;
 
@@ -141,7 +144,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="Likelihood divider in objective value computation, default is 1/nobs")
     public double obj_reg;
 
-    @API(help = "", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse",
+    @API(help = "Link function.", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse",
             "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
     public GLMParameters.Link link;
 

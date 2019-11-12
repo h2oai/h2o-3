@@ -6,6 +6,7 @@ import hex.genmodel.easy.stub.TestMojoModel;
 import org.junit.Test;
 
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -33,8 +34,8 @@ public class RowToRawDataConverterTest {
     TestMojoModel testMojoModel = new TestMojoModel();
 
     // Indices for this map are based on `m.getDomainValues()` method
-    HashMap<Integer, HashMap<String, Integer>> domainMap = new DomainMapConstructor(testMojoModel).create();
-    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(testMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, true, true);
+    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(testMojoModel).create();
+    RowToRawDataConverter rowToRawDataConverter = new RowToRawDataConverter(testMojoModel, modelColumnNameToIndexMap, domainMap, errorConsumer, new EasyPredictModelWrapper.Config());
 
     double[] rawData = new double[rowToPredictFor.size()];
     rowToRawDataConverter.convert(rowToPredictFor, rawData);

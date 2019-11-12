@@ -67,7 +67,7 @@ class H2OOrdinalModel(ModelBase):
 
     def plot(self, timestep="AUTO", metric="AUTO", **kwargs):
         """
-        Plots training set (and validation set if available) scoring history for an H2OMultinomialModel. The timestep
+        Plots training set (and validation set if available) scoring history for an H2OOrdinalModel. The timestep
         and metric arguments are restricted to what is available in its scoring history.
 
         :param timestep: A unit of measurement for the x-axis.
@@ -75,12 +75,5 @@ class H2OOrdinalModel(ModelBase):
 
         :returns: A scoring history plot.
         """
-
-        if self._model_json["algo"] in ("glm"):
-            if metric == "AUTO":
-                metric = "classification_error"
-            elif metric not in ("logloss", "classification_error", "rmse"):
-                raise ValueError(
-                    "metric for H2OOrdinalModel must be one of: AUTO, logloss, classification_error, rmse")
 
         self._plot(timestep=timestep, metric=metric, **kwargs)

@@ -2,7 +2,23 @@
 // Micro benchmark support
 //
 
+buildscript {
+    repositories {
+        maven { url 'https://plugins.gradle.org/m2/' }
+    }
+    dependencies {
+        classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
+        classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.6'
+    }
+}
+
 apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: "com.github.johnrengelman.shadow"
+
+
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+import water.build.tasks.S3UploadTask
+
 
 ext {
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
@@ -37,6 +53,7 @@ jmh {
 
 dependencies {
     jmh group: 'commons-io' , name: 'commons-io', version: '2.4'
+    compile 'org.openjdk.jmh:jmh-core:1.21'
 }
 
 task jmhPostProcess(dependsOn: "jmh") {
@@ -55,7 +72,21 @@ task jmhPostProcess(dependsOn: "jmh") {
     }
 }
 
-task uploadResultsToS3(type: water.build.tasks.S3UploadTask) {
+task jmhFatJar(type: ShadowJar) {
+    classifier = "jmh"
+    manifest {
+        attributes "Main-Class": "org.openjdk.jmh.Main"
+    }
+    configurations = [project.configurations.runtime, project.configurations.jmh]
+    from sourceSets.main.output
+    from sourceSets.jmh.output
+    from tasks.jmhRunBytecodeGenerator.outputs
+    from tasks.jmhCompileGeneratedClasses.outputs
+    dependsOn(tasks.jmhCompileGeneratedClasses)
+}
+
+
+task uploadResultsToS3(type: S3UploadTask) {
     bucket = "ai.h2o.ubench"
     objectName = "${project.name}/$jmhResultFileName"
     file = ubenchResultFile

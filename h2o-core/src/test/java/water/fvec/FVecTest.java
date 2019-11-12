@@ -10,6 +10,7 @@ import water.util.FileUtils;
 import water.util.StringUtils;
 
 import java.io.File;
+import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -48,9 +49,9 @@ public class FVecTest extends TestUtil {
 */
 
   // ==========================================================================
-  @Test public void testBasicCRUD() {
+  @Test public void testBasicCRUD() throws IOException {
     // Make and insert a FileVec to the global store
-    File file = FileUtils.locateFile("./smalldata/junit/cars.csv");
+    File file = FileUtils.getFile("./smalldata/junit/cars.csv");
     NFSFileVec nfs = NFSFileVec.make(file);
     int sum = ArrayUtils.sum(new ByteHisto().doAll(nfs)._x);
     assertEquals(file.length(),sum);

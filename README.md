@@ -21,6 +21,7 @@ H2O-3 (this repository) is the third incarnation of H2O, and the successor to [H
 * [Sparkling Water](#Sparkling)
 * [Documentation](#Documentation)
 * [Citing H2O](#Citing)
+* [Roadmap](#Roadmap)
 * [Community](#Community) / [Advisors](#Advisors) / [Investors](#Investors)
 
 <a name="Downloading"></a>
@@ -390,7 +391,7 @@ Note: on a regular machine it may take very long time (about an hour) to run all
 
 ##### Step 2. Install JDK:
 
-Install [Java 1.7](http://www.oracle.com/technetwork/java/javase/downloads/jdk7-downloads-1880260.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). To make sure the command prompt is detecting the correct Java version, run:
+Install [Java 8](https://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html). Installation instructions can be found here [JDK installation](http://askubuntu.com/questions/56104/how-can-i-install-sun-oracles-proprietary-java-jdk-6-7-8-or-jre). To make sure the command prompt is detecting the correct Java version, run:
 
     javac -version
 
@@ -710,24 +711,34 @@ Arora, A., Candel, A., Lanford, J., LeDell, E., and Parmar, V. (Oct. 2016). _Dee
 
 Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _Gradient Boosted Models with H2O_. <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/booklets/GBMBooklet.pdf>.
 
+<a name="Roadmap"></a>
+## 10. Roadmap
+
+### H2O 3.28 - Autumn 2019 (Q4/2019)
+
+* Support for Mixed Effects/Hierarchical GLM: [PUBDEV-6509](https://0xdata.atlassian.net/browse/PUBDEV-6509)
+* Constrained k-means Clustering: [PUBDEV-6447](https://0xdata.atlassian.net/browse/PUBDEV-6447)
+* Grid Search Improvements (parallelization, crash recovery)
+* XGBoost Improvements (upgrade, Platt Scaling)
+* MOJO Import (XGBoost support, expose original model parameters)
+* Security Improvements (SPNEGO support: [PUBDEV-6899](https://0xdata.atlassian.net/browse/PUBDEV-6899))
+* Target Encoding (Flow support): [PUBDEV-6837](https://0xdata.atlassian.net/browse/PUBDEV-6837)
+
+### H2O 3.30 - Winter 2020 (Q1/2020)
+
+* Generalized Additive Models: [PUBDEV-6807](https://0xdata.atlassian.net/browse/PUBDEV-6807)
+* Kubernetes Support: [PUBDEV-6852](https://0xdata.atlassian.net/browse/PUBDEV-6852)
+* Automatic cluster sizing: [PUBDEV-6045](https://0xdata.atlassian.net/browse/PUBDEV-6045)
+* Out-of-memory error protection: [PUBDEV-6614](https://0xdata.atlassian.net/browse/PUBDEV-6614)
+* Target Encoding Improvements (regression, multinomial)
+* PSVM Improvements (linear kernel, MOJO)
+
 
 <a name="Community"></a>
-## 10. Community
+## 11. Community
 
 H2O has been built by a great many number of contributors over the years both within H2O.ai (the company) and the greater open source community.  You can begin to contribute to H2O by answering [Stack Overflow](http://stackoverflow.com/questions/tagged/h2o) questions or [filing bug reports](https://0xdata.atlassian.net/projects/PUBDEV/issues).  Please join us!  
 
-<a name="Roadmap"></a>
-## 11. Roadmap
-
-Next major H2O release (3.26) is planned for the end of June/beginning of July and will add these major features:
-
-* SVM
-* Customized Loss Function in GBM
-* Isolation Forest – early stopping + variable importance
-* XGBoost Upgrade and performance improvements
-* CoxPH in Python
-* MOJO Import improvements
-* MOJO for Target Encoding
 
 ### Team & Committers
 
@@ -799,6 +810,9 @@ Leland Wilkinson
 Wendy Wong
 Nikhil Shekhar
 Pavel Pscheidl
+Michal Kurka
+Veronika Maurerova
+Jan Sterba
 ```
 
 <a name="Advisors"></a>

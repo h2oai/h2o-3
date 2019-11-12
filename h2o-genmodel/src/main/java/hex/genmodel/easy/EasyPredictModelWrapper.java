@@ -1,21 +1,18 @@
 package hex.genmodel.easy;
 
 import hex.ModelCategory;
-import hex.genmodel.GenModel;
-import hex.genmodel.IClusteringModel;
-import hex.genmodel.PredictContributions;
-import hex.genmodel.PredictContributionsFactory;
-import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
+import hex.genmodel.*;
+import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
+import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
-import hex.genmodel.algos.glrm.GlrmMojoModel;
-import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.Serializable;
 import java.util.*;
 
 /**
@@ -56,12 +53,8 @@ import java.util.*;
 public class EasyPredictModelWrapper implements Serializable {
   // These private members are read-only after the constructor.
   public final GenModel m;
-  private final HashMap<String, Integer> modelColumnNameToIndexMap;
-  public final HashMap<Integer, HashMap<String, Integer>> domainMap;
-  private final ErrorConsumer errorConsumer;
+  private final RowToRawDataConverter rowDataConverter;
 
-  private final boolean convertUnknownCategoricalLevelsToNa;
-  private final boolean convertInvalidNumbersToNa;
   private final boolean useExtendedOutput;
   private final boolean enableLeafAssignment;
   private final boolean enableGLRMReconstruct;  // if set true, will return the GLRM resconstructed value, A_hat=X*Y instead of just X
@@ -107,6 +100,7 @@ public class EasyPredictModelWrapper implements Serializable {
     private boolean enableGLRMReconstrut = false;
     private boolean enableStagedProbabilities = false;
     private boolean enableContributions = false;
+    private boolean useExternalEncoding = false;
     private int glrmIterNumber = 100; // default set to 100
 
     /**
@@ -198,6 +192,22 @@ public class EasyPredictModelWrapper implements Serializable {
     public boolean getEnableContributions() { return enableContributions; }
 
     /**
+     * Allows to switch on/off applying categorical encoding in EasyPredictModelWrapper.
+     * In current implementation only AUTO encoding is supported by the Wrapper, users are required to set
+     * this flag to true if they want to use POJOs/MOJOs with other encodings than AUTO.
+     * 
+     * This requirement will be removed in https://0xdata.atlassian.net/browse/PUBDEV-6929 
+     * @param val if true, user needs to provide already encoded input in the RowData structure
+     * @return self
+     */
+    public Config setUseExternalEncoding(boolean val)  {
+      useExternalEncoding = val;
+      return this;
+    }
+
+    public boolean getUseExternalEncoding() { return useExternalEncoding; }
+
+    /**
      * @return Setting for unknown categorical levels handling
      */
     public boolean getConvertUnknownCategoricalLevelsToNa() { return convertUnknownCategoricalLevelsToNa; }
@@ -270,18 +280,9 @@ public class EasyPredictModelWrapper implements Serializable {
   public EasyPredictModelWrapper(Config config) {
     m = config.getModel();
     // Ensure an error consumer is always instantiated to avoid missing null-check errors.
-    errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
-
-    // Create map of column names to index number.
-    modelColumnNameToIndexMap = new HashMap<>();
-    String[] modelColumnNames = m.getNames();
-    for (int i = 0; i < modelColumnNames.length; i++) {
-      modelColumnNameToIndexMap.put(modelColumnNames[i], i);
-    }
+    ErrorConsumer errorConsumer = config.getErrorConsumer() == null ? new VoidErrorConsumer() : config.getErrorConsumer();
 
     // How to handle unknown categorical levels.
-    convertUnknownCategoricalLevelsToNa = config.getConvertUnknownCategoricalLevelsToNa();
-    convertInvalidNumbersToNa = config.getConvertInvalidNumbersToNa();
     useExtendedOutput = config.getUseExtendedOutput();
     enableLeafAssignment = config.getEnableLeafAssignment();
     enableGLRMReconstruct = config.getEnableGLRMReconstrut();
@@ -299,8 +300,22 @@ public class EasyPredictModelWrapper implements Serializable {
     } else {
       predictContributions = null;
     }
-    
-    domainMap = new DomainMapConstructor(m).create();
+
+    if ((m.getCategoricalEncoding() != CategoricalEncoding.AUTO) && !config.getUseExternalEncoding()) {
+      throw new UnsupportedOperationException("Categorical Encoding `" + m.getCategoricalEncoding() + 
+              "` is currently not supported by EasyPredictModelWrapper. Instantiate the wrapper with `useExternalEncoding=true` " +
+              " and apply the encoding manually before calling the predict function. For more information please refer to https://0xdata.atlassian.net/browse/PUBDEV-6929.");
+    }
+
+    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(m).create();
+    // Create map of column names to index number.
+    String[] modelColumnNames = m.getNames();
+    Map<String, Integer> modelColumnNameToIndexMap = new HashMap<>(modelColumnNames.length);
+    for (int i = 0; i < modelColumnNames.length; i++) {
+      modelColumnNameToIndexMap.put(modelColumnNames[i], i);
+    }
+
+    rowDataConverter = RowDataConverterFactory.makeConverter(m, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
   }
 
   /**
@@ -362,6 +377,12 @@ public class EasyPredictModelWrapper implements Serializable {
     return predict(data, m.getModelCategory());
   }
 
+  ErrorConsumer getErrorConsumer() {
+    return rowDataConverter.getErrorConsumer();
+  }
+
+  
+  
   /**
    * Make a prediction on a new data point using an AutoEncoder model.
    * @param data A new data point.
@@ -822,7 +843,8 @@ public class EasyPredictModelWrapper implements Serializable {
   }
   protected double[] preamble(ModelCategory c, RowData data, double offset) throws PredictException {
     validateModelCategory(c);
-    return predict(data, offset, new double[m.getPredsSize(c)]);
+    final int predsSize = m.getPredsSize(c);
+    return predict(data, offset, new double[predsSize]);
   }
 
   private static double[] nanArray(int len) {
@@ -834,8 +856,7 @@ public class EasyPredictModelWrapper implements Serializable {
   }
 
   protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {
-    return new RowToRawDataConverter(m, modelColumnNameToIndexMap, domainMap, errorConsumer, convertUnknownCategoricalLevelsToNa, convertInvalidNumbersToNa)
-            .convert(data, rawData);
+    return rowDataConverter.convert(data, rawData);
   }
 
   protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {

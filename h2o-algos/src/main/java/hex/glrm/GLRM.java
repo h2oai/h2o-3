@@ -1113,6 +1113,7 @@ public class GLRM extends ModelBuilder<GLRMModel, GLRMModel.GLRMParameters, GLRM
         }
         if (tinfo._numMeans != null) {
           tinfo._numMeans = Arrays.copyOf(numMeansTemp, tinfo._nums);
+          tinfo._numNAFill = tinfo._numMeans; // NAs will be imputed with means
         }
         _ncolY = _ncolY-binaryLossCols;   // adjust for binary columns with binary loss changed to numerical columns
       }

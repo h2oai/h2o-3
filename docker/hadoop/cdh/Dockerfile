@@ -1,5 +1,5 @@
 # pull base image
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-r-3.4.1-jdk-8:10
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-4.10.1:14
 
 # maintainer details
 MAINTAINER h2oai "h2o.ai"
@@ -88,12 +88,11 @@ COPY ${PATH_PREFIX}/../common/ldap /opt/ldap-scripts/
 RUN chmod 700 /usr/sbin/startup.sh && \
     chown -R hive:hive /opt/hive-scripts && \
     chmod +x /usr/sbin/install_hive.sh && \
-    chmod 700 /usr/sbin/install_ldap.sh && \
+    chmod +x /usr/sbin/install_ldap.sh && \
     chmod +x /usr/sbin/mysql_configure.sh && \
-    chmod 700 /usr/sbin/mysql_configure.sh && \
     sync && \
     /usr/sbin/install_hive.sh && \
-    if [ "${VERSION}" = "6.2" ] ; then echo "Decrease mysql connection timeout." && /usr/sbin/mysql_configure.sh; fi && \
+    /usr/sbin/mysql_configure.sh && \
     ln -sf /usr/share/java/mysql-connector-java.jar /usr/lib/hive/lib/mysql-connector-java.jar
 
 # Copy hive configs

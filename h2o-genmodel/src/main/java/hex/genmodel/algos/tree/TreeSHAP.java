@@ -241,12 +241,18 @@ public class TreeSHAP<R, N extends INode<R>, S extends INodeStat> implements Tre
 
   @Override
   public PathPointer makeWorkspace() {
-    final int maxd = treeDepth() + 2;
-    PathElement[] unique_path_data = new PathElement[(maxd * (maxd + 1)) / 2];
+    int wsSize = getWorkspaceSize();
+    PathElement[] unique_path_data = new PathElement[wsSize];
     for (int i = 0; i < unique_path_data.length; i++) {
       unique_path_data[i] = new PathElement();
     }
     return new PathPointer(unique_path_data);
+  }
+
+  @Override
+  public int getWorkspaceSize() {
+    final int maxd = treeDepth() + 2;
+    return (maxd * (maxd + 1)) / 2;
   }
 
   private int treeDepth() {

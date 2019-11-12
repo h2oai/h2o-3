@@ -66,6 +66,9 @@ public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
   @API(help = "Cross validation model metrics summary for the returned models; only returned if sort_by is set", direction = API.Direction.OUTPUT)
   public TwoDimTableV3[] cross_validation_metrics_summary;
 
+  @API(help = "Directory for Grid automatic checkpointing", direction = API.Direction.OUTPUT)
+  public String export_checkpoints_dir;
+
   @API(help="Summary", direction=API.Direction.OUTPUT)
   TwoDimTableV3 summary_table;
 
@@ -155,6 +158,7 @@ public class GridSchemaV99 extends SchemaV3<Grid, GridSchemaV99> {
     failure_details = failures.getFailureDetails();
     failure_stack_traces = failures.getFailureStackTraces();
     failed_raw_params = failures.getFailedRawParameters();
+    export_checkpoints_dir = grid.getParams() != null ? grid.getParams()._export_checkpoints_dir : null;
 
     TwoDimTable t = grid.createSummaryTable(keys, sort_by, decreasing);
     if (t!=null)

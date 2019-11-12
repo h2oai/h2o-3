@@ -1,11 +1,8 @@
 package hex.mojo;
 
 import hex.genmodel.tools.PredictCsv;
-import hex.tree.PrintMojoTreeTest;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import hex.tree.isofor.IsolationForest;
-import hex.tree.isofor.IsolationForestModel;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -14,7 +11,6 @@ import org.junit.rules.TemporaryFolder;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.FileUtils;
 
 
 import java.io.ByteArrayOutputStream;
@@ -34,14 +30,14 @@ public class PredictCsvTest {
   private SecurityManager originalSecurityManager;
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     TestUtil.stall_till_cloudsize(1);
     originalSecurityManager = System.getSecurityManager();
     System.setSecurityManager(new PreventExitSecurityManager());
   }
 
   @After
-  public void tearDown() throws Exception {
+  public void tearDown() {
     System.setSecurityManager(originalSecurityManager);
   }
 
@@ -71,7 +67,7 @@ public class PredictCsvTest {
       System.setOut(printStream);
       try {
         PredictCsv.main(new String[]{"--mojo", modelFile.getAbsolutePath(),
-                "--input", FileUtils.getFile("smalldata/iris/iris_test.csv").getAbsolutePath(),
+                "--input", TestUtil.makeNfsFileVec("smalldata/iris/iris_test.csv").getPath(),
                 "--output", outputFile.getAbsolutePath()});
         fail("Expected PredictCSV to exit");
       } catch (PreventedExitException e) {
@@ -93,6 +89,48 @@ public class PredictCsvTest {
       assertTrue(predictCsvOutput.contains("sepal_wid"));
            
 
+    } finally {
+      System.setOut(originaOutputStream);
+      System.out.print(predictCsvOutput);
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testScoreNoMissingColumns() throws IOException {
+    final PrintStream originaOutputStream = System.out;
+    String predictCsvOutput = null;
+    try {
+      Scope.enter();
+      // The following iris dataset has columns named: {C1,C2,C3,C4,C5}, while the test dataset used below has descriptive names. 
+      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/junit/iris.csv"));
+
+      GBMModel.GBMParameters p = new GBMModel.GBMParameters();
+      p._train = train._key;
+      p._seed = 0xC0DE;
+      p._response_column = "class";
+      p._ntrees = 1;
+
+      GBMModel model = new GBM(p).trainModel().get();
+      final File modelFile = folder.newFile();
+      model.exportMojo(modelFile.getAbsolutePath(), true);
+
+      final File outputFile = folder.newFile();
+
+      ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+      PrintStream printStream = new PrintStream(outputBytes);
+      System.setOut(printStream);
+      try {
+        PredictCsv.main(new String[]{"--mojo", modelFile.getAbsolutePath(),
+                "--input", TestUtil.makeNfsFileVec("smalldata/junit/iris.csv").getPath(),
+                "--output", outputFile.getAbsolutePath()});
+        fail("Expected PredictCSV to exit");
+      } catch (PreventedExitException e) {
+        assertEquals(0, e.status); // PredictCsv is expected to finish without errors
+      }
+
+      predictCsvOutput = new String(outputBytes.toByteArray());
+      assertTrue(predictCsvOutput.isEmpty());
     } finally {
       System.setOut(originaOutputStream);
       System.out.print(predictCsvOutput);

@@ -13,8 +13,6 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
   
   private static final String ENCODING_MAP_PATH = "feature_engineering/target_encoding/encoding_map.ini";
   
-  private static final String COLUMN_MAP_PATH = "feature_engineering/target_encoding/te_column_name_to_idx_map.ini";
-  
   private static final String MISSING_VALUES_PRESENCE_MAP_PATH = "feature_engineering/target_encoding/te_column_name_to_missing_values_presence.ini";
 
   @Override
@@ -30,7 +28,6 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
       _model._smoothing = readkv("smoothing");
     }
     _model._targetEncodingMap = parseEncodingMap();
-    _model._teColumnNameToIdx = parseTEColumnNameToIndexMap();
     _model._teColumnNameToMissingValuesPresence = parseTEColumnNameToMissingValuesPresenceMap();
     _model._priorMean = readkv("priorMean");
   }
@@ -38,18 +35,6 @@ public class TargetEncoderMojoReader extends ModelMojoReader<TargetEncoderMojoMo
   @Override
   protected TargetEncoderMojoModel makeModel(String[] columns, String[][] domains, String responseColumn) {
     return new TargetEncoderMojoModel(columns, domains, responseColumn);
-  }
-  
-  private Map<String, Integer> parseTEColumnNameToIndexMap() throws IOException {
-    Map<String, Integer> teColumnNameToIndexMap = new HashMap<>();
-    if(exists(COLUMN_MAP_PATH)) {
-      Iterable<String> parsedFile = readtext(COLUMN_MAP_PATH);
-      for(String line : parsedFile) {
-        String[] nameAndIndex = line.split("\\s*=\\s*", 2);
-        teColumnNameToIndexMap.put(nameAndIndex[0], Integer.parseInt(nameAndIndex[1]));
-      }
-    }
-    return teColumnNameToIndexMap;
   }
   
   private Map<String, Integer> parseTEColumnNameToMissingValuesPresenceMap() throws IOException {

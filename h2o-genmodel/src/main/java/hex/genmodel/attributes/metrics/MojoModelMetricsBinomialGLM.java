@@ -1,6 +1,8 @@
 package hex.genmodel.attributes.metrics;
 
 
+import hex.genmodel.attributes.SerializedName;
+
 public class MojoModelMetricsBinomialGLM extends MojoModelMetricsBinomial {
   
   @SerializedName("null_degrees_of_freedom")

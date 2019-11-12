@@ -2,14 +2,14 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details) 
 #'
 # -------------------------- Singular Value Decomposition -------------------------- #
-#' 
+#'
 #' Singular value decomposition of an H2O data frame using the power method
-#' 
+#'
+#' @param training_frame Id of the training data frame.
 #' @param x A vector containing the \code{character} names of the predictors in the model.
 #' @param destination_key (Optional) The unique key assigned to the resulting model.
-#'                        Automatically generated if none is provided.
+#'        Automatically generated if none is provided.
 #' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param training_frame Id of the training data frame.
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
@@ -19,14 +19,14 @@
 #'        "GramSVD", "Power", "Randomized". Defaults to GramSVD.
 #' @param nv Number of right singular vectors Defaults to 1.
 #' @param max_iterations Maximum iterations Defaults to 1000.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default)
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
 #' @param keep_u \code{Logical}. Save left singular vectors? Defaults to TRUE.
 #' @param u_name Frame key to save left singular vectors
 #' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @return Returns an object of class \linkS4class{H2ODimReductionModel}.
+#' @return an object of class \linkS4class{H2ODimReductionModel}.
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
 #' @examples
 #' \dontrun{
@@ -37,7 +37,9 @@
 #' h2o.svd(training_frame = australia, nv = 8)
 #' }
 #' @export
-h2o.svd <- function(training_frame, x, destination_key,
+h2o.svd <- function(training_frame,
+                    x,
+                    destination_key,
                     model_id = NULL,
                     validation_frame = NULL,
                     ignore_const_cols = TRUE,
@@ -51,15 +53,13 @@ h2o.svd <- function(training_frame, x, destination_key,
                     u_name = NULL,
                     use_all_factor_levels = TRUE,
                     max_runtime_secs = 0,
-                    export_checkpoints_dir = NULL
-                    ) 
+                    export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
-  validation_frame <- .validate.H2OFrame(validation_frame)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
 
-  # Handle other args
-  # Parameter list to send to model builder
+  # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
   if(!missing(x))
@@ -70,6 +70,7 @@ h2o.svd <- function(training_frame, x, destination_key,
       parms$model_id <- destination_key
     }
   }
+
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(validation_frame))
@@ -98,6 +99,8 @@ h2o.svd <- function(training_frame, x, destination_key,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+
   # Error check and build model
-  .h2o.modelJob('svd', parms, h2oRestApiVersion = 99) 
+  model <- .h2o.modelJob('svd', parms, h2oRestApiVersion=99, verbose=FALSE)
+  return(model)
 }

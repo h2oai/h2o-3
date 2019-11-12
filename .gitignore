@@ -151,3 +151,6 @@ leak-check.out
 h2o-r/h2o-package/docs/*.html
 h2o-r/h2o-package/docs/articles/*.html
 h2o-r/h2o-package/docs/reference/*.html
+
+# Terraform
+.terraform/

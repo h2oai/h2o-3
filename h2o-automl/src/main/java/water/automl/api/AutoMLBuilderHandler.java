@@ -14,6 +14,7 @@ public class AutoMLBuilderHandler extends Handler {
     AutoMLBuildSpec buildSpec = buildSpecSchema.createAndFillImpl();
     AutoML aml = AutoML.startAutoML(buildSpec);
     buildSpecSchema.job = new JobV3().fillFromImpl(aml.job());
+    buildSpecSchema.build_control.project_name = aml.projectName();
     return buildSpecSchema;
   }
 }

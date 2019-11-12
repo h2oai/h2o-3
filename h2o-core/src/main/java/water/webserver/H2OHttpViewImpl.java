@@ -69,6 +69,9 @@ public class H2OHttpViewImpl implements H2OHttpView {
       return false;
     }
 
+    if (request.getUserPrincipal() == null) {
+      return false;
+    }
     final String loginName = request.getUserPrincipal().getName();
     if (loginName.equals(config.user_name)) {
       return false;
@@ -79,20 +82,29 @@ public class H2OHttpViewImpl implements H2OHttpView {
   }
 
   @Override
-  public void gateHandler(HttpServletRequest request, HttpServletResponse response) {
+  public boolean gateHandler(HttpServletRequest request, HttpServletResponse response) {
     ServletUtils.startRequestLifecycle();
-    while (!_acceptRequests) {
+    while (! isAcceptingRequests()) {
       try { Thread.sleep(100); }
       catch (Exception ignore) {}
     }
 
     boolean isXhrRequest = false;
     if (request != null) {
+      if (ServletUtils.isTraceRequest(request)) {
+        ServletUtils.setResponseStatus(response, HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        return true;
+      }
       isXhrRequest = ServletUtils.isXhrRequest(request);
     }
     ServletUtils.setCommonResponseHttpHeaders(response, isXhrRequest);
+    return false;
   }
 
+  protected boolean isAcceptingRequests() {
+    return _acceptRequests;
+  }
+  
   @Override
   public H2OHttpConfig getConfig() {
     return config;

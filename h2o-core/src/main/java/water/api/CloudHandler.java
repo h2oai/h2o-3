@@ -22,6 +22,10 @@ class CloudHandler extends Handler {
     // TODO: this really ought to be in the water package
     cloud.version = H2O.ABV.projectVersion();
     cloud.branch_name = H2O.ABV.branchName();
+    cloud.last_commit_hash = H2O.ABV.lastCommitHash();
+    cloud.describe = H2O.ABV.describe();
+    cloud.compiled_by = H2O.ABV.compiledBy();
+    cloud.compiled_on = H2O.ABV.compiledOn();
     cloud.build_number = H2O.ABV.buildNumber();
     cloud.build_age = PrettyPrint.toAge(H2O.ABV.compiledOnDate(), new Date());
     cloud.build_too_old = H2O.ABV.isTooOld();
@@ -41,6 +45,9 @@ class CloudHandler extends Handler {
     H2ONode[] members = H2O.CLOUD.members();
     cloud.bad_nodes = 0;
     cloud.cloud_healthy = true;
+    
+    H2ONode leader = H2O.CLOUD.leader();
+    cloud.leader_idx = leader == null ? -1 : leader.index();
     if (null != members) {
       cloud.nodes = new CloudV3.NodeV3[members.length];
       for (int i = 0; i < members.length; i++) {

@@ -19,54 +19,51 @@ class H2ODeepLearningEstimator(H2OEstimator):
     Build a Deep Neural Network model using CPUs
     Builds a feed-forward multilayer artificial neural network on an H2OFrame
 
-    Examples
-    --------
-      >>> import h2o
-      >>> from h2o.estimators.deeplearning import H2ODeepLearningEstimator
-      >>> h2o.connect()
-      >>> rows = [[1,2,3,4,0], [2,1,2,4,1], [2,1,4,2,1], [0,1,2,34,1], [2,3,4,1,0]] * 50
-      >>> fr = h2o.H2OFrame(rows)
-      >>> fr[4] = fr[4].asfactor()
-      >>> model = H2ODeepLearningEstimator()
-      >>> model.train(x=range(4), y=4, training_frame=fr)
+    :examples:
+
+    >>> from h2o.estimators.deeplearning import H2ODeepLearningEstimator
+    >>> rows = [[1,2,3,4,0], [2,1,2,4,1], [2,1,4,2,1],
+    ...         [0,1,2,34,1], [2,3,4,1,0]] * 50
+    >>> fr = h2o.H2OFrame(rows)
+    >>> fr[4] = fr[4].asfactor()
+    >>> model = H2ODeepLearningEstimator()
+    >>> model.train(x = range(4), y = 4, training_frame = fr)
+    >>> model.logloss()
     """
 
     algo = "deeplearning"
+    param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_models",
+                   "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
+                   "fold_column", "response_column", "ignored_columns", "ignore_const_cols", "score_each_iteration",
+                   "weights_column", "offset_column", "balance_classes", "class_sampling_factors",
+                   "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k", "checkpoint",
+                   "pretrained_autoencoder", "overwrite_with_best_model", "use_all_factor_levels", "standardize",
+                   "activation", "hidden", "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp", "seed",
+                   "adaptive_rate", "rho", "epsilon", "rate", "rate_annealing", "rate_decay", "momentum_start",
+                   "momentum_ramp", "momentum_stable", "nesterov_accelerated_gradient", "input_dropout_ratio",
+                   "hidden_dropout_ratios", "l1", "l2", "max_w2", "initial_weight_distribution", "initial_weight_scale",
+                   "initial_weights", "initial_biases", "loss", "distribution", "quantile_alpha", "tweedie_power",
+                   "huber_alpha", "score_interval", "score_training_samples", "score_validation_samples",
+                   "score_duty_cycle", "classification_stop", "regression_stop", "stopping_rounds", "stopping_metric",
+                   "stopping_tolerance", "max_runtime_secs", "score_validation_sampling", "diagnostics", "fast_mode",
+                   "force_load_balance", "variable_importances", "replicate_training_data", "single_node_mode",
+                   "shuffle_training_data", "missing_values_handling", "quiet_mode", "autoencoder", "sparse",
+                   "col_major", "average_activation", "sparsity_beta", "max_categorical_features", "reproducible",
+                   "export_weights_and_biases", "mini_batch_size", "categorical_encoding", "elastic_averaging",
+                   "elastic_averaging_moving_rate", "elastic_averaging_regularization", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2ODeepLearningEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "nfolds", "keep_cross_validation_models",
-                      "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
-                      "fold_column", "response_column", "ignored_columns", "ignore_const_cols", "score_each_iteration",
-                      "weights_column", "offset_column", "balance_classes", "class_sampling_factors",
-                      "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k", "checkpoint",
-                      "pretrained_autoencoder", "overwrite_with_best_model", "use_all_factor_levels", "standardize",
-                      "activation", "hidden", "epochs", "train_samples_per_iteration", "target_ratio_comm_to_comp",
-                      "seed", "adaptive_rate", "rho", "epsilon", "rate", "rate_annealing", "rate_decay",
-                      "momentum_start", "momentum_ramp", "momentum_stable", "nesterov_accelerated_gradient",
-                      "input_dropout_ratio", "hidden_dropout_ratios", "l1", "l2", "max_w2",
-                      "initial_weight_distribution", "initial_weight_scale", "initial_weights", "initial_biases",
-                      "loss", "distribution", "quantile_alpha", "tweedie_power", "huber_alpha", "score_interval",
-                      "score_training_samples", "score_validation_samples", "score_duty_cycle", "classification_stop",
-                      "regression_stop", "stopping_rounds", "stopping_metric", "stopping_tolerance", "max_runtime_secs",
-                      "score_validation_sampling", "diagnostics", "fast_mode", "force_load_balance",
-                      "variable_importances", "replicate_training_data", "single_node_mode", "shuffle_training_data",
-                      "missing_values_handling", "quiet_mode", "autoencoder", "sparse", "col_major",
-                      "average_activation", "sparsity_beta", "max_categorical_features", "reproducible",
-                      "export_weights_and_biases", "mini_batch_size", "categorical_encoding", "elastic_averaging",
-                      "elastic_averaging_moving_rate", "elastic_averaging_regularization", "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
-        if isinstance(self, H2OAutoEncoderEstimator): self._parms['autoencoder'] = True
 
     @property
     def training_frame(self):
@@ -74,6 +71,25 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator()
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.auc()
         """
         return self._parms.get("training_frame")
 
@@ -88,6 +104,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Id of the validation data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(standardize = True,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("validation_frame")
 
@@ -102,6 +133,18 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars_dl = H2ODeepLearningEstimator(nfolds = 5, seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("nfolds")
 
@@ -117,6 +160,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Whether to keep the cross-validation models.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_models = True,
+        ...                                   seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> print(cars_dl.cross_validation_models())
         """
         return self._parms.get("keep_cross_validation_models")
 
@@ -132,6 +190,20 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Whether to keep the predictions of the cross-validation models.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_predictions = True,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train)
+        >>> print(cars_dl.cross_validation_predictions())
         """
         return self._parms.get("keep_cross_validation_predictions")
 
@@ -147,6 +219,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Whether to keep the cross-validation fold assignment.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(keep_cross_validation_fold_assignment = True,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> print(cars_dl.cross_validation_fold_assignment())
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
@@ -163,6 +250,22 @@ class H2ODeepLearningEstimator(H2OEstimator):
         the folds based on the response variable, for classification problems.
 
         One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(fold_assignment = "Random",
+        ...                                    nfolds = 5,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("fold_assignment")
 
@@ -178,6 +281,23 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Column with cross-validation fold index assignment per observation.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> fold_numbers = cars.kfold_column(n_folds = 5, seed = 1234)
+        >>> fold_numbers.set_names(["fold_numbers"])
+        >>> cars = cars.cbind(fold_numbers)
+        >>> print(cars['fold_numbers'])
+        >>> cars_dl = H2ODeepLearningEstimator(seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars,
+        ...               fold_column = "fold_numbers")
+        >>> cars_dl.mse()
         """
         return self._parms.get("fold_column")
 
@@ -223,6 +343,23 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars["const_1"] = 6
+        >>> cars["const_2"] = 7
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(seed = 1234,
+        ...                                    ignore_const_cols = True)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("ignore_const_cols")
 
@@ -238,6 +375,19 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars_dl = H2ODeepLearningEstimator(score_each_iteration = True,
+        ...                                    seed = 1234) 
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("score_each_iteration")
 
@@ -257,6 +407,20 @@ class H2ODeepLearningEstimator(H2OEstimator):
         During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("weights_column")
 
@@ -272,6 +436,22 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Offset column. This will be added to the combination of columns before applying the link function.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+        >>> predictors = boston.columns[:-1]
+        >>> response = "medv"
+        >>> boston['chas'] = boston['chas'].asfactor()
+        >>> boston["offset"] = boston["medv"].log()
+        >>> train, valid = boston.split_frame(ratios = [.8], seed = 1234)
+        >>> boston_dl = H2ODeepLearningEstimator(offset_column = "offset",
+        ...                                      seed = 1234)
+        >>> boston_dl.train(x = predictors,
+        ...                 y = response,
+        ...                 training_frame = train,
+        ...                 validation_frame = valid)
+        >>> boston_dl.mse()
         """
         return self._parms.get("offset_column")
 
@@ -287,6 +467,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Balance training data class counts via over/under-sampling (for imbalanced data).
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> cov_dl = H2ODeepLearningEstimator(balance_classes = True,
+        ...                                   seed = 1234)
+        >>> cov_dl.train(x = predictors,
+        ...              y = response,
+        ...              training_frame = train,
+        ...              validation_frame = valid)
+        >>> cov_dl.mse()
         """
         return self._parms.get("balance_classes")
 
@@ -303,6 +498,23 @@ class H2ODeepLearningEstimator(H2OEstimator):
         be automatically computed to obtain class balance during training. Requires balance_classes.
 
         Type: ``List[float]``.
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> sample_factors = [1., 0.5, 1., 1., 1., 1., 1.]
+        >>> cars_dl = H2ODeepLearningEstimator(balance_classes = True,
+        ...                                    class_sampling_factors = sample_factors,
+        ...                                    seed = 1234)
+        >>> cov_dl.train(x = predictors,
+        ...              y = response,
+        ...              training_frame = train,
+        ...              validation_frame = valid)
+        >>> cov_dl.mse()
         """
         return self._parms.get("class_sampling_factors")
 
@@ -319,6 +531,23 @@ class H2ODeepLearningEstimator(H2OEstimator):
         balance_classes.
 
         Type: ``float``  (default: ``5``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> max = .85
+        >>> cov_dl = H2ODeepLearningEstimator(balance_classes = True,
+        ...                                   max_after_balance_size = max,
+        ...                                   seed = 1234)
+        >>> cov_dl.train(x = predictors,
+        ...              y = response,
+        ...              training_frame = train,
+        ...              validation_frame = valid)
+        >>> cov_dl.logloss()
         """
         return self._parms.get("max_after_balance_size")
 
@@ -349,6 +578,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable).
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> cov_dl = H2ODeepLearningEstimator(max_hit_ratio_k = 3,
+        ...                                   seed = 1234) 
+        >>> cov_dl.train(x = predictors,
+        ...              y = response,
+        ...              training_frame = train,
+        ...              validation_frame = valid)
+        >>> cov_dl.show()
         """
         return self._parms.get("max_hit_ratio_k")
 
@@ -364,6 +608,30 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Model checkpoint to resume training with.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(activation="tanh",
+        ...                                    autoencoder=True,
+        ...                                    seed = 1234,
+        ...                                    model_id="cars_dl")
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
+        >>> cars_cont = H2ODeepLearningEstimator(checkpoint = cars_dl,
+        ...                                      seed = 1234)
+        >>> cars_cont.train(x = predictors,
+        ...                 y = response,
+        ...                 training_frame = train,
+        ...                 validation_frame = valid)
+        >>> cars_cont.mse()
         """
         return self._parms.get("checkpoint")
 
@@ -379,6 +647,40 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Pretrained autoencoder model to initialize this model with.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
+        >>> resp = 784
+        >>> nfeatures = 20
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
+        >>> train[resp] = train[resp].asfactor()
+        >>> test[resp] = test[resp].asfactor()
+        >>> sid = train[0].runif(0)
+        >>> train_unsupervised = train[sid >=0.5]
+        >>> train_unsupervised.pop(resp)
+        >>> train_supervised = train[sid < 0.5]
+        >>> ae_model = H2OAutoEncoderEstimator(activation = "Tanh",
+        ...                                    hidden = [nfeatures],
+        ...                                    model_id = "ae_model",
+        ...                                    epochs = 1,
+        ...                                    ignore_const_cols = False,
+        ...                                    reproducible = True,
+        ...                                    seed = 1234)
+        >>> ae_model.train(list(range(resp)), training_frame = train_unsupervised)
+        >>> ae_model.mse()
+        >>> pretrained_model = H2ODeepLearningEstimator(activation="Tanh",
+        ...                                             hidden=[nfeatures],
+        ...                                             epochs=1,
+        ...                                             reproducible = True,
+        ...                                             seed=1234,
+        ...                                             ignore_const_cols=False,
+        ...                                             pretrained_autoencoder="ae_model")
+        >>> pretrained_model.train(list(range(resp)), resp,
+        ...                        training_frame=train_supervised,
+        ...                        validation_frame=test)
+        >>> pretrained_model.mse()
         """
         return self._parms.get("pretrained_autoencoder")
 
@@ -394,6 +696,22 @@ class H2ODeepLearningEstimator(H2OEstimator):
         If enabled, override the final model with the best model found during training.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+        >>> predictors = boston.columns[:-1]
+        >>> response = "medv"
+        >>> boston['chas'] = boston['chas'].asfactor()
+        >>> boston["offset"] = boston["medv"].log()
+        >>> train, valid = boston.split_frame(ratios = [.8], seed = 1234)
+        >>> boston_dl = H2ODeepLearningEstimator(overwrite_with_best_model = True,
+        ...                                      seed = 1234)
+        >>> boston_dl.train(x = predictors,
+        ...                 y = response,
+        ...                 training_frame = train,
+        ...                 validation_frame = valid)
+        >>> boston_dl.mse()
         """
         return self._parms.get("overwrite_with_best_model")
 
@@ -410,6 +728,26 @@ class H2ODeepLearningEstimator(H2OEstimator):
         accuracy). Useful for variable importances and auto-enabled for autoencoder.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(use_all_factor_levels = True,
+        ...                                        seed = 1234)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.mse()
         """
         return self._parms.get("use_all_factor_levels")
 
@@ -425,6 +763,19 @@ class H2ODeepLearningEstimator(H2OEstimator):
         If enabled, automatically standardize the data. If disabled, the user must provide properly scaled input data.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars_dl = H2ODeepLearningEstimator(standardize = True,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("standardize")
 
@@ -441,6 +792,19 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
         One of: ``"tanh"``, ``"tanh_with_dropout"``, ``"rectifier"``, ``"rectifier_with_dropout"``, ``"maxout"``,
         ``"maxout_with_dropout"``  (default: ``"rectifier"``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> cars_dl = H2ODeepLearningEstimator(activation = "tanh")
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("activation")
 
@@ -456,6 +820,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Hidden layer sizes (e.g. [100, 100]).
 
         Type: ``List[int]``  (default: ``[200, 200]``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(hidden = [100,100],
+        ...                                    seed = 1234) 
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("hidden")
 
@@ -471,6 +850,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         How many times the dataset should be iterated (streamed), can be fractional.
 
         Type: ``float``  (default: ``10``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(epochs = 15,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("epochs")
 
@@ -487,6 +881,27 @@ class H2ODeepLearningEstimator(H2OEstimator):
         available data (e.g., replicated training data), -2: automatic.
 
         Type: ``int``  (default: ``-2``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(train_samples_per_iteration = -1,
+        ...                                        epochs = 1,
+        ...                                        seed = 1234)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.auc()
         """
         return self._parms.get("train_samples_per_iteration")
 
@@ -503,6 +918,26 @@ class H2ODeepLearningEstimator(H2OEstimator):
         train_samples_per_iteration = -2 (auto-tuning).
 
         Type: ``float``  (default: ``0.05``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(target_ratio_comm_to_comp = 0.05,
+        ...                                        seed = 1234)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.auc()
         """
         return self._parms.get("target_ratio_comm_to_comp")
 
@@ -518,6 +953,20 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Seed for random numbers (affects sampling) - Note: only reproducible when running single threaded.
 
         Type: ``int``  (default: ``-1``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("seed")
 
@@ -533,6 +982,19 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Adaptive learning rate.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> cars_dl = H2ODeepLearningEstimator(adaptive_rate = True)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("adaptive_rate")
 
@@ -548,6 +1010,19 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Adaptive learning rate time decay factor (similarity to prior updates).
 
         Type: ``float``  (default: ``0.99``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars_dl = H2ODeepLearningEstimator(rho = 0.9,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("rho")
 
@@ -563,6 +1038,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Adaptive learning rate smoothing factor (to avoid divisions by zero and allow progress).
 
         Type: ``float``  (default: ``1e-08``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(epsilon = 1e-6,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("epsilon")
 
@@ -578,6 +1068,31 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Learning rate (higher => less stable, lower => slower convergence).
 
         Type: ``float``  (default: ``0.005``).
+
+        :examples:
+
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
+        >>> predictors = list(range(0,784))
+        >>> resp = 784
+        >>> train[resp] = train[resp].asfactor()
+        >>> test[resp] = test[resp].asfactor()
+        >>> nclasses = train[resp].nlevels()[0]
+        >>> model = H2ODeepLearningEstimator(activation="RectifierWithDropout",
+        ...                                  adaptive_rate=False,
+        ...                                  rate=0.01,
+        ...                                  rate_decay=0.9,
+        ...                                  rate_annealing=1e-6,
+        ...                                  momentum_start=0.95,
+        ...                                  momentum_ramp=1e5,
+        ...                                  momentum_stable=0.99,
+        ...                                  nesterov_accelerated_gradient=False,
+        ...                                  input_dropout_ratio=0.2,
+        ...                                  train_samples_per_iteration=20000,
+        ...                                  classification_stop=-1,
+        ...                                  l1=1e-5)
+        >>> model.train (x=predictors,y=resp, training_frame=train, validation_frame=test)
+        >>> model.model_performance(valid=True)
         """
         return self._parms.get("rate")
 
@@ -593,6 +1108,34 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Learning rate annealing: rate / (1 + rate_annealing * samples).
 
         Type: ``float``  (default: ``1e-06``).
+
+        :examples:
+
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
+        >>> predictors = list(range(0,784))
+        >>> resp = 784
+        >>> train[resp] = train[resp].asfactor()
+        >>> test[resp] = test[resp].asfactor()
+        >>> nclasses = train[resp].nlevels()[0]
+        >>> model = H2ODeepLearningEstimator(activation="RectifierWithDropout",
+        ...                                  adaptive_rate=False,
+        ...                                  rate=0.01,
+        ...                                  rate_decay=0.9,
+        ...                                  rate_annealing=1e-6,
+        ...                                  momentum_start=0.95,
+        ...                                  momentum_ramp=1e5,
+        ...                                  momentum_stable=0.99,
+        ...                                  nesterov_accelerated_gradient=False,
+        ...                                  input_dropout_ratio=0.2,
+        ...                                  train_samples_per_iteration=20000,
+        ...                                  classification_stop=-1,
+        ...                                  l1=1e-5)
+        >>> model.train (x=predictors,
+        ...              y=resp,
+        ...              training_frame=train,
+        ...              validation_frame=test)
+        >>> model.mse()
         """
         return self._parms.get("rate_annealing")
 
@@ -608,6 +1151,34 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Learning rate decay factor between layers (N-th layer: rate * rate_decay ^ (n - 1).
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
+        >>> predictors = list(range(0,784))
+        >>> resp = 784
+        >>> train[resp] = train[resp].asfactor()
+        >>> test[resp] = test[resp].asfactor()
+        >>> nclasses = train[resp].nlevels()[0]
+        >>> model = H2ODeepLearningEstimator(activation="RectifierWithDropout",
+        ...                                  adaptive_rate=False,
+        ...                                  rate=0.01,
+        ...                                  rate_decay=0.9,
+        ...                                  rate_annealing=1e-6,
+        ...                                  momentum_start=0.95,
+        ...                                  momentum_ramp=1e5,
+        ...                                  momentum_stable=0.99,
+        ...                                  nesterov_accelerated_gradient=False,
+        ...                                  input_dropout_ratio=0.2,
+        ...                                  train_samples_per_iteration=20000,
+        ...                                  classification_stop=-1,
+        ...                                  l1=1e-5)
+        >>> model.train (x=predictors,
+        ...              y=resp,
+        ...              training_frame=train,
+        ...              validation_frame=test)
+        >>> model.model_performance()
         """
         return self._parms.get("rate_decay")
 
@@ -623,6 +1194,29 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Initial momentum at the beginning of training (try 0.5).
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> predictors = ["Year","Month","DayofMonth","DayOfWeek","CRSDepTime",
+        ...               "CRSArrTime","UniqueCarrier","FlightNum"]
+        >>> response_col = "IsDepDelayed"
+        >>> airlines_dl = H2ODeepLearningEstimator(hidden=[200,200],
+        ...                                        activation="Rectifier",
+        ...                                        input_dropout_ratio=0.0,
+        ...                                        momentum_start=0.9,
+        ...                                        momentum_stable=0.99,
+        ...                                        momentum_ramp=1e7,
+        ...                                        epochs=100,
+        ...                                        stopping_rounds=4,
+        ...                                        train_samples_per_iteration=30000,
+        ...                                        mini_batch_size=32,
+        ...                                        score_duty_cycle=0.25,
+        ...                                        score_interval=1)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response_col,
+        ...                   training_frame = airlines)
+        >>> airlines_dl.mse()
         """
         return self._parms.get("momentum_start")
 
@@ -638,6 +1232,29 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Number of training samples for which momentum increases.
 
         Type: ``float``  (default: ``1000000``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> predictors = ["Year","Month","DayofMonth","DayOfWeek","CRSDepTime",
+        ...               "CRSArrTime","UniqueCarrier","FlightNum"]
+        >>> response_col = "IsDepDelayed"
+        >>> airlines_dl = H2ODeepLearningEstimator(hidden=[200,200],
+        ...                                        activation="Rectifier",
+        ...                                        input_dropout_ratio=0.0,
+        ...                                        momentum_start=0.9,
+        ...                                        momentum_stable=0.99,
+        ...                                        momentum_ramp=1e7,
+        ...                                        epochs=100,
+        ...                                        stopping_rounds=4,
+        ...                                        train_samples_per_iteration=30000,
+        ...                                        mini_batch_size=32,
+        ...                                        score_duty_cycle=0.25,
+        ...                                        score_interval=1)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response_col,
+        ...                   training_frame = airlines)
+        >>> airlines_dl.mse()
         """
         return self._parms.get("momentum_ramp")
 
@@ -653,6 +1270,29 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Final momentum after the ramp is over (try 0.99).
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> predictors = ["Year","Month","DayofMonth","DayOfWeek","CRSDepTime",
+        ...               "CRSArrTime","UniqueCarrier","FlightNum"]
+        >>> response_col = "IsDepDelayed"
+        >>> airlines_dl = H2ODeepLearningEstimator(hidden=[200,200],
+        ...                                        activation="Rectifier",
+        ...                                        input_dropout_ratio=0.0,
+        ...                                        momentum_start=0.9,
+        ...                                        momentum_stable=0.99,
+        ...                                        momentum_ramp=1e7,
+        ...                                        epochs=100,
+        ...                                        stopping_rounds=4,
+        ...                                        train_samples_per_iteration=30000,
+        ...                                        mini_batch_size=32,
+        ...                                        score_duty_cycle=0.25,
+        ...                                        score_interval=1)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response_col,
+        ...                   training_frame = airlines)
+        >>> airlines_dl.mse()
         """
         return self._parms.get("momentum_stable")
 
@@ -668,6 +1308,34 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Use Nesterov accelerated gradient (recommended).
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
+        >>> predictors = list(range(0,784))
+        >>> resp = 784
+        >>> train[resp] = train[resp].asfactor()
+        >>> test[resp] = test[resp].asfactor()
+        >>> nclasses = train[resp].nlevels()[0]
+        >>> model = H2ODeepLearningEstimator(activation = "RectifierWithDropout",
+        ...                                  adaptive_rate = False,
+        ...                                  rate = 0.01,
+        ...                                  rate_decay = 0.9,
+        ...                                  rate_annealing = 1e-6,
+        ...                                  momentum_start = 0.95,
+        ...                                  momentum_ramp = 1e5,
+        ...                                  momentum_stable = 0.99,
+        ...                                  nesterov_accelerated_gradient = False,
+        ...                                  input_dropout_ratio = 0.2,
+        ...                                  train_samples_per_iteration = 20000,
+        ...                                  classification_stop = -1,
+        ...                                  l1 = 1e-5) 
+        >>> model.train (x = predictors,
+        ...              y = resp,
+        ...              training_frame = train,
+        ...              validation_frame = test)
+        >>> model.model_performance()
         """
         return self._parms.get("nesterov_accelerated_gradient")
 
@@ -683,6 +1351,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Input layer dropout ratio (can improve generalization, try 0.1 or 0.2).
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(input_dropout_ratio = 0.2,
+        ...                                    seed = 1234) 
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("input_dropout_ratio")
 
@@ -698,6 +1381,25 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Hidden layer dropout ratios (can improve generalization), specify one value per hidden layer, defaults to 0.5.
 
         Type: ``List[float]``.
+
+        :examples:
+
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+        >>> valid = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
+        >>> features = list(range(0,784))
+        >>> target = 784
+        >>> train[target] = train[target].asfactor()
+        >>> valid[target] = valid[target].asfactor()
+        >>> model = H2ODeepLearningEstimator(epochs = 20,
+        ...                                  hidden = [200,200],
+        ...                                  hidden_dropout_ratios = [0.5,0.5],
+        ...                                  seed = 1234,
+        ...                                  activation='tanhwithdropout')
+        >>> model.train(x = features,
+        ...             y = target,
+        ...             training_frame = train,
+        ...             validation_frame = valid)
+        >>> model.mse()
         """
         return self._parms.get("hidden_dropout_ratios")
 
@@ -713,6 +1415,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         L1 regularization (can add stability and improve generalization, causes many weights to become 0).
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> hh_imbalanced = H2ODeepLearningEstimator(l1=1e-5,
+        ...                                          activation="Rectifier",
+        ...                                          loss="CrossEntropy",
+        ...                                          hidden=[200,200],
+        ...                                          epochs=1,
+        ...                                          balance_classes=False,
+        ...                                          reproducible=True,
+        ...                                          seed=1234)
+        >>> hh_imbalanced.train(x=list(range(54)),y=54, training_frame=covtype)
+        >>> hh_imbalanced.mse()
         """
         return self._parms.get("l1")
 
@@ -728,6 +1445,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         L2 regularization (can add stability and improve generalization, causes many weights to be small.
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> hh_imbalanced = H2ODeepLearningEstimator(l2=1e-5,
+        ...                                          activation="Rectifier",
+        ...                                          loss="CrossEntropy",
+        ...                                          hidden=[200,200],
+        ...                                          epochs=1,
+        ...                                          balance_classes=False,
+        ...                                          reproducible=True,
+        ...                                          seed=1234)
+        >>> hh_imbalanced.train(x=list(range(54)),y=54, training_frame=covtype)
+        >>> hh_imbalanced.mse()
         """
         return self._parms.get("l2")
 
@@ -743,6 +1475,26 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Constraint for squared sum of incoming weights per unit (e.g. for Rectifier).
 
         Type: ``float``  (default: ``3.4028235e+38``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> cov_dl = H2ODeepLearningEstimator(activation = "RectifierWithDropout",
+        ...                                   hidden = [10,10],
+        ...                                   epochs = 10,
+        ...                                   input_dropout_ratio = 0.2,
+        ...                                   l1 = 1e-5,
+        ...                                   max_w2 = 10.5,
+        ...                                   stopping_rounds = 0)
+        >>> cov_dl.train(x = predictors,
+        ...              y = response,
+        ...              training_frame = train,
+        ...              validation_frame = valid)
+        >>> cov_dl.mse()
         """
         return self._parms.get("max_w2")
 
@@ -758,6 +1510,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Initial weight distribution.
 
         One of: ``"uniform_adaptive"``, ``"uniform"``, ``"normal"``  (default: ``"uniform_adaptive"``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(initial_weight_distribution = "Uniform",
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("initial_weight_distribution")
 
@@ -773,6 +1540,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Uniform: -value...value, Normal: stddev.
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(initial_weight_scale = 1.5,
+        ...                                    seed = 1234) 
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("initial_weight_scale")
 
@@ -788,6 +1570,28 @@ class H2ODeepLearningEstimator(H2OEstimator):
         A list of H2OFrame ids to initialize the weight matrices of this model with.
 
         Type: ``List[H2OFrame]``.
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> dl1 = H2ODeepLearningEstimator(hidden=[10,10],
+        ...                                export_weights_and_biases=True)
+        >>> dl1.train(x=list(range(4)), y=4, training_frame=iris)
+        >>> p1 = dl1.model_performance(iris).logloss()
+        >>> ll1 = dl1.predict(iris)
+        >>> print(p1)
+        >>> w1 = dl1.weights(0)
+        >>> w2 = dl1.weights(1)
+        >>> w3 = dl1.weights(2)
+        >>> b1 = dl1.biases(0)
+        >>> b2 = dl1.biases(1)
+        >>> b3 = dl1.biases(2)
+        >>> dl2 = H2ODeepLearningEstimator(hidden=[10,10],
+        ...                                initial_weights=[w1, w2, w3],
+        ...                                initial_biases=[b1, b2, b3],
+        ...                                epochs=0)
+        >>> dl2.train(x=list(range(4)), y=4, training_frame=iris)
+        >>> dl2.initial_weights
         """
         return self._parms.get("initial_weights")
 
@@ -803,6 +1607,28 @@ class H2ODeepLearningEstimator(H2OEstimator):
         A list of H2OFrame ids to initialize the bias vectors of this model with.
 
         Type: ``List[H2OFrame]``.
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> dl1 = H2ODeepLearningEstimator(hidden=[10,10],
+        ...                                export_weights_and_biases=True)
+        >>> dl1.train(x=list(range(4)), y=4, training_frame=iris)
+        >>> p1 = dl1.model_performance(iris).logloss()
+        >>> ll1 = dl1.predict(iris)
+        >>> print(p1)
+        >>> w1 = dl1.weights(0)
+        >>> w2 = dl1.weights(1)
+        >>> w3 = dl1.weights(2)
+        >>> b1 = dl1.biases(0)
+        >>> b2 = dl1.biases(1)
+        >>> b3 = dl1.biases(2)
+        >>> dl2 = H2ODeepLearningEstimator(hidden=[10,10],
+        ...                                initial_weights=[w1, w2, w3],
+        ...                                initial_biases=[b1, b2, b3],
+        ...                                epochs=0)
+        >>> dl2.train(x=list(range(4)), y=4, training_frame=iris)
+        >>> dl2.initial_biases
         """
         return self._parms.get("initial_biases")
 
@@ -819,6 +1645,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
         One of: ``"automatic"``, ``"cross_entropy"``, ``"quadratic"``, ``"huber"``, ``"absolute"``, ``"quantile"``
         (default: ``"automatic"``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> hh_imbalanced = H2ODeepLearningEstimator(l1=1e-5,
+        ...                                          activation="Rectifier",
+        ...                                          loss="CrossEntropy",
+        ...                                          hidden=[200,200],
+        ...                                          epochs=1,
+        ...                                          balance_classes=False,
+        ...                                          reproducible=True,
+        ...                                          seed=1234)
+        >>> hh_imbalanced.train(x=list(range(54)),y=54, training_frame=covtype)
+        >>> hh_imbalanced.mse()
         """
         return self._parms.get("loss")
 
@@ -835,6 +1676,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
         One of: ``"auto"``, ``"bernoulli"``, ``"multinomial"``, ``"gaussian"``, ``"poisson"``, ``"gamma"``,
         ``"tweedie"``, ``"laplace"``, ``"quantile"``, ``"huber"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(distribution = "poisson",
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("distribution")
 
@@ -850,6 +1706,22 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Desired quantile for Quantile regression, must be between 0 and 1.
 
         Type: ``float``  (default: ``0.5``).
+
+        :examples:
+
+        >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+        >>> predictors = boston.columns[:-1]
+        >>> response = "medv"
+        >>> boston['chas'] = boston['chas'].asfactor()
+        >>> train, valid = boston.split_frame(ratios = [.8], seed = 1234)
+        >>> boston_dl = H2ODeepLearningEstimator(distribution = "quantile",
+        ...                                      quantile_alpha = .8,
+        ...                                      seed = 1234)
+        >>> boston_dl.train(x = predictors,
+        ...                 y = response,
+        ...                 training_frame = train,
+        ...                 validation_frame = valid)
+        >>> boston_dl.mse()
         """
         return self._parms.get("quantile_alpha")
 
@@ -865,6 +1737,26 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Tweedie power for Tweedie regression, must be between 1 and 2.
 
         Type: ``float``  (default: ``1.5``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(tweedie_power = 1.5,
+        ...                                        seed = 1234) 
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.auc()
         """
         return self._parms.get("tweedie_power")
 
@@ -880,6 +1772,23 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Desired quantile for Huber/M-regression (threshold between quadratic and linear loss, must be between 0 and 1).
 
         Type: ``float``  (default: ``0.9``).
+
+        :examples:
+
+        >>> insurance = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+        >>> predictors = insurance.columns[0:4]
+        >>> response = 'Claims'
+        >>> insurance['Group'] = insurance['Group'].asfactor()
+        >>> insurance['Age'] = insurance['Age'].asfactor()
+        >>> train, valid = insurance.split_frame(ratios = [.8], seed = 1234)
+        >>> insurance_dl = H2ODeepLearningEstimator(distribution = "huber",
+        ...                                         huber_alpha = 0.9,
+        ...                                         seed = 1234)
+        >>> insurance_dl.train(x = predictors,
+        ...                    y = response,
+        ...                    training_frame = train,
+        ...                    validation_frame = valid)
+        >>> insurance_dl.mse()
         """
         return self._parms.get("huber_alpha")
 
@@ -895,6 +1804,19 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Shortest time interval (in seconds) between model scoring.
 
         Type: ``float``  (default: ``5``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars_dl = H2ODeepLearningEstimator(score_interval = 3,
+        ...                                    seed = 1234) 
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("score_interval")
 
@@ -910,6 +1832,19 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Number of training set samples for scoring (0 for all).
 
         Type: ``int``  (default: ``10000``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars_dl = H2ODeepLearningEstimator(score_training_samples = 10000,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("score_training_samples")
 
@@ -925,6 +1860,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Number of validation set samples for scoring (0 for all).
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(score_validation_samples = 3,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("score_validation_samples")
 
@@ -940,6 +1890,19 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Maximum duty cycle fraction for scoring (lower: more training, higher: more scoring).
 
         Type: ``float``  (default: ``0.1``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars_dl = H2ODeepLearningEstimator(score_duty_cycle = 0.2,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("score_duty_cycle")
 
@@ -955,6 +1918,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Stopping criterion for classification error fraction on training data (-1 to disable).
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(classification_stop = 1.5,
+        ...                                    seed = 1234)
+        >>> cov_dl.train(x = predictors,
+        ...              y = response,
+        ...              training_frame = train,
+        ...              validation_frame = valid)
+        >>> cov_dl.mse()
         """
         return self._parms.get("classification_stop")
 
@@ -970,6 +1948,26 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Stopping criterion for regression error (MSE) on training data (-1 to disable).
 
         Type: ``float``  (default: ``1e-06``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(regression_stop = 1e-6,
+        ...                                        seed = 1234)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.auc()
         """
         return self._parms.get("regression_stop")
 
@@ -986,6 +1984,28 @@ class H2ODeepLearningEstimator(H2OEstimator):
         stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)
 
         Type: ``int``  (default: ``5``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(stopping_metric = "auc",
+        ...                                        stopping_rounds = 3,
+        ...                                        stopping_tolerance = 1e-2,
+        ...                                        seed = 1234)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.auc()
         """
         return self._parms.get("stopping_rounds")
 
@@ -1005,6 +2025,28 @@ class H2ODeepLearningEstimator(H2OEstimator):
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
         ``"lift_top_group"``, ``"misclassification"``, ``"aucpr"``, ``"mean_per_class_error"``, ``"custom"``,
         ``"custom_increasing"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(stopping_metric = "auc",
+        ...                                        stopping_rounds = 3,
+        ...                                        stopping_tolerance = 1e-2,
+        ...                                        seed = 1234)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.auc()
         """
         return self._parms.get("stopping_metric")
 
@@ -1020,6 +2062,28 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(stopping_metric = "auc",
+        ...                                        stopping_rounds = 3,
+        ...                                        stopping_tolerance = 1e-2,
+        ...                                        seed = 1234)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.auc()
         """
         return self._parms.get("stopping_tolerance")
 
@@ -1035,6 +2099,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(max_runtime_secs = 10,
+        ...                                    seed = 1234) 
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("max_runtime_secs")
 
@@ -1050,6 +2129,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Method used to sample validation dataset for scoring.
 
         One of: ``"uniform"``, ``"stratified"``  (default: ``"uniform"``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(score_validation_sampling = "uniform",
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.auc()
         """
         return self._parms.get("score_validation_sampling")
 
@@ -1065,6 +2159,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Enable diagnostics for hidden layers.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(diagnostics = True,
+        ...                                    seed = 1234)  
+        >>> cov_dl.train(x = predictors,
+        ...              y = response,
+        ...              training_frame = train,
+        ...              validation_frame = valid)
+        >>> cov_dl.mse()
         """
         return self._parms.get("diagnostics")
 
@@ -1080,6 +2189,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Enable fast mode (minor approximation in back-propagation).
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(fast_mode = False,
+        ...                                    seed = 1234)          
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("fast_mode")
 
@@ -1095,6 +2219,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Force extra load balancing to increase training speed for small datasets (to keep all cores busy).
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(force_load_balance = False,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("force_load_balance")
 
@@ -1110,6 +2249,26 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Compute variable importances for input features (Gedeon method) - can be slow for large networks.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(variable_importances = True,
+        ...                                        seed = 1234)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.mse()
         """
         return self._parms.get("variable_importances")
 
@@ -1125,6 +2284,23 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Replicate the entire training dataset onto every node for faster training on small datasets.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> airlines_dl = H2ODeepLearningEstimator(replicate_training_data = False)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = airlines) 
+        >>> airlines_dl.auc()
         """
         return self._parms.get("replicate_training_data")
 
@@ -1140,6 +2316,20 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Run on a single node for fine-tuning of model parameters.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(single_node_mode = True,
+        ...                                    seed = 1234) 
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("single_node_mode")
 
@@ -1156,6 +2346,20 @@ class H2ODeepLearningEstimator(H2OEstimator):
         close to #nodes x #rows, of if using balance_classes).
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(shuffle_training_data = True,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("shuffle_training_data")
 
@@ -1171,6 +2375,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Handling of missing values. Either MeanImputation or Skip.
 
         One of: ``"mean_imputation"``, ``"skip"``  (default: ``"mean_imputation"``).
+
+        :examples:
+
+        >>> boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+        >>> predictors = boston.columns[:-1]
+        >>> response = "medv"
+        >>> boston['chas'] = boston['chas'].asfactor()
+        >>> boston.insert_missing_values()
+        >>> train, valid = boston.split_frame(ratios = [.8])
+        >>> boston_dl = H2ODeepLearningEstimator(missing_values_handling = "skip")
+        >>> boston_dl.train(x = predictors,
+        ...                 y = response,
+        ...                 training_frame = train,
+        ...                 validation_frame = valid)
+        >>> boston_dl.mse()
         """
         return self._parms.get("missing_values_handling")
 
@@ -1186,6 +2405,22 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Enable quiet mode for less output to standard output.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic['survived'] = titanic['survived'].asfactor()
+        >>> predictors = titanic.columns
+        >>> del predictors[1:3]
+        >>> response = 'survived'
+        >>> train, valid = titanic.split_frame(ratios = [.8], seed = 1234)
+        >>> titanic_dl = H2ODeepLearningEstimator(quiet_mode = True,
+        ...                                       seed = 1234)
+        >>> titanic_dl.train(x = predictors,
+        ...                  y = response,
+        ...                  training_frame = train,
+        ...                  validation_frame = valid)
+        >>> titanic_dl.mse()
         """
         return self._parms.get("quiet_mode")
 
@@ -1201,6 +2436,19 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Auto-Encoder.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> cars_dl = H2ODeepLearningEstimator(autoencoder = True)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("autoencoder")
 
@@ -1216,6 +2464,20 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Sparse data handling (more efficient for data with lots of 0 values).
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(sparse = True,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = cars)
+        >>> cars_dl.auc()
         """
         return self._parms.get("sparse")
 
@@ -1247,6 +2509,20 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Average activation for sparse auto-encoder. #Experimental
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> cars_dl = H2ODeepLearningEstimator(average_activation = 1.5,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("average_activation")
 
@@ -1262,6 +2538,29 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Sparsity regularization. #Experimental
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OAutoEncoderEstimator
+        >>> resp = 784
+        >>> nfeatures = 20
+        >>> train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/train.csv.gz")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/mnist/test.csv.gz")
+        >>> train[resp] = train[resp].asfactor()
+        >>> test[resp] = test[resp].asfactor()
+        >>> sid = train[0].runif(0)
+        >>> train_unsupervised = train[sid >=0.5]
+        >>> train_unsupervised.pop(resp)
+        >>> ae_model = H2OAutoEncoderEstimator(activation = "Tanh",
+        ...                                    hidden = [nfeatures],
+        ...                                    epochs = 1,
+        ...                                    ignore_const_cols = False,
+        ...                                    reproducible = True,
+        ...                                    sparsity_beta = 0.5,
+        ...                                    seed = 1234)
+        >>> ae_model.train(list(range(resp)),
+        ...                training_frame = train_unsupervised)
+        >>> ae_model.mse()
         """
         return self._parms.get("sparsity_beta")
 
@@ -1277,6 +2576,22 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Max. number of categorical features, enforced via hashing. #Experimental
 
         Type: ``int``  (default: ``2147483647``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> cov_dl = H2ODeepLearningEstimator(balance_classes = True,
+        ...                                   max_categorical_features = 2147483647,
+        ...                                   seed = 1234)
+        >>> cov_dl.train(x = predictors,
+        ...              y = response,
+        ...              training_frame = train,
+        ...              validation_frame = valid)
+        >>> cov_dl.logloss()
         """
         return self._parms.get("max_categorical_features")
 
@@ -1292,6 +2607,25 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Force reproducibility on small data (will be slow - only uses 1 thread).
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> airlines_dl = H2ODeepLearningEstimator(reproducible = True)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.auc()
         """
         return self._parms.get("reproducible")
 
@@ -1307,6 +2641,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Whether to export Neural Network weights and biases to H2O Frames.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(export_weights_and_biases = True,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("export_weights_and_biases")
 
@@ -1322,6 +2671,27 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Mini-batch size (smaller leads to better fit, larger can speed up and generalize better).
 
         Type: ``int``  (default: ``1``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios = [.8], seed = 1234)
+        >>> cov_dl = H2ODeepLearningEstimator(activation = "RectifierWithDropout",
+        ...                                   hidden = [10,10],
+        ...                                   epochs = 10,
+        ...                                   input_dropout_ratio = 0.2,
+        ...                                   l1 = 1e-5,
+        ...                                   max_w2 = 10.5,
+        ...                                   stopping_rounds = 0)
+        ...                                   mini_batch_size = 35
+        >>> cov_dl.train(x = predictors,
+        ...              y = response,
+        ...              training_frame = train,
+        ...              validation_frame = valid)
+        >>> cov_dl.mse()
         """
         return self._parms.get("mini_batch_size")
 
@@ -1338,6 +2708,27 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
         One of: ``"auto"``, ``"enum"``, ``"one_hot_internal"``, ``"one_hot_explicit"``, ``"binary"``, ``"eigen"``,
         ``"label_encoder"``, ``"sort_by_response"``, ``"enum_limited"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"]= airlines["Year"].asfactor()
+        >>> airlines["Month"]= airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        >>> encoding = "one_hot_internal"
+        >>> airlines_dl = H2ODeepLearningEstimator(categorical_encoding = encoding,
+        ...                                        seed = 1234)
+        >>> airlines_dl.train(x = predictors,
+        ...                   y = response,
+        ...                   training_frame = train,
+        ...                   validation_frame = valid)
+        >>> airlines_dl.mse()
         """
         return self._parms.get("categorical_encoding")
 
@@ -1353,6 +2744,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Elastic averaging between compute nodes can improve distributed model convergence. #Experimental
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(elastic_averaging = True,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("elastic_averaging")
 
@@ -1368,6 +2774,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Elastic averaging moving rate (only if elastic averaging is enabled).
 
         Type: ``float``  (default: ``0.9``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(elastic_averaging_moving_rate = .8,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("elastic_averaging_moving_rate")
 
@@ -1383,6 +2804,21 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Elastic averaging regularization strength (only if elastic averaging is enabled).
 
         Type: ``float``  (default: ``0.001``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_dl = H2ODeepLearningEstimator(elastic_averaging_regularization = .008,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> cars_dl.mse()
         """
         return self._parms.get("elastic_averaging_regularization")
 
@@ -1398,6 +2834,24 @@ class H2ODeepLearningEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> import tempfile
+        >>> from os import listdir
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> cars_dl = H2ODeepLearningEstimator(export_checkpoints_dir=checkpoints_dir,
+        ...                                    seed = 1234)
+        >>> cars_dl.train(x = predictors,
+        ...               y = response,
+        ...               training_frame = train,
+        ...               validation_frame = valid)
+        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 
@@ -1410,15 +2864,17 @@ class H2ODeepLearningEstimator(H2OEstimator):
 
 class H2OAutoEncoderEstimator(H2ODeepLearningEstimator):
     """
-    Examples
-    --------
-      >>> import h2o as ml
-      >>> from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
-      >>> ml.init()
-      >>> rows = [[1,2,3,4,0]*50, [2,1,2,4,1]*50, [2,1,4,2,1]*50, [0,1,2,34,1]*50, [2,3,4,1,0]*50]
-      >>> fr = ml.H2OFrame(rows)
-      >>> fr[4] = fr[4].asfactor()
-      >>> model = H2OAutoEncoderEstimator()
-      >>> model.train(x=range(4), training_frame=fr)
+    :examples:
+
+    >>> import h2o as ml
+    >>> from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
+    >>> ml.init()
+    >>> rows = [[1,2,3,4,0]*50, [2,1,2,4,1]*50, [2,1,4,2,1]*50, [0,1,2,34,1]*50, [2,3,4,1,0]*50]
+    >>> fr = ml.H2OFrame(rows)
+    >>> fr[4] = fr[4].asfactor()
+    >>> model = H2OAutoEncoderEstimator()
+    >>> model.train(x=range(4), training_frame=fr)
     """
-    pass
+    def __init__(self, **kwargs):
+        super(H2OAutoEncoderEstimator, self).__init__(**kwargs)
+        self._parms['autoencoder'] = True

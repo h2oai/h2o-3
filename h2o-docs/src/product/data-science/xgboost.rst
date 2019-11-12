@@ -102,14 +102,13 @@ Defining an XGBoost Model
 -  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
   - ``auto`` or ``AUTO``: Allow the algorithm to decide. In XGBoost, the algorithm will automatically perform ``one_hot_internal`` encoding. (default)
-  - ``enum`` or ``Enum``: 1 column per categorical feature
   - ``one_hot_internal`` or ``OneHotInternal``: On the fly N+1 new cols for categorical features with N levels
   - ``one_hot_explicit`` or ``OneHotExplicit``: N+1 new columns for categorical features with N levels
   - ``binary`` or ``Binary``: No more than 32 columns per categorical feature
   - ``eigen`` or ``Eigen``: *k* columns per categorical feature, keeping projections of one-hot-encoded matrix onto *k*-dim eigen space only
   - ``label_encoder`` or ``LabelEncoder``: Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.) 
   - ``sort_by_response`` or ``SortByResponse``: Reorders the levels by the mean response (for example, the level with lowest response -> 0, the level with second-lowest response -> 1, etc.). This is useful, for example, when you have more levels than ``nbins_cats``, and where the top level splits now have a chance at separating the data with a split. 
-  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (1024) most frequent levels.
+  - ``enum_limited`` or ``EnumLimited``: Automatically reduce categorical levels to the most prevalent ones during training and only keep the **T** (1024) most frequent levels, and then internally do one hot encoding in the case of XGBoost.
 
   **Note**: This value defaults to ``label_encoder``. Similarly, if ``auto`` is specified, then the algorithm performs ``label_encoder`` encoding. 
 
@@ -137,6 +136,8 @@ Defining an XGBoost Model
 
 -  `min_split_improvement <algo-params/min_split_improvement.html>`__ (alias: ``gamma``): The value of this option specifies the minimum relative improvement in squared error reduction in order for a split to happen. When properly tuned, this option can help reduce overfitting. Optimal values would be in the 1e-10...1e-3 range. This value defaults to 0.
 
+- `checkpoint <algo-params/checkpoint.html>`__: Allows you to specify a model key associated with a previously trained model. This builds a new model as a continuation of a previously generated model. If this is not specified, then a new model will be trained instead of building on a previous model
+
 -  **tree_method**: Specify the construction tree method to use. This can be one of the following: 
 
    - ``auto`` (default): Allow the algorithm to choose the best method. For small to medium dataset, ``exact``  will be used. For very large datasets, ``approx`` will be used.
@@ -154,7 +155,16 @@ Defining an XGBoost Model
 
 -  **min_data_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
 
--  **booster**: Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree". More information about the ``booster`` parameter is available `here <https://github.com/dmlc/xgboost/blob/master/doc/tutorials/dart.md>`__.
+-  **booster**: Specify the booster type. This can be one of the following: ``gbtree``, ``gblinear``, or ``dart``. 
+   Note that ``gbtree`` and ``dart`` use a tree-based model while ``gblinear`` uses linear function. This value 
+   defaults to ``gbtree``. Together with ``tree_method`` this will also determine the ``updater`` XGBoost parameter:
+
+    - for ``gblinear`` the ``coord_descent`` updater will be configured (``gpu_coord_descent`` for GPU backend)
+    - for ``gbtree`` and ``dart`` with GPU backend selected ``grow_gpu`` is used when ``tree_method`` is ``exact``
+      and ``grow_gpu_hist`` otherwise
+    - for other cases the ``updater`` is set automatically by XGBoost, visit the 
+      `XGBoost Documentation <https://xgboost.readthedocs.io/en/latest/parameter.html#parameters-for-tree-booster>`__
+      to learn more about updaters
 
 -  **sample_type**: When ``booster="dart"``, specify whether the sampling type should be one of the following:
 
@@ -230,6 +240,16 @@ The following additional parameters can be configured when ``booster=dart``:
 - ``one_drop``
 - ``skip_drop``
 
+GPU Support
+~~~~~~~~~~~
+
+GPU support is available in H2O's XGBoost if the following requirements are met:
+
+- NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
+- CUDA 8
+
+You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
+
 Limitations
 ~~~~~~~~~~~
 
@@ -241,25 +261,28 @@ This section provides a list of XGBoost limitations - some of which will be addr
 
 The list of limitations include:
 
-  1. XGBoost is not supported on Windows.
+  - XGBoost is not supported on Windows.
 
-  2. The list of supported platforms includes:
+  - The list of supported platforms includes:
  
-    +----------+-----------------+-----+-----+-----------------------+
-    | Platform | Minimal XGBoost | OMP | GPU | Compilation OS        |
-    +==========+=================+=====+=====+=======================+
-    |Linux     | yes             | yes | yes | Ubuntu 14.04, g++ 4.7 |
-    +----------+-----------------+-----+-----+-----------------------+
-    |OS X      | yes             | no  | no  | OS X 10.11            |
-    +----------+-----------------+-----+-----+-----------------------+
-    |Windows   | no              | no  | no  | NA                    |
-    +----------+-----------------+-----+-----+-----------------------+
+    +----------+-----------------+-----+-----+----------------+
+    | Platform | Minimal XGBoost | OMP | GPU | Compilation OS |
+    +==========+=================+=====+=====+================+
+    |Linux     | yes             | yes | yes | CentOS 7       |
+    +----------+-----------------+-----+-----+----------------+
+    |OS X      | yes             | no  | no  | OS X 10.11     |
+    +----------+-----------------+-----+-----+----------------+
+    |Windows   | no              | no  | no  | NA             |
+    +----------+-----------------+-----+-----+----------------+
 
-    **Note**: Minimal XGBoost configuration includes support for a single CPU.
+    **Notes**:
 
-  3. Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
+    - Minimal XGBoost configuration includes support for a single CPU.
+    - Testing is done on Ubuntu 16 and CentOS 7 with GCC 5. These can be considered as being supported.
 
-  4. XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
+  -  Because we are using native XGBoost libraries that depend on OS/platform libraries, it is possible that on older operating systems, XGBoost will not be able to find all necessary binary dependencies, and will not be initialized and available.
+
+  -  XGBoost GPU libraries are compiled against CUDA 8, which is a necessary runtime requirement in order to utilize XGBoost GPU support.
 
 Disabling XGBoost
 ~~~~~~~~~~~~~~~~~
@@ -305,7 +328,7 @@ FAQs
 
 -  **Why does my H2O cluster on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
 
-  XGBoost uses memory outside the Java heap, and when that memory is not available, Hadoop kills the h2o job and the h2o cluster becomes unresponsive. Please set ``-extramempercent`` argument to a much higher value (120% recommended) when starting H2O. This argument configures the extra memory for internal JVM use outside of the Java heap and is a percentage of mapperXmx. For example:
+  This is why the extramempercent option exists, and we recommend setting this to a high value, such as 120. What happens internally is that when you specify ``-node_memory 10G`` and ``-extramempercent 120``, the h2o driver will ask Hadoop for :math:`10G * (1 + 1.2) = 22G` of memory. At the same time, the h2o driver will limit the memory used by the container JVM (the h2o node) to 10G, leaving the :math:`10G*120%=12G` memory "unused." This memory can be then safely used by XGBoost outside of the JVM. Keep in mind that H2O algorithms will only have access to the JVM memory (10GB), while XGBoost will use the native memory for model training. For example:
 
   ::
 

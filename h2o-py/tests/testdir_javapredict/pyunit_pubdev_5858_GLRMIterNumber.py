@@ -18,8 +18,7 @@ def glrm_mojo():
     test = df[:NTESTROWS, :]
     x = df.names
 
-    transform_types = ["NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"]
-    transformN = transform_types[randint(0, len(transform_types)-1)]
+    transformN = "STANDARDIZE"
 
     # build a GLRM model with random dataset generated earlier
     glrmModel = H2OGeneralizedLowRankEstimator(k=3, transform=transformN, max_iterations=10, seed=1234)

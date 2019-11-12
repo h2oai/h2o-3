@@ -19,20 +19,19 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
     """
 
     algo = "pca"
+    param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
+                   "score_each_iteration", "transform", "pca_method", "pca_impl", "k", "max_iterations",
+                   "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs",
+                   "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OPrincipalComponentAnalysisEstimator, self).__init__()
         self._parms = {}
-        names_list = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                      "score_each_iteration", "transform", "pca_method", "pca_impl", "k", "max_iterations",
-                      "use_all_factor_levels", "compute_metrics", "impute_missing", "seed", "max_runtime_secs",
-                      "export_checkpoints_dir"}
-        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
                 self._parms["model_id"] = pvalue
-            elif pname in names_list:
+            elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
             else:
@@ -44,6 +43,13 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator()
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("training_frame")
 
@@ -58,6 +64,16 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Id of the validation data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> train, valid = data.split_frame(ratios=[.8], seed=1234)
+        >>> model_pca = H2OPrincipalComponentAnalysisEstimator(impute_missing=True)
+        >>> model_pca.train(x=data.names,
+        ...                training_frame=train,
+        ...                validation_frame=valid)
+        >>> model_pca.show()
         """
         return self._parms.get("validation_frame")
 
@@ -87,6 +103,17 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+        >>> prostate['RACE'] = prostate['RACE'].asfactor()
+        >>> prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+        >>> prostate['DPROS'] = prostate['DPROS'].asfactor()
+        >>> pros_pca = H2OPrincipalComponentAnalysisEstimator(ignore_const_cols=False)
+        >>> pros_pca.train(x=prostate.names, training_frame=prostate)
+        >>> pros_pca.show()
         """
         return self._parms.get("ignore_const_cols")
 
@@ -102,6 +129,16 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=3,
+        ...                                                   score_each_iteration=True,
+        ...                                                   seed=1234,
+        ...                                                   impute_missing=True)
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("score_each_iteration")
 
@@ -117,6 +154,17 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Transformation of training data
 
         One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+        ...                                                   transform="standardize",
+        ...                                                   pca_method="power",
+        ...                                                   impute_missing=True,
+        ...                                                   max_iterations=800)
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("transform")
 
@@ -135,6 +183,17 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         with L2 loss function and no regularization and solves for the SVD using local matrix algebra (experimental)
 
         One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``, ``"glrm"``  (default: ``"gram_s_v_d"``).
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+        ...                                                   transform="standardize",
+        ...                                                   pca_method="power",
+        ...                                                   impute_missing=True,
+        ...                                                   max_iterations=800)
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("pca_method")
 
@@ -154,6 +213,16 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         https://github.com/fommil/matrix-toolkits-java/
 
         One of: ``"mtj_evd_densematrix"``, ``"mtj_evd_symmmatrix"``, ``"mtj_svd_densematrix"``, ``"jama"``.
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=3,
+        ...                                                   pca_impl="jama",
+        ...                                                   impute_missing=True,
+        ...                                                   max_iterations=1200)
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("pca_impl")
 
@@ -169,6 +238,17 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Rank of matrix approximation
 
         Type: ``int``  (default: ``1``).
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+        ...                                                   transform="standardize",
+        ...                                                   pca_method="power",
+        ...                                                   impute_missing=True,
+        ...                                                   max_iterations=800)
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("k")
 
@@ -184,6 +264,17 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Maximum training iterations
 
         Type: ``int``  (default: ``1000``).
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+        ...                                                   transform="standardize",
+        ...                                                   pca_method="power",
+        ...                                                   impute_missing=True,
+        ...                                                   max_iterations=800)
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("max_iterations")
 
@@ -199,6 +290,15 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Whether first factor level is included in each categorical expansion
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=3,
+        ...                                                   use_all_factor_levels=True,
+        ...                                                   seed=1234)
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("use_all_factor_levels")
 
@@ -214,6 +314,17 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Whether to compute metrics on the training data
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+        >>> prostate['RACE'] = prostate['RACE'].asfactor()
+        >>> prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+        >>> prostate['DPROS'] = prostate['DPROS'].asfactor()
+        >>> pros_pca = H2OPrincipalComponentAnalysisEstimator(compute_metrics=False)
+        >>> pros_pca.train(x=prostate.names, training_frame=prostate)
+        >>> pros_pca.show()
         """
         return self._parms.get("compute_metrics")
 
@@ -229,6 +340,17 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Whether to impute missing entries with the column mean
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+        >>> prostate['RACE'] = prostate['RACE'].asfactor()
+        >>> prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+        >>> prostate['DPROS'] = prostate['DPROS'].asfactor()
+        >>> pros_pca = H2OPrincipalComponentAnalysisEstimator(impute_missing=True)
+        >>> pros_pca.train(x=prostate.names, training_frame=prostate)
+        >>> pros_pca.show()
         """
         return self._parms.get("impute_missing")
 
@@ -244,6 +366,15 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         RNG seed for initialization
 
         Type: ``int``  (default: ``-1``).
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=3,
+        ...                                                   seed=1234,
+        ...                                                   impute_missing=True)
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("seed")
 
@@ -259,6 +390,18 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/SDSS_quasar.txt.zip")
+        >>> data_pca = H2OPrincipalComponentAnalysisEstimator(k=-1,
+        ...                                                   transform="standardize",
+        ...                                                   pca_method="power",
+        ...                                                   impute_missing=True,
+        ...                                                   max_iterations=800
+        ...                                                   max_runtime_secs=15)
+        >>> data_pca.train(x=data.names, training_frame=data)
+        >>> data_pca.show()
         """
         return self._parms.get("max_runtime_secs")
 
@@ -274,6 +417,21 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> import tempfile
+        >>> from os import listdir
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+        >>> prostate['RACE'] = prostate['RACE'].asfactor()
+        >>> prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+        >>> prostate['DPROS'] = prostate['DPROS'].asfactor()
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> pros_pca = H2OPrincipalComponentAnalysisEstimator(impute_missing=True,
+        ...                                                   export_checkpoints_dir=checkpoints_dir)
+        >>> pros_pca.train(x=prostate.names, training_frame=prostate)
+        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 
@@ -283,13 +441,23 @@ class H2OPrincipalComponentAnalysisEstimator(H2OEstimator):
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
 
 
-
     def init_for_pipeline(self):
         """
         Returns H2OPCA object which implements fit and transform method to be used in sklearn.Pipeline properly.
         All parameters defined in self.__params, should be input parameters in H2OPCA.__init__ method.
 
         :returns: H2OPCA object
+
+        :examples:
+
+        >>> from sklearn.pipeline import Pipeline
+        >>> from h2o.transforms.preprocessing import H2OScaler
+        >>> from h2o.estimators import H2ORandomForestEstimator
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> pipe = Pipeline([("standardize", H2OScaler()),
+        ...                  ("pca", H2OPrincipalComponentAnalysisEstimator(k=2).init_for_pipeline()),
+        ...                  ("rf", H2ORandomForestEstimator(seed=42,ntrees=5))])
+        >>> pipe.fit(iris[:4], iris[4])
         """
         import inspect
         from h2o.transforms.decomposition import H2OPCA

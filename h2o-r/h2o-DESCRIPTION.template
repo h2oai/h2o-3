@@ -1,7 +1,7 @@
 Package: h2o
 Version: SUBST_PROJECT_VERSION
 Type: Package
-Title: R Interface for 'H2O'
+Title: R Interface for the 'H2O' Scalable Machine Learning Platform
 Date: SUBST_PROJECT_DATE
 Authors@R: c(
     person("Erin", "LeDell", role = c("aut", "cre"), email = "erin@h2o.ai"),
@@ -71,6 +71,7 @@ Collate:
          'communication.R'
          'kvstore.R'
          'frame.R'
+         'targetencoder_deprecated.R'
          'targetencoder.R'
          'import.R'
          'isolationforest.R'

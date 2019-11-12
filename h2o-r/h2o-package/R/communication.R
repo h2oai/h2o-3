@@ -75,7 +75,10 @@
   url = .h2o.calcBaseURL(conn, h2oRestApiVersion = h2oRestApiVersion, urlSuffix = urlSuffix)
 
   opts = curlOptions()
-  if (!is.na(conn@username)) {
+  if (conn@use_spnego) {
+    negotiateAuth = 4
+    opts = curlOptions(httpauth = negotiateAuth, userpwd = ":", .opts = opts)
+  } else if (!is.na(conn@username)) {
     userpwd = sprintf("%s:%s", conn@username, conn@password)
     basicAuth = 1L
     opts = curlOptions(userpwd = userpwd, httpauth = basicAuth, .opts = opts)
@@ -83,10 +86,14 @@
   if (conn@https) {
     if (conn@insecure) {
       opts = curlOptions(ssl.verifypeer = 0L, ssl.verifyhost=0L, .opts = opts)
+    } else if (! is.na(conn@cacert)) {
+      opts = curlOptions(cainfo = conn@cacert, .opts = opts)
     }
   }
   if (!is.na(conn@proxy)) {
     opts = curlOptions(proxy = conn@proxy, .opts = opts)
+  } else if (conn@ip == "localhost" || conn@ip == "127.0.0.1") {
+    opts = curlOptions(noproxy="127.0.0.1,localhost", .opts = opts)
   }
 
   queryString = ""
@@ -783,6 +790,19 @@ h2o.list_jobs <- function() {
   df
 }
 
+h2o.get_job <- function(job_key) {
+  myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
+  rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
+  jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
+  jobs <- jsonObject$jobs
+  if (length(jobs) > 1) {
+    stop("Job list has more than 1 entry")
+  } else if (length(jobs) == 0) {
+    stop("Job list is empty")
+  }
+  jobs[[1]]
+}
+
 #' Check H2O Server Health
 #'
 #' Warn if there are sick nodes.
@@ -859,18 +879,8 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
   keepRunning <- TRUE
   tryCatch({
     while (keepRunning) {
-      myJobUrlSuffix <- paste0(.h2o.__JOBS, "/", job_key)
-      rawResponse <- .h2o.doSafeGET(urlSuffix = myJobUrlSuffix)
-      jsonObject <- .h2o.fromJSON(jsonlite::fromJSON(rawResponse, simplifyDataFrame=FALSE))
-      jobs <- jsonObject$jobs
-      if (length(jobs) > 1) {
-        stop("Job list has more than 1 entry")
-      } else if (length(jobs) == 0) {
-        stop("Job list is empty")
-      }
-
-      job = jobs[[1]]
-      status = job$status
+      job <- h2o.get_job(job_key)
+      status <- job$status
       stopifnot(is.character(status))
 
       # check failed up front...
@@ -882,7 +892,7 @@ h2o.show_progress <- function() assign("PROGRESS_BAR", TRUE, .pkg.env)
         if (!is.null(job$stacktrace)) {cat(job$stacktrace)}
         cat("\n")
 
-        m <- strsplit(jobs[[1]]$exception, "\n")[[1]][1]
+        m <- strsplit(job$stacktrace, "\n")[[1]][1]
         m <- gsub(".*msg ","",m)
         stop(m, call.=FALSE)
       }

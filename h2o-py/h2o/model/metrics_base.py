@@ -12,7 +12,7 @@ import imp
 from h2o.model.confusion_matrix import ConfusionMatrix
 from h2o.utils.backward_compatibility import backwards_compatible
 from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, assert_satisfies, numeric
+from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
 
 
 class MetricsBase(backwards_compatible()):
@@ -513,7 +513,7 @@ class MetricsBase(backwards_compatible()):
             return None
 
     def custom_metric_value(self):
-        """Value of custom metric or None."""        
+        """Value of custom metric or None."""
         if MetricsBase._has(self._metric_json, "custom_metric_value"):
             return self._metric_json['custom_metric_value']
         else:
@@ -740,8 +740,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def F1(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The F1 for the given set of thresholds.
 
         :examples:
@@ -763,8 +763,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def F2(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The F2 for this set of metrics and thresholds.
 
         :examples:
@@ -786,8 +786,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def F0point5(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The F0.5 for this set of metrics and thresholds.
 
         :examples:
@@ -809,8 +809,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def accuracy(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The accuracy for this set of metrics and thresholds.
 
         :examples:
@@ -832,8 +832,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def error(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold minimizing the error will be used.
         :returns: The error for this set of metrics and thresholds.
 
         :examples:
@@ -850,13 +850,13 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                validation_frame = valid)
         >>> cars_gbm.error()
         """
-        return 1 - self.metric("accuracy", thresholds=thresholds)
+        return H2OBinomialModelMetrics._accuracy_to_error(self.metric("accuracy", thresholds=thresholds))
 
 
     def precision(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The precision for this set of metrics and thresholds.
 
         :examples:
@@ -878,8 +878,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def tpr(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The True Postive Rate.
 
         :examples:
@@ -901,8 +901,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def tnr(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The True Negative Rate.
 
         :examples:
@@ -924,8 +924,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def fnr(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The False Negative Rate.
 
         :examples:
@@ -947,8 +947,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def fpr(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The False Positive Rate.
 
         :examples:
@@ -970,8 +970,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def recall(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: Recall for this set of metrics and thresholds.
 
         :examples:
@@ -988,13 +988,13 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                validation_frame = valid)
         >>> cars_gbm.recall()
         """
-        return self.metric("tpr", thresholds=thresholds)
+        return self.metric("recall", thresholds=thresholds)
 
 
     def sensitivity(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: Sensitivity or True Positive Rate for this set of metrics and thresholds.
 
         :examples:
@@ -1011,13 +1011,13 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                validation_frame = valid)
         >>> cars_gbm.sensitivity()
         """
-        return self.metric("tpr", thresholds=thresholds)
+        return self.metric("sensitivity", thresholds=thresholds)
 
 
     def fallout(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The fallout (same as False Positive Rate) for this set of metrics and thresholds.
 
         :examples:
@@ -1034,13 +1034,13 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                validation_frame = valid)
         >>> cars_gbm.fallout()
         """
-        return self.metric("fpr", thresholds=thresholds)
+        return self.metric("fallout", thresholds=thresholds)
 
 
     def missrate(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The miss rate (same as False Negative Rate).
 
         :examples:
@@ -1057,13 +1057,13 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                validation_frame = valid)
         >>> cars_gbm.missrate()
         """
-        return self.metric("fnr", thresholds=thresholds)
+        return self.metric("missrate", thresholds=thresholds)
 
 
     def specificity(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The specificity (same as True Negative Rate).
 
         :examples:
@@ -1080,13 +1080,13 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                validation_frame = valid)
         >>> cars_gbm.specificity()
         """
-        return self.metric("tnr", thresholds=thresholds)
+        return self.metric("specificity", thresholds=thresholds)
 
 
     def mcc(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
         :returns: The absolute MCC (a value between 0 and 1, 0 being totally dissimilar, 1 being identical).
 
         :examples:
@@ -1108,8 +1108,8 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def max_per_class_error(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold minimizing the error will be used.
         :returns: Return 1 - min(per class accuracy).
 
         :examples:
@@ -1126,13 +1126,13 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                validation_frame = valid)
         >>> cars_gbm.max_per_class_error()
         """
-        return 1 - self.metric("min_per_class_accuracy", thresholds=thresholds)
+        return H2OBinomialModelMetrics._accuracy_to_error(self.metric("min_per_class_accuracy", thresholds=thresholds))
 
 
     def mean_per_class_error(self, thresholds=None):
         """
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then the
-            thresholds in this set of metrics will be used.
+        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold minimizing the error will be used.
         :returns: mean per class error.
 
         :examples:
@@ -1149,14 +1149,26 @@ class H2OBinomialModelMetrics(MetricsBase):
         ...                validation_frame = valid)
         >>> cars_gbm.mean_per_class_error()
         """
-        return [[x[0], 1 - x[1]] for x in self.metric("mean_per_class_accuracy", thresholds=thresholds)]
+        return H2OBinomialModelMetrics._accuracy_to_error(self.metric("mean_per_class_accuracy", thresholds=thresholds))
+
+
+    @staticmethod
+    def _accuracy_to_error(accuracies):
+        errors = List()
+        errors.extend([acc[0], 1 - acc[1]] for acc in accuracies)
+        setattr(errors, 'value',
+                [1 - v for v in accuracies.value] if isinstance(accuracies.value, list)
+                else 1 - accuracies.value
+                )
+        return errors
 
 
     def metric(self, metric, thresholds=None):
         """
-        :param str metric: The desired metric.
-        :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]). If None, then
-            the thresholds in this set of metrics will be used.
+        :param str metric: A metric among :const:`maximizing_metrics`.
+        :param thresholds: thresholds parameter must be a number or a list (i.e. [0.01, 0.5, 0.99]).
+            If None, then the threshold maximizing the metric will be used.
+            If 'all', then all stored thresholds are used and returned with the matching metric.
         :returns: The set of metrics for the list of thresholds.
 
         :examples:
@@ -1178,11 +1190,37 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         assert_is_type(thresholds, None, [numeric])
         if not thresholds: thresholds = [self.find_threshold_by_max_metric(metric)]
+            The returned list has a 'value' property holding only
+            the metric value (if no threshold provided or if provided as a number),
+            or all the metric values (if thresholds provided as a list)
+        """
+        assert_is_type(thresholds, None, 'all', numeric, [numeric])
+        if metric not in H2OBinomialModelMetrics.maximizing_metrics:
+            raise ValueError("The only allowable metrics are {}".format(', '.join(H2OBinomialModelMetrics.maximizing_metrics)))
+
+        h2o_metric = (H2OBinomialModelMetrics.metrics_aliases[metric] if metric in H2OBinomialModelMetrics.metrics_aliases
+                      else metric)
+        value_is_scalar = is_type(metric, str) and (thresholds is None or is_type(thresholds, numeric))
+        if thresholds is None:
+            thresholds = [self.find_threshold_by_max_metric(h2o_metric)]
+        elif thresholds == 'all':
+            thresholds = None
+        elif is_type(thresholds, numeric):
+            thresholds = [thresholds]
+
+        metrics = List()
         thresh2d = self._metric_json['thresholds_and_metric_scores']
-        metrics = []
-        for t in thresholds:
-            idx = self.find_idx_by_threshold(t)
-            metrics.append([t, thresh2d[metric][idx]])
+        if thresholds is None:  # fast path to return all thresholds: skipping find_idx logic
+            metrics.extend(list(t) for t in zip(thresh2d['threshold'], thresh2d[h2o_metric]))
+        else:
+            for t in thresholds:
+                idx = self.find_idx_by_threshold(t)
+                metrics.append([t, thresh2d[h2o_metric][idx]])
+
+        setattr(metrics, 'value',
+                metrics[0][1] if value_is_scalar
+                else list(r[1] for r in metrics)
+                )
         return metrics
 
 
@@ -1250,23 +1288,36 @@ class H2OBinomialModelMetrics(MetricsBase):
         return self._metric_json["thresholds_and_metric_scores"]["tpr"]
 
 
+    def roc(self):
+        """
+        Return the coordinates of the ROC curve as a tuple containing the false positive rates as a list and true positive rates as a list.
+        :returns: The ROC values.
+        """
+        return self.fprs, self.tprs
+
+
+    metrics_aliases = dict(
+        fallout='fpr',
+        missrate='fnr',
+        recall='tpr',
+        sensitivity='fnr',
+        specificity='tnr'
+    )
+
     #: metrics names allowed for confusion matrix
-    max_metrics = ('absolute_mcc', 'accuracy',
-                   'f0point5', 'f1', 'f2',
-                   'mean_per_class_accuracy', 'min_per_class_accuracy',
-                   'precision', 'recall', 'specificity',
-                   # 'fpr', 'fallout',                    # could be enabled maybe once PUBDEV-6366 is fixed
-                   # 'fnr', 'missrate', 'sensitivity',
-                   # 'tpr', 'recall',
-                   # 'tnr', 'specificity'
-                   )
+    maximizing_metrics = ('absolute_mcc', 'accuracy', 'precision',
+                          'f0point5', 'f1', 'f2',
+                          'mean_per_class_accuracy', 'min_per_class_accuracy',
+                          'tns', 'fns', 'fps', 'tps',
+                          'tnr', 'fnr', 'fpr', 'tpr') + tuple(metrics_aliases.keys())
 
     def confusion_matrix(self, metrics=None, thresholds=None):
         """
         Get the confusion matrix for the specified metric
 
-        :param metrics: A string (or list of strings) among metrics listed in :const:`max_metrics`. Defaults to 'f1'.
+        :param metrics: A string (or list of strings) among metrics listed in :const:`maximizing_metrics`. Defaults to 'f1'.
         :param thresholds: A value (or list of values) between 0 and 1.
+            If None, then the thresholds maximizing each provided metric will be used.
         :returns: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
             (if there is only one).
 
@@ -1308,8 +1359,8 @@ class H2OBinomialModelMetrics(MetricsBase):
         assert_is_type(thresholds_list, [numeric])
         assert_satisfies(thresholds_list, all(0 <= t <= 1 for t in thresholds_list))
 
-        if not all(m.lower() in H2OBinomialModelMetrics.max_metrics for m in metrics_list):
-            raise ValueError("The only allowable metrics are {}", ', '.join(H2OBinomialModelMetrics.max_metrics))
+        if not all(m.lower() in H2OBinomialModelMetrics.maximizing_metrics for m in metrics_list):
+            raise ValueError("The only allowable metrics are {}".format(', '.join(H2OBinomialModelMetrics.maximizing_metrics)))
 
         # make one big list that combines the thresholds and metric-thresholds
         metrics_thresholds = [self.find_threshold_by_max_metric(m) for m in metrics_list]
@@ -1347,7 +1398,7 @@ class H2OBinomialModelMetrics(MetricsBase):
 
     def find_threshold_by_max_metric(self, metric):
         """
-        :param metrics: A string among the metrics listed in :const:`max_metrics`.
+        :param metrics: A string among the metrics listed in :const:`maximizing_metrics`.
         :returns: the threshold at which the given metric is maximal.
 
         :examples:
@@ -1368,9 +1419,11 @@ class H2OBinomialModelMetrics(MetricsBase):
         >>> perf.find_threshold_by_max_metric("f1")
         """
         crit2d = self._metric_json['max_criteria_and_metric_scores']
-
+        # print(crit2d)
+        h2o_metric = (H2OBinomialModelMetrics.metrics_aliases[metric] if metric in H2OBinomialModelMetrics.metrics_aliases
+                      else metric)
         for e in crit2d.cell_values:
-            if e[0] == "max " + metric.lower():
+            if e[0] == "max " + h2o_metric.lower():
                 return e[1]
         raise ValueError("No metric " + str(metric.lower()))
 
@@ -1402,6 +1455,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         assert_is_type(threshold, numeric)
         thresh2d = self._metric_json['thresholds_and_metric_scores']
+        # print(thresh2d)
         for i, e in enumerate(thresh2d.cell_values):
             t = float(e[0])
             if abs(t - threshold) < 1e-8 * max(t, threshold):
@@ -1520,4 +1574,12 @@ class H2OCoxPHModelMetrics(MetricsBase):
     def __init__(self, metric_json, on=None, algo=""):
         super(H2OCoxPHModelMetrics, self).__init__(metric_json, on, algo)
 
-        
+
+class H2OTargetEncoderMetrics(MetricsBase):
+
+    def __init__(self, metric_json, on=None, algo=""):
+        super(H2OTargetEncoderMetrics, self).__init__(metric_json, on, algo)
+
+
+class List(list):
+    pass

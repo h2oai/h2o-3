@@ -5,6 +5,7 @@ import hex.*;
 import static hex.ModelCategory.Binomial;
 import static hex.genmodel.GenModel.createAuxKey;
 
+import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
@@ -13,7 +14,6 @@ import hex.util.LinearAlgebraUtils;
 import water.*;
 import water.codegen.CodeGenerator;
 import water.codegen.CodeGeneratorPipeline;
-import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.JCodeSB;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -22,7 +22,6 @@ import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.util.*;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -45,7 +44,7 @@ public abstract class SharedTreeModel<
 
   @Override public ToEigenVec getToEigenVec() { return LinearAlgebraUtils.toEigen; }
 
-  public abstract static class SharedTreeParameters extends Model.Parameters {
+  public abstract static class SharedTreeParameters extends Model.Parameters implements Model.GetNTrees {
 
     public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
 
@@ -91,35 +90,13 @@ public abstract class SharedTreeModel<
     /** Fields which can NOT be modified if checkpoint is specified.
      * FIXME: should be defined in Schema API annotation
      */
-    private static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
+    static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { "_build_tree_one_node", "_sample_rate", "_max_depth", "_min_rows", "_nbins", "_nbins_cats", "_nbins_top_level"};
 
-    protected String[] getCheckpointNonModifiableFields() {
-      return CHECKPOINT_NON_MODIFIABLE_FIELDS;
+    @Override
+    public int getNTrees() {
+      return _ntrees;
     }
 
-    /** This method will take actual parameters and validate them with parameters of
-     * requested checkpoint. In case of problem, it throws an API exception.
-     *
-     * @param checkpointParameters checkpoint parameters
-     */
-    public void validateWithCheckpoint(SharedTreeParameters checkpointParameters) {
-      for (Field fAfter : this.getClass().getFields()) {
-        // only look at non-modifiable fields
-        if (ArrayUtils.contains(getCheckpointNonModifiableFields(),fAfter.getName())) {
-          for (Field fBefore : checkpointParameters.getClass().getFields()) {
-            if (fBefore.equals(fAfter)) {
-              try {
-                if (!PojoUtils.equals(this, fAfter, checkpointParameters, checkpointParameters.getClass().getField(fAfter.getName()))) {
-                  throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field " + fAfter.getName() + " cannot be modified if checkpoint is specified!");
-                }
-              } catch (NoSuchFieldException e) {
-                throw new H2OIllegalArgumentException(fAfter.getName(), "TreeBuilder", "Field " + fAfter.getName() + " is not supported by checkpoint!");
-              }
-            }
-          }
-        }
-      }
-    }
   }
 
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
@@ -131,7 +108,7 @@ public abstract class SharedTreeModel<
     }
   }
 
-  public abstract static class SharedTreeOutput extends Model.Output {
+  public abstract static class SharedTreeOutput extends Model.Output implements Model.GetNTrees {
     /** InitF value (for zero trees)
      *  f0 = mean(yi) for gaussian
      *  f0 = log(yi/1-yi) for bernoulli
@@ -212,6 +189,11 @@ public abstract class SharedTreeModel<
       _scored_valid = _scored_valid != null ? ArrayUtils.copyAndFillOf(_scored_valid, _ntrees+1, new ScoreKeeper()) : null;
       _training_time_ms = ArrayUtils.copyAndFillOf(_training_time_ms, _ntrees+1, System.currentTimeMillis());
       fs.blockForPending();
+    }
+
+    @Override
+    public int getNTrees() {
+      return _ntrees;
     }
 
     public CompressedTree ctree( int tnum, int knum ) { return _treeKeys[tnum][knum].get(); }
@@ -364,18 +346,14 @@ public abstract class SharedTreeModel<
 
   private static class AssignLeafNodeIdTask extends AssignLeafNodeTaskBase {
     private final Key<CompressedTree>[/*_ntrees*/][/*_nclass*/] _auxTreeKeys;
-    private final int _nclasses;
-    private transient BufStringDecisionPathTracker _tr;
 
     private AssignLeafNodeIdTask(SharedTreeOutput output) {
       super(output);
       _auxTreeKeys = output._treeKeysAux;
-      _nclasses = output.nclasses();
     }
 
     @Override
     protected void initMap() {
-      _tr = new BufStringDecisionPathTracker();
     }
 
     @Override
@@ -662,15 +640,31 @@ public abstract class SharedTreeModel<
 
   protected boolean binomialOpt() { return true; }
 
+  @Override protected CategoricalEncoding getGenModelEncoding() {
+    switch (_parms._categorical_encoding) {
+      case AUTO:
+      case Enum:
+        return CategoricalEncoding.AUTO;
+      case OneHotExplicit:
+        return CategoricalEncoding.OneHotExplicit;
+      default:
+        return null;
+    }
+  }
+  
   @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
-    if (_parms._categorical_encoding != Parameters.CategoricalEncodingScheme.AUTO &&
-        _parms._categorical_encoding != Parameters.CategoricalEncodingScheme.Enum) {
-      throw new IllegalArgumentException("Only default categorical_encoding scheme is supported for POJO/MOJO");
+    CategoricalEncoding encoding = getGenModelEncoding();
+    if (encoding == null) {
+      throw new IllegalArgumentException("Only default and 1-hot explicit scheme is supported for POJO/MOJO");
     }
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
     sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
+    if (encoding != CategoricalEncoding.AUTO) {
+      sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." + 
+              encoding.name() + "; }").nl();
+    }
     return sb;
   }
 

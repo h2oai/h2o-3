@@ -1176,6 +1176,25 @@ h2o.pivot <- function(x, index, column, value){
   .newExpr("pivot", x, .quote(index), .quote(column), .quote(value))
 }
 
+#' Converts a frame to key-value representation while optionally skipping NA values.
+#' Inverse operation to h2o.pivot.
+#'
+#' Pivot the frame designated by the three columns: index, column, and value. Index and column should be
+#' of type enum, int, or time.
+#' For cases of multiple indexes for a column label, the aggregation method is to pick the first occurrence in the data frame
+#'
+#' @param x an H2OFrame
+#' @param id_vars the columns used as identifiers
+#' @param value_vars what columns will be converted to key-value pairs (optional, if not specified complement to id_vars will be used)
+#' @param var_name name of the key-column (default: "variable")
+#' @param value_name name of the value-column (default: "value")
+#' @param skipna if enabled, do not include NAs in the result (default: FALSE)
+#' @return an unpivoted H2OFrame
+#' @export
+h2o.melt <- function(x, id_vars, value_vars=NULL, var_name="variable", value_name="value", skipna=FALSE) {
+    .newExpr("melt", chk.H2OFrame(x), .str.list(id_vars), .str.list(value_vars), .quote(var_name), .quote(value_name), skipna)
+}
+
 # H2O topBottomN
 #
 # topBottomN function will will grab the top N percent or botom N percent of values of a column and return it in a
@@ -1413,7 +1432,12 @@ h2o.listTimezones <- function() .fetch.data(.newExpr("listTimeZones"),1000L)
 
 # Convert to Currents string-list syntax
 .quote <- function(x) paste0('"',x,'"')
-.str.list <- function(sl) paste0('[',paste0('"',sl,'"',collapse=" "),']')
+.str.list <- function(sl) {
+  if (is.null(sl))
+    "[]"
+  else
+    paste0('[',paste0('"',sl,'"',collapse=" "),']')
+}
 
 # Convert a row or column selector to zero-based numbering and return a string
 .row.col.selector <- function( sel, raw_sel=NULL, envir=NULL ) {
