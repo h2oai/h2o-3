@@ -55,17 +55,22 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
     @Override
     public void onModelSuccess(Model model) {
-      _modelInProgressCounter.decrementAndGet();
-      _callback.onBuildSucces(model, ParallelModelBuilder.this);
+      try {
+        _callback.onBuildSucces(model, ParallelModelBuilder.this);
+      } finally {
+        _modelInProgressCounter.decrementAndGet();
+      }
       attemptComplete();
     }
 
     @Override
     public void onModelFailure(Throwable cause, Model.Parameters parameters) {
-      _modelInProgressCounter.decrementAndGet();
-
-      final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
-      _callback.onBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
+      try {
+        final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
+        _callback.onBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
+      } finally {
+        _modelInProgressCounter.decrementAndGet();
+      }
       attemptComplete();
     }
     
