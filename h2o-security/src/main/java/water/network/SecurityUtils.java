@@ -1,7 +1,5 @@
 package water.network;
 
-import water.util.Log;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,9 +63,8 @@ public class SecurityUtils {
         }
 
         // Unsuported JRE/JDK
-        String errorMsg = "This version of Java is not supported. Please use Oracle/OpenJDK/IBM JDK version 6/7/8.";
-        Log.err(errorMsg);
-        throw new IllegalStateException(errorMsg);
+        throw new IllegalStateException("This version of Java is not supported. " +
+                "Please use Oracle/OpenJDK/IBM JDK version 6/7/8 or later");
     }
 
     static SSLCredentials generateSSLPair(String passwd, String name, String location) throws Exception {
