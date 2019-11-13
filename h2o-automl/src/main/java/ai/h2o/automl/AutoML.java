@@ -3,6 +3,8 @@ package ai.h2o.automl;
 import ai.h2o.automl.EventLogEntry.Stage;
 import ai.h2o.automl.StepDefinition.Alias;
 import hex.Model;
+import hex.ScoreKeeper;
+import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.Grid;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
@@ -193,7 +195,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void initLeaderboard(AutoMLBuildSpec buildSpec) {
-    String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
+    String sort_metric = StoppingMetric.AUTO.name().equalsIgnoreCase(buildSpec.input_spec.sort_metric) ? null : buildSpec.input_spec.sort_metric.toLowerCase();
     _leaderboard = Leaderboard.getOrMake(_key.toString(), _eventLog, _leaderboardFrame, sort_metric);
   }
 

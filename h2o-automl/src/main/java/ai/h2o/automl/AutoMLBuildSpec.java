@@ -147,6 +147,16 @@ public class AutoMLBuildSpec extends Iced {
       return _searchCriteria;
     }
 
+    public AutoMLStoppingCriteria() {
+      // reasonable defaults:
+      set_max_models(0);
+      set_max_runtime_secs(3600);
+      set_max_runtime_secs_per_model(0);
+
+      set_stopping_rounds(3);
+      set_stopping_tolerance(0.001);
+      set_stopping_metric(StoppingMetric.AUTO);
+    }
   }
 
   /**
@@ -166,7 +176,7 @@ public class AutoMLBuildSpec extends Iced {
     public String fold_column;
     public String weights_column;
     public String[] ignored_columns;
-    public String sort_metric;
+    public String sort_metric = StoppingMetric.AUTO.name();
   }
 
   /**

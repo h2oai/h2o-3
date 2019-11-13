@@ -32,44 +32,43 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   public static final class AutoMLBuildControlV99 extends SchemaV3<AutoMLBuildSpec.AutoMLBuildControl, AutoMLBuildControlV99> {
 
     @API(help="Optional project name used to group models from multiple AutoML runs into a single Leaderboard; derived from the training data name if not specified.",
-            direction=API.Direction.INOUT, level = API.Level.critical)
+            direction = API.Direction.INOUT)
     public String project_name;
 
-    @API(help="Model performance based stopping criteria for the AutoML run.",
-            direction=API.Direction.INPUT)
+    @API(help="Model performance based stopping criteria for the AutoML run.")
     public AutoMLStoppingCriteriaV99 stopping_criteria;
 
     @API(help="Number of folds for k-fold cross-validation (defaults to 5, must be >=2 or use 0 to disable). Disabling prevents Stacked Ensembles from being built.",
-            direction=API.Direction.INPUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public int nfolds;
 
     @API(help = "Balance training data class counts via over/under-sampling (for imbalanced data).",
-            direction = API.Direction.INOUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public boolean balance_classes;
 
     @API(help = "Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will be automatically computed to obtain class balance during training. Requires balance_classes.",
-            direction = API.Direction.INOUT, level = API.Level.expert)
+            level = API.Level.expert)
     public float[] class_sampling_factors;
 
     @API(help = "Maximum relative size of the training data after balancing class counts (defaults to 5.0 and can be less than 1.0). Requires balance_classes.",
-            direction = API.Direction.INOUT, level = API.Level.expert)
+            level = API.Level.expert)
     public float max_after_balance_size;
 
     @API(help="Whether to keep the predictions of the cross-validation predictions. "
             + "This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML.",
-            direction=API.Direction.INPUT, level = API.Level.expert)
+            level = API.Level.expert)
     public boolean keep_cross_validation_predictions;
 
     @API(help="Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster.",
-            direction=API.Direction.INPUT, level = API.Level.expert)
+            level = API.Level.expert)
     public boolean keep_cross_validation_models;
 
     @API(help="Whether to keep cross-validation assignments.",
-            direction=API.Direction.INPUT, level = API.Level.expert)
+            level = API.Level.expert)
     public boolean keep_cross_validation_fold_assignment;
 
     @API(help = "Path to a directory where every generated model will be stored.",
-            direction = API.Direction.INOUT, level = API.Level.expert)
+            level = API.Level.expert)
     public String export_checkpoints_dir;
 
   } // class AutoMLBuildControlV99
@@ -85,46 +84,41 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
    */
   public static final class AutoMLInputV99 extends SchemaV3<AutoMLBuildSpec.AutoMLInput, AutoMLInputV99> {
 
-    @API(help = "ID of the training data frame.",
-            direction=API.Direction.INPUT, level = API.Level.critical)
+    @API(help = "ID of the training data frame.")
     public KeyV3.FrameKeyV3 training_frame;
 
-    @API(help = "ID of the validation data frame (used for early stopping in grid searches and for early stopping of the AutoML process itself).",
-            direction=API.Direction.INPUT, level = API.Level.critical)
+    @API(help = "Response column",
+            is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame", "blending_frame"},
+            is_mutually_exclusive_with = {"ignored_columns", "fold_column", "weights_column"}
+    )
+    public FrameV3.ColSpecifierV3 response_column;
+
+    @API(help = "ID of the validation data frame (used for early stopping in grid searches and for early stopping of the AutoML process itself).")
     public KeyV3.FrameKeyV3 validation_frame;
 
     @API(help = "ID of the H2OFrame used to train the the metalearning algorithm in Stacked Ensembles (instead of relying on cross-validated predicted values)."
-            + " When provided, it is also recommended to disable cross validation by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.",
-            direction = API.Direction.INPUT, level = API.Level.critical)
+            + " When provided, it is also recommended to disable cross validation by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.")
     public KeyV3.FrameKeyV3 blending_frame;
 
-    @API(help = "ID of the leaderboard data frame (used to score models and rank them on the AutoML Leaderboard).",
-            direction=API.Direction.INPUT, level = API.Level.critical)
+    @API(help = "ID of the leaderboard data frame (used to score models and rank them on the AutoML Leaderboard).")
     public KeyV3.FrameKeyV3 leaderboard_frame;
 
-    @API(help = "Response column",
-            direction=API.Direction.INPUT, level = API.Level.critical,
-            is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame", "blending_frame"},
-            is_mutually_exclusive_with = {"ignored_columns", "fold_column", "weights_column"}
-      )
-    public FrameV3.ColSpecifierV3 response_column;
-
     @API(help = "Fold column (contains fold IDs) in the training frame. These assignments are used to create the folds for cross-validation of the models.",
-            direction=API.Direction.INPUT, level = API.Level.secondary,
+            level = API.Level.secondary,
             is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
             is_mutually_exclusive_with = {"ignored_columns", "response_column", "weights_column"}
     )
     public FrameV3.ColSpecifierV3 fold_column;
 
     @API(help = "Weights column in the training frame, which specifies the row weights used in model training.",
-            direction=API.Direction.INPUT, level = API.Level.secondary,
+            level = API.Level.secondary,
             is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame"},
             is_mutually_exclusive_with = {"ignored_columns", "response_column", "fold_column"}
     )
     public FrameV3.ColSpecifierV3 weights_column;
 
     @API(help = "Names of columns to ignore in the training frame when building models.",
-         direction=API.Direction.INPUT, level = API.Level.secondary,
+         level = API.Level.secondary,
          is_member_of_frames = {"training_frame", "validation_frame", "leaderboard_frame", "blending_frame"},
          is_mutually_exclusive_with = {"response_column", "fold_column", "weights_column"}
       )
@@ -132,7 +126,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
     @API(help="Metric used to sort leaderboard",
             valuesProvider = AutoMLMetricProvider.class,
-            direction=API.Direction.INPUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public String sort_metric;
 
   } // class AutoMLInputV99
@@ -140,32 +134,32 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   public static final class AutoMLStoppingCriteriaV99 extends SchemaV3<AutoMLStoppingCriteria, AutoMLStoppingCriteriaV99> {
 
     @API(help = "Seed for random number generator; set to a value other than -1 for reproducibility.",
-            direction = API.Direction.INOUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public long seed;
 
     @API(help = "Maximum number of models to build (optional).",
-            direction = API.Direction.INOUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public int max_models;
 
     @API(help = "Maximum time to spend building all models (optional).",
-            direction = API.Direction.INOUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public double max_runtime_secs;
 
     @API(help = "Maximum time to spend on each individual model (optional).",
-            direction = API.Direction.INOUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public double max_runtime_secs_per_model;
 
     @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)",
-            direction=API.Direction.INOUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public int stopping_rounds;
 
     @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)",
             valuesProvider = AutoMLMetricProvider.class,
-            direction=API.Direction.INOUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public StoppingMetric stopping_metric;
 
     @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)",
-            direction=API.Direction.INOUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public double stopping_tolerance;
 
     @Override
@@ -219,16 +213,13 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
   public static final class AutoMLCustomParameterV99<V> extends SchemaV3<Iced, AutoMLCustomParameterV99<V>> {
     @API(help="Scope of application of the parameter (specific algo, or any algo).",
-            valuesProvider=ScopeProvider.class,
-            direction=API.Direction.INPUT)
+            valuesProvider=ScopeProvider.class)
     public String scope;
 
-    @API(help="Name of the model parameter.",
-            direction=API.Direction.INPUT)
+    @API(help="Name of the model parameter.")
     public String name;
 
-    @API(help="Value of the model parameter.",
-            direction=API.Direction.INPUT)
+    @API(help="Value of the model parameter.")
     public JSONValue value;
 
     @SuppressWarnings("unchecked")
@@ -246,24 +237,24 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
 
     @API(help="A list of algorithms to skip during the model-building phase.",
             valuesProvider=AlgoProvider.class,
-            direction=API.Direction.INPUT)
+            level = API.Level.secondary)
     public Algo[] exclude_algos;
 
     @API(help="A list of algorithms to restrict to during the model-building phase.",
             valuesProvider=AlgoProvider.class,
-            direction=API.Direction.INPUT)
+            level = API.Level.secondary)
     public Algo[] include_algos;
 
     @API(help="The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).",
-            direction=API.Direction.INPUT)
+            level = API.Level.expert)
     public StepDefinitionV99[] modeling_plan;
 
     @API(help="Custom algorithm parameters.",
-            direction=API.Direction.INPUT)
+            level = API.Level.expert)
     public AutoMLCustomParameterV99[] algo_parameters;
 
     @API(help = "A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.",
-            direction = API.Direction.INPUT, level = API.Level.secondary)
+            level = API.Level.secondary)
     public KeyValueV3[] monotone_constraints;
 
     @Override
@@ -306,16 +297,13 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   ////////////////
   // Input fields
 
-  @API(help="Specification of overall controls for the AutoML build process.",
-          direction=API.Direction.INPUT)
+  @API(help="Specification of overall controls for the AutoML build process.")
   public AutoMLBuildControlV99 build_control;
 
-  @API(help="Specification of the input data for the AutoML build process.",
-          direction=API.Direction.INPUT)
+  @API(help="Specification of the input data for the AutoML build process.")
   public AutoMLInputV99 input_spec;
 
-  @API(help="If present, specifies details of how to train models.",
-          direction=API.Direction.INPUT)
+  @API(help="If present, specifies details of how to train models.")
   public AutoMLBuildModelsV99 build_models;
 
   ////////////////
