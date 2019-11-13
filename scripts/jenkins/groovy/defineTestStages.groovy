@@ -437,12 +437,12 @@ def call(final pipelineContext) {
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
     onHadoopStage.customData.mode = 'ON_HADOOP'
-    standaloneStage.timeoutValue = 90
+    onHadoopStage.timeoutValue = 90
 
     def onHadoopWithSpnegoStage = evaluate(stageTemplate.inspect())
     onHadoopWithSpnegoStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP WITH SPNEGO"
     onHadoopWithSpnegoStage.customData.mode = 'ON_HADOOP_WITH_SPNEGO'
-    standaloneStage.timeoutValue = 90
+    onHadoopStage.timeoutValue = 90
 
     KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage ]
   }
