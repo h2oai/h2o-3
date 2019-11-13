@@ -449,10 +449,19 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
     /** All visited hyper params permutations, including the current one. */
     private List<int[]> _visitedPermutations = new ArrayList<>();
-    private int _numberOfNonSkippedPermutations = 0;
     private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // for fast dupe lookup
 
+    /**
+     * List of filter functions having a match from any of which is enough to discard given permutation
+     */
     ArrayList<PermutationFilterFunction> _filterFunctions;
+
+    /**
+     * 
+     * Keeps number of returned to the user permutations as not all visited permutations are considered to be worthy
+     * for evaluation due to a {@code _filterFunctions}. 
+     */
+    private int _numberOfUsedPermutations = 0;
 
     public RandomDiscreteValueWalker(MP params,
                                      Map<String, Object[]> hyperParamsGrid,
@@ -509,16 +518,16 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           _currentHyperparamIndices = nextModelIndices();
 
           if (_currentHyperparamIndices != null) {
-              _visitedPermutations.add(_currentHyperparamIndices);
-              _visitedPermutationHashes.add(integerHash(_currentHyperparamIndices));
-              _currentPermutationNum++; // NOTE: 1-based counting
+            _visitedPermutations.add(_currentHyperparamIndices);
+            _visitedPermutationHashes.add(integerHash(_currentHyperparamIndices));
+            _currentPermutationNum++; // NOTE: 1-based counting
 
             // Fill array of hyper-values
             Object[] permutation = permutation(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
              
             if (_filterFunctions == null || !permutationIsSkipped(permutation, _filterFunctions)) {
 
-              _numberOfNonSkippedPermutations++;
+              _numberOfUsedPermutations++;
               // Get clone of parameters
               MP commonModelParams = (MP) _params.clone();
               // Fill model parameters
@@ -589,7 +598,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           //
           // _currentPermutationNum is 1-based
           return (_visitedPermutationHashes.size() < _maxHyperSpaceSize &&
-                  (search_criteria().max_models() == 0 || _numberOfNonSkippedPermutations < search_criteria().max_models())
+                  (search_criteria().max_models() == 0 || _numberOfUsedPermutations < search_criteria().max_models())
           );
         }
 
@@ -603,7 +612,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           if(_filterFunctions != null) _filterFunctions.stream()
                   .filter(fun -> fun instanceof KeepOnlyFirstMatchFilterFunction)
                   .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction)fun).reset());
-          _numberOfNonSkippedPermutations = 0;
+          _numberOfUsedPermutations = 0;
         }
 
         public double max_runtime_secs() {
@@ -625,7 +634,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           // so we don't revisit bad parameters. Note that if a model build fails for other reasons we
           // won't retry.
           _currentPermutationNum--;
-          _numberOfNonSkippedPermutations--;
+          _numberOfUsedPermutations--;
         }
 
         @Override
