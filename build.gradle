@@ -82,6 +82,7 @@ ext {
       project(':h2o-jetty-9'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
+      project(':h2o-security'),
     ]
 
     javaProjects = [
@@ -113,6 +114,7 @@ ext {
       project(':h2o-jetty-9'),
       project(':h2o-ext-jython-cfunc'),
       project(':h2o-hive'),
+      project(':h2o-security'),
     ]
 
     scalaProjects = [
