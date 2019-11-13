@@ -40,6 +40,8 @@ public class GLMMojoWriter extends ModelMojoWriter<GLMModel, GLMModel.GLMParamet
 
     if (GLMModel.GLMParameters.Family.tweedie.equals(model._parms._family))
       writekv("tweedie_link_power", model._parms._tweedie_link_power);
+
+    writekv("offset_column", model._parms._offset_column);
   }
 
 }

@@ -69,5 +69,6 @@ public class DeepLearningMojoWriter extends ModelMojoWriter<DeepLearningModel,
       writekv("bias_layer"+index, _model_info.get_biases(index).raw());
     }
     writekv("hidden_dropout_ratios", all_drop_out_ratios);
+    writekv("offset_column", _parms._offset_column);
   }
 }
