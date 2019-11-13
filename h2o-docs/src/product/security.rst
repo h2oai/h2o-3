@@ -581,7 +581,7 @@ Example:
 
 ::
 
-    java -Djavax.security.auth.useSubjectCredsOnly=false -jar h2o.jar \
+    java -jar h2o.jar \
         -spnego_login -user_name pricipal@DOMAIN \
         -login_conf /path/to/spnego.conf \
         -spnego_properties /path/to/spnego.properties
