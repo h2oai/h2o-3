@@ -22,9 +22,27 @@ def connect_invalid():
     # Not invalid yet - first do sanity check that original connection can be used to make a request
     invalid.request("GET /3/About")
 
+    # Test with invalid basic auth
     err = None
     try:
         invalid._auth = ("invalid-user", "invalid-password")
+        invalid.request("GET /3/About")
+    except H2OServerError as e:
+        err = e
+
+    assert err is not None
+
+    msg = str(err.args[0])
+    print("<Error message>")
+    print(msg)
+    print("</Error Message>")
+
+    assert msg.startswith("HTTP 401") # Unauthorized
+    
+    # Test without any auth
+    err = None
+    try:
+        invalid._auth = None
         invalid.request("GET /3/About")
     except H2OServerError as e:
         err = e
