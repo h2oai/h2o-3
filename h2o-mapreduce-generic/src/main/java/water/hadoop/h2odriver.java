@@ -157,6 +157,7 @@ public class h2odriver extends Configured implements Tool {
   static String hivePrincipal = null;
   static boolean refreshTokens = false;
   static boolean disableFlow = false;
+  static boolean swExtBackend = false;
 
   String proxyUrl = null;
   // Runtime state that might be touched by different threads.
@@ -1079,7 +1080,9 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-disable_flow")) {
         disableFlow = true;
       }
-      else if (s.equals("-session_timeout")) {
+      else if (s.equals("-sw_ext_backend")) {
+        swExtBackend = true;
+      } else if (s.equals("-session_timeout")) {
         i++; if (i >= args.length) { usage(); }
         sessionTimeout = args[i];
       }
@@ -1659,6 +1662,9 @@ public class h2odriver extends Configured implements Tool {
     if (disableFlow) {
       addMapperArg(conf, "-disable_flow");
     }
+    if (swExtBackend) {
+      addMapperArg(conf, "-allow_clients");
+    }
     addMapperArg(conf, "-user_name", userName);
 
     for (String s : extraArguments) {
@@ -1668,6 +1674,7 @@ public class h2odriver extends Configured implements Tool {
     if (client) {
       addMapperArg(conf, "-md5skip");
       addMapperArg(conf, "-disable_web");
+      addMapperArg(conf, "-allow_clients");
     }
 
     // Proxy

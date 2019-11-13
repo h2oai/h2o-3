@@ -59,8 +59,15 @@ public abstract class Paxos {
       }
     }
 
+    if(!H2O.ARGS.allow_clients && h2o.isClient()) {
+      // ignore requests from clients if cloud is not started with client connections enabled
+      ListenerService.getInstance().report("clients_disabled", h2o);
+      return 0;
+    }
+    
     if(h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
       // ignore requests from this node as they are coming from different cluster
+      ListenerService.getInstance().report("different_cloud", h2o);
       return 0;
     }
 
