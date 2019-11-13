@@ -39,6 +39,8 @@ public class KMeansModel extends ClusteringModel<KMeansModel,KMeansModel.KMeansP
     public boolean _pred_indicator = false;   // For internal use only: generate indicator cols during prediction
                                               // Ex: k = 4, cluster = 3 -> [0, 0, 1, 0]
     public boolean _estimate_k = false;       // If enabled, iteratively find up to _k clusters
+    public int[] _cluster_size_constrains = null;
+    public int _constrained_kmeans_precision = 1000;
   }
 
   public static class KMeansOutput extends ClusteringModel.ClusteringOutput {

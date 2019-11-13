@@ -4,6 +4,7 @@ import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
 import hex.genmodel.easy.EasyPredictModelWrapper;
+import javafx.animation.KeyFrame;
 import org.junit.*;
 import water.DKV;
 import water.Key;
@@ -12,6 +13,7 @@ import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.util.*;
 
@@ -93,6 +95,134 @@ public class KMeansTest extends TestUtil {
     }
   }
 
+  @Test public void testSimpleConstrained() {
+    KMeansModel kmm = null;
+    Frame fr = null, fr2 = null, points = null;
+    try {
+      
+      fr = new Frame(Key.<Frame>make(), new String[]{"x", "y"}, new Vec[]{Vec.makeVec(new long[]{1, 2, 4}, null, Vec.newKey()),
+              Vec.makeVec(new long[]{1, 2, 3}, null, Vec.newKey())});
+      DKV.put(fr);
+      
+      points = new Frame(Key.<Frame>make(), new String[]{"x", "y"}, new Vec[]{Vec.makeVec(new long[]{1, 3}, null, Vec.newKey()),
+              Vec.makeVec(new long[]{2, 4}, null, Vec.newKey())});
+      DKV.put(points);
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._k = 2;
+      parms._standardize = false;
+      parms._max_iterations = 10;
+      parms._cluster_size_constrains = new int[]{1, 1};
+      parms._user_points = points._key;
+      kmm = doSeed(parms,0);
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = kmm.score(fr);
+      for(int i=0; i<parms._k; i++) {
+        assert kmm._output._size[i] >= parms._cluster_size_constrains[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constrains[i]+" but is "+kmm._output._size[i]+".";
+      }
+
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
+      if( points != null ) points.delete();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testIrisConstrained() {
+    KMeansModel kmm = null;
+    Frame fr = null, fr2= null, points=null;
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      
+      points = ArrayUtils.frame(ard(ard(6.0,2.2,4.0,1.0,0),
+              ard(5.2,3.4,1.4,0.2,1),
+              ard(6.9,3.1,5.4,2.1,2),
+              ard(6.9,3.1,5.4,2.1,2)
+      ));
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._k = 4;
+      parms._standardize = true;
+      parms._max_iterations = 10;
+      parms._user_points = points._key;
+      parms._cluster_size_constrains = new int[]{2, 20, 70, 20};
+      kmm = doSeed(parms,0);
+
+      //Iris last column is categorical; make sure centers are ordered in the
+      //same order as the iris columns.
+      double[/*k*/][/*features*/] centers = kmm._output._centers_raw;
+      for( int k=0; k<parms._k; k++ ) {
+        double flower = centers[k][4];
+        Assert.assertTrue("categorical column expected",flower==(int)flower);
+      }
+
+      // Done building model; produce a score column with cluster choices
+      fr2 = kmm.score(fr);
+
+      for(int i=0; i<parms._k; i++) {
+        System.out.println(kmm._output._size[i]+">="+parms._cluster_size_constrains[i]);
+        assert kmm._output._size[i] >= parms._cluster_size_constrains[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constrains[i]+" but is "+kmm._output._size[i]+".";
+      }
+
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( fr2 != null ) fr2.delete();
+      if( points != null ) points.delete();
+      if( kmm != null ) kmm.delete();
+    }
+  }
+
+  @Test public void testChicagoConstrained() {
+    KMeansModel kmm = null;
+    Frame fr = null, points = null;
+    try {
+      Scope.enter();
+      fr = Scope.track(parse_test_file("smalldata/chicago/chicagoAllWeather.csv"));
+      points = ArrayUtils.frame(ard(
+                      ard(0.9223065747871615,1.016292569726567,1.737905586557139,-0.2732881352142627,0.8408705963844509,-0.2664469441473223,-0.2881728818872508),
+                      ard(-1.4846149848792978,-1.5780763628717547,-1.330641758390853,-1.3664503532612082,-1.0180638458160431,-1.1194221247071547,-1.2345088149586547),
+                      ard(1.4953511836400069,-1.001549933405461,-1.4442916600555933,1.5766442462663375,-1.855936520243046,-2.07274732650932,-2.2859931850379924)));
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._seed = 0xcaf;
+      parms._k = 3;
+      parms._cluster_size_constrains = new int[]{1000, 3000, 1000};
+      parms._user_points = points._key;
+
+      KMeans job = new KMeans(parms);
+      kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());
+      checkConsistency(kmm);
+
+      assertEquals("date", kmm._output._names[0]);
+      assertEquals(-1, kmm._output._mode[0]); // time column is not treated as a categorical (PUBDEV-6264)
+
+      double minTime = fr.vec("date").min();
+      double maxTime = fr.vec("date").max();
+
+      assertEquals(3, kmm._output._centers_raw.length);
+      for (double[] center : kmm._output._centers_raw) {
+        assertTrue(center[0] >= minTime);
+        assertTrue(center[0] <= maxTime);
+      }
+
+      for(int i=0; i<parms._k; i++) {
+        System.out.println(kmm._output._size[i]+">="+parms._cluster_size_constrains[i]);
+        assert kmm._output._size[i] >= parms._cluster_size_constrains[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constrains[i]+" but is "+kmm._output._size[i]+".";
+      }
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( points != null ) points.delete();
+      if( kmm != null ) kmm.delete();
+      Scope.exit();
+    }
+  }
+  
+  
   @Test public void testIrisAutoK() {
     KMeansModel kmm = null;
     Frame fr = null, fr2= null;
