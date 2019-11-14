@@ -249,6 +249,9 @@ final public class H2O {
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
 
+    /** -internal_security_conf_rel_paths interpret paths of internal_security_conf relative to the main config file */
+    public boolean internal_security_conf_rel_paths = false;
+
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
 
@@ -653,6 +656,9 @@ final public class H2O {
       else if (s.matches("internal_security_conf")) {
         i = s.incrementAndCheck(i, args);
         trgt.internal_security_conf = args[i];
+      }
+      else if (s.matches("internal_security_conf_rel_paths")) {
+        trgt.internal_security_conf_rel_paths = true;
       }
       else if (s.matches("decrypt_tool")) {
         i = s.incrementAndCheck(i, args);
