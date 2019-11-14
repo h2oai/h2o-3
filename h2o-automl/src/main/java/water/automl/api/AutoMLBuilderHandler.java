@@ -18,8 +18,4 @@ public class AutoMLBuilderHandler extends Handler {
     return schema;
   }
 
-  @SuppressWarnings("unused")
-  public AutoMLBuildSpecV99 meta(int version, AutoMLBuildSpecV99 schema) {
-    return schema;
-  }
 }
