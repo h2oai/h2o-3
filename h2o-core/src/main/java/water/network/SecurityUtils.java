@@ -2,10 +2,12 @@ package water.network;
 
 import water.util.Log;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.*;
+import java.security.SecureRandom;
 import java.util.Properties;
 
 public class SecurityUtils {
@@ -29,7 +31,7 @@ public class SecurityUtils {
 
     private static StoreCredentials generateKeystore(String password, String name, String location) throws Exception {
         String path = null != location && !location.isEmpty() ? location + File.separatorChar + name : name;
-        if(new File(path).exists()) {
+        if (new File(path).exists()) {
             throw new IllegalStateException("A file under the location " + path + " already exists. Please delete it first.");
         }
 
@@ -91,18 +93,24 @@ public class SecurityUtils {
     }
 
     public static String generateSSLConfig(SSLCredentials credentials) throws IOException {
-        File temp = File.createTempFile("h2o-internal-" + Long.toString(System.nanoTime()), "-ssl.properties");
-        temp.deleteOnExit();
-        return generateSSLConfig(credentials, temp.getAbsolutePath());
+        StoreCredentials jks = credentials.jks;
+        StoreCredentials jts = credentials.jts;
+        return generateSSLConfig(jks.name, jks.pass, jts.name, jts.pass);
     }
 
-    static String generateSSLConfig(SSLCredentials credentials, String file) throws IOException {
+    public static String generateSSLConfig(String jksName, String jksPass, String jtsName, String jtsPass) throws IOException {
+        File temp = File.createTempFile("h2o-internal-" + Long.toString(System.nanoTime()), "-ssl.properties");
+        temp.deleteOnExit();
+        return generateSSLConfig(jksName, jksPass, jtsName, jtsPass, temp.getAbsolutePath());
+    }
+
+    static String generateSSLConfig(String jksName, String jksPass, String jtsName, String jtsPass, String file) throws IOException {
         Properties sslConfig = new Properties();
         sslConfig.put("h2o_ssl_protocol", defaultTLSVersion());
-        sslConfig.put("h2o_ssl_jks_internal", credentials.jks.name);
-        sslConfig.put("h2o_ssl_jks_password", credentials.jks.pass);
-        sslConfig.put("h2o_ssl_jts", credentials.jts.name);
-        sslConfig.put("h2o_ssl_jts_password", credentials.jts.pass);
+        sslConfig.put("h2o_ssl_jks_internal", jksName);
+        sslConfig.put("h2o_ssl_jks_password", jksPass);
+        sslConfig.put("h2o_ssl_jts", jtsName);
+        sslConfig.put("h2o_ssl_jts_password", jtsPass);
         FileOutputStream output = new FileOutputStream(file);
         try {
             sslConfig.store(output, "");
@@ -115,6 +123,12 @@ public class SecurityUtils {
             }
         }
         return file;
+    }
+
+    static String generateSSLConfig(SSLCredentials credentials, String file) throws IOException {
+        StoreCredentials jks = credentials.jks;
+        StoreCredentials jts = credentials.jts;
+        return generateSSLConfig(jks.name, jks.pass, jts.name, jts.pass, file);
     }
 
     public static String defaultTLSVersion() {
