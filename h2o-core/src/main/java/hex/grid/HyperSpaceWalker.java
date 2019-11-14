@@ -15,7 +15,7 @@ import static java.lang.StrictMath.min;
 
 public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
 
-  interface HyperSpaceIterator<MP extends Model.Parameters> {
+  abstract class HyperSpaceIterator<MP extends Model.Parameters> {
     /**
      * Get next model parameters.
      *
@@ -33,37 +33,37 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      * @throws IllegalArgumentException  when model parameters cannot be constructed
      * @throws java.util.NoSuchElementException if the iteration has no more elements
      */
-    MP nextModelParameters(Model previousModel);
+    abstract public MP nextModelParameters(Model previousModel);
 
     /**
      * Returns true if the iterator can continue.  Takes into account strategy-specific stopping criteria, if any.
      * @param previousModel  optional parameter which helps to determine next step, can be null
      * @return  true if the iterator can produce one more model parameters configuration.
      */
-    boolean hasNext(Model previousModel);
+    abstract public boolean hasNext(Model previousModel);
 
-    void reset();
+    abstract public void reset();
 
     /**
      * @return the total time allowed for building this grid, in seconds.
      */
-    double max_runtime_secs();
+    abstract public double max_runtime_secs();
 
     /**
      * @return the maximum number of models to build
      */
-    int max_models();
+    abstract public int max_models();
 
     /**
      * @return the time remaining for building this grid, in seconds.
      */
-    double time_remaining_secs();
+    abstract public double time_remaining_secs();
 
     /**
      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
      * @param failedModel
      */
-    void modelFailed(Model failedModel);
+    abstract public void modelFailed(Model failedModel);
 
     /**
      * Returns current "raw" state of iterator.
@@ -72,7 +72,51 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      *
      * @return  array of "untyped" values representing configuration of grid parameters
      */
-    Object[] getCurrentRawParameters();
+    abstract public Object[] getCurrentRawParameters();
+
+    /**
+     * 
+     * @param permutation single permutation from the grid, represented as array of Objects and ordered based on {@code hyperParamNames} array
+     * @param hyperParamNames array of hyper parameters names grid search is performed over
+     * @param filterFunctions list of {@link PermutationFilterFunction} to check against. 
+     *                        Permutation will be skipped if any of the functions consider it as to be skipped one.
+     */
+    boolean permutationIsSkipped(Object[] permutation, String[] hyperParamNames, ArrayList<PermutationFilterFunction> filterFunctions) {
+      boolean skipPermutation = false;
+
+      Map<String, Object> permutationAsMap = convertToMap(permutation, hyperParamNames);
+
+      for (PermutationFilterFunction fun : filterFunctions) {
+        if (!fun.apply(permutationAsMap)) {
+          skipPermutation = true;
+          break;
+        }
+      }
+      // Decrement counters only when we actually decided not to skip given grid item (after taking into account all filter functions),
+      // and only for KeepOnlyFirstMatchFilterFunction functions that already considered given permutation as matching its conditions
+      if (!skipPermutation) {
+        filterFunctions.stream()
+                .filter(fun1 -> {
+                  return fun1 instanceof KeepOnlyFirstMatchFilterFunction && ((KeepOnlyFirstMatchFilterFunction) fun1)._baseMatchFunction.apply(permutationAsMap);
+                })
+                .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction) fun).decrementCounter());
+      }
+      return skipPermutation;
+    }
+
+    /**
+     * Changes permutation's representation from Object[] to Map<String, Object> for an ability
+     * to specify filter functions with hyper parameters names, i.e. to make it more user friendly
+     */
+    private Map<String, Object> convertToMap(Object[] permutation, String[] hyperParamNames) {
+      Map<String, Object> permutationAsMap = new HashMap<>();
+      int indexOfHP = 0;
+      for(String hpName : hyperParamNames) {
+        permutationAsMap.put(hpName, permutation[indexOfHP]);
+        indexOfHP++;
+      }
+      return permutationAsMap;
+    }
   } // interface HyperSpaceIterator
 
   /**
@@ -172,6 +216,21 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      * times.
      */
     final protected long _maxHyperSpaceSize;
+
+    /**
+     * List of filter functions having a match from any of which is enough to discard given permutation
+     */
+    ArrayList<PermutationFilterFunction> _filterFunctions;
+
+    /**
+     * Gives an ability for {@link HyperSpaceWalker} to reset its {@code _filterFunctions}'s states
+     * as some of those functions might be stateful 
+     */
+    void resetFilterFunctions(ArrayList<PermutationFilterFunction> filterFunctions) {
+      if(filterFunctions != null) filterFunctions.stream()
+              .filter(fun -> fun instanceof KeepOnlyFirstMatchFilterFunction)
+              .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction)fun).reset());
+    }
 
     /**
      * Java hackery so we can have a factory method on a class with type params.
@@ -346,8 +405,18 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     public CartesianWalker(MP params,
                            Map<String, Object[]> hyperParamsGrid,
                            ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                           HyperSpaceSearchCriteria.CartesianSearchCriteria search_criteria) {
-      super(params, hyperParamsGrid, paramsBuilderFactory, search_criteria);
+                           HyperSpaceSearchCriteria.CartesianSearchCriteria searchCriteria,
+                           ArrayList<PermutationFilterFunction> filterFunctions) {
+      super(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria);
+
+      _filterFunctions = filterFunctions;
+    }
+    
+    public CartesianWalker(MP params,
+                           Map<String, Object[]> hyperParamsGrid,
+                           ModelParametersBuilderFactory<MP> paramsBuilderFactory,
+                           HyperSpaceSearchCriteria.CartesianSearchCriteria searchCriteria) {
+      this(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria, null);
     }
 
     @Override
@@ -364,12 +433,17 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           if (_currentHyperparamIndices != null) {
             // Fill array of hyper-values
             Object[] permutation = permutation(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
-            // Get clone of parameters
-            MP commonModelParams = (MP) _params.clone();
-            // Fill model parameters
-            MP params = getModelParams(commonModelParams, permutation);
 
-            return params;
+            if (_filterFunctions == null || !permutationIsSkipped(permutation, _hyperParamNames, _filterFunctions)) {
+              // Get clone of parameters
+              MP commonModelParams = (MP) _params.clone();
+              // Fill model parameters
+              MP params = getModelParams(commonModelParams, permutation);
+
+              return params;
+            } else {
+              return hasNext(previousModel) ? nextModelParameters(previousModel) : null;
+            }
           } else {
             throw new NoSuchElementException("No more elements to explore in hyper-space!");
           }
@@ -391,6 +465,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         @Override public void reset() {
           _currentHyperparamIndices = null;
+          resetFilterFunctions(_filterFunctions);
         }
 
         @Override
@@ -450,11 +525,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     /** All visited hyper params permutations, including the current one. */
     private List<int[]> _visitedPermutations = new ArrayList<>();
     private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // for fast dupe lookup
-
-    /**
-     * List of filter functions having a match from any of which is enough to discard given permutation
-     */
-    ArrayList<PermutationFilterFunction> _filterFunctions;
 
     /**
      * 
@@ -525,7 +595,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             // Fill array of hyper-values
             Object[] permutation = permutation(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
              
-            if (_filterFunctions == null || !permutationIsSkipped(permutation, _filterFunctions)) {
+            if (_filterFunctions == null || !permutationIsSkipped(permutation, _hyperParamNames, _filterFunctions)) {
 
               _numberOfUsedPermutations++;
               // Get clone of parameters
@@ -566,30 +636,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             throw new NoSuchElementException("No more elements to explore in hyper-space!");
           }
         }
-        
-        private boolean permutationIsSkipped(Object[] permutation, ArrayList<PermutationFilterFunction> filterFunctions) {
-          boolean skipPermutation = false;
-          
-          Map<String, Object> permutationAsMap = convertToMap(permutation, _hyperParamNames);
-
-          for(PermutationFilterFunction fun : filterFunctions) {
-            if(!fun.apply(permutationAsMap)  ) {
-              skipPermutation = true;
-              break;
-            }
-          }
-
-          // Decrement counters only when we actually decided not to skip given grid item (after taking into account all filter functions),
-          // and only for KeepOnlyFirstMatchFilterFunction functions that were matching
-          if(!skipPermutation) {
-            filterFunctions.stream()
-                    .filter(fun1 -> {
-                      return fun1 instanceof KeepOnlyFirstMatchFilterFunction && ((KeepOnlyFirstMatchFilterFunction) fun1)._baseMatchFunction.apply(permutationAsMap);
-                    })
-                    .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction) fun).decrementCounter());
-          }
-          return skipPermutation;
-        }
 
         @Override
         public boolean hasNext(Model previousModel) {
@@ -609,9 +655,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           _currentHyperparamIndices = null;
           _visitedPermutations.clear();
           _visitedPermutationHashes.clear();
-          if(_filterFunctions != null) _filterFunctions.stream()
-                  .filter(fun -> fun instanceof KeepOnlyFirstMatchFilterFunction)
-                  .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction)fun).reset());
+          resetFilterFunctions(_filterFunctions);
           _numberOfUsedPermutations = 0;
         }
 
@@ -644,16 +688,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         }
       }; // anonymous HyperSpaceIterator class
     } // iterator()
-
-    private Map<String, Object> convertToMap(Object[] permutation, String[] hyperParamNames) {
-      Map<String, Object> permutationAsMap = new HashMap<>();
-      int indexOfHP = 0;
-      for(String hpName : hyperParamNames) {
-        permutationAsMap.put(hpName, permutation[indexOfHP]);
-        indexOfHP++;
-      }
-      return permutationAsMap;
-    }
 
     /**
      * Random iteration over the hyper-parameter space.  Does not repeat
