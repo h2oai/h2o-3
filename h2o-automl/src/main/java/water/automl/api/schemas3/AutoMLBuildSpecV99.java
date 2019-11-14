@@ -9,6 +9,7 @@ import hex.ScoreKeeper.StoppingMetric;
 import water.Iced;
 import water.api.API;
 import water.api.EnumValuesProvider;
+import water.api.Schema;
 import water.api.ValuesProvider;
 import water.api.schemas3.*;
 import water.util.*;
@@ -211,7 +212,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     }
   }
 
-  public static final class AutoMLCustomParameterV99<V> extends SchemaV3<Iced, AutoMLCustomParameterV99<V>> {
+  public static final class AutoMLCustomParameterV99<V> extends Schema<Iced, AutoMLCustomParameterV99<V>> {
     @API(help="Scope of application of the parameter (specific algo, or any algo).",
             valuesProvider=ScopeProvider.class)
     public String scope;
