@@ -34,5 +34,6 @@ public class PaxosTest extends TestUtil {
     ArrayList<Object[]> events = ext.getData("clients_disabled");
     assertEquals(1, events.size());
     assertArrayEquals(new Object[]{clientNode}, events.get(0));
+    assertEquals(0, H2O.getClients().length);
   }
 }
