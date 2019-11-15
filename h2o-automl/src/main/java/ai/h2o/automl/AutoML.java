@@ -409,7 +409,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
 
     if (buildSpec.input_spec.ignored_columns != null) {
-      List<String> ignored_columns = Arrays.asList(buildSpec.input_spec.ignored_columns);
+      List<String> ignored_columns = new ArrayList<>(Arrays.asList(buildSpec.input_spec.ignored_columns));
       Map<String, String> do_not_ignore = new LinkedHashMap<String, String>(){{
         put("response_column", buildSpec.input_spec.response_column);
         put("fold_column", buildSpec.input_spec.fold_column);
