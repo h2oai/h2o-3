@@ -33,7 +33,7 @@ private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
             rm -fv h2o_one_node h2odriver.out
             export HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp)
             hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
-                -n 1 -mapperXmx 4g -baseport 54445 \\
+                -n 1 -mapperXmx 2g -baseport 54445 \\
                 -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 \\
                 -jks mykeystore.jks \\
                 -notify h2o_one_node -ea -proxy \\

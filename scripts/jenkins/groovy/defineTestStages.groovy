@@ -408,7 +408,7 @@ def call(final pipelineContext) {
     }
 
     def stageTemplate = [
-            target: target,
+            target: target, timeoutValue: 60,
             component: pipelineContext.getBuildConfig().COMPONENT_ANY,
             additionalTestPackages: [
                     pipelineContext.getBuildConfig().COMPONENT_PY,
@@ -432,17 +432,14 @@ def call(final pipelineContext) {
     def standaloneStage = evaluate(stageTemplate.inspect())
     standaloneStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STANDALONE"
     standaloneStage.customData.mode = 'STANDALONE'
-    standaloneStage.timeoutValue = 60
 
     def onHadoopStage = evaluate(stageTemplate.inspect())
     onHadoopStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP"
     onHadoopStage.customData.mode = 'ON_HADOOP'
-    onHadoopStage.timeoutValue = 90
 
     def onHadoopWithSpnegoStage = evaluate(stageTemplate.inspect())
     onHadoopWithSpnegoStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP WITH SPNEGO"
     onHadoopWithSpnegoStage.customData.mode = 'ON_HADOOP_WITH_SPNEGO'
-    onHadoopStage.timeoutValue = 90
 
     KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage ]
   }
