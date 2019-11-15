@@ -34,9 +34,9 @@
 #'        over the 5 best models). Examples bellow:
 #'        \code{list(strategy = "RandomDiscrete", max_runtime_secs = 600, max_models = 100, stopping_metric = "AUTO",
 #'        stopping_tolerance = 0.00001, stopping_rounds = 5, seed = 123456)} or \code{list(strategy = "RandomDiscrete", 
-#         max_models = 42, max_runtime_secs = 28800)} or \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", 
-#         stopping_tolerance = 0.001, stopping_rounds = 10)} or \code{list(strategy = "RandomDiscrete", stopping_metric = 
-#         "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.}
+#'        max_models = 42, max_runtime_secs = 28800)} or \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", 
+#'        stopping_tolerance = 0.001, stopping_rounds = 10)} or \code{list(strategy = "RandomDiscrete", stopping_metric = 
+#'        "misclassification", stopping_tolerance = 0.00001, stopping_rounds = 5)}.}
 #' @importFrom jsonlite toJSON
 #' @examples
 #' \dontrun{
