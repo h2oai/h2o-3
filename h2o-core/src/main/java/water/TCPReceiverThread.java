@@ -89,6 +89,11 @@ public class TCPReceiverThread extends Thread {
         int chanType = bb.get(); // 1 - small, 2 - big, 3 - external
         short timestamp = bb.getShort(); // read timestamp
                                          // Note: timestamp was not part of the original protocol, was added in 3.22.0.1, #a33de44)
+        if (H2ONodeTimestamp.decodeIsClient(timestamp) && !H2O.ARGS.allow_clients) {
+          ListenerService.getInstance().report("connection-failure", "clients-disabled");
+          throw new IllegalStateException("Client connection from " + inetAddress + " blocked. " +
+                  "This cloud has client connections disabled.");
+        }
         int port = bb.getChar(); // read port
         int sentinel = (0xFF) & bb.get();
         if(sentinel != 0xef) {
