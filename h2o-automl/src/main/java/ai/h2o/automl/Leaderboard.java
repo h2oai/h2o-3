@@ -146,7 +146,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * @return true iff the metric is a loss function
    */
   public static boolean isLossFunction(String metric) {
-    return !"auc".equals(metric);
+    return !Arrays.asList("auc", "aucpr").contains(metric.toLowerCase());
   }
 
   public String getProject() {

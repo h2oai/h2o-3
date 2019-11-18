@@ -40,8 +40,12 @@ public class AutoMLTest extends water.TestUtil {
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
       fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      String target = "CAPSULE";
+      int tidx = fr.find(target);
+      fr.replace(tidx, fr.vec(tidx).toCategoricalVec()).remove(); DKV.put(fr);
       autoMLBuildSpec.input_spec.training_frame = fr._key;
-      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.input_spec.response_column = target;
+      autoMLBuildSpec.input_spec.sort_metric = "AUCPR";
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models

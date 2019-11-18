@@ -74,6 +74,8 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
   // expose simple metrics criteria for sorting
   public double auc() { return auc_obj()._auc; }
+  public double pr_auc() { return auc_obj()._pr_auc; }
+  public double aucpr() { return auc_obj()._pr_auc; } // for compatibility with naming in ScoreKeeper.StoppingMetric annotation
   public double lift_top_group() { return gainsLift().response_rates[0] / gainsLift().avg_response_rate; }
 
   /**
