@@ -24,8 +24,6 @@ class H2OGenericEstimator(H2OEstimator):
     def __init__(self, **kwargs):
         super(H2OGenericEstimator, self).__init__()
         self._parms = {}
-        if all(kwargs.get(name, None) is None for name in ["model_key", "path"]):
-            raise H2OValueError('At least one of ["model_key", "path"] is required.')
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
