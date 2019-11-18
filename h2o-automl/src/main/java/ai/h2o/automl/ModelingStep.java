@@ -16,6 +16,7 @@ import water.Iced;
 import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.EnumUtils;
 import water.util.Log;
 
 import java.util.Map;
@@ -180,12 +181,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         switch (name) {
             case "mean_residual_deviance": return StoppingMetric.deviance;
             default:
-                String[] attempts = { name, name.toUpperCase(), name.toLowerCase() };
-                for (String attempt : attempts) {
-                    try {
-                        return StoppingMetric.valueOf(attempt);
-                    } catch (IllegalArgumentException ignored) { }
-                }
+                try {
+                    return EnumUtils.valueOf(StoppingMetric.class, name);
+                } catch (IllegalArgumentException ignored) { }
                 return StoppingMetric.AUTO;
         }
     }
