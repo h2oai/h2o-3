@@ -89,6 +89,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   }
 
   private SmallMessagesSendThread startSendThread() {
+    if (isClient() && !H2O.ARGS.allow_clients) {
+      throw new IllegalStateException("Attempt to communicate with client " + getIpPortString() + " blocked. " +
+          "Client connections are not allowed in this cloud.");
+    }
     SmallMessagesSendThread newSendThread = new SmallMessagesSendThread(); // Launch the send thread for small messages  
     _sendThread = newSendThread;
     newSendThread.start();
@@ -250,9 +254,12 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   // *interned*: there is only one per InetAddress.
   static private H2ONode intern(H2Okey key, short timestamp) {
     final boolean foundPossibleClient = H2ONodeTimestamp.decodeIsClient(timestamp);
+    if (!H2O.ARGS.client && foundPossibleClient && !H2O.ARGS.allow_clients) {
+      throw new IllegalStateException("Client connections are not allowed, source " + key.getIpPortString());
+    }
     H2ONode h2o = INTERN.get(key);
     if (h2o != null) {
-      if (foundPossibleClient || h2o.isPossibleClient()) {
+      if (foundPossibleClient || h2o.isPossibleClient()) {  
         h2o.refreshClient(timestamp);
       }
       // Transition the timestamp to defined state for both workers & client
@@ -285,11 +292,11 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return h2o;
   }
 
-  public static H2ONode intern(InetAddress ip, int port, short timestamp) { return intern(new H2Okey(ip, port), timestamp); }
+  static H2ONode intern(InetAddress ip, int port, short timestamp) { return intern(new H2Okey(ip, port), timestamp); }
 
   public static H2ONode intern(InetAddress ip, int port) { return intern(ip, port, H2ONodeTimestamp.UNDEFINED); }
 
-  public static H2ONode intern(byte[] bs, int off) {
+  static H2ONode intern(byte[] bs, int off) {
     byte[] b = new byte[H2Okey.SIZE_OF_IP]; // the size depends on version of selected IP stack
     int port;
     // The static constant should be optimized
