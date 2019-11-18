@@ -79,13 +79,15 @@ def check_leaderboard(aml, excluded_algos, expected_metrics, expected_sort_metri
         "leaderboard is missing some algos from {included}: {models}".format(included=included_algos, models=model_ids)
 
     j_leaderboard = aml._state_json['leaderboard']
-    sort_metric = j_leaderboard['sort_metric']
-    assert sort_metric == expected_sort_metric, \
-        "expected leaderboard sorted by {expected} but was sorted by {actual}".format(expected=expected_sort_metric, actual=sort_metric)
-    sorted_desc = j_leaderboard['sort_decreasing']
-    assert sorted_desc == expected_sorted_desc, \
-        "expected leaderboard sorted {expected} but was sorted {actual}".format(expected="desc" if expected_sorted_desc else "asc",
-                                                                                actual="desc" if sorted_desc else "asc")
+    if expected_sort_metric is not None:
+        sort_metric = j_leaderboard['sort_metric']
+        assert sort_metric == expected_sort_metric, \
+            "expected leaderboard sorted by {expected} but was sorted by {actual}".format(expected=expected_sort_metric, actual=sort_metric)
+    if expected_sorted_desc is not None:
+        sorted_desc = j_leaderboard['sort_decreasing']
+        assert sorted_desc == expected_sorted_desc, \
+            "expected leaderboard sorted {expected} but was sorted {actual}".format(expected="desc" if expected_sorted_desc else "asc",
+                                                                                    actual="desc" if sorted_desc else "asc")
 
 
 def test_warn_on_empty_leaderboard():
@@ -164,7 +166,7 @@ def test_leaderboard_with_no_algos():
 
     lb = aml.leaderboard
     assert lb.nrows == 0
-    check_leaderboard(aml, exclude_algos, ["unknown"], None)
+    check_leaderboard(aml, exclude_algos, ["unknown"], None, None)
 
 
 def test_leaderboard_for_binomial_with_custom_sorting():
