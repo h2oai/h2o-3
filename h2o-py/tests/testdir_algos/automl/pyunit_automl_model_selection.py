@@ -246,6 +246,30 @@ def test_exclude_algos_is_applied_on_top_of_modeling_plan():
     assert len(se) == 0
 
 
+def test_monotone_constraints():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_monotone_constraints",
+                    monotone_constraints=dict(AGE=1, VOL=-1),  # constraints just for the sake of testing
+                    max_models=6,
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train)
+    model_names, _, _ = get_partitioned_model_names(aml.leaderboard)
+    models_supporting_monotone_constraints = [n for n in model_names if re.match(r"GBM|XGBoost", n)]
+    assert len(models_supporting_monotone_constraints) < len(model_names), \
+        "models not supporting the constraint should not have been skipped"
+    for m in models_supporting_monotone_constraints:
+        model = h2o.get_model(m)
+        value = next(v['actual'] for n, v in model.params.items() if n == 'monotone_constraints')
+        assert isinstance(value, list)
+        assert len(value) == 2
+        age = next((v for v in value if v['key'] == 'AGE'), None)
+        assert age is not None
+        assert age['value'] == 1.0
+        vol = next((v for v in value if v['key'] == 'VOL'), None)
+        assert vol is not None
+        assert vol['value'] == -1.0
+
+
 def test_monotone_constraints_can_be_passed_as_algo_parameter():
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_monotone_constraints",
@@ -330,6 +354,7 @@ pu.run_tests([
     test_modeling_plan_using_minimal_syntax,
     test_modeling_steps,
     test_exclude_algos_is_applied_on_top_of_modeling_plan,
+    test_monotone_constraints,
     test_monotone_constraints_can_be_passed_as_algo_parameter,
     test_algo_parameter_can_be_applied_only_to_a_specific_algo,
     test_cannot_set_unauthorized_algo_parameter,

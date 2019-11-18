@@ -65,6 +65,7 @@ class H2OAutoML(Keyed):
                  exclude_algos=None,
                  include_algos=None,
                  modeling_plan=None,
+                 monotone_constraints=None,
                  algo_parameters=None,
                  keep_cross_validation_predictions=False,
                  keep_cross_validation_models=False,
@@ -113,6 +114,8 @@ class H2OAutoML(Keyed):
           Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
         :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).
           Defaults to None (Expert usage only).
+        :param monotone_constraints: Dict representing monotonic constraints.
+          Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
         :param algo_parameters: Dict of ``param_name=param_value`` to be passed to internal models. Defaults to none (Expert usage only).
           By default, params are set only to algorithms accepting them, and ignored by others.
           Only following parameters are currently allowed: ``"monotone_constraints"``.
@@ -272,6 +275,11 @@ class H2OAutoML(Keyed):
                         else:
                             plan.append(dict(name=name, steps=[dict(id=i) for i in ids]))
             self.build_models['modeling_plan'] = plan
+
+        if monotone_constraints is not None:
+            if algo_parameters is None:
+                algo_parameters = {}
+            algo_parameters['monotone_constraints'] = monotone_constraints
 
         if algo_parameters is not None:
             assert_is_type(algo_parameters, dict)
