@@ -21,9 +21,5 @@ def class_extensions():
 
 
 extensions = dict(
-    __init__validation="""
-if all(kwargs.get(name, None) is None for name in ["model_key", "path"]):
-    raise H2OValueError('At least one of ["model_key", "path"] is required.')
-""",
     __class__=class_extensions,
 )
