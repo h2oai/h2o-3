@@ -3,7 +3,6 @@ package ai.h2o.automl;
 import ai.h2o.automl.EventLogEntry.Stage;
 import ai.h2o.automl.StepDefinition.Alias;
 import hex.Model;
-import hex.ScoreKeeper;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.Grid;
 import hex.splitframe.ShuffleSplitFrame;
