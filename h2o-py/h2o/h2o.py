@@ -78,7 +78,6 @@ def connect(server=None, url=None, ip=None, port=None,
 
     :examples:
 
-    >>> python
     >>> import h2o
     >>> ipA = "127.0.0.1"
     >>> portN = "54321"
@@ -200,14 +199,14 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param extra_classpath: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
     :param kwargs: (all other deprecated attributes)
     :param jvm_custom_args: Customer, user-defined argument's for the JVM H2O is instantiated in. Ignored if there is an instance of H2O already running and the client connects to it.
+    :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
+
 
     :examples:
 
-    >>> python
     >>> import h2o
-    >>> h2o.init()
+    >>> h2o.init(ip="localhost", port=54323)
 
-    :param bind_to_localhost: A flag indicating whether access to the H2O instance should be restricted to the local machine (default) or if it can be reached from other computers on the network.
     """
     global h2oconn
     assert_is_type(url, str, None)
@@ -445,8 +444,10 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
     :returns: a new :class:`H2OFrame` instance.
 
     :examples:
-        >>> birds = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
+    
+    >>> birds = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
     """
+
     coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
@@ -475,9 +476,36 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
 def load_grid(grid_file_path):
     """
     Loads previously saved grid with all its models from the same folder
+
     :param grid_file_path: A string containing the path to the file with grid saved.
      Grid models are expected to be in the same folder.
+
     :return: An instance of H2OGridSearch
+
+    :examples:
+
+    >>> from collections import OrderedDict
+    >>> from h2o.grid.grid_search import H2OGridSearch
+    >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    >>> train = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    # Run GBM Grid Search
+    >>> ntrees_opts = [1, 3]
+    >>> learn_rate_opts = [0.1, 0.01, .05]
+    >>> hyper_parameters = OrderedDict()
+    >>> hyper_parameters["learn_rate"] = learn_rate_opts
+    >>> hyper_parameters["ntrees"] = ntrees_opts
+    >>> export_dir = pyunit_utils.locate("results")
+    >>> gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters)
+    >>> gs.train(x=list(range(4)), y=4, training_frame=train)
+    >>> grid_id = gs.grid_id
+    >>> old_grid_model_count = len(gs.model_ids)
+    # Save the grid search to the export directory
+    >>> saved_path = h2o.save_grid(export_dir, grid_id)
+    >>> h2o.remove_all();
+    >>> train = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    # Load the grid searcht-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    >>> grid = h2o.load_grid(saved_path)
+    >>> grid.train(x=list(range(4)), y=4, training_frame=train)
     """
 
     assert_is_type(grid_file_path, str)
@@ -488,8 +516,34 @@ def load_grid(grid_file_path):
 def save_grid(grid_directory, grid_id):
     """
     Export a Grid and it's all its models into the given folder
+
     :param grid_directory: A string containing the path to the folder for the grid to be saved to.
     :param grid_id: A chracter string with identification of the Grid in H2O. 
+
+    :examples:
+
+    >>> from collections import OrderedDict
+    >>> from h2o.grid.grid_search import H2OGridSearch
+    >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+    >>> train = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    # Run GBM Grid Search
+    >>> ntrees_opts = [1, 3]
+    >>> learn_rate_opts = [0.1, 0.01, .05]
+    >>> hyper_parameters = OrderedDict()
+    >>> hyper_parameters["learn_rate"] = learn_rate_opts
+    >>> hyper_parameters["ntrees"] = ntrees_opts
+    >>> export_dir = pyunit_utils.locate("results")
+    >>> gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters)
+    >>> gs.train(x=list(range(4)), y=4, training_frame=train)
+    >>> grid_id = gs.grid_id
+    >>> old_grid_model_count = len(gs.model_ids)
+    # Save the grid search to the export directory
+    >>> saved_path = h2o.save_grid(export_dir, grid_id)
+    >>> h2o.remove_all();
+    >>> train = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    # Load the grid search
+    >>> grid = h2o.load_grid(saved_path)
+    >>> grid.train(x=list(range(4)), y=4, training_frame=train)
     """
     assert_is_type(grid_directory, str)
     assert_is_type(grid_id, str)
@@ -555,11 +609,12 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     :returns: an :class:`H2OFrame` containing data of the specified SQL table.
 
     :examples:
-        >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
-        >>> table = "citibike20k"
-        >>> username = "root"
-        >>> password = "abc123"
-        >>> my_citibike_data = h2o.import_sql_table(conn_url, table, username, password)
+
+    >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+    >>> table = "citibike20k"
+    >>> username = "root"
+    >>> password = "abc123"
+    >>> my_citibike_data = h2o.import_sql_table(conn_url, table, username, password)
     """
     assert_is_type(connection_url, str)
     assert_is_type(table, str)
@@ -604,11 +659,12 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     :returns: an :class:`H2OFrame` containing data of the specified SQL query.
 
     :examples:
-        >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
-        >>> select_query = "SELECT bikeid from citibike20k"
-        >>> username = "root"
-        >>> password = "abc123"
-        >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query,
+
+    >>> conn_url = "jdbc:mysql://172.16.2.178:3306/ingestSQL?&useSSL=false"
+    >>> select_query = "SELECT bikeid from citibike20k"
+    >>> username = "root"
+    >>> password = "abc123"
+    >>> my_citibike_data = h2o.import_sql_select(conn_url, select_query,
         ...                                          username, password)
     """
     assert_is_type(connection_url, str)
@@ -1303,7 +1359,7 @@ def download_all_logs(dirname=".", filename=None, container=None):
 
     :examples: The following code will save the zip file `'h2o_log.zip'` in a directory that is one down from where you are currently working into a directory called `your_directory_name`. (Please note that `your_directory_name` should be replaced with the name of the directory that you've created and that already exists.)
 
-        >>> h2o.download_all_logs(dirname='./your_directory_name/', filename = 'h2o_log.zip')
+    >>> h2o.download_all_logs(dirname='./your_directory_name/', filename = 'h2o_log.zip')
 
     """
     assert_is_type(dirname, str)
@@ -1420,7 +1476,6 @@ def cluster():
 
     :examples:
 
-    >>> python
     >>> import h2o
     >>> h2o.init()
     >>> h2o.cluster()
@@ -1693,8 +1748,9 @@ def demo(funcname, interactive=True, echo=True, test=False):
     :param test: If True, `h2o.init()` will not be called (used for pyunit testing).
 
     :example:
-        >>> import h2o
-        >>> h2o.demo("gbm")
+    
+    >>> import h2o
+    >>> h2o.demo("gbm")
     """
     import h2o.demos as h2odemo
     assert_is_type(funcname, str)
@@ -1862,28 +1918,29 @@ def upload_custom_metric(func, func_file="metrics.py", func_name=None, class_nam
     :return: reference to uploaded metrics function
 
     :examples:
-        >>> class CustomMaeFunc:
-        >>>     def map(self, pred, act, w, o, model):
-        >>>         return [abs(act[0] - pred[0]), 1]
-        >>>
-        >>>     def reduce(self, l, r):
-        >>>         return [l[0] + r[0], l[1] + r[1]]
-        >>>
-        >>>     def metric(self, l):
-        >>>         return l[0] / l[1]
-        >>>
-        >>> custom_func_str = '''class CustomMaeFunc:
-        >>>     def map(self, pred, act, w, o, model):
-        >>>         return [abs(act[0] - pred[0]), 1]
-        >>>
-        >>>     def reduce(self, l, r):
-        >>>         return [l[0] + r[0], l[1] + r[1]]
-        >>>
-        >>>     def metric(self, l):
-        >>>         return l[0] / l[1]'''
-        >>>
-        >>>
-        >>> h2o.upload_custom_metric(custom_func_str, class_name="CustomMaeFunc", func_name="mae")
+    
+    >>> class CustomMaeFunc:
+    >>>     def map(self, pred, act, w, o, model):
+    >>>         return [abs(act[0] - pred[0]), 1]
+    >>>
+    >>>     def reduce(self, l, r):
+    >>>         return [l[0] + r[0], l[1] + r[1]]
+    >>>
+    >>>     def metric(self, l):
+    >>>         return l[0] / l[1]
+    >>>
+    >>> custom_func_str = '''class CustomMaeFunc:
+    >>>     def map(self, pred, act, w, o, model):
+    >>>         return [abs(act[0] - pred[0]), 1]
+    >>>
+    >>>     def reduce(self, l, r):
+    >>>         return [l[0] + r[0], l[1] + r[1]]
+    >>>
+    >>>     def metric(self, l):
+    >>>         return l[0] / l[1]'''
+    >>>
+    >>>
+    >>> h2o.upload_custom_metric(custom_func_str, class_name="CustomMaeFunc", func_name="mae")
     """
     import tempfile
     import inspect
