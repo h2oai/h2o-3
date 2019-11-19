@@ -31,7 +31,7 @@
 #'        cartesian grid search, you can leave the search_criteria argument unspecified. Specify the "RandomDiscrete" strategy
 #'        to get random search of all the combinations of your hyperparameters with three ways of specifying when to stop the
 #'        search: max number of models, max time, and metric-based early stopping (e.g., stop if MSE hasn’t improved by 0.0001
-#'        over the 5 best models). Examples bellow:
+#'        over the 5 best models). Examples below:
 #'        \code{list(strategy = "RandomDiscrete", max_runtime_secs = 600, max_models = 100, stopping_metric = "AUTO",
 #'        stopping_tolerance = 0.00001, stopping_rounds = 5, seed = 123456)} or \code{list(strategy = "RandomDiscrete", 
 #'        max_models = 42, max_runtime_secs = 28800)} or \code{list(strategy = "RandomDiscrete", stopping_metric = "AUTO", 

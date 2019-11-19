@@ -29,12 +29,12 @@ class H2OGridSearch(backwards_compatible()):
         automatically be generated.
     :param search_criteria:  The optional dictionary of directives which control the search of the hyperparameter space.
         The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, 
-        ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default strategy "Cartesian" covers the entire space of 
-        hyperparameter combinations.  If you want to use cartesian grid search, you can leave the search_criteria 
+        ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default strategy, "Cartesian", covers the entire space of 
+        hyperparameter combinations. If you want to use cartesian grid search, you can leave the search_criteria 
         argument unspecified. Specify the "RandomDiscrete" strategy to get random search of all the combinations of 
         your hyperparameters with three ways of specifying when to stop the search: max number of models, max time, and 
         metric-based early stopping (e.g., stop if MSE hasn’t improved by 0.0001 over the 5 best models). 
-        Examples bellow::
+        Examples below::
 
             >>> criteria = {"strategy": "RandomDiscrete", "max_runtime_secs": 600,
             ...             "max_models": 100, "stopping_metric": "AUTO",
