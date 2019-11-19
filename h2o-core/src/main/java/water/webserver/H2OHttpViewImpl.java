@@ -65,20 +65,21 @@ public class H2OHttpViewImpl implements H2OHttpView {
   @Override
   public boolean authenticationHandler(HttpServletRequest request, HttpServletResponse response) throws IOException {
     if (!config.loginType.needToCheckUserName()) {
-      //TODO for LoginType.HASH, this equals not adding the handler at all; consinder this optimization
       return false;
     }
-
+    
     if (request.getUserPrincipal() == null) {
-      return false;
+      throw new IllegalStateException("AuthenticateHandler called with request.userPrincipal is null");
     }
+  
     final String loginName = request.getUserPrincipal().getName();
     if (loginName.equals(config.user_name)) {
       return false;
+    } else {
+      Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + config.user_name + ")");
+      ServletUtils.sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
+      return true;
     }
-    Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + config.user_name + ")");
-    ServletUtils.sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
-    return true;
   }
 
   @Override

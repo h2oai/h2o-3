@@ -4,10 +4,8 @@ def call() {
 
 class HealthChecker {
 
-    private static final int ROOT_THRESHOLD = SPACE_THRESHOLD
-    private static final int HOME_THRESHOLD = SPACE_THRESHOLD
-
-    private static final int SPACE_THRESHOLD = 87
+    private static final int ROOT_REQUIRED_FREE_SPACE_GB = 10
+    private static final int HOME_REQUIRED_FREE_SPACE_GB = 100
 
 
     private List<HealthProblem> healthProblems = []
@@ -15,14 +13,14 @@ class HealthChecker {
     boolean checkHealth(final context, final String node, final String dockerImage, final String dockerRegistry, final buildConfig) {
         boolean healthy = true
         String cause = ''
-        final String checkRootSpaceCmd = createSpaceCheckCmd(ROOT_THRESHOLD, '/')
+        final String checkRootSpaceCmd = createSpaceCheckCmd(ROOT_REQUIRED_FREE_SPACE_GB, '/')
         final int rootSpaceCheckResult = context.sh(script: checkRootSpaceCmd, returnStatus: true)
         if (rootSpaceCheckResult != 0) {
             cause = "Free space check of / failed"
             healthy = false
         }
 
-        final String checkHomeSpaceCmd = createSpaceCheckCmd(HOME_THRESHOLD, '${HOME}')
+        final String checkHomeSpaceCmd = createSpaceCheckCmd(HOME_REQUIRED_FREE_SPACE_GB, '${HOME}')
         final int homeSpaceCheckResult = context.sh(script: checkHomeSpaceCmd, returnStatus: true)
         if (homeSpaceCheckResult != 0) {
             cause = "Free space check of \${HOME} failed"
@@ -91,11 +89,11 @@ class HealthChecker {
         return benchmarksSummary.getSummaryHTML(context)
     }
 
-    private String createSpaceCheckCmd(final int threshold, final String path) {
+    private String createSpaceCheckCmd(final int minFreeSpaceGB, final String path) {
         return """
-            used=\$(df -h --output=pcent ${path} | tail -1 | tr -d % | tr -d [:space:])
-            if [ \$used -gt ${threshold} ]; then 
-                echo "Usage limit for ${path} reached -> used \${used}%, limit is ${threshold}%";
+            available=\$(df -BG ${path} --output=avail | tail -1 | tr -d %[:space:]G)
+            if [ \$available -lt ${minFreeSpaceGB} ]; then 
+                echo "Disk space utilization for ${path} exceeded -> Available \${used}GB, required is at least ${minFreeSpaceGB}GB";
                 exit 1 
             else 
                 echo "${path} space check passed"

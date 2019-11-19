@@ -73,7 +73,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
         parameter.
 
-        Type: ``float``  (default: ``20``).
+        Type: ``float``  (default: ``10``).
 
         :examples:
 
@@ -104,7 +104,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         """
         Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``  (default: ``20``).
 
         :examples:
 
@@ -133,7 +133,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     @property
     def data_leakage_handling(self):
         """
-        Data leakage handling strategy. Default to None.
+        Data leakage handling strategy.
 
         One of: ``"none"``, ``"k_fold"``, ``"leave_one_out"``  (default: ``"none"``).
 
@@ -283,7 +283,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         ...                  y=response,
         ...                  training_frame=titanic)
         >>> transformed = titanic_te.transform(frame=titanic,
-        ...                                    data_leakage_handling="leave_one_out"
+        ...                                    data_leakage_handling="leave_one_out",
         ...                                    seed=1234)
         """
         output = h2o.api("GET /3/TargetEncoderTransform", data={'model': self.model_id, 'frame': frame.key,

@@ -119,6 +119,7 @@ public class h2odriver extends Configured implements Tool {
   static boolean enablePrintCompilation = false;
   static boolean enableExcludeMethods = false;
   static boolean enableLog4jDefaultInitOverride = true;
+  static String logLevel;
   static boolean enableDebug = false;
   static boolean enableSuspend = false;
   static int debugPort = 5005;    // 5005 is the default from IDEA
@@ -152,6 +153,8 @@ public class h2odriver extends Configured implements Tool {
   static boolean refreshTokens = false;
   static CloudingMethod cloudingMethod = CloudingMethod.CALLBACKS;
   static String cloudingDir = null;
+  static boolean disableFlow = false;
+  static boolean swExtBackend = false;
 
   String proxyUrl = null;
 
@@ -1147,6 +1150,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-Dlog4j.defaultInitOverride=true")) {
         enableLog4jDefaultInitOverride = true;
       }
+      else if (s.equals("-log_level")) {
+        i++; if (i >= args.length) { usage(); }
+        logLevel = args[i];
+      } 
       else if (s.equals("-debug")) {
         enableDebug = true;
       }
@@ -1159,7 +1166,8 @@ public class h2odriver extends Configured implements Tool {
         if ((debugPort < 0) || (debugPort > 65535)) {
           error("Debug port must be between 1 and 65535");
         }
-      } else if (s.equals("-XX:+PrintGCDetails")) {
+      } 
+      else if (s.equals("-XX:+PrintGCDetails")) {
         if (!JAVA_VERSION.useUnifiedLogging()) {
           enablePrintGCDetails = true;
         } else {
@@ -1244,7 +1252,12 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-form_auth")) {
         formAuth = true;
       }
-      else if (s.equals("-session_timeout")) {
+      else if (s.equals("-disable_flow")) {
+        disableFlow = true;
+      }
+      else if (s.equals("-sw_ext_backend")) {
+        swExtBackend = true;
+      } else if (s.equals("-session_timeout")) {
         i++; if (i >= args.length) { usage(); }
         sessionTimeout = args[i];
       }
@@ -1791,6 +1804,9 @@ public class h2odriver extends Configured implements Tool {
     if (flowDir != null) {
       addMapperArg(conf, "-flow_dir", flowDir);
     }
+    if (logLevel != null) {
+      addMapperArg(conf, "-log_level", logLevel);
+    }
     if ((new File(".h2o_no_collect")).exists() || (new File(System.getProperty("user.home") + "/.h2o_no_collect")).exists()) {
       addMapperArg(conf, "-ga_opt_out");
     }
@@ -1823,6 +1839,12 @@ public class h2odriver extends Configured implements Tool {
     if (sessionTimeout != null) {
       addMapperArg(conf, "-session_timeout", sessionTimeout);
     }
+    if (disableFlow) {
+      addMapperArg(conf, "-disable_flow");
+    }
+    if (swExtBackend) {
+      addMapperArg(conf, "-allow_clients");
+    }
     addMapperArg(conf, "-user_name", userName);
 
     for (String s : extraArguments) {
@@ -1832,6 +1854,7 @@ public class h2odriver extends Configured implements Tool {
     if (client) {
       addMapperArg(conf, "-md5skip");
       addMapperArg(conf, "-disable_web");
+      addMapperArg(conf, "-allow_clients");
     }
 
     // Proxy

@@ -1,6 +1,9 @@
 package water.network;
 
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -10,10 +13,14 @@ import static org.junit.Assert.*;
 
 public class SecurityUtilsTest {
 
+    @Rule
+    public TemporaryFolder tmp = new TemporaryFolder();
+    
     @Test
     public void shouldGenerateKeystoreAndConfig() throws Exception {
         try {
-            SecurityUtils.SSLCredentials testKeystore = SecurityUtils.generateSSLPair("test123", "h2o-keystore-test.jks", "");
+            String location = tmp.newFolder("ssl").getAbsolutePath();
+            SecurityUtils.SSLCredentials testKeystore = SecurityUtils.generateSSLPair("test123", "h2o-keystore-test.jks", location);
             String configPath = SecurityUtils.generateSSLConfig(testKeystore, "test-ssl.properties");
 
             assertTrue(new File(testKeystore.jks.getLocation()).exists());

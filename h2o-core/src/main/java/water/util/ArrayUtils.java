@@ -1729,11 +1729,19 @@ public class ArrayUtils {
 
     int end=Arrays.binarySearch(sortedSplitPoints, maxEx);
     if (end<0) end=-end-1;
-    assert(end>0 && end<= sortedSplitPoints.length);
-    assert(end>=start);
-    assert(sortedSplitPoints[end-1] < maxEx);
+    assert(end>0 && end<= sortedSplitPoints.length): "End index ("+end+") should be > 0 and <= split points size ("+sortedSplitPoints.length+"). "+collectArrayInfo(sortedSplitPoints);
+    assert(end>=start): "End index ("+end+") should be >= start index ("+start+"). " + collectArrayInfo(sortedSplitPoints);
+    assert(sortedSplitPoints[end-1] < maxEx): "Split valued at index end-1 ("+sortedSplitPoints[end-1]+") should be < maxEx value ("+maxEx+"). "+collectArrayInfo(sortedSplitPoints);
 
     return Arrays.copyOfRange(sortedSplitPoints,start,end);
+  }
+  
+  private static String collectArrayInfo(double[] array){
+    StringBuilder info = new StringBuilder("Array info - length: "+array.length + " values: ");
+    for(double value: array){
+      info.append(value+" ");
+    }
+    return info.toString();
   }
 
   public static double[] extractCol(int i, double[][] ary) {

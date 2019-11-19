@@ -21,7 +21,7 @@ public class TargetEncoderHandler extends Handler {
     final BlendingParams blendingParams = new BlendingParams(parameters._inflection_point, parameters._smoothing);
     final Frame transformedFrame;
     if (NOISE_LEVEL_UNDEFINED == parameters._noise) {
-      transformedFrame = model.transform(parameters._frame.get(), parameters._data_leakage_handling.getVal(),
+      transformedFrame = model.transform(parameters._frame.get(), dataLeakageHandlingStrategy.getVal(),
               parameters._blending, blendingParams, parameters._seed);
     } else {
       transformedFrame = model.transform(parameters._frame.get(), dataLeakageHandlingStrategy.getVal(),

@@ -13,11 +13,10 @@
 #' @param training_frame Id of the training data frame.
 #' @param blending \code{Logical}. Blending enabled/disabled Defaults to FALSE.
 #' @param k Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
-#'        parameter. Defaults to 20.
-#' @param f Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
 #'        parameter. Defaults to 10.
-#' @param data_leakage_handling Data leakage handling strategy. Default to None. Must be one of: "None", "KFold", "LeaveOneOut". Defaults to
-#'        None.
+#' @param f Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
+#'        parameter. Defaults to 20.
+#' @param data_leakage_handling Data leakage handling strategy. Must be one of: "None", "KFold", "LeaveOneOut". Defaults to None.
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @examples
@@ -37,8 +36,8 @@ h2o.targetencoder <- function(x,
                               y,
                               training_frame,
                               blending = FALSE,
-                              k = 20,
-                              f = 10,
+                              k = 10,
+                              f = 20,
                               data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
                               model_id = NULL,
                               fold_column = NULL)

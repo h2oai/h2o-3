@@ -1,14 +1,12 @@
 package ai.h2o.targetencoding;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;
 import water.rapids.Merge;
-import water.rapids.ast.prims.mungers.AstMerge;
-import water.rapids.ast.prims.mungers.AstSort;
 
-import java.io.File;
 import java.util.Map;
 
 import static org.junit.Assert.assertTrue;
@@ -192,6 +190,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       TargetEncoderBuilder builder = new TargetEncoderBuilder(targetEncoderParameters);
       targetEncoderModel = builder.trainModel().get();
+      Scope.track_generic(targetEncoderModel);
 
       TargetEncoder.DataLeakageHandlingStrategy strategy = TargetEncoder.DataLeakageHandlingStrategy.KFold;
       Frame transformedTrainWithModelFromBuilder = targetEncoderModel.transform(fr, TargetEncoder.DataLeakageHandlingStrategy.KFold.getVal(),
@@ -214,7 +213,6 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
     } finally {
       removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
-      targetEncoderModel.remove();
       Scope.exit();
     }
   }

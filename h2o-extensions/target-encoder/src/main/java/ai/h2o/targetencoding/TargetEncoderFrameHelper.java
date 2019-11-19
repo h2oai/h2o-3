@@ -5,6 +5,7 @@ import hex.genmodel.algos.targetencoder.EncodingMaps;
 import water.DKV;
 import water.Key;
 import water.MRTask;
+import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -118,13 +119,15 @@ public class TargetEncoderFrameHelper {
     for (Map.Entry<String, Frame> entry : encodingMap.entrySet()) {
 
       Frame encodingsForParticularColumn = entry.getValue();
-      FrameToTETableTask task = new FrameToTETableTask().doAll(encodingsForParticularColumn);
+      FrameToTETableTask task = new FrameToTETableTask().dfork(encodingsForParticularColumn);
       tasks.put(entry.getKey(), task);
     }
 
     for (Map.Entry<String, FrameToTETableTask> taskEntry : tasks.entrySet()) {
-      IcedHashMap<String, TEComponents> table = taskEntry.getValue().getResult()._table;
+      FrameToTETableTask taskEntryValue = taskEntry.getValue();
+      IcedHashMap<String, TEComponents> table = taskEntryValue.getResult()._table;
       convertEncodingMapToGenModelFormat(convertedEncodingMap, taskEntry.getKey(), table);
+      Scope.track(taskEntryValue._fr);
     }
     
     return convertedEncodingMap;

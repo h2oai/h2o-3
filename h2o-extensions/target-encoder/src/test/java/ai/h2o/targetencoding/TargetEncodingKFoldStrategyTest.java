@@ -84,7 +84,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
             TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    Vec expected = vec(1, 0, 1, 1, 1);
+    Vec expected = vec(1, 1, 1, 1, 0);
     assertVecEquals(expected, resultWithEncoding.vec(4), 1e-5);
 
     expected.remove();
@@ -133,7 +133,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap,
             TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumnName, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    Vec expected = vec(1, 0, 1, 1, 1);
+    Vec expected = vec(1, 1, 1, 1, 0);
     assertVecEquals(expected, resultWithEncoding.vec(5), 1e-5);
 
     expected.remove();
@@ -185,8 +185,9 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
     Frame resultWithEncoding = tec.applyTargetEncoding(fr2, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold,
             foldColumnName, false, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    // We expect that for `c` level we will get mean of encoded column i.e. 0.75 +- noise
-    Vec expected = dvec(0.8, 1.0, 0.0, 1, 1);
+    printOutFrameAsTable(resultWithEncoding, false, resultWithEncoding.numRows());
+    // We expect that for `c` level we will get mean of encoded column i.e. 0.8 +- noise . 0.8 came from four `6` values that are treated as 1 and one `2` value.
+    Vec expected = dvec(1.0, 1.0, 0.8, 1, 0.0);
     assertVecEquals(expected, resultWithEncoding.vec(4), 1e-2); // TODO is it ok that encoding contains negative values?
 
     expected.remove();
@@ -220,7 +221,7 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
     TwoDimTable resultTable = resultWithEncoding.toTwoDimTable();
     System.out.println("Result table" + resultTable.toString());
-    Vec expected = vec(1, 0, 1, 1, 1);
+    Vec expected = vec(1, 1, 1, 1, 0);
     assertVecEquals(expected, resultWithEncoding.vec(4), 2e-2); // TODO we do not check here actually that we have noise more then default 0.01. We need to check that sometimes we get 0.01 < delta < 0.02
 
     expected.remove();
@@ -285,18 +286,17 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(fr, targetColumnName, foldColumn);
 
-    printOutFrameAsTable(targetEncodingMap.get(teColumnName))
-    ;
     //If we do not pass noise_level as parameter then it will be calculated according to the type of target column. For categorical target column it defaults to 1e-2
     Frame resultWithEncoding = tec.applyTargetEncoding(fr, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold,
             foldColumn, false, 0.0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
+    printOutFrameAsTable(resultWithEncoding, false, 100);
     double expectedDifferenceDueToNoise = 1e-5;
-    Vec vec = resultWithEncoding.vec(3);
-    Vec expected = dvec(0.5, 0, 0, 1, 1, 1, 1, 0.66666, 1, 1, 0.66666, 0, 1, 0, 0);
-    assertVecEquals(expected, vec, expectedDifferenceDueToNoise);
+    Vec actualEncodings = resultWithEncoding.vec(3);
+    Vec expectedEncodings = dvec(0.5, 1, 1, 1, 1, 0, 1, 1, 0.66666, 0.66666, 0, 1, 0, 0, 0);
+    assertVecEquals(expectedEncodings, actualEncodings, expectedDifferenceDueToNoise);
 
-    expected.remove();
+    expectedEncodings.remove();
     encodingMapCleanUp(targetEncodingMap);
     resultWithEncoding.delete();
   }
@@ -329,17 +329,15 @@ public class TargetEncodingKFoldStrategyTest extends TestUtil {
 
     Map<String, Frame> targetEncodingMap = tec.prepareEncodingMap(training, targetColumnName, foldColumn);
 
-    printOutFrameAsTable(targetEncodingMap.get(teColumnName));
-
     //In reality we do not use KFold for validation set since we are not usin it for creation of the encoding map
     Frame resultWithEncoding = tec.applyTargetEncoding(valid, targetColumnName, targetEncodingMap, TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumn, false, 0, false,
             TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    printOutFrameAsTable(resultWithEncoding);
+    printOutFrameAsTable(resultWithEncoding, false, 100);
 
-    Vec vec = resultWithEncoding.vec(3);
-    Vec expected = dvec(0.5714285, 0.5714285, 0.5, 0.0, 0.0);
-    assertVecEquals(expected, vec, 1e-5);
+    Vec actualEncodings = resultWithEncoding.vec(3);
+    Vec expected = dvec(0.5714285, 0.0, 0.5, 0.0, 0.5714285);
+    assertVecEquals(expected, actualEncodings, 1e-5);
 
     training.delete();
     valid.delete();

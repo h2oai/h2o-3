@@ -21,6 +21,12 @@ import java.util.*;
  */
 abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Iced {
 
+  private ModelBuilderListener _modelBuilderListener;
+
+  public void setModelBuilderListener(final ModelBuilderListener modelBuilderListener) {
+    this._modelBuilderListener = modelBuilderListener;
+  }
+
   public ToEigenVec getToEigenVec() { return null; }
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
 
@@ -219,6 +225,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Vec vresponse(){return _vresponse == null ? _response : _vresponse;}
 
   abstract protected class Driver extends H2O.H2OCountedCompleter<Driver> {
+
     protected Driver(){ super(); }
     protected Driver(H2O.H2OCountedCompleter completer){ super(completer); }
     // Pull the boilerplate out of the computeImpl(), so the algo writer doesn't need to worry about the following:
@@ -238,7 +245,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.exit();
       }
       tryComplete();
+      if (_modelBuilderListener != null) {
+        _modelBuilderListener.onModelSuccess(_result.get());
+      }
     }
+
+    @Override
+    public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+      if (_modelBuilderListener != null) {
+        _modelBuilderListener.onModelFailure(ex, _parms);
+      }
+      return true;
+    }
+
     public abstract void computeImpl();
   }
 
@@ -323,6 +342,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                         public void compute2() {
                           computeCrossValidation();
                           tryComplete();
+                          if (_modelBuilderListener != null) {
+                            _modelBuilderListener.onModelSuccess(_job.get());
+                          }
                         }
                         @Override
                         public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
@@ -331,6 +353,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
                             Keyed.remove(_job._result); //ensure there's no incomplete model left for manipulation after crash or cancellation
                           } catch (Exception logged) {
                             Log.warn("Exception thrown when removing result from job "+ _job._description, logged);
+                          }
+                          if (_modelBuilderListener != null) {
+                            _modelBuilderListener.onModelFailure(ex, _parms);
                           }
                           return true;
                         }

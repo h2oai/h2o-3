@@ -16,6 +16,10 @@ public class UDPClientEvent extends UDP {
   AutoBuffer call(AutoBuffer ab) {
 
     ClientEvent ce = new ClientEvent().read(ab);
+    // Ignore client events when H2O is started without client connections enabled
+    if (!H2O.ARGS.allow_clients) {
+      return ab;
+    }
     // Ignore messages from different cloud
     if (ce.senderHeartBeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash) {
       return ab;

@@ -1,7 +1,5 @@
 package water.network;
 
-import water.util.Log;
-
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -65,12 +63,11 @@ public class SecurityUtils {
         }
 
         // Unsuported JRE/JDK
-        String errorMsg = "This version of Java is not supported. Please use Oracle/OpenJDK/IBM JDK version 6/7/8.";
-        Log.err(errorMsg);
-        throw new IllegalStateException(errorMsg);
+        throw new IllegalStateException("This version of Java is not supported. " +
+                "Please use Oracle/OpenJDK/IBM JDK version 6/7/8 or later");
     }
 
-    public static SSLCredentials generateSSLPair(String passwd, String name, String location) throws Exception {
+    static SSLCredentials generateSSLPair(String passwd, String name, String location) throws Exception {
         StoreCredentials jks = generateKeystore(passwd, name, location);
         return new SSLCredentials(jks, jks);
     }
@@ -96,15 +93,24 @@ public class SecurityUtils {
         return generateSSLConfig(credentials, temp.getAbsolutePath());
     }
 
-    public static String generateSSLConfig(SSLCredentials credentials, String file) throws IOException {
+    static String generateSSLConfig(SSLCredentials credentials, String file) throws IOException {
         Properties sslConfig = new Properties();
         sslConfig.put("h2o_ssl_protocol", defaultTLSVersion());
-        sslConfig.put("h2o_ssl_jks_internal", credentials.jks.getLocation());
+        sslConfig.put("h2o_ssl_jks_internal", credentials.jks.name);
         sslConfig.put("h2o_ssl_jks_password", credentials.jks.pass);
-        sslConfig.put("h2o_ssl_jts", credentials.jts.getLocation());
+        sslConfig.put("h2o_ssl_jts", credentials.jts.name);
         sslConfig.put("h2o_ssl_jts_password", credentials.jts.pass);
         FileOutputStream output = new FileOutputStream(file);
-        sslConfig.store(output, "");
+        try {
+            sslConfig.store(output, "");
+            output.close();
+        } finally {
+            try {
+                output.close();
+            } catch (IOException e) {
+                // ignore
+            }
+        }
         return file;
     }
 
