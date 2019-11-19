@@ -71,7 +71,7 @@ Optional Miscellaneous Parameters
 -  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
     
     - ``AUTO``: This defaults to ``logloss`` for classification and ``deviance`` for regression. Note that ``custom`` and ``custom_increasing`` can only be used in GBM and DRF with the Python client.
-    - ``deviance``
+    - ``deviance`` (mean residual deviance)
     - ``logloss``
     - ``MSE``
     - ``RMSE``
@@ -81,8 +81,6 @@ Optional Miscellaneous Parameters
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
-    - ``custom`` (Python client only)
-    - ``custom_increasing`` (Python client only)
 
 - `stopping_tolerance <data-science/algo-params/stopping_tolerance.html>`__: This option specifies the relative tolerance for the metric-based stopping criterion to stop a grid search and the training of individual models within the AutoML run. This value defaults to 0.001 if the dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed as 1/sqrt(nrows * non-NA-rate).
 
@@ -130,7 +128,7 @@ Optional Miscellaneous Parameters
 
 - **verbosity**: (Optional: Python and R only) The verbosity of the backend messages printed during training. Must be one of ``"debug", "info", "warn"``. Defaults to ``NULL/None`` (client logging disabled).
 
--  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+-  `export_checkpoints_dir <data-science/algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 Notes
 ~~~~~
