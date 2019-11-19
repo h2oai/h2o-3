@@ -11,6 +11,8 @@ if [[ "$@" == "ssl" ]]; then
   fi
 fi
 
+export IS_TEST_MULTI_NODE=true
+
 if [[ "$(uname)" = "Darwin" ]]; then
   # Node discovery doesn't work on OS X for local interface
   export H2O_NODE_IP=$(ifconfig | grep "inet " | grep -v 127.0.0.1 | grep -v " --> " | tail -n 1 | sed -E 's/.*inet ([^ ]+) .*/\1/')
