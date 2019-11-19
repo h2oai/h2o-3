@@ -221,6 +221,27 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       }
     }
   }
+  
+  private static XGBoostParameters.Backend findSuitableBackend(XGBoostParameters p) {
+    if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
+      if (H2O.getCloudSize() > 1) {
+        Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
+        return XGBoostParameters.Backend.cpu;
+      } else if (! p.gpuIncompatibleParams().isEmpty()) {
+        Log.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
+        return XGBoostParameters.Backend.cpu;
+      } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
+        Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
+        return XGBoostParameters.Backend.gpu;
+      } else {
+        Log.info("No GPU (gpu_id: " + p._gpu_id + ") found. Using CPU backend.");
+        return XGBoostParameters.Backend.cpu;
+      }
+    } else {
+      Log.info("Using CPU backend.");
+      return XGBoostParameters.Backend.cpu;
+    }
+  }
 
   public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
     Map<String, Object> params = new HashMap<>();
@@ -273,7 +294,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     params.put("seed", (int)(p._seed % Integer.MAX_VALUE));
 
     // XGBoost specific options
-    params.put("tree_method", p._tree_method.toString());
     params.put("grow_policy", p._grow_policy.toString());
     if (p._grow_policy== XGBoostParameters.GrowPolicy.lossguide) {
       params.put("max_bins", p._max_bins);
@@ -289,33 +309,29 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
-    if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
-      if (H2O.getCloudSize() > 1) {
-        Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
-      } else if (! p.gpuIncompatibleParams().isEmpty()) {
-        Log.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
-      } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
-        Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
-        params.put("gpu_id", p._gpu_id);
-        if (p._booster == XGBoostParameters.Booster.gblinear) {
-          Log.info("Using gpu_coord_descent updater."); 
-          params.put("updater", "gpu_coord_descent");
-        } else  if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
-          Log.info("Using grow_gpu (exact) updater.");
-          params.put("tree_method", "exact");
-          params.put("updater", "grow_gpu");
-        } else {
-          Log.info("Using grow_gpu_hist (approximate) updater.");
-          params.put("max_bins", p._max_bins);
-          params.put("tree_method", "exact");
-          params.put("updater", "grow_gpu_hist");
-        }
+    XGBoostParameters.Backend actualBackend = findSuitableBackend(p);
+    if (actualBackend == XGBoostParameters.Backend.gpu) {
+      params.put("gpu_id", p._gpu_id);
+      if (p._booster == XGBoostParameters.Booster.gblinear) {
+        Log.info("Using gpu_coord_descent updater."); 
+        params.put("updater", "gpu_coord_descent");
+      } else if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
+        Log.info("Using gpu_exact tree method.");
+        params.put("tree_method", "gpu_exact");
       } else {
-        Log.info("No GPU (gpu_id: "+p._gpu_id + ") found. Using CPU backend.");
+        Log.info("Using gpu_hist tree method.");
+        params.put("max_bin", p._max_bins);
+        params.put("tree_method", "gpu_hist");
       }
+    } else if (p._booster == XGBoostParameters.Booster.gblinear) {
+      Log.info("Using coord_descent updater.");
+      params.put("updater", "coord_descent");
     } else {
-      assert p._backend == XGBoostParameters.Backend.cpu;
-      Log.info("Using CPU backend.");
+      Log.info("Using " + p._tree_method.toString() + " tree method.");
+      params.put("tree_method", p._tree_method.toString());
+      if (p._tree_method == XGBoostParameters.TreeMethod.hist) {
+        params.put("max_bin", p._max_bins);
+      }
     }
     if (p._min_child_weight!=1) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");

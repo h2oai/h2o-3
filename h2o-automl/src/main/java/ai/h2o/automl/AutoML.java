@@ -32,6 +32,9 @@ import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING
  */
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
+  public static final Comparator<AutoML> byStartTime = Comparator.comparing(a -> a._startTime);
+  public static final String keySeparator = "@@";
+
   private final static boolean verifyImmutability = true; // check that trainingFrame hasn't been messed with
   private final static SimpleDateFormat timestampFormatForKeys = new SimpleDateFormat("yyyyMMdd_HHmmss");
 
@@ -71,7 +74,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       lastStartTime = startTime;
     }
 
-    AutoML aml = makeAutoML(Key.make(buildSpec.project()), startTime, buildSpec);
+    // if user offers a different response column,
+    //   the new models will be added to a new Leaderboard, without removing the previous one.
+    // otherwise, the new models will be added to the existing leaderboard.
+    Key<AutoML> key = Key.make(buildSpec.project()+keySeparator+buildSpec.input_spec.response_column);
+    AutoML aml = new AutoML(key, startTime, buildSpec);
     startAutoML(aml);
     return aml;
   }
@@ -86,6 +93,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (aml._job == null || !aml._job.isRunning()) {
       H2OJob<AutoML> j = new H2OJob<>(aml, aml._key, aml._runCountdown.remainingTime());
       aml._job = j._job;
+      aml.eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.format(aml._startTime))
+              .setNamedValue("creation_epoch", aml._startTime, EventLogEntry.epochFormat);
       j.start(aml._workAllocations.remainingWork());
       DKV.put(aml);
     }
@@ -120,10 +129,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   public StepDefinition[] getActualModelingSteps() { return _actualModelingSteps; }
 
-  Frame _trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place
-  Frame _validationFrame;  // optional validation frame; the training_frame is split automagically if it's not specified
-  Frame _blendingFrame;
-  Frame _leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics
+  Frame _trainingFrame;    // required training frame: can add and remove Vecs, but not mutate Vec data in place.
+  Frame _validationFrame;  // optional validation frame; the training_frame is split automatically if it's not specified.
+  Frame _blendingFrame;    // optional blending frame for SE (usually if xval is disabled).
+  Frame _leaderboardFrame; // optional test frame used for leaderboard scoring; if not specified, leaderboard will use xval metrics.
 
   Vec _responseColumn;
   Vec _foldColumn;
@@ -153,7 +162,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
-    super(key);
+    super(key == null ? Key.make(buildSpec.project()) : key);
     _startTime = startTime;
     _buildSpec = buildSpec;
     _runCountdown = Countdown.fromSeconds(buildSpec.build_control.stopping_criteria.max_runtime_secs());
@@ -161,10 +170,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     _modelingStepsRegistry = new ModelingStepsRegistry();
 
     try {
-      _eventLog = EventLog.make(_key);
+      _eventLog = EventLog.getOrMake(_key);
       eventLog().info(Stage.Workflow, "Project: " + projectName());
-      eventLog().info(Stage.Workflow, "AutoML job created: " + EventLogEntry.dateTimeFormat.format(_startTime))
-              .setNamedValue("creation_epoch", _startTime, EventLogEntry.epochFormat);
 
       handleCVParameters(buildSpec);
 
@@ -187,7 +194,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private void initLeaderboard(AutoMLBuildSpec buildSpec) {
     String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
-    _leaderboard = Leaderboard.getOrMake(projectName(), _eventLog, _leaderboardFrame, sort_metric);
+    _leaderboard = Leaderboard.getOrMake(_key.toString(), _eventLog, _leaderboardFrame, sort_metric);
   }
 
   private void handleReproducibilityParameters(AutoMLBuildSpec buildSpec) {
@@ -277,6 +284,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     if (0 < leaderboard().getModelKeys().length) {
       Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
+    } else {
+      long max_runtime_secs = (long)_buildSpec.build_control.stopping_criteria.max_runtime_secs();
+      eventLog().warn(Stage.Workflow, "Empty leaderboard.\n"
+              +"AutoML was not able to build any model within a max runtime constraint of "+max_runtime_secs+" seconds, "
+              +"you may want to increase this value before retrying.");
     }
 
     possiblyVerifyImmutability();
@@ -441,6 +453,12 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           "leaderboard frame: "+_leaderboardFrame.toString().replace("\n", " ")+" checksum: "+_leaderboardFrame.checksum());
     } else {
       eventLog().info(Stage.DataImport, "leaderboard frame: NULL");
+    }
+    if (null != _blendingFrame) {
+      this.eventLog().info(Stage.DataImport,
+          "blending frame: "+_blendingFrame.toString().replace("\n", " ")+" checksum: "+_blendingFrame.checksum());
+    } else {
+      this.eventLog().info(Stage.DataImport, "blending frame: NULL");
     }
 
     eventLog().info(Stage.DataImport, "response column: "+buildSpec.input_spec.response_column);

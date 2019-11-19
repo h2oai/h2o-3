@@ -1357,6 +1357,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
 
     @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller){
+      super.onExceptionalCompletion(t, caller);
       doCleanup();
       return true;
     }

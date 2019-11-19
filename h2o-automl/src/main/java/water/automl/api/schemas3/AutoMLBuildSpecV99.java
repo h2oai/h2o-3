@@ -4,15 +4,16 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import hex.KeyValue;
 import hex.ScoreKeeper.StoppingMetric;
+import water.Iced;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.Schema;
+import water.api.ValuesProvider;
 import water.api.schemas3.*;
 import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
-import water.util.JSONUtils;
-
-import water.util.PojoUtils;
+import water.util.*;
 
 import java.util.Map;
 
@@ -31,7 +32,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
    */
   public static final class AutoMLBuildControlV99 extends Schema<AutoMLBuildSpec.AutoMLBuildControl, AutoMLBuildControlV99> {
 
-    @API(help="Optional project name used to group models from multiple AutoML runs into a single Leaderboard; derived from the training data name if not specified.")
+    @API(help="Optional project name used to group models from multiple AutoML runs into a single Leaderboard; derived from the training data name if not specified.", direction=API.Direction.INOUT)
     public String project_name;
 
     @API(help="Model performance based stopping criteria for the AutoML run.", direction=API.Direction.INPUT)
@@ -163,6 +164,37 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     }
   }
 
+  public static final class ScopeProvider implements ValuesProvider {
+    private static final String ANY_ALGO = "any";
+    private static final String[] SCOPES = ArrayUtils.append(new String[]{ANY_ALGO}, new AlgoProvider().values());
+
+    @Override
+    public String[] values() {
+      return SCOPES;
+    }
+  }
+
+  public static final class AutoMLCustomParameterV99<V> extends Schema<Iced, AutoMLCustomParameterV99<V>> {
+    @API(help="Scope of application of the parameter (specific algo, or any algo).", valuesProvider=ScopeProvider.class, direction=API.Direction.INPUT)
+    public String scope;
+
+    @API(help="Name of the model parameter.", direction=API.Direction.INPUT)
+    public String name;
+
+    @API(help="Value of the model parameter.", direction=API.Direction.INPUT)
+    public JSONValue value;
+
+    @SuppressWarnings("unchecked")
+    V getFormattedValue() {
+      switch (name) {
+        case "monotone_constraints":
+          return (V)value.valueAsArray(KeyValue[].class, KeyValueV3[].class);
+        default:
+          return (V)value.value();
+      }
+    }
+  }
+
   public static final class AutoMLBuildModelsV99 extends Schema<AutoMLBuildSpec.AutoMLBuildModels, AutoMLBuildModelsV99> {
 
     @API(help="A list of algorithms to skip during the model-building phase.", valuesProvider=AlgoProvider.class, direction=API.Direction.INPUT)
@@ -174,6 +206,47 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).", direction=API.Direction.INPUT)
     public StepDefinitionV99[] modeling_plan;
 
+    @API(help="Custom algorithm parameters.", direction=API.Direction.INPUT)
+    public AutoMLCustomParameterV99[] algo_parameters;
+
+    @API(help="A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.", direction= API.Direction.INPUT)
+    public KeyValueV3[] monotone_constraints;
+
+    @Override
+    public AutoMLBuildSpec.AutoMLBuildModels fillImpl(AutoMLBuildSpec.AutoMLBuildModels impl) {
+      super.fillImpl(impl, new String[]{"algo_parameters"});
+
+      if (monotone_constraints != null) {
+        AutoMLCustomParameterV99 mc = new AutoMLCustomParameterV99();
+        mc.scope = ScopeProvider.ANY_ALGO;
+        mc.name = "monotone_constraints";
+        mc.value = JSONValue.fromValue(monotone_constraints);
+        if (algo_parameters == null) {
+          algo_parameters = new AutoMLCustomParameterV99[] {mc};
+        } else {
+          algo_parameters = ArrayUtils.append(algo_parameters, mc);
+        }
+      }
+
+      if (algo_parameters != null) {
+         AutoMLBuildSpec.AutoMLCustomParameters.Builder builder = AutoMLBuildSpec.AutoMLCustomParameters.create();
+        for (AutoMLCustomParameterV99 param : algo_parameters) {
+          if (ScopeProvider.ANY_ALGO.equals(param.scope)) {
+            builder.add(param.name, param.getFormattedValue());
+          } else {
+            Algo algo = EnumUtils.valueOf(Algo.class, param.scope);
+            builder.add(algo, param.name, param.getFormattedValue());
+          }
+        }
+        impl.algo_parameters = builder.build();
+      }
+      return impl;
+    }
+
+    @Override
+    public AutoMLBuildModelsV99 fillFromImpl(AutoMLBuildSpec.AutoMLBuildModels impl) {
+      return super.fillFromImpl(impl, new String[]{"algo_parameters"});
+    }
   } // class AutoMLBuildModels
 
   ////////////////

@@ -79,7 +79,7 @@ Defining a Stacked Ensemble Model
 
 -  `metalearner_algorithm <algo-params/metalearner_algorithm.html>`__ (Optional) Specify the metalearner algorithm type.  Options include:
 
- - ``"AUTO"`` (GLM with non negative weights, and if ``validation_frame`` is present, then ``lambda_search`` is set to True; may change over time). This is the default.
+ - ``"AUTO"`` (GLM with non negative weights & standardization turned off, and if ``validation_frame`` is present, then ``lambda_search`` is set to True; may change over time). This is the default.
  - ``"glm"`` (GLM with default parameters)
  - ``"gbm"`` (GBM with default parameters) 
  - ``"drf"`` (Random Forest with default parameters)

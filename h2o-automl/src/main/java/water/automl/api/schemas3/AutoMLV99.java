@@ -90,19 +90,19 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     }
 
     // NOTE: don't return nulls; return an empty leaderboard/eventLog, to ease life for the client
-    Leaderboard leaderboard = autoML.leaderboard();
-    if (null == leaderboard) {
-      leaderboard = new Leaderboard(autoML.projectName(), autoML.eventLog(), autoML.getLeaderboardFrame(), this.sort_metric);
-    }
-    this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
-    this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
-
     EventLog eventLog = autoML.eventLog();
     if (null == eventLog) {
       eventLog = new EventLog(autoML._key);
     }
     this.event_log = new EventLogV99().fillFromImpl(eventLog);
     this.event_log_table = new TwoDimTableV3().fillFromImpl(eventLog.toTwoDimTable());
+
+    Leaderboard leaderboard = autoML.leaderboard();
+    if (null == leaderboard) {
+      leaderboard = new Leaderboard(project_name, eventLog, autoML.getLeaderboardFrame(), sort_metric);
+    }
+    this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
+    this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
 
     if (autoML.getActualModelingSteps() != null) {
       modeling_steps = new StepDefinitionV99[autoML.getActualModelingSteps().length];

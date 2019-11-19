@@ -155,7 +155,16 @@ Defining an XGBoost Model
 
 -  **min_data_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
 
--  **booster**: Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree". More information about the ``booster`` parameter is available `here <https://github.com/dmlc/xgboost/blob/master/doc/tutorials/dart.md>`__.
+-  **booster**: Specify the booster type. This can be one of the following: ``gbtree``, ``gblinear``, or ``dart``. 
+   Note that ``gbtree`` and ``dart`` use a tree-based model while ``gblinear`` uses linear function. This value 
+   defaults to ``gbtree``. Together with ``tree_method`` this will also determine the ``updater`` XGBoost parameter:
+
+    - for ``gblinear`` the ``coord_descent`` updater will be configured (``gpu_coord_descent`` for GPU backend)
+    - for ``gbtree`` and ``dart`` with GPU backend selected ``grow_gpu`` is used when ``tree_method`` is ``exact``
+      and ``grow_gpu_hist`` otherwise
+    - for other cases the ``updater`` is set automatically by XGBoost, visit the 
+      `XGBoost Documentation <https://xgboost.readthedocs.io/en/latest/parameter.html#parameters-for-tree-booster>`__
+      to learn more about updaters
 
 -  **sample_type**: When ``booster="dart"``, specify whether the sampling type should be one of the following:
 
@@ -319,7 +328,7 @@ FAQs
 
 -  **Why does my H2O cluster on Hadoop became unresponsive when running XGBoost even when I supplied 4 times the datasize memory?**
 
-  XGBoost uses memory outside the Java heap, and when that memory is not available, Hadoop kills the h2o job and the h2o cluster becomes unresponsive. Please set ``-extramempercent`` argument to a much higher value (120% recommended) when starting H2O. This argument configures the extra memory for internal JVM use outside of the Java heap and is a percentage of mapperXmx. For example:
+  This is why the extramempercent option exists, and we recommend setting this to a high value, such as 120. What happens internally is that when you specify ``-node_memory 10G`` and ``-extramempercent 120``, the h2o driver will ask Hadoop for :math:`10G * (1 + 1.2) = 22G` of memory. At the same time, the h2o driver will limit the memory used by the container JVM (the h2o node) to 10G, leaving the :math:`10G*120%=12G` memory "unused." This memory can be then safely used by XGBoost outside of the JVM. Keep in mind that H2O algorithms will only have access to the JVM memory (10GB), while XGBoost will use the native memory for model training. For example:
 
   ::
 

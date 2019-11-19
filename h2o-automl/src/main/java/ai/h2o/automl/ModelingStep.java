@@ -1,14 +1,17 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
+import ai.h2o.automl.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import hex.Model;
+import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
-import hex.ScoreKeeper;
+import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.HyperSpaceSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
 import water.Iced;
 import water.Job;
 import water.Key;
@@ -24,8 +27,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     private transient AutoML _aml;
 
-    protected Algo _algo;
-    protected String _id;
+    protected final Algo _algo;
+    protected final String _id;
     protected int _weight;
     protected boolean _ignoreConstraints;  // whether or not to ignore the max_models/max_runtime constraints
     protected String _description;
@@ -100,7 +103,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 params._nfolds = buildSpec.build_control.nfolds;
                 if (buildSpec.build_control.nfolds > 1) {
                     // TODO: below allow the user to specify this (vs Modulo)
-                    params._fold_assignment = Model.Parameters.FoldAssignmentScheme.Modulo;
+                    params._fold_assignment = FoldAssignmentScheme.Modulo;
                 }
             }
             if (buildSpec.build_control.balance_classes) {
@@ -115,6 +118,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         params._keep_cross_validation_fold_assignment = buildSpec.build_control.nfolds != 0 && buildSpec.build_control.keep_cross_validation_fold_assignment;
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
     }
+
+    void setCustomParams(Model.Parameters params) {
+        AutoMLCustomParameters customParams = aml().getBuildSpec().build_models.algo_parameters;
+        if (customParams == null) return;
+        customParams.applyCustomParameters(_algo, params);
+    }
+
 
     /**
      * Configures early-stopping for the model or set of models to be built.
@@ -145,10 +155,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         if (parms._stopping_metric == defaults._stopping_metric)
             parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
 
-        if (parms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO) {
+        if (parms._stopping_metric == StoppingMetric.AUTO) {
             String sort_metric = getSortMetric();
-            parms._stopping_metric = sort_metric == null ? ScoreKeeper.StoppingMetric.AUTO
-                    : sort_metric.equals("auc") ? ScoreKeeper.StoppingMetric.logloss
+            parms._stopping_metric = sort_metric == null ? StoppingMetric.AUTO
+                    : sort_metric.equals("auc") ? StoppingMetric.logloss
                     : metricValueOf(sort_metric);
         }
 
@@ -162,21 +172,21 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     private String getSortMetric() {
         //ensures that the sort metric is always updated according to the defaults set by leaderboard
         Leaderboard leaderboard = aml().leaderboard();
-        return leaderboard == null ? null : leaderboard.sort_metric;
+        return leaderboard == null ? null : leaderboard.getSortMetric();
     }
 
-    private static ScoreKeeper.StoppingMetric metricValueOf(String name) {
-        if (name == null) return ScoreKeeper.StoppingMetric.AUTO;
+    private static StoppingMetric metricValueOf(String name) {
+        if (name == null) return StoppingMetric.AUTO;
         switch (name) {
-            case "mean_residual_deviance": return ScoreKeeper.StoppingMetric.deviance;
+            case "mean_residual_deviance": return StoppingMetric.deviance;
             default:
                 String[] attempts = { name, name.toUpperCase(), name.toLowerCase() };
                 for (String attempt : attempts) {
                     try {
-                        return ScoreKeeper.StoppingMetric.valueOf(attempt);
+                        return StoppingMetric.valueOf(attempt);
                     } catch (IllegalArgumentException ignored) { }
                 }
-                return ScoreKeeper.StoppingMetric.AUTO;
+                return StoppingMetric.AUTO;
         }
     }
 
@@ -231,6 +241,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             setCommonModelBuilderParams(builder._parms);
             setStoppingCriteria(builder._parms, defaults, true);
+            setCustomParams(builder._parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
             if (_ignoreConstraints)
@@ -240,13 +251,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             else
                 builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, aml().timeRemainingMs() / 1e3);
 
-            aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+key+" model training");
+            aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+key+" model training");
             builder.init(false);          // validate parameters
             Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
             try {
                 return builder.trainModelOnH2ONode();
             } catch (H2OIllegalArgumentException exception) {
-                aml().eventLog().warn(EventLogEntry.Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
+                aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
                 return null;
             }
         }
@@ -297,16 +308,17 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             try {
                 defaults = baseParms.getClass().newInstance();
             } catch (Exception e) {
-                aml().eventLog().warn(EventLogEntry.Stage.ModelTraining, "Internal error doing hyperparameter search");
+                aml().eventLog().warn(Stage.ModelTraining, "Internal error doing hyperparameter search");
                 throw new H2OIllegalArgumentException("Hyperparameter search can't create a new instance of Model.Parameters subclass: " + baseParms.getClass());
             }
 
             setCommonModelBuilderParams(baseParms);
             setStoppingCriteria(baseParms, defaults, false);
+            setCustomParams(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
-            HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria =
-                    (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
+            RandomDiscreteValueSearchCriteria searchCriteria =
+                    (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
             Work work = getAllocatedWork();
             double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
             // predicate can be removed if/when we decide to include SEs in the max_models limit
@@ -325,14 +337,15 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             if (null == key) key = makeKey(_algo.name(), true);
             aml().addGridKey(key);
 
-            aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+key+" hyperparameter search");
+            aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+key+" hyperparameter search");
             Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+aml().timeRemainingMs());
             return GridSearch.startGridSearch(
                     key,
                     baseParms,
                     searchParms,
                     new GridSearch.SimpleParametersBuilderFactory<>(),
-                    searchCriteria
+                    searchCriteria,
+                    GridSearch.SEQUENTIAL_MODEL_BUILDING
             );
         }
     }

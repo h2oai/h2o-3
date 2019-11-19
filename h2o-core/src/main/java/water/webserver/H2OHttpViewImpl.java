@@ -65,34 +65,47 @@ public class H2OHttpViewImpl implements H2OHttpView {
   @Override
   public boolean authenticationHandler(HttpServletRequest request, HttpServletResponse response) throws IOException {
     if (!config.loginType.needToCheckUserName()) {
-      //TODO for LoginType.HASH, this equals not adding the handler at all; consinder this optimization
       return false;
     }
-
+    
+    if (request.getUserPrincipal() == null) {
+      throw new IllegalStateException("AuthenticateHandler called with request.userPrincipal is null");
+    }
+  
     final String loginName = request.getUserPrincipal().getName();
     if (loginName.equals(config.user_name)) {
       return false;
+    } else {
+      Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + config.user_name + ")");
+      ServletUtils.sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
+      return true;
     }
-    Log.warn("Login name (" + loginName + ") does not match cluster owner name (" + config.user_name + ")");
-    ServletUtils.sendResponseError(response, HttpServletResponse.SC_UNAUTHORIZED, "Login name does not match cluster owner name");
-    return true;
   }
 
   @Override
-  public void gateHandler(HttpServletRequest request, HttpServletResponse response) {
+  public boolean gateHandler(HttpServletRequest request, HttpServletResponse response) {
     ServletUtils.startRequestLifecycle();
-    while (!_acceptRequests) {
+    while (! isAcceptingRequests()) {
       try { Thread.sleep(100); }
       catch (Exception ignore) {}
     }
 
     boolean isXhrRequest = false;
     if (request != null) {
+      if (ServletUtils.isTraceRequest(request)) {
+        ServletUtils.setResponseStatus(response, HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+        return true;
+      }
       isXhrRequest = ServletUtils.isXhrRequest(request);
     }
     ServletUtils.setCommonResponseHttpHeaders(response, isXhrRequest);
+    return false;
   }
 
+  protected boolean isAcceptingRequests() {
+    return _acceptRequests;
+  }
+  
   @Override
   public H2OHttpConfig getConfig() {
     return config;

@@ -73,6 +73,7 @@
 #'        Defaults to 0.0.
 #' @param nthread Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
 #'        parameter). Defaults to maximum available Defaults to -1.
+#' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
 #' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
 #' @param max_leaves For tree_method=hist only: maximum number of leaves Defaults to 0.
 #' @param min_sum_hessian_in_leaf For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting Defaults to 100.0.
@@ -140,6 +141,7 @@ h2o.xgboost <- function(x,
                         min_split_improvement = 0.0,
                         gamma = 0.0,
                         nthread = -1,
+                        save_matrix_directory = NULL,
                         max_bins = 256,
                         max_leaves = 0,
                         min_sum_hessian_in_leaf = 100.0,
@@ -267,6 +269,8 @@ h2o.xgboost <- function(x,
     parms$gamma <- gamma
   if (!missing(nthread))
     parms$nthread <- nthread
+  if (!missing(save_matrix_directory))
+    parms$save_matrix_directory <- save_matrix_directory
   if (!missing(max_bins))
     parms$max_bins <- max_bins
   if (!missing(max_leaves))

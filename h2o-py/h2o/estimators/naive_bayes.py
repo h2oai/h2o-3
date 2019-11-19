@@ -51,6 +51,19 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Number of folds for K-fold cross-validation (0 to disable or >= 2).
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars_nb = H2ONaiveBayesEstimator(nfolds=5,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=cars)
+        >>> cars_nb.auc()
         """
         return self._parms.get("nfolds")
 
@@ -66,6 +79,31 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Seed for pseudo random number generator (only used for cross-validation and fold_assignment="Random" or "AUTO")
 
         Type: ``int``  (default: ``-1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+        >>> nb_w_seed = H2ONaiveBayesEstimator(seed=1234)
+        >>> nb_w_seed.train(x=predictors,
+        ...                 y=response,
+        ...                 training_frame=train,
+        ...                  validation_frame=valid)
+        >>> nb_wo_seed = H2ONaiveBayesEstimator()
+        >>> nb_wo_seed.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=train,
+        ...                  validation_frame=valid)
+        >>> nb_w_seed.auc()
+        >>> nb_wo_seed.auc()
         """
         return self._parms.get("seed")
 
@@ -82,6 +120,19 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         the folds based on the response variable, for classification problems.
 
         One of: ``"auto"``, ``"random"``, ``"modulo"``, ``"stratified"``  (default: ``"auto"``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> cars_nb = H2ONaiveBayesEstimator(fold_assignment="Random",
+        ...                                  nfolds=5,
+        ...                                  seed=1234)
+        >>> response = "economy_20mpg"
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> cars_nb.train(x=predictors, y=response, training_frame=cars)
+        >>> cars_nb.auc()
         """
         return self._parms.get("fold_assignment")
 
@@ -97,6 +148,22 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Column with cross-validation fold index assignment per observation.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> fold_numbers = cars.kfold_column(n_folds=5, seed=1234)
+        >>> fold_numbers.set_names(["fold_numbers"])
+        >>> cars = cars.cbind(fold_numbers)
+        >>> cars_nb = H2ONaiveBayesEstimator(seed=1234)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=cars,
+        ...               fold_column="fold_numbers")
+        >>> cars_nb.auc()
         """
         return self._parms.get("fold_column")
 
@@ -112,6 +179,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Whether to keep the cross-validation models.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_nb = H2ONaiveBayesEstimator(keep_cross_validation_models=True,
+        ...                                  nfolds=5,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train)
+        >>> cars_nb.cross_validation_models()
         """
         return self._parms.get("keep_cross_validation_models")
 
@@ -127,6 +209,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Whether to keep the predictions of the cross-validation models.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_nb = H2ONaiveBayesEstimator(keep_cross_validation_predictions=True,
+        ...                                  nfolds=5,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train)
+        >>> cars_nb.cross_validation_predictions()
         """
         return self._parms.get("keep_cross_validation_predictions")
 
@@ -142,6 +239,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Whether to keep the cross-validation fold assignment.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_nb = H2ONaiveBayesEstimator(keep_cross_validation_fold_assignment=True,
+        ...                                  nfolds=5,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train)
+        >>> cars_nb.cross_validation_fold_assignment()
         """
         return self._parms.get("keep_cross_validation_fold_assignment")
 
@@ -157,6 +269,20 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_nb = H2ONaiveBayesEstimator()
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> cars_nb.auc()
         """
         return self._parms.get("training_frame")
 
@@ -171,6 +297,20 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Id of the validation data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_nb = H2ONaiveBayesEstimator()
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> cars_nb.auc()
         """
         return self._parms.get("validation_frame")
 
@@ -215,6 +355,23 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> cars["const_1"] = 6
+        >>> cars["const_2"] = 7
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_nb = H2ONaiveBayesEstimator(seed=1234,
+        ...                                  ignore_const_cols=True)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> cars_nb.auc()
         """
         return self._parms.get("ignore_const_cols")
 
@@ -230,6 +387,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_nb = H2ONaiveBayesEstimator(score_each_iteration=True,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> cars_nb.auc()
         """
         return self._parms.get("score_each_iteration")
 
@@ -245,6 +417,17 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Balance training data class counts via over/under-sampling (for imbalanced data).
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> iris_nb = H2ONaiveBayesEstimator(balance_classes=False,
+        ...                                  nfolds=3,
+        ...                                  seed=1234)
+        >>> iris_nb.train(x=list(range(4)),
+        ...               y=4,
+        ...               training_frame=iris)
+        >>> iris_nb.mse()
         """
         return self._parms.get("balance_classes")
 
@@ -261,6 +444,18 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         be automatically computed to obtain class balance during training. Requires balance_classes.
 
         Type: ``List[float]``.
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> sample_factors = [1., 0.5, 1., 1., 1., 1., 1.]
+        >>> cov_nb = H2ONaiveBayesEstimator(class_sampling_factors=sample_factors,
+        ...                                 seed=1234)
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> cov_nb.train(x=predictors, y=response, training_frame=covtype)
+        >>> cov_nb.logloss()
         """
         return self._parms.get("class_sampling_factors")
 
@@ -277,6 +472,22 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         balance_classes.
 
         Type: ``float``  (default: ``5``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+        >>> max = .85
+        >>> cov_nb = H2ONaiveBayesEstimator(max_after_balance_size=max,
+        ...                                 seed=1234) 
+        >>> cov_nb.train(x=predictors,
+        ...              y=response,
+        ...              training_frame=train,
+        ...              validation_frame=valid)
+        >>> cars_nb.logloss()
         """
         return self._parms.get("max_after_balance_size")
 
@@ -307,6 +518,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
 
         Type: ``int``  (default: ``0``).
+
+        :examples:
+
+        >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
+        >>> covtype[54] = covtype[54].asfactor()
+        >>> predictors = covtype.columns[0:54]
+        >>> response = 'C55'
+        >>> train, valid = covtype.split_frame(ratios=[.8], seed=1234)
+        >>> cars_nb = H2ONaiveBayesEstimator(max_hit_ratio_k=3,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> cov_nb.mse()
         """
         return self._parms.get("max_hit_ratio_k")
 
@@ -322,6 +548,19 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Laplace smoothing parameter
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+        >>> prostate['RACE'] = prostate['RACE'].asfactor()
+        >>> prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+        >>> prostate['DPROS'] = prostate['DPROS'].asfactor()
+        >>> prostate_nb = H2ONaiveBayesEstimator(laplace=1)
+        >>> prostate_nb.train(x=list(range(3,9)),
+        ...                   y=response_col,
+        ...                   training_frame=prostate)
+        >>> prostate_nb.mse()
         """
         return self._parms.get("laplace")
 
@@ -337,6 +576,25 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Min. standard deviation to use for observations with not enough data
 
         Type: ``float``  (default: ``0.001``).
+
+        :examples:
+
+        >>> import random
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> problem = random.sample(["binomial","multinomial"],1)
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> if problem == "binomial":
+        ...     response_col = "economy_20mpg"
+        ... else:
+        ...     response_col = "cylinders"
+        >>> cars[response_col] = cars[response_col].asfactor()
+        >>> cars_nb = H2ONaiveBayesEstimator(min_sdev=0.1,
+        ...                                  eps_sdev=0.5,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response_col,
+        ...               training_frame=cars)
+        >>> cars_nb.show()
         """
         return self._parms.get("min_sdev")
 
@@ -352,6 +610,22 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Cutoff below which standard deviation is replaced with min_sdev
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> problem = random.sample(["binomial","multinomial"],1)
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> if problem == "binomial":
+        ...     response_col = "economy_20mpg"
+        ... else:
+        ...     response_col = "cylinders"
+        >>> cars[response_col] = cars[response_col].asfactor()
+        >>> cars_nb = H2ONaiveBayesEstimator(min_sdev=0.1,
+        ...                                  eps_sdev=0.5,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors, y=response_col, training_frame=cars)
+        >>> cars_nb.mse()
         """
         return self._parms.get("eps_sdev")
 
@@ -367,6 +641,25 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Min. probability to use for observations with not enough data
 
         Type: ``float``  (default: ``0.001``).
+
+        :examples:
+
+        >>> import random
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> problem = random.sample(["binomial","multinomial"],1)
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> if problem == "binomial":
+        ...     response_col = "economy_20mpg"
+        ... else:
+        ...     response_col = "cylinders"
+        >>> cars[response_col] = cars[response_col].asfactor()
+        >>> cars_nb = H2ONaiveBayesEstimator(min_prob=0.1,
+        ...                                  eps_prob=0.5,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors,
+        ...               y=response_col,
+        ...               training_frame=cars)
+        >>> cars_nb.show()
         """
         return self._parms.get("min_prob")
 
@@ -382,6 +675,23 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Cutoff below which probability is replaced with min_prob
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> import random
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> problem = random.sample(["binomial","multinomial"],1)
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> if problem == "binomial":
+        ...     response_col = "economy_20mpg"
+        ... else:
+        ...     response_col = "cylinders"
+        >>> cars[response_col] = cars[response_col].asfactor()
+        >>> cars_nb = H2ONaiveBayesEstimator(min_prob=0.1,
+        ...                                  eps_prob=0.5,
+        ...                                  seed=1234)
+        >>> cars_nb.train(x=predictors, y=response_col, training_frame=cars)
+        >>> cars_nb.mse()
         """
         return self._parms.get("eps_prob")
 
@@ -397,6 +707,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Compute metrics on training data
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+        >>> prostate['RACE'] = prostate['RACE'].asfactor()
+        >>> prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+        >>> prostate['DPROS'] = prostate['DPROS'].asfactor()
+        >>> response_col = 'CAPSULE'
+        >>> prostate_nb = H2ONaiveBayesEstimator(laplace=0,
+        ...                                      compute_metrics=False)
+        >>> prostate_nb.train(x=list(range(3,9)),
+        ...                   y=response_col,
+        ...                   training_frame=prostate)
+        >>> prostate_nb.show()
         """
         return self._parms.get("compute_metrics")
 
@@ -412,6 +737,21 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_nb = H2ONaiveBayesEstimator(max_runtime_secs=10,
+        ...                                  seed=1234) 
+        >>> cars_nb.train(x=predictors,
+        ...               y=response,
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> cars_nb.auc()
         """
         return self._parms.get("max_runtime_secs")
 
@@ -427,6 +767,18 @@ class H2ONaiveBayesEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> import tempfile
+        >>> from os import listdir
+        >>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
+        >>> predictors = ["DayofMonth", "DayOfWeek"]
+        >>> response = "IsDepDelayed"
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> air_nb = H2ONaiveBayesEstimator(export_checkpoints_dir=checkpoints_dir)
+        >>> air_nb.train(x=predictors, y=response, training_frame=airlines)
+        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 

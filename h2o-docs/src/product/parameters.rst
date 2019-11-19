@@ -54,7 +54,8 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/impute_missing
    data-science/algo-params/include_algos
    data-science/algo-params/inflection_point
-   data-science/algo-params/init
+   data-science/algo-params/init1
+   data-science/algo-params/init2
    data-science/algo-params/interaction_pairs
    data-science/algo-params/interactions
    data-science/algo-params/intercept
@@ -69,6 +70,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/learn_rate
    data-science/algo-params/learn_rate_annealing
    data-science/algo-params/link
+   data-science/algo-params/lre_min
    data-science/algo-params/max_abs_leafnode_pred
    data-science/algo-params/max_active_predictors
    data-science/algo-params/max_after_balance_size
@@ -123,6 +125,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/stopping_metric
    data-science/algo-params/stopping_rounds
    data-science/algo-params/stopping_tolerance
+   data-science/algo-params/stratify_by
    data-science/algo-params/theta
    data-science/algo-params/ties
    data-science/algo-params/training_frame

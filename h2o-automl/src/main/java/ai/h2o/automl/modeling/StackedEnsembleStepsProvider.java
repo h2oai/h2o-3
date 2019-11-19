@@ -81,7 +81,7 @@ public class StackedEnsembleStepsProvider implements ModelingStepsProvider<Stack
 
         private ModelingStep[] defaults = new StackedEnsembleModelStep[] {
                 new StackedEnsembleModelStep("best", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
-                    { _description = _description+" (build using top model from each algorithm type)"; }
+                    { _description = _description+" (built using top model from each algorithm type)"; }
                     @Override
                     protected Job<StackedEnsembleModel> startJob() {
                         // Set aside List<Model> for best models per model type. Meaning best GLM, GBM, DRF, XRT, and DL (5 models).
@@ -104,7 +104,7 @@ public class StackedEnsembleStepsProvider implements ModelingStepsProvider<Stack
                     }
                 },
                 new StackedEnsembleModelStep("all", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
-                    { _description = _description+" (build using all AutoML models)"; }
+                    { _description = _description+" (built using all AutoML models)"; }
                     @Override
                     protected Job<StackedEnsembleModel> startJob() {
                         int nonEnsembleCount = 0;

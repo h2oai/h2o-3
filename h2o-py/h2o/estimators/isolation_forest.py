@@ -54,9 +54,9 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OIsolationForestEstimator(seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
+        >>> cars_if = H2OIsolationForestEstimator(seed=1234)
+        >>> cars_if.train(x=predictors,
+        ...               training_frame=cars)
         >>> cars_if.model_performance()
         """
         return self._parms.get("training_frame")
@@ -77,11 +77,11 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OIsolationForestEstimator(score_each_iteration = True,
-        ...                                       ntrees = 55,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
+        >>> cars_if = H2OIsolationForestEstimator(score_each_iteration=True,
+        ...                                       ntrees=55,
+        ...                                       seed=1234)
+        >>> cars_if.train(x=predictors,
+        ...               training_frame=cars)
         >>> cars_if.model_performance()
         """
         return self._parms.get("score_each_iteration")
@@ -103,10 +103,10 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OIsolationForestEstimator(score_tree_interval = 5,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
+        >>> cars_if = H2OIsolationForestEstimator(score_tree_interval=5,
+        ...                                       seed=1234)
+        >>> cars_if.train(x=predictors,
+        ...               training_frame=cars)
         >>> cars_if.model_performance()
         """
         return self._parms.get("score_tree_interval")
@@ -123,17 +123,6 @@ class H2OIsolationForestEstimator(H2OEstimator):
         Names of columns to ignore for training.
 
         Type: ``List[str]``.
-
-        :examples:
-
-        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> predictors = airlines.columns[:9]
-        >>> col_list = ['DepTime','CRSDepTime','ArrTime','CRSArrTime']
-        >>> airlines_if = H2OIsolationForestEstimator(ignored_columns = col_list,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
-        >>> airlines_if.model_performance()
         """
         return self._parms.get("ignored_columns")
 
@@ -156,11 +145,11 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> predictors = ["displacement","power","weight","acceleration","year"]
         >>> cars["const_1"] = 6
         >>> cars["const_2"] = 7
-        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
-        >>> cars_if = H2OIsolationForestEstimator(seed = 1234,
-        ...                                       ignore_const_cols = True)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> cars_if = H2OIsolationForestEstimator(seed=1234,
+        ...                                       ignore_const_cols=True)
+        >>> cars_if.train(x=predictors,
+        ...               training_frame=cars)
         >>> cars_if.model_performance()
         """
         return self._parms.get("ignore_const_cols")
@@ -185,11 +174,11 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> tree_num = [20, 50, 80, 110, 140, 170, 200]
         >>> label = ["20", "50", "80", "110", "140", "170", "200"]
         >>> for key, num in enumerate(tree_num):
-        ...     titanic_if = H2OIsolationForestEstimator(ntrees = num,
-        ...                                              seed = 1234)
-        ...     titanic_if.train(x = predictors,
-        ...                      training_frame = titanic) 
-        ...     print(label[key], 'training score', titanic_if.mse(train = True))
+        ...     titanic_if = H2OIsolationForestEstimator(ntrees=num,
+        ...                                              seed=1234)
+        ...     titanic_if.train(x=predictors,
+        ...                      training_frame=titanic) 
+        ...     print(label[key], 'training score', titanic_if.mse(train=True))
         """
         return self._parms.get("ntrees")
 
@@ -210,10 +199,10 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OIsolationForestEstimator(max_depth = 2,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
+        >>> cars_if = H2OIsolationForestEstimator(max_depth=2,
+        ...                                       seed=1234)
+        >>> cars_if.train(x=predictors,
+        ...               training_frame=cars)
         >>> cars_if.model_performance()
         """
         return self._parms.get("max_depth")
@@ -235,10 +224,10 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OIsolationForestEstimator(min_rows = 16,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
+        >>> cars_if = H2OIsolationForestEstimator(min_rows=16,
+        ...                                       seed=1234)
+        >>> cars_if.train(x=predictors,
+        ...               training_frame=cars)
         >>> cars_if.model_performance()
         """
         return self._parms.get("min_rows")
@@ -260,12 +249,12 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OIsolationForestEstimator(max_runtime_secs = 10,
-        ...                                       ntrees = 10000,
-        ...                                       max_depth = 10,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
+        >>> cars_if = H2OIsolationForestEstimator(max_runtime_secs=10,
+        ...                                       ntrees=10000,
+        ...                                       max_depth=10,
+        ...                                       seed=1234)
+        >>> cars_if.train(x=predictors,
+        ...               training_frame=cars)
         >>> cars_if.model_performance()
         """
         return self._parms.get("max_runtime_secs")
@@ -288,12 +277,12 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> isofor_w_seed = H2OIsolationForestEstimator(seed = 1234) 
-        >>> isofor_w_seed.train(x = predictors,
-        ...                     training_frame = airlines)
+        >>> isofor_w_seed = H2OIsolationForestEstimator(seed=1234) 
+        >>> isofor_w_seed.train(x=predictors,
+        ...                     training_frame=airlines)
         >>> isofor_wo_seed = H2OIsolationForestEstimator()
-        >>> isofor_wo_seed.train(x = predictors,
-        ...                      training_frame = airlines)
+        >>> isofor_wo_seed.train(x=predictors,
+        ...                      training_frame=airlines)
         >>> isofor_w_seed.model_performance()
         >>> isofor_wo_seed.model_performance()
         """
@@ -316,10 +305,10 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
         >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
         >>> predictors = ["displacement","power","weight","acceleration","year"]
-        >>> cars_if = H2OIsolationForestEstimator(build_tree_one_node = True,
-        ...                                       seed = 1234)
-        >>> cars_if.train(x = predictors,
-        ...               training_frame = cars)
+        >>> cars_if = H2OIsolationForestEstimator(build_tree_one_node=True,
+        ...                                       seed=1234)
+        >>> cars_if.train(x=predictors,
+        ...               training_frame=cars)
         >>> cars_if.model_performance()
         """
         return self._parms.get("build_tree_one_node")
@@ -342,9 +331,9 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
         >>> covtype = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
         >>> predictors = covtype.columns[0:54]
-        >>> cov_if = H2OIsolationForestEstimator(mtries = 30, seed = 1234)
-        >>> cov_if.train(x = predictors,
-        ...              training_frame = covtype)
+        >>> cov_if = H2OIsolationForestEstimator(mtries=30, seed=1234)
+        >>> cov_if.train(x=predictors,
+        ...              training_frame=covtype)
         >>> cov_if.model_performance()
         """
         return self._parms.get("mtries")
@@ -367,9 +356,9 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
         >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_train.csv")
         >>> test = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_test.csv")
-        >>> isofor_model = H2OIsolationForestEstimator(sample_size = 5,
+        >>> isofor_model = H2OIsolationForestEstimator(sample_size=5,
         ...                                            ntrees=7)
-        >>> isofor_model.train(training_frame = train)
+        >>> isofor_model.train(training_frame=train)
         >>> isofor_model.model_performance()
         >>> isofor_model.model_performance(test)
         """
@@ -394,10 +383,10 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OIsolationForestEstimator(sample_rate = .7,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
+        >>> airlines_if = H2OIsolationForestEstimator(sample_rate=.7,
+        ...                                           seed=1234)
+        >>> airlines_if.train(x=predictors,
+        ...                   training_frame=airlines)
         >>> airlines_if.model_performance()
         """
         return self._parms.get("sample_rate")
@@ -420,10 +409,10 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OIsolationForestEstimator(col_sample_rate_change_per_level = .9,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
+        >>> airlines_if = H2OIsolationForestEstimator(col_sample_rate_change_per_level=.9,
+        ...                                           seed=1234)
+        >>> airlines_if.train(x=predictors,
+        ...                   training_frame=airlines)
         >>> airlines_if.model_performance()
         """
         return self._parms.get("col_sample_rate_change_per_level")
@@ -446,10 +435,10 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OIsolationForestEstimator(col_sample_rate_per_tree = .7,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
+        >>> airlines_if = H2OIsolationForestEstimator(col_sample_rate_per_tree=.7,
+        ...                                           seed=1234)
+        >>> airlines_if.train(x=predictors,
+        ...                   training_frame=airlines)
         >>> airlines_if.model_performance()
         """
         return self._parms.get("col_sample_rate_per_tree")
@@ -474,10 +463,10 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
         >>> encoding = "one_hot_explicit"
-        >>> airlines_if = H2OIsolationForestEstimator(categorical_encoding = encoding,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
+        >>> airlines_if = H2OIsolationForestEstimator(categorical_encoding=encoding,
+        ...                                           seed=1234)
+        >>> airlines_if.train(x=predictors,
+        ...                   training_frame=airlines)
         >>> airlines_if.model_performance()
         """
         return self._parms.get("categorical_encoding")
@@ -501,12 +490,12 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OIsolationForestEstimator(stopping_metric = "auto",
-        ...                                           stopping_rounds = 3,
-        ...                                           stopping_tolerance = 1e-2,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
+        >>> airlines_if = H2OIsolationForestEstimator(stopping_metric="auto",
+        ...                                           stopping_rounds=3,
+        ...                                           stopping_tolerance=1e-2,
+        ...                                           seed=1234)
+        >>> airlines_if.train(x=predictors,
+        ...                   training_frame=airlines)
         >>> airlines_if.model_performance()
         """
         return self._parms.get("stopping_rounds")
@@ -531,12 +520,12 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OIsolationForestEstimator(stopping_metric = "auto",
-        ...                                           stopping_rounds = 3,
-        ...                                           stopping_tolerance = 1e-2,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
+        >>> airlines_if = H2OIsolationForestEstimator(stopping_metric="auto",
+        ...                                           stopping_rounds=3,
+        ...                                           stopping_tolerance=1e-2,
+        ...                                           seed=1234)
+        >>> airlines_if.train(x=predictors,
+        ...                   training_frame=airlines)
         >>> airlines_if.model_performance()
         """
         return self._parms.get("stopping_metric")
@@ -559,12 +548,12 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
         >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
         ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
-        >>> airlines_if = H2OIsolationForestEstimator(stopping_metric = "auto",
-        ...                                           stopping_rounds = 3,
-        ...                                           stopping_tolerance = 1e-2,
-        ...                                           seed = 1234)
-        >>> airlines_if.train(x = predictors,
-        ...                   training_frame = airlines)
+        >>> airlines_if = H2OIsolationForestEstimator(stopping_metric="auto",
+        ...                                           stopping_rounds=3,
+        ...                                           stopping_tolerance=1e-2,
+        ...                                           seed=1234)
+        >>> airlines_if.train(x=predictors,
+        ...                   training_frame=airlines)
         >>> airlines_if.model_performance()
         """
         return self._parms.get("stopping_tolerance")
@@ -589,11 +578,11 @@ class H2OIsolationForestEstimator(H2OEstimator):
         >>> airlines = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip", destination_frame="air.hex")
         >>> predictors = ["DayofMonth", "DayOfWeek"]
         >>> checkpoints_dir = tempfile.mkdtemp()
-        >>> air_if = H2OIsolationForestEstimator(max_depth = 3,
-        ...                                      seed = 1234,
-        ...                                      export_checkpoints_dir = checkpoints_dir)
-        >>> air_if.train(x = predictors,
-        ...              training_frame = airlines)
+        >>> air_if = H2OIsolationForestEstimator(max_depth=3,
+        ...                                      seed=1234,
+        ...                                      export_checkpoints_dir=checkpoints_dir)
+        >>> air_if.train(x=predictors,
+        ...              training_frame=airlines)
         >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")

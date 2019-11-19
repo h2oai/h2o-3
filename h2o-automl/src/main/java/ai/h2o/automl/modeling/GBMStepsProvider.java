@@ -46,7 +46,9 @@ public class GBMStepsProvider implements ModelingStepsProvider<GBMStepsProvider.
             }
 
             GBMParameters prepareModelParameters() {
-                return GBMSteps.prepareModelParameters();
+                GBMParameters gbmParameters = GBMSteps.prepareModelParameters();
+                gbmParameters._ntrees = 10000;
+                return gbmParameters;
             }
         }
 
@@ -111,7 +113,6 @@ public class GBMStepsProvider implements ModelingStepsProvider<GBMStepsProvider.
                         GBMParameters gbmParameters = prepareModelParameters();
 
                         Map<String, Object[]> searchParams = new HashMap<>();
-                        searchParams.put("_ntrees", new Integer[]{10000});
                         searchParams.put("_max_depth", new Integer[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
                         searchParams.put("_min_rows", new Integer[]{1, 5, 10, 15, 30, 100});
                         searchParams.put("_learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});

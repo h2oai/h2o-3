@@ -47,6 +47,18 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
   @API(help="branch_name", direction=API.Direction.OUTPUT)
   public String branch_name;
 
+  @API(help="last_commit_hash", direction=API.Direction.OUTPUT)
+  public String last_commit_hash;
+
+  @API(help="describe", direction=API.Direction.OUTPUT)
+  public String describe;
+
+  @API(help="compiled_by", direction=API.Direction.OUTPUT)
+  public String compiled_by;
+
+  @API(help="compiled_on", direction=API.Direction.OUTPUT)
+  public String compiled_on;
+  
   @API(help="build_number", direction=API.Direction.OUTPUT)
   public String build_number;
 

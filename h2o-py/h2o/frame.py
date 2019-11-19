@@ -2438,15 +2438,13 @@ class H2OFrame(Keyed):
                         raise H2OValueError("Column index selected to drop is not part of the frame: %r" % index)
                     if min(index) < 0:
                         raise H2OValueError("Column index selected to drop is not positive: %r" % index)
-                    for i in range(len(index)):
-                        index[i] = -(index[i] + 1)
+                    index = [-(i + 1) for i in index]
                 #If index is a string array, i.e., ["C1", "C2"]
                 elif is_type(index, [str]):
                     #Check if index is an actual column(s) in the frame
                     if not set(index).issubset(self.names):
                         raise H2OValueError("Column(s) selected to drop are not in original frame: %r" % index)
-                    for i in range(len(index)):
-                        index[i] = -(self.names.index(index[i]) + 1)
+                    index = [-(self.names.index(i) + 1) for i in index]
                 fr = H2OFrame._expr(expr=ExprNode("cols", self, index), cache=self._ex._cache)
                 fr._ex._cache.ncols -= len(index)
                 fr._ex._cache.names = [i for i in self.names
@@ -3476,7 +3474,7 @@ class H2OFrame(Keyed):
         tokenize() is similar to strsplit(), the difference between them is that tokenize() will store the tokenized
         text into a single column making it easier for additional processing (filtering stop words, word2vec algo, ...).
 
-        :param str split: The regular expression to split on.
+        :param tokenize split: The regular expression to tokenize on.
         
         :returns: An H2OFrame with a single column representing the tokenized Strings. Original rows of the input DF are separated by NA.
 
@@ -3494,6 +3492,7 @@ class H2OFrame(Keyed):
         >>> df4 = h2o.H2OFrame.from_python({'String':
         ...                                ['this is tall, this is taller']})
         >>> df4 = df4.ascharacter()
+        >>> combined = df1.rbind([df2, df3, df4])
         >>> combined
         >>> tokenized = combined.tokenize(" ")
         >>> tokenized.describe
@@ -3986,6 +3985,19 @@ class H2OFrame(Keyed):
         :param value_name: Name of the value-column (default: "value").
         :param skipna: If enabled, do not include NAs in the result. 
         :returns: Returns an unpivoted H2OFrame.
+
+        :examples:
+
+        >>> import pandas as pd
+        >>> from h2o.frame import H2OFrame
+        >>> df = pd.DataFrame({'A': {0: 'a', 1: 'b', 2: 'c'},
+        ...                    'B': {0: 1, 2: 5},
+        ...                    'C': {0: 2, 1: 4, 2: 6}})
+        >>> df
+        >>> frozen_h2o = H2OFrame(df)
+        >>> frozen_h2o
+        >>> melted = frozen_h2o.melt(id_vars=["A"], value_vars=["B"])
+        >>> melted
         """
         assert_is_type(id_vars, [str])
         assert_is_type(value_vars, [str], None)

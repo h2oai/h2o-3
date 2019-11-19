@@ -49,17 +49,17 @@ import static water.ExternalFrameUtils.writeToChannel;
  * writer.finalizeFrame("frameName, rowsPerChunk, colTypes, domains);
  * </pre>
  * </p>
- *
  */
 final public class ExternalFrameWriterClient {
-  private AutoBuffer ab;
-  private ByteChannel channel;
+  private final AutoBuffer ab;
+  private final ByteChannel channel;
   private byte[] expectedTypes;
   private int currentColIdx = 0;
   private int currentRowIdx = 0;
-  private int timeout;
+  private final int timeout;
   private int numRows;
   private int numCols;
+  private final long blockSize;
 
   /**
    * Initialize the External frame writer
@@ -68,15 +68,16 @@ final public class ExternalFrameWriterClient {
    *
    * @param channel communication channel to h2o node
    */
-  public ExternalFrameWriterClient(ByteChannel channel, int timeout) {
+  public ExternalFrameWriterClient(ByteChannel channel, int timeout, long blockSize) {
     this.ab = new AutoBuffer();
     this.channel = channel;
     this.timeout = timeout;
+    this.blockSize = blockSize;
   }
 
-  public static ExternalFrameWriterClient create(String ip, int port, short timestamp, int timeout) throws IOException {
+  public static ExternalFrameWriterClient create(String ip, int port, short timestamp, int timeout, long blockSize) throws IOException {
     ByteChannel channel = ExternalFrameUtils.getConnection(ip, port, timestamp);
-    return new ExternalFrameWriterClient(channel, timeout);
+    return new ExternalFrameWriterClient(channel, timeout, blockSize);
   }
 
   public void initFrame(String keyName, String[] names) throws IOException, ExternalFrameConfirmationException {
@@ -124,77 +125,82 @@ final public class ExternalFrameWriterClient {
     waitForRequestToFinish(timeout, requestType);
   }
 
-    public void close() throws IOException, ExternalFrameConfirmationException {
-        waitForRequestToFinish(timeout, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
-        channel.close();
+  public void close() throws IOException, ExternalFrameConfirmationException {
+    try {
+      // write remaining data
+      writeToChannel(ab, channel);
+      waitForRequestToFinish(timeout, ExternalBackendRequestType.WRITE_TO_CHUNK.getByte());
+    } finally {
+      channel.close();
     }
+  }
 
-    public void sendBoolean(boolean data) throws IOException {
-        ExternalFrameUtils.sendBoolean(ab, channel, data);
-        increaseCurrentColIdx();
-    }
+  public void sendBoolean(boolean data) throws IOException {
+    ExternalFrameUtils.sendBoolean(ab, data);
+    increaseAndSend();
+  }
 
-    public void sendByte(byte data) throws IOException {
-        ExternalFrameUtils.sendByte(ab, channel, data);
-        increaseCurrentColIdx();
-    }
+  public void sendByte(byte data) throws IOException {
+    ExternalFrameUtils.sendByte(ab, data);
+    increaseAndSend();
+  }
 
-    public void sendChar(char data) throws IOException {
-        ExternalFrameUtils.sendChar(ab, channel, data);
-        increaseCurrentColIdx();
-    }
+  public void sendChar(char data) throws IOException {
+    ExternalFrameUtils.sendChar(ab, data);
+    increaseAndSend();
+  }
 
-    public void sendShort(short data) throws IOException {
-        ExternalFrameUtils.sendShort(ab, channel, data);
-        increaseCurrentColIdx();
-    }
+  public void sendShort(short data) throws IOException {
+    ExternalFrameUtils.sendShort(ab, data);
+    increaseAndSend();
+  }
 
-    public void sendInt(int data) throws IOException {
-        ExternalFrameUtils.sendInt(ab, channel, data);
-        increaseCurrentColIdx();
-    }
+  public void sendInt(int data) throws IOException {
+    ExternalFrameUtils.sendInt(ab, data);
+    increaseAndSend();
+  }
 
-    public void sendLong(long data) throws IOException {
-        ExternalFrameUtils.sendLong(ab, channel, data);
-        increaseCurrentColIdx();
-    }
+  public void sendLong(long data) throws IOException {
+    ExternalFrameUtils.sendLong(ab, data);
+    increaseAndSend();
+  }
 
-    public void sendFloat(float data) throws IOException {
-        ExternalFrameUtils.sendFloat(ab, channel, data);
-        increaseCurrentColIdx();
-    }
+  public void sendFloat(float data) throws IOException {
+    ExternalFrameUtils.sendFloat(ab, data);
+    increaseAndSend();
+  }
 
-    public void sendDouble(double data) throws IOException {
-        ExternalFrameUtils.sendDouble(ab, channel, data);
-        increaseCurrentColIdx();
-    }
+  public void sendDouble(double data) throws IOException {
+    ExternalFrameUtils.sendDouble(ab, data);
+    increaseAndSend();
+  }
 
-    public void sendString(String data) throws IOException {
-        ExternalFrameUtils.sendString(ab, channel, data);
-        increaseCurrentColIdx();
-    }
+  public void sendString(String data) throws IOException {
+    ExternalFrameUtils.sendString(ab, data);
+    increaseAndSend();
+  }
 
-    public void sendTimestamp(Timestamp timestamp) throws IOException {
-        ExternalFrameUtils.sendTimestamp(ab, channel, timestamp);
-        increaseCurrentColIdx();
-    }
+  public void sendTimestamp(Timestamp timestamp) throws IOException {
+    ExternalFrameUtils.sendTimestamp(ab, timestamp);
+    increaseAndSend();
+  }
 
-    public void sendNA() throws IOException {
-        ExternalFrameUtils.sendNA(ab, channel, expectedTypes[currentColIdx]);
-        increaseCurrentColIdx();
-    }
+  public void sendNA() throws IOException {
+    ExternalFrameUtils.sendNA(ab, expectedTypes[currentColIdx]);
+    increaseAndSend();
+  }
 
   public void sendSparseVector(int[] indices, double[] values) throws IOException {
-    ExternalFrameUtils.sendBoolean(ab, channel, ExternalFrameUtils.VECTOR_IS_SPARSE);
-    ExternalFrameUtils.sendIntArray(ab, channel, indices);
-    ExternalFrameUtils.sendDoubleArray(ab, channel, values);
-    increaseCurrentColIdx();
+    ExternalFrameUtils.sendBoolean(ab, ExternalFrameUtils.VECTOR_IS_SPARSE);
+    ExternalFrameUtils.sendIntArray(ab, indices);
+    ExternalFrameUtils.sendDoubleArray(ab, values);
+    increaseAndSend();
   }
 
   public void sendDenseVector(double[] values) throws IOException {
-    ExternalFrameUtils.sendBoolean(ab, channel, ExternalFrameUtils.VECTOR_IS_DENSE);
-    ExternalFrameUtils.sendDoubleArray(ab, channel, values);
-    increaseCurrentColIdx();
+    ExternalFrameUtils.sendBoolean(ab, ExternalFrameUtils.VECTOR_IS_DENSE);
+    ExternalFrameUtils.sendDoubleArray(ab, values);
+    increaseAndSend();
   }
 
   public int getNumberOfWrittenRows() {
@@ -215,11 +221,15 @@ final public class ExternalFrameWriterClient {
     }
   }
 
-  private void increaseCurrentColIdx() {
+  private void increaseAndSend() throws IOException {
     currentColIdx++;
     if (currentColIdx == numCols) {
       currentRowIdx++;
       currentColIdx = 0;
+    }
+
+    if (ab.position() > blockSize) {
+      writeToChannel(ab, channel);
     }
   }
 }

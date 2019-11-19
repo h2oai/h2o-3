@@ -16,10 +16,10 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     @API(help = "Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
     public double k;
 
-    @API(help = "Smooothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
+    @API(help = "Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.")
     public double f;
 
-    @API(help = "Data leakage handling strategy. Default to None.", values = {"None", "KFold", "LeaveOneOut"})
+    @API(help = "Data leakage handling strategy.", values = {"None", "KFold", "LeaveOneOut"})
     public TargetEncoder.DataLeakageHandlingStrategy data_leakage_handling;
   
     @Override
@@ -29,6 +29,7 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
       params.add("ignored_columns");
       params.add("training_frame");
       params.add("fold_column");
+      params.add("response_column");
   
       return params.toArray(new String[0]);
     }

@@ -5,6 +5,7 @@ import hex.*;
 import static hex.ModelCategory.Binomial;
 import static hex.genmodel.GenModel.createAuxKey;
 
+import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
@@ -639,15 +640,31 @@ public abstract class SharedTreeModel<
 
   protected boolean binomialOpt() { return true; }
 
+  @Override protected CategoricalEncoding getGenModelEncoding() {
+    switch (_parms._categorical_encoding) {
+      case AUTO:
+      case Enum:
+        return CategoricalEncoding.AUTO;
+      case OneHotExplicit:
+        return CategoricalEncoding.OneHotExplicit;
+      default:
+        return null;
+    }
+  }
+  
   @Override protected SBPrintStream toJavaInit(SBPrintStream sb, CodeGeneratorPipeline fileCtx) {
-    if (_parms._categorical_encoding != Parameters.CategoricalEncodingScheme.AUTO &&
-        _parms._categorical_encoding != Parameters.CategoricalEncodingScheme.Enum) {
-      throw new IllegalArgumentException("Only default categorical_encoding scheme is supported for POJO/MOJO");
+    CategoricalEncoding encoding = getGenModelEncoding();
+    if (encoding == null) {
+      throw new IllegalArgumentException("Only default and 1-hot explicit scheme is supported for POJO/MOJO");
     }
     sb.nl();
     sb.ip("public boolean isSupervised() { return true; }").nl();
     sb.ip("public int nfeatures() { return " + _output.nfeatures() + "; }").nl();
     sb.ip("public int nclasses() { return " + _output.nclasses() + "; }").nl();
+    if (encoding != CategoricalEncoding.AUTO) {
+      sb.ip("public hex.genmodel.CategoricalEncoding getCategoricalEncoding() { return hex.genmodel.CategoricalEncoding." + 
+              encoding.name() + "; }").nl();
+    }
     return sb;
   }
 

@@ -957,7 +957,7 @@ assertCorrectSkipColumns <-
           # only tests half of the columns to save time
           print(paste0("testing column ", ind))
           if (allFrameTypes[ind] == "uuid")
-            continue
+            next
           for (rind in c(1:rowNum)) {
             if (is.na(f1R[rind, ind]))
               expect_true(
@@ -1319,7 +1319,7 @@ assertCorrectSkipColumnsNamesTypes <- function(originalFile, parsePath, skippedC
     for (ind in c(1:length(cfullnames))) {
         if (cfullnames[ind] == cskipnames[skipcount]) {
             if (allFrameTypes[ind] == "uuid")
-            continue
+              next
             for (rind in c(1:rowNum)) {
                 if (is.na(originalR[rind, ind])) {
                     expect_true(

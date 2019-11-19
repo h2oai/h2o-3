@@ -331,6 +331,15 @@ class H2OConnection(backwards_compatible()):
                 if name.lower() == scheme + "_proxy":
                     warn("Proxy is defined in the environment: %s. "
                          "This may interfere with your H2O Connection." % name)
+                    
+            if ("localhost" in conn.ip() or "127.0.0.1" in conn.ip()):
+                # Empty list will cause requests library to respect the default behavior.
+                # Thus a non-existing proxy is inserted.
+
+                conn._proxies = {
+                    "http": None,
+                    "https": None,
+                }
 
         try:
             retries = 20 if server else 5
@@ -358,7 +367,6 @@ class H2OConnection(backwards_compatible()):
             raise
         return conn
 
-
     def request(self, endpoint, data=None, json=None, filename=None, save_to=None):
         """
         Perform a REST API request to the backend H2O server.
@@ -383,7 +391,7 @@ class H2OConnection(backwards_compatible()):
 
         # Prepare URL
         assert_is_type(endpoint, str)
-        match = assert_matches(str(endpoint), r"^(GET|POST|PUT|DELETE|PATCH|HEAD) (/.*)$")
+        match = assert_matches(str(endpoint), r"^(GET|POST|PUT|DELETE|PATCH|HEAD|TRACE) (/.*)$")
         method = match.group(1)
         urltail = match.group(2)
         url = self._base_url + urltail
@@ -513,8 +521,7 @@ class H2OConnection(backwards_compatible()):
     @property
     def proxy(self):
         """URL of the proxy server used for the connection (or None if there is no proxy)."""
-        if self._proxies is None: return None
-        return self._proxies.values()[0]
+        return self._proxies
 
     @property
     def local_server(self):
@@ -744,7 +751,7 @@ class H2OConnection(backwards_compatible()):
         if status_code == 200 and save_to:
             if save_to.startswith("~"): save_to = os.path.expanduser(save_to)
             if os.path.isdir(save_to) or save_to.endswith(os.path.sep):
-                dirname = os.path.abspath(save_to)
+                dirname = os.path.join(os.path.abspath(save_to), '')
                 filename = H2OConnection._find_file_name(response)
             else:
                 dirname, filename = os.path.split(os.path.abspath(save_to))

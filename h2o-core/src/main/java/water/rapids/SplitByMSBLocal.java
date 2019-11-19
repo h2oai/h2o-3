@@ -63,7 +63,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     }
     // shared between threads on the same node, all mappers write into distinct
     // locations (no conflicts, no need to atomic updates, etc.)
-    System.out.print("Allocating _o and _x buckets on this node with known size up front ... ");
+    Log.info("Allocating _o and _x buckets on this node with known size up front ... ");
     long t0 = System.nanoTime();
     _o = new long[256][][];
     _x = new byte[256][][];  // for each bucket, there might be > 2^31 bytes, so an extra dimension for that
@@ -83,7 +83,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
       _o[msb][b] = MemoryManager.malloc8(lastSize);
       _x[msb][b] = MemoryManager.malloc1(lastSize * _keySize);
     }
-    System.out.println("done in " + (System.nanoTime() - t0) / 1e9);
+    Log.debug("done in " + (System.nanoTime() - t0) / 1e9+" seconds.");
 
 
     // TO DO: otherwise, expand width. Once too wide (and interestingly large
@@ -113,7 +113,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   @Override public void map(Chunk chk[]) {
     long myCounts[] = _counts[chk[0].cidx()]; //cumulative offsets into o and x
     if (myCounts == null) {
-      System.out.println("myCounts empty for chunk " + chk[0].cidx());
+      Log.debug("myCounts empty for chunk " + chk[0].cidx());
       return;
     }
 
@@ -251,9 +251,9 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     // TODO: send nChunks * 256.  Currently we do nNodes * 256.  Or avoid DKV
     // altogether if possible.
 
-    System.out.print("Starting SendSplitMSB on this node (keySize is " + _keySize + " as [");
-    for( int bs : _bytesUsed ) System.out.print(" "+bs);
-    System.out.println(" ]) ...");
+    Log.info("Starting SendSplitMSB on this node (keySize is " + _keySize + " as [");
+    for( int bs : _bytesUsed ) Log.debug(" "+bs);
+    Log.debug(" ]) ...");
 
     long t0 = System.nanoTime();
     Futures myfs = new Futures(); // Private Futures instead of _fs, so can block early and get timing results
@@ -267,8 +267,8 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     myfs.blockForPending();
     double timeTaken = (System.nanoTime() - t0) / 1e9;
     long bytes = _numRowsOnThisNode*( 8/*_o*/ + _keySize) + 64;
-    System.out.println("took : " + timeTaken);
-    System.out.println("  DKV.put " + PrettyPrint.bytes(bytes) + " @ " +
+    Log.debug("took : " + timeTaken+" seconds.");
+    Log.debug("  DKV.put " + PrettyPrint.bytes(bytes) + " @ " +
                        String.format("%.3f", bytes / timeTaken / (1024*1024*1024)) + " GByte/sec  [10Gbit = 1.25GByte/sec]");
   }
 

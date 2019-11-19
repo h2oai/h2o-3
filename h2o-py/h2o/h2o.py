@@ -440,6 +440,30 @@ def import_file(path=None, destination_frame=None, parse=True, header=0, sep=Non
                                         skipped_columns, custom_non_data_line_markers)
 
 
+def load_grid(grid_file_path):
+    """
+    Loads previously saved grid with all its models from the same folder
+    :param grid_file_path: A string containing the path to the file with grid saved.
+     Grid models are expected to be in the same folder.
+    :return: An instance of H2OGridSearch
+    """
+
+    assert_is_type(grid_file_path, str)
+    response = api("POST /3/Grid.bin/import", {"grid_path": grid_file_path})
+    return get_grid(response["name"])
+
+
+def save_grid(grid_directory, grid_id):
+    """
+    Export a Grid and it's all its models into the given folder
+    :param grid_directory: A string containing the path to the folder for the grid to be saved to.
+    :param grid_id: A chracter string with identification of the Grid in H2O. 
+    """
+    assert_is_type(grid_directory, str)
+    assert_is_type(grid_id, str)
+    api("POST /3/Grid.bin/" + grid_id + "/export", {"grid_directory": grid_directory})
+    return grid_directory + "/" + grid_id
+
 def import_hive_table(database=None, table=None, partitions=None, allow_multi_format=False):
     """
     Import Hive table to H2OFrame in memory.
@@ -1003,6 +1027,7 @@ def download_pojo(model, path="", get_jar=True, jar_name=""):
     if not model.have_pojo:
         raise H2OValueError("Export to POJO not supported")
 
+    path = str(os.path.join(path, ''))
     if path == "":
         java_code = api("GET /3/Models.java/%s" % model.model_id)
         print(java_code)
@@ -1591,7 +1616,6 @@ class {}Wrapper({}, DistributionFunc, object):
         assert_satisfies(func, inspect.isclass(func), "The parameter `func` should be str or class")
         for method in ['link', 'init', 'gamma', 'gradient']:
             assert_satisfies(func, method in dir(func), "The class `func` needs to define method `{}`".format(method))
-
         assert_satisfies(class_name, class_name is None,
                          "If class is specified then class_name parameter needs to be None")
 

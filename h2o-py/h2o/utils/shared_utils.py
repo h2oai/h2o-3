@@ -44,19 +44,22 @@ def _py_tmp_key(append):
 
 
 def check_frame_id(frame_id):
-    """Check that the provided frame id is valid in Rapids language."""
-    if frame_id is None:
+    check_id(frame_id, "H2OFrame")
+
+
+def check_id(id, type):
+    """Check that the provided id is valid in Rapids language."""
+    if id is None:
         return
-    if frame_id.strip() == "":
-        raise H2OValueError("Frame id cannot be an empty string: %r" % frame_id)
-    for i, ch in enumerate(frame_id):
+    if id.strip() == "":
+        raise H2OValueError("%s id cannot be an empty string: %r" % (type, id))
+    for i, ch in enumerate(id):
         # '$' character has special meaning at the beginning of the string; and prohibited anywhere else
         if ch == "$" and i == 0: continue
         if ch not in _id_allowed_characters:
-            raise H2OValueError("Character '%s' is illegal in frame id: %s" % (ch, frame_id))
-    if re.match(r"-?[0-9]", frame_id):
-        raise H2OValueError("Frame id cannot start with a number: %s" % frame_id)
-
+            raise H2OValueError("Character '%s' is illegal in %s id: %s" % (ch, type, id))
+    if re.match(r"-?[0-9]", id):
+        raise H2OValueError("%s id cannot start with a number: %s" % (type, id))
 
 
 def temp_ctr():

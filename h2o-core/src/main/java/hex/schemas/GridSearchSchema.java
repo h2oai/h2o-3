@@ -48,6 +48,9 @@ public class GridSearchSchema<G extends Grid<MP>,
   @API(help="Hyperparameter search criteria, including strategy and early stopping directives.  If it is not given, exhaustive Cartesian is used.", required = false, direction = API.Direction.INOUT)
   public HyperSpaceSearchCriteriaV99 search_criteria;
 
+  @API(help = "Level of parallelism during grid model building. 1 = sequential building (default). 0 for adaptive parallelism." +
+          "Any number > 1 sets the exact number of models built in parallel.")
+  public int parallelism;
   //
   // Outputs
   //
@@ -56,6 +59,8 @@ public class GridSearchSchema<G extends Grid<MP>,
 
   @API(help = "Job Key.", direction = API.Direction.OUTPUT)
   public JobV3 job;
+
+  private static final int SEQUENTIAL_GRID_SEARCH = 1; // 1 model built at a time = sequential :)
 
   @Override public S fillFromParms(Properties parms) {
     if( parms.containsKey("hyper_parameters") ) {
@@ -120,6 +125,24 @@ public class GridSearchSchema<G extends Grid<MP>,
     if (parms.containsKey("grid_id")) {
       grid_id = new KeyV3.GridKeyV3(Key.<Grid>make(parms.getProperty("grid_id")));
       parms.remove("grid_id");
+    }
+
+    if (parms.containsKey("parallelism")) {
+      final String parallelismProperty = parms.getProperty("parallelism");
+      try {
+        this.parallelism = Integer.parseInt(parallelismProperty);
+        if (this.parallelism < 0) {
+          throw new IllegalArgumentException(String.format("Parallelism level must be >= 0. Given value: '%d'",
+                  parallelism));
+        }
+      } catch (NumberFormatException e) {
+        final String errorMessage = String.format("Could not parse given parallelism value: '%s' - not a number.",
+                parallelismProperty);
+        throw new IllegalArgumentException(errorMessage, e);
+      }
+      parms.remove("parallelism");
+    } else {
+      this.parallelism = SEQUENTIAL_GRID_SEARCH;
     }
 
     // Do not check validity of parameters, GridSearch is tolerant of bad

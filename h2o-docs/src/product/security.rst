@@ -224,7 +224,7 @@ with HTTPS:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = TRUE)
+    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = FALSE)
 
 The underlying HTTPS implementation is provided by RCurl and by
 extension libcurl and OpenSSL.
@@ -237,7 +237,7 @@ with HTTPS:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, https = TRUE, insecure = TRUE)
+    h2o.init(ip="a.b.c.d", port=54321, https=True, insecure=False)
 
 The underlying HTTPS implementation is provided by RCurl and by
 extension libcurl and OpenSSL.
@@ -384,7 +384,7 @@ For Python, connecting to H2O with authentication is similar:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
 Kerberos H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -498,7 +498,13 @@ and the browser will use last key acquired via kinit on the client machine.
 R Client
 ''''''''
 
-Currently SPNEGO authentication is not supported in R client.
+The following code snippet demonstrates connecting to an H2O cluster
+with SPNEGO authentication:
+
+::
+
+    h2o.init(ip = "a.b.c.d", port = 54321, use_spnego = TRUE)
+
 
 Python Client
 '''''''''''''
@@ -509,7 +515,7 @@ For Python, connecting to H2O with authentication is similar:
 
     from h2o.auth import SpnegoAuth
 
-    h2o.connect(ip = "a.b.c.d", port = 54321, auth = SpnegoAuth(service_principal = "HTTP/h2o_server@EXAMPLE.COM"))
+    h2o.connect(ip="a.b.c.d", port=54321, auth=SpnegoAuth(service_principal="HTTP/h2o_server@EXAMPLE.COM"))
 
 Connecting to SPNEGO configured H2O server is currently possible only via h2o.connect (h2o.init not supported).
 Read below on what to specify as service_principal.
@@ -575,7 +581,7 @@ Example:
 
 ::
 
-    java -Djavax.security.auth.useSubjectCredsOnly=false -jar h2o.jar \
+    java -jar h2o.jar \
         -spnego_login -user_name pricipal@DOMAIN \
         -login_conf /path/to/spnego.conf \
         -spnego_properties /path/to/spnego.properties
@@ -648,7 +654,7 @@ with authentication:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
 LDAP H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^
@@ -817,7 +823,7 @@ For Python, connecting to H2O with authentication is similar:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
 
 PAM H2O Server Side
@@ -934,7 +940,7 @@ with authentication:
 
 ::
 
-    h2o.init(ip = "a.b.c.d", port = 54321, username = "myusername", password = "mypassword")
+    h2o.init(ip="a.b.c.d", port=54321, username="myusername", password="mypassword")
 
 Hash File H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^^

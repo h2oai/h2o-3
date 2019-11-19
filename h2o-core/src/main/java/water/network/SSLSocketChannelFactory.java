@@ -13,6 +13,8 @@ import java.security.cert.CertificateException;
 
 public class SSLSocketChannelFactory {
 
+    private static final String DEFAULT_TLS_VERSION = "TLSv1.2";
+    
     private SSLContext sslContext = null;
     private SSLProperties properties = null;
 
@@ -35,7 +37,7 @@ public class SSLSocketChannelFactory {
         properties = props;
         try {
             if (requiredParamsPresent()) {
-                this.sslContext = SSLContext.getInstance(properties.h2o_ssl_protocol());
+                this.sslContext = SSLContext.getInstance(properties.h2o_ssl_protocol(DEFAULT_TLS_VERSION));
                 this.sslContext.init(keyManager(), trustManager(), null);
             } else {
                 this.sslContext = SSLContext.getDefault();

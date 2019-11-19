@@ -105,7 +105,7 @@ public class PredictCsv {
     switch (category) {
       case AutoEncoder:
         String[] cnames =  this.model.m.getNames();
-        int numCats = this.model.domainMap.size();
+        int numCats = this.model.m.nCatFeatures();
         int numNums = this.model.m.nfeatures()-numCats;
         String[][] domainValues = this.model.m.getDomainValues();
         int lastCatIdx = numCats-1;

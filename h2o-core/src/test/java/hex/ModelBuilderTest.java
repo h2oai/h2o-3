@@ -1,18 +1,26 @@
 package hex;
 
 import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
+
 public class ModelBuilderTest extends TestUtil {
+
+  @Rule
+  public transient TemporaryFolder tmp = new TemporaryFolder();
 
   @BeforeClass()
   public static void setup() { stall_till_cloudsize(1); }
@@ -121,8 +129,24 @@ public class ModelBuilderTest extends TestUtil {
       ModelBuilder.make("invalid", null, null);
       fail();
     } catch (IllegalStateException e) {
-      assertEquals("Algorithm 'invalid' is not registered. Available algos: []", e.getMessage()); // core doesn't have any algos
+      // core doesn't have any algos but depending on the order of tests' execution DummyModelBuilder might already be registered
+      assertTrue( e.getMessage().startsWith("Algorithm 'invalid' is not registered. Available algos: [")); 
     }
+  }
+  
+  @Test
+  public void testMakeByModelParameters() {
+    
+    String registrationAlgoName = "dummymodelbuilder"; // by default it is a lower case of the ModelBuilder's simple name
+    DummyModelParameters params = new DummyModelParameters("dummy_MSG", Key.make( "dummyGBM_key"), registrationAlgoName);
+    new DummyModelBuilder(params, true); // as a side effect DummyModelBuilder will be registered in a static field ModelBuilder.ALGOBASES
+
+    ModelBuilder modelBuilder = ModelBuilder.make(params);
+
+    assertNotNull(modelBuilder._job); 
+    assertNotNull(modelBuilder._result); 
+    assertEquals(params, params); 
+    assertNotEquals(modelBuilder._parms, params); 
   }
 
   @Test
@@ -182,6 +206,40 @@ public class ModelBuilderTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testExportCheckpointsWriteCheck() throws IOException {
+    try {
+      Scope.enter();
+      File dummyFile = tmp.newFile("dummy");
+
+      Frame train = TestFrameCatalog.oneChunkFewRows();
+      
+      // 1. Validation is only down
+      DummyModelParameters failingParms = new DummyModelParameters("Failing Dummy", Key.make("dummny-failing"));
+      failingParms._export_checkpoints_dir = dummyFile.getAbsolutePath();
+      failingParms._train = train._key;
+      failingParms._response_column = train.name(0); 
+
+      DummyModelBuilder failingBuilder = new DummyModelBuilder(failingParms);
+      assertEquals(
+              "ERRR on field: _export_checkpoints_dir: Checkpoints directory path must point to a writable path.\n",
+              failingBuilder.validationErrors()
+      );
+
+      // 2. Now test that CV model will do no validation 
+      DummyModelParameters cvParams = new DummyModelParameters("Failing Dummy", Key.make("dummny-failing"));
+      cvParams._export_checkpoints_dir = dummyFile.getAbsolutePath();
+      cvParams._train = train._key;
+      cvParams._response_column = train.name(0);
+      cvParams._is_cv_model = true; // Emulate CV
+
+      DummyModelBuilder cvBuilder = new DummyModelBuilder(cvParams);
+      assertEquals("", cvBuilder.validationErrors()); // shouldn't fail
+    } finally {
+      Scope.exit();
+    }
+  }
+
   public static class BulkRunner extends H2O.H2OCountedCompleter<BulkRunner> {
     private Job _j;
     private BulkRunner(Job j) { _j = j; }
@@ -214,10 +272,12 @@ public class ModelBuilderTest extends TestUtil {
   public static class DummyModelParameters extends Model.Parameters {
     private String _msg;
     private Key _trgt;
+    private String _registrationAlgoName;
     private boolean _makeModel;
     public DummyModelParameters(String msg, Key trgt) { _msg = msg; _trgt = trgt; }
-    @Override public String fullName() { return "dummy"; }
-    @Override public String algoName() { return "dummy"; }
+    public DummyModelParameters(String msg, Key trgt, String algoRegistrationName) { _msg = msg; _trgt = trgt; _registrationAlgoName = algoRegistrationName; }
+    @Override public String fullName() { return _registrationAlgoName == null ? "dummy": _registrationAlgoName; }
+    @Override public String algoName() { return _registrationAlgoName == null ? "dummy": _registrationAlgoName; }
     @Override public String javaName() { return DummyModelBuilder.class.getName(); }
     @Override public long progressUnits() { return 1; }
   }
@@ -243,6 +303,8 @@ public class ModelBuilderTest extends TestUtil {
       super(parms);
       init(false);
     }
+
+    public DummyModelBuilder(DummyModelParameters parms, boolean startup_once ) { super(parms,startup_once); }
 
     @Override
     protected Driver trainModelImpl() {

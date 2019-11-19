@@ -261,12 +261,14 @@ class H2OCloudNode(object):
     terminated: Only from a signal.  Not normal shutdown.
     """
 
-    def __init__(self, is_client, cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
+    def __init__(self, is_client, allow_clients,
+                 cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
                  xmx, cp, output_dir, test_ssl, ldap_config_path, jvm_opts, flatfile):
         """
         Create a node in a cloud.
 
         :param is_client: Whether this node is an H2O client node (vs a worker node) or not.
+        :param allow_clients: Whether to enable client connections.
         :param cloud_num: Dense 0-based cluster index number.
         :param nodes_per_cloud: How many H2O java instances are in a cluster. Clustes are symmetric.
         :param node_num: This node's dense 0-based node index number.
@@ -282,6 +284,7 @@ class H2OCloudNode(object):
         :return The node object.
         """
         self.is_client = is_client
+        self.allow_clients = allow_clients
         self.cloud_num = cloud_num
         self.nodes_per_cloud = nodes_per_cloud
         self.node_num = node_num
@@ -350,6 +353,9 @@ class H2OCloudNode(object):
                "-ip", self.ip]
         if self.flatfile is not None:
             cmd += ["-flatfile", self.flatfile]
+
+        if self.allow_clients:
+            cmd += ["-allow_clients"]
 
         if self.ldap_config_path is not None:
             cmd.append('-login_conf')
@@ -575,7 +581,7 @@ class H2OCloud(object):
                 with open(self.flatfile, "a") as ff:
                     for node in self.nodes:
                         ff.write("%s:%s\n" % (node.ip, node.port))
-            node = H2OCloudNode(is_client,
+            node = H2OCloudNode(is_client, use_client,
                                 self.cloud_num, actual_nodes_per_cloud, node_num,
                                 self.cloud_name,
                                 self.h2o_jar,
@@ -926,6 +932,8 @@ class Test(object):
             cmd += ['--username', g_ldap_username]
         if g_ldap_password:
             cmd += ['--password', g_ldap_password]
+        if g_kerb_principal:
+            cmd += ['--kerbPrincipal', g_kerb_principal]
 
         if is_runit(test_name):
             if on_hadoop: cmd += ["--onHadoop"]

@@ -1,5 +1,6 @@
 package hex.genmodel.attributes.metrics;
 
+import hex.genmodel.attributes.SerializedName;
 import hex.genmodel.attributes.Table;
 
 public class MojoModelMetricsOrdinal extends MojoModelMetricsSupervised {

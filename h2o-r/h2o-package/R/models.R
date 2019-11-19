@@ -508,13 +508,17 @@ setGeneric("h2o.transform", function(model, ...) {
 #'  By default, model settings are respected, if not overridden by this setting.
 #' @param smoothing Blending parameter. Only effective when blending is enabled.
 #'  By default, model settings are respected, if not overridden by this setting.
+#' @param noise An amount of random noise added to the encoding. This helps prevent overfitting. Defaults to 0.01 * range of response.
+#' @param seed A random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 #' @return Returns an H2OFrame object with data transformed.
 #' @export
 setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, data,
                                                                         data_leakage_handling = NULL,
                                                                         use_blending = NULL,
                                                                         inflection_point = -1,
-                                                                        smoothing = -1) {
+                                                                        smoothing = -1, 
+                                                                        noise = -1, 
+                                                                        seed = -1) {
   
   params <- list()
   params[["model"]] <- model@model_id
@@ -524,6 +528,12 @@ setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, d
   }
   if(!is.null(use_blending)){
     params[["use_blending"]] <- use_blending
+  }
+  if(!is.null(noise)){
+    params[["noise"]] <- noise
+  }
+  if(!is.null(seed)){
+    params[["seed"]] <- seed
   }
   
   

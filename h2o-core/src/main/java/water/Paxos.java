@@ -59,8 +59,16 @@ public abstract class Paxos {
       }
     }
 
+    if(!H2O.ARGS.allow_clients && h2o.isClient()) {
+      // ignore requests from clients if cloud is not started with client connections enabled
+      ListenerService.getInstance().report("clients_disabled", h2o);
+      h2o.removeClient();
+      return 0;
+    }
+    
     if(h2o._heartbeat._cloud_name_hash != H2O.SELF._heartbeat._cloud_name_hash){
       // ignore requests from this node as they are coming from different cluster
+      ListenerService.getInstance().report("different_cloud", h2o);
       return 0;
     }
 
@@ -130,7 +138,7 @@ public abstract class Paxos {
     Paxos.print("Announcing new Cloud Membership: ", H2O.CLOUD._memary);
     Log.info("Cloud of size ", H2O.CLOUD.size(), " formed ", H2O.CLOUD.toString());
     H2Okey leader = H2O.CLOUD.leader()._key;
-    H2O.notifyAboutCloudSize(H2O.SELF_ADDRESS, H2O.API_PORT, leader.getAddress(), leader.htm_port(), H2O.CLOUD.size());
+    H2O.notifyAboutCloudSize(H2O.SELF_ADDRESS, H2O.API_PORT, leader.getAddress(), leader.getApiPort(), H2O.CLOUD.size());
     return 0;
   }
 
@@ -160,7 +168,7 @@ public abstract class Paxos {
       if(H2O.isFlatfileEnabled()){
         for(H2ONode n: H2O.getFlatfile()){
           if(!n._heartbeat._client && !PROPOSED.containsKey(n._key)){
-            Log.info("Flatile::" + n._key + " not active in this cloud. Removing it from the list.");
+            Log.warn("Flatfile entry ignored: Node " + n._key.getIpPortString() + " not active in this cloud. Removing it from the list.");
             n.removeFromCloud();
           }
         }

@@ -18,11 +18,11 @@ import java.io.Serializable;
  */
 public class EventLog extends Keyed<EventLog> {
 
-  public Key<AutoML> _automlKey;
+  public final Key<AutoML> _automl_id;
   public EventLogEntry[] _events;
 
   public EventLog(Key<AutoML> automlKey) {
-    _automlKey = automlKey;
+    _automl_id = automlKey;
     _key = Key.make(idForRun(automlKey));
     _events = new EventLogEntry[0];
   }
@@ -32,12 +32,6 @@ public class EventLog extends Keyed<EventLog> {
     if (null == eventLog) {
       eventLog = new EventLog(runKey);
     }
-    DKV.put(eventLog);
-    return eventLog;
-  }
-
-  static EventLog make(Key<AutoML> runKey) {
-    EventLog eventLog = new EventLog(runKey);
     DKV.put(eventLog);
     return eventLog;
   }
@@ -68,7 +62,7 @@ public class EventLog extends Keyed<EventLog> {
 
   /** Add a EventLogEntry, but don't log. */
   public <V extends Serializable> EventLogEntry<V> addEvent(Level level, Stage stage, String message) {
-    EventLogEntry<V> entry = new EventLogEntry<>(_automlKey, level, stage, message);
+    EventLogEntry<V> entry = new EventLogEntry<>(_automl_id, level, stage, message);
     addEvent(entry);
     return entry;
   }
@@ -91,7 +85,7 @@ public class EventLog extends Keyed<EventLog> {
   }
 
   public TwoDimTable toTwoDimTable() {
-    String name = _automlKey == null ? "(new)" : _automlKey.toString();
+    String name = _automl_id == null ? "(new)" : _automl_id.toString();
     return toTwoDimTable("Event Log for AutoML:" + name);
   }
 

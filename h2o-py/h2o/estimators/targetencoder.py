@@ -21,7 +21,7 @@ class H2OTargetEncoderEstimator(H2OEstimator):
 
     algo = "targetencoder"
     param_names = {"blending", "k", "f", "data_leakage_handling", "model_id", "ignored_columns", "training_frame",
-                   "fold_column"}
+                   "fold_column", "response_column"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -42,6 +42,22 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         Blending enabled/disabled
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = ["home.dest", "cabin", "embarked"]
+        >>> response = "survived"
+        >>> titanic["survived"] = titanic["survived"].asfactor()
+        >>> fold_col = "kfold_column"
+        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
+        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
+        ...                                        f=25,
+        ...                                        blending=True)
+        >>> titanic_te.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=titanic)
+        >>> titanic_te
         """
         return self._parms.get("blending")
 
@@ -57,7 +73,23 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
         parameter.
 
-        Type: ``float``  (default: ``20``).
+        Type: ``float``  (default: ``10``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = ["home.dest", "cabin", "embarked"]
+        >>> response = "survived"
+        >>> titanic["survived"] = titanic["survived"].asfactor()
+        >>> fold_col = "kfold_column"
+        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
+        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
+        ...                                        f=25,
+        ...                                        blending=True)
+        >>> titanic_te.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=titanic)
+        >>> titanic_te
         """
         return self._parms.get("k")
 
@@ -70,9 +102,25 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     @property
     def f(self):
         """
-        Smooothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.
+        Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending' parameter.
 
-        Type: ``float``  (default: ``10``).
+        Type: ``float``  (default: ``20``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = ["home.dest", "cabin", "embarked"]
+        >>> response = "survived"
+        >>> titanic["survived"] = titanic["survived"].asfactor()
+        >>> fold_col = "kfold_column"
+        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
+        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
+        ...                                        f=25,
+        ...                                        blending=True)
+        >>> titanic_te.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=titanic)
+        >>> titanic_te
         """
         return self._parms.get("f")
 
@@ -85,9 +133,26 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     @property
     def data_leakage_handling(self):
         """
-        Data leakage handling strategy. Default to None.
+        Data leakage handling strategy.
 
         One of: ``"none"``, ``"k_fold"``, ``"leave_one_out"``  (default: ``"none"``).
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = ["home.dest", "cabin", "embarked"]
+        >>> response = "survived"
+        >>> titanic["survived"] = titanic["survived"].asfactor()
+        >>> fold_col = "kfold_column"
+        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
+        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
+        ...                                        f=25,
+        ...                                        data_leakage_handling="k_fold",
+        ...                                        blending=True)
+        >>> titanic_te.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=titanic)
+        >>> titanic_te
         """
         return self._parms.get("data_leakage_handling")
 
@@ -118,6 +183,22 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = ["home.dest", "cabin", "embarked"]
+        >>> response = "survived"
+        >>> titanic["survived"] = titanic["survived"].asfactor()
+        >>> fold_col = "kfold_column"
+        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
+        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
+        ...                                        f=25,
+        ...                                        blending=True)
+        >>> titanic_te.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=titanic)
+        >>> titanic_te
         """
         return self._parms.get("training_frame")
 
@@ -132,6 +213,22 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         Column with cross-validation fold index assignment per observation.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = ["home.dest", "cabin", "embarked"]
+        >>> response = "survived"
+        >>> titanic["survived"] = titanic["survived"].asfactor()
+        >>> fold_col = "kfold_column"
+        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
+        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
+        ...                                        f=25,
+        ...                                        blending=True)
+        >>> titanic_te.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=titanic)
+        >>> titanic_te
         """
         return self._parms.get("fold_column")
 
@@ -141,24 +238,53 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         self._parms["fold_column"] = fold_column
 
 
+    @property
+    def response_column(self):
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
+        return self._parms.get("response_column")
+
+    @response_column.setter
+    def response_column(self, response_column):
+        assert_is_type(response_column, None, str)
+        self._parms["response_column"] = response_column
+
+
     def transform(self, frame, data_leakage_handling="None", noise=-1, seed=-1):
         """
 
-        Apply transformation to `te_columns` based on the encoding maps generated during `trains()` method call.
+        Apply transformation to `te_columns` based on the encoding maps generated during `train()` method call.
 
         :param H2OFrame frame: to which frame we are applying target encoding transformations.
         :param str data_leakage_handling: Supported options:
 
-        1) "KFold" - encodings for a fold are generated based on out-of-fold data.
-        2) "LeaveOneOut" - leave one out. Current row's response value is subtracted from the pre-calculated per-level frequencies.
-        3) "None" - we do not holdout anything. Using whole frame for training
+        1) "k_fold" - encodings for a fold are generated based on out-of-fold data.
+        2) "leave_one_out" - leave one out. Current row's response value is subtracted from the pre-calculated per-level frequencies.
+        3) "none" - we do not holdout anything. Using whole frame for training
 
         :param float noise: the amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
         :param int seed: a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
 
         :example:
-        >>> targetEncoder = TargetEncoder(encoded_columns=te_columns, target_column=responseColumnName, blended_avg=True, inflection_point=10, smoothing=20)
-                            >>> encodedTrain = targetEncoder.transform(frame=trainFrame, data_leakage_handling="None", seed=1234, is_train_or_valid=True)
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = ["home.dest", "cabin", "embarked"]
+        >>> response = "survived"
+        >>> titanic[response] = titanic[response].asfactor()
+        >>> fold_col = "kfold_column"
+        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
+        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
+        ...                                        f=25,
+        ...                                        data_leakage_handling="leave_one_out",
+        ...                                        blending=True)
+        >>> titanic_te.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=titanic)
+        >>> transformed = titanic_te.transform(frame=titanic,
+        ...                                    data_leakage_handling="leave_one_out",
+        ...                                    seed=1234)
         """
         output = h2o.api("GET /3/TargetEncoderTransform", data={'model': self.model_id, 'frame': frame.key,
                                                                 'data_leakage_handling': data_leakage_handling,

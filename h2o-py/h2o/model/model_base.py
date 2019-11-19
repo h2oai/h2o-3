@@ -88,7 +88,7 @@ class ModelBase(backwards_compatible(Keyed)):
         params = {}
         for p in self.parms:
             if p in params_to_select.keys():
-                params[p] = self.parms[p]["actual_value"].get(params_to_select[p], None)
+                params[p] = (self.parms[p].get("actual_value") or {}).get(params_to_select[p], None)
             else:
                 params[p] = self.parms[p]["actual_value"]
         return params
