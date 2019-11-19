@@ -68,7 +68,7 @@ Optional Miscellaneous Parameters
 
 - `max_runtime_secs_per_model <data-science/algo-params/max_runtime_secs_per_model.html>`__: Specify the max amount of time dedicated to the training of each individual model in the AutoML run. Defaults to 0 (disabled). Note that setting this parameter can affect AutoML reproducibility.
 
--  `stopping_metric <algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
+-  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
     
     - ``AUTO``: This defaults to ``logloss`` for classification and ``deviance`` for regression. Note that ``custom`` and ``custom_increasing`` can only be used in GBM and DRF with the Python client.
     - ``deviance``

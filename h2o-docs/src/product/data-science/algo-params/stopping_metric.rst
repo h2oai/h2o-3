@@ -3,7 +3,7 @@
 ``stopping_metric``
 -------------------
 
-- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost
+- Available in: GBM, DRF, Deep Learning, AutoML, XGBoost, Isolation Forest
 - Hyperparameter: yes
 
 Description
@@ -19,7 +19,8 @@ then the model will stop training after reaching three scoring events in a row i
 
 Available options for ``stopping_metric`` include the following:
 
-- ``AUTO``: This defaults to ``logloss`` for classification and ``deviance`` (mean residual deviance) for regression.
+- ``AUTO``: This defaults to ``logloss`` for classification, ``deviance`` (mean residual deviance) for regression, and ``anomaly_score`` for Isolation Forest.
+- ``anomaly_score`` (for Isolation Forest only)
 - ``deviance``
 - ``logloss``
 - ``MSE``
@@ -29,6 +30,7 @@ Available options for ``stopping_metric`` include the following:
 - ``AUC``
 - ``lift_top_group``
 - ``misclassification``
+- ``aucpr``
 - ``mean_per_class_error``
 - ``custom`` (for custom metric functions where "less is better". It is expected that the lower bound is 0.) Note that this is currently only supported in the Python client for GBM and DRF. More information available in Python example below and `here <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/dev/custom_functions.md>`__.
 - ``custom_increasing`` (for custom metric functions where "more is better".) Note that this is currently only supported in the Python client for GBM and DRF. More information available in Python example below and `here <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/dev/custom_functions.md>`__.
