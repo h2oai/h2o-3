@@ -18,13 +18,16 @@ def call(final stageConfig) {
 }
 
 private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
-    def loginArgs = ""
-    def loginEnvs = ""
+    def loginArgs
+    def loginEnvs
     if (spnegoAuth) {
         loginArgs = """-spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
-                -login_conf ${stageConfig.customData.kerberosConfigPath} \\
-                -spnego_properties ${stageConfig.customData.kerberosPropertiesPath}"""
+                -login_conf ${stageConfig.customData.spnegoConfigPath} \\
+                -spnego_properties ${stageConfig.customData.spnegoPropertiesPath}"""
         loginEnvs = """export KERB_PRINCIPAL=${stageConfig.customData.kerberosPrincipal}"""
+    } else {
+        loginArgs = "-kerberos_login -login_conf ${stageConfig.customData.kerberosConfigPath}"
+        loginEnvs = ""
     }
     return """
             rm -fv h2o_one_node h2odriver.out
@@ -61,13 +64,12 @@ private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
 private GString getCommandStandalone(final stageConfig) {
     def defaultPort = 54321
     return """
-            java -Djavax.security.auth.useSubjectCredsOnly=false \\
-                -cp build/h2o.jar:\$(cat /opt/hive-jdbc-cp) water.H2OApp \\
+            java -cp build/h2o.jar:\$(cat /opt/hive-jdbc-cp) water.H2OApp \\
                 -port ${defaultPort} -ip \$(hostname --ip-address) -name \$(date +%s) \\
                 -jks mykeystore.jks \\
                 -spnego_login -user_name ${stageConfig.customData.kerberosUserName} \\
-                -login_conf ${stageConfig.customData.kerberosConfigPath} \\
-                -spnego_properties ${stageConfig.customData.kerberosPropertiesPath} \\
+                -login_conf ${stageConfig.customData.spnegoConfigPath} \\
+                -spnego_properties ${stageConfig.customData.spnegoPropertiesPath} \\
                 > standalone_h2o.log 2>&1 & sleep 15
             export KERB_PRINCIPAL=${stageConfig.customData.kerberosPrincipal}
             export CLOUD_IP=\$(hostname --ip-address)

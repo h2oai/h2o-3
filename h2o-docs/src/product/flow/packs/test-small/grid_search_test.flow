@@ -48,6 +48,10 @@
     {
       "type": "cs",
       "input": "buildModel 'naivebayes', {\"model_id\":\"naivebayes-8db789ac-7c02-4cbc-b69b-80344f7b8ca7\",\"training_frame\":\"iris_wheader1.hex\",\"response_column\":\"class\",\"ignored_columns\":[],\"ignore_const_cols\":true,\"min_prob\":0.001,\"eps_prob\":0,\"compute_metrics\":true,\"score_each_iteration\":false,\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":10,\"hyper_parameters\":{\"laplace\":[\"1.1234\",\"5.1234\"],\"min_sdev\":[\"0.2345\",\"0.6543\"],\"eps_sdev\":[\"0.65432\",\"0.23456\"]}}"
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'glm', {\"model_id\":\"glm-8b92cbd3-ddfc-41fb-8538-1d41e4c80c0c\",\"training_frame\":\"iris_wheader.hex\",\"nfolds\":0,\"seed\":-1,\"ignored_columns\":[],\"ignore_const_cols\":true,\"family\":\"gaussian\",\"solver\":\"AUTO\",\"lambda\":[],\"lambda_search\":false,\"standardize\":true,\"non_negative\":false,\"obj_reg\":-1,\"score_each_iteration\":false,\"compute_p_values\":false,\"remove_collinear_columns\":false,\"max_iterations\":-1,\"link\":\"family_default\",\"export_checkpoints_dir\":\"\",\"max_confusion_matrix_size\":20,\"max_hit_ratio_k\":0,\"max_runtime_secs\":0,\"custom_metric_func\":\"\",\"missing_values_handling\":\"MeanImputation\",\"intercept\":true,\"objective_epsilon\":-1,\"beta_epsilon\":0.0001,\"gradient_epsilon\":-1,\"prior\":-1,\"max_active_predictors\":-1,\"interactions\":[],\"interaction_pairs\":[],\"grid_id\":\"grid-ad3538aa-7c08-49ad-bbfb-258c2962d298\",\"hyper_parameters\":{\"alpha\":[[0.2],[0.3]]},\"search_criteria\":{\"strategy\":\"Cartesian\"}}"
     }
   ]
 }

@@ -344,6 +344,9 @@ final public class H2O {
     /** -client, -client=true; Client-only; no work; no homing of Keys (but can cache) */
     public boolean client;
 
+    /** -allow_clients, -allow_clients=true; Enable clients to connect to this H2O node - disabled by default */
+    public boolean allow_clients = false;
+
     /** specifies a file to write when the node is up */
     public String notify_local;
 
@@ -522,6 +525,9 @@ final public class H2O {
       }
       else if (s.matches("client")) {
         trgt.client = true;
+      }
+      else if (s.matches("allow_clients")) {
+        trgt.allow_clients = true;
       }
       else if (s.matches("notify_local")) {
         i = s.incrementAndCheck(i, args);

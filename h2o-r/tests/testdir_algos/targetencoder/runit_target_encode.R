@@ -1,5 +1,5 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source("../../../scripts/h2o-r-test-setup.R")
 ##
 # Testing target encoding map (h2o.target_encode_create) and target encoding frame (h2o.target_encode_apply)
 ##

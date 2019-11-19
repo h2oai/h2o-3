@@ -209,9 +209,25 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @API(help="Custom algorithm parameters.", direction=API.Direction.INPUT)
     public AutoMLCustomParameterV99[] algo_parameters;
 
+    @API(help="A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.", direction= API.Direction.INPUT)
+    public KeyValueV3[] monotone_constraints;
+
     @Override
     public AutoMLBuildSpec.AutoMLBuildModels fillImpl(AutoMLBuildSpec.AutoMLBuildModels impl) {
       super.fillImpl(impl, new String[]{"algo_parameters"});
+
+      if (monotone_constraints != null) {
+        AutoMLCustomParameterV99 mc = new AutoMLCustomParameterV99();
+        mc.scope = ScopeProvider.ANY_ALGO;
+        mc.name = "monotone_constraints";
+        mc.value = JSONValue.fromValue(monotone_constraints);
+        if (algo_parameters == null) {
+          algo_parameters = new AutoMLCustomParameterV99[] {mc};
+        } else {
+          algo_parameters = ArrayUtils.append(algo_parameters, mc);
+        }
+      }
+
       if (algo_parameters != null) {
          AutoMLBuildSpec.AutoMLCustomParameters.Builder builder = AutoMLBuildSpec.AutoMLCustomParameters.create();
         for (AutoMLCustomParameterV99 param : algo_parameters) {

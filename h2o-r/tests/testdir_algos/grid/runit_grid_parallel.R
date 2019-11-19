@@ -17,4 +17,4 @@ test.grid.resume <- function() {
 
 }
 
-doTest("Resume grid search after cluster restart", test.grid.resume)
+doTest("Parallel Grid Search test", test.grid.resume)

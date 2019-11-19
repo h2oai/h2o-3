@@ -56,9 +56,11 @@ def test_target_encoding_fit_method():
     # Drop all non-categorical columns
     te.train(x=None, y=targetColumnName, training_frame=trainingFrame, fold_column="pclass")
     transformed = te.transform(trainingFrame, data_leakage_handling="kfold", seed=1234)
-    assert transformed.col_names == ['home.dest', 'pclass', 'embarked', 'cabin', 'sex', 'survived', 'name', 'age',
-                                     'sibsp', 'parch', 'ticket', 'fare', 'boat', 'body', 'kfold_column',
-                                     'sex_te', 'cabin_te', 'embarked_te', 'home.dest_te'] # 4 encoded columns
+    expected_columns = ['home.dest', 'pclass', 'embarked', 'cabin', 'sex', 'survived', 'name', 'age',
+           'sibsp', 'parch', 'ticket', 'fare', 'boat', 'body', 'kfold_column',
+           'sex_te', 'cabin_te', 'embarked_te', 'home.dest_te']
+    assert len(transformed.col_names) == len(expected_columns)
+    assert sorted(transformed.col_names) == sorted(expected_columns) # 4 encoded columns
 
 
 testList = [
