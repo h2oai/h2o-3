@@ -167,21 +167,24 @@ def call(final pipelineContext) {
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'gbm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true
     ],
     [
       stageName: 'GLM Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'glm'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true
     ],
     [
       stageName: 'GBM Benchmark Client', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
       timeoutValue: 120, target: 'benchmark-gbm-client-mode', component: pipelineContext.getBuildConfig().COMPONENT_ANY,
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'gbm-client'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel()
+      nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true
     ],
     [
       stageName: 'H2O XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
@@ -189,6 +192,7 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true
     ],
     [
       stageName: 'H2O XGB GPU Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
@@ -197,7 +201,8 @@ def call(final pipelineContext) {
       dockerImageSuffix: "gpu",
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'xgb'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
-      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel()
+      nodeLabel: pipelineContext.getBuildConfig().getGPUBenchmarkNodeLabel(),
+      healthCheckSuppressed: true
     ],
     [
       stageName: 'Vanilla XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
@@ -205,6 +210,7 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY],
       customData: [algorithm: 'xgb-vanilla'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true
     ],
     [
       stageName: 'DMLC XGB Benchmark', executionScript: 'h2o-3/scripts/jenkins/groovy/benchmarkStage.groovy',
@@ -212,6 +218,7 @@ def call(final pipelineContext) {
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R],
       customData: [algorithm: 'xgb-dmlc'], makefilePath: pipelineContext.getBuildConfig().BENCHMARK_MAKEFILE_PATH,
       nodeLabel: pipelineContext.getBuildConfig().getBenchmarkNodeLabel(),
+      healthCheckSuppressed: true
     ]
   ]
 
@@ -579,6 +586,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
 	      customDockerArgs = c['customDockerArgs']
           imageSpecifier = c['imageSpecifier']
           dockerImageSuffix = c['dockerImageSuffix']
+          healthCheckSuppressed = c['healthCheckSuppressed']
         }
       }
     ]
@@ -630,6 +638,12 @@ private void invokeStage(final pipelineContext, final body) {
             config.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_PY)
   }
   config.image = config.image ?: pipelineContext.getBuildConfig().getStageImage(config)
+  if (config.healthCheckSuppressed == null) {
+    config.healthCheckSuppressed = false
+  }
+  if (config.healthCheckSuppressed) {
+    echo "######### Healthcheck suppressed #########"
+  }
 
   if (pipelineContext.getBuildConfig().componentChanged(config.component)) {
     def stageClosure = {
@@ -654,7 +668,7 @@ private void invokeStage(final pipelineContext, final body) {
                 echo "###### Unstash scripts. ######"
                 pipelineContext.getUtils().unstashScripts(this)
 
-                healthCheckPassed = pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
+                healthCheckPassed = config.healthCheckSuppressed || pipelineContext.getHealthChecker().checkHealth(this, env.NODE_NAME, config.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig())
                 if (healthCheckPassed) {
                   pipelineContext.getBuildSummary().setStageDetails(this, config.stageName, env.NODE_NAME, env.WORKSPACE)
 
