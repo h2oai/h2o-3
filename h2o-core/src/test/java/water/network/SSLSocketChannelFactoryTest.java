@@ -4,6 +4,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.H2O;
+import water.TestBase;
 import water.util.StringUtils;
 
 import javax.net.ssl.SSLException;
@@ -20,7 +21,7 @@ import java.util.concurrent.CyclicBarrier;
 import static org.junit.Assert.*;
 import static water.util.FileUtils.*;
 
-public class SSLSocketChannelFactoryTest {
+public class SSLSocketChannelFactoryTest extends TestBase {
 
     private int port = 9999;
 

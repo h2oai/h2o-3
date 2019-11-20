@@ -4,6 +4,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import water.Key;
+import water.TestBase;
 import water.fvec.AppendableVec;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
@@ -11,7 +12,7 @@ import water.fvec.Vec;
 
 import java.util.Random;
 
-public class FVecParseWriterTest {
+public class FVecParseWriterTest extends TestBase {
 
   private FVecParseWriter writer;
 

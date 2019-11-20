@@ -1,6 +1,7 @@
 package water.util.fp;
 
 import org.junit.Test;
+import water.TestBase;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -13,7 +14,7 @@ import static org.junit.Assert.*;
  * 
  * Created by vpatryshev on 12/13/16.
  */
-public class FunctionsTest {
+public class FunctionsTest extends TestBase {
 
   @Test
   public void testCompose() throws Exception {

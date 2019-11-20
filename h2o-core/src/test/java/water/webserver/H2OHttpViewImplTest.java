@@ -1,6 +1,7 @@
 package water.webserver;
 
 import org.junit.Test;
+import water.TestBase;
 import water.webserver.iface.H2OHttpView;
 
 import javax.servlet.http.HttpServletRequest;
@@ -10,7 +11,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
 
-public class H2OHttpViewImplTest {
+public class H2OHttpViewImplTest extends TestBase {
 
   @Test
   public void gateHandlerRejectsTraceRequests() {

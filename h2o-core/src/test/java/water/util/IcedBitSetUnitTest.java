@@ -2,10 +2,11 @@ package water.util;
 
 import org.junit.Assert;
 import org.junit.Test;
+import water.TestBase;
 
 import java.util.Random;
 
-public class IcedBitSetUnitTest {
+public class IcedBitSetUnitTest extends TestBase {
 
   @Test (expected = AssertionError.class)
   public void outOfBounds() {

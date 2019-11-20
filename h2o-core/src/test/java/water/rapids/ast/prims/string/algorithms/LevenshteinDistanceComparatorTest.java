@@ -1,11 +1,12 @@
 package water.rapids.ast.prims.string.algorithms;
 
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class LevenshteinDistanceComparatorTest {
+public class LevenshteinDistanceComparatorTest extends TestBase {
 
   private static LevenshteinDistanceComparator levenshteinDistanceComparator = new LevenshteinDistanceComparator();
 

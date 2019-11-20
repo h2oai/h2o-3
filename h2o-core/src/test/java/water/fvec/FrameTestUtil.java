@@ -6,6 +6,7 @@ import org.junit.Ignore;
 import water.DKV;
 import water.Key;
 import water.MRTask;
+import water.TestBase;
 import water.parser.BufferedString;
 import water.util.Log;
 
@@ -16,7 +17,7 @@ import java.util.Arrays;
  * Methods to access frame internals.
  */
 @Ignore("Support for tests, but no actual tests here")
-public class FrameTestUtil {
+public class FrameTestUtil extends TestBase {
 
   public static Frame createFrame(String fname, long[] chunkLayout, String[][] data) {
     Frame f = new Frame(Key.<Frame>make(fname));

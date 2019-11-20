@@ -2,12 +2,13 @@ package water.parser;
 
 import org.junit.Test;
 import water.AutoBuffer;
+import water.TestBase;
 
 import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
-public class BufferedStringTest {
+public class BufferedStringTest extends TestBase {
 
   @Test
   public void testWrite_impl() throws Exception {

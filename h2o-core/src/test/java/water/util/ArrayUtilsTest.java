@@ -1,6 +1,7 @@
 package water.util;
 
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -17,7 +18,7 @@ import static water.util.ArrayUtils.toDouble;
 /**
  * Test FrameUtils interface.
  */
-public class ArrayUtilsTest {
+public class ArrayUtilsTest extends TestBase {
   @Test
   public void testAppendBytes() {
     byte[] sut = {1, 2, 3};

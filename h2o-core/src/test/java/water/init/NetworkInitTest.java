@@ -7,6 +7,7 @@ import java.util.Arrays;
 
 import water.AutoBuffer;
 import water.H2O;
+import water.TestBase;
 import water.util.ArrayUtils;
 import water.util.MathUtils;
 import water.webserver.iface.H2OHttpConfig;
@@ -18,7 +19,7 @@ import static water.TestUtil.ari;
 /**
  * Test to verify correctness of network algebra.
  */
-public class NetworkInitTest {
+public class NetworkInitTest extends TestBase {
 
   // Test for H2OKey
   @Test public void testIPv6AddressEncoding() {

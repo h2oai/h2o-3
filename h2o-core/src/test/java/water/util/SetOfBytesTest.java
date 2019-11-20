@@ -1,6 +1,7 @@
 package water.util;
 
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.*;
 
@@ -9,7 +10,7 @@ import static org.junit.Assert.*;
  * 
  * Created by vpatryshev on 1/13/17.
  */
-public class SetOfBytesTest {
+public class SetOfBytesTest extends TestBase {
 
   @Test
   public void testContains() throws Exception {

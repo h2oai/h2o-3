@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class H2ONodeTimestampTest {
+public class H2ONodeTimestampTest extends TestBase {
 
     @Test
     public void decodeClientInfoNotClient(){

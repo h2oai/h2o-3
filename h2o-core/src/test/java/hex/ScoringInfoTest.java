@@ -5,12 +5,13 @@ import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.junit.Test;
 import water.IcedWrapper;
+import water.TestBase;
 import water.util.TwoDimTable;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class ScoringInfoTest {
+public class ScoringInfoTest extends TestBase {
 
 
     @Test

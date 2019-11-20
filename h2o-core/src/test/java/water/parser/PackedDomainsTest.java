@@ -1,6 +1,7 @@
 package water.parser;
 
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.*;
 import static water.parser.PackedDomains.*;
@@ -10,7 +11,7 @@ import static water.parser.PackedDomains.*;
  * 
  * Created by vpatryshev on 4/12/17.
  */
-public class PackedDomainsTest {
+public class PackedDomainsTest extends TestBase {
 
   @Test
   public void testSizeOf() throws Exception {

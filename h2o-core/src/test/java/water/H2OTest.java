@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class H2OTest {
+public class H2OTest extends TestBase {
   @Test
   public void testGetSysProperty() {
     assertEquals("default1", H2O.getSysProperty("test.testGetSysProperty", "default1"));

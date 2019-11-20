@@ -1,11 +1,11 @@
 package hex.tree.xgboost.matrix;
 
-import org.junit.Assert;
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.assertEquals;
 
-public class SparseMatrixFactoryTest {
+public class SparseMatrixFactoryTest extends TestBase {
     
     @Test
     public void testNestedPointerInit() {

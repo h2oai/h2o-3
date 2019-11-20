@@ -2,6 +2,7 @@ package water.parser;
 
 import org.junit.Before;
 import org.junit.Test;
+import water.TestBase;
 import water.TestUtil;
 import water.fvec.NFSFileVec;
 import water.fvec.Vec;
@@ -11,7 +12,7 @@ import static org.junit.Assert.*;
 /**
  * Unit test for methods of ARFFParser, for integration tests {@see ParserTestARFF}
  */
-public class ARFFParserTest {
+public class ARFFParserTest extends TestBase {
 
   @Before
   public void setUp() throws Exception {

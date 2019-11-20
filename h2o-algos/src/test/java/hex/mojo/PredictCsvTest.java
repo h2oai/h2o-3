@@ -35,7 +35,7 @@ public class PredictCsvTest extends TestUtil{
 
   @Before
   public void setUp() throws Exception {
-    TestUtil.stall_till_cloudsize(1);
+    stall_till_cloudsize(1);
     originalSecurityManager = System.getSecurityManager();
     System.setSecurityManager(new PreventExitSecurityManager());
   }
@@ -52,7 +52,7 @@ public class PredictCsvTest extends TestUtil{
     try {
       Scope.enter();
       // The following iris dataset has columns named: {C1,C2,C3,C4,C5}, while the test dataset used below has descriptive names. 
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parse_test_file("smalldata/iris/iris.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;
@@ -108,7 +108,7 @@ public class PredictCsvTest extends TestUtil{
     try {
       Scope.enter();
       // The following iris dataset has columns named: {C1,C2,C3,C4,C5}, while the test dataset used below has descriptive names. 
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/junit/iris.csv"));
+      Frame train = Scope.track(parse_test_file("smalldata/junit/iris.csv"));
 
       GBMModel.GBMParameters p = new GBMModel.GBMParameters();
       p._train = train._key;

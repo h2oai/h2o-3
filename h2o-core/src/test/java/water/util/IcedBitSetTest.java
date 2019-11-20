@@ -3,10 +3,11 @@ package water.util;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import water.TestBase;
 
 import java.util.Random;
 
-public class IcedBitSetTest {
+public class IcedBitSetTest extends TestBase {
   static void check(IcedBitSet bs, int bitoff, Integer[] idx) {
     String correct = "{";
     if (bitoff > 0) {

@@ -2,12 +2,13 @@ package hex.tree.xgboost;
 
 import org.junit.Test;
 import water.H2O;
+import water.TestBase;
 
 import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class XGBoostModelTest {
+public class XGBoostModelTest extends TestBase {
 
   @Test
   public void testCreateParamsNThreads() throws Exception {

@@ -4,11 +4,12 @@ import org.apache.commons.lang.ArrayUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import water.TestBase;
 import water.exceptions.H2OIllegalArgumentException;
 
 
 
-public class AUC2Test {
+public class AUC2Test extends TestBase {
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();

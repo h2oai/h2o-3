@@ -1,10 +1,11 @@
 package water.parser;
 
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.*;
 
-public class ParseSetupTest {
+public class ParseSetupTest extends TestBase {
 
   @Test
   public void isNA() throws Exception {

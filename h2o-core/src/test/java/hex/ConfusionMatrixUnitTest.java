@@ -4,10 +4,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ProvideSystemProperty;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
+import water.TestBase;
 
 import static org.junit.Assert.*;
 
-public class ConfusionMatrixUnitTest {
+public class ConfusionMatrixUnitTest extends TestBase {
 
   @Rule
   public final ProvideSystemProperty provideSystemProperty = new ProvideSystemProperty("sys.ai.h2o.cm.maxClasses", "7");

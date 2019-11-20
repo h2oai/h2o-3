@@ -4,7 +4,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class HeartBeatTest {
+public class HeartBeatTest extends TestBase{
 
   @Test
   public void testSetMem() {

@@ -5,11 +5,12 @@ import static org.junit.Assert.assertEquals;
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 import org.junit.Test;
+import water.TestBase;
 
 /**
  * Java version string parser test.
  */
-public class JavaVersionUtilsTest {
+public class JavaVersionUtilsTest extends TestBase {
 
     @Test
     public void testPreJava10Parsing() {

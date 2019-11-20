@@ -9,6 +9,7 @@ import ml.dmlc.xgboost4j.java.*;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import water.TestBase;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -22,7 +23,7 @@ import static water.util.FileUtils.getFile;
 
 // this test demonstrates that XGBoost Predictor can be used to calculate feature contributions (Tree SHAP values)
 // naive (=slow) algorithm implemented and compared to implementation in XGBoost Predictor
-public class XgbPredictContribsTest {
+public class XgbPredictContribsTest extends TestBase {
 
   private List<Map<Integer, Float>> trainData;
   private DMatrix trainMat;

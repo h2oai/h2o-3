@@ -4,18 +4,12 @@ import hex.CreateFrame;
 import hex.genmodel.easy.RowData;
 import org.junit.AfterClass;
 import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.rules.TestRule;
-import org.junit.runner.Description;
-import org.junit.runners.model.Statement;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.DefaultParserProviders;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.util.FileUtils;
-import water.util.Log;
-import water.util.Timer;
 import water.util.TwoDimTable;
 
 import java.io.*;
@@ -26,7 +20,7 @@ import java.util.*;
 import static org.junit.Assert.*;
 
 @Ignore("Support for tests, but no actual tests here")
-public class TestUtil extends Iced {
+public class TestUtil extends TestBase {
   { // we need assertions to be checked at least when tests are running
     ClassLoader loader = getClass().getClassLoader();
     loader.setDefaultAssertionStatus(true);
@@ -34,8 +28,6 @@ public class TestUtil extends Iced {
 
   public final static boolean JACOCO_ENABLED = Boolean.parseBoolean(System.getProperty("test.jacocoEnabled", "false"));
   private static boolean _stall_called_before = false;
-  private static String[] ignoreTestsNames;
-  private static String[] doonlyTestsNames;
   protected static int _initial_keycnt = 0;
   /** Minimal cloud size to start test. */
   protected static int MINCLOUDSIZE = Integer.parseInt(System.getProperty("cloudSize", "1"));
@@ -44,21 +36,7 @@ public class TestUtil extends Iced {
 
   public TestUtil() { this(1); }
   public TestUtil(int minCloudSize) {
-    MINCLOUDSIZE = Math.max(MINCLOUDSIZE,minCloudSize);
-    String ignoreTests = System.getProperty("ignore.tests");
-    if (ignoreTests != null) {
-      ignoreTestsNames = ignoreTests.split(",");
-      if (ignoreTestsNames.length == 1 && ignoreTestsNames[0].equals("")) {
-        ignoreTestsNames = null;
-      }
-    }
-    String doonlyTests = System.getProperty("doonly.tests");
-    if (doonlyTests != null) {
-      doonlyTestsNames = doonlyTests.split(",");
-      if (doonlyTestsNames.length == 1 && doonlyTestsNames[0].equals("")) {
-        doonlyTestsNames = null;
-      }
-    }
+    super(minCloudSize);
   }
 
   // ==== Test Setup & Teardown Utilities ====
@@ -235,76 +213,6 @@ public class TestUtil extends Iced {
   private static class DKVCleaner extends MRTask<DKVCleaner> {
     @Override public void setupLocal() {  H2O.raw_clear();  water.fvec.Vec.ESPC.clear(); }
   }
-
-  /** Execute this rule before each test to print test name and test class */
-  @Rule transient public TestRule logRule = new TestRule() {
-
-    @Override public Statement apply(Statement base, Description description) {
-      Log.info("###########################################################");
-      Log.info("  * Test class name:  " + description.getClassName());
-      Log.info("  * Test method name: " + description.getMethodName());
-      Log.info("###########################################################");
-      return base;
-    }
-  };
-
-  /* Ignore tests specified in the ignore.tests system property */
-  @Rule transient public TestRule runRule = new TestRule() {
-    @Override public Statement apply(Statement base, Description description) {
-      String testName = description.getClassName() + "#" + description.getMethodName();
-      boolean ignored = false;
-      if (ignoreTestsNames != null && ignoreTestsNames.length > 0) {
-        for (String tn : ignoreTestsNames) {
-          if (testName.startsWith(tn)) {
-            ignored = true;
-            break;
-          }
-        }
-      }
-      if (doonlyTestsNames != null && doonlyTestsNames.length > 0) {
-        ignored = true;
-        for (String tn : doonlyTestsNames) {
-          if (testName.startsWith(tn)) {
-            ignored = false;
-            break;
-          }
-        }
-      }
-      if (ignored) {
-        // Ignored tests trump do-only tests
-        Log.info("#### TEST " + testName + " IGNORED");
-        return new Statement() {
-          @Override
-          public void evaluate() throws Throwable {}
-        };
-      } else {
-        return base;
-      }
-    }
-  };
-
-  @Rule transient public TestRule timerRule = new TestRule() {
-    @Override public Statement apply(Statement base, Description description) {
-      return new TimerStatement(base, description.getClassName()+"#"+description.getMethodName());
-    }
-    class TimerStatement extends Statement {
-      private final Statement _base;
-      private final String _tname;
-      Throwable _ex;
-      public TimerStatement(Statement base, String tname) { _base = base; _tname = tname;}
-      @Override public void evaluate() throws Throwable {
-        Timer t = new Timer();
-        try {
-          _base.evaluate();
-        } catch( Throwable ex ) {
-          _ex=ex;
-          throw _ex;
-        } finally {
-          Log.info("#### TEST "+_tname+" EXECUTION TIME: " + t.toString());
-        }
-      }
-    }
-  };
 
   // ==== Data Frame Creation Utilities ====
 

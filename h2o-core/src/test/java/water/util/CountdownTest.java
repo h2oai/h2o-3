@@ -2,10 +2,11 @@ package water.util;
 
 import org.junit.Assert;
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.*;
 
-public class CountdownTest {
+public class CountdownTest extends TestBase {
   
   private void short_sleep() {
     try {

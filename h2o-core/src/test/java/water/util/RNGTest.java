@@ -2,10 +2,11 @@ package water.util;
 
 import org.junit.Assert;
 import org.junit.Test;
+import water.TestBase;
 
 import java.util.Random;
 
-public class RNGTest {
+public class RNGTest extends TestBase {
   final static long[] seed = {7234723423423402343L, 1234882173459262304L};
 
   enum NumType { DOUBLE, FLOAT, LONG, INT }

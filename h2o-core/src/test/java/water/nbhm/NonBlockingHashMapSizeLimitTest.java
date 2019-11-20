@@ -2,8 +2,9 @@ package water.nbhm;
 
 import org.junit.Ignore;
 import org.junit.Test;
+import water.TestBase;
 
-public class NonBlockingHashMapSizeLimitTest {
+public class NonBlockingHashMapSizeLimitTest extends TestBase {
   @Ignore
   @Test public void run() {
     NonBlockingHashMap<Object, Object> nbhm = new NonBlockingHashMap();

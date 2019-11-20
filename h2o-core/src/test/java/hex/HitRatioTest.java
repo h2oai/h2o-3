@@ -4,11 +4,13 @@ import static hex.ModelMetricsMultinomial.updateHits;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.TestBase;
+
 import static water.TestUtil.stall_till_cloudsize;
 
 import java.util.Arrays;
 
-public class HitRatioTest {
+public class HitRatioTest extends TestBase {
 
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
 

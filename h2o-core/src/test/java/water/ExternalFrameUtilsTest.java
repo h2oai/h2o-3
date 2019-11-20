@@ -26,7 +26,7 @@ import static water.ExternalFrameUtils.vecTypesFromExpectedTypes;
 import static water.fvec.Vec.T_STR;
 import static water.fvec.Vec.T_TIME;
 
-public class ExternalFrameUtilsTest {
+public class ExternalFrameUtilsTest extends TestBase {
 
   static final int[] EMPTY_ARI = new int[0];
 

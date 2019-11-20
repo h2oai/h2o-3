@@ -3,10 +3,11 @@ package hex.tree;
 import hex.tree.DHistogram.NASplitDir;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.*;
 
-public class DTreeTest {
+public class DTreeTest extends TestBase {
 
   @Test
   public void testFindBestSplitPoint_pubdev6495() {

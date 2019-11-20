@@ -2,13 +2,14 @@ package hex.tree.xgboost.rabit.util;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+import water.TestBase;
 import water.util.Pair;
 
 import java.util.*;
 
 import static org.junit.Assert.*;
 
-public class LinkMapTest {
+public class LinkMapTest extends TestBase {
 
     @Test(expected = IllegalStateException.class)
     public void shouldThrowExceptionOnNegativeRank() {

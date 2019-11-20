@@ -1,6 +1,7 @@
 package hex;
 
 import org.junit.Test;
+import water.TestBase;
 import water.util.Log;
 
 import java.io.BufferedReader;
@@ -11,7 +12,7 @@ import java.util.zip.GZIPInputStream;
 
 import static org.junit.Assert.*;
 
-public class AUCBuilderTest {
+public class AUCBuilderTest extends TestBase {
 
   @Test
   public void testPerRow() {

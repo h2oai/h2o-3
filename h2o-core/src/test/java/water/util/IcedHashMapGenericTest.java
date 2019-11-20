@@ -2,6 +2,7 @@ package water.util;
 
 import org.junit.Test;
 import water.AutoBuffer;
+import water.TestBase;
 
 import java.io.ByteArrayOutputStream;
 import java.util.Collections;
@@ -10,7 +11,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class IcedHashMapGenericTest {
+public class IcedHashMapGenericTest extends TestBase {
 
   @Test
   public void testJavaNativeValues() {

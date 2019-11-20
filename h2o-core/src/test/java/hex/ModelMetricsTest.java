@@ -1,10 +1,11 @@
 package hex;
 
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.*;
 
-public class ModelMetricsTest {
+public class ModelMetricsTest extends TestBase {
 
   @Test
   public void testEmptyModelAUC() {

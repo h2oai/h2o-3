@@ -1,6 +1,7 @@
 package water.util;
 
 import org.junit.Test;
+import water.TestBase;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -11,7 +12,7 @@ import static org.junit.Assert.*;
 /**
  * Tests for StringUtils
  */
-public class StringUtilsTest {
+public class StringUtilsTest extends TestBase {
 
   @Test
   public void testToString() throws Exception {

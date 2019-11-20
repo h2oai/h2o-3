@@ -2,11 +2,12 @@ package water.api;
 
 import org.junit.Assert;
 import org.junit.Test;
+import water.TestBase;
 
 /**
  * Various tests for schema parsing.
  */
-public class SchemaParsingTest {
+public class SchemaParsingTest extends TestBase {
 
   @Test public void testArrayParse() {
     String[] testCases = new String[] { "null", "[]", "[1.0]",

@@ -1,6 +1,7 @@
 package hex.tree.xgboost;
 
 import org.junit.Test;
+import water.TestBase;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -8,7 +9,7 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class BoosterParmsTest {
+public class BoosterParmsTest extends TestBase {
 
   @Test
   public void testGetLocalized() {

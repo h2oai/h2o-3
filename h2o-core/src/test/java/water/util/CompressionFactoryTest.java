@@ -3,6 +3,7 @@ package water.util;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import water.TestBase;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -12,7 +13,7 @@ import java.util.zip.GZIPOutputStream;
 
 import static org.junit.Assert.*;
 
-public class CompressionFactoryTest {
+public class CompressionFactoryTest extends TestBase {
 
   @Rule
   public ExpectedException ee = ExpectedException.none();

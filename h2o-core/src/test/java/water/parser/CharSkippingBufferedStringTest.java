@@ -2,10 +2,11 @@ package water.parser;
 
 import org.junit.Before;
 import org.junit.Test;
+import water.TestBase;
 
 import static org.junit.Assert.*;
 
-public class CharSkippingBufferedStringTest {
+public class CharSkippingBufferedStringTest extends TestBase {
 
 
     private CharSkippingBufferedString charSkippingBufferedString;

@@ -5,6 +5,7 @@ import org.junit.Ignore;
 import water.DKV;
 import water.Key;
 import water.Scope;
+import water.TestBase;
 import water.rapids.Env;
 import water.rapids.Session;
 
@@ -44,7 +45,7 @@ import java.util.Random;
  * The frame created will be automatically tracked in the currently active {@link Scope}.
  */
 @Ignore
-public class TestFrameBuilder {
+public class TestFrameBuilder extends TestBase {
 
   private static final long NOT_SET = -1;
   private HashMap<Integer, String[]> stringData = new HashMap<>();

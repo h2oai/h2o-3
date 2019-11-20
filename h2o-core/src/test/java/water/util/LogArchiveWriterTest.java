@@ -1,6 +1,7 @@
 package water.util;
 
 import org.junit.Test;
+import water.TestBase;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -11,7 +12,7 @@ import java.util.zip.ZipInputStream;
 
 import static org.junit.Assert.*;
 
-public class LogArchiveWriterTest {
+public class LogArchiveWriterTest extends TestBase {
 
   private final Date date1 = new Date(10);
   private final Date date2 = new Date(20);

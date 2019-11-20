@@ -1,6 +1,7 @@
 package water.util.fp;
 
 import org.junit.Test;
+import water.TestBase;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -11,7 +12,7 @@ import static water.util.fp.FP.*;
 /**
  * Tests set for FP library
  */
-public class FPTest {
+public class FPTest extends TestBase {
 
   @Test
   public void testSome() throws Exception {

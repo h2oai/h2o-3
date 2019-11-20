@@ -2,6 +2,7 @@ package water.init;
 
 import org.junit.Assert;
 import org.junit.Test;
+import water.TestBase;
 
 import java.util.Collections;
 
@@ -11,7 +12,7 @@ import static water.init.HostnameGuesser.calcArrayList;
 import static water.init.NetworkInitTest.toByte;
 import static water.init.NetworkInitTest.toOctects;
 
-public class HostnameGuesserTest {
+public class HostnameGuesserTest extends TestBase {
 
   @Test
   public void testIPV4CidrBlocks() {

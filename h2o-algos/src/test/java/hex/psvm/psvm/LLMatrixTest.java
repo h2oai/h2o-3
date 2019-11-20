@@ -3,12 +3,13 @@ package hex.psvm.psvm;
 import Jama.CholeskyDecomposition;
 import Jama.Matrix;
 import org.junit.Test;
+import water.TestBase;
 
 import java.util.Random;
 
 import static org.junit.Assert.*;
 
-public class LLMatrixTest {
+public class LLMatrixTest extends TestBase {
 
   @Test
   public void cholSolve_identity() {

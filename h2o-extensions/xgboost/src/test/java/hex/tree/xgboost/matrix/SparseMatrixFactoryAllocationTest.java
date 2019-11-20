@@ -6,6 +6,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import water.TestBase;
 import water.TestUtil;
 
 import java.util.Arrays;
@@ -14,7 +15,7 @@ import java.util.Collection;
 import static org.junit.Assert.assertEquals;
 
 @RunWith(Parameterized.class)
-public class SparseMatrixFactoryAllocationTest {
+public class SparseMatrixFactoryAllocationTest extends TestBase {
 
     @BeforeClass
     public static void beforeClass(){

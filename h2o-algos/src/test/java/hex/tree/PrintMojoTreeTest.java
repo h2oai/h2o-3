@@ -10,6 +10,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.Scope;
+import water.TestBase;
 import water.TestUtil;
 import water.fvec.Frame;
 
@@ -21,7 +22,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.Assert.*;
 
-public class PrintMojoTreeTest {
+public class PrintMojoTreeTest extends TestBase {
 
   @Rule
   public TemporaryFolder folder = new TemporaryFolder();

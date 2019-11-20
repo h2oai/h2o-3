@@ -7,7 +7,7 @@ import java.util.Collection;
 import java.util.HashMap;
 
 @Ignore
-public class NodeLocalEventCollectingListener implements H2OListenerExtension {
+public class NodeLocalEventCollectingListener extends TestBase implements H2OListenerExtension {
 
   private HashMap<String, ArrayList<Object[]>> reports;
   @Override

@@ -8,7 +8,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
-public class AutoSerialTest extends Iced {
+public class AutoSerialTest extends TestBase {
   @BeforeClass public static void stall() { TestUtil.stall_till_cloudsize(1); }
   @AfterClass public static void checkLeakedKeys() { TestUtil.checkLeakedKeys(); }
 

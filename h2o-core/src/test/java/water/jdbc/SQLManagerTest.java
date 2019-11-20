@@ -8,13 +8,14 @@ import org.junit.contrib.java.lang.system.ProvideSystemProperty;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
 import org.junit.rules.ExpectedException;
 import water.H2O;
+import water.TestBase;
 
 import java.io.File;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.concurrent.ArrayBlockingQueue;
 
-public class SQLManagerTest {
+public class SQLManagerTest extends TestBase {
 
   private static final File BUILD_DIR = new File("build").getAbsoluteFile();
 
