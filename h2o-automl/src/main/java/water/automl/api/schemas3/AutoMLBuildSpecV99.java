@@ -15,6 +15,7 @@ import water.api.schemas3.*;
 import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
 import water.util.*;
 
+import java.util.Arrays;
 import java.util.Map;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
@@ -115,7 +116,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
       )
     public String[] ignored_columns;
 
-    @API(help="Metric used to sort leaderboard", direction=API.Direction.INPUT)
+    @API(help="Metric used to sort leaderboard", valuesProvider = AutoMLMetricProvider.class, direction=API.Direction.INPUT)
     public String sort_metric;
 
   } // class AutoMLInputV99
@@ -161,6 +162,24 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   public static final class AlgoProvider extends EnumValuesProvider<Algo> {
     public AlgoProvider() {
       super(Algo.class);
+    }
+  }
+
+  public static final class AutoMLMetricProvider extends EnumValuesProvider<StoppingMetric> {
+    public AutoMLMetricProvider() {
+      // list all metrics currently supported in leaderboard, and by all algos used in AutoML, incl. corresponding gris searches.
+      super(StoppingMetric.class, e -> Arrays.asList(
+              StoppingMetric.AUTO,
+              StoppingMetric.AUC,
+              StoppingMetric.AUCPR,
+              StoppingMetric.deviance,
+              StoppingMetric.logloss,
+              StoppingMetric.MAE,
+              StoppingMetric.mean_per_class_error,
+              StoppingMetric.MSE,
+              StoppingMetric.RMSE,
+              StoppingMetric.RMSLE
+      ).contains(e));
     }
   }
 

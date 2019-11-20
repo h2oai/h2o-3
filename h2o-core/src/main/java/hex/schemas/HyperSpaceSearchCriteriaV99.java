@@ -1,10 +1,9 @@
 package hex.schemas;
 
-import hex.ScoreKeeper;
+import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.HyperSpaceSearchCriteria;
 import water.api.API;
 import water.api.EnumValuesProvider;
-import water.api.schemas3.ModelParamsValuesProviders.StoppingMetricValuesProvider;
 import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 
@@ -54,14 +53,27 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
     @API(help = "Maximum time to spend building models (optional).", direction = API.Direction.INOUT)
     public double max_runtime_secs;
 
-    @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable)",
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public int stopping_rounds;
 
-    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)", valuesProvider = StoppingMetricValuesProvider.class, level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
-    public ScoreKeeper.StoppingMetric stopping_metric;
+    @API(help = "Metric to use for early stopping (AUTO: logloss for classification, deviance for regression)",
+            valuesProvider = RandomSearchStoppingMetricValuesProvider.class,
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    public StoppingMetric stopping_metric;
 
-    @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
+    @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)",
+            level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
     public double stopping_tolerance;
+  }
+
+  public static class RandomSearchStoppingMetricValuesProvider extends EnumValuesProvider<StoppingMetric> {
+    public RandomSearchStoppingMetricValuesProvider() {
+      super(StoppingMetric.class, new StoppingMetric[]{ // non-supported stopping metrics in grid search, cf. ScoringInfo.metric
+              StoppingMetric.custom,
+              StoppingMetric.custom_increasing,
+      });
+    }
   }
 
   public static class StrategyValuesProvider extends EnumValuesProvider<HyperSpaceSearchCriteria.Strategy> {
