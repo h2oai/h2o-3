@@ -8,7 +8,7 @@ from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.model.model_base import ModelBase
 from h2o.utils.shared_utils import check_id
-from h2o.utils.typechecks import assert_is_type, is_type
+from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 
 class H2OAutoML(Keyed):
@@ -144,99 +144,93 @@ class H2OAutoML(Keyed):
                   "*******************************************************************\n" \
                   "\nVerbose Error Message:")
 
-        
+        self._job = None
+        self._leader_id = None
+        self._leaderboard = None
+        self._verbosity = verbosity
+        self._event_log = None
+        self._training_info = None
+        self._state_json = None
+
         # Make bare minimum build_control (if max_runtimes_secs is an invalid value, it will catch below)
-        self.build_control = {
-            'stopping_criteria': {
-                'max_runtime_secs': max_runtime_secs,
-            }
-        }
+        self.build_control = dict(
+            stopping_criteria=dict()
+        )
 
         # Make bare minimum build_models
-        self.build_models = {
-            'exclude_algos': None
-        }
+        self.build_models = dict()
 
-        # nfolds must be an non-negative integer and not equal to 1:
-        if nfolds is not 5:
-            assert_is_type(nfolds,int)
+        # Make bare minimum input_spec
+        self.input_spec = dict()
+
+        # build_control params #
+
+        assert_is_type(project_name, None, str)
+        check_id(project_name, "H2OAutoML")
+        self.project_name = self.build_control["project_name"] = project_name
+
+        assert_is_type(nfolds, int)
         assert nfolds >= 0, "nfolds set to " + str(nfolds) + "; nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
-        assert nfolds is not 1, "nfolds set to " + str(nfolds) + "; nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."           
-        self.build_control["nfolds"] = nfolds
-        self.nfolds = nfolds
+        assert nfolds is not 1, "nfolds set to " + str(nfolds) + "; nfolds = 1 is an invalid value. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
+        self.nfolds = self.build_control["nfolds"] = nfolds
 
-        # Pass through to all algorithms
-        if balance_classes is True:
-            self.build_control["balance_classes"] = balance_classes
-            self.balance_classes = balance_classes
-        if class_sampling_factors is not None:
-            self.build_control["class_sampling_factors"] = class_sampling_factors
-            self.class_sampling_factors = class_sampling_factors
-        if max_after_balance_size != 5.0:
-            assert_is_type(max_after_balance_size, float)
-            self.build_control["max_after_balance_size"] = max_after_balance_size
-            self.max_after_balance_size = max_after_balance_size
+        assert_is_type(balance_classes, bool)
+        self.balance_classes = self.build_control["balance_classes"] = balance_classes
 
-        # If max_runtime_secs is not provided, then it is set to default (3600 secs)
-        if max_runtime_secs is not 3600:
-            assert_is_type(max_runtime_secs, int)
-        self.max_runtime_secs = max_runtime_secs
+        assert_is_type(class_sampling_factors, None, [numeric])
+        self.class_sampling_factors = self.build_control["class_sampling_factors"] = class_sampling_factors
+
+        assert_is_type(max_after_balance_size, None, numeric)
+        self.max_after_balance_size = self.build_control["max_after_balance_size"] = max_after_balance_size
+
+        assert_is_type(keep_cross_validation_models, bool)
+        self.keep_cross_validation_models = self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
+
+        assert_is_type(keep_cross_validation_fold_assignment, bool)
+        self.keep_cross_validation_fold_assignment = self.build_control["keep_cross_validation_fold_assignment"] = keep_cross_validation_fold_assignment
+
+        assert_is_type(keep_cross_validation_predictions, bool)
+        self.keep_cross_validation_predictions = self.build_control["keep_cross_validation_predictions"] = keep_cross_validation_predictions
+
+        assert_is_type(export_checkpoints_dir, None, str)
+        self.export_checkpoints_dir = self.build_control["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+        # stopping criteria params #
+
+        assert_is_type(max_runtime_secs, None, int)
+        self.max_runtime_secs = self.build_control['stopping_criteria']['max_runtime_secs'] = max_runtime_secs
 
         assert_is_type(max_runtime_secs_per_model, None, int)
-        self.max_runtime_secs_per_model = max_runtime_secs_per_model
-        if self.max_runtime_secs_per_model is not None:
-            self.build_control["stopping_criteria"]["max_runtime_secs_per_model"] = self.max_runtime_secs_per_model
+        self.max_runtime_secs_per_model = self.build_control["stopping_criteria"]["max_runtime_secs_per_model"] = max_runtime_secs_per_model
 
-        # Add other parameters to build_control if available
-        if max_models is not None:
-            assert_is_type(max_models, int)
-            self.build_control["stopping_criteria"]["max_models"] = max_models
-        self.max_models = max_models
+        assert_is_type(max_models, None, int)
+        self.max_models = self.build_control["stopping_criteria"]["max_models"] = max_models
 
-        if stopping_metric is not "AUTO":
-            assert_is_type(stopping_metric, str)
-        self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
-        self.stopping_metric = stopping_metric
+        assert_is_type(stopping_metric, None, str)
+        self.stopping_metric = self.build_control["stopping_criteria"]["stopping_metric"] = stopping_metric
 
-        if stopping_tolerance is not None:
-            assert_is_type(stopping_tolerance, float)
-            self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
-        self.stopping_tolerence = stopping_tolerance
+        assert_is_type(stopping_tolerance, None, numeric)
+        self.stopping_tolerance = self.build_control["stopping_criteria"]["stopping_tolerance"] = stopping_tolerance
 
-        if stopping_rounds is not 3:
-            assert_is_type(stopping_rounds, int)
-        self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
-        self.stopping_rounds = stopping_rounds    
+        assert_is_type(stopping_rounds, None, int)
+        self.stopping_rounds = self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
 
-        if seed is not None:
-            assert_is_type(seed, int)
-            self.build_control["stopping_criteria"]["seed"] = seed
-            self.seed = seed
+        assert_is_type(seed, int)
+        self.seed = self.build_control["stopping_criteria"]["seed"] = seed
 
-        # Set project name if provided. If None, then we set in .train() to "automl_" + training_frame.frame_id
-        if project_name is not None:
-            assert_is_type(project_name, str)
-            check_id(project_name, "H2OAutoML")
-            self.build_control["project_name"] = project_name
-            self.project_name = project_name
-        else:
-            self.project_name = None
+        # build models params #
 
-        if exclude_algos is not None:
-            assert_is_type(exclude_algos, list)
-            for elem in exclude_algos:
-                assert_is_type(elem, str)
-            self.build_models['exclude_algos'] = exclude_algos
+        assert_is_type(exclude_algos, None, [str])
+        self.exclude_algos = self.build_models['exclude_algos'] = exclude_algos
 
+        assert_is_type(include_algos, None, [str])
         if include_algos is not None:
             assert exclude_algos is None, "Use either include_algos or exclude_algos, not both."
-            assert_is_type(include_algos, list)
-            for elem in include_algos:
-                assert_is_type(elem, str)
-            self.build_models['include_algos'] = include_algos
+        self.include_algos = self.build_models['include_algos'] = include_algos
 
+        assert_is_type(modeling_plan, None, list)
         if modeling_plan is not None:
-            assert_is_type(modeling_plan, list)
             supported_aliases = ['all', 'defaults', 'grids']
 
             def assert_is_step_def(sd):
@@ -274,15 +268,20 @@ class H2OAutoML(Keyed):
                             plan.append(dict(name=name, alias=ids))
                         else:
                             plan.append(dict(name=name, steps=[dict(id=i) for i in ids]))
-            self.build_models['modeling_plan'] = plan
+            self.modeling_plan = self.build_models['modeling_plan'] = plan
+        else:
+            self.modeling_plan = None
 
+        assert_is_type(algo_parameters, None, dict)
         if monotone_constraints is not None:
             if algo_parameters is None:
                 algo_parameters = {}
-            algo_parameters['monotone_constraints'] = monotone_constraints
+            self.monotone_constraints = algo_parameters['monotone_constraints'] = monotone_constraints
+        else:
+            self.monotone_constraints = None
 
+        assert_is_type(algo_parameters, None, dict)
         if algo_parameters is not None:
-            assert_is_type(algo_parameters, dict)
             algo_parameters_json = []
             for k, v in algo_parameters.items():
                 scope, __, name = k.partition('__')
@@ -291,32 +290,15 @@ class H2OAutoML(Keyed):
                 value = [dict(key=k, value=v) for k, v in v.items()] if isinstance(v, dict) else v   # we can't use stringify_dict here as this will be converted into a JSON string
                 algo_parameters_json.append(dict(scope=scope, name=name, value=value))
 
-            self.build_models['algo_parameters'] = algo_parameters_json
-
-        assert_is_type(keep_cross_validation_predictions, bool)
-        self.build_control["keep_cross_validation_predictions"] = keep_cross_validation_predictions
-
-        assert_is_type(keep_cross_validation_models, bool)
-        self.build_control["keep_cross_validation_models"] = keep_cross_validation_models
-
-        assert_is_type(keep_cross_validation_fold_assignment, bool)
-        self.build_control["keep_cross_validation_fold_assignment"] = self.nfolds != 0 and keep_cross_validation_fold_assignment
-
-        self._job = None
-        self._leader_id = None
-        self._leaderboard = None
-        self._verbosity = verbosity
-        self._event_log = None
-        self._training_info = None
-        self._state_json = None
-        if sort_metric == "AUTO":
-            self.sort_metric = None
+            self.algo_parameters = self.build_models['algo_parameters'] = algo_parameters_json
         else:
-            self.sort_metric = sort_metric
+            self.algo_parameters = None
 
-        if export_checkpoints_dir is not None:
-            assert_is_type(export_checkpoints_dir, str)
-            self.build_control["export_checkpoints_dir"] = export_checkpoints_dir
+        # input spec params #
+
+        assert_is_type(sort_metric, None, str)
+        self.sort_metric = self.input_spec['sort_metric'] = sort_metric
+
 
 
     #---------------------------------------------------------------------------
@@ -429,11 +411,13 @@ class H2OAutoML(Keyed):
         >>> # Launch an AutoML run
         >>> aml.train(y=y, training_frame=train)
         """
+        # Minimal required arguments are training_frame and y (response)
         training_frame = H2OFrame._validate(training_frame, 'training_frame', required=True)
+        self.input_spec['training_frame'] = training_frame.frame_id
+
         ncols = training_frame.ncols
         names = training_frame.names
 
-        # Minimal required arguments are training_frame and y (response)
         if y is None:
             raise H2OValueError('The response column (y) is not set; please set it to the name of the column that you are trying to predict in your data.')
         else:
@@ -445,39 +429,26 @@ class H2OAutoML(Keyed):
             else:
                 if y not in names:
                     raise H2OValueError("Column %s does not exist in the training frame" % y)
-            input_spec = {
-                'response_column': y,
-            }
+            self.input_spec['response_column'] = y
 
-        input_spec['training_frame'] = training_frame.frame_id
 
-        if fold_column is not None:
-            assert_is_type(fold_column,int,str)
-            input_spec['fold_column'] = fold_column
+        assert_is_type(fold_column, None, int, str)
+        self.input_spec['fold_column'] = fold_column
 
-        if weights_column is not None:
-            assert_is_type(weights_column,int,str)
-            input_spec['weights_column'] = weights_column
+        assert_is_type(weights_column, None, int, str)
+        self.input_spec['weights_column'] = weights_column
 
-        if validation_frame is not None:
-            validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
-            input_spec['validation_frame'] = validation_frame.frame_id
+        validation_frame = H2OFrame._validate(validation_frame, 'validation_frame')
+        self.input_spec['validation_frame'] = validation_frame.frame_id if validation_frame is not None else None
 
-        if leaderboard_frame is not None:
-            leaderboard_frame = H2OFrame._validate(leaderboard_frame, 'leaderboard_frame')
-            input_spec['leaderboard_frame'] = leaderboard_frame.frame_id
+        leaderboard_frame = H2OFrame._validate(leaderboard_frame, 'leaderboard_frame')
+        self.input_spec['leaderboard_frame'] = leaderboard_frame.frame_id if leaderboard_frame is not None else None
 
-        if blending_frame is not None:
-            blending_frame = H2OFrame._validate(blending_frame, 'blending_frame')
-            input_spec['blending_frame'] = blending_frame.frame_id
-
-        if self.sort_metric is not None:
-            assert_is_type(self.sort_metric, str)
-            sort_metric = self.sort_metric.lower()
-            input_spec['sort_metric'] = sort_metric
+        blending_frame = H2OFrame._validate(blending_frame, 'blending_frame')
+        self.input_spec['blending_frame'] = blending_frame.frame_id if blending_frame is not None else None
 
         if x is not None:
-            assert_is_type(x,list)
+            assert_is_type(x, list)
             xset = set()
             if is_type(x, int, str): x = [x]
             for xi in x:
@@ -489,21 +460,22 @@ class H2OAutoML(Keyed):
                     if xi not in names:
                         raise H2OValueError("Column %s not in the training frame" % xi)
                     xset.add(xi)
-            x = list(xset)
-            ignored_columns = set(names) - {y} - set(x)
-            if fold_column is not None and fold_column in ignored_columns:
-                ignored_columns.remove(fold_column)
-            if weights_column is not None and weights_column in ignored_columns:
-                ignored_columns.remove(weights_column)
+            ignored_columns = set(names) - xset
+            for col in [y, fold_column, weights_column]:
+                if col is not None and col in ignored_columns:
+                    ignored_columns.remove(col)
             if ignored_columns is not None:
-                input_spec['ignored_columns'] = list(ignored_columns)
+                self.input_spec['ignored_columns'] = list(ignored_columns)
 
-        automl_build_params = dict(input_spec=input_spec)
 
-        # NOTE: if the user hasn't specified some block of parameters don't send them!
-        # This lets the back end use the defaults.
-        automl_build_params['build_control'] = self.build_control
-        automl_build_params['build_models'] = self.build_models
+        def clean_params(params):
+            return {k: clean_params(v) for k, v in params.items() if v is not None} if isinstance(params, dict) else params
+
+        automl_build_params = clean_params(dict(
+            build_control=self.build_control,
+            build_models=self.build_models,
+            input_spec=self.input_spec,
+        ))
 
         resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
         if 'job' not in resp:
@@ -512,7 +484,7 @@ class H2OAutoML(Keyed):
             return
 
         if not self.project_name:
-            self.build_control['project_name'] = self.project_name = resp['build_control']['project_name']
+            self.project_name = self.build_control['project_name'] = resp['build_control']['project_name']
 
         self._job = H2OJob(resp['job'], "AutoML")
         poll_updates = ft.partial(self._poll_training_updates, verbosity=self._verbosity, state={})
