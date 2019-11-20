@@ -174,7 +174,7 @@ h2o.automl <- function(x, y, training_frame,
   if (!is.null(max_models)) {
     build_control$stopping_criteria$max_models <- max_models
   }
-  build_control$stopping_criteria$stopping_metric <- match.arg(stopping_metric)
+  build_control$stopping_criteria$stopping_metric <- match.arg(tolower(stopping_metric), tolower(formals()$stopping_metric))
   if (!is.null(stopping_tolerance)) {
     build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
   }
