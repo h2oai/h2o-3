@@ -43,6 +43,13 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator()
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("training_frame")
 
@@ -57,6 +64,16 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Id of the validation data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> train, valid = arrests.split_frame(ratios=[.8])
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator()
+        >>> fit_h2o.train(x=list(range(4)),
+        ...               training_frame=train,
+        ...               validation_frame=valid)
+        >>> fit_h2o
         """
         return self._parms.get("validation_frame")
 
@@ -86,6 +103,14 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(ignore_const_cols=False,
+        ...                                                  nv=4)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("ignore_const_cols")
 
@@ -101,6 +126,14 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Whether to score during each iteration of model training.
 
         Type: ``bool``  (default: ``False``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(nv=4,
+        ...                                                  score_each_iteration=True)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("score_each_iteration")
 
@@ -116,6 +149,15 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Transformation of training data
 
         One of: ``"none"``, ``"standardize"``, ``"normalize"``, ``"demean"``, ``"descale"``  (default: ``"none"``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(nv=4,
+        ...                                                  transform="standardize",
+        ...                                                  max_iterations=2000)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("transform")
 
@@ -131,6 +173,13 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Method for computing SVD (Caution: Randomized is currently experimental and unstable)
 
         One of: ``"gram_s_v_d"``, ``"power"``, ``"randomized"``  (default: ``"gram_s_v_d"``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(svd_method="power")
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("svd_method")
 
@@ -146,6 +195,15 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Number of right singular vectors
 
         Type: ``int``  (default: ``1``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(nv=4,
+        ...                                                  transform="standardize",
+        ...                                                  max_iterations=2000)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("nv")
 
@@ -161,6 +219,15 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Maximum iterations
 
         Type: ``int``  (default: ``1000``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(nv=4,
+        ...                                                  transform="standardize",
+        ...                                                  max_iterations=2000)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("max_iterations")
 
@@ -176,6 +243,13 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         RNG seed for k-means++ initialization
 
         Type: ``int``  (default: ``-1``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(nv=4, seed=-3)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("seed")
 
@@ -191,6 +265,13 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Save left singular vectors?
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(keep_u=False)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("keep_u")
 
@@ -206,6 +287,14 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Frame key to save left singular vectors
 
         Type: ``str``.
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(u_name="fit_h2o")
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o.u_name
+        >>> fit_h2o
         """
         return self._parms.get("u_name")
 
@@ -221,6 +310,13 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Whether first factor level is included in each categorical expansion
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(use_all_factor_levels=False)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("use_all_factor_levels")
 
@@ -236,6 +332,15 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Maximum allowed runtime in seconds for model training. Use 0 to disable.
 
         Type: ``float``  (default: ``0``).
+
+        :examples:
+
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(nv=4,
+        ...                                                  transform="standardize",
+        ...                                                  max_runtime_secs=25)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> fit_h2o
         """
         return self._parms.get("max_runtime_secs")
 
@@ -251,6 +356,17 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         Automatically export generated models to this directory.
 
         Type: ``str``.
+
+        :examples:
+
+        >>> import tempfile
+        >>> from os import listdir
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> checkpoints_dir = tempfile.mkdtemp()
+        >>> fit_h2o = H2OSingularValueDecompositionEstimator(export_checkpoints_dir=checkpoints_dir,
+        ...                                                  seed=-5)
+        >>> fit_h2o.train(x=list(range(4)), training_frame=arrests)
+        >>> len(listdir(checkpoints_dir))
         """
         return self._parms.get("export_checkpoints_dir")
 
@@ -266,6 +382,18 @@ class H2OSingularValueDecompositionEstimator(H2OEstimator):
         All parameters defined in self.__params, should be input parameters in H2OSVD.__init__ method.
 
         :returns: H2OSVD object
+
+        :examples:
+
+        >>> from h2o.transforms.preprocessing import H2OScaler
+        >>> from h2o.estimators import H2ORandomForestEstimator
+        >>> from h2o.estimators import H2OSingularValueDecompositionEstimator
+        >>> from sklearn.pipeline import Pipeline
+        >>> arrests = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        >>> pipe = Pipeline([("standardize", H2OScaler()),
+        ...                  ("svd", H2OSingularValueDecompositionEstimator(nv=3).init_for_pipeline()),
+        ...                  ("rf", H2ORandomForestEstimator(seed=42,ntrees=50))])
+        >>> pipe.fit(arrests[1:], arrests[0])
         """
         import inspect
         from h2o.transforms.decomposition import H2OSVD

@@ -30,7 +30,7 @@ class H2OBinomialModel(ModelBase):
         >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
         >>> r = cars[0].runif()
         >>> train = cars[r > .2]
-        >>> valid = cars[r <=.2]
+        >>> valid = cars[r <=.2] 
         >>> response_col = "economy_20mpg"
         >>> distribution = "bernoulli"
         >>> predictors = ["displacement", "power", "weight", "acceleration", "year"]
