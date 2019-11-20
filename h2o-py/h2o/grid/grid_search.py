@@ -32,7 +32,7 @@ class H2OGridSearch(backwards_compatible()):
         "RandomDiscrete" strategy to get random search of all the combinations of your hyperparameters.
         RandomDiscrete should usually be combined with at least one early stopping criterion: max_models
         and/or max_runtime_secs, e.g::
-    :param parallelism Level of parallelism during grid model building. 1 = sequential building (default). 
+    :param parallelism: Level of parallelism during grid model building. 1 = sequential building (default). 
          Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models
          built in parallel.
 
@@ -81,7 +81,18 @@ class H2OGridSearch(backwards_compatible()):
 
     @property
     def grid_id(self):
-        """A key that identifies this grid search object in H2O."""
+        """A key that identifies this grid search object in H2O.
+
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.grid_id
+        """
         return self._id
 
     @grid_id.setter
@@ -93,16 +104,49 @@ class H2OGridSearch(backwards_compatible()):
 
     @property
     def model_ids(self):
+        """
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.model_ids
+        """
         return [i['name'] for i in self._grid_json["model_ids"]]
 
 
     @property
     def hyper_names(self):
+        """
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.hyper_names
+        """
         return self._grid_json["hyper_names"]
 
 
     @property
     def failed_params(self):
+        """
+        :examples:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6], 'beta_epsilon': [0.05]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'), hyper_parameters)
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.failed_params
+        """
         return self._grid_json.get("failed_params", None)
 
 
