@@ -10,6 +10,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
+import static org.junit.Assert.fail;
+
 public class XGBoostNativeMojoModelTest {
 
   @Rule
@@ -24,4 +26,8 @@ public class XGBoostNativeMojoModelTest {
     XGBoostNativeMojoModel.main(new String[]{"--dump", mojoFile.getAbsolutePath(), "false", "json"}); // expect no smoke
   }
 
+  @Test
+  public void failingOnPurposeMethod_XGBoostNativeMojoModelTest() {
+    fail("Great! XGBoostNativeMojoModelTest fails as expected");
+  }
 }
