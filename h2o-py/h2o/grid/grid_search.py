@@ -476,6 +476,36 @@ class H2OGridSearch(backwards_compatible()):
         :param valid: Report the validation metrics for the model.
         :param xval: Report the validation metrics for the model.
         :return: An object of class H2OModelMetrics.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> data = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        >>> x = data.columns
+        >>> y = "response"
+        >>> x.remove(y)
+        >>> data[y] = data[y].asfactor()
+        >>> test[y] = test[y].asfactor()
+        >>> ss = data.split_frame(seed = 1)
+        >>> train = ss[0]
+        >>> valid = ss[1]
+        >>> gbm_params1 = {'learn_rate': [0.01, 0.1],
+        ...                 'max_depth': [3, 5, 9],
+        ...                 'sample_rate': [0.8, 1.0],
+        ...                 'col_sample_rate': [0.2, 0.5, 1.0]}
+        >>> gbm_grid1 = H2OGridSearch(model=H2OGradientBoostingEstimator,
+        ...                           grid_id='gbm_grid1',
+        ...                           hyper_params=gbm_params1)
+        >>> gbm_grid1.train(x=x, y=y,
+        ...                 training_frame=train,
+        ...                 validation_frame=valid,
+        ...                 ntrees=100,
+        ...                 seed=1)
+        >>> gbm_gridperf1 = gbm_grid1.get_grid(sort_by='auc', decreasing=True)
+        >>> best_gbm1 = gbm_gridperf1.models[0]
+        >>> best_gbm1.model_performance(test)
         """
         return {model.model_id: model.model_performance(test_data, train, valid, xval) for model in self.models}
 
@@ -698,6 +728,37 @@ class H2OGridSearch(backwards_compatible()):
         :param bool xval:  If xval is True, then return the AUC value for the validation data.
 
         :returns: The AUC.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> data = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        >>> x = data.columns
+        >>> y = "response"
+        >>> x.remove(y)
+        >>> data[y] = data[y].asfactor()
+        >>> test[y] = test[y].asfactor()
+        >>> ss = data.split_frame(seed = 1)
+        >>> train = ss[0]
+        >>> valid = ss[1]
+        >>> gbm_params1 = {'learn_rate': [0.01, 0.1],
+        ...                 'max_depth': [3, 5, 9],
+        ...                 'sample_rate': [0.8, 1.0],
+        ...                 'col_sample_rate': [0.2, 0.5, 1.0]}
+        >>> gbm_grid1 = H2OGridSearch(model=H2OGradientBoostingEstimator,
+        ...                           grid_id='gbm_grid1',
+        ...                           hyper_params=gbm_params1)
+        >>> gbm_grid1.train(x=x, y=y,
+        ...                 training_frame=train,
+        ...                 validation_frame=valid,
+        ...                 ntrees=100,
+        ...                 seed=1)
+        >>> gbm_pridperf1 = gbm_grid1.get_grid(sort_by='auc', decreasing=True)
+        >>> best_gbm1 = gbm_gridperf1.models[0]
+        >>> best_gbm_perf1 = best_gbm1.model_performance(test)
+        >>> best_gbm_perf1.auc()
         """
         return {model.model_id: model.auc(train, valid, xval) for model in self.models}
 
@@ -837,6 +898,34 @@ class H2OGridSearch(backwards_compatible()):
             order (default).
 
         :returns: A new H2OGridSearch instance optionally sorted on the specified metric.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> data = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        >>> test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        >>> x = data.columns
+        >>> y = "response"
+        >>> x.remove(y)
+        >>> data[y] = data[y].asfactor()
+        >>> test[y] = test[y].asfactor()
+        >>> ss = data.split_frame(seed = 1)
+        >>> train = ss[0]
+        >>> valid = ss[1]
+        >>> gbm_params1 = {'learn_rate': [0.01, 0.1],
+        ...                 'max_depth': [3, 5, 9],
+        ...                 'sample_rate': [0.8, 1.0],
+        ...                 'col_sample_rate': [0.2, 0.5, 1.0]}
+        >>> gbm_grid1 = H2OGridSearch(model=H2OGradientBoostingEstimator,
+        ...                           grid_id='gbm_grid1',
+        ...                           hyper_params=gbm_params1)
+        >>> gbm_grid1.train(x=x, y=y,
+        ...                 training_frame=train,
+        ...                 validation_frame=valid,
+        ...                 ntrees=100,
+        ...                 seed=1)
+        >>> gbm_grid1.get_grid(sort_by='auc', decreasing=True)
         """
         if sort_by is None and decreasing is None: return self
 
