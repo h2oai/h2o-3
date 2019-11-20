@@ -4,8 +4,7 @@ import hex.Model;
 import hex.ModelParametersBuilderFactory;
 import hex.ScoreKeeper;
 import hex.ScoringInfo;
-import hex.grid.filter.PermutationFilterFunction;
-import hex.grid.filter.KeepOnlyFirstMatchFilterFunction;
+import hex.grid.filter.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
@@ -15,7 +14,7 @@ import static java.lang.StrictMath.min;
 
 public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
 
-  abstract class HyperSpaceIterator<MP extends Model.Parameters> {
+  interface HyperSpaceIterator<MP extends Model.Parameters> {
     /**
      * Get next model parameters.
      *
@@ -33,37 +32,37 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      * @throws IllegalArgumentException  when model parameters cannot be constructed
      * @throws java.util.NoSuchElementException if the iteration has no more elements
      */
-    abstract public MP nextModelParameters(Model previousModel);
+    MP nextModelParameters(Model previousModel);
 
     /**
      * Returns true if the iterator can continue.  Takes into account strategy-specific stopping criteria, if any.
      * @param previousModel  optional parameter which helps to determine next step, can be null
      * @return  true if the iterator can produce one more model parameters configuration.
      */
-    abstract public boolean hasNext(Model previousModel);
-
-    abstract public void reset();
+    boolean hasNext(Model previousModel);
+    
+    void reset();
 
     /**
      * @return the total time allowed for building this grid, in seconds.
      */
-    abstract public double max_runtime_secs();
+    double max_runtime_secs();
 
     /**
      * @return the maximum number of models to build
      */
-    abstract public int max_models();
+    int max_models();
 
     /**
      * @return the time remaining for building this grid, in seconds.
      */
-    abstract public double time_remaining_secs();
+    double time_remaining_secs();
 
     /**
      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
      * @param failedModel
      */
-    abstract public void modelFailed(Model failedModel);
+    void modelFailed(Model failedModel);
 
     /**
      * Returns current "raw" state of iterator.
@@ -72,51 +71,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      *
      * @return  array of "untyped" values representing configuration of grid parameters
      */
-    abstract public Object[] getCurrentRawParameters();
+    Object[] getCurrentRawParameters();
 
-    /**
-     * 
-     * @param permutation single permutation from the grid, represented as array of Objects and ordered based on {@code hyperParamNames} array
-     * @param hyperParamNames array of hyper parameters names grid search is performed over
-     * @param filterFunctions list of {@link PermutationFilterFunction} to check against. 
-     *                        Permutation will be skipped if any of the functions consider it as to be skipped one.
-     */
-    boolean permutationIsSkipped(Object[] permutation, String[] hyperParamNames, ArrayList<PermutationFilterFunction> filterFunctions) {
-      boolean skipPermutation = false;
-
-      Map<String, Object> permutationAsMap = convertToMap(permutation, hyperParamNames);
-
-      for (PermutationFilterFunction fun : filterFunctions) {
-        if (!fun.apply(permutationAsMap)) {
-          skipPermutation = true;
-          break;
-        }
-      }
-      // Decrement counters only when we actually decided not to skip given grid item (after taking into account all filter functions),
-      // and only for KeepOnlyFirstMatchFilterFunction functions that already considered given permutation as matching its conditions
-      if (!skipPermutation) {
-        filterFunctions.stream()
-                .filter(fun1 -> {
-                  return fun1 instanceof KeepOnlyFirstMatchFilterFunction && ((KeepOnlyFirstMatchFilterFunction) fun1)._baseMatchFunction.apply(permutationAsMap);
-                })
-                .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction) fun).decrementCounter());
-      }
-      return skipPermutation;
-    }
-
-    /**
-     * Changes permutation's representation from Object[] to Map<String, Object> for an ability
-     * to specify filter functions with hyper parameters names, i.e. to make it more user friendly
-     */
-    private Map<String, Object> convertToMap(Object[] permutation, String[] hyperParamNames) {
-      Map<String, Object> permutationAsMap = new HashMap<>();
-      int indexOfHP = 0;
-      for(String hpName : hyperParamNames) {
-        permutationAsMap.put(hpName, permutation[indexOfHP]);
-        indexOfHP++;
-      }
-      return permutationAsMap;
-    }
   } // interface HyperSpaceIterator
 
   /**
@@ -218,19 +174,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     final protected long _maxHyperSpaceSize;
 
     /**
-     * List of filter functions having a match from any of which is enough to discard given permutation
+     * Provides filtering logic to make walking process more efficient.
      */
-    ArrayList<PermutationFilterFunction> _filterFunctions;
-
-    /**
-     * Gives an ability for {@link HyperSpaceWalker} to reset its {@code _filterFunctions}'s states
-     * as some of those functions might be stateful 
-     */
-    void resetFilterFunctions(ArrayList<PermutationFilterFunction> filterFunctions) {
-      if(filterFunctions != null) filterFunctions.stream()
-              .filter(fun -> fun instanceof KeepOnlyFirstMatchFilterFunction)
-              .forEach(fun -> ((KeepOnlyFirstMatchFilterFunction)fun).reset());
-    }
+    PermutationFilter<MP> _permutationFilter;
 
     /**
      * Java hackery so we can have a factory method on a class with type params.
@@ -398,6 +344,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
   /**
    * Hyperparameter space walker which visits each combination of hyperparameters in order.
+   * 
+   * @params permutationFilter for details see javadoc for {@link RandomDiscreteValueWalker}
    */
   public static class CartesianWalker<MP extends Model.Parameters>
           extends BaseWalker<MP, HyperSpaceSearchCriteria.CartesianSearchCriteria> {
@@ -406,10 +354,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                            Map<String, Object[]> hyperParamsGrid,
                            ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                            HyperSpaceSearchCriteria.CartesianSearchCriteria searchCriteria,
-                           ArrayList<PermutationFilterFunction> filterFunctions) {
+                           PermutationFilter<MP> permutationFilter) {
       super(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria);
 
-      _filterFunctions = filterFunctions;
+      _permutationFilter = permutationFilter;
     }
     
     public CartesianWalker(MP params,
@@ -422,7 +370,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     @Override
     public HyperSpaceIterator<MP> iterator() {
 
-      return new HyperSpaceIterator<MP>() {
+      HyperSpaceIterator<MP> hyperSpaceIterator = new HyperSpaceIterator<MP>() {
         /** Hyper params permutation.
          */
         private int[] _currentHyperparamIndices = null;
@@ -432,18 +380,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           _currentHyperparamIndices = _currentHyperparamIndices != null ? nextModelIndices(_currentHyperparamIndices) : new int[_hyperParamNames.length];
           if (_currentHyperparamIndices != null) {
             // Fill array of hyper-values
-            Object[] permutation = permutation(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
+            Object[] hypers = permutation(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
+            // Get clone of parameters
+            MP commonModelParams = (MP) _params.clone();
+            // Fill model parameters
+            MP params = getModelParams(commonModelParams, hypers);
 
-            if (_filterFunctions == null || !permutationIsSkipped(permutation, _hyperParamNames, _filterFunctions)) {
-              // Get clone of parameters
-              MP commonModelParams = (MP) _params.clone();
-              // Fill model parameters
-              MP params = getModelParams(commonModelParams, permutation);
-
-              return params;
-            } else {
-              return hasNext(previousModel) ? nextModelParameters(previousModel) : null;
-            }
+            return params;
           } else {
             throw new NoSuchElementException("No more elements to explore in hyper-space!");
           }
@@ -462,10 +405,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           }
           return false;
         }
-
+        
         @Override public void reset() {
           _currentHyperparamIndices = null;
-          resetFilterFunctions(_filterFunctions);
         }
 
         @Override
@@ -486,7 +428,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           Object[] hyperValues = new Object[_hyperParamNames.length];
           return permutation(_currentHyperparamIndices, hyperValues);
         }
-      }; // anonymous HyperSpaceIterator class
+      };
+      
+      if(_permutationFilter == null) {
+        return hyperSpaceIterator;
+      } else {
+        return new FilteredHyperSpaceIterator<>(hyperSpaceIterator, _permutationFilter, getMaxHyperSpaceSize());
+      }
     } // iterator()
 
     /**
@@ -527,17 +475,46 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // for fast dupe lookup
 
     /**
+     * Hyperparameter space walker which visits each combination of hyper parameters randomly.
      * 
-     * Keeps number of returned to the user permutations as not all visited permutations are considered to be worthy
-     * for evaluation due to a {@code _filterFunctions}. 
+     * @param permutationFilter Provides a way to filter out redundant permutations. 
+     *                          
+     *  For users, in order to specify exact rules for filtering, functions {@link PermutationFilterFunction} 
+     *  could be passed to the {@link HyperSpaceWalker} constructor.
+     *                          
+     *  For convenience there are two specific implementations of {@link PermutationFilterFunction}s interface:
+     *          1. {@link KeepOnlyFirstMatchFilterFunction} 
+     *                          - could be used when it is needed to evaluate only one permutation from the group of matching permutations.
+     *                          Typical use case is when we have interdependent(hierarchical) hyper parameters top level one of which is a boolean parameter.
+     *                          When parameter;s value is false, we do not care about dependent hyper parameters( as they are disabled) 
+     *                          and we want to evaluate just this single case when feature is disabled.
+     *                          
+     *          2. {@link StrictFilterFunction}
+     *                          - could be used when it is needed to specify exact sub-combination of hyper parameters values that in case of matching should be skipped
+     *                          
+     *   Usage example:
+     *                          
+     *  {@code
+     * 
+     *     PermutationFilterFunction filterFunction1 = 
+     *          new KeepOnlyFirstMatchFilterFunction<Model.Parameters>(permutation -> !permutation._blending);
+     *
+     *     PermutationFilterFunction filterFunction2 = 
+     *          new StrictFilterFunction<Model.Parameters>(permutation -> !(permutation._k == 3.0 && permutation._f == 1.0));
+     *
+     *     List<PermutationFilterFunction> filterFunctions = new ArrayList<>();
+     *     filterFunctions.add(filterFunction1);
+     *     filterFunctions.add(filterFunction2);
+     *
+     *     PermutationFilter<Model.Parameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
+     *   }
+     *   , where {@link Model.Parameters} should be substituted with specific implementation.                        
      */
-    private int _numberOfUsedPermutations = 0;
-
     public RandomDiscreteValueWalker(MP params,
                                      Map<String, Object[]> hyperParamsGrid,
                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria,
-                                     ArrayList<PermutationFilterFunction> filterFunctions) {
+                                     PermutationFilter<MP> permutationFilter) {
       super(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria);
 
       if (-1 == searchCriteria.seed())
@@ -545,7 +522,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       else
         random = new Random(searchCriteria.seed()); // seeded repeatable pseudorandom
       
-      _filterFunctions = filterFunctions;
+      _permutationFilter = permutationFilter;
     }
     
     public RandomDiscreteValueWalker(MP params,
@@ -568,7 +545,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
     @Override
     public HyperSpaceIterator<MP> iterator() {
-      return new HyperSpaceIterator<MP>() {
+      HyperSpaceIterator<MP> hyperSpaceIterator = new HyperSpaceIterator<MP>() {
         /** Current hyper params permutation. */
         private int[] _currentHyperparamIndices = null;
 
@@ -584,7 +561,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           // NOTE: nextModel checks _visitedHyperparamIndices and does not return a duplicate set of indices.
           // NOTE: in RandomDiscreteValueWalker nextModelIndices() returns a new array each time, rather than
           // mutating the last one.
-
           _currentHyperparamIndices = nextModelIndices();
 
           if (_currentHyperparamIndices != null) {
@@ -593,45 +569,32 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             _currentPermutationNum++; // NOTE: 1-based counting
 
             // Fill array of hyper-values
-            Object[] permutation = permutation(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
-             
-            if (_filterFunctions == null || !permutationIsSkipped(permutation, _hyperParamNames, _filterFunctions)) {
+            Object[] hypers = permutation(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
+            // Get clone of parameters
+            MP commonModelParams = (MP) _params.clone();
+            // Fill model parameters
+            MP params = getModelParams(commonModelParams, hypers);
 
-              _numberOfUsedPermutations++;
-              // Get clone of parameters
-              MP commonModelParams = (MP) _params.clone();
-              // Fill model parameters
-              MP params = getModelParams(commonModelParams, permutation);
-
-              // add max_runtime_secs in search criteria into params if applicable
-              if (_search_criteria != null && _search_criteria.strategy() == HyperSpaceSearchCriteria.Strategy.RandomDiscrete) {
-                // ToDo: model seed setting will be different for parallel model building.
-                // ToDo: This implementation only works for sequential model building.
-                if (_set_model_seed_from_search_seed) {
-                  // set model seed = search_criteria.seed+(0, 1, 2,..., model number)
-                  params._seed = _search_criteria.seed() + (model_number++);
-                }
-
-                // set max_runtime_secs
-                double timeleft = this.time_remaining_secs();
-                if (timeleft > 0) {
-                  if (params._max_runtime_secs > 0) {
-                    params._max_runtime_secs = min(params._max_runtime_secs, timeleft);
-                  } else {
-                    params._max_runtime_secs = timeleft;
-                  }
-                }
+            // add max_runtime_secs in search criteria into params if applicable
+            if (_search_criteria != null && _search_criteria.strategy() == HyperSpaceSearchCriteria.Strategy.RandomDiscrete) {
+              // ToDo: model seed setting will be different for parallel model building.
+              // ToDo: This implementation only works for sequential model building.
+              if (_set_model_seed_from_search_seed) {
+                // set model seed = search_criteria.seed+(0, 1, 2,..., model number)
+                params._seed = _search_criteria.seed() + (model_number++);
               }
-              return params;
-            } else {
-              
-              int nextPermutationNum = _currentPermutationNum + 1;
-              if(hasNext(previousModel) && (max_models() == 0 || max_models() > 0 && nextPermutationNum < max_models())) {
-                return nextModelParameters(previousModel);
-              } else {
-                return null;
+
+              // set max_runtime_secs
+              double timeleft = this.time_remaining_secs();
+              if (timeleft > 0) {
+                if (params._max_runtime_secs > 0) {
+                  params._max_runtime_secs = min(params._max_runtime_secs, timeleft);
+                } else {
+                  params._max_runtime_secs = timeleft;
+                }
               }
             }
+            return params;
           } else {
             throw new NoSuchElementException("No more elements to explore in hyper-space!");
           }
@@ -644,7 +607,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           //
           // _currentPermutationNum is 1-based
           return (_visitedPermutationHashes.size() < _maxHyperSpaceSize &&
-                  (search_criteria().max_models() == 0 || _numberOfUsedPermutations < search_criteria().max_models())
+                  (search_criteria().max_models() == 0 || _currentPermutationNum < search_criteria().max_models())
           );
         }
 
@@ -655,8 +618,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           _currentHyperparamIndices = null;
           _visitedPermutations.clear();
           _visitedPermutationHashes.clear();
-          resetFilterFunctions(_filterFunctions);
-          _numberOfUsedPermutations = 0;
         }
 
         public double max_runtime_secs() {
@@ -678,7 +639,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           // so we don't revisit bad parameters. Note that if a model build fails for other reasons we
           // won't retry.
           _currentPermutationNum--;
-          _numberOfUsedPermutations--;
         }
 
         @Override
@@ -686,7 +646,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           Object[] hyperValues = new Object[_hyperParamNames.length];
           return permutation(_currentHyperparamIndices, hyperValues);
         }
-      }; // anonymous HyperSpaceIterator class
+      };
+
+      if(_permutationFilter == null) {
+        return hyperSpaceIterator;
+      } else {
+        return new FilteredHyperSpaceIterator<>(hyperSpaceIterator, _permutationFilter, getMaxHyperSpaceSize());
+      }
     } // iterator()
 
     /**

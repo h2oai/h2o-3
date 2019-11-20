@@ -1,18 +1,18 @@
 package hex.grid;
 
-import hex.grid.filter.KeepOnlyFirstMatchFilterFunction;
+import hex.grid.filter.DefaultPermutationFilter;
+import hex.grid.filter.PermutationFilter;
 import hex.grid.filter.PermutationFilterFunction;
+import hex.grid.filter.StrictFilterFunction;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 /**
  * Note: exact type of {@code Model.Parameters} is transparent to filtering functionality 
@@ -45,24 +45,26 @@ public class GridSearchWithFilteringTest extends TestUtil {
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
 
-    PermutationFilterFunction strictFilterFunction = gridItem -> {
-      return !((int) gridItem.get("_max_depth") >= 15.0 && (int) gridItem.get("_min_rows") >= 50);
-    };
+    PermutationFilterFunction strictFilterFunction = new StrictFilterFunction<GBMModel.GBMParameters>(permutation -> {
+      return !(permutation._max_depth >= 15.0 && permutation._min_rows >= 50);
+    }
+    );
     int expectedNumberOfFilteredOutPermutations = 2916;
 
-    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
-    filterFunctions.add(strictFilterFunction);
+    List<PermutationFilterFunction> filterFunctions = singletonList(strictFilterFunction);
+
+    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<GBMModel.GBMParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<>(gbmParameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
                     hyperSpaceSearchCriteria,
-                    filterFunctions);
+                    defaultPermutationFilter);
 
     HyperSpaceWalker.HyperSpaceIterator<GBMModel.GBMParameters> iterator = walker.iterator();
 
-    ArrayList<GBMModel.GBMParameters> filteredGridItems = new ArrayList<>();
+    List<GBMModel.GBMParameters> filteredGridItems = new ArrayList<>();
     while (iterator.hasNext(null)) {
       GBMModel.GBMParameters gbmParams = iterator.nextModelParameters(null);
       if( gbmParams != null) { // we might have had next element ( iterator.hasNext) = true) but it could be filtered out by filtering functions
@@ -87,24 +89,27 @@ public class GridSearchWithFilteringTest extends TestUtil {
 
     HyperSpaceSearchCriteria.CartesianSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.CartesianSearchCriteria();
 
-    PermutationFilterFunction strictFilterFunction = gridItem -> {
-      return !((int) gridItem.get("_max_depth") >= 15.0 && (int) gridItem.get("_min_rows") >= 30);
-    };
+    PermutationFilterFunction strictFilterFunction = new StrictFilterFunction<GBMModel.GBMParameters>(gridItem -> {
+      return !(gridItem._max_depth >= 15.0 && gridItem._min_rows >= 30);
+    }
+    );
+    
     int expectedNumberOfFilteredOutPermutations = 6;
 
-    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
-    filterFunctions.add(strictFilterFunction);
+    List<PermutationFilterFunction> filterFunctions = singletonList(strictFilterFunction);
+
+    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
 
     HyperSpaceWalker.CartesianWalker<GBMModel.GBMParameters> walker =
             new HyperSpaceWalker.CartesianWalker<>(gbmParameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
                     hyperSpaceSearchCriteria,
-                    filterFunctions);
+                    defaultPermutationFilter);
 
     HyperSpaceWalker.HyperSpaceIterator<GBMModel.GBMParameters> iterator = walker.iterator();
 
-    ArrayList<GBMModel.GBMParameters> filteredGridItems = new ArrayList<>();
+    List<GBMModel.GBMParameters> filteredGridItems = new ArrayList<>();
     while (iterator.hasNext(null)) {
       GBMModel.GBMParameters gbmParams = iterator.nextModelParameters(null);
       if( gbmParams != null) { // we might have had next element ( iterator.hasNext) = true) but it could be filtered out by filtering functions
@@ -113,25 +118,5 @@ public class GridSearchWithFilteringTest extends TestUtil {
     }
 
     assertEquals(totalNumberOfPermutationsInHPGrid - expectedNumberOfFilteredOutPermutations, filteredGridItems.size());
-  }
-
-  @Test
-  public void test_class_KeepOnlyFirstMatchFilterFunction_was_extended_properly() {
-    KeepOnlyFirstMatchFilterFunction ff1 = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
-      Object mainHP = gridItem.get("_blending");
-      return mainHP instanceof Boolean && !(Boolean) mainHP;
-    });
-
-    KeepOnlyFirstMatchFilterFunction ff2 = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
-      Object mainHP = gridItem.get("_noise_level");
-      return mainHP instanceof Double && (Double) mainHP == 0.01;
-    });
-
-    Map<String, Object> permutation = new HashMap<>();
-    permutation.put("_blending", false);
-    permutation.put("_noise_level",  0.01);
-    
-    assertTrue(ff1.apply(permutation));
-    assertTrue(ff2.apply(permutation));
   }
 }

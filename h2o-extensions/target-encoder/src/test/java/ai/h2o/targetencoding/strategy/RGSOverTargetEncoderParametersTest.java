@@ -4,15 +4,14 @@ import ai.h2o.targetencoding.TargetEncoderModel;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceWalker;
-import hex.grid.filter.KeepOnlyFirstMatchFilterFunction;
-import hex.grid.filter.PermutationFilterFunction;
+import hex.grid.filter.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
 
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
 public class RGSOverTargetEncoderParametersTest extends TestUtil {
@@ -37,29 +36,24 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
 
 
-    KeepOnlyFirstMatchFilterFunction filterFunction1 = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
-      Object mainHP = gridItem.get("_blending");
-      return mainHP instanceof Boolean && !(Boolean) mainHP; // TODO handle cases when type is not that expected
-    });
+    PermutationFilterFunction filterFunction1 = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>(permutation -> !permutation._blending);
 
-    PermutationFilterFunction filterFunction2 = gridItem -> {
-      return !((double) gridItem.get("_k") == 3.0 && (double) gridItem.get("_f") == 1.0);
-    };
+    PermutationFilterFunction filterFunction2 = new StrictFilterFunction<TargetEncoderModel.TargetEncoderParameters>(gridItem -> !(gridItem._k == 3.0 && gridItem._f == 1.0));
+    
+    List<PermutationFilterFunction> filterFunctions = Arrays.asList(filterFunction1, filterFunction2);
 
-    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
-    filterFunctions.add(filterFunction1);
-    filterFunctions.add(filterFunction2);
+    PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
                     hyperSpaceSearchCriteria,
-                    filterFunctions);
+                    defaultPermutationFilter);
 
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
 
-    ArrayList<TargetEncoderModel.TargetEncoderParameters> evaluatedGridItems = new ArrayList<>();
+    List<TargetEncoderModel.TargetEncoderParameters> evaluatedGridItems = new ArrayList<>();
     while (iterator.hasNext(null)) {
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
       if( targetEncoderParameters != null) { // we might have had next element but it can be filtered out by ffiltering unctions
@@ -93,24 +87,22 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
     hyperSpaceSearchCriteria.set_max_models(10);
 
-    KeepOnlyFirstMatchFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
-      Object mainHP = gridItem.get("_blending");
-      return mainHP instanceof Boolean && !(Boolean) mainHP;
-    });
+    PermutationFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>(gridItem -> !gridItem._blending);
 
-    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
-    filterFunctions.add(blendingFilterFunction);
+    List<PermutationFilterFunction> filterFunctions = singletonList(blendingFilterFunction);
+
+    PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
                     hyperSpaceSearchCriteria,
-                    filterFunctions);
+                    defaultPermutationFilter);
 
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
 
-    ArrayList<TargetEncoderModel.TargetEncoderParameters> evaluatedGridItems = new ArrayList<>();
+    List<TargetEncoderModel.TargetEncoderParameters> evaluatedGridItems = new ArrayList<>();
     while (iterator.hasNext(null)) {
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
       if( targetEncoderParameters != null) { // we might have had next element but it can be filtered out by ffiltering unctions
@@ -140,24 +132,22 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     int numberOfFailedModels = 1;
     hyperSpaceSearchCriteria.set_max_models(maxModels);
 
-    KeepOnlyFirstMatchFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
-      Object mainHP = gridItem.get("_blending");
-      return mainHP instanceof Boolean && !(Boolean) mainHP;
-    });
+    PermutationFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
 
-    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
-    filterFunctions.add(blendingFilterFunction);
+    List<PermutationFilterFunction> filterFunctions = singletonList(blendingFilterFunction);
+
+    PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
                     hyperSpaceSearchCriteria,
-                    filterFunctions);
+                    defaultPermutationFilter);
 
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
 
-    ArrayList<TargetEncoderModel.TargetEncoderParameters> returnedGridItems = new ArrayList<>();
+    List<TargetEncoderModel.TargetEncoderParameters> returnedGridItems = new ArrayList<>();
     while (iterator.hasNext(null)) {
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
       
@@ -188,24 +178,22 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
 
-    KeepOnlyFirstMatchFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction((gridItem) -> {
-      Object mainHP = gridItem.get("_blending");
-      return mainHP instanceof Boolean && !(Boolean) mainHP;
-    });
+    PermutationFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
 
-    ArrayList<PermutationFilterFunction> filterFunctions = new ArrayList<>();
-    filterFunctions.add(blendingFilterFunction);
+    List<PermutationFilterFunction> filterFunctions = singletonList(blendingFilterFunction);
+
+    PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
                     hyperSpaceSearchCriteria,
-                    filterFunctions);
+                    defaultPermutationFilter);
 
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
 
-    ArrayList<TargetEncoderModel.TargetEncoderParameters> returnedGridItems = new ArrayList<>();
+    List<TargetEncoderModel.TargetEncoderParameters> returnedGridItems = new ArrayList<>();
     boolean wasResetOnce = false;
     while (iterator.hasNext(null)) {
       TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);

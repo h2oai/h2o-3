@@ -1,6 +1,6 @@
 package hex.grid.filter;
 
-import java.util.Map;
+import hex.Model;
 import java.util.function.Function;
 
 /**
@@ -11,29 +11,36 @@ import java.util.function.Function;
  *  Usage: pass the function to the constructor which will return `true` for the grid items of type <Map<String, Object>
  *  that we will want to consider equal.
  */
-public class KeepOnlyFirstMatchFilterFunction implements PermutationFilterFunction {
+public class KeepOnlyFirstMatchFilterFunction<MP extends Model.Parameters> implements PermutationFilterFunction<MP> {
 
-  // Function that should return `true` for grid items that we want to evaluate only one representative from.
-  public final Function<Map<String, Object>, Boolean> _baseMatchFunction;
+  // Function that should return `true` for permutations that we want to evaluate only one representative from.
+  public final Function<MP, Boolean> _baseMatchFunction;
   private int _maxNumberOfMatchesToApply = 1;
   
-  public KeepOnlyFirstMatchFilterFunction(Function<Map<String, Object>, Boolean> fun) {
+  public KeepOnlyFirstMatchFilterFunction(Function<MP, Boolean> fun) {
     _baseMatchFunction = fun;
   }
 
   @Override
-  public Boolean apply(Map<String, Object> stringObjectMap) {
+  public Boolean apply(MP permutation) {
     if(_maxNumberOfMatchesToApply == 0) {
-      return  !_baseMatchFunction.apply(stringObjectMap);
+      return  !test(permutation);
     } else {
       return true;
     }
   }
-  
-  public void decrementCounter() {
+
+  @Override
+  public boolean test(MP permutation) {
+    return _baseMatchFunction.apply(permutation);
+  }
+
+  @Override
+  public void activate() {
     if (_maxNumberOfMatchesToApply > 0) _maxNumberOfMatchesToApply--;
   }
-  
+
+  @Override
   public void reset() {
     _maxNumberOfMatchesToApply = 1;
   }
