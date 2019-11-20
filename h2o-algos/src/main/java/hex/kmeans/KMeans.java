@@ -80,6 +80,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     if (_parms._estimate_k) {
       if (_parms._user_points!=null)
         error("_estimate_k", "Cannot estimate k if user_points are provided.");
+      if(_parms._cluster_size_constraints != null){
+        error("_estimate_k", "Cannot estimate k if cluster_size_constraints are provided.");
+      }
       info("_seed", "seed is ignored when estimate_k is enabled.");
       info("_init", "Initialization scheme is ignored when estimate_k is enabled - algorithm is deterministic.");
       if (expensive) {
@@ -93,6 +96,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         if (!numeric) {
           error("_estimate_k", "Cannot estimate k if data has no numeric columns.");
         }
+      }
+    }
+    if(_parms._cluster_size_constraints != null){
+      if(_parms._cluster_size_constraints.length != _parms._k){
+        error("_cluster_size_constraints", "\"The number of cluster size constraints is not equal to k = \" + _parms._k");
       }
     }
     if (expensive && error_count() == 0) checkMemoryFootPrint();
@@ -291,7 +299,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           Log.info("Cutoff for relative improvement in within_cluster_sum_of_squares: " + rel_improvement_cutoff);
 
         Vec[] vecs2;
-        if(_parms._cluster_size_constrains == null) {
+        if(_parms._cluster_size_constraints == null) {
           vecs2 = Arrays.copyOf(vecs, vecs.length+1);
           vecs2[vecs2.length-1] = vecs2[0].makeCon(-1);
         } else {
@@ -301,6 +309,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           for (int i = vecs.length; i < newVecLength; i++) {
             vecs2[i] = vecs2[0].makeCon(-1);
           }
+          // Check sum of constrains
+          long csum = 0;
+          for(int i = 0; i<_parms._cluster_size_constraints.length; i++){
+            csum += _parms._cluster_size_constraints[i];
+            assert csum <= vecs[0].length(): "The sum of constraints is more than the number of points.";
+          }
         }
         
         for (int k = startK; k <= _parms._k; ++k) {
@@ -309,28 +323,25 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           double[][] lo=null, hi=null;
           boolean stop = false;
           int iteration = 0;
-          do { //Lloyds algorithm
+          do { 
             assert(centers.length == k);
-            IterationTask task = null;
-            if(_parms._cluster_size_constrains == null) {
+            IterationTask task;
+            if(_parms._cluster_size_constraints == null) {
+              //Lloyds algorithm
               task = new LloydsIterationTask(centers, means, mults, impute_cat, _isCats, k, hasWeightCol()).doAll(vecs2); //1 PASS OVER THE DATA
             }  else {
-              // Check sum of constrains
-              long csum = 0;
-              for(int i=0; i<_parms._cluster_size_constrains.length;i++){
-                csum += _parms._cluster_size_constrains[i];
-                assert csum < vecs[0].length(): "The sum of constraints is more than the number of points.";
-              }
               // Constrained K-means
-              // Get distances
-              CountDistancesTask countDistancesTask = new CountDistancesTask(centers, means, mults, impute_cat, _isCats, k, hasWeightCol(), _parms._constrained_kmeans_precision).doAll(vecs2);
               
-              Log.info("Iteration: "+(++iteration));
-
+              // Get distances
+              CalculateDistancesTask countDistancesTask = new CalculateDistancesTask(centers, means, mults, impute_cat, _isCats, k, hasWeightCol(), _parms._constrained_kmeans_precision).doAll(vecs2);
+              
               // Calculate center assignments
-              KMeansSimplexSolverVec solver = new KMeansSimplexSolverVec(_parms._cluster_size_constrains, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), _parms._constrained_kmeans_precision);
+              KMeansSimplexSolver solver = new KMeansSimplexSolver(_parms._cluster_size_constraints, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), _parms._constrained_kmeans_precision);
+              //KMeansSimplexSolverLongVec solver = new KMeansSimplexSolverLongVec(_parms._cluster_size_constraints, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), _parms._constrained_kmeans_precision);
+              
+              // Get cluster assignments
               Frame result = solver.assignClusters();
-
+              
               // Count statistics and result task
               task = new CalculateMetricTask(centers, means, mults, impute_cat, _isCats, k, hasWeightCol()).doAll(result);
             }
@@ -340,7 +351,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
             // Handle the case where some centers go dry.  Rescue only 1 cluster
             // per iteration ('cause we only tracked the 1 worst row)
-            if( !_parms._estimate_k && cleanupBadClusters(task,vecs,centers,means,mults,impute_cat) ) continue;
+            // If constrained K-meas is set, clusters with zero points are allowed
+            if(!_parms._estimate_k && _parms._cluster_size_constraints == null && cleanupBadClusters(task,vecs,centers,means,mults,impute_cat) ) continue;
 
             // Compute model stats; update standardized cluster centers
             centers = computeStatsFillModel(task, model, vecs, means, mults, impute_cat, k);
@@ -351,7 +363,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
             if (work_unit_iter) {
               model.update(_job); // Update model in K/V store
-              _job.update(1); //1 more Lloyds iteration
+              _job.update(1); //1 more iteration
             }
 
             stop = (task._reassigned_count < Math.max(1,train().numRows()*TOLERANCE) ||
@@ -393,8 +405,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         vecs2[vecs2.length-1].remove();
 
         // Create metrics by scoring on training set otherwise scores are based on last Lloyd iteration
-        model.score(_train).delete();
-        model._output._training_metrics = ModelMetrics.getFromDKV(model,_train);
+        //model.score(_train).delete();
+        //model._output._training_metrics = ModelMetrics.getFromDKV(model,_train);
 
         Log.info(model._output._model_summary);
         Log.info(model._output._scoring_history);
@@ -786,7 +798,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
   }
 
-  private static class CountDistancesTask extends MRTask<CountDistancesTask> {
+  private static class CalculateDistancesTask extends MRTask<CalculateDistancesTask> {
     // IN
     double[][] _centers;
     double[] _means, _mults;      // Standardization
@@ -797,7 +809,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     long _sum;
     int _precision;
     
-    CountDistancesTask(double[][] centers, double[] means, double[] mults, int[] modes, String[][] isCats, int k, boolean hasWeight, int precision) {
+    CalculateDistancesTask(double[][] centers, double[] means, double[] mults, int[] modes, String[][] isCats, int k, boolean hasWeight, int precision) {
       _centers = centers;
       _means = means;
       _mults = mults;
@@ -830,7 +842,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
 
     @Override
-    public void reduce(CountDistancesTask mrt) {
+    public void reduce(CalculateDistancesTask mrt) {
       _sum += mrt._sum;
     }
   }

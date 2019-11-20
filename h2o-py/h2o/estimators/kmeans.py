@@ -24,7 +24,8 @@ class H2OKMeansEstimator(H2OEstimator):
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                    "fold_column", "ignored_columns", "ignore_const_cols", "score_each_iteration", "k", "estimate_k",
                    "user_points", "max_iterations", "standardize", "seed", "init", "max_runtime_secs",
-                   "categorical_encoding", "export_checkpoints_dir"}
+                   "categorical_encoding", "export_checkpoints_dir", "cluster_size_constraints",
+                   "constrained_kmeans_precision"}
 
     def __init__(self, **kwargs):
         super(H2OKMeansEstimator, self).__init__()
@@ -618,5 +619,36 @@ class H2OKMeansEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def cluster_size_constraints(self):
+        """
+        How many points should be at least in each cluster. The length of constraints array has to be same as number of
+        clusters.
+
+        Type: ``List[int]``.
+        """
+        return self._parms.get("cluster_size_constraints")
+
+    @cluster_size_constraints.setter
+    def cluster_size_constraints(self, cluster_size_constraints):
+        assert_is_type(cluster_size_constraints, None, [int])
+        self._parms["cluster_size_constraints"] = cluster_size_constraints
+
+
+    @property
+    def constrained_kmeans_precision(self):
+        """
+        How precise distance calculation should be used in calculation of Constrained K-means.
+
+        Type: ``int``  (default: ``1000``).
+        """
+        return self._parms.get("constrained_kmeans_precision")
+
+    @constrained_kmeans_precision.setter
+    def constrained_kmeans_precision(self, constrained_kmeans_precision):
+        assert_is_type(constrained_kmeans_precision, None, int)
+        self._parms["constrained_kmeans_precision"] = constrained_kmeans_precision
 
 

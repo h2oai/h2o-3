@@ -6,34 +6,46 @@ import water.fvec.Vec;
 import java.util.ArrayList;
 import java.util.Collections;
 
-class KMeansSimplexSolverVec {
+/**
+ * Calculate Minimal Cost Flow problem using simplex method with go through spanning tree.
+ * Used to solve minimal cluster size constraints in K-means.
+ */
+class KMeansSimplexSolver {
     public int _constraintsLength;
     public long _numberOfPoints;
     public long _edgeSize;
     public long _nodeSize;
     public long _resultSize;
 
-    // Input graph
-    public Vec _nodes;
-    public Vec _edges;
-    public Vec _demands;
-    public Vec _capacities;
-    public Frame _weights;
-    public Vec _additiveWeights;
-    public long _sumWeights;
-    public long _maxAbsDemand;
-    public boolean _hasWeightsColumn;   // TODO: rename
-    public int _precision;
+    // Input graph to store K-means configuration
+    public Vec _nodes; // store data points indices, constraints + additive node
+    public Vec _edges; // store edges indices between data points and constraints (distances * precision), edges between constraints and additive node
+    public Vec _demands; // store demand of all nodes (-1 for data points, constraints values for constraints nodes, )
+    public Vec _capacities; // store capacities of all edges + edges from all node to leader node
+    public Frame _weights; // input data + weight column, calculated distances from all points to all centres + columns to store result cluster assignments 
+    public Vec _additiveWeights; // additive weight vector to store edge weight from constraints nodes to additive and leader nodes
+    public long _sumWeights; // calculated sum of all weights to calculate maximal capacity value
+    public long _maxAbsDemand; // maximal absolute demand to calculate maximal capacity value
+    public boolean _hasWeightsColumn; // weight column existence flag
+    public int _precision; // precision for calculation where weight is originally double number 
 
     // Spanning tree to calculate min cost flow
     public SpanningTree tree;
-
-
+    
+    // variables to split calculation in smaller blocks to speed up calculation
     long numberOfConsecutiveBlocks = 0;
     long firstEdgeInBlock = 0;
     long nextBlockOfEdges;
 
-    public KMeansSimplexSolverVec(int[] constrains, Frame weights, long sumWeights, boolean hasWeights, int precision) {
+    /**
+     * Construct K-means solver.
+     * @param constrains 
+     * @param weights
+     * @param sumWeights
+     * @param hasWeights
+     * @param precision
+     */
+    public KMeansSimplexSolver(int[] constrains, Frame weights, long sumWeights, boolean hasWeights, int precision) {
         this._numberOfPoints = (int) weights.numRows();
         this._nodeSize = this._numberOfPoints + constrains.length + 1;
         this._edgeSize = _numberOfPoints * constrains.length + constrains.length;
@@ -81,10 +93,9 @@ class KMeansSimplexSolverVec {
         this.tree = new SpanningTree(_nodeSize, _edgeSize, _constraintsLength);
     }
 
-    public void checkInfeasibility() {
-        assert !tree.isInfeasible();
-    }
-
+    /**
+     * Initialize graph and spanning tree.
+     */
     public void init() {
         // always start with infinity _capacities
         for (long i = 0; i < _edgeSize; i++) {
@@ -103,6 +114,11 @@ class KMeansSimplexSolverVec {
         tree.init(_numberOfPoints, maxCapacity, _demands);
     }
 
+    /**
+     * Get weight base on edge index from weights data or from additive weights.
+     * @param edgeIndex
+     * @return
+     */
     public long getWeight(long edgeIndex) {
         long numberOfFrameWeights = this._numberOfPoints * this._constraintsLength;
         if (edgeIndex < numberOfFrameWeights) {
@@ -114,6 +130,12 @@ class KMeansSimplexSolverVec {
         return _additiveWeights.at8(edgeIndex - numberOfFrameWeights);
     }
 
+    /**
+     * Find minimal reduced weight to select entering edge to find cycle
+     * @param from
+     * @param to
+     * @return
+     */
     public long findMinimalReducedWeight(long from, long to) {
         long minimalWeight = Long.MAX_VALUE;
         long minimalIndex = -1;
@@ -127,6 +149,10 @@ class KMeansSimplexSolverVec {
         return minimalIndex;
     }
 
+    /**
+     * Check edges flow where constraints flows and additive node flow should be zero at the end of calculation.
+     * @return true if the flows are not zero yet
+     */
     private boolean checkIfContinue() {
         for (long i = tree._edgeFlow.length() - 1; i > tree._edgeFlow.length() - _constraintsLength - 2; i--) {
             if (tree._edgeFlow.at8(i) != 0) {
@@ -135,11 +161,15 @@ class KMeansSimplexSolverVec {
         }
         return false;
     }
-    
-    public Edge nextEnteringEdge() {
+
+    /**
+     * Find next entering edge to find cycle.
+     * @return index of the edge
+     */
+    public Edge findNextEnteringEdge() {
         if(checkIfContinue()) {
             // split calculation to block
-            // place where parallelization is needed
+            // place where parallelisation is needed
             long blockSize = (long) Math.ceil(Math.sqrt(_edgeSize));
             long numberOfBlocks = Math.floorDiv(_edgeSize + blockSize - 1, blockSize);
             if (numberOfConsecutiveBlocks < numberOfBlocks) {
@@ -164,7 +194,7 @@ class KMeansSimplexSolverVec {
                 long minimalWeight = tree.reduceWeight(minimalIndex, getWeight(minimalIndex));
                 if (minimalWeight >= 0) {
                     numberOfConsecutiveBlocks += 1;
-                    return nextEnteringEdge();
+                    return findNextEnteringEdge();
                 } else {
                     numberOfConsecutiveBlocks = 0;
                     if (tree._edgeFlow.at8(minimalIndex) == 0) {
@@ -180,6 +210,13 @@ class KMeansSimplexSolverVec {
         return null;
     }
 
+    /**
+     * Find cycle from the edge defined by source and target nodes to leader node and back.
+     * @param edgeIndex
+     * @param sourceIndex
+     * @param targetIndex
+     * @return
+     */
     public NodesEdgesObject getCycle(long edgeIndex, long sourceIndex, long targetIndex) {
         long ancestor = tree.findAncestor(sourceIndex, targetIndex);
         NodesEdgesObject resultPath = tree.getPath(sourceIndex, ancestor);
@@ -195,6 +232,11 @@ class KMeansSimplexSolverVec {
         return resultPath;
     }
 
+    /**
+     * Find the leaving edge with minimal residual capacity.
+     * @param cycle
+     * @return the edge with minimal residual capacity
+     */
     public Edge getLeavingEdge(NodesEdgesObject cycle) {
         cycle.reverseNodes();
         cycle.reverseEdges();
@@ -213,25 +255,29 @@ class KMeansSimplexSolverVec {
         return new Edge(edgeIndex, nodeIndex, nodeIndex == tree._sources.at8(edgeIndex) ? tree._targets.at8(edgeIndex) : tree._sources.at8(edgeIndex));
     }
 
+    /**
+     * Loop over all entering edges to find minimal cost flow in spanning tree.
+     */
     public void pivotLoop() {
-        Edge edge = nextEnteringEdge();
+        Edge edge = findNextEnteringEdge();
         while (edge != null) {
             long enteringEdgeIndex = edge.get_edgeIndex();
             long enteringEdgeSourceIndex = edge.getSourceIndex();
             long enteringEdgeTargetIndex = edge.getTargetIndex();
             NodesEdgesObject cycle = getCycle(enteringEdgeIndex, enteringEdgeSourceIndex, enteringEdgeTargetIndex);
             Edge leavingEdge = getLeavingEdge(cycle);
-            long leavingEdgeEdgeIndex = leavingEdge.get_edgeIndex();
+            long leavingEdgeIndex = leavingEdge.get_edgeIndex();
             long leavingEdgeSourceIndex = leavingEdge.getSourceIndex();
             long leavingEdgeTargetIndex = leavingEdge.getTargetIndex();
-            tree.augmentFlow(cycle, tree.getResidualCapacity(leavingEdgeEdgeIndex, leavingEdgeSourceIndex, _capacities.at8(leavingEdgeEdgeIndex)));
-            if (enteringEdgeIndex != leavingEdgeEdgeIndex) {
+            
+            tree.augmentFlow(cycle, tree.getResidualCapacity(leavingEdgeIndex, leavingEdgeSourceIndex, _capacities.at8(leavingEdgeIndex)));
+            if (enteringEdgeIndex != leavingEdgeIndex) {
                 if (leavingEdgeSourceIndex != tree._parents.at8(leavingEdgeTargetIndex)) {
                     long tmpS = leavingEdgeSourceIndex;
                     leavingEdgeSourceIndex = leavingEdgeTargetIndex;
                     leavingEdgeTargetIndex = tmpS;
                 }
-                if (cycle.indexOfEdge(enteringEdgeIndex) < cycle.indexOfEdge(leavingEdgeEdgeIndex)) {
+                if (cycle.indexOfEdge(enteringEdgeIndex) < cycle.indexOfEdge(leavingEdgeIndex)) {
                     long tmpP = enteringEdgeSourceIndex;
                     enteringEdgeSourceIndex = enteringEdgeTargetIndex;
                     enteringEdgeTargetIndex = tmpP;
@@ -241,39 +287,67 @@ class KMeansSimplexSolverVec {
                 tree.addEdge(enteringEdgeIndex, enteringEdgeSourceIndex, enteringEdgeTargetIndex);
                 tree.updatePotentials(enteringEdgeIndex, enteringEdgeSourceIndex, enteringEdgeTargetIndex, getWeight(enteringEdgeIndex));
             }
-            edge = nextEnteringEdge();
+            edge = findNextEnteringEdge();
         }
     }
 
+    public void checkInfeasibility() {
+        assert !tree.isInfeasible();
+    }
+    
+    public void checkConstraintsCondition(int[] numberOfPointsInCluster){
+        for(int i = 0; i<_constraintsLength; i++){
+            assert numberOfPointsInCluster[i] >= _demands.at8(_numberOfPoints+i) : String.format("Cluster %d has %d assigned points however should has assigned at least %d points.", i+1, numberOfPointsInCluster[i], _demands.at8(_numberOfPoints+i));
+        }
+    }
+
+    /**
+     * Initialize graph and working spanning tree, calculate minimal cost flow and check if result flow is correct. 
+     */
     private void calculateMinimalCostFlow() {
         init();
         pivotLoop();
         checkInfeasibility();
     }
 
+    /**
+     * Calculate minimal cost flow and based on flow assign cluster to all data points.
+     * @return input data with new cluster assignments
+     */
     public Frame assignClusters() {
         calculateMinimalCostFlow();
-        int distanceAssigmnentIndex = _weights.numCols() - 3;
-        int oldAssigmnentIndex = _weights.numCols() - 2;
-        int newAssigmnentIndex = _weights.numCols() - 1;
+        int distanceAssignmentIndex = _weights.numCols() - 3;
+        int oldAssignmentIndex = _weights.numCols() - 2;
+        int newAssignmentIndex = _weights.numCols() - 1;
         int dataStopLength = _weights.numCols() - (_hasWeightsColumn ? 1 : 0) - _constraintsLength - 3;
+        
+        int[] numberOfPointsInCluster = new int[_constraintsLength];
+        for(int i = 0; i<_constraintsLength; i++){
+            numberOfPointsInCluster[i] = 0;
+        }
+        
         for (long i = 0; i < _weights.numRows(); i++) {
             for (int j = 0; j < _constraintsLength; j++) {
                 if (tree._edgeFlow.at8(i * _constraintsLength + j) == 1) {
                     // old assignment
-                    _weights.vec(oldAssigmnentIndex).set(i, _weights.vec(newAssigmnentIndex).at(i));
+                    _weights.vec(oldAssignmentIndex).set(i, _weights.vec(newAssignmentIndex).at(i));
                     // new assignment
-                    _weights.vec(newAssigmnentIndex).set(i, j);
+                    _weights.vec(newAssignmentIndex).set(i, j);
                     // distances
-                    _weights.vec(distanceAssigmnentIndex).set(i, _weights.vec(dataStopLength + j).at(i));
+                    _weights.vec(distanceAssignmentIndex).set(i, _weights.vec(dataStopLength + j).at(i));
+                    numberOfPointsInCluster[j]++;
                     break;
                 }
             }
         }
+        checkConstraintsCondition(numberOfPointsInCluster);
         return _weights;
     }
 }
 
+/**
+ * Class to store calculation of flow in minimal cost flow problem.
+ */
 class SpanningTree {
 
     public long _nodeSize;
@@ -347,7 +421,7 @@ class SpanningTree {
         }
         _parents.set(_nodeSize, -1);
         _subtreeSize.set(_nodeSize, _nodeSize + 1);
-        _nextDepthFirst.set(_nodeSize, _nodeSize);
+        _nextDepthFirst.set(_nodeSize - 1, _nodeSize);
         _previousNodes.set(0, _nodeSize);
         _previousNodes.set(_nodeSize, _nodeSize - 1);
         _lastDescendants.set(_nodeSize, _nodeSize - 1);
@@ -424,7 +498,7 @@ class SpanningTree {
         long previousTargetIndex = _previousNodes.at8(targetIndex);
         long lastTargetIndex = _lastDescendants.at8(targetIndex);
         long nextTargetIndex = _nextDepthFirst.at8(lastTargetIndex);
-
+   
         _parents.set(targetIndex, -1);
         _parentEdges.set(targetIndex, -1);
         _nextDepthFirst.set(previousTargetIndex, nextTargetIndex);
@@ -500,6 +574,7 @@ class SpanningTree {
                 _lastDescendants.set(sourceIndex, lastTargetIndex);
             }
             sourceIndex = _parents.at8(sourceIndex);
+            
         }
     }
 
@@ -512,8 +587,8 @@ class SpanningTree {
             potential = _nodePotentials.at8(sourceIndex) + weight - _nodePotentials.at8(targetIndex);
         }
         _nodePotentials.set(targetIndex, _nodePotentials.at8(targetIndex) + potential);
-        long l = _lastDescendants.at8(targetIndex);
-        while (targetIndex != l) {
+        long last = _lastDescendants.at8(targetIndex);
+        while (targetIndex != last) {
             targetIndex = _nextDepthFirst.at8(targetIndex);
             _nodePotentials.set(targetIndex, _nodePotentials.at8(targetIndex) + potential);
         }
@@ -542,6 +617,11 @@ class Edge {
 
     public long getTargetIndex() {
         return _targetIndex;
+    }
+
+    @Override
+    public String toString() {
+        return _edgeIndex+" "+_sourceIndex+" "+_targetIndex;
     }
 }
 
@@ -622,5 +702,19 @@ class NodesEdgesObject {
 
     public void addAllEdges(ArrayList<Long> newEdges){
         _edges.addAll(newEdges);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder("NEO: nodes: ");
+        for (long i: _nodes) {
+            sb.append(i+" ");
+        }
+        sb.append("edges: ");
+        for (long i: _edges) {
+            sb.append(i+" ");
+        }
+        sb.deleteCharAt(sb.length()-1);
+        return sb.toString();
     }
 }

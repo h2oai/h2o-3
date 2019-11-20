@@ -4,7 +4,6 @@ import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
 import hex.genmodel.easy.EasyPredictModelWrapper;
-import javafx.animation.KeyFrame;
 import org.junit.*;
 import water.DKV;
 import water.Key;
@@ -36,8 +35,11 @@ public class KMeansTest extends TestUtil {
     KMeans job = new KMeans(parms);
     KMeansModel kmm = job.trainModel().get();
     checkConsistency(kmm);
-    for( int i=0; i<kmm._output._k[kmm._output._k.length-1]; i++ )
-      Assert.assertTrue( "Seed: "+seed, kmm._output._size[i] != 0 );
+    // constrained kmeans clusters can be zero
+    if(parms._cluster_size_constraints == null) {
+      for (int i = 0; i < kmm._output._k[kmm._output._k.length - 1]; i++)
+        Assert.assertTrue("Seed: " + seed, kmm._output._size[i] != 0);
+    }
     return kmm;
   }
 
@@ -113,14 +115,14 @@ public class KMeansTest extends TestUtil {
       parms._k = 2;
       parms._standardize = false;
       parms._max_iterations = 10;
-      parms._cluster_size_constrains = new int[]{1, 1};
+      parms._cluster_size_constraints = new int[]{1, 1};
       parms._user_points = points._key;
       kmm = doSeed(parms,0);
 
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
       for(int i=0; i<parms._k; i++) {
-        assert kmm._output._size[i] >= parms._cluster_size_constrains[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constrains[i]+" but is "+kmm._output._size[i]+".";
+        assert kmm._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm._output._size[i]+".";
       }
 
     } finally {
@@ -149,7 +151,8 @@ public class KMeansTest extends TestUtil {
       parms._standardize = true;
       parms._max_iterations = 10;
       parms._user_points = points._key;
-      parms._cluster_size_constrains = new int[]{2, 20, 70, 20};
+      parms._cluster_size_constraints = new int[]{10, 10, 10, 100};
+      parms._score_each_iteration = true;
       kmm = doSeed(parms,0);
 
       //Iris last column is categorical; make sure centers are ordered in the
@@ -164,8 +167,8 @@ public class KMeansTest extends TestUtil {
       fr2 = kmm.score(fr);
 
       for(int i=0; i<parms._k; i++) {
-        System.out.println(kmm._output._size[i]+">="+parms._cluster_size_constrains[i]);
-        assert kmm._output._size[i] >= parms._cluster_size_constrains[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constrains[i]+" but is "+kmm._output._size[i]+".";
+        System.out.println(kmm._output._size[i]+">="+parms._cluster_size_constraints[i]);
+        assert kmm._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm._output._size[i]+".";
       }
 
     } finally {
@@ -191,7 +194,7 @@ public class KMeansTest extends TestUtil {
       parms._train = fr._key;
       parms._seed = 0xcaf;
       parms._k = 3;
-      parms._cluster_size_constrains = new int[]{1000, 3000, 1000};
+      parms._cluster_size_constraints = new int[]{1000, 3000, 1000};
       parms._user_points = points._key;
 
       KMeans job = new KMeans(parms);
@@ -211,8 +214,8 @@ public class KMeansTest extends TestUtil {
       }
 
       for(int i=0; i<parms._k; i++) {
-        System.out.println(kmm._output._size[i]+">="+parms._cluster_size_constrains[i]);
-        assert kmm._output._size[i] >= parms._cluster_size_constrains[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constrains[i]+" but is "+kmm._output._size[i]+".";
+        System.out.println(kmm._output._size[i]+">="+parms._cluster_size_constraints[i]);
+        assert kmm._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm._output._size[i]+".";
       }
     } finally {
       if( fr  != null ) fr.delete();

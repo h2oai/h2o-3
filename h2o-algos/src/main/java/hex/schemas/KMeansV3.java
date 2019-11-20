@@ -31,7 +31,9 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
         "init",
         "max_runtime_secs",
         "categorical_encoding",
-        "export_checkpoints_dir"
+        "export_checkpoints_dir",
+        "cluster_size_constraints",
+        "constrained_kmeans_precision"    
     };
 
     // Input fields
@@ -54,5 +56,11 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
 
     @API(help = "Whether to estimate the number of clusters (<=k) iteratively and deterministically.", level = API.Level.critical, gridable = true)
     public boolean estimate_k = false;
+
+    @API(help = "How many points should be at least in each cluster. The length of constraints array has to be same as number of clusters.", level = API.Level.expert)
+    public int[] cluster_size_constraints = null;
+
+    @API(help = "How precise distance calculation should be used in calculation of Constrained K-means.", level = API.Level.expert)
+    public int constrained_kmeans_precision = 1000;
   }
 }
