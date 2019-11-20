@@ -152,15 +152,11 @@ class H2OAutoML(Keyed):
         self._training_info = None
         self._state_json = None
 
-        # Make bare minimum build_control (if max_runtimes_secs is an invalid value, it will catch below)
+        # Make bare minimum params containers
         self.build_control = dict(
             stopping_criteria=dict()
         )
-
-        # Make bare minimum build_models
         self.build_models = dict()
-
-        # Make bare minimum input_spec
         self.input_spec = dict()
 
         # build_control params #

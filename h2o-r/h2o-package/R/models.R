@@ -302,7 +302,7 @@ h2o.getFutureModel <- function(object, verbose=FALSE) {
       } else {
         if (!inherits(paramValue, type)) {
           e <- paste0(e, "\"", name , "\" must be of type ", type, ", but got ", class(paramValue), ".\n")
-        } else if ((length(paramDef$values) > 1L) && !(tolower(paramValue) %in% tolower(paramDef$values))) {
+        } else if ((length(paramDef$values) > 1L) && (is.null(paramValue) || !(tolower(paramValue) %in% tolower(paramDef$values)))) {
           e <- paste0(e, "\"", name,"\" must be in")
           for (fact in paramDef$values)
             e <- paste0(e, " \"", fact, "\",")
