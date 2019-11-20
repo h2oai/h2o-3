@@ -474,11 +474,6 @@ class H2OAutoML(Keyed):
         if self.sort_metric is not None:
             assert_is_type(self.sort_metric, str)
             sort_metric = self.sort_metric.lower()
-            # Changed the API to use "deviance" to be consistent with stopping_metric values
-            # TO DO: let's change the backend to use "deviance" since we use the term "deviance"
-            # After that we can take this `if` statement out
-            if sort_metric == "deviance":
-                sort_metric = "mean_residual_deviance"
             input_spec['sort_metric'] = sort_metric
 
         if x is not None:
