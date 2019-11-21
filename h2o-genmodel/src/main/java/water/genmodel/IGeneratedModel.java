@@ -22,6 +22,9 @@ public interface IGeneratedModel {
     @Deprecated
     public String getResponseName();
 
+    /** The name of the offset column. */
+    public String getOffsetName();
+
     /** Returns an index of the response column inside getDomains(). */
     public int getResponseIdx();
 

@@ -78,7 +78,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   public boolean isSupervised(){return true;}
 
   @Override public boolean haveMojo() { return true; }
-  @Override public boolean havePojo() { return true; }
+  @Override public boolean havePojo() { 
+    if (_parms == null)
+      return true;
+    return _parms._offset_column == null; // offset column is not supported for POJO
+  }
 
   public boolean scoreZeroTrees(){return true;}
 
