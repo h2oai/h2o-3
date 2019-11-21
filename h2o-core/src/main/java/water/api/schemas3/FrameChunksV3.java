@@ -22,14 +22,13 @@ public class FrameChunksV3 extends SchemaV3<Frame, FrameChunksV3> {
         @API(help="Number of rows represented byt the chunk", direction=API.Direction.OUTPUT)
         public int row_count;
         
-        @API(help="Description of H2O node where the chunk is located", direction=API.Direction.OUTPUT)
-        public CloudV3.NodeV3 location;
+        @API(help="Index of H2O node where the chunk is located in", direction=API.Direction.OUTPUT)
+        public int node_idx;
         
         public FrameChunkV3(int id, Vec vector) {
             this.chunk_id = id;
-            H2ONode node = vector.chunkKey(id).home_node();
             this.row_count = vector.chunkLen(id);
-            this.location = new CloudV3.NodeV3(node, true);
+            this.node_idx = vector.chunkKey(id).home_node().index();
         }
     }
 
