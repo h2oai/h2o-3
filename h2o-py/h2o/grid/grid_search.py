@@ -27,12 +27,19 @@ class H2OGridSearch(backwards_compatible()):
         search (values).
     :param str grid_id: The unique id assigned to the resulting grid object. If none is given, an id will
         automatically be generated.
-    :param search_criteria:  A dictionary of directives which control the search of the hyperparameter space.
-        The default strategy "Cartesian" covers the entire space of hyperparameter combinations. Specify the
-        "RandomDiscrete" strategy to get random search of all the combinations of your hyperparameters.
-        RandomDiscrete should usually be combined with at least one early stopping criterion: max_models
-        and/or max_runtime_secs, e.g::
+    :param search_criteria:  The optional dictionary of directives which control the search of the hyperparameter space.
+        The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, 
+        ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default strategy, "Cartesian", covers the entire space of 
+        hyperparameter combinations. If you want to use cartesian grid search, you can leave the search_criteria 
+        argument unspecified. Specify the "RandomDiscrete" strategy to get random search of all the combinations of 
+        your hyperparameters with three ways of specifying when to stop the search: max number of models, max time, and 
+        metric-based early stopping (e.g., stop if MSE hasn’t improved by 0.0001 over the 5 best models). 
+        Examples below::
 
+            >>> criteria = {"strategy": "RandomDiscrete", "max_runtime_secs": 600,
+            ...             "max_models": 100, "stopping_metric": "AUTO",
+            ...             "stopping_tolerance": 0.00001, "stopping_rounds": 5,
+            ...             "seed": 123456}
             >>> criteria = {"strategy": "RandomDiscrete", "max_models": 42,
             ...             "max_runtime_secs": 28800, "seed": 1234}
             >>> criteria = {"strategy": "RandomDiscrete", "stopping_metric": "AUTO",
