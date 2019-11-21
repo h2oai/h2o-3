@@ -26,7 +26,7 @@ import java.security.Permission;
 import static org.junit.Assert.*;
 
 
-public class PredictCsvTest {
+public class PredictCsvTest extends TestUtil{
 
   @Rule
   public TemporaryFolder folder = new TemporaryFolder();
@@ -61,6 +61,8 @@ public class PredictCsvTest {
       p._ntrees = 1;
 
       GBMModel model = new GBM(p).trainModel().get();
+      Scope.track_generic(model);
+
       final File modelFile = folder.newFile();
       model.exportMojo(modelFile.getAbsolutePath(), true);
 
@@ -91,7 +93,6 @@ public class PredictCsvTest {
       assertTrue(predictCsvOutput.contains("species"));
       assertTrue(predictCsvOutput.contains("petal_len"));
       assertTrue(predictCsvOutput.contains("sepal_wid"));
-           
 
     } finally {
       System.setOut(originaOutputStream);
