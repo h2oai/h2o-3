@@ -23,6 +23,8 @@ public class FrameChunksV3 extends SchemaV3<Frame, FrameChunksV3> {
         
         @API(help="Index of H2O node where the chunk is located in", direction=API.Direction.OUTPUT)
         public int node_idx;
+
+        public FrameChunkV3() {}
         
         public FrameChunkV3(int id, Vec vector) {
             this.chunk_id = id;
