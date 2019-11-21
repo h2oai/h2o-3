@@ -1,6 +1,5 @@
 package water.api.schemas3;
 
-import water.H2ONode;
 import water.Iced;
 import water.fvec.Frame;
 import water.api.API;
