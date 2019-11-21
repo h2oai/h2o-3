@@ -34,7 +34,7 @@ dependencies {
 
 test {
     dependsOn ":h2o-core:testJar"
-    dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode
+    dependsOn cpLibs, jar, testJar, testSingleNode, testMultiNode
 
     // Defeat task 'test' by running no tests.
     exclude '**'
