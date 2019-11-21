@@ -142,7 +142,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
             level = API.Level.secondary)
     public int max_models;
 
-    @API(help = "Maximum time to spend building all models (optional).",
+    @API(help = "Maximum time to spend building all models. Defaults to 1h if max_models is not provided. (optional).",
             level = API.Level.secondary)
     public double max_runtime_secs;
 
