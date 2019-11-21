@@ -196,6 +196,10 @@ public class RegisterV3Api extends AbstractRegister {
             "DELETE /3/Frames", FramesHandler.class, "deleteAll",
             "Delete all Frames from the H2O distributed K/V store.");
 
+    context.registerEndpoint("frameChunks",
+            "GET /3/FrameChunks/{frame_id}", FrameChunksHandler.class, "fetch",
+            "Return information about chunks for a given frame.");
+
 
     // Handle models
     context.registerEndpoint("model",

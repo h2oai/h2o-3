@@ -97,7 +97,7 @@ public class APIThrPriorTest extends TestUtil {
       vec.sigma();
       Assert.assertNotNull(DKV.get(rskey)); // Rollups on my zeros not computed yet
       serve("/3/Frames/iris.hex", null,200); // Rollups already done at parse, but gets ChunkSummary
-
+      serve("/3/FrameChunks/iris.hex", null,200);
       // Convenience; inspection of simple stuff
       urlparms = new Properties();
       urlparms.setProperty("src","./smalldata/iris");
