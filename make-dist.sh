@@ -52,6 +52,7 @@ function make_hadoop_zip {
   mkdir -p $IMAGEDIR
   cp h2o-hadoop-*/h2o-${HADOOP_VERSION}-assembly/build/libs/h2odriver.jar $IMAGEDIR
   cat h2o-dist/hadoop/README.txt | sed -e "s/SUBST_BRANCH_NAME/${BRANCH_NAME}/g" | sed -e "s/SUBST_BUILD_NUMBER/${BUILD_NUMBER}/g" > ${IMAGEDIR}/README.txt
+  cat h2o-dist/hadoop/distribution.info | sed -e "s/H2O_VERSION/${PROJECT_VERSION}/g" | sed -e "s/HADOOP_VERSION/${HADOOP_VERSION}/g" > ${IMAGEDIR}/distribution.info
 
   make_zip_common $PROJECT_BASE $IMAGEDIR
 }
