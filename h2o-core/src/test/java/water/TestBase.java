@@ -105,12 +105,4 @@ public class TestBase extends Iced {
     }
   };
 
-  @Rule transient public TestRule skipCorruptedEnvironmentRule = new TestRule() {
-    @Override
-    public Statement apply(Statement base, Description description) {
-      Assume.assumeTrue(H2O.CLOUD.size() == 0 || H2O.CLOUD.size() >= MINCLOUDSIZE);
-      return base;
-    }
-  };
-
 }

@@ -53,7 +53,7 @@ public class ParseTestParquet extends TestUtil {
   private static double EPSILON = 1e-9;
 
   @BeforeClass
-  static public void setup() { TestUtil.stall_till_cloudsize(1); }
+  static public void setup() { stall_till_cloudsize(1); }
 
   @Parameterized.Parameters
   public static Object[] data() {
@@ -77,7 +77,7 @@ public class ParseTestParquet extends TestUtil {
   }
 
   private Frame parse_parquet(String fname) {
-    return TestUtil.parse_test_file(fname, psTransformer);
+    return parse_test_file(fname, psTransformer);
   }
 
   @Test

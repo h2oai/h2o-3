@@ -22,7 +22,7 @@ import java.util.regex.Pattern;
 
 import static org.junit.Assert.*;
 
-public class PrintMojoTreeTest extends TestBase {
+public class PrintMojoTreeTest extends TestUtil {
 
   @Rule
   public TemporaryFolder folder = new TemporaryFolder();
@@ -31,7 +31,7 @@ public class PrintMojoTreeTest extends TestBase {
 
   @Before
   public void setUp() throws Exception {
-    TestUtil.stall_till_cloudsize(1);
+    stall_till_cloudsize(1);
     originalSecurityManager = System.getSecurityManager();
     System.setSecurityManager(new PreventExitSecurityManager());
   }
@@ -45,7 +45,7 @@ public class PrintMojoTreeTest extends TestBase {
   public void testMojoCategoricalPrint() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parse_test_file("smalldata/iris/iris.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -88,7 +88,7 @@ public class PrintMojoTreeTest extends TestBase {
   public void testMojoCategoricalPrint_limitedLevels() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parse_test_file("smalldata/iris/iris.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;
@@ -128,7 +128,7 @@ public class PrintMojoTreeTest extends TestBase {
   public void testMojoCategoricalPrint_internalRepresentationOutput() throws IOException {
     try {
       Scope.enter();
-      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/iris/iris.csv"));
+      Frame train = Scope.track(parse_test_file("smalldata/iris/iris.csv"));
 
       IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
       p._train = train._key;

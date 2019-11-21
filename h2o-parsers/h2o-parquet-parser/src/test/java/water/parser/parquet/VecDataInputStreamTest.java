@@ -20,7 +20,7 @@ import static org.junit.Assert.*;
 public class VecDataInputStreamTest extends TestUtil {
 
   @BeforeClass
-  static public void setup() { TestUtil.stall_till_cloudsize(1); }
+  static public void setup() { stall_till_cloudsize(1); }
 
   @Test
   public void testReadVecAsInputStream() throws Exception {

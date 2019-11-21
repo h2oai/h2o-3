@@ -18,7 +18,6 @@ import java.util.UUID;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 import static org.junit.Assume.assumeTrue;
-import static water.TestUtil.stall_till_cloudsize;
 
 public class PersistS3HandlerTest extends TestUtil {
 

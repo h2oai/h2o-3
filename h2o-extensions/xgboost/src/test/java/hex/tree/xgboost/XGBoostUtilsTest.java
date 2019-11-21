@@ -40,7 +40,7 @@ public class XGBoostUtilsTest extends TestUtil {
 
   @BeforeClass
   public static void beforeClass(){
-    TestUtil.stall_till_cloudsize(1);
+    stall_till_cloudsize(1);
   }
 
   @After
@@ -85,9 +85,9 @@ public class XGBoostUtilsTest extends TestUtil {
       try {
         Scope.enter();
         final String response = "cylinders";
-        final Frame frame = TestUtil.parse_test_file("smalldata/junit/cars.csv");
+        final Frame frame = parse_test_file("smalldata/junit/cars.csv");
         Scope.track(frame);
-        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/cars_test.csv");
+        final Frame testFrame = parse_test_file("smalldata/testng/cars_test.csv");
         Scope.track(testFrame);
 
         testCSRPredictions(frame, response, testFrame);
@@ -102,9 +102,9 @@ public class XGBoostUtilsTest extends TestUtil {
         Scope.enter();
         final String response = "IsDepDelayed";
 
-        final Frame frame = TestUtil.parse_test_file("smalldata/testng/airlines.csv");
+        final Frame frame = parse_test_file("smalldata/testng/airlines.csv");
         Scope.track(frame);
-        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/airlines_test.csv");
+        final Frame testFrame = parse_test_file("smalldata/testng/airlines_test.csv");
         Scope.track(testFrame);
 
         testCSRPredictions(frame, response, testFrame );
@@ -119,9 +119,9 @@ public class XGBoostUtilsTest extends TestUtil {
         Scope.enter();
         final String response = "Ozone";
 
-        final Frame frame = TestUtil.parse_test_file("smalldata/testng/airquality_train1.csv");
+        final Frame frame = parse_test_file("smalldata/testng/airquality_train1.csv");
         Scope.track(frame);
-        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/airquality_validation1.csv");
+        final Frame testFrame = parse_test_file("smalldata/testng/airquality_validation1.csv");
         Scope.track(testFrame);
 
         testCSRPredictions(frame, response, testFrame );
@@ -136,9 +136,9 @@ public class XGBoostUtilsTest extends TestUtil {
         Scope.enter();
         final String response = "GLEASON";
 
-        final Frame frame = TestUtil.parse_test_file("smalldata/testng/prostate_train.csv");
+        final Frame frame = parse_test_file("smalldata/testng/prostate_train.csv");
         Scope.track(frame);
-        final Frame testFrame = TestUtil.parse_test_file("smalldata/testng/prostate_test.csv");
+        final Frame testFrame = parse_test_file("smalldata/testng/prostate_test.csv");
         Scope.track(testFrame);
 
         testCSRPredictions(frame, response, testFrame );

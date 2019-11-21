@@ -12,11 +12,11 @@ import static org.junit.Assert.*;
 /**
  * Unit test for methods of ARFFParser, for integration tests {@see ParserTestARFF}
  */
-public class ARFFParserTest extends TestBase {
+public class ARFFParserTest extends TestUtil {
 
   @Before
   public void setUp() throws Exception {
-    TestUtil.stall_till_cloudsize(1);
+    stall_till_cloudsize(1);
   }
 
   @Test
@@ -76,7 +76,7 @@ public class ARFFParserTest extends TestBase {
     parseSetup._nonDataLineMarkers = new byte[]{'%', '@'};
     final ARFFParser parser = new ARFFParser(parseSetup, null);
 
-    final NFSFileVec data = TestUtil.makeNfsFileVec("./smalldata/arff-examples/dataWeka/iris.arff");
+    final NFSFileVec data = makeNfsFileVec("./smalldata/arff-examples/dataWeka/iris.arff");
     final Parser.ByteAryData byteAryData = new Parser.ByteAryData(data.getFirstBytes(), 0);
     final ParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
     final PreviewParseWriter outWriter = (PreviewParseWriter) parser.parseChunk(0, byteAryData, parseWriter);
@@ -97,7 +97,7 @@ public class ARFFParserTest extends TestBase {
     parseSetup._nonDataLineMarkers = new byte[]{'@'}; // Instead of using default settings, this should be used
     final ARFFParser parser = new ARFFParser(parseSetup, null);
 
-    final NFSFileVec data = TestUtil.makeNfsFileVec("./smalldata/arff-examples/dataWeka/iris.arff");
+    final NFSFileVec data = makeNfsFileVec("./smalldata/arff-examples/dataWeka/iris.arff");
     final Parser.ByteAryData byteAryData = new Parser.ByteAryData(data.getFirstBytes(), 0);
     final ParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
     final PreviewParseWriter outWriter = (PreviewParseWriter) parser.parseChunk(0, byteAryData, parseWriter);

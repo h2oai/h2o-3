@@ -8,9 +8,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Map;
 
-public class AutoSerialTest extends TestBase {
-  @BeforeClass public static void stall() { TestUtil.stall_till_cloudsize(1); }
-  @AfterClass public static void checkLeakedKeys() { TestUtil.checkLeakedKeys(); }
+public class AutoSerialTest extends TestUtil {
+  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   byte _byte, _bytes[];
   short _short, _shorts[];
