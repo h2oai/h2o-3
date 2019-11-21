@@ -122,6 +122,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     return _domains.length - 1;
   }
 
+  @Override public String getOffsetName() {
+    return _offsetColumn;
+  }
+
   /** Get number of classes in the given column.
    * Return number greater than zero if the column is categorical or -1 if the column is numeric. */
   @Override public int getNumClasses(int colIdx) {

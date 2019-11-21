@@ -1736,7 +1736,7 @@ public class GBMTest extends TestUtil {
 
   // just a simple sanity check - not a golden test
   @Test
-  public void testDistributions() {
+  public void testDistributions() throws Exception {
     Frame tfr = null, vfr = null, res= null;
     GBMModel gbm = null;
 
@@ -1766,12 +1766,14 @@ public class GBMTest extends TestUtil {
         parms._distribution = dist;
         parms._min_rows = 1;
         parms._ntrees = 30;
-//        parms._offset_column = "logInsured"; //POJO scoring not supported for offsets
+        parms._offset_column = "logInsured"; // POJO scoring not supported for offsets (only MOJO will be tested)
         parms._learn_rate = 1e-3f;
 
         // Build a first model; all remaining models should be equal
         gbm = new GBM(parms).trainModel().get();
 
+        assertEquals("logInsured", gbm.toMojo().getOffsetName());
+        
         res = gbm.score(vfr);
         Assert.assertTrue(gbm.testJavaScoring(vfr,res,1e-15));
         res.remove();
