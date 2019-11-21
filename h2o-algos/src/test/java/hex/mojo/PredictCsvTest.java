@@ -40,9 +40,20 @@ public class PredictCsvTest {
     System.setSecurityManager(new PreventExitSecurityManager());
   }
 
+
+  @Test
+  public void testThatShouldCauseMergeConflict1() throws Exception {
+    fail();
+  }
+
   @After
   public void tearDown() throws Exception {
     System.setSecurityManager(originalSecurityManager);
+  }
+
+  @Test
+  public void testThatShouldCauseMergeConflict2() throws Exception {
+    fail();
   }
 
   @Test
