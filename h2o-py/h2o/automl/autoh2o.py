@@ -212,7 +212,7 @@ class H2OAutoML(Keyed):
         assert_is_type(stopping_rounds, None, int)
         self.stopping_rounds = self.build_control["stopping_criteria"]["stopping_rounds"] = stopping_rounds
 
-        assert_is_type(seed, int)
+        assert_is_type(seed, None, int)
         self.seed = self.build_control["stopping_criteria"]["seed"] = seed
 
         # build models params #
