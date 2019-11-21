@@ -3,7 +3,7 @@ import functools as ft
 
 import h2o
 from h2o.base import Keyed
-from h2o.exceptions import H2OValueError
+from h2o.exceptions import H2OResponseError, H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
 from h2o.model.model_base import ModelBase
@@ -54,7 +54,7 @@ class H2OAutoML(Keyed):
                  balance_classes=False,
                  class_sampling_factors=None,
                  max_after_balance_size=5.0,
-                 max_runtime_secs=3600,
+                 max_runtime_secs=None,
                  max_runtime_secs_per_model=None,
                  max_models=None,
                  stopping_metric="AUTO",
@@ -83,9 +83,9 @@ class H2OAutoML(Keyed):
           factors will be automatically computed to obtain class balance during training. Requires ``balance_classes``.
         :param float max_after_balance_size: Maximum relative size of the training data after balancing class counts (can be less than 1.0).
           Requires ``balance_classes``. Defaults to ``5.0``.
-        :param int max_runtime_secs: This argument controls how long the AutoML run will execute. Defaults to ``3600`` seconds (1 hour).
+        :param int max_runtime_secs: This argument controls how long the AutoML run will execute. If ``max_models`` is not set, then defaults to ``3600`` seconds (1 hour).
         :param int max_runtime_secs_per_model: This argument controls the max time the AutoML run will dedicate to each individual model. Defaults to `0` (disabled).
-        :param int max_models: Specify the maximum number of models to build in an AutoML run. (Does not include the Stacked Ensemble models.)
+        :param int max_models: Specify the maximum number of models to build in an AutoML run. Not limited by default. (Does not include the Stacked Ensemble models.)
         :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
           The available options are:
           ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
@@ -151,6 +151,7 @@ class H2OAutoML(Keyed):
         self._event_log = None
         self._training_info = None
         self._state_json = None
+        self._build_resp = None  # contains all the actual parameters used on backend
 
         # Make bare minimum params containers
         self.build_control = dict(
@@ -473,11 +474,9 @@ class H2OAutoML(Keyed):
             input_spec=self.input_spec,
         ))
 
-        resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
+        resp = self._build_resp = h2o.api('POST /99/AutoMLBuilder', json=automl_build_params)
         if 'job' not in resp:
-            print("Exception from the back end: ")
-            print(resp)
-            return
+            raise H2OResponseError("Backend failed to build the AutoML job: {}".format(resp))
 
         if not self.project_name:
             self.project_name = self.build_control['project_name'] = resp['build_control']['project_name']

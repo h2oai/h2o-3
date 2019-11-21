@@ -1,11 +1,11 @@
 from __future__ import print_function
 import sys, os, time
 
-from h2o.exceptions import H2OTypeError
+from h2o.exceptions import H2OTypeError, H2OJobCancelled
 
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
-from tests import pyunit_utils
+from tests import pyunit_utils as pu
 from h2o.automl import H2OAutoML
 
 """
@@ -15,7 +15,7 @@ max_models = 2
 
 
 def import_dataset(seed=0, larger=False):
-    df = h2o.import_file(path=pyunit_utils.locate("smalldata/prostate/{}".format("prostate_complete.csv.zip" if larger else "prostate.csv")))
+    df = h2o.import_file(path=pu.locate("smalldata/prostate/{}".format("prostate_complete.csv.zip" if larger else "prostate.csv")))
     target = "CAPSULE"
     df[target] = df[target].asfactor()
     #Split frames
@@ -298,27 +298,76 @@ def test_frames_cannot_be_passed_as_key():
             assert "'{}' must be a valid H2OFrame".format(attr) in str(e)
 
 
+def test_no_time_limit_if_max_models_is_provided():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_no_time_limit", seed=1, max_models=1)
+    aml.train(y=ds['target'], training_frame=ds['train'])
+    max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
+    max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
+    assert max_runtime == 0
+    assert max_models == 1
+
+
+def test_max_runtime_secs_alone():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_max_runtime_secs", seed=1, max_runtime_secs=7)
+    aml.train(y=ds['target'], training_frame=ds['train'])
+    max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
+    max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
+    assert max_runtime == 7
+    assert max_models == 0
+
+
+def test_max_runtime_secs_can_be_set_in_combination_with_max_models():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_all_stopping_constraints", seed=1, max_models=1, max_runtime_secs=12)
+    aml.train(y=ds['target'], training_frame=ds['train'])
+    max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
+    max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
+    assert max_runtime == 12
+    assert max_models == 1
+
+
+def test_default_max_runtime_if_no_max_models_provided():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_no_stopping_constraints", seed=1, verbosity='Info')
+    with pu.Timeout(5, on_timeout=lambda: aml._job.cancel()):
+        try:
+            aml.train(y=ds['target'], training_frame=ds['train'])
+        except H2OJobCancelled:
+            pass
+        max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
+        max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
+        print(max_runtime)
+        assert max_runtime == 3600
+        assert max_models == 0
+
+
     # TO DO  PUBDEV-5676
     # Add a test that checks fold_column like in runit
 
-pyunit_utils.run_tests([
-    test_invalid_project_name,
-    test_early_stopping_args,
-    test_no_x_train_set_only,
-    test_no_x_train_and_validation_sets,
-    test_no_x_train_and_test_sets,
-    test_no_x_train_and_validation_and_test_sets,
-    test_no_x_y_as_idx_train_and_validation_and_test_sets,
-    test_predict_on_train_set,
-    test_nfolds_param,
-    test_nfolds_eq_0,
-    test_balance_classes,
-    test_nfolds_default_and_fold_assignements_skipped_by_default,
-    test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
-    test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
-    test_stacked_ensembles_are_trained_after_timeout,
-    test_automl_stops_after_max_models,
-    test_stacked_ensembles_are_trained_after_max_models,
-    test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
-    test_frames_cannot_be_passed_as_key,
+pu.run_tests([
+    # test_invalid_project_name,
+    # test_early_stopping_args,
+    # test_no_x_train_set_only,
+    # test_no_x_train_and_validation_sets,
+    # test_no_x_train_and_test_sets,
+    # test_no_x_train_and_validation_and_test_sets,
+    # test_no_x_y_as_idx_train_and_validation_and_test_sets,
+    # test_predict_on_train_set,
+    # test_nfolds_param,
+    # test_nfolds_eq_0,
+    # test_balance_classes,
+    # test_nfolds_default_and_fold_assignements_skipped_by_default,
+    # test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
+    # test_keep_cross_validation_fold_assignment_enabled_with_nfolds_eq_0,
+    # test_stacked_ensembles_are_trained_after_timeout,
+    # test_automl_stops_after_max_models,
+    # test_stacked_ensembles_are_trained_after_max_models,
+    # test_stacked_ensembles_are_trained_with_blending_frame_even_if_nfolds_eq_0,
+    # test_frames_cannot_be_passed_as_key,
+    test_no_time_limit_if_max_models_is_provided,
+    test_max_runtime_secs_alone,
+    test_max_runtime_secs_can_be_set_in_combination_with_max_models,
+    test_default_max_runtime_if_no_max_models_provided,
 ])
