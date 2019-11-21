@@ -34,3 +34,11 @@ dependencies {
   }
   compileOnly "com.google.protobuf.nano:protobuf-javanano:3.1.0"
 }
+
+test {
+  dependsOn ":h2o-core:testJar"
+  dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode
+
+  // Defeat task 'test' by running no tests.
+  exclude '**'
+}

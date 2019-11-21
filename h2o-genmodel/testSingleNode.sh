@@ -85,7 +85,7 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
 # Slash/dot "water/MRThrow"      becomes "water.MRThrow"
 
-# On this h2o-ext-target-encoder testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
+# On this h2o-genmodel testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
 # If sorted, the result of the cd/grep varies by machine. 
 # If randomness is desired, replace sort with the unix 'shuf'
 # Use /usr/bin/sort because of cygwin on windows. 

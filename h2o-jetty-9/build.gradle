@@ -8,3 +8,11 @@ dependencies {
     testCompile group: "junit", name: "junit", version: "4.12"
     testCompile "org.mockito:mockito-core:2.23.0"
 }
+
+test {
+    dependsOn ":h2o-core:testJar"
+    dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode
+
+    // Defeat task 'test' by running no tests.
+    exclude '**'
+}

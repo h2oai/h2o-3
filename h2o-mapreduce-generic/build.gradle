@@ -20,3 +20,11 @@ dependencies {
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
 }
+
+test {
+  dependsOn ":h2o-core:testJar"
+  dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode
+
+  // Defeat task 'test' by running no tests.
+  exclude '**'
+}
