@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.EventLogEntry.Stage;
 import ai.h2o.automl.StepDefinition.Alias;
 import hex.Model;
+import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.Grid;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
@@ -193,7 +194,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void initLeaderboard(AutoMLBuildSpec buildSpec) {
-    String sort_metric = buildSpec.input_spec.sort_metric == null ? null : buildSpec.input_spec.sort_metric.toLowerCase();
+    String sort_metric = buildSpec.input_spec.sort_metric;
+    sort_metric = sort_metric == null || StoppingMetric.AUTO.name().equalsIgnoreCase(sort_metric) ? null : sort_metric.toLowerCase();
     _leaderboard = Leaderboard.getOrMake(_key.toString(), _eventLog, _leaderboardFrame, sort_metric);
   }
 
@@ -404,6 +406,23 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     if (null == _origTrainingFrame)
       throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key.");
+
+    if (buildSpec.input_spec.ignored_columns != null) {
+      List<String> ignored_columns = new ArrayList<>(Arrays.asList(buildSpec.input_spec.ignored_columns));
+      Map<String, String> do_not_ignore = new LinkedHashMap<String, String>(){{
+        put("response_column", buildSpec.input_spec.response_column);
+        put("fold_column", buildSpec.input_spec.fold_column);
+        put("weights_column", buildSpec.input_spec.weights_column);
+      }};
+      for (Map.Entry<String, String> entry: do_not_ignore.entrySet()) {
+        if (entry.getValue() != null && ignored_columns.contains(entry.getValue())) {
+          eventLog().info(Stage.DataImport,
+                  "Removing "+entry.getKey()+" '"+entry.getValue()+"' from list of ignored columns.");
+          ignored_columns.remove(entry.getValue());
+        }
+      }
+      buildSpec.input_spec.ignored_columns = ignored_columns.toArray(new String[0]);
+    }
 
     Map<String, Frame> compatible_frames = new LinkedHashMap<String, Frame>(){{
       put("training", _origTrainingFrame);
