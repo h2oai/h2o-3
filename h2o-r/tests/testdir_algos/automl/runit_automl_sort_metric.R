@@ -13,7 +13,7 @@ automl.leaderboard_sort_metric.test <- function() {
                      sort_metric = "AUC")  #currently returns unsorted lb for "AUC"
   aml1@leaderboard
   # check that correct leaderboard columns exist
-  expect_equal(names(aml1@leaderboard), c("model_id", "auc", "logloss", "mean_per_class_error", "rmse", "mse"))
+  expect_equal(names(aml1@leaderboard), c("model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"))
   # check that auc col is sorted already
   auc_col <- as.vector(aml1@leaderboard[,"auc"])
   expect_equal(identical(auc_col, sort(auc_col, decreasing = TRUE)), TRUE)
@@ -42,7 +42,7 @@ automl.leaderboard_sort_metric.test <- function() {
                      project_name = "r_lbsm_test_aml2",
                      sort_metric = "RMSE")
   aml2@leaderboard
-  expect_equal(names(aml2@leaderboard), c("model_id", "rmse", "mean_residual_deviance", "mse", "mae", "rmsle"))
+  expect_equal(names(aml2@leaderboard), c("model_id", "rmse", "deviance", "mse", "mae", "rmsle"))
   # check that rmse col is sorted already
   rmse_col <- as.vector(aml2@leaderboard[,"rmse"])
   expect_equal(identical(rmse_col, sort(rmse_col, decreasing = FALSE)), TRUE)
@@ -52,7 +52,7 @@ automl.leaderboard_sort_metric.test <- function() {
                      project_name = "r_lbsm_test_aml2_auto")
   aml2@leaderboard
   # check that leaderboard is sorted by mean_residual_deviance
-  mrd_col <- as.vector(aml2@leaderboard[,"mean_residual_deviance"])
+  mrd_col <- as.vector(aml2@leaderboard[,"deviance"])
   expect_equal(identical(mrd_col, sort(mrd_col, decreasing = FALSE)), TRUE)
   
   
