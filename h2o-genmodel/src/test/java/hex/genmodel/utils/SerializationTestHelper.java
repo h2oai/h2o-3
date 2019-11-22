@@ -1,7 +1,10 @@
 package hex.genmodel.utils;
 
+import org.junit.Ignore;
+
 import java.io.*;
 
+@Ignore
 public class SerializationTestHelper {
 
   public static byte[] serialize(Object o) throws Exception {

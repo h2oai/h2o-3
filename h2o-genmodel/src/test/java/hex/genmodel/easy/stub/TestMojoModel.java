@@ -2,7 +2,9 @@ package hex.genmodel.easy.stub;
 
 import hex.ModelCategory;
 import hex.genmodel.MojoModel;
+import org.junit.Ignore;
 
+@Ignore
 public class TestMojoModel extends MojoModel {
   @Override
   public int nfeatures() {

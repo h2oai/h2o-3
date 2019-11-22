@@ -1,10 +1,12 @@
 package hex.genmodel;
 
 import hex.genmodel.attributes.ModelAttributes;
+import org.junit.Ignore;
 import org.mockito.Mockito;
 
 import java.io.IOException;
 
+@Ignore
 public class MockMojoReader extends ModelMojoReader {
 
   private ModelMojoReader delegate = Mockito.mock(ModelMojoReader.class); 
