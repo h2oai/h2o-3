@@ -23,6 +23,7 @@ javadoc {
 
 dependencies {
   compile "commons-lang:commons-lang:2.6"
+  testCompile project(":h2o-core").sourceSets.test.output
   testCompile "com.google.guava:guava:16.0.1"
   testCompile 'org.mockito:mockito-core:2.18.3'
   testCompile "junit:junit:${junitVersion}"
