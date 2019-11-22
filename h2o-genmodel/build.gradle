@@ -22,9 +22,7 @@ javadoc {
 //
 
 dependencies {
-  compile project(":h2o-core") {
-    exclude project(":h2o-genmodel")
-  }
+  compile "commons-lang:commons-lang:2.6"
   testCompile "com.google.guava:guava:16.0.1"
   testCompile 'org.mockito:mockito-core:2.18.3'
   testCompile "junit:junit:${junitVersion}"
@@ -36,7 +34,6 @@ dependencies {
     exclude group: 'org.slf4j'
   }
   compileOnly "com.google.protobuf.nano:protobuf-javanano:3.1.0"
-  testCompile project(path: ":h2o-core", configuration: "testArchives")
   testRuntimeOnly project(":${defaultWebserverModule}")
 }
 
