@@ -22,7 +22,9 @@ javadoc {
 //
 
 dependencies {
-  compile project(":h2o-core")
+  compile project(":h2o-core") {
+    exclude project(":h2o-genmodel")
+  }
   testCompile "com.google.guava:guava:16.0.1"
   testCompile 'org.mockito:mockito-core:2.18.3'
   testCompile "junit:junit:${junitVersion}"
