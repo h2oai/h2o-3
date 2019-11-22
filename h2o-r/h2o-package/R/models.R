@@ -1843,6 +1843,28 @@ h2o.scoreHistory <- function(object) {
 }
 
 #'
+#' Retrieve actual number of trees for tree algorithms
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @export
+h2o.get_ntrees_actual <- function(object) {
+    o <- object
+    if( is(o, "H2OModel") ) {
+        if(o@algorithm == "gbm" | o@algorithm == "drf"| o@algorithm == "isolationforest"| o@algorithm == "xgboost"){
+            sh <- o@model$model_summary['number_of_trees'][,1]
+            if( is.null(sh) ) return(NULL)
+            sh
+        } else {
+            warning( paste0("No actual number of trees for this model") )
+            return(NULL)
+        }
+    } else {
+        warning( paste0("No actual number of trees for ", class(o)) )
+        return(NULL)
+    }
+}
+
+#'
 #' Retrieve the respective weight matrix
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
