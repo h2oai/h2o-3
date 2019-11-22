@@ -205,41 +205,46 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (null == DKV.getGet(input.training_frame))
       throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key, or it is not available anymore.");
 
-    Map<String, Frame> compatible_frames = new LinkedHashMap<String, Frame>(){{
-      put("training", _origTrainingFrame);
-      put("validation", _validationFrame);
-      put("blending", _blendingFrame);
-      put("leaderboard", _leaderboardFrame);
+    final Frame trainingFrame = DKV.getGet(input.training_frame);
+    final Frame validationFrame = DKV.getGet(input.validation_frame);
+    final Frame blendingFrame = DKV.getGet(input.blending_frame);
+    final Frame leaderboardFrame = DKV.getGet(input.leaderboard_frame);
+
+    Map<String, Frame> compatibleFrames = new LinkedHashMap<String, Frame>(){{
+      put("training", trainingFrame);
+      put("validation", validationFrame);
+      put("blending", blendingFrame);
+      put("leaderboard", leaderboardFrame);
     }};
-    for (Map.Entry<String, Frame> entry : compatible_frames.entrySet()) {
+    for (Map.Entry<String, Frame> entry : compatibleFrames.entrySet()) {
       Frame frame = entry.getValue();
-      if (frame != null && frame.find(input.response_column) == -1) {
+      if (frame != null && frame.find(input.response_column) < 0) {
         throw new H2OIllegalArgumentException("Response column '"+input.response_column+"' is not in the "+entry.getKey()+" frame.");
       }
     }
 
-    if (input.fold_column != null && _origTrainingFrame.find(input.fold_column) == -1) {
+    if (input.fold_column != null && trainingFrame.find(input.fold_column) < 0) {
       throw new H2OIllegalArgumentException("Fold column '"+input.fold_column+"' is not in the training frame.");
     }
-    if (input.weights_column != null && _origTrainingFrame.find(input.weights_column) == -1) {
+    if (input.weights_column != null && trainingFrame.find(input.weights_column) < 0) {
       throw new H2OIllegalArgumentException("Weights column '"+input.weights_column+"' is not in the training frame.");
     }
 
     if (input.ignored_columns != null) {
-      List<String> ignored_columns = new ArrayList<>(Arrays.asList(input.ignored_columns));
-      Map<String, String> do_not_ignore = new LinkedHashMap<String, String>(){{
+      List<String> ignoredColumns = new ArrayList<>(Arrays.asList(input.ignored_columns));
+      Map<String, String> doNotIgnore = new LinkedHashMap<String, String>(){{
         put("response_column", input.response_column);
         put("fold_column", input.fold_column);
         put("weights_column", input.weights_column);
       }};
-      for (Map.Entry<String, String> entry: do_not_ignore.entrySet()) {
-        if (entry.getValue() != null && ignored_columns.contains(entry.getValue())) {
+      for (Map.Entry<String, String> entry: doNotIgnore.entrySet()) {
+        if (entry.getValue() != null && ignoredColumns.contains(entry.getValue())) {
           eventLog().info(Stage.DataImport,
                   "Removing "+entry.getKey()+" '"+entry.getValue()+"' from list of ignored columns.");
-          ignored_columns.remove(entry.getValue());
+          ignoredColumns.remove(entry.getValue());
         }
       }
-      input.ignored_columns = ignored_columns.toArray(new String[0]);
+      input.ignored_columns = ignoredColumns.toArray(new String[0]);
     }
   }
 
