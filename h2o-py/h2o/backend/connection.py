@@ -45,6 +45,7 @@ if tuple(int(x) for x in requests.__version__.split('.')) < (2, 10):
           "You can upgrade to the newest version of the module running from the command line\n"
           "    $ pip%s install --upgrade requests" % (requests.__version__, sys.version_info[0]))
 
+
 class H2OConnectionConf(object):
     """
     Configuration of connection to H2O.
@@ -71,7 +72,7 @@ class H2OConnectionConf(object):
             self._fill_from_config(config)
 
     """List of allowed property names exposed by this class"""
-    allowed_properties = ["ip", "port", "https", "context_path", "verify_ssl_certificates",
+    allowed_properties = ["ip", "port", "https", "context_path", "verify_ssl_certificates", "cacert",
                           "proxy", "auth", "cookies", "verbose"]
 
     def _fill_from_config(self, config):
