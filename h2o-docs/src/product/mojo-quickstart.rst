@@ -433,7 +433,10 @@ Step 2: Compile and Run the MOJO
 
  GBM and DRF return classProbabilities, but not all MOJOs will return a classProbabilities field. Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction. You can also view the hex.genmodel.easy.prediction classes in the `Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.
 
- In addition to classProbabilities, in GBM and DRF you can choose to generate the ``leafNodeAssignments`` field, which will show the decision path through each tree. Note that this may slow down the MOJO as it adds computation. Below is the Java code showing how return the leaf node assignment:
+ In addition to classProbabilities, in GBM and DRF you can choose to generate additional fields ``leafNodeAssignments`` and ``contributions`` field.
+ Field ``leafNodeAssignments`` will show the decision path through each tree. Field ``contributions`` will provide
+ Shapley contributions. Note that this may slow down the MOJO as it adds computation.
+ Below is the Java code showing how return both the leaf node assignment and the contributions:
 
  .. code:: java
 
@@ -445,7 +448,10 @@ Step 2: Compile and Run the MOJO
 
      public class main {
        public static void main(String[] args) throws Exception {
-         EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(MojoModel.load("GBM_model_R_1475248925871_74.zip")).setEnableLeafAssignment(true);
+         EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
+            .setModel(MojoModel.load("GBM_model_R_1475248925871_74.zip"))
+            .setEnableLeafAssignment(true)
+            .setEnableContributions(true);
          EasyPredictModelWrapper model = new EasyPredictModelWrapper(config);
 
          RowData row = new RowData();
@@ -468,8 +474,17 @@ Step 2: Compile and Run the MOJO
          System.out.println("Leaf node assignments: ");
          for (int i=0; i < p.leafNodeAssignments; i++) {
            if (i > 0) {
-             System.out.print.(p.leafNodeAssignments[i]);
+             System.out.print(p.leafNodeAssignments[i]);
            }
+         }
+         System.out.println("");
+
+         System.out.println("Shapley contributions: ");
+         for (int i=0; i < p.contributions; i++) {
+           if (i > 0) {
+             System.out.print(",");
+           }
+           System.out.print(p.contributions[i]);
          }
          System.out.println("");
        }
