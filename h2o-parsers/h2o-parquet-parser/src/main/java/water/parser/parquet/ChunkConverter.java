@@ -134,6 +134,8 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_TIME:
         if (OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
           return new TimestampConverter(colIdx, _writer);
+        } else if (parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.BOOLEAN)) {
+          return new BooleanConverter(_writer, colIdx);
         } else {
           boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
           return new StringConverter(_writer, colIdx, dictSupport);
@@ -148,6 +150,26 @@ class ChunkConverter extends GroupConverter {
     }
   }
 
+  private static class BooleanConverter extends PrimitiveConverter {
+    private BufferedString TRUE = new BufferedString("True"); // note: this cannot be static - some BS ops are not thread safe!
+    private BufferedString FALSE = new BufferedString("False");
+
+    private final int _colIdx;
+    private final WriterDelegate _writer;
+
+    BooleanConverter(WriterDelegate writer, int colIdx) {
+      _colIdx = colIdx;
+      _writer = writer;
+    }
+
+    @Override
+    public void addBoolean(boolean value) {
+      BufferedString bsValue = value ? TRUE : FALSE;
+      _writer.addStrCol(_colIdx, bsValue);
+    }
+
+  }
+  
   private static class StringConverter extends PrimitiveConverter {
     private final BufferedString _bs = new BufferedString();
     private final int _colIdx;

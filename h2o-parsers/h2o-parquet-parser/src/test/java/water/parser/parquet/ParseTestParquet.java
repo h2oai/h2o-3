@@ -182,7 +182,8 @@ public class ParseTestParquet extends TestUtil {
       }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("myboolean", "myint", "mylong", "myfloat", "mydouble", "mydate", "myuuid", "mystring", "myenum"), f.names());
-        assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
+        assertArrayEquals("Boolean domain needs to be [False,True]", ar("False", "True"), f.vec(0).domain());
       }
     };
     assertFrameAssertion(assertion);
@@ -197,7 +198,8 @@ public class ParseTestParquet extends TestUtil {
       @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateAvroPrimitiveTypes(Files.createTempDir(), file, nrows(), new Date()); }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("myboolean", "myint", "mylong", "myfloat", "mydouble", "mydate", "myuuid", "mystring", "myenum"), f.names());
-        assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
+        assertArrayEquals("Boolean domain needs to be [False,True]", ar("False", "True"), f.vec(0).domain());
         BufferedString bs = new BufferedString();
         for (int row = 0; row < nrows(); row++) {
           assertEquals("Value in column myboolean", 1 - (row % 2), f.vec(0).at8(row));
