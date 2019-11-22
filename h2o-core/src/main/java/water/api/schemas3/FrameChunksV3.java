@@ -5,9 +5,9 @@ import water.fvec.Frame;
 import water.api.API;
 import water.fvec.Vec;
 
-public class FrameChunksV3 extends SchemaV3<Frame, FrameChunksV3> {
+public class FrameChunksV3 extends SchemaV3<Iced, FrameChunksV3> {
 
-    @API(help="ID of a given frame", json=false)
+    @API(help="ID of a given frame", required=true, direction=API.Direction.INOUT)
     public KeyV3.FrameKeyV3 frame_id;
 
     @API(help="Description of particular chunks", direction=API.Direction.OUTPUT)
@@ -33,7 +33,7 @@ public class FrameChunksV3 extends SchemaV3<Frame, FrameChunksV3> {
         }
     }
 
-    @Override public FrameChunksV3 fillFromImpl(Frame frame) {
+    public FrameChunksV3 fillFromFrame(Frame frame) {
         this.frame_id = new KeyV3.FrameKeyV3(frame._key);
         Vec vector = frame.anyVec();
         this.chunks = new FrameChunkV3[vector.nChunks()];

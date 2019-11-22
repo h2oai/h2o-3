@@ -18,12 +18,12 @@ def test_frame_chunks():
     hf = h2o.H2OFrame({'A': [1, 'NA', 2], 'B': [1, 2, 3], 'C': [4, 5, 6]})
     result = h2o.api("GET /3/FrameChunks/%s" % urllib.parse.quote(hf.frame_id))
     
-    assert result["frame_id"] == hf.frame_id
+    assert result["frame_id"]["name"] == hf.frame_id
     chunks = result["chunks"]
     assert len(chunks) > 0
     for chunk in result["chunks"]:
         assert chunk["node_idx"] >= 0
-        assert chunk["node_idx"] < h2o.cluster().cloud_size()
+        assert chunk["node_idx"] < h2o.cluster().cloud_size
     assert sum(map(lambda c : c["row_count"], chunks)) == 3
 
 
