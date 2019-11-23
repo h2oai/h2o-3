@@ -34,8 +34,8 @@ public class MojoCheckVersionTest {
         }
     }
 
-    @Test
-    public void failingOnPurposeMethod_MojoCheckVersionTest() {
-        fail("Great! MojoCheckVersionTest fails as expected");
-    }
+//    @Test
+//    public void failingOnPurposeMethod_MojoCheckVersionTest() {
+//        fail("Great! MojoCheckVersionTest fails as expected");
+//    }
 }
