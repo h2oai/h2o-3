@@ -182,7 +182,8 @@ class BuildConfig {
     ]
     if (context.env.BRANCH_NAME.startsWith('PR')) {
       jobProperties += context.parameters([
-        context.booleanParam(name: 'executeFailedOnly', defaultValue: false, description: 'If checked, execute only failed stages')
+        context.booleanParam(name: 'executeFailedOnly', defaultValue: false, description: 'If checked, execute only failed stages'),
+        context.booleanParam(name: 'excludeAutoML', defaultValue: false, description: 'If checked, automl module will not be executed')
       ])
     }
     if (customProperties != null) {
