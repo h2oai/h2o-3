@@ -1850,16 +1850,14 @@ final public class H2O {
 
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
-    Log.info("Started clouding. Target number of nodes: " + x);
+    Log.info("Waiting for clouding to finish. Target number of nodes: " + x);
     while (System.currentTimeMillis() - start < ms) {
       if (CLOUD.size() >= x && Paxos._commonKnowledge)
         break;
       try { Thread.sleep(100); } catch (InterruptedException ignore) {}
     }
-    Log.info("Clouding process has timedout ( last retry achieved " + CLOUD.size() + " out of " + x + " nodes cloud ). " 
-            + "Consider to increase `DEFAULT_TIME_FOR_CLOUDING`. Continuing....");
     if (CLOUD.size() < x)
-      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x);
+      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x + ". Consider to increase `DEFAULT_TIME_FOR_CLOUDING`.");
   }
 
   public static int getCloudSize() {
