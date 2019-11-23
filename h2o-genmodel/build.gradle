@@ -36,6 +36,9 @@ dependencies {
 }
 
 test {
+  dependsOn ":h2o-core:testJar"
+  dependsOn jar, testJar
+  
   useJUnit()
 
   logger.warn("The project $project should not depend on h2o-core (H2OTestRunner). Using default JUnit runner.")
