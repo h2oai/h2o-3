@@ -38,6 +38,13 @@ dependencies {
 test {
   useJUnit()
 
+  logger.warn("The project $project should not depend on h2o-core (H2OTestRunner). Using default JUnit runner.")
+  if(project.testMultiNode.enabled) {
+    logger.warn("Default value: project.testMultiNode.enabled = ${project.testMultiNode.enabled} ")
+    logger.warn("Setting project.testMultiNode.enabled to `false`")
+    project.testMultiNode.enabled = false
+  }
+
   testLogging {
     events "passed", "skipped", "failed"
   }
