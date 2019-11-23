@@ -5,10 +5,13 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import water.DKV;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Test VecUtils interface.
@@ -54,5 +57,28 @@ public class VecUtilsTest extends TestUtil {
     } finally {
       if (frame != null) frame.remove();
     }
+  }
+
+
+  @Test
+  public void testNaIgnoringMean() {
+    Scope.enter();
+    try {
+      final Frame frame = new TestFrameBuilder()
+              .withName("average")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withColNames("C1", "C2")
+              .withChunkLayout(2, 2, 2)
+              .withDataForCol(0, ard(1, 2, 3, 4, 5, Double.NaN)) // Line with NaN results in skipped line
+              .withDataForCol(1, ard(1, 2, 3, 4, 5, 50)) // 50 at the end will be ignored, as there is NaN in C1
+              .build();
+
+      final double[] means = VecUtils.calculateMeansIgnoringNas(frame.vec("C1"), frame.vec("C2"));
+      assertArrayEquals(means, new double[]{3D, 3D}, 0D);
+
+    } finally {
+      Scope.exit();
+    }
+
   }
 }

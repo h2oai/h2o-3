@@ -6,17 +6,22 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.*;
-import water.fvec.*;
+import water.fvec.Frame;
+import water.fvec.NFSFileVec;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
+import water.rapids.vals.ValNum;
 import water.rapids.vals.ValNums;
-import water.rapids.vals.ValStr;
 import water.rapids.vals.ValStrs;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.FileUtils;
+import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,8 +36,51 @@ public class RapidsTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   @Rule
-  public transient ExpectedException ee = ExpectedException.none(); 
-  
+  public transient ExpectedException ee = ExpectedException.none();
+
+  @Test
+  public void testPearson() {
+    Scope.enter();
+    try {
+      final Frame frame = new TestFrameBuilder()
+              .withName("heightsweights")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withColNames("HEIGHT", "WEIGHT")
+              .withDataForCol(0, ard(175, 166, 170, 169, 188, 175, 176, 171, 173, 175, 173, 174, 169, Double.NaN))
+              .withDataForCol(1, ard(69, 55, 67, 52, 90, 53, 57, 57, 68, 73, 62, 90, 63, 160))
+              .withChunkLayout(5,5,4)
+              .build();
+
+      Val pearson = Rapids.exec("(pearson heightsweights 'HEIGHT' 'WEIGHT')");
+      assertTrue(pearson instanceof ValNum);
+      
+      assertEquals(0.6396751082981977D, pearson.getNum(), 1e-12);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testPearsonIris() {
+    Scope.enter();
+    try {
+      final Frame iris = TestUtil.parse_test_file(Key.make("iris_pearson"), "smalldata/junit/iris.csv");
+      Scope.track_generic(iris);
+
+      final Val pearson_sepal = Rapids.exec("(pearson iris_pearson 'sepal_len' 'sepal_wid')");
+      assertTrue(pearson_sepal instanceof ValNum);
+      assertEquals(-0.1094D, pearson_sepal.getNum(), 1e-4);
+
+      final Val pearson_sepal_petal = Rapids.exec("(pearson iris_pearson 'sepal_len' 'petal_len')");
+      assertTrue(pearson_sepal_petal instanceof ValNum);
+      // Actually interesting there is a strong positive correlation
+      assertEquals(0.8718D, pearson_sepal_petal.getNum(), 1e-4);
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
   @Test public void bigSlice() {
     // check that large slices do something sane
     String tree = "(rows a.hex [0:2147483647])";

@@ -15,6 +15,7 @@ import water.rapids.ast.prims.operators.*;
 import water.rapids.ast.prims.reducers.*;
 import water.rapids.ast.prims.repeaters.*;
 import water.rapids.ast.prims.search.*;
+import water.rapids.ast.prims.statistics.AstPearson;
 import water.rapids.ast.prims.string.*;
 import water.rapids.ast.prims.time.*;
 import water.rapids.ast.prims.timeseries.*;
@@ -297,6 +298,9 @@ public class Env extends Iced {
     init(new AstRepLen());
     init(new AstSeq());
     init(new AstSeqLen());
+    
+    // Statistics
+    init(new AstPearson());
 
     // Custom (eg. algo-specific)
     for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())
