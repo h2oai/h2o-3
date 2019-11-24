@@ -33,5 +33,4 @@ public class MojoCheckVersionTest {
             fail(e.toString());
         }
     }
-    
 }
