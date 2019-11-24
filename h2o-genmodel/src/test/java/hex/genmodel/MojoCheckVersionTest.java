@@ -33,9 +33,5 @@ public class MojoCheckVersionTest {
             fail(e.toString());
         }
     }
-
-    @Test
-    public void failingOnPurposeMethod_MojoCheckVersionTest() {
-        fail("Great! MojoCheckVersionTest fails as expected");
-    }
+    
 }

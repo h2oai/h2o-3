@@ -33,16 +33,13 @@ dependencies {
     exclude group: 'org.slf4j'
   }
   compileOnly "com.google.protobuf.nano:protobuf-javanano:3.1.0"
+  testCompile project(":h2o-core").sourceSets.test.output
+  testCompile "commons-lang:commons-lang:2.6"
 }
 
 test {
-  useJUnit()
-
-  logger.warn("The project $project should not depend on h2o-core (H2OTestRunner). Using default JUnit runner.")
-
-  testLogging {
-    events "passed", "skipped", "failed"
-  }
+  dependsOn testSingleNode
   
-  testClassesDirs = sourceSets.test.output
+  // Defeat task 'test' by running no tests.
+  exclude '**'
 }
