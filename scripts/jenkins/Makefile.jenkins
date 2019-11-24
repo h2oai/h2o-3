@@ -268,7 +268,7 @@ test-junit-jenkins:
 	@$(MAKE) -f $(THIS_FILE) test-junit
 
 test-junit:
-	./gradlew h2o-genmodel:test :h2o-jetty-9:test :h2o-jetty-8:test :h2o-mapreduce-generic:test :h2o-genmodel-ext-xgboost:test  $$ADDITIONAL_GRADLE_OPTS
+	./gradlew test -x h2o-ext-mojo-pipeline:test -x h2o-automl:test -x h2o-ext-xgboost:testMultiNode $$ADDITIONAL_GRADLE_OPTS
 
 test-junit-automl-jenkins:
 	$(call sed_test_scripts)

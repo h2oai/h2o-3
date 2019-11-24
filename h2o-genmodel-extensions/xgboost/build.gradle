@@ -37,7 +37,7 @@ dependencies {
 }
 
 test {
-    dependsOn testMultiNode
+    dependsOn testSingleNode, testMultiNode
 
     // Defeat task 'test' by running no tests.
     exclude '**'

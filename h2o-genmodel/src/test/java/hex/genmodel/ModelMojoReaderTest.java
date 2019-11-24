@@ -59,9 +59,4 @@ public class ModelMojoReaderTest {
     verify(reader).readModelSpecificAttributes();
   }
 
-//  @Test
-//  public void failingOnPurposeMethod_MockitoJUnitRunner() {
-//    fail("Great! MockitoJUnitRunner fails as expected");
-//  }
-
 }

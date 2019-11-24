@@ -26,8 +26,4 @@ public class XGBoostNativeMojoModelTest {
     XGBoostNativeMojoModel.main(new String[]{"--dump", mojoFile.getAbsolutePath(), "false", "json"}); // expect no smoke
   }
 
-//  @Test
-//  public void failingOnPurposeMethod_XGBoostNativeMojoModelTest() {
-//    fail("Great! XGBoostNativeMojoModelTest fails as expected");
-//  }
 }
