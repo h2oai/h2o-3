@@ -5,13 +5,17 @@ dependencies {
     compile 'org.eclipse.jetty:jetty-server:8.1.21.v20160908'
     compile "org.eclipse.jetty:jetty-servlets:8.1.21.v20160908"
     compile "org.eclipse.jetty:jetty-plus:8.1.21.v20160908"
+    
+    //To make H2OTestRunner available
+    testCompile project(":h2o-core").sourceSets.test.output
+    testCompile "commons-lang:commons-lang:2.6"
+    
     testCompile group: "junit", name: "junit", version: "4.12"
     testCompile "org.mockito:mockito-core:2.23.0"
 }
 
 test {
-    dependsOn ":h2o-core:testJar"
-    dependsOn jar, testJar, testSingleNode, testMultiNode
+    dependsOn testSingleNode
 
     // Defeat task 'test' by running no tests.
     exclude '**'

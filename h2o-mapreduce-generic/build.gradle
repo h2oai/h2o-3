@@ -17,13 +17,17 @@ dependencies {
     exclude module: "${defaultWebserverModule}"
   }
   compile project(":h2o-security")
+
+  //To make H2OTestRunner available
+  testCompile project(":h2o-core").sourceSets.test.output
+  testCompile "commons-lang:commons-lang:2.6"
+  
   testCompile "junit:junit:${junitVersion}"
   testCompile "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
 }
 
 test {
-  dependsOn ":h2o-core:testJar"
-  dependsOn jar, testJar, testSingleNode, testMultiNode
+  dependsOn testSingleNode, testMultiNode
 
   // Defeat task 'test' by running no tests.
   exclude '**'

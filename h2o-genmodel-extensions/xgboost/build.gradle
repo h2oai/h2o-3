@@ -28,13 +28,16 @@ dependencies {
     compile "ai.h2o:xgboost4j-linux-ompv3:${xgboost4jVersion}"
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
 
+    //To make H2OTestRunner available
+    testCompile project(":h2o-core").sourceSets.test.output
+    testCompile "commons-lang:commons-lang:2.6"
+    
     testCompile 'com.esotericsoftware.kryo:kryo:2.21'
     testCompile "junit:junit:${junitVersion}"
 }
 
 test {
-    dependsOn ":h2o-core:testJar"
-    dependsOn jar, testJar, testSingleNode, testMultiNode
+    dependsOn testMultiNode
 
     // Defeat task 'test' by running no tests.
     exclude '**'
