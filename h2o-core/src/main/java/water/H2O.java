@@ -1574,10 +1574,7 @@ final public class H2O {
   /* A static list of acceptable Cloud members passed via -flatfile option.
    * It is updated also when a new client appears. */
   private static Set<H2ONode> STATIC_H2OS = null;
-
-  /* List of all clients that ever connected to this cloud. Keys are IP:PORT of these clients */
-  private static Map<String, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
-
+  
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
 
