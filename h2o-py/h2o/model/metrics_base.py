@@ -169,7 +169,13 @@ class MetricsBase(backwards_compatible()):
         """The AUC for this set of metrics."""
         return self._metric_json['AUC']
 
+
     def pr_auc(self):
+        """The area under the precision recall curve."""
+        return self._metric_json['pr_auc']
+
+
+    def aucpr(self):
         """The area under the precision recall curve."""
         return self._metric_json['pr_auc']
 

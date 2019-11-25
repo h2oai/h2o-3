@@ -1095,6 +1095,10 @@ h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
+#' @rdname h2o.pr_auc
+#' @export
+h2o.aucpr <- h2o.pr_auc
+
 #' Retrieve the mean per class error
 #'
 #' Retrieves the mean per class error from an \linkS4class{H2OBinomialMetrics}.

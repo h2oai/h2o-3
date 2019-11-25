@@ -615,6 +615,18 @@ class H2OGridSearch(backwards_compatible()):
         return {model.model_id: model.mse(train, valid, xval) for model in self.models}
 
 
+    def rmse(self, train=False, valid=False, xval=False):
+        return {model.model_id: model.rmse(train, valid, xval) for model in self.models}
+
+
+    def mae(self, train=False, valid=False, xval=False):
+        return {model.model_id: model.mae(train, valid, xval) for model in self.models}
+
+
+    def rmsle(self, train=False, valid=False, xval=False):
+        return {model.model_id: model.rmsle(train, valid, xval) for model in self.models}
+
+
     def logloss(self, train=False, valid=False, xval=False):
         """
         Get the Log Loss(s).
@@ -697,6 +709,14 @@ class H2OGridSearch(backwards_compatible()):
         :returns: The Gini Coefficient for this binomial model.
         """
         return {model.model_id: model.gini(train, valid, xval) for model in self.models}
+
+
+    def pr_auc(self, train=False, valid=False, xval=False):
+        return {model.model_id: model.pr_auc(train, valid, xval) for model in self.models}
+
+
+    def aucpr(self, train=False, valid=False, xval=False):
+        return {model.model_id: model.aucpr(train, valid, xval) for model in self.models}
 
 
     def get_hyperparams(self, id, display=True):

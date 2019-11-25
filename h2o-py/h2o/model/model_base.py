@@ -4,6 +4,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import os
 import traceback
 import warnings
+from functools import wraps
 
 import h2o
 from h2o.base import Keyed
@@ -841,11 +842,14 @@ class ModelBase(backwards_compatible(Keyed)):
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): 
-            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
+            if v is not None and not is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics):
                 raise H2OValueError("pr_auc() is only available for Binomial classifiers.")
             m[k] = None if v is None else v.pr_auc()
         return list(m.values())[0] if len(m) == 1 else m
-    
+
+    def aucpr(self, train=False, valid=False, xval=False):
+        return self.pr_auc(train, valid, xval)
+
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
         Download the POJO for this model to the directory specified by path.
