@@ -130,12 +130,13 @@ class ChunkConverter extends GroupConverter {
       case Vec.T_BAD:
       case Vec.T_CAT:
       case Vec.T_STR:
+        if (parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.BOOLEAN)) {
+          return new BooleanConverter(_writer, colIdx);
+        }
       case Vec.T_UUID:
       case Vec.T_TIME:
         if (OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) || parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.INT96)) {
           return new TimestampConverter(colIdx, _writer);
-        } else if (parquetType.getPrimitiveTypeName().equals(PrimitiveType.PrimitiveTypeName.BOOLEAN)) {
-          return new BooleanConverter(_writer, colIdx);
         } else {
           boolean dictSupport = parquetType.getOriginalType() == OriginalType.UTF8 || parquetType.getOriginalType() == OriginalType.ENUM;
           return new StringConverter(_writer, colIdx, dictSupport);
