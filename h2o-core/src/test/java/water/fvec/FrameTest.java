@@ -140,6 +140,18 @@ public class FrameTest extends TestUtil {
       assertEquals(2, slicedRange.numRows());
       assertStringVecEquals(svec("a", "d"), slicedRange.vec(0));
       assertVecEquals(vec(1,4), slicedRange.vec(1), 1e-5);
+
+      //checking negative indices for "All but this" use case
+      try {
+        Frame slicedRangeExcept = input.deepSlice(new long[]{-1}, null); // <--- failing here already
+      } catch (AssertionError ex) { // Catching internal assertion error from deepSlice method 
+        fail("Unsupported negative index in deepSlice");
+      }
+      
+      // Uncomment once ^^^ is fixed
+      // assertEquals(3, slicedRangeExcept.numRows());
+      // assertStringVecEquals(svec("a", "c", "d"), slicedRangeExcept.vec(0));
+      // assertVecEquals(vec(1, 3, 4), slicedRangeExcept.vec(1), 1e-5);
     } finally {
       Scope.exit();
     }
