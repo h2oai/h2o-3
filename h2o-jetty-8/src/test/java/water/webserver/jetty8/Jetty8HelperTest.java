@@ -25,7 +25,9 @@ public class Jetty8HelperTest {
 
   @Test
   public void testCreateJettyServerWithSSL() {
-    H2OHttpConfig cfg = new H2OHttpConfig();
+if (true)
+throw new IllegalStateException("prcak");    
+H2OHttpConfig cfg = new H2OHttpConfig();
     cfg.jks = "/path/to/keystore.jks";
     cfg.jks_pass = "test-password";
     cfg.jks_alias = "test-alias";
