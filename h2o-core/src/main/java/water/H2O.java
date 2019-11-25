@@ -350,6 +350,11 @@ final public class H2O {
     /** -allow_clients, -allow_clients=true; Enable clients to connect to this H2O node - disabled by default */
     public boolean allow_clients = false;
 
+    /** If this timeout is set to non 0 value, stop the cluster if there hasn't been any rest api request to leader
+     * node after the given timeout. Unit is milliseconds.
+     */
+    public int rest_api_ping_timeout = 0;
+    
     /** specifies a file to write when the node is up */
     public String notify_local;
 
@@ -531,6 +536,9 @@ final public class H2O {
       }
       else if (s.matches("allow_clients")) {
         trgt.allow_clients = true;
+      } else if (s.matches("rest_api_ping_timeout")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.rest_api_ping_timeout = s.parseInt(args[i]);
       }
       else if (s.matches("notify_local")) {
         i = s.incrementAndCheck(i, args);
@@ -742,6 +750,10 @@ final public class H2O {
       }
       if (ARGS.session_timeout <= 0)
         parseFailed("Invalid session timeout specification (" + ARGS.session_timeout + ")");
+    }
+    
+    if (ARGS.rest_api_ping_timeout < 0) {
+      parseFailed("rest_api_ping_timeout needs to be 0 or higher, was (" + ARGS.rest_api_ping_timeout + ")");
     }
 
     // Validate extension arguments
@@ -1654,6 +1666,11 @@ final public class H2O {
               "  2. Point your browser to " + NetworkInit.h2oHttpView.getScheme() + "://localhost:55555");
     }
 
+    if (H2O.ARGS.rest_api_ping_timeout > 0) {
+      Log.info("Registering REST API Check Thread. If 3/Ping endpoint is not accessed during " + H2O.ARGS.rest_api_ping_timeout + "" +
+          " ms, the cluster will be terminated.");
+      new RestApiPingCheckThread().start();
+    }
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;

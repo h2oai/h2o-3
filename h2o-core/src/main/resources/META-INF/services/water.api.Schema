@@ -154,3 +154,5 @@ water.api.schemas3.StringPairV3
 water.api.schemas3.KeyValueV3
 water.api.schemas3.GridExportV3
 water.api.schemas3.GridImportV3
+water.api.schemas3.PingV3
+water.api.schemas3.PingV3$NodeMemoryInfoV3
