@@ -1,9 +1,13 @@
 package hex.tree;
 
+import hex.Model;
 import hex.genmodel.tools.PrintMojo;
+import hex.tree.gbm.GBM;
+import hex.tree.gbm.GBMModel;
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.IOUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -104,15 +108,14 @@ public class PrintMojoTreeTest {
         PrintMojo.main(new String[]{"--input", modelFile.getAbsolutePath(), "--output", treeOutput.getAbsolutePath(), "--levels", "1"});
         fail("Expected PrintMojo to call System.exit()");
       } catch (PreventedExitException e) {
+        // expected
       }
 
       final String treeDotz = FileUtils.readFileToString(treeOutput);
-      assertFalse(treeDotz.isEmpty());
-
       assertTrue(treeDotz.contains("\"SG_0_Node_0\" -> \"SG_0_Node_1\" [fontsize=14, label=\"[NA]\\n2 levels\\n\"]\n" +
-              "\"SG_0_Node_0\" -> \"SG_0_Node_4\" [fontsize=14, label=\"Iris-virginica\\n\"]\n" +
-              "\"SG_0_Node_1\" -> \"SG_0_Node_5\" [fontsize=14, label=\"Iris-versicolor\\n\"]\n" +
-              "\"SG_0_Node_1\" -> \"SG_0_Node_6\" [fontsize=14, label=\"[NA]\\nIris-setosa\\n\"]"));
+          "\"SG_0_Node_0\" -> \"SG_0_Node_4\" [fontsize=14, label=\"Iris-virginica\\n\"]\n" +
+          "\"SG_0_Node_1\" -> \"SG_0_Node_5\" [fontsize=14, label=\"Iris-versicolor\\n\"]\n" +
+          "\"SG_0_Node_1\" -> \"SG_0_Node_6\" [fontsize=14, label=\"[NA]\\nIris-setosa\\n\"]"));
 
     } finally {
       Scope.exit();
@@ -162,9 +165,94 @@ public class PrintMojoTreeTest {
           matches++; // Find labels with '<>=' inside. In non-internal representation, there should be none in a graph with purely categorical splits
         }
       }
-
       assertTrue(matches > 0);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  private void assertMojoJSONEqualsFixture(Model model, String fixtureFile) throws IOException {
+    final File modelFile = folder.newFile();
+    model.exportMojo(modelFile.getAbsolutePath(), true);
+    final File treeOutput = folder.newFile();
+    try {
+      PrintMojo.main(new String[]{"--input", modelFile.getAbsolutePath(), "--output", treeOutput.getAbsolutePath(), "--format", "json"});
+      fail("Expected PrintMojo to call System.exit()");
+    } catch (PreventedExitException e) {
+      // expected
+    }
+    final String treeJson = FileUtils.readFileToString(treeOutput);
+    assertFalse(treeJson.isEmpty());
+    final String expectedTreeJson = IOUtils.toString(getClass().getResourceAsStream(fixtureFile));
+    assertEquals(
+        removeH2OVersion(expectedTreeJson), 
+        removeH2OVersion(treeJson)
+    );
+  }
+  
+  private String removeH2OVersion(String json) {
+    return json.replaceAll("\"h2o_version\": \"[\\d\\.]+\"", "h2o_version");
+  }
 
+  @Test
+  public void testMojoCategoricalJson() throws IOException {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._seed = 0xFEED;
+      p._response_column = "IsDepDelayed";
+      p._ntrees = 1;
+      p._max_depth = 3;
+      p._ignored_columns = new String[] { "Origin", "Dest", "IsDepDelayed" };
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      assertMojoJSONEqualsFixture(model, "categorical.json");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMojoCategoricalOneHotJson() throws IOException {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+
+      GBMModel.GBMParameters p = new GBMModel.GBMParameters();
+      p._train = train._key;
+      p._seed = 0xFEED;
+      p._response_column = "IsDepDelayed";
+      p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+      p._ntrees = 2;
+      p._max_depth = 3;
+      p._ignored_columns = new String[] { "Origin", "Dest" };
+
+      GBMModel model = new GBM(p).trainModel().get();
+      assertMojoJSONEqualsFixture(model, "categoricalOneHot.json");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMojoGBMJson() throws IOException {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/extdata/prostate.csv"));
+
+      GBMModel.GBMParameters p = new GBMModel.GBMParameters();
+      p._train = train._key;
+      p._response_column = "CAPSULE";
+      p._ignored_columns = new String[]{"ID"};
+      p._seed = 1;
+      p._ntrees = 2;
+      p._max_depth = 3;
+
+      GBMModel model = new GBM(p).trainModel().get();
+      assertMojoJSONEqualsFixture(model, "gbmProstate.json");
     } finally {
       Scope.exit();
     }

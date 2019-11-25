@@ -8,10 +8,7 @@ import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.GenmodelBitSet;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Node in a tree.
@@ -42,8 +39,6 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
   // When a column is categorical, levels that are reachable to this node.
   // This in particular includes any earlier splits of the same colId.
   private BitSet inclusiveLevels;
-
-  private Logger logger = LoggerFactory.getLogger(SharedTreeNode.class);
 
   /**
    * Create a new node.
@@ -451,6 +446,37 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     }
   }
 
+  public Map<String, Object> toJson() {
+    Map<String, Object> json = new LinkedHashMap<>();
+    json.put("nodeNumber", nodeNumber);
+    if (!Float.isNaN(weight)) json.put("weight", weight);
+    if (isLeaf()) {
+      if (!Float.isNaN(predValue)) json.put("predValue", predValue);
+    } else {
+      json.put("colId", colId);
+      json.put("colName", colName);
+      json.put("leftward", leftward);
+      json.put("isCategorical", isBitset());
+      json.put("inclusiveNa", inclusiveNa);
+      if (!Float.isNaN(splitValue)) {
+        json.put("splitValue", splitValue);
+      }
+    }
+    if (inclusiveLevels != null) {
+      List<Integer> matchedDomainValues = new ArrayList<>();
+      for (int i = inclusiveLevels.nextSetBit(0); i >= 0; i = inclusiveLevels.nextSetBit(i+1)) {
+        matchedDomainValues.add(i);
+      }
+      json.put("matchValues", matchedDomainValues);
+      json.put("inclusiveNa", inclusiveNa);
+    }
+    if (!isLeaf()) {
+      json.put("rightChild", rightChild.toJson());
+      json.put("leftChild", leftChild.toJson());
+    }
+    return json;
+  }
+  
   public SharedTreeNode getParent() {
     return parent;
   }
@@ -556,10 +582,15 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
   @Override
   public final int next(double[] value) {
     final double d = value[colId];
-
-    if (Double.isNaN(d) || 
-            (bs != null && !bs.isInRange((int)d)) || (domainValues != null && domainValues.length <= (int)d)
-            ? !leftward : !naVsRest && (bs == null ? d >= splitValue : bs.contains((int)d))) {
+    if (
+            Double.isNaN(d) || 
+            (bs != null && !bs.isInRange((int)d)) || 
+            (domainValues != null && domainValues.length <= (int) d)
+        ? 
+            !leftward 
+        : 
+            !naVsRest && (bs == null ? d >= splitValue : bs.contains((int)d))
+    ) {
       // go RIGHT
       return getRightChildIndex();
     } else {

@@ -4,6 +4,8 @@ import hex.genmodel.tools.PrintMojo;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -159,6 +161,14 @@ public class SharedTreeSubgraph {
     String title = SharedTreeNode.escapeQuotes((optionalTitle != null) ? optionalTitle : name);
     os.println("label=\"" + title + "\"");
     os.println("}");
+  }
+  
+  Map<String, Object> toJson() {
+    Map<String, Object> json = new HashMap<>();
+    json.put("index", subgraphNumber);
+    json.put("name", name);
+    json.put("root", rootNode.toJson());
+    return json;
   }
 
   @Override

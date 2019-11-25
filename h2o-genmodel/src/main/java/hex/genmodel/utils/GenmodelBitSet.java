@@ -25,6 +25,10 @@ public class GenmodelBitSet {
         fill(nbits <= 0 ? null : new byte[bytes(nbits)], 0, nbits, bitoff);
     }
 
+    public int getNBits() {
+        return _nbits;
+    }
+
     // Fill in fields, with the bytes coming from some other large backing byte
     // array, which also contains other unrelated bits.
     public void fill(byte[] v, int byteoff, int nbits, int bitoff) {
