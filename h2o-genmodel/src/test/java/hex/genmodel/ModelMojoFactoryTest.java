@@ -4,6 +4,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
+import static org.junit.Assert.fail;
+
 public class ModelMojoFactoryTest {
 
   @Rule
@@ -16,4 +18,8 @@ public class ModelMojoFactoryTest {
     ModelMojoFactory.INSTANCE.getMojoReader("Unknown");
   }
 
+  @Test
+  public void failing_on_purpose() throws Exception {
+    fail("Failing on purpose");
+  }
 }
