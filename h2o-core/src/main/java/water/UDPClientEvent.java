@@ -4,10 +4,10 @@ import water.util.Log;
 
 /**
  * A simple message which informs cluster about a new client
- * which was connected or about existing client who wants to disconnect.
- * The event is used only in flatfile mode where in case of connecting, it
+ * which was connected.
+ * The event is used only in flatfile mode, where it
  * allows the client to connect to a single node, which will
- * inform a cluster about the client. Hence, the rest of nodes will
+ * inform the current rest of the cluster about the client. Hence, the rest of nodes will
  * start ping client with heartbeat, and vice versa.
  */
 public class UDPClientEvent extends UDP {
