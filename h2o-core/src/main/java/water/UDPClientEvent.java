@@ -38,25 +38,7 @@ public class UDPClientEvent extends UDP {
             H2O.addNodeToFlatfile(ce.clientNode);
           }
           break;
-        // Regular disconnect event also doesn't have any effect in multicast mode.
-        // However we need to catch the watchdog disconnect event in both multicast and flatfile mode.
-        case DISCONNECT:
-          // handle regular disconnection
-          if (H2O.isFlatfileEnabled()) {
-            Log.info("Client: " + ce.clientNode + " has been disconnected on: " + ab._h2o);
-            H2O.removeNodeFromFlatfile(ce.clientNode);
-            H2O.removeClient(ce.clientNode);
-          }
-
-          // In case the disconnection comes from the watchdog client, stop the cloud ( in both multicast and flatfile mode )
-          if (ce.clientHeartBeat._watchdog_client) {
-            Log.info("Stopping H2O cloud because watchdog client is disconnecting from the cloud.");
-            // client is sending disconnect message on purpose, we can stop the cloud even without asking
-            // the rest of the nodes for consensus on this
-            H2O.shutdown(0);
-          }
-          break;
-        default:
+          default:
           throw new RuntimeException("Unsupported Client event: " + ce.type);
       }
     }
@@ -67,9 +49,8 @@ public class UDPClientEvent extends UDP {
   public static class ClientEvent extends Iced<ClientEvent> {
 
     public enum Type {
-      CONNECT,
-      DISCONNECT;
-
+      CONNECT;
+      
       public void broadcast(H2ONode clientNode) {
         ClientEvent ce = new ClientEvent(this, H2O.SELF._heartbeat, clientNode);
         ce.write(new AutoBuffer(H2O.SELF, udp.client_event._prior).putUdp(udp.client_event)).close();
