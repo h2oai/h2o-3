@@ -42,8 +42,14 @@ public class AstPearson extends AstPrimitive {
     final Frame frame = value.get(Frame.class);
     final Vec x = getVectorFromFrame(frame, asts[2].str());
     final Vec y = getVectorFromFrame(frame, asts[3].str());
-    // Can't use means from rollup stats - lines with NAs in the columns evaluated are skipped completely. 
-    final double[] means = VecUtils.calculateMeansIgnoringNas(x, y);
+    
+    final double[] means;
+    if (x.naCnt() == 0 && y.naCnt() == 0) {
+      means = new double[]{x.mean(), y.mean()};
+    } else {
+      // Can't use means from rollup stats - lines with NAs in the columns evaluated are skipped completely. 
+      means = VecUtils.calculateMeansIgnoringNas(x, y);
+    }
 
     final PearsonCorrelationCoefficientTask pearsonTask = new PearsonCorrelationCoefficientTask(means[0], means[1])
             .doAll(x, y);
