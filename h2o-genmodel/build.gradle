@@ -34,3 +34,7 @@ dependencies {
   }
   compileOnly "com.google.protobuf.nano:protobuf-javanano:3.1.0"
 }
+
+test {
+  reports.junitXml.destination = "$buildDir/test-results"
+}
