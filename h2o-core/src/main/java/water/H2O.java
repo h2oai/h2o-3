@@ -753,7 +753,7 @@ final public class H2O {
     }
     
     if (ARGS.rest_api_ping_timeout < 0) {
-      parseFailed("rest_api_ping_timeout needs to be 0 or higher, was (" + ARGS.rest_api_ping_timeout + ")");
+      parseFailed(String.format("rest_api_ping_timeout needs to be 0 or higher, was (%d)", ARGS.rest_api_ping_timeout));
     }
 
     // Validate extension arguments
@@ -1667,8 +1667,8 @@ final public class H2O {
     }
 
     if (H2O.ARGS.rest_api_ping_timeout > 0) {
-      Log.info("Registering REST API Check Thread. If 3/Ping endpoint is not accessed during " + H2O.ARGS.rest_api_ping_timeout + "" +
-          " ms, the cluster will be terminated.");
+      Log.info(String.format("Registering REST API Check Thread. If 3/Ping endpoint is not" +
+          " accessed during %d ms, the cluster will be terminated.", H2O.ARGS.rest_api_ping_timeout));
       new RestApiPingCheckThread().start();
     }
     // Create the starter Cloud with 1 member
