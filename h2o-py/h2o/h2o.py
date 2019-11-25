@@ -11,6 +11,8 @@ import logging
 import os
 import warnings
 import webbrowser
+import subprocess
+import tempfile
 
 from .backend import H2OConnection
 from .backend import H2OConnectionConf
@@ -31,7 +33,7 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .estimators.word2vec import H2OWord2vecEstimator
 from .estimators.isolation_forest import H2OIsolationForestEstimator
-from .exceptions import H2OConnectionError, H2OValueError
+from .exceptions import H2OConnectionError, H2OError
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
@@ -2119,6 +2121,41 @@ def upload_mojo(mojo_path):
     print(mojo_estimator)
     return mojo_estimator
 
+
+def print_mojo(mojo_path, format="json", tree_index=None):
+    """
+    Generates string representation of an existing MOJO model. 
+    :param mojo_path:  Path to the MOJO archive on the user's local filesystem
+    :param format:  Output format. Possible values: json (default), dot 
+    :param tree_index:  Index of tree to print (only work dot format)
+    :return: An string representation of given MOJO in given format
+    """    
+    assert_is_type(mojo_path, str)
+    assert_is_type(format, str, None)
+    assert_satisfies(format, format in [None, "json", "dot"])
+    assert_is_type(tree_index, int, None)
+
+    ls = H2OLocalServer()
+    jar = ls._find_jar()
+    java = ls._find_java()
+    if format is None:
+        format = "json"
+    cmd = [java, "-cp", jar, "hex.genmodel.tools.PrintMojo", "--input", mojo_path, "--format", format]
+    if tree_index is not None:
+        cmd += ["--tree", str(tree_index)]
+    output_file = tempfile.mkstemp(prefix="mojo_output")[1]
+    try:
+        with open(output_file, 'w+') as stdout:
+            return_code = subprocess.call(cmd, stdout=stdout)
+            stdout.seek(0)
+            output = stdout.read()
+    except OSError as e:
+        traceback = getattr(e, "child_traceback", None)
+        raise H2OError("Unable to print MOJO: %s" % e, traceback)
+    if return_code == 0:
+        return output
+    else:
+        raise H2OError("Unable to print MOJO: %s" % output)
 
 #-----------------------------------------------------------------------------------------------------------------------
 # Private

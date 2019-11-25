@@ -17,7 +17,8 @@ import java.util.Map;
  * Common ancestor for {@link DrfMojoModel} and {@link GbmMojoModel}.
  * See also: `hex.tree.SharedTreeModel` and `hex.tree.TreeVisitor` classes.
  */
-public abstract class SharedTreeMojoModel extends MojoModel implements SharedTreeGraphConverter, PlattScalingMojoHelper.MojoModelWithCalibration {
+public abstract class SharedTreeMojoModel extends MojoModel implements TreeBackedMojoModel, PlattScalingMojoHelper.MojoModelWithCalibration {
+    
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
@@ -37,6 +38,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
      */
     protected int _ntree_groups;
     protected int _ntrees_per_group;
+
     /**
      * Array of binary tree data, each tree being a {@code byte[]} array. The
      * trees are logically grouped into a rectangular grid of dimensions
@@ -68,14 +70,15 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         _scoreTree = new ScoreTree2(); // Current version
     }
 
+    @Override
     public final int getNTreeGroups() {
       return _ntree_groups;
     }
 
+    @Override
     public final int getNTreesPerGroup() {
       return _ntrees_per_group;
     }
-
 
     /**
      * @deprecated use {@link #scoreTree0(byte[], double[], boolean)} instead.
