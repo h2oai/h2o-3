@@ -23,6 +23,8 @@ water.api.schemas3.DownloadDataV3
 water.api.schemas3.FieldMetadataV3
 water.api.schemas3.FindV3
 water.api.schemas3.FrameBaseV3
+water.api.schemas3.FrameChunksV3
+water.api.schemas3.FrameChunksV3$FrameChunkV3
 water.api.schemas3.FrameSynopsisV3
 water.api.schemas3.FrameV3
 water.api.schemas3.FrameV3$ColSpecifierV3
