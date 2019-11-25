@@ -43,4 +43,9 @@ public class Jetty8HelperTest {
     assertEquals("test-alias", contextFactory.getCertAlias());
   }
 
+  @Test
+  public void anotherFailingTest() {
+    fail();
+  }
+
 }
