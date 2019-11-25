@@ -292,7 +292,7 @@ class KMeansSimplexSolver {
     }
 
     public void checkInfeasibility() {
-        assert !tree.isInfeasible();
+        assert !tree.isInfeasible(): "Spanning tree to calculate K-means cluster assignments is not infeasible.";
     }
     
     public void checkConstraintsCondition(int[] numberOfPointsInCluster){

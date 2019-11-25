@@ -86,7 +86,7 @@ public class KMeansTest extends TestUtil {
         double flower = centers[k][4];
         Assert.assertTrue("categorical column expected",flower==(int)flower);
       }
-
+      
       // Done building model; produce a score column with cluster choices
       fr2 = kmm.score(fr);
 

@@ -289,7 +289,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         double[][] centers = initial_centers(model,vecs,means,mults,impute_cat, startK);
         if( centers==null ) return; // Stopped/cancelled during center-finding
         boolean work_unit_iter = !_parms._estimate_k;
-
+        boolean constrained = _parms._cluster_size_constraints != null;
+        
         // ---
         // Run the main KMeans Clustering loop
         // Stop after enough iterations or reassigned_count < TOLERANCE * num_rows
@@ -299,7 +300,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           Log.info("Cutoff for relative improvement in within_cluster_sum_of_squares: " + rel_improvement_cutoff);
 
         Vec[] vecs2;
-        if(_parms._cluster_size_constraints == null) {
+        if(!constrained) {
           vecs2 = Arrays.copyOf(vecs, vecs.length+1);
           vecs2[vecs2.length-1] = vecs2[0].makeCon(-1);
         } else {
@@ -312,8 +313,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           // Check sum of constrains
           long csum = 0;
           for(int i = 0; i<_parms._cluster_size_constraints.length; i++){
+            assert _parms._cluster_size_constraints[i] > 0: "The value of constraint should be higher then zero.";
             csum += _parms._cluster_size_constraints[i];
-            assert csum <= vecs[0].length(): "The sum of constraints is more than the number of points.";
+            assert csum <= vecs[0].length(): "The sum of constraints is higher than the number of points.";
           }
         }
         
@@ -322,11 +324,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality
           double[][] lo=null, hi=null;
           boolean stop = false;
-          int iteration = 0;
           do { 
             assert(centers.length == k);
             IterationTask task;
-            if(_parms._cluster_size_constraints == null) {
+            if(!constrained) {
               //Lloyds algorithm
               task = new LloydsIterationTask(centers, means, mults, impute_cat, _isCats, k, hasWeightCol()).doAll(vecs2); //1 PASS OVER THE DATA
             }  else {
@@ -337,7 +338,6 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               
               // Calculate center assignments
               KMeansSimplexSolver solver = new KMeansSimplexSolver(_parms._cluster_size_constraints, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), _parms._constrained_kmeans_precision);
-              //KMeansSimplexSolverLongVec solver = new KMeansSimplexSolverLongVec(_parms._cluster_size_constraints, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), _parms._constrained_kmeans_precision);
               
               // Get cluster assignments
               Frame result = solver.assignClusters();
@@ -356,7 +356,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
             // Compute model stats; update standardized cluster centers
             centers = computeStatsFillModel(task, model, vecs, means, mults, impute_cat, k);
-            if (model._parms._score_each_iteration)
+            if (model._parms._score_each_iteration) 
               Log.info(model._output._model_summary);
             lo = task._lo;
             hi = task._hi;
@@ -370,9 +370,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
                     model._output._iterations >= _parms._max_iterations || stop_requested());
             if (stop) {
               if (model._output._iterations < _parms._max_iterations)
-                Log.info("Lloyds converged after " + model._output._iterations + " iterations.");
+                Log.info("K-means converged after " + model._output._iterations + " iterations.");
               else
-                Log.info("Lloyds stopped after " + model._output._iterations + " iterations.");
+                Log.info("K-means stopped after " + model._output._iterations + " iterations.");
             }
           } while (!stop);
 
@@ -405,9 +405,18 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         vecs2[vecs2.length-1].remove();
 
         // Create metrics by scoring on training set otherwise scores are based on last Lloyd iteration
-        //model.score(_train).delete();
-        //model._output._training_metrics = ModelMetrics.getFromDKV(model,_train);
+        // maurever edit: 
+        // These lines cause the training metrics from the last iteration are replaced by another unknown metrics from DKV
+        // There should be the metrics from last Kmeans iteration
+        // If this is turn on, it causes the result metrics don't match any calculated metrics from all iterations. 
+        // Especially for Constrained Kmeans, it returns a result that does not meet the stated constraints.
+        // There is a JIRA to explore this part of code: https://0xdata.atlassian.net/browse/PUBDEV-7097
+        if(!constrained) {
+          model.score(_train).delete();
+          model._output._training_metrics = ModelMetrics.getFromDKV(model, _train);
+        }
 
+        model.update(_job); // Update model in K/V store
         Log.info(model._output._model_summary);
         Log.info(model._output._scoring_history);
         Log.info(((ModelMetricsClustering)model._output._training_metrics).createCentroidStatsTable().toString());
