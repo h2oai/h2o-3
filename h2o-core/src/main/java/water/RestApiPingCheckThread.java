@@ -21,6 +21,7 @@ public class RestApiPingCheckThread extends Thread {
       } else if (H2O.CLOUD._memary.length != 0 && Paxos._cloudLocked) {
         // Cloud is locked, but we are not leader, we can stop the thread
         Thread.currentThread().interrupt();
+        continue;
       }
       try {
         Thread.sleep(H2O.ARGS.rest_api_ping_timeout);
