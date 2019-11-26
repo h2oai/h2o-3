@@ -6,6 +6,7 @@ import water.util.Log;
 public class RestApiPingCheckThread extends Thread {
   
   public RestApiPingCheckThread() {
+    super("RestApiPingCheckThread");
     this.setDaemon(true);
   }
 

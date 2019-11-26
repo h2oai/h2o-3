@@ -71,7 +71,7 @@ public class RegisterV3Api extends AbstractRegister {
             "Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
     context.registerEndpoint("ping",
-        "GET /3/Ping", PingHandler.class, "status",
+        "GET /3/Ping", PingHandler.class, "ping",
         "The endpoint used to let H2O know from external services that it should keep running.");
 
     // Admin
