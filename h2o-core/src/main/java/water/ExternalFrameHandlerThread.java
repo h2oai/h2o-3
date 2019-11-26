@@ -20,6 +20,7 @@ class ExternalFrameHandlerThread extends Thread {
 
     ExternalFrameHandlerThread(ByteChannel sock, AutoBuffer ab) {
         super("TCP-"+sock);
+        setDaemon(true);
         _sock = sock;
         _ab = ab;
         setPriority(MAX_PRIORITY-1);
