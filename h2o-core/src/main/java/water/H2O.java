@@ -1986,8 +1986,8 @@ final public class H2O {
     // Notes: 
     // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
     // - upgrade of the javassist library should be considered when adding support for a new java version
-    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>12)) {
-      System.err.println("Only Java 8, 9, 10, 11 and 12 are supported, system version is " + System.getProperty("java.version"));
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>13)) {
+      System.err.println("Only Java 8, 9, 10, 11, 12 and 13 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
