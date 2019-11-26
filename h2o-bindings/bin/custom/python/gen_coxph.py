@@ -26,8 +26,8 @@ examples = dict(
 >>> predictor = "age"
 >>> response = "event"
 >>> train, valid = heart.split_frame(ratios=[.8])
->>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-...                                            stop_column="stop")
+>>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+...                                                  stop_column="stop")
 >>> heart_coxph.train(x=predictor,
 ...                   y=response,
 ...                   training_frame=train,
@@ -39,9 +39,9 @@ examples = dict(
 >>> predictor = "age"
 >>> response = "event"
 >>> train, valid = heart.split_frame(ratios=[.8])
->>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-...                                            stop_column="stop",
-...                                            ties="breslow")
+>>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+...                                                  stop_column="stop",
+...                                                  ties="breslow")
 >>> heart_coxph.train(x=predictor,
 ...                   y=response,
 ...                   training_frame=train,
@@ -53,8 +53,8 @@ examples = dict(
 >>> predictor = "age"
 >>> response = "event"
 >>> train, valid = heart.split_frame(ratios=[.8])
->>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-...                                            stop_column="stop")
+>>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+...                                                  stop_column="stop")
 >>> heart_coxph.train(x=predictor,
 ...                   y=response,
 ...                   training_frame=train,
@@ -66,8 +66,8 @@ examples = dict(
 >>> predictor = "age"
 >>> response = "event"
 >>> train, valid = heart.split_frame(ratios=[.8])
->>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-...                                            stop_column="stop")
+>>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+...                                                  stop_column="stop")
 >>> heart_coxph.train(x=predictor,
 ...                   y=response,
 ...                   training_frame=train,
@@ -78,9 +78,9 @@ examples = dict(
 >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 >>> predictor = "age"
 >>> response = "event"
->>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-...                                            stop_column="stop",
-...                                            use_all_factor_levels=True)
+>>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+...                                                  stop_column="stop",
+...                                                  use_all_factor_levels=True)
 >>> heart_coxph.train(x=predictor,
 ...                   y=response,
 ...                   training_frame=heart)
@@ -90,9 +90,9 @@ examples = dict(
 >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 >>> predictor = "age"
 >>> response = "event"
->>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-...                                            stop_column="stop",
-...                                            offset_column="transplant")
+>>> heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+...                                                  stop_column="stop",
+...                                                  offset_column="transplant")
 >>> heart_coxph.train(x=predictor,
 ...                   y=response,
 ...                   training_frame=heart)
@@ -187,11 +187,5 @@ examples = dict(
 ...             y=response,
 ...             training_frame=heart)
 >>> len(listdir(checkpoints_dir))
-""",
-    stratify_by="""
-
-""",
-    weights_column="""
-
 """
 )
