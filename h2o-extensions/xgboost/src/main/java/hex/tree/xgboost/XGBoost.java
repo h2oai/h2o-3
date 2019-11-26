@@ -2,7 +2,10 @@ package hex.tree.xgboost;
 
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLM;
 import hex.glm.GLMTask;
+import hex.tree.PlattScalingHelper;
+import hex.tree.SharedTree;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.util.FeatureScore;
@@ -30,7 +33,8 @@ import static water.H2O.technote;
  *
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
-public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
+public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> 
+    implements PlattScalingHelper.ModelBuilderWithCalibration<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
   private static final double FILL_RATIO_THRESHOLD = 0.25D;
 
@@ -61,6 +65,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // Number of trees requested, including prior trees from a checkpoint
   private int _ntrees;
+
+  // Calibration frame for Platt scaling
+  private transient Frame _calib;
 
   @Override protected int nModelsInParallel(int folds) {
     return nModelsInParallel(folds, 2);
@@ -201,6 +208,23 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if ((_train != null) && (_parms._monotone_constraints != null)) {
       TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
     }
+
+    PlattScalingHelper.initCalibration(this, _parms, expensive);
+  }
+
+  @Override
+  public ModelBuilder getModelBuilder() {
+    return this;
+  }
+
+  @Override
+  public Frame getCalibrationFrame() {
+    return _calib;
+  }
+
+  @Override
+  public void setCalibrationFrame(Frame f) {
+    _calib = f;
   }
 
   static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
@@ -512,6 +536,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model.update(_job);
         Log.info(model);
         scored = true;
+      }
+
+      // Model Calibration (only for the final model, not CV models)
+      if (finalScoring && _parms.calibrateModel() && (!_parms._is_cv_model)) {
+        model._output._calib_model = PlattScalingHelper.buildCalibrationModel(XGBoost.this, _parms, _job, model);
+        model.update(_job);
       }
 
       return scored;

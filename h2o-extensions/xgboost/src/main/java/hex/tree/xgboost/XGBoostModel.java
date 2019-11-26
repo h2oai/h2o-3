@@ -12,10 +12,14 @@ import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.glm.GLMModel;
+import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
+import water.api.API;
+import water.api.schemas3.KeyV3;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -40,7 +44,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   public XGBoostModelInfo model_info() { return model_info; }
 
-  public static class XGBoostParameters extends Model.Parameters implements Model.GetNTrees {
+  public static class XGBoostParameters extends Model.Parameters implements Model.GetNTrees, PlattScalingHelper.ParamsWithCalibration {
     public enum TreeMethod {
       auto, exact, approx, hist
     }
@@ -116,6 +120,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public DMatrixType _dmatrix_type = DMatrixType.auto;
     public float _reg_lambda = 1;
     public float _reg_alpha = 0;
+    
+    // Platt scaling
+    public boolean _calibrate_model;
+    public Key<Frame> _calibration_frame;
 
     // Dart specific (booster == dart)
     public DartSampleType _sample_type = DartSampleType.uniform;
@@ -172,6 +180,21 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     @Override
     public int getNTrees() {
       return _ntrees;
+    }
+
+    @Override
+    public Frame getCalibrationFrame() {
+      return _calibration_frame != null ? _calibration_frame.get() : null;
+    }
+
+    @Override
+    public boolean calibrateModel() {
+      return _calibrate_model;
+    }
+
+    @Override
+    public Parameters getParams() {
+      return this;
     }
 
     static String[] CHECKPOINT_NON_MODIFIABLE_FIELDS = { 
@@ -469,8 +492,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   @Override
-  protected boolean needsPostProcess() {
-    return false; // scoring functions return final predictions
+  protected Frame postProcessPredictions(Frame adaptedFrame, Frame predictFr, Job j) {
+    return PlattScalingHelper.postProcessPredictions(predictFr, j, _output);
   }
 
   @Override
@@ -559,6 +582,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (di != null) {
       di.remove(fs);
     }
+    if (_output._calib_model != null)
+      _output._calib_model.remove(fs);
     return super.remove_impl(fs, cascade);
   }
 
