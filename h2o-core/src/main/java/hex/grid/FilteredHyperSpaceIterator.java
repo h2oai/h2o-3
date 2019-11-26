@@ -30,7 +30,7 @@ public class FilteredHyperSpaceIterator<MP extends Model.Parameters> implements 
   public MP nextModelParameters(Model previousModel) {
     MP nextMPs = _hyperSpaceIterator.nextModelParameters(previousModel);
     _numberOfVisitedPermutations++;
-    if(_permutationFilter.skip(nextMPs)) {
+    if(! _permutationFilter.test(nextMPs)) {
       return hasNext(previousModel) ? nextModelParameters(previousModel) : null;
     } else {
       _numberOfUsedPermutations++;

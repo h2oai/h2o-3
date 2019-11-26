@@ -506,7 +506,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      *     filterFunctions.add(filterFunction1);
      *     filterFunctions.add(filterFunction2);
      *
-     *     PermutationFilter<Model.Parameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
+     *     PermutationFilter<Model.Parameters> defaultPermutationFilter = new AnyMatchPermutationFilter(filterFunctions);
      *   }
      *   , where {@link Model.Parameters} should be substituted with specific implementation.                        
      */

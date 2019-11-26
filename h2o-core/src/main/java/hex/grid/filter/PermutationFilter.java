@@ -14,7 +14,7 @@ public interface PermutationFilter<MP extends Model.Parameters> extends Resetabl
    * Main method that decides whether given {@code permutation} should be skipped
    * @param permutation instance of {@link Model.Parameters} that represents particular
    *                   combination of hyper parameters during grid search
-   * @return `true` when permutation should be skipped
+   * @return `false` when permutation should be skipped
    */
-  boolean skip(MP permutation);
+  boolean test(MP permutation);
 }

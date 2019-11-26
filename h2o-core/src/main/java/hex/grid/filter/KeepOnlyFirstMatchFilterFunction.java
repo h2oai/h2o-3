@@ -37,8 +37,8 @@ public class KeepOnlyFirstMatchFilterFunction<MP extends Model.Parameters> imple
 
 
   @Override
-  public void activate(MP permutation) {
-    if (test(permutation) && _maxNumberOfMatchesToApply > 0) _maxNumberOfMatchesToApply--;
+  public void activate(boolean globalActivate, MP permutation) {
+    if (test(permutation) && globalActivate && _maxNumberOfMatchesToApply > 0) _maxNumberOfMatchesToApply--;
   }
 
   @Override

@@ -1,6 +1,6 @@
 package hex.grid;
 
-import hex.grid.filter.DefaultPermutationFilter;
+import hex.grid.filter.AnyMatchPermutationFilter;
 import hex.grid.filter.PermutationFilter;
 import hex.grid.filter.PermutationFilterFunction;
 import hex.grid.filter.StrictFilterFunction;
@@ -11,7 +11,6 @@ import water.TestUtil;
 
 import java.util.*;
 
-import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -51,7 +50,7 @@ public class GridSearchWithFilteringTest extends TestUtil {
     );
     int expectedNumberOfFilteredOutPermutations = 2916;
 
-    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new DefaultPermutationFilter(strictFilterFunction);
+    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new AnyMatchPermutationFilter(strictFilterFunction);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<GBMModel.GBMParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<>(gbmParameters,
@@ -94,7 +93,7 @@ public class GridSearchWithFilteringTest extends TestUtil {
     
     int expectedNumberOfFilteredOutPermutations = 6;
 
-    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new DefaultPermutationFilter(strictFilterFunction);
+    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new AnyMatchPermutationFilter(strictFilterFunction);
 
     HyperSpaceWalker.CartesianWalker<GBMModel.GBMParameters> walker =
             new HyperSpaceWalker.CartesianWalker<>(gbmParameters,

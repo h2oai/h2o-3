@@ -18,7 +18,7 @@ public interface FilterFunction<MP extends Model.Parameters> extends Predicate<M
     return test(permutation);
   }
 
-  default void activate(MP permutation) { }
+  default void activate(boolean globalActivate, MP permutation) { }
 
   /**
    *  For stateless implementations there is no need to do anything.

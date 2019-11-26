@@ -41,7 +41,7 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     PermutationFilterFunction filterFunction2 = new StrictFilterFunction<TargetEncoderModel.TargetEncoderParameters>(gridItem -> !(gridItem._k == 3.0 && gridItem._f == 1.0));
     
     PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter =
-            new DefaultPermutationFilter(filterFunction1, filterFunction2);
+            new AnyMatchPermutationFilter<>(filterFunction1, filterFunction2);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
@@ -88,7 +88,7 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
 
     PermutationFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>(gridItem -> !gridItem._blending);
 
-    PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new DefaultPermutationFilter(blendingFilterFunction);
+    PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new AnyMatchPermutationFilter<>(blendingFilterFunction);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
@@ -131,7 +131,7 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
 
     PermutationFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
 
-    PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new DefaultPermutationFilter(blendingFilterFunction);
+    PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new AnyMatchPermutationFilter<>(blendingFilterFunction);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
@@ -176,7 +176,7 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     PermutationFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
 
     PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter =
-            new DefaultPermutationFilter(blendingFilterFunction);
+            new AnyMatchPermutationFilter<>(blendingFilterFunction);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
