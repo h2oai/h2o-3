@@ -24,8 +24,7 @@ public class PingV3 extends RequestSchemaV3<Iced, PingV3> {
       ip_port = ipPort;
       free_mem = freeMemory;
     }
-
-
+    
     @API(help="IP address and port in the form a.b.c.d:e", direction=API.Direction.OUTPUT)
     public String ip_port;
 
