@@ -25,7 +25,7 @@ public class AnyMatchPermutationFilter<MP extends Model.Parameters> implements P
     boolean evaluatePermutation = true;
 
     for (FilterFunction<MP> fun : _filterFunctions) {
-      if (!fun.apply(permutation)) {
+      if (!fun.test(permutation)) {
         evaluatePermutation = false;
         break;
       }
