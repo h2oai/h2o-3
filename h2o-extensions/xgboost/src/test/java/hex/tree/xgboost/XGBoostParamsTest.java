@@ -14,7 +14,7 @@ import static org.junit.Assert.assertNotNull;
 public class XGBoostParamsTest extends TestUtil {
 
   @BeforeClass
-  public void setUp() {
+  public static void setUp() {
     TestUtil.stall_till_cloudsize(1);
   }
 
