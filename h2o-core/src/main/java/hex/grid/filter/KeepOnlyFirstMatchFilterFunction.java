@@ -8,7 +8,7 @@ import java.util.function.Function;
  * This class is intended to be used to reduce number of grid items grid search process is going to evaluate.
  * Use this class to mark group of grid items that are equivalent in terms of their evaluation values and to only evaluate a single representative.
  * 
- *  Usage: pass the function to the constructor which will return `true` for the grid items of type <Map<String, Object>
+ *  Usage: pass a function to the constructor which will return `true` for the grid items of type {@link Model.Parameters}
  *  that we will want to consider equal.
  */
 public class KeepOnlyFirstMatchFilterFunction<MP extends Model.Parameters> implements PermutationFilterFunction<MP> {
@@ -22,23 +22,21 @@ public class KeepOnlyFirstMatchFilterFunction<MP extends Model.Parameters> imple
   }
 
   @Override
-  public boolean apply(MP permutation) {
+  public boolean test(MP permutation) {
     if(_maxNumberOfMatchesToApply == 0) {
-      return  !test(permutation);
+      return !testBaseMatch(permutation);
     } else {
       return true;
     }
   }
 
-  @Override
-  public boolean test(MP permutation) {
+  private boolean testBaseMatch(MP permutation) {
     return _baseMatchFunction.apply(permutation);
   }
 
-
   @Override
   public void activate(boolean globalActivate, MP permutation) {
-    if (test(permutation) && globalActivate && _maxNumberOfMatchesToApply > 0) _maxNumberOfMatchesToApply--;
+    if (globalActivate && _maxNumberOfMatchesToApply > 0 && testBaseMatch(permutation)) _maxNumberOfMatchesToApply--;
   }
 
   @Override
