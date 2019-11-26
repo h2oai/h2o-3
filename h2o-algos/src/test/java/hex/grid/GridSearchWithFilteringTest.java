@@ -51,9 +51,7 @@ public class GridSearchWithFilteringTest extends TestUtil {
     );
     int expectedNumberOfFilteredOutPermutations = 2916;
 
-    List<PermutationFilterFunction> filterFunctions = singletonList(strictFilterFunction);
-
-    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
+    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new DefaultPermutationFilter(strictFilterFunction);
 
     HyperSpaceWalker.RandomDiscreteValueWalker<GBMModel.GBMParameters> walker =
             new HyperSpaceWalker.RandomDiscreteValueWalker<>(gbmParameters,
@@ -96,9 +94,7 @@ public class GridSearchWithFilteringTest extends TestUtil {
     
     int expectedNumberOfFilteredOutPermutations = 6;
 
-    List<PermutationFilterFunction> filterFunctions = singletonList(strictFilterFunction);
-
-    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new DefaultPermutationFilter(filterFunctions);
+    PermutationFilter<GBMModel.GBMParameters> defaultPermutationFilter = new DefaultPermutationFilter(strictFilterFunction);
 
     HyperSpaceWalker.CartesianWalker<GBMModel.GBMParameters> walker =
             new HyperSpaceWalker.CartesianWalker<>(gbmParameters,

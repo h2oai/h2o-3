@@ -13,20 +13,8 @@ public class StrictFilterFunction<MP extends Model.Parameters> implements Permut
   }
 
   @Override
-  public Boolean apply(MP permutation) {
-    return test(permutation);
-  }
-
-  @Override
   public boolean test(MP permutation) {
     return _baseMatchFunction.apply(permutation);
   }
 
-  /**
-   *  {@link StrictFilterFunction} is considered to be a stateless function, 
-   *  which could be seen as activated as well - so no need to do anything.
-   */
-  public void activate() {}
-  
-  public void reset() { }
 }

@@ -22,7 +22,7 @@ public class KeepOnlyFirstMatchFilterFunction<MP extends Model.Parameters> imple
   }
 
   @Override
-  public Boolean apply(MP permutation) {
+  public boolean apply(MP permutation) {
     if(_maxNumberOfMatchesToApply == 0) {
       return  !test(permutation);
     } else {
@@ -35,9 +35,10 @@ public class KeepOnlyFirstMatchFilterFunction<MP extends Model.Parameters> imple
     return _baseMatchFunction.apply(permutation);
   }
 
+
   @Override
-  public void activate() {
-    if (_maxNumberOfMatchesToApply > 0) _maxNumberOfMatchesToApply--;
+  public void activate(MP permutation) {
+    if (test(permutation) && _maxNumberOfMatchesToApply > 0) _maxNumberOfMatchesToApply--;
   }
 
   @Override
