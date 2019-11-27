@@ -123,16 +123,23 @@ public class GBMTest extends TestUtil {
               .toCategoricalCol("RACE")
               .toCategoricalCol(response);
       fr.remove("ID").remove();
+      fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
       Scope.track(fr);
       DKV.put(fr);
 
+      
       GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = fr._key;
       parms._response_column = response;
       parms._ntrees = 5;
       parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
 
-      GBM job = new GBM(parms);
+      GBM job = new GBM(parms) {
+        @Override
+        public boolean haveMojo() {
+          return false;
+        }
+      };
       GBMModel gbm = job.trainModel().get();
       Scope.track_generic(gbm);
 

@@ -9,14 +9,19 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-public class DomainMapConstructorTest {
+public class EnumEncoderDomainMapConstructorTest {
 
   @Test
   public void create() {
 
     TestMojoModel testMojoModel = new TestMojoModel();
 
-    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(testMojoModel).create();
+    Map<String, Integer> columnMapping = new HashMap<String, Integer>() {{
+      put("embarked", 0);
+      put("age", 1);
+      put("sex", 2);
+    }};
+    Map<Integer, CategoricalEncoder> domainMap = new EnumEncoderDomainMapConstructor(testMojoModel, columnMapping).create();
 
     checkEncode(domainMap, 0, 0, "S");
     checkEncode(domainMap, 1, 0, "Q");
