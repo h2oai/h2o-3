@@ -4,9 +4,9 @@ import hex.Model;
 import hex.grid.filter.PermutationFilter;
 
 public class FilteredHyperSpaceIterator<MP extends Model.Parameters> implements HyperSpaceWalker.HyperSpaceIterator<MP> {
-  private HyperSpaceWalker.HyperSpaceIterator<MP> _hyperSpaceIterator;
+  private final HyperSpaceWalker.HyperSpaceIterator<MP> _hyperSpaceIterator;
 
-  private PermutationFilter<MP> _permutationFilter;
+  private final PermutationFilter<MP> _permutationFilter;
 
   /**
    * Total number of visited permutations, including those filtered out by {@code _permutationFilter}.
@@ -15,7 +15,7 @@ public class FilteredHyperSpaceIterator<MP extends Model.Parameters> implements 
 
   /**
    * Keeps number of returned to the user permutations as not all visited permutations are considered to be worthy
-   * for evaluation due to a {@code _permutationFilter}. 
+   * for evaluation due to a {@code _permutationFilter}.
    */
   private long _numberOfUsedPermutations = 0;
   private final long _maxHyperSpaceSize;
@@ -28,14 +28,15 @@ public class FilteredHyperSpaceIterator<MP extends Model.Parameters> implements 
 
   @Override
   public MP nextModelParameters(Model previousModel) {
-    MP nextMPs = _hyperSpaceIterator.nextModelParameters(previousModel);
-    _numberOfVisitedPermutations++;
-    if(! _permutationFilter.test(nextMPs)) {
-      return hasNext(previousModel) ? nextModelParameters(previousModel) : null;
-    } else {
-      _numberOfUsedPermutations++;
-      return nextMPs;
+    MP permutation = _hyperSpaceIterator.nextModelParameters(previousModel);
+
+    while (permutation != null && !_permutationFilter.test(permutation)) {
+      _numberOfVisitedPermutations++;
+      permutation = hasNext(previousModel) ? _hyperSpaceIterator.nextModelParameters(previousModel) : null;
     }
+    _numberOfVisitedPermutations++;
+    _numberOfUsedPermutations++;
+    return permutation;
   }
 
   @Override
