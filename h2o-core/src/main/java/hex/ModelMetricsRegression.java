@@ -14,14 +14,6 @@ import water.util.MathUtils;
 public class ModelMetricsRegression extends ModelMetricsSupervised {
   public final double _mean_residual_deviance;
   /**
-   * Alias for {@link #mean_residual_deviance()}.
-   *
-   * Required for consistency when retrieving metrics using reflection, as it is exposed for input as {@link ScoreKeeper.StoppingMetric#deviance}.
-   * @return {@link #mean_residual_deviance()}
-   */
-  @SuppressWarnings("unused")
-  public double deviance() { return _mean_residual_deviance; }
-  /**
    * @return {@link #mean_residual_deviance()} for all algos except GLM, for which it means "total residual deviance".
    **/
   public double residual_deviance() { return _mean_residual_deviance; }

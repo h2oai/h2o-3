@@ -58,7 +58,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
 
   /**
    * Metrics reported in leaderboard
-   * Regression metrics: deviance, rmse, mse, mae, rmsle
+   * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
    * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
    * Multinomial metrics: logloss, mean_per_class_error, rmse, mse
    */
@@ -159,7 +159,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * <li>
    *     <ul>binomial classification: auc</ul>
    *     <ul>multinomial classification: logloss</ul>
-   *     <ul>regression: deviance</ul>
+   *     <ul>regression: mean_residual_deviance</ul>
    * </li>
    * @return the metric used to sort the models in the leaderboard.
    */
@@ -435,7 +435,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
     } else if (m._output.isMultinomialClassifier()) { // multinomial
       return new String[] {"mean_per_class_error", "logloss", "rmse", "mse"};
     } else if (m._output.isSupervised()) { // regression
-      return new String[] {"deviance", "rmse", "mse", "mae", "rmsle"};
+      return new String[] {"mean_residual_deviance", "rmse", "mse", "mae", "rmsle"};
     }
     return new String[0];
   }

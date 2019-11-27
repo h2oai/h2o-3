@@ -140,7 +140,7 @@ def test_leaderboard_for_regression():
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["deviance", "rmse", "mse", "mae", "rmsle"], "deviance")
+    check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "mean_residual_deviance")
 
 
 def test_leaderboard_with_all_algos():
@@ -208,7 +208,21 @@ def test_leaderboard_for_regression_with_custom_sorting():
                     sort_metric="RMSE")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["rmse", "deviance", "mse", "mae", "rmsle"], "rmse")
+    check_leaderboard(aml, exclude_algos, ["rmse", "mean_residual_deviance", "mse", "mae", "rmsle"], "rmse")
+
+
+def test_leaderboard_for_regression_with_custom_sorting_deviance():
+    print("Check leaderboard for Regression sort by deviance")
+    ds = prepare_data('regression')
+    exclude_algos = ["GBM", "DeepLearning"]
+    aml = H2OAutoML(project_name="py_aml_lb_test_custom_regr_deviance",
+                    exclude_algos=exclude_algos,
+                    max_models=10,
+                    seed=automl_seed,
+                    sort_metric="deviance")
+    aml.train(y=ds.target, training_frame=ds.train)
+
+    check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "rmse")
 
 
 def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
@@ -239,7 +253,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
                     seed=automl_seed)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["deviance", "rmse", "mse", "mae", "rmsle"], "deviance")
+    check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "mean_residual_deviance")
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     first = [m for m in non_se if 'XGBoost_1' in m]
     others = [m for m in non_se if m not in first]
@@ -274,7 +288,7 @@ def test_AUTO_stopping_metric_with_custom_sorting_metric():
                     sort_metric="rmse")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["rmse", "deviance", "mse", "mae", "rmsle"], "rmse")
+    check_leaderboard(aml, exclude_algos, ["rmse", "mean_residual_deviance", "mse", "mae", "rmsle"], "rmse")
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     check_model_property(non_se, 'stopping_metric', True, "RMSE")
 

@@ -196,6 +196,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void initLeaderboard(AutoMLBuildSpec buildSpec) {
     String sort_metric = buildSpec.input_spec.sort_metric;
     sort_metric = sort_metric == null || StoppingMetric.AUTO.name().equalsIgnoreCase(sort_metric) ? null : sort_metric.toLowerCase();
+    if ("deviance".equalsIgnoreCase(sort_metric)) {
+        sort_metric = "mean_residual_deviance"; //compatibility with names used in leaderboard
+    }
     _leaderboard = Leaderboard.getOrMake(_key.toString(), _eventLog, _leaderboardFrame, sort_metric);
   }
 
