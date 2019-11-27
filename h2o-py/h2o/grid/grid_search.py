@@ -474,7 +474,22 @@ class H2OGridSearch(backwards_compatible()):
 
 
     def xval_keys(self):
-        """Model keys for the cross-validated model."""
+        """Model keys for the cross-validated model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> y = 3
+        >>> x = [4,5,6,7,8,9,10,11]
+        >>> hyper_params = {'alpha': [0.01,0.3,0.5],
+        ...                 'lambda': [1e-5, 1e-6, 1e-7]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_params)
+        >>> gs.train(x=x,y=y, training_frame=benign)
+        >>> gs.xval_keys()
+        """
         return {model.model_id: model.xval_keys() for model in self.models}
 
 
