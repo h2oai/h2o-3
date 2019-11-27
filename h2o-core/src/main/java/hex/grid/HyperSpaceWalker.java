@@ -479,10 +479,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      * 
      * @param permutationFilter Provides a way to filter out redundant permutations. 
      *                          
-     *  For users, in order to specify exact rules for filtering, functions {@link PermutationFilterFunction} 
+     *  For users, in order to specify exact rules for filtering, functions {@link FilterFunction}
      *  could be passed to the {@link HyperSpaceWalker} constructor.
      *                          
-     *  For convenience there are two specific implementations of {@link PermutationFilterFunction}s interface:
+     *  For convenience there are two specific implementations of {@link FilterFunction}s interface:
      *          1. {@link KeepOnlyFirstMatchFilterFunction} 
      *                          - could be used when it is needed to evaluate only one permutation from the group of matching permutations.
      *                          Typical use case is when we have interdependent(hierarchical) hyper parameters top level one of which is a boolean parameter.
@@ -496,17 +496,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      *                          
      *  {@code
      * 
-     *     PermutationFilterFunction filterFunction1 = 
+     *     FilterFunction filterFunction1 =
      *          new KeepOnlyFirstMatchFilterFunction<Model.Parameters>(permutation -> !permutation._blending);
      *
-     *     PermutationFilterFunction filterFunction2 = 
+     *     FilterFunction filterFunction2 =
      *          new StrictFilterFunction<Model.Parameters>(permutation -> !(permutation._k == 3.0 && permutation._f == 1.0));
      *
-     *     List<PermutationFilterFunction> filterFunctions = new ArrayList<>();
-     *     filterFunctions.add(filterFunction1);
-     *     filterFunctions.add(filterFunction2);
-     *
-     *     PermutationFilter<Model.Parameters> defaultPermutationFilter = new AnyMatchPermutationFilter(filterFunctions);
+     *     PermutationFilter<Model.Parameters> defaultPermutationFilter = new AnyMatchPermutationFilter(filterFunction1, filterFunction2);
      *   }
      *   , where {@link Model.Parameters} should be substituted with specific implementation.                        
      */
