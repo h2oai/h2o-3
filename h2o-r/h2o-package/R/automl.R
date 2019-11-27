@@ -165,6 +165,9 @@ h2o.automl <- function(x, y, training_frame,
       input_spec$ignored_columns <- ignored_columns
     } # else: length(ignored_columns) == 0; don't send ignored_columns
   }
+  input_spec$sort_metric <- ifelse(length(sort_metric) == 1,
+                                   match.arg(tolower(sort_metric), tolower(formals()$sort_metric)),
+                                   match.arg(sort_metric))
 
   # Update build_control list with top level build control args
   build_control <- list(stopping_criteria = list(max_runtime_secs = max_runtime_secs))
@@ -174,7 +177,9 @@ h2o.automl <- function(x, y, training_frame,
   if (!is.null(max_models)) {
     build_control$stopping_criteria$max_models <- max_models
   }
-  build_control$stopping_criteria$stopping_metric <- match.arg(stopping_metric)
+  build_control$stopping_criteria$stopping_metric <- ifelse(length(stopping_metric) == 1,
+                                                            match.arg(tolower(stopping_metric), tolower(formals()$stopping_metric)),
+                                                            match.arg(stopping_metric))
   if (!is.null(stopping_tolerance)) {
     build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
   }
@@ -188,17 +193,6 @@ h2o.automl <- function(x, y, training_frame,
     build_control$project_name <- project_name
   }
 
-  sort_metric <- match.arg(sort_metric)
-  # Only send for non-default
-  if (sort_metric != "AUTO") {
-    if (sort_metric == "deviance") {
-      # Changed the API to use "deviance" to be consistent with stopping_metric values
-      # TO DO: # let's change the backend to use "deviance" since we use the term "deviance"
-      # After that we can take this out
-      sort_metric <- "mean_residual_deviance"
-    }
-    input_spec$sort_metric <- tolower(sort_metric)
-  }
   build_models <- list()
   if (!is.null(exclude_algos)) {
     if (!is.null(include_algos)) stop("Use either include_algos or exclude_algos, not both.")

@@ -52,12 +52,12 @@ def test_invalid_project_name():
 def test_early_stopping_args():
     print("Check arguments to H2OAutoML class")
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234, exclude_algos=["DeepLearning"])
+    aml = H2OAutoML(project_name="py_aml0", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="auc", max_models=max_models, seed=1234, exclude_algos=["DeepLearning"])
     aml.train(y=ds['target'], training_frame=ds['train'])
     assert aml.project_name == "py_aml0", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
-    assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
-    assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
+    assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
+    assert aml.stopping_metric == "auc", "stopping_metrics is not set to `auc`"
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
     print("Check leaderboard")
@@ -71,7 +71,7 @@ def test_no_x_train_set_only():
     aml.train(y=ds['target'], training_frame=ds['train'])
     assert aml.project_name == "py_aml1", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
-    assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
+    assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
@@ -86,7 +86,7 @@ def test_no_x_train_and_validation_sets():
     aml.train(y=ds['target'], training_frame=ds['train'], validation_frame=ds['valid'])
     assert aml.project_name == "py_aml2", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
-    assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
+    assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
@@ -101,7 +101,7 @@ def test_no_x_train_and_test_sets():
     aml.train(y=ds['target'], training_frame=ds['train'], leaderboard_frame=ds['test'])
     assert aml.project_name == "py_aml3", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
-    assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
+    assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
@@ -116,7 +116,7 @@ def test_no_x_train_and_validation_and_test_sets():
     aml.train(y=ds['target'], training_frame=ds['train'], validation_frame=ds['valid'], leaderboard_frame=ds['test'])
     assert aml.project_name == "py_aml4", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
-    assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
+    assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
@@ -131,7 +131,7 @@ def test_no_x_y_as_idx_train_and_validation_and_test_sets():
     aml.train(y=ds['target_idx'], training_frame=ds['train'], validation_frame=ds['valid'], leaderboard_frame=ds['test'])
     assert aml.project_name == "py_aml5", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
-    assert aml.stopping_tolerence == 0.001, "stopping_tolerance is not set to 0.001"
+    assert aml.stopping_tolerance == 0.001, "stopping_tolerance is not set to 0.001"
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
