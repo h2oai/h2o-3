@@ -318,14 +318,28 @@ def test_max_runtime_secs_alone():
     assert max_models == 0
 
 
-def test_max_runtime_secs_can_be_set_in_combination_with_max_models():
+def test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_models_wins():
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_all_stopping_constraints", seed=1, max_models=1, max_runtime_secs=12)
+    aml = H2OAutoML(project_name="py_all_stopping_constraints", seed=1, max_models=1, max_runtime_secs=1200)
+    aml.train(y=ds['target'], training_frame=ds['train'])
+    max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
+    max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
+    assert max_runtime == 1200
+    assert max_models == 1
+    assert aml.leaderboard.nrows == 1
+    assert int(aml.training_info['duration_secs']) < max_runtime/2  # being generous to avoid errors on slow Jenkins
+
+
+def test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_runtime_wins():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_all_stopping_constraints", seed=1, max_models=20, max_runtime_secs=12)
     aml.train(y=ds['target'], training_frame=ds['train'])
     max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
     max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
     assert max_runtime == 12
-    assert max_models == 1
+    assert max_models == 20
+    assert aml.leaderboard.nrows < 20
+    assert int(aml.training_info['duration_secs']) < 2*max_runtime  # being generous to avoid errors on slow Jenkins
 
 
 def test_default_max_runtime_if_no_max_models_provided():
@@ -368,6 +382,7 @@ pu.run_tests([
     test_frames_cannot_be_passed_as_key,
     test_no_time_limit_if_max_models_is_provided,
     test_max_runtime_secs_alone,
-    test_max_runtime_secs_can_be_set_in_combination_with_max_models,
+    test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_models_wins,
+    test_max_runtime_secs_can_be_set_in_combination_with_max_models_and_max_runtime_wins,
     test_default_max_runtime_if_no_max_models_provided,
 ])

@@ -186,14 +186,19 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     }
   }
 
+  /**
+   * Validates all buildSpec parameters and provide reasonable defaults dynamically or parameter cleaning if necessary.
+   *
+   * Ideally, validation should be fast as we should be able to call it in the future
+   * directly from client (e.g. Flow) to validate parameters before starting the AutoML run.
+   * That's also the reason why validate methods should not modify data,
+   * only possibly read them to validate parameters that may depend on data.
+   *
+   * In the future, we may also reuse ModelBuilder.ValidationMessage to return all validation results at once to the client (cf. ModelBuilder).
+   *
+   * @param buildSpec all the AutoML parameters to validate.
+   */
   private void validateBuildSpec(AutoMLBuildSpec buildSpec) {
-    // Validate all buildSpec parameters here and provide reasonable defaults or parameter cleaning if necessary.
-    // When assigning default or modifying the original value, use `eventLog` to inform the user about the changes.
-    // Please no additional logic!
-
-    // Can possibly use this validation entry point to provide parameters validation for Flow later.
-    // Can also reuse ModelBuilder.ValidationMessage for this.
-
     validateInput(buildSpec.input_spec);
     validateModelValidation(buildSpec);
     validateModelBuilding(buildSpec.build_models);
@@ -202,7 +207,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void validateInput(AutoMLInput input) {
-    if (null == DKV.getGet(input.training_frame))
+    if (DKV.getGet(input.training_frame) == null)
       throw new H2OIllegalArgumentException("No training data has been specified, either as a path or a key, or it is not available anymore.");
 
     final Frame trainingFrame = DKV.getGet(input.training_frame);
@@ -249,7 +254,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private void validateModelValidation(AutoMLBuildSpec buildSpec) {
-    if (null != buildSpec.input_spec.fold_column) {
+    if (buildSpec.input_spec.fold_column != null) {
       eventLog().warn(Stage.Workflow, "Fold column "+buildSpec.input_spec.fold_column+" will be used for cross validation. nfolds parameter will be ignored.");
       buildSpec.build_control.nfolds = 0;
     } else if (buildSpec.build_control.nfolds <= 1) {
