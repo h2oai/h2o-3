@@ -4,7 +4,7 @@ import hex.Model;
 
 import java.util.function.Function;
 
-public class StrictFilterFunction<MP extends Model.Parameters> implements PermutationFilterFunction<MP> {
+public class StrictFilterFunction<MP extends Model.Parameters> implements FilterFunction<MP> {
 
   public final Function<MP, Boolean> _baseMatchFunction;
   

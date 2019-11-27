@@ -11,7 +11,7 @@ import java.util.function.Function;
  *  Usage: pass a function to the constructor which will return `true` for the grid items of type {@link Model.Parameters}
  *  that we will want to consider equal.
  */
-public class KeepOnlyFirstMatchFilterFunction<MP extends Model.Parameters> implements PermutationFilterFunction<MP> {
+public class KeepOnlyFirstMatchFilterFunction<MP extends Model.Parameters> implements FilterFunction<MP> {
 
   // Function that should return `true` for permutations that we want to evaluate only one representative from.
   public final Function<MP, Boolean> _baseMatchFunction;

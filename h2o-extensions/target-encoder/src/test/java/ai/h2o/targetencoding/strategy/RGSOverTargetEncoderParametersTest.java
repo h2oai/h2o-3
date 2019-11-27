@@ -11,7 +11,6 @@ import water.TestUtil;
 
 import java.util.*;
 
-import static java.util.Collections.singletonList;
 import static org.junit.Assert.assertEquals;
 
 public class RGSOverTargetEncoderParametersTest extends TestUtil {
@@ -36,9 +35,9 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
 
 
-    PermutationFilterFunction filterFunction1 = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>(permutation -> !permutation._blending);
+    FilterFunction filterFunction1 = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>(permutation -> !permutation._blending);
 
-    PermutationFilterFunction filterFunction2 = new StrictFilterFunction<TargetEncoderModel.TargetEncoderParameters>(gridItem -> !(gridItem._k == 3.0 && gridItem._f == 1.0));
+    FilterFunction filterFunction2 = new StrictFilterFunction<TargetEncoderModel.TargetEncoderParameters>(gridItem -> !(gridItem._k == 3.0 && gridItem._f == 1.0));
     
     PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter =
             new AnyMatchPermutationFilter<>(filterFunction1, filterFunction2);
@@ -86,7 +85,7 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
     hyperSpaceSearchCriteria.set_max_models(10);
 
-    PermutationFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>(gridItem -> !gridItem._blending);
+    FilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>(gridItem -> !gridItem._blending);
 
     PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new AnyMatchPermutationFilter<>(blendingFilterFunction);
 
@@ -129,7 +128,7 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     int numberOfFailedModels = 1;
     hyperSpaceSearchCriteria.set_max_models(maxModels);
 
-    PermutationFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
+    FilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
 
     PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new AnyMatchPermutationFilter<>(blendingFilterFunction);
 
@@ -173,7 +172,7 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
 
-    PermutationFilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
+    FilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
 
     PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter =
             new AnyMatchPermutationFilter<>(blendingFilterFunction);

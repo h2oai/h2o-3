@@ -1,8 +1,8 @@
 package hex.grid;
 
 import hex.grid.filter.AnyMatchPermutationFilter;
+import hex.grid.filter.FilterFunction;
 import hex.grid.filter.PermutationFilter;
-import hex.grid.filter.PermutationFilterFunction;
 import hex.grid.filter.StrictFilterFunction;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
@@ -44,7 +44,7 @@ public class GridSearchWithFilteringTest extends TestUtil {
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
 
-    PermutationFilterFunction strictFilterFunction = new StrictFilterFunction<GBMModel.GBMParameters>(permutation -> {
+    FilterFunction strictFilterFunction = new StrictFilterFunction<GBMModel.GBMParameters>(permutation -> {
       return !(permutation._max_depth >= 15.0 && permutation._min_rows >= 50);
     }
     );
@@ -86,7 +86,7 @@ public class GridSearchWithFilteringTest extends TestUtil {
 
     HyperSpaceSearchCriteria.CartesianSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.CartesianSearchCriteria();
 
-    PermutationFilterFunction strictFilterFunction = new StrictFilterFunction<GBMModel.GBMParameters>(gridItem -> {
+    FilterFunction strictFilterFunction = new StrictFilterFunction<GBMModel.GBMParameters>(gridItem -> {
       return !(gridItem._max_depth >= 15.0 && gridItem._min_rows >= 30);
     }
     );
