@@ -11,13 +11,13 @@ from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
-from h2o.utils.backward_compatibility import backwards_compatible
-from h2o.utils.shared_utils import deprecated, quoted
+from h2o.utils.metaclass import Alias as alias, Deprecated as deprecated, h2o_meta
+from h2o.utils.shared_utils import quoted
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
-class H2OGridSearch(backwards_compatible()):
+class H2OGridSearch(h2o_meta()):
     """
     Grid Search of a Hyper-Parameter Space for a Model
 
@@ -706,17 +706,31 @@ class H2OGridSearch(backwards_compatible()):
         :param bool valid: If valid is True, then return the Gini Coefficient value for the validation data.
         :param bool xval:  If xval is True, then return the Gini Coefficient value for the cross validation data.
 
-        :returns: The Gini Coefficient for this binomial model.
+        :returns: The Gini Coefficient for the models in this grid.
         """
         return {model.model_id: model.gini(train, valid, xval) for model in self.models}
 
 
-    def pr_auc(self, train=False, valid=False, xval=False):
-        return {model.model_id: model.pr_auc(train, valid, xval) for model in self.models}
-
-
+    # @alias('pr_auc')
     def aucpr(self, train=False, valid=False, xval=False):
+        """
+        Get the aucPR (Area Under PRECISION RECALL Curve).
+
+        If all are False (default), then return the training metric value.
+        If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
+        "valid", and "xval".
+
+        :param bool train: If train is True, then return the aucpr value for the training data.
+        :param bool valid: If valid is True, then return the aucpr value for the validation data.
+        :param bool xval:  If xval is True, then return the aucpr value for the validation data.
+
+        :returns: The AUCPR for the models in this grid.
+        """
         return {model.model_id: model.aucpr(train, valid, xval) for model in self.models}
+
+    @deprecated(replaced_by=aucpr)
+    def pr_auc(self):
+        pass
 
 
     def get_hyperparams(self, id, display=True):

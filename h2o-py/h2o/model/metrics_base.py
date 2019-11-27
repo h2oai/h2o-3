@@ -10,12 +10,12 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import imp
 
 from h2o.model.confusion_matrix import ConfusionMatrix
-from h2o.utils.backward_compatibility import backwards_compatible
+from h2o.utils.metaclass import Alias as alias, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
 
 
-class MetricsBase(backwards_compatible()):
+class MetricsBase(h2o_meta()):
     """
     A parent class to house common metrics available for the various Metrics types.
 
@@ -170,11 +170,7 @@ class MetricsBase(backwards_compatible()):
         return self._metric_json['AUC']
 
 
-    def pr_auc(self):
-        """The area under the precision recall curve."""
-        return self._metric_json['pr_auc']
-
-
+    @alias('pr_auc')
     def aucpr(self):
         """The area under the precision recall curve."""
         return self._metric_json['pr_auc']

@@ -3,21 +3,19 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import traceback
-import warnings
-from functools import wraps
 
 import h2o
 from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
-from h2o.utils.backward_compatibility import backwards_compatible
+from h2o.utils.metaclass import Alias as alias, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
 
 
-class ModelBase(backwards_compatible(Keyed)):
+class ModelBase(h2o_meta(Keyed)):
     """Base class for all models."""
 
     def __init__(self):
@@ -825,19 +823,20 @@ class ModelBase(backwards_compatible(Keyed)):
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
 
-    def pr_auc(self, train=False, valid=False, xval=False):
+    @alias('pr_auc')
+    def aucpr(self, train=False, valid=False, xval=False):
         """
-        Get the pr_auc (Area Under PRECISION RECALL Curve).
+        Get the aucPR (Area Under PRECISION RECALL Curve).
 
         If all are False (default), then return the training metric value.
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the pr_auc value for the training data.
-        :param bool valid: If valid is True, then return the pr_auc value for the validation data.
-        :param bool xval:  If xval is True, then return the pr_auc value for the validation data.
+        :param bool train: If train is True, then return the aucpr value for the training data.
+        :param bool valid: If valid is True, then return the aucpr value for the validation data.
+        :param bool xval:  If xval is True, then return the aucpr value for the validation data.
 
-        :returns: The pr_auc.
+        :returns: The aucpr.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
@@ -846,9 +845,6 @@ class ModelBase(backwards_compatible(Keyed)):
                 raise H2OValueError("pr_auc() is only available for Binomial classifiers.")
             m[k] = None if v is None else v.pr_auc()
         return list(m.values())[0] if len(m) == 1 else m
-
-    def aucpr(self, train=False, valid=False, xval=False):
-        return self.pr_auc(train, valid, xval)
 
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
