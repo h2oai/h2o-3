@@ -12,7 +12,7 @@ import java.util.function.Predicate;
  * Note: interface with {@link FunctionalInterface} will not provide full functional support ( e.g. no `compose` and `andThen` methods)
  */
 @FunctionalInterface
-public interface FilterFunction<MP extends Model.Parameters> extends Predicate<MP>, Resetable {
+public interface FilterFunction<MP extends Model.Parameters> extends Predicate<MP>, Resettable {
 
   /**
    * Provides a way to set implementation into a state when it is considered to be already used. Useful only for stateful implementations.

@@ -174,11 +174,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     final protected long _maxHyperSpaceSize;
 
     /**
-     * Provides filtering logic to make walking process more efficient.
-     */
-    PermutationFilter<MP> _permutationFilter;
-
-    /**
      * Java hackery so we can have a factory method on a class with type params.
      */
     public static class WalkerFactory<MP extends Model.Parameters, C extends HyperSpaceSearchCriteria> {
@@ -295,6 +290,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return _params;
     }
 
+    public Map<String, Object[]> getHyperParamsGrid() {
+      return _hyperParamsGrid;
+    }
+
     @Override
     public ModelParametersBuilderFactory<MP> getParametersBuilderFactory() {
       return _paramsBuilderFactory;
@@ -353,24 +352,14 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     public CartesianWalker(MP params,
                            Map<String, Object[]> hyperParamsGrid,
                            ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                           HyperSpaceSearchCriteria.CartesianSearchCriteria searchCriteria,
-                           PermutationFilter<MP> permutationFilter) {
-      super(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria);
-
-      _permutationFilter = permutationFilter;
-    }
-    
-    public CartesianWalker(MP params,
-                           Map<String, Object[]> hyperParamsGrid,
-                           ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                            HyperSpaceSearchCriteria.CartesianSearchCriteria searchCriteria) {
-      this(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria, null);
+      super(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria);
     }
 
     @Override
     public HyperSpaceIterator<MP> iterator() {
 
-      HyperSpaceIterator<MP> hyperSpaceIterator = new HyperSpaceIterator<MP>() {
+      return new HyperSpaceIterator<MP>() {
         /** Hyper params permutation.
          */
         private int[] _currentHyperparamIndices = null;
@@ -405,7 +394,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           }
           return false;
         }
-        
+
         @Override public void reset() {
           _currentHyperparamIndices = null;
         }
@@ -429,12 +418,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           return permutation(_currentHyperparamIndices, hyperValues);
         }
       };
-      
-      if(_permutationFilter == null) {
-        return hyperSpaceIterator;
-      } else {
-        return new FilteredHyperSpaceIterator<>(hyperSpaceIterator, _permutationFilter, getMaxHyperSpaceSize());
-      }
     } // iterator()
 
     /**
@@ -474,59 +457,15 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     private List<int[]> _visitedPermutations = new ArrayList<>();
     private Set<Integer> _visitedPermutationHashes = new LinkedHashSet<>(); // for fast dupe lookup
 
-    /**
-     * Hyperparameter space walker which visits each combination of hyper parameters randomly.
-     * 
-     * @param permutationFilter Provides a way to filter out redundant permutations. 
-     *                          
-     *  For users, in order to specify exact rules for filtering, functions {@link FilterFunction}
-     *  could be passed to the {@link HyperSpaceWalker} constructor.
-     *                          
-     *  For convenience there are two specific implementations of {@link FilterFunction}s interface:
-     *          1. {@link KeepOnlyFirstMatchFilterFunction} 
-     *                          - could be used when it is needed to evaluate only one permutation from the group of matching permutations.
-     *                          Typical use case is when we have interdependent(hierarchical) hyper parameters top level one of which is a boolean parameter.
-     *                          When parameter;s value is false, we do not care about dependent hyper parameters( as they are disabled) 
-     *                          and we want to evaluate just this single case when feature is disabled.
-     *                          
-     *          2. {@link StrictFilterFunction}
-     *                          - could be used when it is needed to specify exact sub-combination of hyper parameters values that in case of matching should be skipped
-     *                          
-     *   Usage example:
-     *                          
-     *  {@code
-     * 
-     *     FilterFunction filterFunction1 =
-     *          new KeepOnlyFirstMatchFilterFunction<Model.Parameters>(permutation -> !permutation._blending);
-     *
-     *     FilterFunction filterFunction2 =
-     *          new StrictFilterFunction<Model.Parameters>(permutation -> !(permutation._k == 3.0 && permutation._f == 1.0));
-     *
-     *     PermutationFilter<Model.Parameters> defaultPermutationFilter = new AnyMatchPermutationFilter(filterFunction1, filterFunction2);
-     *   }
-     *   , where {@link Model.Parameters} should be substituted with specific implementation.                        
-     */
-    public RandomDiscreteValueWalker(MP params,
-                                     Map<String, Object[]> hyperParamsGrid,
-                                     ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                                     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria,
-                                     PermutationFilter<MP> permutationFilter) {
-      super(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria);
-
-      if (-1 == searchCriteria.seed())
-        random = new Random();                       // true random
-      else
-        random = new Random(searchCriteria.seed()); // seeded repeatable pseudorandom
-      
-      _permutationFilter = permutationFilter;
-    }
-    
     public RandomDiscreteValueWalker(MP params,
                                      Map<String, Object[]> hyperParamsGrid,
                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria) {
-      this(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria, null);
-      
+      super(params, hyperParamsGrid, paramsBuilderFactory, searchCriteria);
+      if (-1 == searchCriteria.seed())
+        random = new Random();                       // true random
+      else
+        random = new Random(searchCriteria.seed()); // seeded repeatable pseudorandom
     }
 
     /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
@@ -541,7 +480,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
     @Override
     public HyperSpaceIterator<MP> iterator() {
-      HyperSpaceIterator<MP> hyperSpaceIterator = new HyperSpaceIterator<MP>() {
+
+      return new HyperSpaceIterator<MP>() {
         /** Current hyper params permutation. */
         private int[] _currentHyperparamIndices = null;
 
@@ -643,12 +583,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           return permutation(_currentHyperparamIndices, hyperValues);
         }
       };
-
-      if(_permutationFilter == null) {
-        return hyperSpaceIterator;
-      } else {
-        return new FilteredHyperSpaceIterator<>(hyperSpaceIterator, _permutationFilter, getMaxHyperSpaceSize());
-      }
     } // iterator()
 
     /**

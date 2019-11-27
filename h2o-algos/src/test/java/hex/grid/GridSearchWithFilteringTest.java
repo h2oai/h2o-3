@@ -1,9 +1,6 @@
 package hex.grid;
 
-import hex.grid.filter.AnyMatchPermutationFilter;
-import hex.grid.filter.FilterFunction;
-import hex.grid.filter.PermutationFilter;
-import hex.grid.filter.StrictFilterFunction;
+import hex.grid.filter.*;
 import hex.tree.gbm.GBMModel;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -56,14 +53,15 @@ public class GridSearchWithFilteringTest extends TestUtil {
             new HyperSpaceWalker.RandomDiscreteValueWalker<>(gbmParameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
-                    hyperSpaceSearchCriteria,
-                    defaultPermutationFilter);
+                    hyperSpaceSearchCriteria);
 
-    HyperSpaceWalker.HyperSpaceIterator<GBMModel.GBMParameters> iterator = walker.iterator();
+    FilteredWalker filteredWalker = new FilteredWalker(walker, defaultPermutationFilter);
+
+    HyperSpaceWalker.HyperSpaceIterator<GBMModel.GBMParameters> filteredIterator = filteredWalker.iterator();
 
     List<GBMModel.GBMParameters> filteredGridItems = new ArrayList<>();
-    while (iterator.hasNext(null)) {
-      GBMModel.GBMParameters gbmParams = iterator.nextModelParameters(null);
+    while (filteredIterator.hasNext(null)) {
+      GBMModel.GBMParameters gbmParams = filteredIterator.nextModelParameters(null);
       if( gbmParams != null) { // we might have had next element ( iterator.hasNext) = true) but it could be filtered out by filtering functions
         filteredGridItems.add(gbmParams);
       }
@@ -99,14 +97,15 @@ public class GridSearchWithFilteringTest extends TestUtil {
             new HyperSpaceWalker.CartesianWalker<>(gbmParameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
-                    hyperSpaceSearchCriteria,
-                    defaultPermutationFilter);
+                    hyperSpaceSearchCriteria);
 
-    HyperSpaceWalker.HyperSpaceIterator<GBMModel.GBMParameters> iterator = walker.iterator();
+    FilteredWalker filteredWalker = new FilteredWalker(walker, defaultPermutationFilter);
+
+    HyperSpaceWalker.HyperSpaceIterator<GBMModel.GBMParameters> filteredIterator = filteredWalker.iterator();
 
     List<GBMModel.GBMParameters> filteredGridItems = new ArrayList<>();
-    while (iterator.hasNext(null)) {
-      GBMModel.GBMParameters gbmParams = iterator.nextModelParameters(null);
+    while (filteredIterator.hasNext(null)) {
+      GBMModel.GBMParameters gbmParams = filteredIterator.nextModelParameters(null);
       if( gbmParams != null) { // we might have had next element ( iterator.hasNext) = true) but it could be filtered out by filtering functions
         filteredGridItems.add(gbmParams);
       }

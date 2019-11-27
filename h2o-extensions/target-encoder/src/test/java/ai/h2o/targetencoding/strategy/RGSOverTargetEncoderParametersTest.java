@@ -46,14 +46,15 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
-                    hyperSpaceSearchCriteria,
-                    defaultPermutationFilter);
+                    hyperSpaceSearchCriteria);
 
-    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
+    FilteredWalker filteredWalker = new FilteredWalker(walker, defaultPermutationFilter);
+
+    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> filteredIterator = filteredWalker.iterator();
 
     List<TargetEncoderModel.TargetEncoderParameters> evaluatedGridItems = new ArrayList<>();
-    while (iterator.hasNext(null)) {
-      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
+    while (filteredIterator.hasNext(null)) {
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = filteredIterator.nextModelParameters(null);
       if( targetEncoderParameters != null) { // we might have had next element but it can be filtered out by ffiltering unctions
         evaluatedGridItems.add(targetEncoderParameters);
       }
@@ -93,14 +94,15 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
-                    hyperSpaceSearchCriteria,
-                    defaultPermutationFilter);
+                    hyperSpaceSearchCriteria);
 
-    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
+    FilteredWalker filteredWalker = new FilteredWalker(walker, defaultPermutationFilter);
+
+    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> filteredIterator = filteredWalker.iterator();
 
     List<TargetEncoderModel.TargetEncoderParameters> evaluatedGridItems = new ArrayList<>();
-    while (iterator.hasNext(null)) {
-      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
+    while (filteredIterator.hasNext(null)) {
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = filteredIterator.nextModelParameters(null);
       if( targetEncoderParameters != null) { // we might have had next element but it can be filtered out by ffiltering unctions
         evaluatedGridItems.add(targetEncoderParameters);
       }
@@ -136,19 +138,20 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
-                    hyperSpaceSearchCriteria,
-                    defaultPermutationFilter);
+                    hyperSpaceSearchCriteria);
 
-    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
+    FilteredWalker filteredWalker = new FilteredWalker(walker, defaultPermutationFilter);
+
+    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> filteredIterator = filteredWalker.iterator();
 
     List<TargetEncoderModel.TargetEncoderParameters> returnedGridItems = new ArrayList<>();
-    while (iterator.hasNext(null)) {
-      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
+    while (filteredIterator.hasNext(null)) {
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = filteredIterator.nextModelParameters(null);
       
       // For the sake of test let's pretend that 3rd parameters lead to model's failure. 
       // By notifying `iterator` we will be able to reach `max_model` number of models
       if(returnedGridItems.size() == 3) {
-        iterator.modelFailed(null);
+        filteredIterator.modelFailed(null);
       }
       if( targetEncoderParameters != null) { // we might have had next element but it can be filtered out by ffiltering unctions
         returnedGridItems.add(targetEncoderParameters);
@@ -181,18 +184,19 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
             new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
                     hpGrid,
                     simpleParametersBuilderFactory,
-                    hyperSpaceSearchCriteria,
-                    defaultPermutationFilter);
+                    hyperSpaceSearchCriteria);
 
-    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = walker.iterator();
+    FilteredWalker filteredWalker = new FilteredWalker(walker, defaultPermutationFilter);
+
+    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> filteredIterator = filteredWalker.iterator();
 
     List<TargetEncoderModel.TargetEncoderParameters> returnedGridItems = new ArrayList<>();
     boolean wasResetOnce = false;
-    while (iterator.hasNext(null)) {
-      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = iterator.nextModelParameters(null);
+    while (filteredIterator.hasNext(null)) {
+      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = filteredIterator.nextModelParameters(null);
 
       if(!wasResetOnce && returnedGridItems.size() == 1) {
-        iterator.reset();
+        filteredIterator.reset();
         wasResetOnce = true;
       } else {
         if (targetEncoderParameters != null) { // we might have had next element but it can be filtered out by ffiltering unctions

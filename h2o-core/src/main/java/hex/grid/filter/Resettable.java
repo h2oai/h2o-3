@@ -2,7 +2,7 @@ package hex.grid.filter;
 
 import hex.grid.HyperSpaceWalker;
 
-public interface Resetable {
+public interface Resettable {
 
   /**
    * Gives an ability for {@link HyperSpaceWalker} to reset its {@code _permutationFilter}'s states

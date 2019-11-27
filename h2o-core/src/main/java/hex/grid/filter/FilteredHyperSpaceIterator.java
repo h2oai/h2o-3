@@ -1,7 +1,7 @@
-package hex.grid;
+package hex.grid.filter;
 
 import hex.Model;
-import hex.grid.filter.PermutationFilter;
+import hex.grid.HyperSpaceWalker;
 
 public class FilteredHyperSpaceIterator<MP extends Model.Parameters> implements HyperSpaceWalker.HyperSpaceIterator<MP> {
   private final HyperSpaceWalker.HyperSpaceIterator<MP> _hyperSpaceIterator;

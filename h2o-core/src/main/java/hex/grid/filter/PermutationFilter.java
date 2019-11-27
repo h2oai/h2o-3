@@ -8,7 +8,7 @@ import hex.Model;
  * @param <MP> as {@link hex.grid.HyperSpaceWalker} is working only with descendants of the {@link Model.Parameters},
  *            this interface is generic with corresponding type parameter
  */
-public interface PermutationFilter<MP extends Model.Parameters> extends Resetable {
+public interface PermutationFilter<MP extends Model.Parameters> extends Resettable {
 
   /**
    * Main method that decides whether given {@code permutation} should be skipped

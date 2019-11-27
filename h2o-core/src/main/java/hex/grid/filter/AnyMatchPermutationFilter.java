@@ -39,6 +39,6 @@ public class AnyMatchPermutationFilter<MP extends Model.Parameters> implements P
 
   @Override
   public void reset() {
-    _filterFunctions.forEach(Resetable::reset);
+    _filterFunctions.forEach(Resettable::reset);
   }
 }
