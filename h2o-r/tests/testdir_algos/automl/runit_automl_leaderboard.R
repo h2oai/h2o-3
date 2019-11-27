@@ -20,7 +20,7 @@ automl.leaderboard.suite <- function() {
                            exclude_algos = exclude_algos)
         aml@leaderboard
         # check that correct leaderboard columns exist
-        expect_equal(names(aml@leaderboard), c("model_id", "auc", "logloss", "mean_per_class_error", "rmse", "mse"))
+        expect_equal(names(aml@leaderboard), c("model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"))
         model_ids <- as.vector(aml@leaderboard$model_id)
         # check that no excluded algos are present in leaderboard
         exclude_algo_count <- sum(sapply(exclude_algos, function(i) sum(grepl(i, model_ids))))
