@@ -5,9 +5,12 @@ dependencies {
   compile project(":h2o-core")
   compile project(":h2o-algos")
   compileOnly project(":h2o-ext-xgboost")
+  compile project(":h2o-ext-target-encoder")
 
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"
+  testCompile "com.pholser:junit-quickcheck-core:0.9"
+  testCompile 'com.pholser:junit-quickcheck-generators:0.9'
   testCompile "com.github.stefanbirkner:system-rules:1.18.0"
   testCompile project(path: ":h2o-core", configuration: "testArchives")
   testCompile project(":h2o-ext-xgboost")

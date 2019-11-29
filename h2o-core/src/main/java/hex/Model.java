@@ -212,6 +212,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       this._train = train;
     }
 
+    public void setValid(Key<Frame> valid) {
+      this._valid = valid;
+    }
+
     public enum FoldAssignmentScheme {
       AUTO, Random, Modulo, Stratified
     }

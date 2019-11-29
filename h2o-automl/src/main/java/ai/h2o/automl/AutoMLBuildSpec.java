@@ -1,5 +1,8 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.targetencoder.TargetEncodingParams;
+import ai.h2o.automl.targetencoder.strategy.HPsSelectionStrategy;
+import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.HyperSpaceSearchCriteria;
@@ -16,6 +19,7 @@ import water.util.PojoUtils.FieldNaming;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Stream;
 
 import java.text.DateFormat;
@@ -339,9 +343,25 @@ public class AutoMLBuildSpec extends Iced {
     }
   }
 
+  /**
+   * The specification of the parameters for Automatic Target Encoding
+   */
+  static final public class AutoMLTEControl extends Iced {
+
+    public boolean enabled = true;
+    public TEApplicationStrategy application_strategy;
+    public HPsSelectionStrategy params_selection_strategy;
+    public TargetEncodingParams fixedTEParams;
+    public double early_stopping_ratio = 1.0;
+    public double ratio_of_hyperspace_to_explore;
+    public boolean search_over_columns = true;
+    public long seed = new Random().nextLong();
+  }
+
   public final AutoMLBuildControl build_control = new AutoMLBuildControl();
   public final AutoMLInput input_spec = new AutoMLInput();
   public final AutoMLBuildModels build_models = new AutoMLBuildModels();
+  public AutoMLBuildSpec.AutoMLTEControl te_spec = new AutoMLTEControl();
 
   public String project() {
     if (build_control.project_name == null) {

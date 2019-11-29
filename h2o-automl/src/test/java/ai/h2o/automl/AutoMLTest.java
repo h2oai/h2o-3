@@ -59,6 +59,8 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
+      autoMLBuildSpec.te_spec.enabled = false;
+
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
 

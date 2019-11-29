@@ -1171,7 +1171,7 @@ public class TestUtil extends Iced {
    * @param columnName column's name to be factorized
    * @return Frame with factorized column
    */
-  public Frame asFactor(Frame frame, String columnName) {
+  public static Frame asFactor(Frame frame, String columnName) {
     Vec vec = frame.vec(columnName);
     frame.replace(frame.find(columnName), vec.toCategoricalVec());
     vec.remove();

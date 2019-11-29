@@ -210,8 +210,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** Validation frame: derived from the parameter's validation frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
-  protected final Frame valid() { return _valid; }
+  public final Frame valid() { return _valid; }
   protected transient Frame _valid;
+
+  public void setValid(Frame valid) {
+    _valid = valid;
+  }
 
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
