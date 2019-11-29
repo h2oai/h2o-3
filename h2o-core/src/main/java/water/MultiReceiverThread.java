@@ -16,7 +16,10 @@ import water.util.Log;
  */
 
 class MultiReceiverThread extends Thread {
-  MultiReceiverThread() { super("Multi-UDP-R"); }
+  MultiReceiverThread() { 
+    super("Multi-UDP-R");
+    setDaemon(true);
+  }
 
   // The Run Method.
   // ---
