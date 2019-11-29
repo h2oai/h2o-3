@@ -292,4 +292,29 @@ public class TargetEncodingFrameHelperTest extends TestUtil {
 
     assertTrue(totalTimeDFork < totalTimeDoAll);
   }
+
+  @Test
+  public void factorColumnTest() {
+    Frame fr = null;
+    Vec colA = null;
+    try {
+      fr = new TestFrameBuilder()
+              .withName("testFrame")
+              .withColNames("ColA")
+              .withVecTypes(Vec.T_NUM)
+              .withDataForCol(0, ar(0, 1))
+              .build();
+
+      colA = fr.vec("ColA");
+      assertFalse(colA.isCategorical());
+
+      TargetEncoderFrameHelper.factorColumn(fr, "ColA");
+
+      colA = fr.vec("ColA");
+      assertTrue(colA.isCategorical());
+    } finally {
+      if(fr!=null) fr.delete();
+      if(colA!=null) colA.remove();
+    }
+  }
 }

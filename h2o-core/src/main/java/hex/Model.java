@@ -129,7 +129,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double defaultThreshold() {
     return _output.defaultThreshold();
   }
-  
+
   public void resetThreshold(double value){
     _output.resetThreshold(value);
   }
@@ -236,6 +236,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     public void setTrain(Key<Frame> train) {
       this._train = train;
+    }
+
+    public void setValid(Key<Frame> valid) {
+      this._valid = valid;
     }
 
     public enum FoldAssignmentScheme {
@@ -709,9 +713,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  response col categoricals for SupervisedModels.  */
     public String _domains[][];
     public String _origDomains[][]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
-    
+
     public double[] _orig_projection_array;// only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
-    
+
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
     public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
@@ -945,7 +949,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       assert value > 0 && value <= 1: "Reset threshold should be value from 0 to 1 (included). Got "+value+".";
       _defaultThreshold = value;
     }
-    
+
     public void printTwoDimTables(StringBuilder sb, Object o) {
       for (Field f : Weaver.getWovenFields(o.getClass())) {
         Class<?> c = f.getType();
@@ -1565,6 +1569,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
+
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame newFr = new Frame(fr);
     Frame adaptFr = applyTEIfModelAvailable(newFr);

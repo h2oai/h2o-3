@@ -1,5 +1,6 @@
 package ai.h2o.targetencoding.strategy;
 
+import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
@@ -45,6 +46,7 @@ public class TargetEncoderRGSTest{
         hpGrid.put("noise_level", new Double[]{0.0, 0.01, 0.1});
         hpGrid.put("k", new Double[]{1.0, 2.0, 3.0});
         hpGrid.put("f", new Double[]{5.0, 10.0, 20.0});
+        hpGrid.put("data_leakage_handling", new TargetEncoder.DataLeakageHandlingStrategy[]{TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, TargetEncoder.DataLeakageHandlingStrategy.None});
 
         TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
 

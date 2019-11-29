@@ -9,6 +9,7 @@ import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
+import ai.h2o.automl.preprocessing.UniversalPreprocessingSteps;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
@@ -19,14 +20,17 @@ import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import water.*;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Countdown;
+import water.fvec.Frame;
 import water.util.EnumUtils;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -72,9 +76,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final Key<M> resultKey,
             final MP params
     ) {
-        Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
-        ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
-        builder._parms = params;
+        ModelBuilder builder = getModelBuilder(resultKey, params);
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
                 .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         builder.init(false);          // validate parameters
@@ -85,6 +87,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return null;
         }
 
+    }
+
+    protected  <M extends Model, MP extends Model.Parameters> ModelBuilder getModelBuilder(Key<M> resultKey, MP params) {
+        Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
+        ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
+        builder._parms = params;
+        return builder;
     }
 
     private transient AutoML _aml;
@@ -297,14 +306,14 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
 
         /**
-         * @param key (optional) model key.
+         * @param keyNullable (optional) model key.
          * @param parms the model builder params.
          * @return a started training model.
          */
-        protected Job<M> trainModel(Key<M> key, Model.Parameters parms) {
+        protected Job<M> trainModel(Key<M> keyNullable, Model.Parameters parms) {
             String algoName = ModelBuilder.algoName(_algo.urlName());
 
-            if (null == key) key = makeKey(algoName, true);
+            final Key<M> key = keyNullable == null ? makeKey(algoName, true) : keyNullable;
 
             Model.Parameters defaults = ModelBuilder.make(_algo.urlName(), null, null)._parms;
             setCommonModelBuilderParams(parms);
@@ -322,13 +331,91 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                         ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
             }
+
             Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
             aml().eventLog().debug(Stage.ModelTraining, parms._max_runtime_secs == 0
                     ? "No time limitation for "+key
                     : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
-            return startModel(key, parms);
+            Job<M> baselineModelJob = startModel(key, parms);;
+            baselineModelJob.get();
+            Model retrievedBaselineModel = DKV.getGet(key);
+            double baselineLoss = retrievedBaselineModel.loss();
+
+            // getModelBuilder can probably be moved from startModel() and be passed as parameter
+            ModelBuilder builder = getModelBuilder(key, parms);
+
+            // Attempt to beat base line model performance with data preprocessing
+            ModelBuilder clonedModelBuilder = ModelBuilder.make(builder._parms); // TODO can we substitute with just `parms`?
+
+            // for now we use universal preprocessing which does not depend on type of model at this particular ModelingStep. Can be instantiated once.
+            PreprocessingStep[] steps = new UniversalPreprocessingSteps(aml()).getSteps();
+            Arrays.stream(steps).forEach(preprocessingStep -> {
+                preprocessingStep.applyIfUseful(clonedModelBuilder, baselineLoss);
+            });
+
+            //TODO FIX. steps length does not guarantee that we applied usefull preprocessing
+            if(steps.length > 0 ) {
+                final Key<M> keyModelWithPreprocessing = Key.make(key + "_te");
+                return runModelTrainingWithTEJob(
+                        keyModelWithPreprocessing,
+                        algoName,
+                        clonedModelBuilder,
+                        parms.train(), // TODO check whether it is original train that is being passed
+                        parms._ignored_columns,
+                        aml()
+                        );
+            } else {
+                return baselineModelJob;
+            }
         }
 
+        private Job<M> runModelTrainingWithTEJob(final Key<M> key, String algoName,
+                                                 ModelBuilder builder,
+                                                 Frame originalTrain,
+                                                 String[] originalIgnoredColumns,
+                                                 AutoML aml) {
+            AutoMLBuildSpec buildSpec = aml.getBuildSpec();
+            builder._parms._ignored_columns = buildSpec.input_spec.ignored_columns; //TODO maybe it is better to directly change builder from assistant
+
+            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml.timeRemainingMs());
+            Job trainingModelJob = null;
+            try {
+                trainingModelJob = builder.trainModelOnH2ONode();
+                trainingModelJob.get();
+                return trainingModelJob;
+            } catch (H2OIllegalArgumentException exception) {
+                aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model " + key + " due to exception: " + exception);
+                return null;
+            } finally {
+
+                removeTEColumnsFrom(originalIgnoredColumns, builder._parms.train(), buildSpec);
+                removeTEColumnsFrom(originalIgnoredColumns, builder._parms.valid(), buildSpec);
+                removeTEColumnsFrom(originalIgnoredColumns, aml.getLeaderboardFrame(), buildSpec);
+                if(originalTrain._key != builder._parms.train()._key) {
+                    builder._parms.train().delete();
+                    builder._parms.setTrain(originalTrain._key);
+                }
+                printOutFrameAsTable(builder._parms.train(), false, 10);
+                printOutFrameAsTable(builder._parms.valid(), false, 10);
+                printOutFrameAsTable(aml.getLeaderboardFrame(), false, 10);
+                buildSpec.input_spec.ignored_columns = originalIgnoredColumns;
+            }
+        }
+
+
+        private void removeTEColumnsFrom(String[] originalIgnoredColumns, Frame train, AutoMLBuildSpec buildSpec) {
+            String[] teColumns = ArrayUtils.difference(buildSpec.input_spec.ignored_columns, originalIgnoredColumns);
+            for (String teColumn : teColumns) {
+                if (train.vec(teColumn + "_te") != null)
+                    train.remove(teColumn + "_te").remove();
+            }
+        }
+
+        public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+            assert limit <= Integer.MAX_VALUE;
+            TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
+            System.out.println(twoDimTable.toString(2, true));
+        }
     }
 
     /**

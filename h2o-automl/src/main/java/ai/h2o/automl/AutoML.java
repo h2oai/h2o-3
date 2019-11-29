@@ -81,7 +81,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
-  /**
+  /**'
    * Instantiate an AutoML object and start it running.  Progress can be tracked via its job().
    *
    * @param buildSpec
