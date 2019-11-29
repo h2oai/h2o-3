@@ -23,6 +23,36 @@ def fullname(fn):
     return fn.__qualname__ if hasattr(fn, '__qualname__') else fn.__name__
 
 
+def extend_and_replace(cls, **attrs):
+    new_attrs = dict(cls.__dict__)
+    new_attrs.update(attrs)
+    new_cls = type(cls.__name__, (cls,), new_attrs)
+    # new_cls.__module__ = cls.__module__
+    # setattr(sys.modules[cls.__module__], cls.__name__, new_cls)
+    return new_cls
+
+
+class Deprecated(object):
+
+    def __init__(self, msg=None, replaced_by=None):
+        self._msg = msg
+        self._replaced_by = replaced_by
+
+    def __call__(self, fn):
+        msg = self._msg if self._msg is not None \
+            else "{} is deprecated, please use ``{}`` instead.".format(fullname(fn), fullname(self._replaced_by)) if self._replaced_by is not None \
+            else "{} is deprecated.".format(fullname(fn))
+        fn.__doc__ = "{msg}\n\n{doc}".format(msg=msg, doc=fn.__doc__) if fn.__doc__ is not None else msg
+        call_fn = self._replaced_by or fn
+
+        @wraps(fn)
+        def wrapper(*args, **kwargs):
+            warnings.warn(msg, DeprecationWarning, 2)
+            return call_fn(*args, **kwargs)
+
+        return wrapper
+
+
 class MetaFeature(object):
 
     NOT_FOUND = object()
@@ -60,12 +90,13 @@ class Alias(MetaFeature):
     @classmethod
     def before_class(cls, bases, dct):
         attr_names = set(dct)
+        ddct = dict(dct)
         for name, impl in dct.items():
             if hasattr(impl, '_aliases'):
                 for alias in impl._aliases - attr_names:
-                    dct[str(alias)] = impl
+                    ddct[str(alias)] = impl
                 delattr(impl, '_aliases')
-        return bases, dct
+        return bases, ddct
 
     def __init__(self, *aliases):
         self._aliases = set(aliases)
@@ -75,53 +106,7 @@ class Alias(MetaFeature):
         return fn
 
 
-class Deprecated(object):
-
-    def __init__(self, msg=None, replaced_by=None):
-        self._msg = msg
-        self._replaced_by = replaced_by
-
-    def __call__(self, fn):
-        msg = self._msg if self._msg is not None \
-            else "{} is deprecated, please use ``{}`` instead.".format(fullname(fn), fullname(self._replaced_by)) if self._replaced_by is not None \
-            else "{} is deprecated.".format(fullname(fn))
-        fn.__doc__ = "{msg}\n\n{doc}".format(msg=msg, doc=fn.__doc__) if fn.__doc__ is not None else msg
-        call_fn = self._replaced_by or fn
-
-        @wraps(fn)
-        def wrapper(*args, **kwargs):
-            warnings.warn(msg, DeprecationWarning, 2)
-            return call_fn(*args, **kwargs)
-
-        return wrapper
-
-
 class BackwardsCompatible(MetaFeature):
-
-    @staticmethod
-    def make_getattr(clz,):
-        ori_getattr_ = clz.__getattr__ if MetaFeature.type_attr(clz, '__getattr__') else None
-
-        def __getattr__(self, name):
-            if ori_getattr_:
-                try:
-                    return ori_getattr_(self, name)
-                except AttributeError:
-                    pass
-            if name in self._bc:
-                return self._bc[name]
-            return getattr(clz, name)
-
-        return __getattr__
-
-    @staticmethod
-    def make_new(clz):
-        def new_inst(cls, *args, **kwargs):
-            inst = super(clz, cls).__new__(cls, *args, **kwargs)
-            inst._bc = {name: (lambda fn: lambda *args, **kwargs: fn(inst, *args, **kwargs))(fn)
-                        for name, fn in cls._bc._instance_attrs.items()}
-            return inst
-        return new_inst
 
     def __init__(self, class_attrs=None, instance_attrs=None):
         self._class_attrs = class_attrs or {}
@@ -129,14 +114,24 @@ class BackwardsCompatible(MetaFeature):
 
     def __call__(self, clz):
         clz._bc = self
-        clz.__new__ = staticmethod(BackwardsCompatible.make_new(clz))
-        clz.__getattr__ = BackwardsCompatible.make_getattr(clz)
+        new_clz = None
 
-        # attr_names = set(dir(clz))
-        # for name, impl in self._static_attrs.items():
-        #     if name not in attr_names:
-        #         setattr(clz, name, staticmethod(impl) if callable(impl) else impl)
-        return clz
+        def __init__(self, *args, **kwargs):
+            super(new_clz, self).__init__(*args, **kwargs)
+            self._bci = {name: val.__get__(self, new_clz) if callable(val) else val for name, val in clz._bc._instance_attrs.items()}
+
+        def __getattr__(self, name):
+            try:
+                attr = super(new_clz, self).__getattr__(self, name)
+                return attr
+            except AttributeError:
+                pass
+            if name in self._bci:
+                return self._bci[name]
+            return getattr(new_clz, name)
+
+        new_clz = extend_and_replace(clz, __init__=__init__, __getattr__=__getattr__)
+        return new_clz
 
     @classmethod
     def get_class_attr(cls, clz, name):

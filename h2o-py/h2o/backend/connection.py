@@ -608,7 +608,6 @@ class H2OConnection(h2o_meta()):
 
     def __init__(self):
         """[Private] Please use H2OConnection.connect() to create H2OConnection objects."""
-        super(H2OConnection, self).__init__()
         globals()["__H2OCONN__"] = self  # for backward-compatibility: __H2OCONN__ is the latest instantiated object
         self._stage = 0             # 0 = not connected, 1 = connected, -1 = disconnected
         self._session_id = None     # Rapids session id; issued upon request only
