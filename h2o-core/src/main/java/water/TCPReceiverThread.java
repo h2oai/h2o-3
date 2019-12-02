@@ -45,7 +45,7 @@ public class TCPReceiverThread extends Thread {
   public TCPReceiverThread(
           ServerSocketChannel sock) {
     super("TCP-Accept");
-    setDaemon(true);
+    ThreadHelper.initCommonThreadProperties(this);
     SOCK = sock;
     this.socketChannelFactory = H2O.SELF.getSocketFactory();
   }
@@ -147,7 +147,7 @@ public class TCPReceiverThread extends Thread {
 
     public TCPReaderThread(ByteChannel sock, AutoBuffer ab, InetAddress address, short timestamp) {
       super("TCP-"+ab._h2o+"-"+(ab._h2o._tcp_readers++));
-      setDaemon(true);
+      ThreadHelper.initCommonThreadProperties(this);
       _sock = sock;
       _ab = ab;
       _address = address;
@@ -206,7 +206,7 @@ public class TCPReceiverThread extends Thread {
 
     public UDP_TCP_ReaderThread(H2ONode h2o, ByteChannel chan) {
       super("UDP-TCP-READ-" + h2o);
-      setDaemon(true);
+      ThreadHelper.initCommonThreadProperties(this);
       
       _h2o = h2o;
       _chan = chan;

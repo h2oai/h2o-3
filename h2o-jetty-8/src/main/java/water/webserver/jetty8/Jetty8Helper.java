@@ -49,10 +49,12 @@ class Jetty8Helper {
   Server createJettyServer(String ip, int port) {
     System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", Integer.toString(Integer.MAX_VALUE));
 
-    QueuedThreadPool pool = new QueuedThreadPool();
-    pool.setDaemon(true);
     final Server jettyServer = new Server();
-    jettyServer.setThreadPool(pool);
+    if (config.ensure_daemon_threads) {
+      QueuedThreadPool pool = new QueuedThreadPool();
+      pool.setDaemon(true);
+      jettyServer.setThreadPool(pool);
+    }
     jettyServer.setSendServerVersion(false);
 
     final Connector connector;

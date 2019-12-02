@@ -44,12 +44,16 @@ class Jetty9Helper {
     Server createJettyServer(String ip, int port) {
         System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", Integer.toString(Integer.MAX_VALUE));
 
-        QueuedThreadPool pool = new QueuedThreadPool();
-        pool.setDaemon(true);
-        final Server jettyServer = new Server(pool);
-        // Ensure the threads started by jetty are daemon threads so they don't prevent stopping of H2O
-        Scheduler s = jettyServer.getBean(Scheduler.class);
-        jettyServer.updateBean(s, new ScheduledExecutorScheduler(null, true));
+        final Server jettyServer;
+        if (config.ensure_daemon_threads) {
+            QueuedThreadPool pool = new QueuedThreadPool();
+            pool.setDaemon(true);
+            jettyServer = new Server(pool);
+            // Ensure the threads started by jetty are daemon threads so they don't prevent stopping of H2O
+            Scheduler s = jettyServer.getBean(Scheduler.class);
+            jettyServer.updateBean(s, new ScheduledExecutorScheduler(null, true));
+        } else 
+            jettyServer = new Server();
 
         final boolean isSecured = config.jks != null;
         final HttpConnectionFactory httpConnectionFactory = buildHttpConnectionFactory(isSecured);

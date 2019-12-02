@@ -389,7 +389,9 @@ final public class H2O {
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
 
-    public boolean isEmbeddedApp = false;
+    /** -embedded; when running embedded into another application (eg. Sparkling Water) - enforce all threads to be daemon threads */
+    public boolean embedded = false;
+
     /**
      * Optionally disable algorithms marked as beta or experimental.
      * Everything is on by default.
@@ -691,7 +693,7 @@ final public class H2O {
         String value = args[i];
         trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
       } else if(s.matches("embedded")) {
-        trgt.isEmbeddedApp = true;
+        trgt.embedded = true;
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -2201,23 +2203,7 @@ final public class H2O {
     Log.debug("    Start network services: " + (time10 - time9) + "ms");
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
-
-    if (!ARGS.isEmbeddedApp) {
-      keepH2OAliveThread.start();
-    }
   }
-  private static Thread keepH2OAliveThread = new Thread("keepH2OAliveThread") {
-
-    @Override
-    public void run() {
-      while (true) {
-        try {
-          Thread.sleep(1000);
-        } catch (InterruptedException ignored) {
-        }
-      }
-    }
-  };
   
   /** Find PID of the current process, use -1 if we can't find the value. */
   private static long getCurrentPID() {
