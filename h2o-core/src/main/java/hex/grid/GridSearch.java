@@ -329,9 +329,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     try {
       // Get iterator to traverse hyper space
       HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
-      // Number of traversed model parameters
-      int counter = grid.getModelCount();
-      while (it.hasNext(model)) {
+      int numberOfBuiltModels = grid.getModelCount();
+      while (it.hasNext(model) && (it.max_models() == 0 || numberOfBuiltModels < it.max_models())) {
         if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
 
         MP params = null;
@@ -349,7 +348,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             scoringInfo.time_stamp_ms = System.currentTimeMillis();
 
             //// build the model!
-            model = buildModel(params, grid, ++counter, protoModelKey);
+            model = buildModel(params, grid, ++numberOfBuiltModels, protoModelKey);
             if (model != null) {
               model.fillScoringInfo(scoringInfo);
               grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
@@ -363,12 +362,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
               Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
             }
 
+            numberOfBuiltModels--;
             grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
           }
         } catch (IllegalArgumentException e) {
           Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
-          // Model parameters cannot be constructed for some reason
-          it.modelFailed(model);
+          numberOfBuiltModels--;
           Object[] rawParams = it.getCurrentRawParameters();
           grid.appendFailedModelParameters(model != null ? model._key : null, rawParams, e);
         } finally {

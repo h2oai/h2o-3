@@ -3,7 +3,7 @@ package hex.grid;
 import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -24,9 +24,126 @@ public class GridTest extends TestUtil {
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
-  @Before
-  public void setUp() {
-    TestUtil.stall_till_cloudsize(1);
+  @BeforeClass
+  public static void setUp() {
+    stall_till_cloudsize(1);
+  }
+
+  @Test
+  public void testMaxModelEarlyStopping() {
+    try {
+      Scope.enter();
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_max_depth", new Integer[]{2 ,3});
+        put("_min_rows", new Integer[]{5, 10, 15});
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+
+      GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      hyperSpaceSearchCriteria.set_max_models(3);
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+
+      assertEquals(3, gs.get().getModelCount());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNoMaxModelBasedEarlyStoppingWillHappenWhenSetToZero() {
+    try {
+      Scope.enter();
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_max_depth", new Integer[]{2 ,3});
+        put("_min_rows", new Integer[]{5, 10, 15});
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+
+      GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      hyperSpaceSearchCriteria.set_max_models(0); // just to make it more explicit as actually default values is 0
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+
+      assertEquals(6, gs.get().getModelCount());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testMaxModelIsSatisfiedWhenSomeModelsHaveFailed() {
+    try {
+      Scope.enter();
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      final Integer min_rows_value_that_cause_error = 5000000;
+
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_max_depth", new Integer[]{1, 2, 3, 4, 5, 6, 7, 8, 9, 10});
+        put("_min_rows", new Integer[]{10, min_rows_value_that_cause_error});
+      }};
+
+      // From total of 20 combinations only 10 are expected to be valid.
+      int numberOfValidCombinations = 10;
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+
+      GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      hyperSpaceSearchCriteria.set_max_models(numberOfValidCombinations);
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+
+      // There is a chance to get expected number of models without hitting failing combination with `min_rows` = `min_rows_value_that_cause_error`
+      // but it is quite a small one and false positive tests would not hurt
+      assertEquals(numberOfValidCombinations, gs.get().getModelCount());
+
+      // Test case 2.
+      // Let's test that we actually failing with `min_rows` = `min_rows_value_that_cause_error`
+      int max_models_one_more_than_number_of_valid_ones = numberOfValidCombinations + 1;
+      hyperSpaceSearchCriteria.set_max_models(max_models_one_more_than_number_of_valid_ones);
+
+      gs = GridSearch.startGridSearch(null, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
+
+      final Grid grid2 = gs.get();
+      Scope.track_generic(grid2
+      );
+      // We expect not to get more than number of valid combinations
+      assertEquals(numberOfValidCombinations, gs.get().getModelCount());
+
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test
@@ -194,7 +311,10 @@ public class GridTest extends TestUtil {
       params._train = trainingFrame._key;
       params._response_column = "species";
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
       Scope.track_generic(gs);
       final Grid errGrid = gs.get();
       Scope.track_generic(errGrid);
@@ -386,7 +506,10 @@ public class GridTest extends TestUtil {
       params._train = trainingFrame._key;
       params._response_column = "species";
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
       Scope.track_generic(gs);
       final Grid errGrid = gs.get();
       Scope.track_generic(errGrid);
@@ -403,7 +526,7 @@ public class GridTest extends TestUtil {
 
       // Train a second model with modified parameters to forcefully produce a new model
       hyperParms.put("_learn_rate", new Double[]{0.5});
-      gs = GridSearch.startGridSearch(errGrid._key, params, hyperParms);
+      gs = GridSearch.startGridSearch(errGrid._key, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
       Scope.track_generic(gs);
       final Grid grid = gs.get();
       Scope.track_generic(grid);
