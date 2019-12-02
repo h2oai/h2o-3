@@ -213,7 +213,7 @@ class BackwardsCompatible(MetaFeature):
 
 class H2OMeta(type):
     """
-    The H2O metaclass to be used by classes wanted to benefit from most of the decorators implemented in this file.
+    The H2O metaclass to be used by classes wanting to benefit from most of the decorators implemented in this file.
     Features requiring usage of this metaclass are listed and injected through the `_FEATURES` static field.
     """
 
