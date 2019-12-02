@@ -20,8 +20,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     """
 
     algo = "targetencoder"
-    param_names = {"blending", "k", "f", "data_leakage_handling", "model_id", "ignored_columns", "training_frame",
-                   "fold_column", "response_column"}
+    param_names = {"blending", "k", "f", "data_leakage_handling", "noise_level", "seed", "model_id", "ignored_columns",
+                   "training_frame", "fold_column", "response_column"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -160,6 +160,36 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def data_leakage_handling(self, data_leakage_handling):
         assert_is_type(data_leakage_handling, None, Enum("none", "k_fold", "leave_one_out"))
         self._parms["data_leakage_handling"] = data_leakage_handling
+
+
+    @property
+    def noise_level(self):
+        """
+        Noise level
+
+        Type: ``float``  (default: ``0.01``).
+        """
+        return self._parms.get("noise_level")
+
+    @noise_level.setter
+    def noise_level(self, noise_level):
+        assert_is_type(noise_level, None, numeric)
+        self._parms["noise_level"] = noise_level
+
+
+    @property
+    def seed(self):
+        """
+        Seed for the specified noise level
+
+        Type: ``int``  (default: ``-1``).
+        """
+        return self._parms.get("seed")
+
+    @seed.setter
+    def seed(self, seed):
+        assert_is_type(seed, None, int)
+        self._parms["seed"] = seed
 
 
     @property

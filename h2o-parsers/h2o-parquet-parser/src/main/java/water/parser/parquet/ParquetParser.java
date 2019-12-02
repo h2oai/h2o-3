@@ -262,8 +262,10 @@ public class ParquetParser extends Parser {
       Type parquetType = messageType.getType(i);
       assert parquetType.isPrimitive();
       switch (parquetType.asPrimitiveType().getPrimitiveTypeName()) {
-        case INT32:
         case BOOLEAN:
+          types[i] = Vec.T_CAT;
+          break;
+        case INT32:
         case FLOAT:
         case DOUBLE:
           types[i] = Vec.T_NUM;

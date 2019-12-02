@@ -233,8 +233,8 @@ h2o.getFutureModel <- function(object, verbose=FALSE) {
     name <- i$name
     # R treats integer as not numeric
     if(is.integer(params[[name]])){
-	  params[[name]] <- as.numeric(params[[name]])
-	}
+      params[[name]] <- as.numeric(params[[name]])
+    }
     if (i$required && !((name %in% names(params)) || (name %in% names(hyper_params)))) {
       e <- paste0("argument \"", name, "\" is missing, with no default\n")
     } else if (name %in% names(params)) {
@@ -302,7 +302,7 @@ h2o.getFutureModel <- function(object, verbose=FALSE) {
       } else {
         if (!inherits(paramValue, type)) {
           e <- paste0(e, "\"", name , "\" must be of type ", type, ", but got ", class(paramValue), ".\n")
-        } else if ((length(paramDef$values) > 1L) && !(paramValue %in% paramDef$values)) {
+        } else if ((length(paramDef$values) > 1L) && (is.null(paramValue) || !(tolower(paramValue) %in% tolower(paramDef$values)))) {
           e <- paste0(e, "\"", name,"\" must be in")
           for (fact in paramDef$values)
             e <- paste0(e, " \"", fact, "\",")
@@ -1840,6 +1840,28 @@ h2o.scoreHistory <- function(object) {
     warning( paste0("No score history for ", class(o)) )
     return(NULL)
   }
+}
+
+#'
+#' Retrieve actual number of trees for tree algorithms
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @export
+h2o.get_ntrees_actual <- function(object) {
+    o <- object
+    if( is(o, "H2OModel") ) {
+        if(o@algorithm == "gbm" | o@algorithm == "drf"| o@algorithm == "isolationforest"| o@algorithm == "xgboost"){
+            sh <- o@model$model_summary['number_of_trees'][,1]
+            if( is.null(sh) ) return(NULL)
+            sh
+        } else {
+            warning( paste0("No actual number of trees for this model") )
+            return(NULL)
+        }
+    } else {
+        warning( paste0("No actual number of trees for ", class(o)) )
+        return(NULL)
+    }
 }
 
 #'

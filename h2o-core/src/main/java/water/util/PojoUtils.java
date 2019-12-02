@@ -275,7 +275,7 @@ public class PojoUtils {
             // Assigning a String into an enum field.
             //
             Class<Enum> dest_class = (Class<Enum>)dest_field.getType();
-            dest_field.set(dest, Enum.valueOf(dest_class, (String) orig_field.get(origin)));
+            dest_field.set(dest, EnumUtils.valueOfIgnoreCase(dest_class, (String) orig_field.get(origin)));
           } else if (Enum.class.isAssignableFrom(orig_field.getType()) && String.class.isAssignableFrom(dest_field.getType())) {
             //
             // Assigning an enum field into a String.
@@ -524,11 +524,9 @@ public class PojoUtils {
           Enum[] valuesCast = (Enum[]) Array.newInstance(f.getType().getComponentType(), valuesTyped.length);
           for (int i = 0; i < valuesTyped.length; i++) {
             String v = (String) valuesTyped[i];
-            try {
-              valuesCast[i] = Enum.valueOf((Class<Enum>) f.getType().getComponentType(), v);
-            } catch (IllegalArgumentException e) {
-              throw new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + value, e);
-            }
+            Enum enu = EnumUtils.valueOfIgnoreCase((Class<Enum>)f.getType().getComponentType(), v);
+            if (enu == null) throw new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + value);
+            valuesCast[i] = enu;
           }
           f.set(o, valuesCast);
         } else if (Schema.class.isAssignableFrom(f.getType().getComponentType())) {
@@ -546,12 +544,10 @@ public class PojoUtils {
         } else {
           throw new IllegalArgumentException("setField can't yet convert an array of: " + value.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
         }
-      } else if(f.getType().isEnum() && value instanceof String){
-          try {
-            f.set(o, Enum.valueOf((Class<Enum>) f.getType(), (String) value));
-          } catch (IllegalArgumentException e ){
-            throw new IllegalArgumentException("Field = " + fieldName + " cannot be set to value = " + value, e);
-          }
+      } else if (f.getType().isEnum() && value instanceof String){
+        Enum enu = EnumUtils.valueOfIgnoreCase((Class<Enum>)f.getType(), (String) value);
+        if (enu == null) throw new IllegalArgumentException("Field = " + fieldName + " cannot be set to value = " + value);
+        f.set(o, enu);
       }
       else if (! f.getType().isPrimitive() && ! f.getType().isAssignableFrom(value.getClass())) {
         // TODO: pull the auto-type-conversion stuff out of copyProperties so we don't have limited copy-paste code here

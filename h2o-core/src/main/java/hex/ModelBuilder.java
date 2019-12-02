@@ -1434,7 +1434,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param expensive indicates full ("expensive") processing
    * @return adapted frame
    */
-  protected Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+  public Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
     Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive);
     if (expensive)
       adapted = encodeFrameCategoricals(adapted, true);

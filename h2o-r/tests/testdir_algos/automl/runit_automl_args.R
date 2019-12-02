@@ -131,14 +131,29 @@ automl.args.test <- function() {
         print("Early stopping args")
         ds <- import_dataset()
         h2o.automl(x = ds$x, y = ds$y,
+            training_frame = ds$train,
+            validation_frame = ds$valid,
+            leaderboard_frame = ds$test,
+            max_models = max_models,
+            stopping_metric = "AUC",
+            stopping_tolerance = 0.001,
+            stopping_rounds = 3,
+            sort_metric = "RMSE",
+            project_name = "aml7",
+        )
+    }
+
+    test_metrics_case_insensitive <- function() {
+        print("Metrics params case insensitive")
+        ds <- import_dataset()
+        h2o.automl(x = ds$x, y = ds$y,
                     training_frame = ds$train,
                     validation_frame = ds$valid,
                     leaderboard_frame = ds$test,
                     max_models = max_models,
-                    stopping_metric = "AUC",
-                    stopping_tolerance = 0.001,
-                    stopping_rounds = 3,
-                    project_name = "aml7",
+                    stopping_metric = "auc",
+                    sort_metric = "rmse",
+                    project_name = "aml7b",
         )
     }
 
@@ -435,6 +450,7 @@ automl.args.test <- function() {
         test_training_with_leaderboard_frame,
         test_training_with_validation_and_leaderboard_frame,
         test_early_stopping,
+        test_metrics_case_insensitive,
         test_leaderboard_growth,
         test_fold_column,
         test_weights_column,

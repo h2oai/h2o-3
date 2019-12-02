@@ -2,12 +2,14 @@ package hex.tree.xgboost;
 
 import hex.Model;
 import hex.ScoreKeeper;
+import hex.glm.GLMModel;
+import hex.tree.PlattScalingHelper;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
 import java.util.List;
 
-public class XGBoostOutput extends Model.Output implements Model.GetNTrees {
+public class XGBoostOutput extends Model.Output implements Model.GetNTrees, PlattScalingHelper.OutputWithCalibration {
   public XGBoostOutput(XGBoost b) {
     super(b);
     _scored_train = new ScoreKeeper[]{new ScoreKeeper(Double.NaN)};
@@ -38,8 +40,15 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees {
   public XgbVarImp _varimp;
   public TwoDimTable _native_parameters;
 
+  public GLMModel _calib_model;
+
   @Override
   public int getNTrees() {
     return _ntrees;
+  }
+
+  @Override
+  public GLMModel calibrationModel() {
+    return _calib_model;
   }
 }

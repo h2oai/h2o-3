@@ -59,7 +59,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
   /**
    * Metrics reported in leaderboard
    * Regression metrics: mean_residual_deviance, rmse, mse, mae, rmsle
-   * Binomial metrics: auc, logloss, mean_per_class_error, rmse, mse
+   * Binomial metrics: auc, logloss, aucpr, mean_per_class_error, rmse, mse
    * Multinomial metrics: logloss, mean_per_class_error, rmse, mse
    */
   private String[] _metrics;
@@ -146,7 +146,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * @return true iff the metric is a loss function
    */
   public static boolean isLossFunction(String metric) {
-    return !"auc".equals(metric);
+    return metric != null && !Arrays.asList("auc", "aucpr").contains(metric.toLowerCase());
   }
 
   public String getProject() {
@@ -431,7 +431,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
 
   private static String[] defaultMetricsForModel(Model m) {
     if (m._output.isBinomialClassifier()) { //binomial
-      return new String[] {"auc", "logloss", "mean_per_class_error", "rmse", "mse"};
+      return new String[] {"auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"};
     } else if (m._output.isMultinomialClassifier()) { // multinomial
       return new String[] {"mean_per_class_error", "logloss", "rmse", "mse"};
     } else if (m._output.isSupervised()) { // regression

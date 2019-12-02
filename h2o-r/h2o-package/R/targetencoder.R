@@ -17,6 +17,9 @@
 #' @param f Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
 #'        parameter. Defaults to 20.
 #' @param data_leakage_handling Data leakage handling strategy. Must be one of: "None", "KFold", "LeaveOneOut". Defaults to None.
+#' @param noise_level Noise level Defaults to 0.01.
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
+#'        Defaults to -1 (time-based random number).
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @examples
@@ -39,6 +42,8 @@ h2o.targetencoder <- function(x,
                               k = 10,
                               f = 20,
                               data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
+                              noise_level = 0.01,
+                              seed = -1,
                               model_id = NULL,
                               fold_column = NULL)
 {
@@ -71,6 +76,10 @@ h2o.targetencoder <- function(x,
     parms$f <- f
   if (!missing(data_leakage_handling))
     parms$data_leakage_handling <- data_leakage_handling
+  if (!missing(noise_level))
+    parms$noise_level <- noise_level
+  if (!missing(seed))
+    parms$seed <- seed
   if (!missing(model_id))
     parms$model_id <- model_id
   if (!missing(fold_column))

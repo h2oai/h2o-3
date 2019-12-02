@@ -2177,6 +2177,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public boolean testJavaScoring(Frame data, Frame model_predictions, EasyPredictModelWrapper.Config config,
                                  double rel_epsilon, double abs_epsilon, double fraction) {
     ModelBuilder mb = ModelBuilder.make(_parms.algoName().toLowerCase(), null, null);
+    mb._parms = _parms;
     boolean havePojo = mb.havePojo();
     boolean haveMojo = mb.haveMojo();
 
@@ -2330,10 +2331,32 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           // Make a prediction
           AbstractPrediction p;
           try {
-            if (genmodel instanceof GlrmMojoModel)  // enable random seed setting to ensure reproducibilitypredictC
+            if (genmodel instanceof GlrmMojoModel)  // enable random seed setting to ensure reproducibility
               ((GlrmMojoModel) genmodel)._rcnt = row;
 
-            p = epmw.predict(rowData);
+            if (genmodel._offsetColumn != null) {
+              double offset = fr.vec(genmodel._offsetColumn).at(row);
+              // TODO: MOJO API is cumbersome in this case - will be fixed in https://0xdata.atlassian.net/browse/PUBDEV-7080
+              switch (genmodel.getModelCategory()) {
+                case Regression:
+                  p = epmw.predictRegression(rowData, offset);
+                  break;
+                case Binomial:
+                  p = epmw.predictBinomial(rowData, offset);
+                  break;
+                case Multinomial:
+                  p = epmw.predictMultinomial(rowData, offset);
+                  break;
+                case Ordinal:
+                  p = epmw.predictOrdinal(rowData, offset);
+                  break;
+                default:
+                  throw new UnsupportedOperationException("Predicting with offset current not supported for " + genmodel.getModelCategory());
+              }
+            } else {
+              p = epmw.predict(rowData);
+            }
+
           } catch (PredictException e) {
             num_errors++;
             if (num_errors < 20) {

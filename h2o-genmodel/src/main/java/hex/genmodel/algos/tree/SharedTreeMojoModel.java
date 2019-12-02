@@ -15,7 +15,7 @@ import java.util.Map;
  * Common ancestor for {@link DrfMojoModel} and {@link GbmMojoModel}.
  * See also: `hex.tree.SharedTreeModel` and `hex.tree.TreeVisitor` classes.
  */
-public abstract class SharedTreeMojoModel extends MojoModel implements SharedTreeGraphConverter{
+public abstract class SharedTreeMojoModel extends MojoModel implements SharedTreeGraphConverter, PlattScalingMojoHelper.MojoModelWithCalibration {
     private static final int NsdNaVsRest = NaSplitDir.NAvsREST.value();
     private static final int NsdNaLeft = NaSplitDir.NALeft.value();
     private static final int NsdLeft = NaSplitDir.Left.value();
@@ -937,17 +937,15 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     }
   }
 
-  @Override
-  public boolean calibrateClassProbabilities(double[] preds) {
-    if (_calib_glm_beta == null)
-      return false;
-    assert _nclasses == 2; // only supported for binomial classification
-    assert preds.length == _nclasses + 1;
-    double p = GLM_logitInv((preds[1] * _calib_glm_beta[0]) + _calib_glm_beta[1]);
-    preds[1] = 1 - p;
-    preds[2] = p;
-    return true;
-  }
+    @Override
+    public boolean calibrateClassProbabilities(double[] preds) { 
+      return PlattScalingMojoHelper.calibrateClassProbabilities(this, preds);
+    }
+
+    @Override
+    public double[] getCalibGlmBeta() {
+        return _calib_glm_beta;
+    }
 
     @Override
     public SharedTreeGraph convert(final int treeNumber, final String treeClass) {

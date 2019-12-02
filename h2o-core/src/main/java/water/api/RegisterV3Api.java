@@ -70,6 +70,10 @@ public class RegisterV3Api extends AbstractRegister {
             "POST /3/ParseSVMLight", ParseHandler.class, "parseSVMLight",
             "Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
+    context.registerEndpoint("ping",
+        "GET /3/Ping", PingHandler.class, "ping",
+        "The endpoint used to let H2O know from external services that it should keep running.");
+
     // Admin
     context.registerEndpoint("cloudStatus",
             "GET /3/Cloud", CloudHandler.class, "status",
@@ -195,6 +199,10 @@ public class RegisterV3Api extends AbstractRegister {
     context.registerEndpoint("deleteAllFrames",
             "DELETE /3/Frames", FramesHandler.class, "deleteAll",
             "Delete all Frames from the H2O distributed K/V store.");
+
+    context.registerEndpoint("frameChunks",
+            "GET /3/FrameChunks/{frame_id}", FrameChunksHandler.class, "fetch",
+            "Return information about chunks for a given frame.");
 
 
     // Handle models

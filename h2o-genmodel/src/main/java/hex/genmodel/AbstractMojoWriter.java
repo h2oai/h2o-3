@@ -180,6 +180,9 @@ public abstract class AbstractMojoWriter {
     writekv("n_classes", model.nclasses());
     writekv("n_columns", model.columnNames().length);
     writekv("n_domains", n_categoricals);
+    if (model.offsetColumn() != null) {
+      writekv("offset_column", model.offsetColumn());
+    }
     writekv("balance_classes", model.balanceClasses());
     writekv("default_threshold", model.defaultThreshold());
     writekv("prior_class_distrib", Arrays.toString(model.priorClassDist()));

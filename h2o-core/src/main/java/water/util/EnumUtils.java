@@ -83,8 +83,7 @@ public class EnumUtils {
    * @param <T> Class of the Enumeration to search in
    * @return
    */
-  public static <T extends Enum<?>> T valueOfIgnoreCase(Class<T> enumeration,
-                                                 String value) {
+  public static <T extends Enum<?>> T valueOfIgnoreCase(Class<T> enumeration, String value) {
     for (T field : enumeration.getEnumConstants()) {
       if (field.name().compareToIgnoreCase(value) == 0) {
         return field;

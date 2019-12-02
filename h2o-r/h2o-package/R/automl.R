@@ -28,9 +28,9 @@
 #'        be automatically computed to obtain class balance during training. Requires balance_classes.
 #' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
 #'        balance_classes. Defaults to 5.0.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for the entire model training process. Use 0 to disable. Defaults to 3600 secs (1 hour).
+#' @param max_runtime_secs This argument specifies the maximum time that the AutoML process will run for, prior to training the final Stacked Ensemble models. If neither `max_runtime_secs` nor `max_models` are specified by the user, then `max_runtime_secs` defaults to 3600 seconds (1 hour).
 #' @param max_runtime_secs_per_model Maximum runtime in seconds dedicated to each individual model training process. Use 0 to disable. Defaults to 0.
-#' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL.
+#' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL (no strict limit).
 #' @param stopping_metric Metric to use for early stopping ("AUTO" is logloss for classification, deviance for regression).
 #'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the
@@ -84,7 +84,7 @@ h2o.automl <- function(x, y, training_frame,
                        balance_classes = FALSE,
                        class_sampling_factors = NULL,
                        max_after_balance_size = 5.0,
-                       max_runtime_secs = 3600,
+                       max_runtime_secs = NULL,
                        max_runtime_secs_per_model = NULL,
                        max_models = NULL,
                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
@@ -165,16 +165,24 @@ h2o.automl <- function(x, y, training_frame,
       input_spec$ignored_columns <- ignored_columns
     } # else: length(ignored_columns) == 0; don't send ignored_columns
   }
+  input_spec$sort_metric <- ifelse(length(sort_metric) == 1,
+                                   match.arg(tolower(sort_metric), tolower(formals()$sort_metric)),
+                                   match.arg(sort_metric))
 
   # Update build_control list with top level build control args
-  build_control <- list(stopping_criteria = list(max_runtime_secs = max_runtime_secs))
+  build_control <- list(stopping_criteria = list())
+  if (!is.null(max_runtime_secs)) {
+    build_control$stopping_criteria$max_runtime_secs <- max_runtime_secs
+  }
   if (!is.null(max_runtime_secs_per_model)) {
-      build_control$stopping_criteria$max_runtime_secs_per_model <- max_runtime_secs_per_model
+    build_control$stopping_criteria$max_runtime_secs_per_model <- max_runtime_secs_per_model
   }
   if (!is.null(max_models)) {
     build_control$stopping_criteria$max_models <- max_models
   }
-  build_control$stopping_criteria$stopping_metric <- match.arg(stopping_metric)
+  build_control$stopping_criteria$stopping_metric <- ifelse(length(stopping_metric) == 1,
+                                                            match.arg(tolower(stopping_metric), tolower(formals()$stopping_metric)),
+                                                            match.arg(stopping_metric))
   if (!is.null(stopping_tolerance)) {
     build_control$stopping_criteria$stopping_tolerance <- stopping_tolerance
   }
@@ -188,17 +196,6 @@ h2o.automl <- function(x, y, training_frame,
     build_control$project_name <- project_name
   }
 
-  sort_metric <- match.arg(sort_metric)
-  # Only send for non-default
-  if (sort_metric != "AUTO") {
-    if (sort_metric == "deviance") {
-      # Changed the API to use "deviance" to be consistent with stopping_metric values
-      # TO DO: # let's change the backend to use "deviance" since we use the term "deviance"
-      # After that we can take this out
-      sort_metric <- "mean_residual_deviance"
-    }
-    input_spec$sort_metric <- tolower(sort_metric)
-  }
   build_models <- list()
   if (!is.null(exclude_algos)) {
     if (!is.null(include_algos)) stop("Use either include_algos or exclude_algos, not both.")
@@ -489,4 +486,3 @@ h2o.getAutoML <- function(project_name) {
              training_info = training_info
   ))
 }
-

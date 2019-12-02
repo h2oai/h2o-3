@@ -390,6 +390,20 @@ class ModelBase(backwards_compatible(Keyed)):
         print("No score history for this model")
 
 
+    def ntrees_actual(self):
+        """
+        Returns actual number of trees in a tree model. If early stopping enabled, GBM can reset the ntrees value.
+        In this case, the actual ntrees value is less than the original ntrees value a user set before
+        building the model.
+    
+        Type: ``float``
+        """
+        tree_algos = ['gbm', 'drf', 'isolationforest', 'xgboost']
+        if self._model_json["algo"] in tree_algos:
+            return self.summary()['number_of_trees'][0]
+        print("No actual number of trees for this model")    
+
+
     def cross_validation_metrics_summary(self):
         """
         Retrieve Cross-Validation Metrics Summary.

@@ -17,7 +17,7 @@ def call(final stageConfig) {
 
 private GString getCommandHadoop(final stageConfig) {
     return """
-            rm -fv h2o_one_node h2odriver.out
+            rm -fv h2o_one_node h2odriver.log
             hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
                 -disable_flow \\
                 -n 1 -mapperXmx 2g -baseport 54445 \\
@@ -26,7 +26,7 @@ private GString getCommandHadoop(final stageConfig) {
                 -notify h2o_one_node -ea -proxy \\
                 -jks mykeystore.jks \\
                 -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login \\
-                &> h2odriver.out &
+                > h2odriver.log 2>&1 &
             for i in \$(seq 20); do
               if [ -f 'h2o_one_node' ]; then
                 echo "H2O started on \$(cat h2o_one_node)"
@@ -37,7 +37,7 @@ private GString getCommandHadoop(final stageConfig) {
             done
             if [ ! -f 'h2o_one_node' ]; then
               echo 'H2O failed to start!'
-              cat h2odriver.out
+              cat h2odriver.log
               exit 1
             fi
             IFS=":" read CLOUD_IP CLOUD_PORT < h2o_one_node

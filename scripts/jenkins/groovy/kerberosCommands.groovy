@@ -18,6 +18,7 @@ def call(final stageConfig) {
 }
 
 private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
+    def defaultPort = 54321
     def loginArgs
     def loginEnvs
     if (spnegoAuth) {
@@ -30,16 +31,16 @@ private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
         loginEnvs = ""
     }
     return """
-            rm -fv h2o_one_node h2odriver.out
+            rm -fv h2o_one_node h2odriver.log
             export HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp)
             hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
                 -n 1 -mapperXmx 2g -baseport 54445 \\
                 -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 \\
                 -jks mykeystore.jks \\
-                -notify h2o_one_node -ea -proxy \\
+                -notify h2o_one_node -ea -proxy -port ${defaultPort} \\
                 -jks mykeystore.jks \\
                 ${loginArgs} \\
-                &> h2odriver.out &
+                > h2odriver.log 2>&1 &
             for i in \$(seq 20); do
               if [ -f 'h2o_one_node' ]; then
                 echo "H2O started on \$(cat h2o_one_node)"
@@ -50,14 +51,13 @@ private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
             done
             if [ ! -f 'h2o_one_node' ]; then
               echo 'H2O failed to start!'
-              cat h2odriver.out
+              cat h2odriver.log
               exit 1
             fi
-            IFS=":" read CLOUD_IP CLOUD_PORT < h2o_one_node
             ${loginEnvs}
             export KRB_USE_TOKEN=true
-            export CLOUD_IP=\$CLOUD_IP
-            export CLOUD_PORT=\$CLOUD_PORT
+            export CLOUD_IP=localhost
+            export CLOUD_PORT=${defaultPort}
         """
 }
 

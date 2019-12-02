@@ -79,13 +79,15 @@ def check_leaderboard(aml, excluded_algos, expected_metrics, expected_sort_metri
         "leaderboard is missing some algos from {included}: {models}".format(included=included_algos, models=model_ids)
 
     j_leaderboard = aml._state_json['leaderboard']
-    sort_metric = j_leaderboard['sort_metric']
-    assert sort_metric == expected_sort_metric, \
-        "expected leaderboard sorted by {expected} but was sorted by {actual}".format(expected=expected_sort_metric, actual=sort_metric)
-    sorted_desc = j_leaderboard['sort_decreasing']
-    assert sorted_desc == expected_sorted_desc, \
-        "expected leaderboard sorted {expected} but was sorted {actual}".format(expected="desc" if expected_sorted_desc else "asc",
-                                                                                actual="desc" if sorted_desc else "asc")
+    if expected_sort_metric is not None:
+        sort_metric = j_leaderboard['sort_metric']
+        assert sort_metric == expected_sort_metric, \
+            "expected leaderboard sorted by {expected} but was sorted by {actual}".format(expected=expected_sort_metric, actual=sort_metric)
+    if expected_sorted_desc is not None:
+        sorted_desc = j_leaderboard['sort_decreasing']
+        assert sorted_desc == expected_sorted_desc, \
+            "expected leaderboard sorted {expected} but was sorted {actual}".format(expected="desc" if expected_sorted_desc else "asc",
+                                                                                    actual="desc" if sorted_desc else "asc")
 
 
 def test_warn_on_empty_leaderboard():
@@ -112,7 +114,7 @@ def test_leaderboard_for_binomial():
                     exclude_algos=exclude_algos)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["auc", "logloss", "mean_per_class_error", "rmse", "mse"], "auc", True)
+    check_leaderboard(aml, exclude_algos, ["auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"], "auc", True)
 
 
 def test_leaderboard_for_multinomial():
@@ -164,7 +166,7 @@ def test_leaderboard_with_no_algos():
 
     lb = aml.leaderboard
     assert lb.nrows == 0
-    check_leaderboard(aml, exclude_algos, ["unknown"], None)
+    check_leaderboard(aml, exclude_algos, ["unknown"], None, None)
 
 
 def test_leaderboard_for_binomial_with_custom_sorting():
@@ -178,7 +180,7 @@ def test_leaderboard_for_binomial_with_custom_sorting():
                     sort_metric="logloss")
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["logloss", "auc", "mean_per_class_error", "rmse", "mse"], "logloss")
+    check_leaderboard(aml, exclude_algos, ["logloss", "auc", "aucpr", "mean_per_class_error", "rmse", "mse"], "logloss")
 
 
 def test_leaderboard_for_multinomial_with_custom_sorting():
@@ -209,6 +211,20 @@ def test_leaderboard_for_regression_with_custom_sorting():
     check_leaderboard(aml, exclude_algos, ["rmse", "mean_residual_deviance", "mse", "mae", "rmsle"], "rmse")
 
 
+def test_leaderboard_for_regression_with_custom_sorting_deviance():
+    print("Check leaderboard for Regression sort by deviance")
+    ds = prepare_data('regression')
+    exclude_algos = ["GBM", "DeepLearning"]
+    aml = H2OAutoML(project_name="py_aml_lb_test_custom_regr_deviance",
+                    exclude_algos=exclude_algos,
+                    max_models=10,
+                    seed=automl_seed,
+                    sort_metric="deviance")
+    aml.train(y=ds.target, training_frame=ds.train)
+
+    check_leaderboard(aml, exclude_algos, ["mean_residual_deviance", "rmse", "mse", "mae", "rmsle"], "rmse")
+
+
 def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
     print("Check leaderboard with AUTO stopping metric and no sorting metric for binomial")
     ds = prepare_data('binomial')
@@ -219,7 +235,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
                     exclude_algos=exclude_algos)
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["auc", "logloss", "mean_per_class_error", "rmse", "mse"], "auc", True)
+    check_leaderboard(aml, exclude_algos, ["auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"], "auc", True)
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     first = [m for m in non_se if 'XGBoost_1' in m]
     others = [m for m in non_se if m not in first]
@@ -256,7 +272,7 @@ def test_AUTO_stopping_metric_with_auc_sorting_metric():
                     sort_metric='auc')
     aml.train(y=ds.target, training_frame=ds.train)
 
-    check_leaderboard(aml, exclude_algos, ["auc", "logloss", "mean_per_class_error", "rmse", "mse"], "auc", True)
+    check_leaderboard(aml, exclude_algos, ["auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"], "auc", True)
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     check_model_property(non_se, 'stopping_metric', True, "logloss")
 

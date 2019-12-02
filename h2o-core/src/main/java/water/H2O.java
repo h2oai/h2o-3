@@ -249,6 +249,9 @@ final public class H2O {
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
 
+    /** -internal_security_conf_rel_paths interpret paths of internal_security_conf relative to the main config file */
+    public boolean internal_security_conf_rel_paths = false;
+
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
 
@@ -347,6 +350,11 @@ final public class H2O {
     /** -allow_clients, -allow_clients=true; Enable clients to connect to this H2O node - disabled by default */
     public boolean allow_clients = false;
 
+    /** If this timeout is set to non 0 value, stop the cluster if there hasn't been any rest api request to leader
+     * node after the given timeout. Unit is milliseconds.
+     */
+    public int rest_api_ping_timeout = 0;
+    
     /** specifies a file to write when the node is up */
     public String notify_local;
 
@@ -528,6 +536,9 @@ final public class H2O {
       }
       else if (s.matches("allow_clients")) {
         trgt.allow_clients = true;
+      } else if (s.matches("rest_api_ping_timeout")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.rest_api_ping_timeout = s.parseInt(args[i]);
       }
       else if (s.matches("notify_local")) {
         i = s.incrementAndCheck(i, args);
@@ -654,6 +665,9 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.internal_security_conf = args[i];
       }
+      else if (s.matches("internal_security_conf_rel_paths")) {
+        trgt.internal_security_conf_rel_paths = true;
+      }
       else if (s.matches("decrypt_tool")) {
         i = s.incrementAndCheck(i, args);
         trgt.decrypt_tool = args[i];
@@ -736,6 +750,10 @@ final public class H2O {
       }
       if (ARGS.session_timeout <= 0)
         parseFailed("Invalid session timeout specification (" + ARGS.session_timeout + ")");
+    }
+    
+    if (ARGS.rest_api_ping_timeout < 0) {
+      parseFailed(String.format("rest_api_ping_timeout needs to be 0 or higher, was (%d)", ARGS.rest_api_ping_timeout));
     }
 
     // Validate extension arguments
@@ -1568,10 +1586,7 @@ final public class H2O {
   /* A static list of acceptable Cloud members passed via -flatfile option.
    * It is updated also when a new client appears. */
   private static Set<H2ONode> STATIC_H2OS = null;
-
-  /* List of all clients that ever connected to this cloud. Keys are IP:PORT of these clients */
-  private static Map<String, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
-
+  
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
 
@@ -1651,6 +1666,11 @@ final public class H2O {
               "  2. Point your browser to " + NetworkInit.h2oHttpView.getScheme() + "://localhost:55555");
     }
 
+    if (H2O.ARGS.rest_api_ping_timeout > 0) {
+      Log.info(String.format("Registering REST API Check Thread. If 3/Ping endpoint is not" +
+          " accessed during %d ms, the cluster will be terminated.", H2O.ARGS.rest_api_ping_timeout));
+      new RestApiPingCheckThread().start();
+    }
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
@@ -1983,8 +2003,8 @@ final public class H2O {
     // Notes: 
     // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
     // - upgrade of the javassist library should be considered when adding support for a new java version
-    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>12)) {
-      System.err.println("Only Java 8, 9, 10, 11 and 12 are supported, system version is " + System.getProperty("java.version"));
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>13)) {
+      System.err.println("Only Java 8, 9, 10, 11, 12 and 13 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");

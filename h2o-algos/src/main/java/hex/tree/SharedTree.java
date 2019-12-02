@@ -29,7 +29,12 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 
-public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends SharedTreeModel.SharedTreeParameters, O extends SharedTreeModel.SharedTreeOutput> extends ModelBuilder<M,P,O> {
+public abstract class SharedTree<
+    M extends SharedTreeModel<M,P,O>, 
+    P extends SharedTreeModel.SharedTreeParameters, 
+    O extends SharedTreeModel.SharedTreeOutput> 
+    extends ModelBuilder<M,P,O> 
+    implements PlattScalingHelper.ModelBuilderWithCalibration<M, P, O> {
 
   private static final boolean DEBUG_PUBDEV_6686 = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.pubdev6686");
 
@@ -65,8 +70,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
 
   protected Random _rand;
 
-  protected final Frame calib() { return _calib; }
-  protected transient Frame _calib;
+  private transient Frame _calib;
 
   protected final Frame validWorkspace() { return _validWorkspace; }
   protected transient Frame _validWorkspace;
@@ -78,7 +82,11 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
   public boolean isSupervised(){return true;}
 
   @Override public boolean haveMojo() { return true; }
-  @Override public boolean havePojo() { return true; }
+  @Override public boolean havePojo() { 
+    if (_parms == null)
+      return true;
+    return _parms._offset_column == null; // offset column is not supported for POJO
+  }
 
   public boolean scoreZeroTrees(){return true;}
 
@@ -156,19 +164,7 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if( _train != null )
       _ncols = _train.numCols()-(isSupervised()?1:0)-numSpecialCols();
 
-    // Calibration
-    Frame cf = _parms.calib();  // User-given calibration set
-    if (cf != null) {
-      if (! _parms._calibrate_model)
-        warn("_calibration_frame", "Calibration frame was specified but calibration was not requested.");
-      _calib = init_adaptFrameToTrain(cf, "Calibration Frame", "_calibration_frame", expensive);
-    }
-    if (_parms._calibrate_model) {
-      if (nclasses() != 2)
-        error("_calibrate_model", "Model calibration is only currently supported for binomial models.");
-      if (cf == null)
-        error("_calibrate_model", "Calibration frame was not specified.");
-    }
+    PlattScalingHelper.initCalibration(this, _parms, expensive);
   }
 
   protected void validateRowSampleRate() {
@@ -756,42 +752,27 @@ public abstract class SharedTree<M extends SharedTreeModel<M,P,O>, P extends Sha
     if( updated ) _model.update(_job);
 
     // Model Calibration (only for the final model, not CV models)
-    if (finalScoring && _parms._calibrate_model && (! _parms._is_cv_model)) {
-      Key<Frame> calibInputKey = Key.make();
-      try {
-        Scope.enter();
-        _job.update(0, "Calibrating probabilities");
-        Vec calibWeights = _parms._weights_column != null ? calib().vec(_parms._weights_column) : null;
-        Frame calibPredict = Scope.track(_model.score(calib(), null, _job, false));
-
-        Frame calibInput = new Frame(calibInputKey,
-                new String[]{"p", "response"}, new Vec[]{calibPredict.vec(1), calib().vec(_parms._response_column)});
-        if (calibWeights != null) {
-          calibInput.add("weights", calibWeights);
-        }
-        DKV.put(calibInput);
-
-        Key<Model> calibModelKey = Key.make();
-        Job calibJob = new Job<>(calibModelKey, ModelBuilder.javaName("glm"), "Platt Scaling (GLM)");
-        GLM calibBuilder = ModelBuilder.make("GLM", calibJob, calibModelKey);
-        calibBuilder._parms._intercept = true;
-        calibBuilder._parms._response_column = "response";
-        calibBuilder._parms._train = calibInput._key;
-        calibBuilder._parms._family = GLMModel.GLMParameters.Family.binomial;
-        calibBuilder._parms._lambda = new double[] {0.0};
-        if (calibWeights != null) {
-          calibBuilder._parms._weights_column = "weights";
-        }
-
-        _model._output._calib_model = calibBuilder.trainModel().get();
-        _model.update(_job);
-      } finally {
-        Scope.exit();
-        DKV.remove(calibInputKey);
-      }
+    if (finalScoring && _parms.calibrateModel() && (!_parms._is_cv_model)) {
+      _model._output._calib_model = PlattScalingHelper.buildCalibrationModel(SharedTree.this, _parms, _job, _model);
+      _model.update(_job);
     }
 
     return updated;
+  }
+
+  @Override
+  public ModelBuilder getModelBuilder() {
+    return this;
+  }
+
+  @Override
+  public final Frame getCalibrationFrame() { 
+    return _calib; 
+  }
+
+  @Override
+  public void setCalibrationFrame(Frame f) {
+    _calib = f;
   }
 
   protected void addCustomInfo(O out) {
