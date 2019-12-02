@@ -35,11 +35,8 @@ public class KMeansTest extends TestUtil {
     KMeans job = new KMeans(parms);
     KMeansModel kmm = job.trainModel().get();
     checkConsistency(kmm);
-    // constrained kmeans clusters can be zero
-    if(parms._cluster_size_constraints == null) {
-      for (int i = 0; i < kmm._output._k[kmm._output._k.length - 1]; i++)
-        Assert.assertTrue("Seed: " + seed, kmm._output._size[i] != 0);
-    }
+    for (int i = 0; i < kmm._output._k[kmm._output._k.length - 1]; i++)
+      Assert.assertTrue("Seed: " + seed, kmm._output._size[i] != 0);
     return kmm;
   }
 
@@ -134,12 +131,13 @@ public class KMeansTest extends TestUtil {
   }
 
   @Test public void testIrisConstrained() {
-    KMeansModel kmm = null;
-    Frame fr = null, fr2= null, points=null;
+    KMeansModel kmm = null, kmm2 = null, kmm3 = null;
+    Frame fr = null, points=null;
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
       
-      points = ArrayUtils.frame(ard(ard(6.0,2.2,4.0,1.0,0),
+      points = ArrayUtils.frame(ard(
+              ard(6.0,2.2,4.0,1.0,0),
               ard(5.2,3.4,1.4,0.2,1),
               ard(6.9,3.1,5.4,2.1,2),
               ard(6.9,3.1,5.4,2.1,2)
@@ -153,34 +151,34 @@ public class KMeansTest extends TestUtil {
       parms._user_points = points._key;
       parms._cluster_size_constraints = new int[]{10, 10, 10, 100};
       parms._score_each_iteration = true;
-      kmm = doSeed(parms,0);
 
-      //Iris last column is categorical; make sure centers are ordered in the
-      //same order as the iris columns.
-      double[/*k*/][/*features*/] centers = kmm._output._centers_raw;
-      for( int k=0; k<parms._k; k++ ) {
-        double flower = centers[k][4];
-        Assert.assertTrue("categorical column expected",flower==(int)flower);
-      }
-
-      // Done building model; produce a score column with cluster choices
-      fr2 = kmm.score(fr);
-
+      KMeans job = new KMeans(parms);
+      kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());
+      
       for(int i=0; i<parms._k; i++) {
         System.out.println(kmm._output._size[i]+">="+parms._cluster_size_constraints[i]);
         assert kmm._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm._output._size[i]+".";
       }
+      
+      parms._standardize = false;
+      KMeans job2 = new KMeans(parms);
+      kmm2 = (KMeansModel) Scope.track_generic(job2.trainModel().get());
+      
+      for(int i=0; i<parms._k; i++) {
+        System.out.println(kmm2._output._size[i]+">="+parms._cluster_size_constraints[i]);
+        assert kmm2._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm2._output._size[i]+".";
+      }
 
     } finally {
       if( fr  != null ) fr.delete();
-      if( fr2 != null ) fr2.delete();
       if( points != null ) points.delete();
       if( kmm != null ) kmm.delete();
+      if( kmm2 != null ) kmm2.delete();
     }
   }
 
   @Test public void testChicagoConstrained() {
-    KMeansModel kmm = null;
+    KMeansModel kmm = null, kmm2 = null;
     Frame fr = null, points = null;
     try {
       Scope.enter();
@@ -196,31 +194,32 @@ public class KMeansTest extends TestUtil {
       parms._k = 3;
       parms._cluster_size_constraints = new int[]{1000, 3000, 1000};
       parms._user_points = points._key;
+      parms._standardize = true;
 
       KMeans job = new KMeans(parms);
       kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());
       checkConsistency(kmm);
 
-      assertEquals("date", kmm._output._names[0]);
-      assertEquals(-1, kmm._output._mode[0]); // time column is not treated as a categorical (PUBDEV-6264)
-
-      double minTime = fr.vec("date").min();
-      double maxTime = fr.vec("date").max();
-
-      assertEquals(3, kmm._output._centers_raw.length);
-      for (double[] center : kmm._output._centers_raw) {
-        assertTrue(center[0] >= minTime);
-        assertTrue(center[0] <= maxTime);
-      }
-
       for(int i=0; i<parms._k; i++) {
         System.out.println(kmm._output._size[i]+">="+parms._cluster_size_constraints[i]);
         assert kmm._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm._output._size[i]+".";
       }
+      
+      parms._standardize = false;
+      KMeans job2 = new KMeans(parms);
+      kmm2 = (KMeansModel) Scope.track_generic(job2.trainModel().get());
+      checkConsistency(kmm2);
+
+      for(int i=0; i<parms._k; i++) {
+         System.out.println(kmm2._output._size[i]+">="+parms._cluster_size_constraints[i]);
+        assert kmm2._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm2._output._size[i]+".";
+      }
+      
     } finally {
       if( fr  != null ) fr.delete();
       if( points != null ) points.delete();
       if( kmm != null ) kmm.delete();
+      if( kmm2 != null ) kmm2.delete();
       Scope.exit();
     }
   }
@@ -761,7 +760,7 @@ public class KMeansTest extends TestUtil {
       Scope.exit();
     }
   }
-
+  
   @Test
   public void testTimeColumnPubdev6264() {
     try {
@@ -774,6 +773,7 @@ public class KMeansTest extends TestUtil {
       parms._train = f._key;
       parms._seed = 0xcaf;
       parms._k = 3;
+      parms._standardize = false;
 
       KMeans job = new KMeans(parms);
       KMeansModel kmeans = (KMeansModel) Scope.track_generic(job.trainModel().get());

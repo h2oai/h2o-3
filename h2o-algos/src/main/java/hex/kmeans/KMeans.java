@@ -300,22 +300,21 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           Log.info("Cutoff for relative improvement in within_cluster_sum_of_squares: " + rel_improvement_cutoff);
 
         Vec[] vecs2;
+        long csum = 0;
         if(!constrained) {
           vecs2 = Arrays.copyOf(vecs, vecs.length+1);
           vecs2[vecs2.length-1] = vecs2[0].makeCon(-1);
         } else {
           int newVecLength = vecs.length + centers.length + 3;
           vecs2 = Arrays.copyOf(vecs, newVecLength);
-
           for (int i = vecs.length; i < newVecLength; i++) {
-            vecs2[i] = vecs2[0].makeCon(-1);
+            vecs2[i] = vecs2[0].makeCon(Double.MAX_VALUE);
           }
           // Check sum of constrains
-          long csum = 0;
           for(int i = 0; i<_parms._cluster_size_constraints.length; i++){
             assert _parms._cluster_size_constraints[i] > 0: "The value of constraint should be higher then zero.";
             csum += _parms._cluster_size_constraints[i];
-            assert csum <= vecs[0].length(): "The sum of constraints is higher than the number of points.";
+            assert csum <= vecs[0].length(): "The sum of constraints is higher than the number of data rows.";
           }
         }
         
@@ -333,11 +332,12 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             }  else {
               // Constrained K-means
               
-              // Get distances
-              CalculateDistancesTask countDistancesTask = new CalculateDistancesTask(centers, means, mults, impute_cat, _isCats, k, hasWeightCol(), _parms._constrained_kmeans_precision).doAll(vecs2);
+              // Get distances and aggregated values
+              CalculateDistancesTask countDistancesTask = new CalculateDistancesTask(centers, means, mults, impute_cat, _isCats, k, hasWeightCol()).doAll(vecs2);
+              assert !hasWeightCol() || csum <= countDistancesTask._non_zero_weights : "The sum of constraints is higher than the number of data rows with non zero weights.";
               
               // Calculate center assignments
-              KMeansSimplexSolver solver = new KMeansSimplexSolver(_parms._cluster_size_constraints, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), _parms._constrained_kmeans_precision);
+              KMeansSimplexSolver solver = new KMeansSimplexSolver(_parms._cluster_size_constraints, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), countDistancesTask._non_zero_weights);
               
               // Get cluster assignments
               Frame result = solver.assignClusters();
@@ -815,10 +815,10 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     final int _k;
     boolean _hasWeight;
     final String[][] _isCats;
-    long _sum;
-    int _precision;
+    double _sum;
+    long _non_zero_weights;
     
-    CalculateDistancesTask(double[][] centers, double[] means, double[] mults, int[] modes, String[][] isCats, int k, boolean hasWeight, int precision) {
+    CalculateDistancesTask(double[][] centers, double[] means, double[] mults, int[] modes, String[][] isCats, int k, boolean hasWeight) {
       _centers = centers;
       _means = means;
       _mults = mults;
@@ -827,25 +827,27 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
       _hasWeight = hasWeight;
       _isCats = isCats;
       _sum = 0;
-      _precision = precision;
+      _non_zero_weights = 0;
     }
 
     @Override
     public void map(Chunk[] cs) {
       int N = cs.length - (_hasWeight ? 1 : 0) - 3 - _centers.length /*data + weight column + distances + old assignment + new assignment  */;
       assert _centers[0].length == N;
+      int vecsStart = _hasWeight ? N+1 : N;
       
       double[] values = new double[N]; // Temp data to hold row as doubles
       for (int row = 0; row < cs[0]._len; row++) {
         double weight = _hasWeight ? cs[N].atd(row) : 1;
         if (weight == 0) continue; //skip holdout rows
+        _non_zero_weights++;
         assert (weight == 1); //K-Means only works for weight 1 (or weight 0 for holdout)
         data(values, cs, row, _means, _mults, _modes); // Load row as doubles
         double[] distances = getDistances(_centers, values, _isCats);
         for(int cluster=0; cluster<distances.length; cluster++){
           double tmpDist = distances[cluster];
-          cs[N+cluster].set(row, tmpDist);
-          _sum += (long) (tmpDist * _precision);
+          cs[vecsStart+cluster].set(row, tmpDist);
+          _sum += tmpDist;
         }
       }
     }
@@ -853,6 +855,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     @Override
     public void reduce(CalculateDistancesTask mrt) {
       _sum += mrt._sum;
+      _non_zero_weights += mrt._non_zero_weights;
     }
   }
 
@@ -905,7 +908,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             }
           }
         }
-        assert cluster != -1 : "cluster "+cluster+"is not set for row:"+row;       // No broken rows
+        assert cluster != -1 : "cluster "+cluster+" is not set for row "+row;       // No broken rows
         _cSqr[cluster] += distance;
 
         // Add values and increment counter for chosen cluster

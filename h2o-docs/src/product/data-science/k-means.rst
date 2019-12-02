@@ -76,6 +76,7 @@ Defining a K-Means Model
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+-  `cluster_size_constraints <algo-params/cluster_size_constraints.html>`__: Specify how many points should be at least in each cluster. The length of constraints array has to be same as number of clusters.
 
 Interpreting a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -117,6 +118,9 @@ H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a
   or
 
  :math:`\big[0.02 + \frac{10}{number\_of\_training\_rows} + \frac{2.5}{number\_of\_model\_features^{2}}\big]`
+
+Constrained K-Means
+~~~~~~~~~~~~~~~~~~~
 
 
 

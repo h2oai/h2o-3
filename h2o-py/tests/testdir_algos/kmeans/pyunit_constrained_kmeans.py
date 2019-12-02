@@ -32,15 +32,16 @@ def test_constrained_kmeans_iris():
     ]
 
     for i in list(range(len(constraints))):
-        print("===== Train KMeans model with Iris dataset and constraints: ", constraints[i], "======")
-        kmm = H2OKMeansEstimator(k=k, user_points=start_points, standardize=False, cluster_size_constraints=constraints[i], score_each_iteration=True)
-        kmm.train(x=list(range(4)), training_frame=iris_h2o)
+        for j in [True, False]:
+            print("===== Train KMeans model with Iris dataset and constraints: ", constraints[i], " standardize "+str(j)+" ======")
+            kmm = H2OKMeansEstimator(k=k, user_points=start_points, standardize=j, cluster_size_constraints=constraints[i], score_each_iteration=True)
+            kmm.train(x=list(range(4)), training_frame=iris_h2o)
         
-        kmm.show()
+            kmm.show()
     
-        for j in list(range(k)):
-            number_points = kmm._model_json['output']['training_metrics']._metric_json['centroid_stats']._cell_values[j][2]
-            assert number_points >= constraints[i][j], "Number of points ("+str(number_points)+") in cluster "+str(i+1)+" should be >= constraint value ("+str(constraints[i][j])+")"
+            for j in list(range(k)):
+                number_points = kmm._model_json['output']['training_metrics']._metric_json['centroid_stats']._cell_values[j][2]
+                assert number_points >= constraints[i][j], "Number of points ("+str(number_points)+") in cluster "+str(i+1)+" should be >= constraint value ("+str(constraints[i][j])+")"
 
 
 def test_constrained_kmeans_chicago():
@@ -58,24 +59,26 @@ def test_constrained_kmeans_chicago():
     constraints = [
         [1000, 3000, 1000],
         [1000, 1000, 1000],
-        [100, 2000, 10]
+        [100, 2000, 10],
+        [10, 1000, 2000]
     ]
 
-    for i in list(range(len(constraints))):
-        print("===== Train KMeans model  with Chicago dataset and constraints: ",constraints[i], "======")
-        kmm = H2OKMeansEstimator(k=k, user_points=start_points, standardize=False, cluster_size_constraints=constraints[i], score_each_iteration=True)
-        kmm.train(x=list(range(7)), training_frame=iris_h2o)
+    for i in range(len(constraints)):
+        for j in [True, False]:
+            print("===== Train KMeans model  with Chicago dataset and constraints: ", constraints[i], " standardize "+str(j)+" ======")
+            kmm = H2OKMeansEstimator(k=k, user_points=start_points, standardize=j, cluster_size_constraints=constraints[i], score_each_iteration=True)
+            kmm.train(x=list(range(7)), training_frame=iris_h2o)
 
-        kmm.show()
+            kmm.show()
 
-        for j in list(range(k)):
-            number_points = kmm._model_json['output']['training_metrics']._metric_json['centroid_stats']._cell_values[j][2]
-            assert number_points >= constraints[i][j], "Number of points ("+str(number_points)+") in cluster "+str(i+1)+" should be >= constraint value ("+str(constraints[i][j])+")"
+            for j in list(range(k)):
+                number_points = kmm._model_json['output']['training_metrics']._metric_json['centroid_stats']._cell_values[j][2]
+                assert number_points >= constraints[i][j], "Number of points ("+str(number_points)+") in cluster "+str(i+1)+" should be >= constraint value ("+str(constraints[i][j])+")"
 
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_constrained_kmeans_iris)
-    #pyunit_utils.standalone_test(test_constrained_kmeans_chicago)
+    pyunit_utils.standalone_test(test_constrained_kmeans_chicago)
 else:
     test_constrained_kmeans_iris()
-    #test_constrained_kmeans_chicago()
+    test_constrained_kmeans_chicago()
