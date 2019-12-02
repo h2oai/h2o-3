@@ -8,7 +8,7 @@ import h2o
 from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
-from h2o.utils.metaclass import Alias as alias, h2o_meta
+from h2o.utils.metaclass import Deprecated as deprecated, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
@@ -823,7 +823,6 @@ class ModelBase(h2o_meta(Keyed)):
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
 
-    @alias('pr_auc')
     def aucpr(self, train=False, valid=False, xval=False):
         """
         Get the aucPR (Area Under PRECISION RECALL Curve).
@@ -842,9 +841,13 @@ class ModelBase(h2o_meta(Keyed)):
         m = {}
         for k, v in viewitems(tm): 
             if v is not None and not is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics):
-                raise H2OValueError("pr_auc() is only available for Binomial classifiers.")
-            m[k] = None if v is None else v.pr_auc()
+                raise H2OValueError("aucpr() is only available for Binomial classifiers.")
+            m[k] = None if v is None else v.aucpr()
         return list(m.values())[0] if len(m) == 1 else m
+
+    @deprecated(replaced_by=aucpr)
+    def pr_auc(self, train=False, valid=False, xval=False):
+        pass
 
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """

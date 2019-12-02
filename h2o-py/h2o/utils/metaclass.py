@@ -11,7 +11,7 @@ from __future__ import division, print_function, absolute_import
 from functools import wraps
 import warnings
 
-from h2o.utils.compatibility import *  # NOQA
+from h2o.utils.compatibility import with_metaclass
 
 
 def h2o_meta(*args):
@@ -33,8 +33,28 @@ def extend_and_replace(cls, **attrs):
 
 
 class Deprecated(object):
+    """
+    Decorator for deprecated methods.
+
+    :example::
+        class Foo:
+
+            def new_method(self, param=None):
+                ...
+                do_sth(param)
+
+            @Deprecated(replaced_by=new_method)
+            def old_method(self, param=None):
+                pass
+    """
 
     def __init__(self, msg=None, replaced_by=None):
+        """
+        :param msg: the deprecation message to print as a ``DeprecationWarning`` when the function is called.
+        :param replaced_by: the optional function replacing the deprecated one.
+            If provided, then the code from the legacy method can be deleted and limited to `pass`,
+            as the call, with its arguments, will be automatically forwarded to this replacement function.
+        """
         self._msg = msg
         self._replaced_by = replaced_by
 
@@ -54,26 +74,30 @@ class Deprecated(object):
 
 
 class MetaFeature(object):
+    """To be implemented by meta features exposed through the ``H2OMeta` metaclass"""
 
     NOT_FOUND = object()
 
     @classmethod
     def before_class(cls, bases, dct):
-        """
-        Allows to dynamically change how the class will be constructed
-        """
+        """Allows to dynamically change how the class will be constructed"""
         return bases, dct
 
     @classmethod
     def after_class(cls, clz):
+        """Allows to modify the class after construction.
+        Note that decorators applied at class level are still not accessible at that time
+        as they're applied only once the class is FULLY constructed."""
         return clz
 
     @classmethod
     def get_class_attr(cls, clz, name):
+        """Allows to override how the class attributes are accessed on this class."""
         return MetaFeature.NOT_FOUND
 
     @classmethod
     def set_class_attr(cls, clz, name, value):
+        """Allows to override how the class attributes are set on this class."""
         return False
 
     @staticmethod
@@ -86,6 +110,18 @@ class MetaFeature(object):
 
 
 class Alias(MetaFeature):
+    """
+    Decorator to alias the current method without having to implement any duplicating or forwarding code.
+
+   :example::
+    class Foo(metaclass=H2OMeta):
+
+        @Alias('ein', 'uno')
+        def one(self, param):
+            ...
+            do_sth()
+
+    """
 
     @classmethod
     def before_class(cls, bases, dct):
@@ -99,6 +135,9 @@ class Alias(MetaFeature):
         return bases, ddct
 
     def __init__(self, *aliases):
+        """
+        :param aliases: alternative names for the method on which the decorator is applied.
+        """
         self._aliases = set(aliases)
 
     def __call__(self, fn):
@@ -107,6 +146,29 @@ class Alias(MetaFeature):
 
 
 class BackwardsCompatible(MetaFeature):
+    """
+    Decorator to keep backward compatibility support for old methods without exposing them (non-discoverable, non-documented).
+
+    :example:
+        @BackwardsCompatible(
+            class_attrs=dict(
+              counter=1
+            ),
+            instance_attrs=dict(
+              getincr=local_function_with_legacy_logic
+            )
+        )
+        class Foo(metaclass=H2OMeta):
+            global_counter = 0
+
+            def __init__(self):
+                self._counter = 0
+
+            def incr_and_get(self):
+                Foo.counter += 1
+                self._counter += 1
+                return self._counter
+    """
 
     def __init__(self, class_attrs=None, instance_attrs=None):
         self._class_attrs = class_attrs or {}
@@ -150,6 +212,10 @@ class BackwardsCompatible(MetaFeature):
 
 
 class H2OMeta(type):
+    """
+    The H2O metaclass to be used by classes wanted to benefit from most of the decorators implemented in this file.
+    Features requiring usage of this metaclass are listed and injected through the `_FEATURES` static field.
+    """
 
     _FEATURES = [Alias, BackwardsCompatible]
 

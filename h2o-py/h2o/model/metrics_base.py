@@ -10,7 +10,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import imp
 
 from h2o.model.confusion_matrix import ConfusionMatrix
-from h2o.utils.metaclass import Alias as alias, h2o_meta
+from h2o.utils.metaclass import Deprecated as deprecated, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
 
@@ -120,7 +120,7 @@ class MetricsBase(h2o_meta()):
             print("AIC: " + str(self.aic()))
         if metric_type in types_w_bin:
             print("AUC: " + str(self.auc()))
-            print("pr_auc: " + str(self.pr_auc()))
+            print("AUCPR: " + str(self.aucpr()))
             print("Gini: " + str(self.gini()))
             self.confusion_matrix().show()
             self._metric_json["max_criteria_and_metric_scores"].show()
@@ -170,10 +170,14 @@ class MetricsBase(h2o_meta()):
         return self._metric_json['AUC']
 
 
-    @alias('pr_auc')
     def aucpr(self):
         """The area under the precision recall curve."""
         return self._metric_json['pr_auc']
+
+
+    @deprecated(replaced_by=aucpr)
+    def pr_auc(self):
+        pass
 
 
     def aic(self):
