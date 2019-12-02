@@ -108,6 +108,8 @@ class H2OGridSearch(backwards_compatible()):
     @property
     def model_ids(self):
         """
+        Returns model ids.
+        
         :examples:
 
         >>> from h2o.grid.grid_search import H2OGridSearch
@@ -126,6 +128,8 @@ class H2OGridSearch(backwards_compatible()):
     @property
     def hyper_names(self):
         """
+        Return the hyperparameter names.
+        
         :examples:
 
         >>> from h2o.grid.grid_search import H2OGridSearch
@@ -144,6 +148,7 @@ class H2OGridSearch(backwards_compatible()):
     @property
     def failed_params(self):
         """
+        Return a list of failed parameters.
         :examples:
 
         >>> from h2o.grid.grid_search import H2OGridSearch
@@ -1014,13 +1019,15 @@ class H2OGridSearch(backwards_compatible()):
 
         :examples:
 
+        >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators import H2OGeneralizedLinearEstimator
-        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
-        ...                                   lambda_search=True,
-        ...                                   solver='COORDINATE_DESCENT')
-        >>> m.train(x=[2,3,4,5,6,7,8], y=1, training_frame=prostate)
-        >>> m.coef()
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5],
+        ...                     'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_parameters)
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.coef()
         """
         return {model.model_id: model.coef() for model in self.models}
 
@@ -1030,13 +1037,15 @@ class H2OGridSearch(backwards_compatible()):
 
         :examples:
 
+        >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators import H2OGeneralizedLinearEstimator
-        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
-        >>> m = H2OGeneralizedLinearEstimator(family='binomial',
-        ...                                   lambda_search=True,
-        ...                                   solver='COORDINATE_DESCENT')
-        >>> m.train(x=[2,3,4,5,6,7,8], y=1, training_frame=prostate)
-        >>> m.coef_norm()
+        >>> training_data = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/logreg/benign.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5],
+        ...                     'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
+        ...                    hyper_parameters)
+        >>> gs.train(x=range(3)+range(4,11), y=3, training_frame=training_data)
+        >>> gs.coef_norm()
         """
         return {model.model_id: model.coef_norm() for model in self.models}
 
