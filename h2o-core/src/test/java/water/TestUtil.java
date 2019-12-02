@@ -41,7 +41,7 @@ public class TestUtil extends Iced {
   /** Minimal cloud size to start test. */
   protected static int MINCLOUDSIZE = Integer.parseInt(System.getProperty("cloudSize", "1"));
   /** Default time in ms to wait for clouding */
-  protected static int DEFAULT_TIME_FOR_CLOUDING = 30000 /* ms */;
+  protected static int DEFAULT_TIME_FOR_CLOUDING = 60000 /* ms */;
 
   public TestUtil() { this(1); }
   public TestUtil(int minCloudSize) {
