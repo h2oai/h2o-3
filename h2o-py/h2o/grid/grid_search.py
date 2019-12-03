@@ -11,12 +11,17 @@ from h2o.estimators.estimator_base import H2OEstimator
 from h2o.two_dim_table import H2OTwoDimTable
 from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
-from h2o.utils.metaclass import Alias as alias, Deprecated as deprecated, h2o_meta
+from h2o.utils.metaclass import Alias as alias, BackwardsCompatible, Deprecated as deprecated, h2o_meta
 from h2o.utils.shared_utils import quoted
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type
 
 
+@BackwardsCompatible(
+    instance_attrs=dict(
+        giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
+    )
+)
 class H2OGridSearch(h2o_meta()):
     """
     Grid Search of a Hyper-Parameter Space for a Model
@@ -66,7 +71,6 @@ class H2OGridSearch(h2o_meta()):
 
     def __init__(self, model, hyper_params, grid_id=None, search_criteria=None, export_checkpoints_dir=None,
                  parallelism=1):
-        super(H2OGridSearch, self).__init__()
         assert_is_type(model, None, H2OEstimator, lambda mdl: issubclass(mdl, H2OEstimator))
         assert_is_type(hyper_params, dict)
         assert_is_type(grid_id, None, str)
@@ -850,12 +854,6 @@ class H2OGridSearch(h2o_meta()):
         H2OEstimator.mixin(grid, model_class)
         grid.__dict__.update(m.__dict__.copy())
         return grid
-
-
-    # Deprecated functions; left here for backward compatibility
-    _bcim = {
-        "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
-    }
 
 
     @deprecated("grid.sort_by() is deprecated; use grid.get_grid() instead")
