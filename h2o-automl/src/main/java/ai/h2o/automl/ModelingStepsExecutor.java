@@ -1,8 +1,12 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
+import ai.h2o.automl.leaderboard.Leaderboard;
+import ai.h2o.automl.leaderboard.LeaderboardExtension;
+import ai.h2o.automl.leaderboard.TrainingTime;
 import hex.Model;
 import hex.grid.Grid;
 import water.Iced;
@@ -106,7 +110,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 int totalGridModelsBuilt = grid.getModelCount();
                 if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
                     eventLog.debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
-                    this.addModels(grid.getModelKeys());
+                    this.addModels(grid);
                     lastTotalGridModelsBuilt = totalGridModelsBuilt;
                 }
             }
@@ -131,7 +135,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 int totalGridModelsBuilt = grid.getModelCount();
                 if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
                     eventLog.debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
-                    this.addModels(grid.getModelKeys());
+                    this.addModels(grid);
                 }
                 eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
             }
@@ -154,10 +158,10 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _jobs.remove(job);
     }
 
-    private void addModels(final Key<Model>[] newModels) {
+    private void addModels(final Grid grid) {
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModels(newModels);
+        leaderboard.addModels(grid.getModelKeys());
         int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }
@@ -165,7 +169,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
     private void addModel(final Model newModel) {
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModel(newModel);
+        leaderboard.addModel(newModel._key);
         int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }

@@ -1,6 +1,6 @@
 package water.automl.api.schemas3;
 
-import ai.h2o.automl.Leaderboard;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import water.api.API;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.SchemaV3;

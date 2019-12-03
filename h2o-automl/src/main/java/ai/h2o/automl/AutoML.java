@@ -3,8 +3,11 @@ package ai.h2o.automl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildModels;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
-import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.StepDefinition.Alias;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.Grid;
@@ -362,7 +365,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       Log.info(event);
 
     if (0 < leaderboard().getModelKeys().length) {
-      Log.info(leaderboard().toTwoDimTable("Leaderboard for project " + projectName(), true).toString());
+      Log.info(leaderboard().toLogString());
     } else {
       long max_runtime_secs = (long)_buildSpec.build_control.stopping_criteria.max_runtime_secs();
       eventLog().warn(Stage.Workflow, "Empty leaderboard.\n"

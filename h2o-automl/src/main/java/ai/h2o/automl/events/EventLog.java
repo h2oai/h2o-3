@@ -1,7 +1,8 @@
-package ai.h2o.automl;
+package ai.h2o.automl.events;
 
-import ai.h2o.automl.EventLogEntry.Level;
-import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.AutoML;
+import ai.h2o.automl.events.EventLogEntry.Level;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import water.DKV;
 import water.Futures;
 import water.Key;
@@ -27,7 +28,7 @@ public class EventLog extends Keyed<EventLog> {
     _events = new EventLogEntry[0];
   }
 
-  static EventLog getOrMake(Key<AutoML> runKey) {
+  public static EventLog getOrMake(Key<AutoML> runKey) {
     EventLog eventLog = DKV.getGet(Key.make(idForRun(runKey)));
     if (null == eventLog) {
       eventLog = new EventLog(runKey);

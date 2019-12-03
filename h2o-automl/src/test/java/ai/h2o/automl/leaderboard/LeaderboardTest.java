@@ -1,5 +1,7 @@
-package ai.h2o.automl;
+package ai.h2o.automl.leaderboard;
 
+import ai.h2o.automl.AutoML;
+import ai.h2o.automl.events.EventLog;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import org.junit.Assert;
@@ -71,7 +73,7 @@ public class LeaderboardTest extends water.TestUtil {
       model = job.trainModel().get();
       
       lb = Leaderboard.getOrMake("dummy_rank_tsv", eventLog, null, "mae");
-      lb.addModel(model);
+      lb.addModel(model._key);
       Log.info(lb.rankTsv());
       Assert.assertEquals("Error\n[0.3448260574357465, 0.19959320678410908, 0.44675855535636816, 0.19959320678410908, 0.31468498072970547]\n", lb.rankTsv());
     } finally {

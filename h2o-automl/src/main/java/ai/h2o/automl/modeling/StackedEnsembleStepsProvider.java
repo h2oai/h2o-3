@@ -2,6 +2,7 @@ package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import ai.h2o.automl.WorkAllocations.Work;
+import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
 import hex.ensemble.StackedEnsembleModel;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;

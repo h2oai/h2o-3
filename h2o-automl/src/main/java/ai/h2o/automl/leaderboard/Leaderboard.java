@@ -1,6 +1,7 @@
-package ai.h2o.automl;
+package ai.h2o.automl.leaderboard;
 
-import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import hex.*;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -50,6 +51,11 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * Map providing for a given metric name, the list of metric values in the same order as the models
    */
   private IcedHashMap<String, double[]> _metric_values = new IcedHashMap<>();
+
+  /**
+   * Map listing the leaderboard extensions per model
+   */
+  private IcedHashMap<Key<Model>, LeaderboardExtension[]> _extensions = new IcedHashMap<>();
 
   /**
    * Metric used to sort this leaderboard.
@@ -112,7 +118,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * @param sort_metric
    * @return an existing leaderboard if there's already one in DKV for this project, or a new leaderboard added to DKV.
    */
-  static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
+  public static Leaderboard getOrMake(String project_name, EventLog eventLog, Frame leaderboardFrame, String sort_metric) {
     Leaderboard leaderboard = DKV.getGet(Key.make(idForProject(project_name)));
     if (null != leaderboard) {
       if (leaderboardFrame != null
@@ -198,7 +204,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
   }
 
   /** Return the number of models in this Leaderboard. */
-  int getModelCount() { return getModelKeys().length; }
+  public int getModelCount() { return getModelKeys().length; }
 
   /**
    * @return list of models sorted by the default metric for the model category
@@ -269,7 +275,11 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * we allow the caller to add the same model multiple times and we eliminate the duplicates here.
    * @param newModels
    */
-  final void addModels(final Key<Model>[] newModels) {
+  public void addModels(final Key<Model>[] newModels) {
+      addModels(newModels, Collections.emptyMap());
+  }
+
+  public void addModels(final Key<Model>[] newModels, Map<Key<Model>, LeaderboardExtension[]> leaderboardExtensions) {
     if (null == _key)
       throw new H2OIllegalArgumentException("Can't add models to a Leaderboard which isn't in the DKV.");
 
@@ -284,7 +294,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
     // eliminate duplicates
     final Set<Key<Model>> uniques = new HashSet<>(oldModelKeys.length + newModels.length);
     uniques.addAll(Arrays.asList(oldModelKeys));
-    uniques.addAll(Arrays.asList(newModels));
+    uniques.addAll(Arrays.asList((Key<Model>[]) newModels));
     final List<Key<Model>> newModelKeys = new ArrayList<>(uniques);
 
     Model model = null;
@@ -305,8 +315,16 @@ public class Leaderboard extends Lockable<Leaderboard> {
         mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
         if (mm == null) {
           //scores and magically stores the metrics where we're looking for it on the next line
+          long start = System.currentTimeMillis();
           model.score(leaderboardFrame).delete();
+          long stop = System.currentTimeMillis();
           mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
+
+          // optimization: as we just score leaderboard, store scoring time in extension if provided.
+          LeaderboardExtension scoringTimePerRow = getExtension(modelKey, ScoringTimePerRow.NAME, leaderboardExtensions);
+          if (scoringTimePerRow != null) {
+            scoringTimePerRow.setValue((stop - start / (double)leaderboardFrame.numRows()));
+          }
         }
       }
       modelMetrics.add(mm);
@@ -346,6 +364,8 @@ public class Leaderboard extends Lockable<Leaderboard> {
     update();
     unlock();
 
+    leaderboardExtensions.forEach(this::addExtensions);
+
     if (oldLeaderKey == null || !oldLeaderKey.equals(modelKeys[0])) {
       eventLog().info(Stage.ModelTraining,
               "New leader: "+modelKeys[0]+", "+ _sort_metric +": "+ _metric_values.get(_sort_metric)[0]);
@@ -353,20 +373,39 @@ public class Leaderboard extends Lockable<Leaderboard> {
   } // addModels
 
 
-  void addModel(final Key<Model> key) {
-    if (null == key) return;
-
-    Key<Model>keys[] = new Key[1];
-    keys[0] = key;
-    addModels(keys);
+  @SuppressWarnings("unchecked")
+  public <M extends Model> void addModel(final Key<M> key, LeaderboardExtension... extensions) {
+    if (key == null) return;
+    addModels(new Key[] {key}, Collections.singletonMap((Key<Model>)key, extensions));
   }
 
-  void addModel(final Model model) {
-    if (null == model) return;
+  public <M extends Model> void addExtensions(final Key<M> key, LeaderboardExtension... extensions) {
+    if (key == null) return;
+    assert ArrayUtils.contains(_model_keys, key);
+    assert Stream.of(extensions).allMatch(le -> getExtension(key, le.getName()) == null);
 
-    Key<Model>keys[] = new Key[1];
-    keys[0] = model._key;
-    addModels(keys);
+    write_lock();
+    if (_extensions.containsKey(key)) {
+      _extensions.replace((Key<Model>)key, ArrayUtils.append(_extensions.get(key), extensions));
+    } else {
+      _extensions.putIfAbsent((Key<Model>)key, extensions);
+    }
+    update();
+    unlock();
+  }
+
+  private <M extends Model> LeaderboardExtension getExtension(final Key<M> key, String extName) {
+      return getExtension(key, extName, _extensions);
+  }
+
+  private <M extends Model> LeaderboardExtension getExtension(final Key<M> key, String extName, Map<Key<Model>, LeaderboardExtension[]> extensions) {
+    if (extensions.containsKey(key)) {
+      return Stream.of(extensions.get(key))
+              .filter(le -> le.getName().equals(extName))
+              .findFirst()
+              .orElse(null);
+    }
+    return null;
   }
 
   private static Model[] getModelsFromKeys(Key<Model>[] modelKeys) {
@@ -506,7 +545,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
     return toTwoDimTable("Leaderboard for AutoML: " + _project_name, false);
   }
 
-  TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds) {
+  private TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds) {
     String[] modelIDsFormatted = new String[_model_keys.length];
     String[] metrics = _metrics == null ? (_sort_metric == null ? new String[] {"unknown"} : new String[] {_sort_metric})
                       : _metrics;
@@ -566,6 +605,10 @@ public class Leaderboard extends Lockable<Leaderboard> {
   @Override
   public String toString() {
     return toString(" ; ", " | ", true, true);
+  }
+
+  public String toLogString() {
+    return toTwoDimTable("Leaderboard for AutoML: " + _project_name, true).toString();
   }
 
 }

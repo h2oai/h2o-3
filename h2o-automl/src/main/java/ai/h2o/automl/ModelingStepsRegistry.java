@@ -1,6 +1,6 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.StepDefinition.Step;
 import water.Iced;

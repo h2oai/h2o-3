@@ -1,8 +1,8 @@
 package water.automl.api.schemas3;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.EventLog;
-import ai.h2o.automl.Leaderboard;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.StepDefinition;
 import water.Iced;
 import water.Key;

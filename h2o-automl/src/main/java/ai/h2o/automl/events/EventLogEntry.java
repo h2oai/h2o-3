@@ -1,5 +1,6 @@
-package ai.h2o.automl;
+package ai.h2o.automl.events;
 
+import ai.h2o.automl.AutoML;
 import water.Iced;
 import water.Key;
 import water.util.TwoDimTable;
@@ -62,7 +63,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     }
   }
 
-  static final Format epochFormat = new SimpleFormat<Date>() {
+  public static final Format epochFormat = new SimpleFormat<Date>() {
     @Override
     public StringBuffer format(Date date, StringBuffer toAppendTo) {
         long epoch = Math.round(date.getTime() / 1e3);
@@ -70,9 +71,9 @@ public class EventLogEntry<V extends Serializable> extends Iced {
         return toAppendTo;
     }
   };
-  static final SimpleDateFormat dateTimeISOFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS"); // uses local timezone
-  static final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S"); // uses local timezone
-  static final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.S");  // uses local timezone
+  public static final SimpleDateFormat dateTimeISOFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS"); // uses local timezone
+  public static final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S"); // uses local timezone
+  public static final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.S");  // uses local timezone
 
   private static final String[] colHeaders = {
           "timestamp",
