@@ -3,6 +3,7 @@ package hex.kmeans;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import javax.xml.bind.SchemaOutputResolver;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -22,7 +23,7 @@ class KMeansSimplexSolver {
     public Vec _edges; // store edges indices between data points and constraints (distances * precision), edges between constraints and additive node
     public Vec _demands; // store demand of all nodes (-1 for data points, constraints values for constraints nodes, )
     public Vec _capacities; // store capacities of all edges + edges from all node to leader node
-    public Frame _weights; // input data + weight column, calculated distances from all points to all centres + columns to store result cluster assignments 
+    public Frame _weights; // input data + weight column, calculated distances from all points to all centres + columns to store result of cluster assignments 
     public Vec _additiveWeights; // additive weight vector to store edge weight from constraints nodes to additive and leader nodes
     public double _sumWeights; // calculated sum of all weights to calculate maximal capacity value
     public double _maxAbsDemand; // maximal absolute demand to calculate maximal capacity value
@@ -41,10 +42,10 @@ class KMeansSimplexSolver {
      * Construct K-means solver.
      * @param constrains
      * @param weights
-     * @param sumWeights
+     * @param sumDistances
      * @param hasWeights
      */
-    public KMeansSimplexSolver(int[] constrains, Frame weights, double sumWeights, boolean hasWeights, long numberOfNonZeroWeightPoints) {
+    public KMeansSimplexSolver(int[] constrains, Frame weights, double sumDistances, boolean hasWeights, long numberOfNonZeroWeightPoints) {
         this._numberOfPoints = weights.numRows();
         this._nodeSize = this._numberOfPoints + constrains.length + 1;
         this._edgeSize = _numberOfPoints * constrains.length + constrains.length;
@@ -60,7 +61,7 @@ class KMeansSimplexSolver {
 
         this._weights = weights;
         this._additiveWeights = Vec.makeCon(0, _nodeSize + _constraintsLength, Vec.T_NUM);
-        this._sumWeights = sumWeights;
+        this._sumWeights = sumDistances;
 
         long constraintsSum = 0;
         _maxAbsDemand = Double.MIN_VALUE;
@@ -121,6 +122,9 @@ class KMeansSimplexSolver {
         if (edgeIndex < numberOfFrameWeights) {
             long i = edgeIndex % _numberOfPoints;
             int j = _weights.numCols() - _constraintsLength - 3 + (int) Math.floor(edgeIndex / _numberOfPoints);
+            //long i = Math.round(edgeIndex / _constraintsLength);
+            //int j = (int) (edgeIndex % _constraintsLength);
+            //System.out.println(edgeIndex+" "+i+" "+j+" "+Math.floor(edgeIndex / this._numberOfPoints)+" "+ (edgeIndex % _numberOfPoints));
             return _weights.vec(j).at(i);
         }
         return _additiveWeights.at(edgeIndex - numberOfFrameWeights);
@@ -137,6 +141,9 @@ class KMeansSimplexSolver {
             if (edgeIndex < numberOfFrameWeights) {
                 long i = edgeIndex % _numberOfPoints;
                 int j = _weights.numCols() - 1 - _constraintsLength - 3;
+                //long i = Math.round(edgeIndex / _constraintsLength);
+                //int j = (int) (edgeIndex % _constraintsLength);
+                //System.out.println("e: "+edgeIndex+" i: "+i+"j: "+j+" w: "+_weights.vec(j).at8(i));
                 return _weights.vec(j).at8(i) == 1;
             }
         }
@@ -184,8 +191,10 @@ class KMeansSimplexSolver {
         if(checkIfContinue()) {
             // split calculation to block
             // place where parallelisation is needed
-            long blockSize = (long) Math.ceil(Math.sqrt(_edgeSize));
-            long numberOfBlocks = Math.floorDiv(_edgeSize + blockSize - 1, blockSize);
+            //long blockSize = (long) Math.ceil(Math.sqrt(_edgeSize));
+            //long numberOfBlocks = Math.floorDiv(_edgeSize + blockSize - 1, blockSize);
+            long blockSize = _edgeSize;
+            long numberOfBlocks = 1;
             if (numberOfConsecutiveBlocks < numberOfBlocks) {
                 nextBlockOfEdges = firstEdgeInBlock + blockSize;
                 long minimalIndex;
@@ -284,10 +293,13 @@ class KMeansSimplexSolver {
             long enteringEdgeSourceIndex = edge.getSourceIndex();
             long enteringEdgeTargetIndex = edge.getTargetIndex();
             NodesEdgesObject cycle = getCycle(enteringEdgeIndex, enteringEdgeSourceIndex, enteringEdgeTargetIndex);
+            //System.out.println("e: "+enteringEdgeIndex+" "+enteringEdgeSourceIndex+" "+enteringEdgeTargetIndex+" weight: "+(isNonZeroWeight(enteringEdgeIndex) ? 1 : 0));
+            //System.out.println(cycle.toString());
             Edge leavingEdge = getLeavingEdge(cycle);
             long leavingEdgeIndex = leavingEdge.getEdgeIndex();
             long leavingEdgeSourceIndex = leavingEdge.getSourceIndex();
             long leavingEdgeTargetIndex = leavingEdge.getTargetIndex();
+            //System.out.println("l: "+leavingEdgeIndex+" "+leavingEdgeSourceIndex+" "+leavingEdgeTargetIndex+" weight: "+(isNonZeroWeight(leavingEdgeIndex) ? 1 : 0));
             double residualCap = tree.getResidualCapacity(leavingEdgeIndex, leavingEdgeSourceIndex, _capacities.at(leavingEdgeIndex));
             if(residualCap != 0) {
                 tree.augmentFlow(cycle, residualCap);
@@ -348,18 +360,27 @@ class KMeansSimplexSolver {
         }
 
         for (long i = 0; i < _weights.numRows(); i++) {
+            //System.out.println("1 row "+i+" weight "+(_hasWeightsColumn ? _weights.vec(dataStopLength).at8(i) : 1)+ " edges: "+i * _constraintsLength+"-"+(i * _constraintsLength+2)+" assignments: "+tree._edgeFlow.at8(i * _constraintsLength)+" "+tree._edgeFlow.at8(i * _constraintsLength + 1)+" "+tree._edgeFlow.at8(i * _constraintsLength + 2));
+            //System.out.println("2 row "+i+" weight "+(_hasWeightsColumn ? _weights.vec(dataStopLength).at8(i) : 1)+ " edges: "+(i+_weights.numRows())+" assignments: "+tree._edgeFlow.at8(i)+" "+tree._edgeFlow.at8(i+_weights.numRows())+" "+tree._edgeFlow.at8(i + 2 * _weights.numRows()));
             if(!_hasWeightsColumn || _weights.vec(dataStopLength).at8(i) == 1) {
+                boolean assign = false;
                 for (int j = 0; j < _constraintsLength; j++) {
-                    if (tree._edgeFlow.at8(i * _constraintsLength + j) == 1) {
+                    //long edgeIndex = i + j * _weights.numRows();
+                    long edgeIndex = i * _constraintsLength + j;
+                    if (tree._edgeFlow.at8(edgeIndex) == 1) {
                         // old assignment
-                        _weights.vec(oldAssignmentIndex).set(i, _weights.vec(newAssignmentIndex).at(i));
+                        //_weights.vec(oldAssignmentIndex).set(i, _weights.vec(newAssignmentIndex).at(i));
                         // new assignment
                         _weights.vec(newAssignmentIndex).set(i, j);
                         // distances
-                        _weights.vec(distanceAssignmentIndex).set(i, _weights.vec(dataStopLength + 1 + j).at(i));
+                        _weights.vec(distanceAssignmentIndex).set(i, _weights.vec(_hasWeightsColumn ? dataStopLength + 1 : dataStopLength + j).at(i));
                         numberOfPointsInCluster[j]++;
+                        assign = true;
                         break;
                     }
+                }
+                if(!assign) {
+                    //System.out.println("Warning: row " + i + " has non zero weight and no cluster assignment " + tree._edgeFlow.at8(i * _constraintsLength) + " " + tree._edgeFlow.at8(i * _constraintsLength + 1) + " " + tree._edgeFlow.at8(i * _constraintsLength + 2)+" | "+tree._edgeFlow.at8(i)+" "+tree._edgeFlow.at8(i+_weights.numRows())+" "+tree._edgeFlow.at8(i + 2 * _weights.numRows()));
                 }
             }
         }

@@ -1,5 +1,6 @@
 package hex.kmeans;
 
+import hex.KeyValue;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
@@ -131,27 +132,29 @@ public class KMeansTest extends TestUtil {
   }
 
   @Test public void testIrisConstrained() {
-    KMeansModel kmm = null, kmm2 = null, kmm3 = null;
-    Frame fr = null, points=null;
+    KMeansModel kmm = null, kmm2 = null, kmm3 = null, kmm4 = null;
+    Frame fr = null, points=null, predict1=null, predict2=null, predict3=null, predict4=null;
     try {
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      fr.remove(4).remove();
+      
       
       points = ArrayUtils.frame(ard(
-              ard(6.0,2.2,4.0,1.0,0),
-              ard(5.2,3.4,1.4,0.2,1),
-              ard(6.9,3.1,5.4,2.1,2),
-              ard(6.9,3.1,5.4,2.1,2)
+              ard(6.0,2.2,4.0,1.0),
+              ard(5.2,3.4,1.4,0.2),
+              ard(6.9,3.1,5.4,2.1)
       ));
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
       parms._train = fr._key;
-      parms._k = 4;
+      parms._k = 3;
       parms._standardize = true;
       parms._max_iterations = 10;
       parms._user_points = points._key;
-      parms._cluster_size_constraints = new int[]{10, 10, 10, 100};
+      parms._cluster_size_constraints = new int[]{46, 50, 54};
       parms._score_each_iteration = true;
 
+      System.out.println("Constrained Kmeans strandardize true (CKT)");
       KMeans job = new KMeans(parms);
       kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());
       
@@ -161,6 +164,9 @@ public class KMeansTest extends TestUtil {
       }
       
       parms._standardize = false;
+      parms._cluster_size_constraints = new int[]{51, 50, 49};
+
+      System.out.println("Constrained Kmeans strandardize false (CKF)");
       KMeans job2 = new KMeans(parms);
       kmm2 = (KMeansModel) Scope.track_generic(job2.trainModel().get());
       
@@ -169,11 +175,49 @@ public class KMeansTest extends TestUtil {
         assert kmm2._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm2._output._size[i]+".";
       }
 
+      parms._standardize = true;
+      parms._cluster_size_constraints = null;
+      System.out.println("Loyd Kmeans strandardize true (FKT)");
+      KMeans job3 = new KMeans(parms);
+      kmm3 = (KMeansModel) Scope.track_generic(job3.trainModel().get());
+
+      parms._standardize = false;
+      System.out.println("Loyd Kmeans strandardize false (FKF)");
+      KMeans job4 = new KMeans(parms);
+      kmm4 = (KMeansModel) Scope.track_generic(job4.trainModel().get());
+
+
+      predict1 = kmm.score(fr);
+      predict2 = kmm2.score(fr);
+      predict3 = kmm3.score(fr);
+      predict4 = kmm4.score(fr);
+
+      System.out.println("\nPredictions:");
+      System.out.println("| CKT | FKT | CKF | FKF |");
+      for (int i=0; i<fr.numRows(); i++){
+        System.out.println("|  "+predict1.vec(0).at8(i)+"  |  "+predict3.vec(0).at8(i)+"  |  "+predict2.vec(0).at8(i)+"  |  "+predict4.vec(0).at8(i)+"  |");
+        System.out.println("|  "+predict1.vec(0).at8(i)+"  |  "+predict3.vec(0).at8(i)+"  |  "+predict2.vec(0).at8(i)+"  |  "+predict4.vec(0).at8(i)+"  |");
+      }
+
+      System.out.println("\nCenters raw:");
+      for (int i=0; i<kmm._output._centers_raw.length;i++){
+        System.out.println("===");
+        for (int j=0; j<kmm._output._centers_raw[0].length;j++) {
+          System.out.println(kmm._output._centers_raw[i][j]+" "+kmm2._output._centers_raw[i][j]+" "+kmm3._output._centers_raw[i][j]+" "+kmm4._output._centers_raw[i][j]);
+        }
+      }
+
     } finally {
       if( fr  != null ) fr.delete();
       if( points != null ) points.delete();
       if( kmm != null ) kmm.delete();
       if( kmm2 != null ) kmm2.delete();
+      if( kmm3 != null ) kmm3.delete();
+      if( kmm4 != null ) kmm4.delete();
+      if( predict1 != null ) predict1.delete();
+      if( predict2 != null ) predict2.delete();
+      if( predict3 != null ) predict3.delete();
+      if( predict4 != null ) predict4.delete();
     }
   }
 
@@ -726,7 +770,7 @@ public class KMeansTest extends TestUtil {
       parms._train = tfr._key;
       parms._seed = 0xdecaf;
       parms._k = 3;
-      parms._nfolds = 3;
+      //parms._nfolds = 3;
 
       // Build a first model; all remaining models should be equal
       KMeans job = new KMeans(parms);
@@ -760,7 +804,7 @@ public class KMeansTest extends TestUtil {
       Scope.exit();
     }
   }
-  
+
   @Test
   public void testTimeColumnPubdev6264() {
     try {
