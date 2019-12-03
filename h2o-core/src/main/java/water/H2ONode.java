@@ -521,6 +521,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
     UDP_TCP_SendThread(){
       super(SEND_THREAD_NAME_PREFIX + H2ONode.this);
+      ThreadHelper.initCommonThreadProperties(this);
       _bb = AutoBuffer.BBP_BIG.make();
     }
 

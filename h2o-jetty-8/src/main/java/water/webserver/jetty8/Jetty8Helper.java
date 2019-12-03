@@ -26,6 +26,7 @@ import org.eclipse.jetty.server.ssl.SslSocketConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.LoginType;
@@ -49,6 +50,11 @@ class Jetty8Helper {
     System.setProperty("org.eclipse.jetty.server.Request.maxFormContentSize", Integer.toString(Integer.MAX_VALUE));
 
     final Server jettyServer = new Server();
+    if (config.ensure_daemon_threads) {
+      QueuedThreadPool pool = new QueuedThreadPool();
+      pool.setDaemon(true);
+      jettyServer.setThreadPool(pool);
+    }
     jettyServer.setSendServerVersion(false);
 
     final Connector connector;

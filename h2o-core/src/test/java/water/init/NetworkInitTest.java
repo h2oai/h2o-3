@@ -3,8 +3,6 @@ package water.init;
 import org.junit.Assert;
 import org.junit.Test;
 
-import java.util.Arrays;
-
 import water.AutoBuffer;
 import water.H2O;
 import water.util.ArrayUtils;
@@ -12,7 +10,6 @@ import water.util.MathUtils;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.LoginType;
 
-import static water.TestUtil.ar;
 import static water.TestUtil.ari;
 
 /**
@@ -86,8 +83,15 @@ public class NetworkInitTest {
     expected.user_name = "testuser";
     expected.context_path = "testcontext";
     expected.loginType = LoginType.NONE;
+    expected.ensure_daemon_threads = false;
     
     Assert.assertEquals(expected, cfg);
+
+    // check that setting embedded flag turns on daemon threads
+    args.embedded = true;
+    expected.ensure_daemon_threads = true;
+
+    Assert.assertTrue(NetworkInit.webServerConfig(args).ensure_daemon_threads);
   }
 
 

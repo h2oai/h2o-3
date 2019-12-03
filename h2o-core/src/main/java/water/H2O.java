@@ -20,7 +20,10 @@ import water.server.ServletUtils;
 import water.util.*;
 import water.webserver.iface.WebServer;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
@@ -386,6 +389,9 @@ final public class H2O {
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
 
+    /** -embedded; when running embedded into another application (eg. Sparkling Water) - enforce all threads to be daemon threads */
+    public boolean embedded = false;
+
     /**
      * Optionally disable algorithms marked as beta or experimental.
      * Everything is on by default.
@@ -686,6 +692,8 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         String value = args[i];
         trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
+      } else if(s.matches("embedded")) {
+        trgt.embedded = true;
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -2196,7 +2204,7 @@ final public class H2O {
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
   }
-
+  
   /** Find PID of the current process, use -1 if we can't find the value. */
   private static long getCurrentPID() {
     try {
