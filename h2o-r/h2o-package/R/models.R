@@ -1098,7 +1098,8 @@ h2o.aucpr <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @rdname h2o.aucpr
 #' @export
 h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
-  .Deprecated(h2o.aucpr)
+  .Deprecated("h2o.aucpr")
+  h2o.aucpr(object, train, valid, xval)
 }
 
 #' Retrieve the mean per class error
