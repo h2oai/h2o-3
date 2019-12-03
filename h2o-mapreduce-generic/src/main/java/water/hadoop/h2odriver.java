@@ -416,15 +416,17 @@ public class h2odriver extends Configured implements Tool {
 
   private void reportClusterReady(String ip, int port) throws Exception {
     setClusterIpPort(ip, port);
-    if (client || proxy)
-      return; // Hadoop cluster ready but we have to wait for client or proxy to come up
-    if (clusterReadyFileName != null) {
-      createClusterReadyFile(ip, port);
-      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
-    }
     if (clusterFlatfileName != null) {
       createFlatFile(flatfileContent);
       System.out.println("Cluster flatfile (" + clusterFlatfileName+ ") created.");
+    }
+
+    if (client || proxy)
+      return; // Hadoop cluster ready but we have to wait for client or proxy to come up
+
+    if (clusterReadyFileName != null) {
+      createClusterReadyFile(ip, port);
+      System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
     }
   }
 
