@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Yau (3.26.0.11) - 12/02/2019
+### Yau (3.26.0.11) - 12/03/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/11/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/11/index.html</a>
 
@@ -51,6 +51,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/11/index.h
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7053'>PUBDEV-7053</a>] - The package name for ai.h2o.org.eclipse.jetty.jaas.spi is now independent of the Jetty version.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7060'>PUBDEV-7060</a>] - The `offset_column` is now propogated to MOJO models.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7070'>PUBDEV-7070</a>] - Improved documentation for `stopping_metric` as it pertains to AutoML.
 </li>
 </ul>
 
