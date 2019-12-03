@@ -214,7 +214,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       if (nextModelParams != null
               && isThereEnoughTime()
               && !_job.stop_requested()
-              && !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos())) {
+              && !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos())) { // this stopEarly is based on scoring, not the parameters from user( e.g. max_models)
         parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
       } else {
         parallelModelBuilder.noMoreModels();
