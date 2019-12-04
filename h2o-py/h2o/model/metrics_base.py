@@ -10,12 +10,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import imp
 
 from h2o.model.confusion_matrix import ConfusionMatrix
-from h2o.utils.backward_compatibility import backwards_compatible
+from h2o.utils.metaclass import BackwardsCompatible, Deprecated as deprecated, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
 
 
-class MetricsBase(backwards_compatible()):
+@BackwardsCompatible(
+    instance_attrs=dict(
+        giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
+    )
+)
+class MetricsBase(h2o_meta()):
     """
     A parent class to house common metrics available for the various Metrics types.
 
@@ -23,7 +28,6 @@ class MetricsBase(backwards_compatible()):
     """
 
     def __init__(self, metric_json, on=None, algo=""):
-        super(MetricsBase, self).__init__()
         # Yep, it's messed up...
         if isinstance(metric_json, MetricsBase): metric_json = metric_json._metric_json
         self._metric_json = metric_json
@@ -120,7 +124,7 @@ class MetricsBase(backwards_compatible()):
             print("AIC: " + str(self.aic()))
         if metric_type in types_w_bin:
             print("AUC: " + str(self.auc()))
-            print("pr_auc: " + str(self.pr_auc()))
+            print("AUCPR: " + str(self.aucpr()))
             print("Gini: " + str(self.gini()))
             self.confusion_matrix().show()
             self._metric_json["max_criteria_and_metric_scores"].show()
@@ -169,9 +173,15 @@ class MetricsBase(backwards_compatible()):
         """The AUC for this set of metrics."""
         return self._metric_json['AUC']
 
-    def pr_auc(self):
+
+    def aucpr(self):
         """The area under the precision recall curve."""
         return self._metric_json['pr_auc']
+
+
+    @deprecated(replaced_by=aucpr)
+    def pr_auc(self):
+        pass
 
 
     def aic(self):
@@ -249,11 +259,6 @@ class MetricsBase(backwards_compatible()):
             return self._metric_json['custom_metric_value']
         else:
             return None
-
-    # Deprecated functions; left here for backward compatibility
-    _bcim = {
-        "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
-    }
 
 
 class H2ORegressionModelMetrics(MetricsBase):

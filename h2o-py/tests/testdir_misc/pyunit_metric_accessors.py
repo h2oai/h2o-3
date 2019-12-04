@@ -23,6 +23,11 @@ def metric_accessors():
                                        fold_assignment="Random")
     gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
 
+    # using list from http://docs.h2o.ai/h2o/latest-stable/h2o-docs/performance-and-prediction.html#regression
+    for metric in ['r2', 'mse', 'rmse', 'rmsle', 'mae']:
+        val = getattr(gbm, metric)()
+        assert isinstance(val, float), "expected a float for metric {} but got {}".format(metric, val)
+
     #   mse
     mse1 = gbm.mse(train=True,  valid=False, xval=False)
     assert isinstance(mse1, float)
@@ -107,6 +112,16 @@ def metric_accessors():
     predictors = ["displacement","power","weight","acceleration","year"]
     gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
     gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+
+    # using list from http://docs.h2o.ai/h2o/latest-stable/h2o-docs/performance-and-prediction.html#classification
+    # + common ones
+    for metric in ['gini', 'logloss', 'auc', 'aucpr', 'mse', 'rmse']:
+        val = getattr(gbm, metric)()
+        assert isinstance(val, float), "expected a float for metric {} but got {}".format(metric, val)
+
+    for metric in ['mcc', 'F1', 'F0point5', 'F2', 'accuracy', 'mean_per_class_error']:
+        val = getattr(gbm, metric)()[0][1]
+        assert isinstance(val, float), "expected a float for metric {} but got {}".format(metric, val)
 
     #   auc
     auc1 = gbm.auc(train=True,  valid=False, xval=False)
@@ -371,44 +386,45 @@ def metric_accessors():
     # plot = gbm.plot(train=False, valid=True,  xval=True)
 
     # #   tpr
-    # tpr1 = gbm.tpr(train=True,  valid=False, xval=False)
-    # tpr2 = gbm.tpr(train=False, valid=True,  xval=False)
-    # tpr3 = gbm.tpr(train=False, valid=False, xval=True)
-    # tpr = gbm.tpr(train=True,  valid=True,  xval=False)
-    # tpr = gbm.tpr(train=True,  valid=False, xval=True)
-    # tpr = gbm.tpr(train=True,  valid=True,  xval=True)
-    # tpr = gbm.tpr(train=False, valid=False, xval=False) # default: return training metrics
-    # tpr = gbm.tpr(train=False, valid=True,  xval=True)
+    tpr1 = gbm.tpr(train=True,  valid=False, xval=False)
+    tpr2 = gbm.tpr(train=False, valid=True,  xval=False)
+    tpr3 = gbm.tpr(train=False, valid=False, xval=True)
+    tpr = gbm.tpr(train=True,  valid=True,  xval=False)
+    tpr = gbm.tpr(train=True,  valid=False, xval=True)
+    tpr = gbm.tpr(train=True,  valid=True,  xval=True)
+    tpr = gbm.tpr(train=False, valid=False, xval=False) # default: return training metrics
+    tpr = gbm.tpr(train=False, valid=True,  xval=True)
     #
     # #   tnr
-    # tnr1 = gbm.tnr(train=True,  valid=False, xval=False)
-    # tnr2 = gbm.tnr(train=False, valid=True,  xval=False)
-    # tnr3 = gbm.tnr(train=False, valid=False, xval=True)
-    # tnr = gbm.tnr(train=True,  valid=True,  xval=False)
-    # tnr = gbm.tnr(train=True,  valid=False, xval=True)
-    # tnr = gbm.tnr(train=True,  valid=True,  xval=True)
-    # tnr = gbm.tnr(train=False, valid=False, xval=False) # default: return training metrics
-    # tnr = gbm.tnr(train=False, valid=True,  xval=True)
+    tnr1 = gbm.tnr(train=True,  valid=False, xval=False)
+    tnr2 = gbm.tnr(train=False, valid=True,  xval=False)
+    tnr3 = gbm.tnr(train=False, valid=False, xval=True)
+    tnr = gbm.tnr(train=True,  valid=True,  xval=False)
+    tnr = gbm.tnr(train=True,  valid=False, xval=True)
+    tnr = gbm.tnr(train=True,  valid=True,  xval=True)
+    tnr = gbm.tnr(train=False, valid=False, xval=False) # default: return training metrics
+    tnr = gbm.tnr(train=False, valid=True,  xval=True)
     #
     # #   fnr
-    # fnr1 = gbm.fnr(train=True,  valid=False, xval=False)
-    # fnr2 = gbm.fnr(train=False, valid=True,  xval=False)
-    # fnr3 = gbm.fnr(train=False, valid=False, xval=True)
-    # fnr = gbm.fnr(train=True,  valid=True,  xval=False)
-    # fnr = gbm.fnr(train=True,  valid=False, xval=True)
-    # fnr = gbm.fnr(train=True,  valid=True,  xval=True)
-    # fnr = gbm.fnr(train=False, valid=False, xval=False) # default: return training metrics
-    # fnr = gbm.fnr(train=False, valid=True,  xval=True)
+    fnr1 = gbm.fnr(train=True,  valid=False, xval=False)
+    fnr2 = gbm.fnr(train=False, valid=True,  xval=False)
+    fnr3 = gbm.fnr(train=False, valid=False, xval=True)
+    fnr = gbm.fnr(train=True,  valid=True,  xval=False)
+    fnr = gbm.fnr(train=True,  valid=False, xval=True)
+    fnr = gbm.fnr(train=True,  valid=True,  xval=True)
+    fnr = gbm.fnr(train=False, valid=False, xval=False) # default: return training metrics
+    fnr = gbm.fnr(train=False, valid=True,  xval=True)
     #
     # #   fpr
-    # fpr1 = gbm.fpr(train=True,  valid=False, xval=False)
-    # fpr2 = gbm.fpr(train=False, valid=True,  xval=False)
-    # fpr3 = gbm.fpr(train=False, valid=False, xval=True)
-    # fpr = gbm.fpr(train=True,  valid=True,  xval=False)
-    # fpr = gbm.fpr(train=True,  valid=False, xval=True)
-    # fpr = gbm.fpr(train=True,  valid=True,  xval=True)
-    # fpr = gbm.fpr(train=False, valid=False, xval=False) # default: return training metrics
-    # fpr = gbm.fpr(train=False, valid=True,  xval=True)
+    fpr1 = gbm.fpr(train=True,  valid=False, xval=False)
+    fpr2 = gbm.fpr(train=False, valid=True,  xval=False)
+    fpr3 = gbm.fpr(train=False, valid=False, xval=True)
+    fpr = gbm.fpr(train=True,  valid=True,  xval=False)
+    fpr = gbm.fpr(train=True,  valid=False, xval=True)
+    fpr = gbm.fpr(train=True,  valid=True,  xval=True)
+    fpr = gbm.fpr(train=False, valid=False, xval=False) # default: return training metrics
+    fpr = gbm.fpr(train=False, valid=True,  xval=True)
+
 
 
     # multinomial
@@ -420,8 +436,18 @@ def metric_accessors():
     response_col = "cylinders"
     distribution = "multinomial"
     predictors = ["displacement","power","weight","acceleration","year"]
-    gbm.distribution="multinomial"
+    gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
     gbm.train(x=predictors,y=response_col, training_frame=train, validation_frame=valid)
+
+    # using list from http://docs.h2o.ai/h2o/latest-stable/h2o-docs/performance-and-prediction.html#classification
+    # + common ones
+    for metric in ['logloss', 'mse', 'rmse', 'mean_per_class_error']:
+        val = getattr(gbm, metric)()
+        assert isinstance(val, float), "expected a float for metric {} but got {}".format(metric, val)
+
+    # for metric in []:
+    #     val = getattr(gbm, metric)()[0][1]
+    #     assert isinstance(val, float), "expected a float for metric {} but got {}".format(metric, val)
 
     #   mse
     mse1 = gbm.mse(train=True,  valid=False, xval=False)

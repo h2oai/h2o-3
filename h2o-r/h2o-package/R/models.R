@@ -1029,17 +1029,17 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
-#' Retrieve the pr_auc
+#' Retrieve the AUCPR (Area Under Precision Recall Curve)
 #'
-#' Retrieves the pr_auc value from an \linkS4class{H2OBinomialMetrics}.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training pr_auc value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of pr_aucs are returned, where the names are "train", "valid"
+#' Retrieves the AUCPR value from an \linkS4class{H2OBinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training AUCPR value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of AUCPRs are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OBinomialMetrics} object.
-#' @param train Retrieve the training pr_auc
-#' @param valid Retrieve the validation pr_auc
-#' @param xval Retrieve the cross-validation pr_auc
+#' @param train Retrieve the training aucpr
+#' @param valid Retrieve the validation aucpr
+#' @param xval Retrieve the cross-validation aucpr
 #' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
 #'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
@@ -1055,10 +1055,10 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' prostate[,2] <- as.factor(prostate[,2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
-#' h2o.pr_auc(perf)
+#' h2o.aucpr(perf)
 #' }
 #' @export
-h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+h2o.aucpr <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$pr_auc )
   if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
@@ -1091,8 +1091,15 @@ h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
       if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
     }
   }
-  warning(paste0("No pr_auc for ", class(object)))
+  warning(paste0("No aucpr for ", class(object)))
   invisible(NULL)
+}
+
+#' @rdname h2o.aucpr
+#' @export
+h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+  .Deprecated("h2o.aucpr")
+  h2o.aucpr(object, train, valid, xval)
 }
 
 #' Retrieve the mean per class error

@@ -14,7 +14,7 @@ from tests import pyunit_utils
 from h2o.estimators import H2OGradientBoostingEstimator
 from h2o.model.metrics_base import H2OBinomialModelMetrics
 base_metric_methods = ['aic', 'auc', 'gini', 'logloss', 'mae', 'mean_per_class_error', 'mean_residual_deviance', 'mse',
-                       'nobs', 'pr_auc', 'r2', 'rmse', 'rmsle',
+                       'nobs', 'aucpr', 'pr_auc', 'r2', 'rmse', 'rmsle',
                        'residual_deviance', 'residual_degrees_of_freedom', 'null_deviance', 'null_degrees_of_freedom']
 max_metrics = list(H2OBinomialModelMetrics.maximizing_metrics)
 

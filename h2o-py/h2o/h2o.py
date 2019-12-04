@@ -38,9 +38,10 @@ from .grid.grid_search import H2OGridSearch
 from .job import H2OJob
 from .model.model_base import ModelBase
 from .transforms.decomposition import H2OSVD
+from .utils.metaclass import Deprecated as deprecated
 from .utils.config import H2OConfigReader
 from .utils.compatibility import *  # NOQA
-from .utils.shared_utils import check_frame_id, deprecated, gen_header, py_tmp_key, quoted
+from .utils.shared_utils import check_frame_id, gen_header, py_tmp_key, quoted
 from .utils.typechecks import assert_is_type, assert_satisfies, BoundInt, BoundNumeric, I, is_type, numeric, U
 
 logging.basicConfig()
@@ -1684,10 +1685,9 @@ def _connect_with_conf(conn_conf):
 #-----------------------------------------------------------------------------------------------------------------------
 
 # Deprecated since 2015-10-08
-@deprecated("Deprecated, use ``h2o.import_file()``.")
+@deprecated(replaced_by=import_file)
 def import_frame():
-    """Deprecated."""
-    import_file()
+    pass
 
 # Deprecated since 2015-10-08
 @deprecated("Deprecated (converted to a private method).")
