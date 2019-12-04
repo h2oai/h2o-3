@@ -36,6 +36,7 @@ import java.util.Arrays;
 public class AstRankWithinGroupBy extends AstPrimitive {
 
   @Override public String[] args() {
+    //(rank_within_groupby %s [0,1] [2,3] [1,1] %s 0)
     return new String[]{"frame", "groupby_cols", "sort_cols", "sort_orders", "new_colname", "sort_cols_order"};
   }
 
@@ -68,7 +69,7 @@ public class AstRankWithinGroupBy extends AstPrimitive {
       return new ValFrame(rankgroups._finalResult);
   }
 
-  public boolean foundNAs(Chunk[] chunks, int rind, int[] sortCols, int sortLen) {
+  public static boolean foundNAs(Chunk[] chunks, int rind, int[] sortCols, int sortLen) {
     for (int colInd = 0; colInd < sortLen; colInd++) { // check sort columns for NAs
       if (Double.isNaN(chunks[sortCols[colInd]].atd(rind))) {
         return true;
@@ -77,7 +78,7 @@ public class AstRankWithinGroupBy extends AstPrimitive {
     return false;
   }
 
-  public class RankGroups extends MRTask<RankGroups> {
+  public static class RankGroups extends MRTask<RankGroups> {
     final int _newRankCol;
     final int _groupbyLen;
     final int[] _sortCols;
@@ -85,9 +86,9 @@ public class AstRankWithinGroupBy extends AstPrimitive {
     final int[] _groupbyCols;
     final GInfoPC[] _chunkFirstG;  // store first Groupby group info per chunk
     final GInfoPC[] _chunkLastG;   // store last Groupby group info per chunk
-    Frame _finalResult;
+    public Frame _finalResult;
 
-    private RankGroups(Frame inputFrame, int[] groupbycols, int[] sortCols, GInfoPC[] chunkFirstG,
+    public RankGroups(Frame inputFrame, int[] groupbycols, int[] sortCols, GInfoPC[] chunkFirstG,
                        GInfoPC[] chunkLastG, int newRankCol) {
       _newRankCol = newRankCol;
       _groupbyCols = groupbycols;
@@ -127,20 +128,20 @@ public class AstRankWithinGroupBy extends AstPrimitive {
     }
   }
 
-  public class SortnGrouby extends MRTask<SortnGrouby> {
-    final int[] _sortCols;
-    final int[] _groupbyCols;
-    final int[] _sortOrders;
-    final String _newColname;
-    Frame _groupedSortedOut;  // store final result
-    GInfoPC[] _chunkFirstG;  // store first groupby class per chunk
-    GInfoPC[] _chunkLastG;  // store first groupby class per chunk
-    final int _groupbyLen;
-    final int _sortLen;
-    final int _newRankCol;
-    final int _numChunks;
+  public static class SortnGrouby extends MRTask<SortnGrouby> {
+    public final int[] _sortCols;
+    public final int[] _groupbyCols;
+    public final int[] _sortOrders;
+    public final String _newColname;
+    public Frame _groupedSortedOut;  // store final result
+    public GInfoPC[] _chunkFirstG;  // store first groupby class per chunk
+    public GInfoPC[] _chunkLastG;  // store first groupby class per chunk
+    public final int _groupbyLen;
+    public final int _sortLen;
+    public final int _newRankCol;
+    public final int _numChunks;
 
-    private SortnGrouby(Frame original, int[] groupbycols, int[] sortCols, int[] sortasc, String newcolname) {
+    public SortnGrouby(Frame original, int[] groupbycols, int[] sortCols, int[] sortasc, String newcolname) {
       _sortCols = sortCols;
       _groupbyCols = groupbycols;
       _groupbyLen = _groupbyCols.length;
@@ -267,7 +268,7 @@ public class AstRankWithinGroupBy extends AstPrimitive {
   /**
    * Store rank info for each chunk.
    */
-  public class GInfoPC extends Iced {
+  public static class GInfoPC extends Iced {
     public final double[] _gs;  // Group Key: Array is final; contents change with the "fill"
     int _hash;
     long _val; // store count of the groupby key inside the chunk

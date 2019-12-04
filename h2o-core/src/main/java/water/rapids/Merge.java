@@ -87,32 +87,9 @@ public class Merge {
         }
     }
 
-    Frame rightFrame = naPresent?new MRTask() {
-      private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
-        for (int i = 0; i < cs.length; ++i) {
-          if (cs[i] instanceof CStrChunk) ncs[i].addStr(cs[i], row);
-          else if (cs[i] instanceof C16Chunk) ncs[i].addUUID(cs[i], row);
-          else if (cs[i].hasFloat()) ncs[i].addNum(cs[i].atd(row));
-          else ncs[i].addNum(cs[i].at8(row), 0);
-        }
-      }
-
-      @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        boolean noNA = true;
-        for (int row = 0; row < cs[0]._len; ++row) {
-          noNA = true;
-          for (int col : riteCols) {
-            if (cs[col].isNA(row)) {
-              noNA = false;
-              break;
-            }
-          }
-          if (noNA)
-            copyRow(row, cs, ncs);
-        }
-      }
-    }.doAll(riteFrame.types(), riteFrame).outputFrame(riteFrame.names(), riteFrame.domains()) : riteFrame;
+    Frame rightFrame = naPresent ? new RemoveNAsTask(riteCols)
+            .doAll(riteFrame.types(), riteFrame).outputFrame(riteFrame.names(), riteFrame.domains())
+            : riteFrame;
 
 
     // map missing levels to -1 (rather than increasing slots after the end)
@@ -381,7 +358,41 @@ public class Merge {
     Log.debug("took: " + (System.nanoTime() - t0)/1e9+" seconds.");
     return bmList;
   }
-  
+
+  public static class RemoveNAsTask extends MRTask<RemoveNAsTask> {
+
+    private final int[] _columns;
+
+    public RemoveNAsTask(int ... _columns) {
+      this._columns = _columns;
+    }
+
+    private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
+      for (int i = 0; i < cs.length; ++i) {
+        if (cs[i] instanceof CStrChunk) ncs[i].addStr(cs[i], row);
+        else if (cs[i] instanceof C16Chunk) ncs[i].addUUID(cs[i], row);
+        else if (cs[i].hasFloat()) ncs[i].addNum(cs[i].atd(row));
+        else ncs[i].addNum(cs[i].at8(row), 0);
+      }
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      boolean noNA = true;
+      for (int row = 0; row < cs[0]._len; ++row) {
+        noNA = true;
+        for (int col : _columns) {
+          if (cs[col].isNA(row)) {
+            noNA = false;
+            break;
+          }
+        }
+        if (noNA)
+          copyRow(row, cs, ncs);
+      }
+    }
+  }
+
   public static long allocateChunk(List<SortCombine> bmList, long chunkSizes[], int chunkLeftMSB[], 
                                    int chunkRightMSB[], int chunkBatch[]) {
     Log.info("Allocating and populating chunk info (e.g. size and batch number) ...");

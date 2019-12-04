@@ -6,17 +6,22 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.*;
-import water.fvec.*;
+import water.fvec.Frame;
+import water.fvec.NFSFileVec;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
+import water.rapids.vals.ValNum;
 import water.rapids.vals.ValNums;
-import water.rapids.vals.ValStr;
 import water.rapids.vals.ValStrs;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.FileUtils;
+import water.util.Log;
 
 import java.io.File;
 import java.io.IOException;
@@ -28,18 +33,65 @@ import static water.rapids.Rapids.IllegalASTException;
 
 
 public class RapidsTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
-
   @Rule
-  public transient ExpectedException ee = ExpectedException.none(); 
-  
-  @Test public void bigSlice() {
+  public transient ExpectedException ee = ExpectedException.none();
+
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
+
+  @Test
+  public void testSpearman() {
+    Scope.enter();
+    try {
+      final Frame frame = new TestFrameBuilder()
+              .withName("heightsweights")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withColNames("HEIGHT", "WEIGHT")
+              .withDataForCol(0, ard(175, 166, 170, 169, 188, 175, 176, 171, 173, 175, 173, 174, 169, Double.NaN))
+              .withDataForCol(1, ard(69, 55, 67, 52, 90, 53, 57, 57, 68, 73, 62, 90, 63, 98))
+              .build();
+
+      Val pearson = Rapids.exec("(spearman heightsweights 'HEIGHT' 'WEIGHT')");
+      assertTrue(pearson instanceof ValNum);
+
+      assertEquals(0.48, pearson.getNum(), 1e-2);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testSpearmanWithoutDuplicatedValues() {
+    Scope.enter();
+    try {
+      final Frame frame = new TestFrameBuilder()
+              .withName("heightsweights")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withColNames("HEIGHT", "WEIGHT")
+              .withDataForCol(0, ard(175,166,170,169,188,176,171,173,174)) // No value is present twice
+              .withDataForCol(1, ard(69,55,67,52,90,57,57,68,90)) // No value is present twice
+              .build();
+
+      Val pearson = Rapids.exec("(spearman heightsweights 'HEIGHT' 'WEIGHT')");
+      assertTrue(pearson instanceof ValNum);
+
+      assertEquals(0.71431, pearson.getNum(), 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void bigSlice() {
     // check that large slices do something sane
     String tree = "(rows a.hex [0:2147483647])";
     checkTree(tree);
   }
 
-  @Test public void testParseString() {
+  @Test
+  public void testParseString() {
     astStr_ok("'hello'", "hello");
     astStr_ok("\"one two three\"", "one two three");
     astStr_ok("\"  \\\"  \"", "  \"  ");
