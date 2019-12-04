@@ -23,7 +23,9 @@ private GString getCommandHadoop(final stageConfig) {
                 -n 1 -mapperXmx 2g -baseport 54445 \\
                 -internal_secure_connections \\
                 -jks mykeystore.jks \\
-                -notify h2o_one_node -ea -proxy \\
+                -notify h2o_one_node \\
+                -flatfile flatfile.lst \\
+                -ea -proxy \\
                 -jks mykeystore.jks \\
                 -login_conf ${stageConfig.customData.ldapConfigPath} -ldap_login \\
                 > h2odriver.log 2>&1 &
