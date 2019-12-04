@@ -204,6 +204,7 @@ public class NetworkInit {
     config.session_timeout = args.session_timeout;
     config.user_name = args.user_name;
     config.context_path = args.context_path;
+    config.ensure_daemon_threads = args.embedded;
     return config;
   }
 

@@ -2,7 +2,6 @@ package water;
 
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.SocketChannel;
 
 /**
  * <p>This class is a thread which exists per each new connection of type {@code TCPReceiverThread.TCP_EXTERNAL}</p>
@@ -20,6 +19,7 @@ class ExternalFrameHandlerThread extends Thread {
 
     ExternalFrameHandlerThread(ByteChannel sock, AutoBuffer ab) {
         super("TCP-"+sock);
+        ThreadHelper.initCommonThreadProperties(this);
         _sock = sock;
         _ab = ab;
         setPriority(MAX_PRIORITY-1);
