@@ -55,7 +55,7 @@ public class UDPRebooted extends UDP {
       }
     }else{
       ListenerService.getInstance().report("shutdown_ignored");
-      Log.warn("Receive "+ T.values()[shutdownPacketType].toString()+ " request from H2O with older version than 3.14.0.4. This request" +
+      Log.warn("Receive shutdownPacketType=" + shutdownPacketType + " request from H2O with older version than 3.14.0.4. This request" +
               " will be ignored");
     }
     // if we receive request from H2O with a wrong version, just ignore the request
