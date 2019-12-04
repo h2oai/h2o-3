@@ -40,29 +40,48 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
             .doAll(originalUnsortedFrame.types(), originalUnsortedFrame)
             .outputFrame(originalUnsortedFrame.names(), originalUnsortedFrame.domains());
 
-    // Sort by X
-    final AstRankWithinGroupBy.SortnGrouby sortTaskX = new AstRankWithinGroupBy.SortnGrouby(unsortedFrameWithoutNAs, new int[]{},
-            new int[]{vecIdX}, new int[]{1}, "rankX");
-    sortTaskX.doAll(sortTaskX._groupedSortedOut);
+    Frame sortedFrame = unsortedFrameWithoutNAs;
+    
+    if (!sortedFrame.vec(vecIdX).isCategorical()) {
+          // Sort by X
+      final AstRankWithinGroupBy.SortnGrouby sortTaskX = new AstRankWithinGroupBy.SortnGrouby(sortedFrame, new int[]{},
+              new int[]{vecIdX}, new int[]{1}, "rankX");
+      sortTaskX.doAll(sortTaskX._groupedSortedOut);
 
-    AstRankWithinGroupBy.RankGroups rankTaskX = new AstRankWithinGroupBy.RankGroups(sortTaskX._groupedSortedOut, sortTaskX._groupbyCols,
-            sortTaskX._sortCols, sortTaskX._chunkFirstG, sortTaskX._chunkLastG, sortTaskX._newRankCol)
-            .doAll(sortTaskX._groupedSortedOut);
+      AstRankWithinGroupBy.RankGroups rankTaskX = new AstRankWithinGroupBy.RankGroups(sortTaskX._groupedSortedOut, sortTaskX._groupbyCols,
+              sortTaskX._sortCols, sortTaskX._chunkFirstG, sortTaskX._chunkLastG, sortTaskX._newRankCol)
+              .doAll(sortTaskX._groupedSortedOut);
+      sortedFrame = rankTaskX._finalResult;
+    }
 
+    if (!sortedFrame.vec(vecIdY).isCategorical()) {
+      // Sort by Y
+      final AstRankWithinGroupBy.SortnGrouby sortTaskY = new AstRankWithinGroupBy.SortnGrouby(sortedFrame, new int[]{},
+              new int[]{vecIdY}, new int[]{1}, "rankY");
+      sortTaskY.doAll(sortTaskY._groupedSortedOut);
 
-    // Sort by Y
-    final AstRankWithinGroupBy.SortnGrouby sortTaskY = new AstRankWithinGroupBy.SortnGrouby(rankTaskX._finalResult, new int[]{},
-            new int[]{vecIdY}, new int[]{1}, "rankY");
-    sortTaskY.doAll(sortTaskY._groupedSortedOut);
+      AstRankWithinGroupBy.RankGroups rankTaskY = new AstRankWithinGroupBy.RankGroups(sortTaskY._groupedSortedOut, sortTaskY._groupbyCols,
+              sortTaskY._sortCols, sortTaskY._chunkFirstG, sortTaskY._chunkLastG, sortTaskY._newRankCol)
+              .doAll(sortTaskY._groupedSortedOut);
+      sortedFrame = rankTaskY._finalResult;
+    }
 
-    AstRankWithinGroupBy.RankGroups rankTaskY = new AstRankWithinGroupBy.RankGroups(sortTaskY._groupedSortedOut, sortTaskY._groupbyCols,
-            sortTaskY._sortCols, sortTaskY._chunkFirstG, sortTaskY._chunkLastG, sortTaskY._newRankCol)
-            .doAll(sortTaskY._groupedSortedOut);
+    final Vec rankX;
+    Vec rankY;
+    
+    if(!sortedFrame.vec(vecIdX).isCategorical()) {
+      rankX = sortedFrame.vec("rankX");
+    } else {
+      rankX = sortedFrame.vec(vecIdX);
+    }
+    
+    if(!sortedFrame.vec(vecIdY).isCategorical()) {
+      rankY = sortedFrame.vec("rankY");
+    } else {
+      rankY = sortedFrame.vec(vecIdY);
+    }
 
-    final Vec rankX = rankTaskY._finalResult.vec("rankX");
-    final Vec rankY = rankTaskY._finalResult.vec("rankY");
-
-    final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(rankTaskX._finalResult.numRows())
+    final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(sortedFrame.numRows())
             .doAll(rankX, rankY);
     return new ValNum(spearman._spearmanCorrelationCoefficient);
   }

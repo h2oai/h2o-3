@@ -84,6 +84,23 @@ public class RapidsTest extends TestUtil {
   }
 
   @Test
+  public void testSpearmanCategoricals() {
+    Scope.enter();
+    try {
+
+      final Frame frame = TestUtil.parse_test_file(Key.make("iris_pearson"), "smalldata/junit/iris.csv");
+      Scope.track_generic(frame);
+
+      Val pearson = Rapids.exec("(spearman iris_pearson 'sepal_len' 'class')");
+      assertTrue(pearson instanceof ValNum);
+
+      assertEquals(0.79808, pearson.getNum(), 1e-5);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
   public void bigSlice() {
     // check that large slices do something sane
     String tree = "(rows a.hex [0:2147483647])";
