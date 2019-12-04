@@ -469,7 +469,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         >>> svm = H2OSupportVectorMachineEstimator(gamma=0.1,
         ...                                        rank_ratio=0.1,
         ...                                        seed=1234,
-        ..                                        disable_training_metrics=False)
+        ...                                        disable_training_metrics=False)
         >>> svm.train(y="C1", training_frame=splice)
         >>> svm.model_performance
         """
