@@ -33,8 +33,8 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     }
 
     final Frame originalUnsortedFrame = value.get(Frame.class);
-    final int vecIdX = originalUnsortedFrame.find(asts[2].str());
-    final int vecIdY = originalUnsortedFrame.find(asts[3].str());
+    final int vecIdX = originalUnsortedFrame.find(asts[2].exec(env).getStr());
+    final int vecIdY = originalUnsortedFrame.find(asts[3].exec(env).getStr());
 
     final Frame unsortedFrameWithoutNAs = new Merge.RemoveNAsTask(vecIdX, vecIdY)
             .doAll(originalUnsortedFrame.types(), originalUnsortedFrame)
