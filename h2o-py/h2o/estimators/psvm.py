@@ -167,6 +167,17 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Type of used kernel
 
         One of: ``"gaussian"``  (default: ``"gaussian"``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.1,
+        ...                                        rank_ratio=0.1,
+        ...                                        hyper_param=0.01,
+        ...                                        kernel_type="gaussian",
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice) 
+        >>> svm.mse()
         """
         return self._parms.get("kernel_type")
 

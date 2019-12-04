@@ -48,7 +48,7 @@ examples = dict(
 >>> svm.train(y="C1", training_frame=splice)
 >>> svm.mse()
 """,
-    kernal_type="""
+    kernel_type="""
 >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
 >>> svm = H2OSupportVectorMachineEstimator(gamma=0.1,
 ...                                        rank_ratio=0.1,
