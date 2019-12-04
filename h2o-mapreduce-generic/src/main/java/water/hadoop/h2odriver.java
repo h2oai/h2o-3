@@ -107,6 +107,7 @@ public class h2odriver extends Configured implements Tool {
   static String network = null;
   static boolean disown = false;
   static String clusterReadyFileName = null;
+  static String clusterFlatfileName = null;
   static String hadoopJobId = "";
   static String applicationId = "";
   static int cloudFormationTimeoutSeconds = DEFAULT_CLOUD_FORMATION_TIMEOUT_SECONDS;
@@ -172,7 +173,7 @@ public class h2odriver extends Configured implements Tool {
   volatile AtomicInteger numNodesReportingFullCloudSize = new AtomicInteger();
   volatile String clusterIp = null;
   volatile int clusterPort = -1;
-  volatile String flatfileContent = null;
+  volatile static String flatfileContent = null;
 
   private static Credentials make(String user) {
     return new Credentials(user, SecurityUtils.passwordGenerator(GEN_PASSWORD_LENGTH));
@@ -394,6 +395,10 @@ public class h2odriver extends Configured implements Tool {
       createClusterReadyFile(ip, port);
       System.out.println("Cluster notification file (" + clusterReadyFileName + ") created (using Client Mode).");
     }
+    if (clusterFlatfileName != null) {
+      createFlatFile(flatfileContent);
+      System.out.println("Cluster flatfile (" + clusterFlatfileName+ ") created.");
+    }
   }
 
   private void reportProxyReady(String proxyUrl) throws Exception {
@@ -403,15 +408,44 @@ public class h2odriver extends Configured implements Tool {
       createClusterReadyFile(url.getHost(), url.getPort());
       System.out.println("Cluster notification file (" + clusterReadyFileName + ") created (using Proxy Mode).");
     }
+    if (clusterFlatfileName != null) {
+      createFlatFile(flatfileContent);
+      System.out.println("Cluster flatfile (" + clusterFlatfileName+ ") created.");
+    }
   }
 
   private void reportClusterReady(String ip, int port) throws Exception {
     setClusterIpPort(ip, port);
+    if (clusterFlatfileName != null) {
+      createFlatFile(flatfileContent);
+      System.out.println("Cluster flatfile (" + clusterFlatfileName+ ") created.");
+    }
+
     if (client || proxy)
       return; // Hadoop cluster ready but we have to wait for client or proxy to come up
+
     if (clusterReadyFileName != null) {
       createClusterReadyFile(ip, port);
       System.out.println("Cluster notification file (" + clusterReadyFileName + ") created.");
+    }
+  }
+
+  private static void createFlatFile(String flatFileContent) throws Exception {
+    String fileName = clusterFlatfileName + ".tmp";
+    try {
+      File file = new File(fileName);
+      BufferedWriter output = new BufferedWriter(new FileWriter(file));
+      output.write(flatFileContent);
+      output.flush();
+      output.close();
+
+      File file2 = new File(clusterFlatfileName);
+      boolean success = file.renameTo(file2);
+      if (! success) {
+        throw new Exception ("Failed to create file " + clusterReadyFileName);
+      }
+    } catch ( IOException e ) {
+      e.printStackTrace();
     }
   }
 
@@ -671,6 +705,7 @@ public class h2odriver extends Configured implements Tool {
                     "          [-timeout <seconds>]\n" +
                     "          [-disown]\n" +
                     "          [-notify <notification file name>]\n" +
+                    "          [-flatfile <generated flatfile name>]\n" +
                     "          [-extramempercent <0 to 20>]\n" +
                     "          [-nthreads <maximum typical worker threads, i.e. cpus to use>]\n" +
                     "          [-context_path <context_path> the context path for jetty]\n" +
@@ -918,6 +953,10 @@ public class h2odriver extends Configured implements Tool {
       else if (s.equals("-notify")) {
         i++; if (i >= args.length) { usage(); }
         clusterReadyFileName = args[i];
+      }
+      else if (s.equals("-flatfile")) {
+        i++; if (i >= args.length) { usage(); }
+        clusterFlatfileName = args[i];
       }
       else if (s.equals("-nthreads")) {
         i++; if (i >= args.length) { usage(); }
