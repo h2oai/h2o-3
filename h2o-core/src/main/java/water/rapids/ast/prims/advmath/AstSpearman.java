@@ -22,7 +22,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
 
   @Override
   public String[] args() {
-    return new String[0];
+    return new String[]{"frame", "first_column", "second_column"};
   }
 
   @Override
