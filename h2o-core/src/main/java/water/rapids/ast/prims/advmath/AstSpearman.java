@@ -2,16 +2,15 @@ package water.rapids.ast.prims.advmath;
 
 import water.DKV;
 import water.MRTask;
+import water.Scope;
 import water.Value;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Merge;
 import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.prims.mungers.AstRankWithinGroupBy;
 import water.rapids.vals.ValNum;
 
 public class AstSpearman extends AstPrimitive<AstSpearman> {
@@ -36,54 +35,42 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     final int vecIdX = originalUnsortedFrame.find(asts[2].exec(env).getStr());
     final int vecIdY = originalUnsortedFrame.find(asts[3].exec(env).getStr());
 
-    final Frame unsortedFrameWithoutNAs = new Merge.RemoveNAsTask(vecIdX, vecIdY)
-            .doAll(originalUnsortedFrame.types(), originalUnsortedFrame)
-            .outputFrame(originalUnsortedFrame.names(), originalUnsortedFrame.domains());
+    Scope.enter();
 
-    Frame sortedFrame = unsortedFrameWithoutNAs;
-    
-    if (!sortedFrame.vec(vecIdX).isCategorical()) {
-          // Sort by X
-      final AstRankWithinGroupBy.SortnGrouby sortTaskX = new AstRankWithinGroupBy.SortnGrouby(sortedFrame, new int[]{},
-              new int[]{vecIdX}, new int[]{1}, "rankX");
-      sortTaskX.doAll(sortTaskX._groupedSortedOut);
+    Frame sortedX = new Frame(originalUnsortedFrame.vec(vecIdX).makeCopy());
+    Frame sortedY = new Frame(originalUnsortedFrame.vec(vecIdY).makeCopy());
+    Scope.track(sortedX);
 
-      AstRankWithinGroupBy.RankGroups rankTaskX = new AstRankWithinGroupBy.RankGroups(sortTaskX._groupedSortedOut, sortTaskX._groupbyCols,
-              sortTaskX._sortCols, sortTaskX._chunkFirstG, sortTaskX._chunkLastG, sortTaskX._newRankCol)
-              .doAll(sortTaskX._groupedSortedOut);
-      sortedFrame = rankTaskX._finalResult;
+    if (!sortedX.vec(0).isCategorical()) {
+      sortedX.label("label");
+      sortedX = sortedX.sort(new int[]{0});
+      Scope.track(sortedX);
+
     }
 
-    if (!sortedFrame.vec(vecIdY).isCategorical()) {
-      // Sort by Y
-      final AstRankWithinGroupBy.SortnGrouby sortTaskY = new AstRankWithinGroupBy.SortnGrouby(sortedFrame, new int[]{},
-              new int[]{vecIdY}, new int[]{1}, "rankY");
-      sortTaskY.doAll(sortTaskY._groupedSortedOut);
-
-      AstRankWithinGroupBy.RankGroups rankTaskY = new AstRankWithinGroupBy.RankGroups(sortTaskY._groupedSortedOut, sortTaskY._groupbyCols,
-              sortTaskY._sortCols, sortTaskY._chunkFirstG, sortTaskY._chunkLastG, sortTaskY._newRankCol)
-              .doAll(sortTaskY._groupedSortedOut);
-      sortedFrame = rankTaskY._finalResult;
+    if (!sortedY.vec(0).isCategorical()) {
+      sortedY.label("label");
+      sortedY = sortedY.sort(new int[]{0});
+      Scope.track(sortedY);
     }
 
-    final Vec rankX;
-    Vec rankY;
-    
-    if(!sortedFrame.vec(vecIdX).isCategorical()) {
-      rankX = sortedFrame.vec("rankX");
-    } else {
-      rankX = sortedFrame.vec(vecIdX);
-    }
-    
-    if(!sortedFrame.vec(vecIdY).isCategorical()) {
-      rankY = sortedFrame.vec("rankY");
-    } else {
-      rankY = sortedFrame.vec(vecIdY);
-    }
+    assert sortedX.numRows() == sortedY.numRows();
+    final Vec orderX = Vec.makeZero(sortedX.numRows());
+    final Vec orderY = Vec.makeZero(sortedY.numRows());
 
-    final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(sortedFrame.numRows())
-            .doAll(rankX, rankY);
-    return new ValNum(spearman._spearmanCorrelationCoefficient);
+    final Vec xLabel = sortedX.vec("label") == null ? sortedX.vec(0) : sortedX.vec("label");
+    final Vec yLabel = sortedY.vec("label") == null ? sortedY.vec(0) : sortedY.vec("label");
+    Scope.track(xLabel);
+    Scope.track(yLabel);
+
+    for (int i = 0; i < orderX.length(); i++) {
+      orderX.set(xLabel.at8(i) - 1, i + 1);
+      orderY.set(yLabel.at8(i) - 1, i + 1);
+    }
+    final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(orderX.mean(), orderY.mean())
+            .doAll(orderX, orderY);
+    Scope.exit();
+    return new ValNum(spearman.getSpearmanCorrelationCoefficient());
   }
 
 
@@ -103,16 +90,26 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
    * @see {@link water.rapids.ast.prims.advmath.AstVariance}
    */
   private static class SpearmanCorrelationCoefficientTask extends MRTask<SpearmanCorrelationCoefficientTask> {
+    // Arguments obtained externally
+    private final double _xMean;
+    private final double _yMean;
 
-    private final long _numRows;
-    private double _xyDiff = 0;
-    private double _spearmanCorrelationCoefficient;
+    private double spearmanCorrelationCoefficient;
 
+    // Required to later finish calculation of standard deviation
+    private double _xDiffSquared = 0;
+    private double _yDiffSquared = 0;
+    private double _xyAvgDiffMul = 0;
+    // If at least one of the vectors contains NaN, such line is skipped
+    private long _linesVisited;
+    
     /**
-     * @param numRows
+     * @param xMean Mean value of the first 'x' vector, with NaNs skipped
+     * @param yMean Mean value of the second 'y' vector, with NaNs skipped
      */
-    private SpearmanCorrelationCoefficientTask(final long numRows) {
-      _numRows = numRows;
+    private SpearmanCorrelationCoefficientTask(final double xMean, final double yMean) {
+      this._xMean = xMean;
+      this._yMean = yMean;
     }
 
     @Override
@@ -122,23 +119,46 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
       final Chunk yChunk = chunks[1];
 
       for (int row = 0; row < chunks[0].len(); row++) {
-        _xyDiff += Math.pow(xChunk.atd(row) - yChunk.atd(row), 2);
+        final double x = xChunk.atd(row);
+        final double y = yChunk.atd(row);
+        if (Double.isNaN(x) || Double.isNaN(y)) {
+          continue; // Skip NaN values
+        }
+        _linesVisited++;
+
+        final double xDiffFromMean = x - _xMean;
+        final double yDiffFromMean = y - _yMean;
+        _xyAvgDiffMul += xDiffFromMean * yDiffFromMean;
+
+        _xDiffSquared += Math.pow(xDiffFromMean, 2);
+        _yDiffSquared += Math.pow(yDiffFromMean, 2);
       }
     }
 
 
     @Override
     public void reduce(final SpearmanCorrelationCoefficientTask mrt) {
-      _xyDiff += mrt._xyDiff;
+      // The intermediate results are addable. The final calculations are done afterwards.
+      this._xDiffSquared += mrt._xDiffSquared;
+      this._yDiffSquared += mrt._yDiffSquared;
+      this._linesVisited += mrt._linesVisited;
+      this._xyAvgDiffMul += mrt._xyAvgDiffMul;
     }
 
     @Override
     protected void postGlobal() {
-      _spearmanCorrelationCoefficient =  1 - ((6 * _xyDiff) / (_numRows * (Math.pow(_numRows, 2) - 1)));
+      // X Standard deviation
+      final double xStdDev = Math.sqrt(1D / (_linesVisited - 1) * _xDiffSquared);
+
+      // Y Standard deviation
+      final double yStdDev = Math.sqrt(1D / (_linesVisited - 1) * _yDiffSquared);
+
+      spearmanCorrelationCoefficient = (_xyAvgDiffMul)
+              / ((_linesVisited - 1) * xStdDev * yStdDev);
     }
 
     public double getSpearmanCorrelationCoefficient() {
-      return _spearmanCorrelationCoefficient;
+      return spearmanCorrelationCoefficient;
     }
   }
 }

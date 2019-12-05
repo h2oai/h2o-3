@@ -1747,6 +1747,11 @@ public class Frame extends Lockable<Frame> {
   public Frame sort(int[] cols, int[] ascending) {
     return Merge.sort(this, cols, ascending);
   }
+  
+  public void label(final String labelColumnName){
+    final Vec labelVec = Vec.makeSeq(1, numRows());
+      add(labelColumnName, labelVec);
+  }
 
   /**
    * A structure for fast lookup in the set of frame's vectors.
