@@ -2,6 +2,66 @@
 
 ## H2O
 
+### Yau (3.26.0.11) - 12/05/2019
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/11/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/11/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6580'>PUBDEV-6580</a>] - The Python client now fails with descriptive message when attempting to run on an unsupported Java version.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6895'>PUBDEV-6895</a>] - Fixed an issue that caused h2o to fail when running on Hadoop with `-internal_secure_connections`.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6911'>PUBDEV-6911</a>] - H2OGenericEstimator can now be instantiated with no parameters.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6945'>PUBDEV-6945</a>] - Multi-node H2O XGBoost now returns reproducible results.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6995'>PUBDEV-6995</a>] - Fixed the backend default values for the `inflection_point` and `smoothing` parameters in Target Encoder.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7006'>PUBDEV-7006</a>] - Users can now specify the `noise` parameter when running Target Encoding in the R client or in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7036'>PUBDEV-7036</a>] - MOJO reader now uses stderr instead of stdout to show warnings.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7056'>PUBDEV-7056</a>] - Fixed an issue that allowed SPNEGO athentication to pass with any HTTP-Basic header.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7062'>PUBDEV-7062</a>] - When connecting to H2O via the Python client, users can now specify `allowed_properties="cacert"`.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6213'>PUBDEV-6213</a>] - Added BroadcastJoinForTargetEncoding.
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6970'>PUBDEV-6970</a>] - Introduced AllCategorical and Threshold TE application strategies.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7052'>PUBDEV-7052</a>] - Added a test to check XGBoost variable importance when trained on frames with shuffled input columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7053'>PUBDEV-7053</a>] - The package name for ai.h2o.org.eclipse.jetty.jaas.spi is now independent of the Jetty version.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7060'>PUBDEV-7060</a>] - The `offset_column` is now propogated to MOJO models.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7070'>PUBDEV-7070</a>] - Improved documentation for `stopping_metric` as it pertains to AutoML.
+</li>
+</ul>
+
+
 ### Yau (3.26.0.10) - 11/7/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yau/10/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yau/10/index.html</a>
