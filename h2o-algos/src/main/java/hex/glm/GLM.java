@@ -195,7 +195,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       HeartBeat hb = H2O.SELF._heartbeat;
       long mem_usage = (long) (hb._cpus_allowed * (p * p + activeData.largestCat()) * 8/*doubles*/ * (1 + .5 * Math.log((double) _train.lastVec().nChunks()) / Math.log(2.))); //one gram per core
       if (_parms._solver.equals(Solver.IRLSM_SPEEDUP_TEST) || _parms._solver.equals(Solver.IRLSM_NATIVE)) {
-        mem_usage = mem_usage * _nclass*2;  // increase this for native multinomial implementation
+        mem_usage = mem_usage * _nclass*3;  // increase this for native multinomial implementation
       }
       long max_mem = hb.get_free_mem();
       String msg;
