@@ -14,7 +14,6 @@ import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNums;
-import water.rapids.vals.ValStr;
 import water.rapids.vals.ValStrs;
 import water.util.*;
 
@@ -434,7 +433,7 @@ public class RapidsTest extends TestUtil {
       Val res = Rapids.exec(x);
       mergeRes = res.getFrame();
       Scope.track(mergeRes);
-      assertTrue(isBitIdentical(ans, mergeRes)); // compare our merge frame with answer from R
+      assertBitIdentical(ans, mergeRes); // compare our merge frame with answer from R
     } finally {
       Scope.exit();
     }

@@ -32,7 +32,7 @@ public class RebalanceDatasetTest extends TestUtil {
           ParseDataset.logParseResults(rebalanced);
           assertEquals(rebalanced.numRows(), fr.numRows());
           assertEquals(rebalanced.anyVec().nChunks(), i);
-          assertTrue(TestUtil.isIdenticalUpToRelTolerance(fr, rebalanced, 1e-10));
+          TestUtil.assertIdenticalUpToRelTolerance(fr, rebalanced, 1e-10);
           Log.info("Rebalanced into " + i + " chunks:");
           Log.info(FrameUtils.chunkSummary(rebalanced).toString());
         } finally {
