@@ -9,7 +9,7 @@ public class OneHotEncoder implements CategoricalEncoder {
   private final int targetIndex;
   private final Map<String, Integer> domainMap;
 
-  public OneHotEncoder(String columnName, int targetIndex, String[] domainValues) {
+  OneHotEncoder(String columnName, int targetIndex, String[] domainValues) {
     this.columnName = columnName;
     this.targetIndex = targetIndex;
     domainMap = new HashMap<>(domainValues.length);

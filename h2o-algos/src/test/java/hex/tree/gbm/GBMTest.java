@@ -134,12 +134,7 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 5;
       parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
 
-      GBM job = new GBM(parms) {
-        @Override
-        public boolean haveMojo() {
-          return false;
-        }
-      };
+      GBM job = new GBM(parms);
       GBMModel gbm = job.trainModel().get();
       Scope.track_generic(gbm);
 
