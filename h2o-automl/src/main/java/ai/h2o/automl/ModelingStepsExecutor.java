@@ -5,8 +5,6 @@ import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
-import ai.h2o.automl.leaderboard.LeaderboardExtension;
-import ai.h2o.automl.leaderboard.TrainingTime;
 import hex.Model;
 import hex.grid.Grid;
 import water.Iced;

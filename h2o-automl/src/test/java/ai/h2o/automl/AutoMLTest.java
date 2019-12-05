@@ -138,6 +138,7 @@ public class AutoMLTest extends water.TestUtil {
       assertEquals("wrong amount of standard models", 3, count_non_se);
       assertEquals("wrong amount of SE models", 2, count_se);
       assertEquals(5, aml.leaderboard().getModelCount());
+      Log.info(aml.leaderboard().toTwoDimTable("training_time_millis", "predict_time_per_row_millis"));
     } finally {
       // Cleanup
       for (Lockable l: deletables) {
@@ -562,7 +563,7 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
-  @Test public void testTestAlgosHaveDefaultParametersEnforcingReproducibility() {
+  @Test public void testAlgosHaveDefaultParametersEnforcingReproducibility() {
     AutoML aml=null;
     Frame fr=null;
     try {

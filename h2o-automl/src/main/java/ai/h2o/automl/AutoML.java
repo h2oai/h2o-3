@@ -7,7 +7,7 @@ import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.StepDefinition.Alias;
-import ai.h2o.automl.leaderboard.Leaderboard;
+import ai.h2o.automl.leaderboard.*;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.grid.Grid;
@@ -57,6 +57,22 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
           new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
   };
+
+  private static LeaderboardExtensionsProvider createLeaderboardExtensionProvider(AutoML automl) {
+    final Key<AutoML> amlKey = automl._key;
+
+    return new LeaderboardExtensionsProvider() {
+      @Override
+      public LeaderboardColumn[] createExtensions(Model model) {
+        final AutoML aml = amlKey.get();
+        return new LeaderboardColumn[] {
+                new TrainingTime(model),
+                new ScoringTimePerRow(model, aml.getLeaderboardFrame(), aml.getTrainingFrame()),
+//                new ModelSize(model._key)
+        };
+      }
+    };
+  }
 
   private static Date lastStartTime; // protect against two runs with the same second in the timestamp; be careful about races
   /**
@@ -306,6 +322,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         sortMetric = "mean_residual_deviance"; //compatibility with names used in leaderboard
     }
     _leaderboard = Leaderboard.getOrMake(_key.toString(), _eventLog, _leaderboardFrame, sortMetric);
+    _leaderboard.setExtensionsProvider(createLeaderboardExtensionProvider(this));
   }
 
   ModelingStep[] getExecutionPlan() {

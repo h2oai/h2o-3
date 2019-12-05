@@ -4,9 +4,9 @@ import hex.Model;
 import water.Iced;
 import water.Key;
 
-public class ModelSize extends Iced<ModelSize> implements LeaderboardExtension<Long, ModelSize> {
+public class ModelSize extends Iced<ModelSize> implements LeaderboardColumn<Long, ModelSize> {
 
-    public static final String NAME = "model_size_bytes";
+    public static final LeaderboardColumnDescriptor DESC = new LeaderboardColumnDescriptor("model_size_bytes", "long", "%s");
 
     private final Key<Model> _modelId;
 
@@ -17,23 +17,13 @@ public class ModelSize extends Iced<ModelSize> implements LeaderboardExtension<L
     }
 
     @Override
+    public LeaderboardColumnDescriptor getDescriptor() {
+        return DESC;
+    }
+
+    @Override
     public Key<Model> getModelId() {
         return _modelId;
-    }
-
-    @Override
-    public String getName() {
-        return NAME;
-    }
-
-    @Override
-    public String getColumnType() {
-        return "long";
-    }
-
-    @Override
-    public String getColumnFormat() {
-        return "%s";
     }
 
     @Override
@@ -58,7 +48,7 @@ public class ModelSize extends Iced<ModelSize> implements LeaderboardExtension<L
 //                Model model = _modelId.get();
                 // export binary model to temp folder
                 // read size
-                // delete save model
+                // delete saved model
             } catch (Exception e) {
                 setValue(-1L);
             }

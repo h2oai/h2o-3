@@ -4,12 +4,10 @@ import hex.Model;
 import water.Freezable;
 import water.Key;
 
-public interface LeaderboardExtension<V, SELF extends LeaderboardExtension> extends Freezable<SELF> {
+public interface LeaderboardColumn<V, SELF extends LeaderboardColumn> extends Freezable<SELF> {
+    LeaderboardColumnDescriptor getDescriptor();
 
     Key<Model> getModelId();
-    String getName();
-    String getColumnType();
-    String getColumnFormat();
     V getValue();
     void setValue(V value);
 

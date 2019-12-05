@@ -5,21 +5,26 @@ import water.Iced;
 import water.Key;
 import water.util.Log;
 
-public class TrainingTime extends Iced<TrainingTime> implements LeaderboardExtension<Long, TrainingTime> {
+public class TrainingTime extends Iced<TrainingTime> implements LeaderboardColumn<Long, TrainingTime> {
 
-    public static final String NAME = "training_time_secs";
+    public static final LeaderboardColumnDescriptor DESC = new LeaderboardColumnDescriptor("training_time_millis", "long", "%s");
 
     private final Key<Model> _modelId;
 
-    private Long _trainingTimeSecs;
+    private Long _trainingTimeMillis;
 
     public TrainingTime(Model model) {
         _modelId = model._key;
-        _trainingTimeSecs = model._output._run_time;
+        _trainingTimeMillis = model._output._run_time;
     }
 
     public TrainingTime(Key<Model> modelId) {
         _modelId = modelId;
+    }
+
+    @Override
+    public LeaderboardColumnDescriptor getDescriptor() {
+        return DESC;
     }
 
     @Override
@@ -28,28 +33,13 @@ public class TrainingTime extends Iced<TrainingTime> implements LeaderboardExten
     }
 
     @Override
-    public String getName() {
-        return NAME;
-    }
-
-    @Override
-    public String getColumnType() {
-        return "int";
-    }
-
-    @Override
-    public String getColumnFormat() {
-        return "%s";
-    }
-
-    @Override
     public Long getValue() {
-        return _trainingTimeSecs;
+        return _trainingTimeMillis;
     }
 
     @Override
     public void setValue(Long value) {
-        _trainingTimeSecs = value;
+        _trainingTimeMillis = value;
     }
 
     @Override

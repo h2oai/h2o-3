@@ -5,9 +5,9 @@ import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 
-public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements LeaderboardExtension<Double, ScoringTimePerRow> {
+public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements LeaderboardColumn<Double, ScoringTimePerRow> {
 
-    public static final String NAME = "prediction_time_per_row_millis";
+    public static final LeaderboardColumnDescriptor DESC = new LeaderboardColumnDescriptor("predict_time_per_row_millis", "double", "%.6f");
 
     private final Key<Model> _modelId;
     private final Key<Frame> _leaderboardFrameId;
@@ -15,8 +15,11 @@ public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements Leader
 
     private Double _scoringTimePerRowMillis;
 
-    public ScoringTimePerRow(Key<Model> modelId) {
-        this(modelId, null, null);
+    public ScoringTimePerRow(Model model, Frame leaderboardFrame, Frame trainingFrame) {
+        this(model._key,
+             leaderboardFrame == null ? null : leaderboardFrame._key,
+             trainingFrame == null ? null : trainingFrame._key
+        );
     }
 
     public ScoringTimePerRow(Key<Model> modelId, Key<Frame> leaderboardFrameId, Key<Frame> trainingFrameId) {
@@ -26,23 +29,13 @@ public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements Leader
     }
 
     @Override
+    public LeaderboardColumnDescriptor getDescriptor() {
+        return DESC;
+    }
+
+    @Override
     public Key<Model> getModelId() {
         return _modelId;
-    }
-
-    @Override
-    public String getName() {
-        return NAME;
-    }
-
-    @Override
-    public String getColumnType() {
-        return "double";
-    }
-
-    @Override
-    public String getColumnFormat() {
-        return "%.3f";
     }
 
     @Override
@@ -70,10 +63,10 @@ public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements Leader
                                 : null;
                 if (scoringFrame != null) {
                     long nrows = scoringFrame.numRows();
-                    long start = System.currentTimeMillis();
+                    long start = System.nanoTime();
                     model.score(scoringFrame).delete();
-                    long stop = System.currentTimeMillis();
-                    setValue((stop-start)/(double)nrows);
+                    long stop = System.nanoTime();
+                    setValue((stop-start)/nrows/1e6);
                 } else {
                     setValue(-1d);
                 }
