@@ -3494,7 +3494,7 @@ public class GBMTest extends TestUtil {
       if (preds!=null && preds2!=null) {
         preds.remove(0);
         preds2.remove(0);
-        assertIdenticalUpToRelTolerance(preds, preds2, 1e-2);
+        assertTrue(isIdenticalUpToRelTolerance(preds, preds2, 1e-2));
       }
     } finally {
       if (preds!=null) preds.delete();

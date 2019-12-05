@@ -95,7 +95,7 @@ public class SortTest extends TestUtil {
       Scope.track(ans);
       res = fr.sort(sortingIndices);
       Scope.track(res);
-      assertBitIdentical(ans, res); // compare our sort frame with answer from R
+      assertTrue(isBitIdentical(ans, res)); // compare our sort frame with answer from R
     } finally {
       Scope.exit();
     }

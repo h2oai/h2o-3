@@ -679,7 +679,7 @@ public class GLRMTest extends TestUtil {
 						boolean[] flippedEig = TestUtil.checkEigvec(modelW._output._eigenvectors, modelN._output._eigenvectors,
               tolerance);
 						assertTrue(Arrays.equals(flippedArch, flippedEig)); // should be the same
-      TestUtil.assertIdenticalUpToRelTolerance(scoreW, scoreN, tolerance);
+      assertTrue(TestUtil.isIdenticalUpToRelTolerance(scoreW, scoreN, tolerance));
     } finally {
       Scope.exit();
     }
@@ -730,7 +730,7 @@ public class GLRMTest extends TestUtil {
       boolean[] flippedEig = TestUtil.checkEigvec(modelW._output._eigenvectors, modelN._output._eigenvectors,
               tolerance);
       assertTrue(Arrays.equals(flippedArch, flippedEig)); // should be the same
-      TestUtil.assertIdenticalUpToRelTolerance(scoreW, scoreN, tolerance);
+      assertTrue(TestUtil.isIdenticalUpToRelTolerance(scoreW, scoreN, tolerance));
     } finally {
       Scope.exit();
     }

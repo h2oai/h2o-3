@@ -38,10 +38,11 @@ public class TargetEncodingImmutabilityTest extends TestUtil {
     Frame trainCopy = fr.deepCopy(Key.make().toString());
     DKV.put(trainCopy);
 
-    assertBitIdentical(fr, trainCopy);
+    assertTrue(isBitIdentical(fr, trainCopy));
+
     trainCopy.vec(0).set(0, "d");
 
-    assertIdenticalUpToRelTolerance(fr, trainCopy, 0, false);
+    assertFalse(isBitIdentical(fr, trainCopy));
     trainCopy.delete();
   }
 
@@ -70,7 +71,7 @@ public class TargetEncodingImmutabilityTest extends TestUtil {
     Frame resultWithEncoding = tec.applyTargetEncoding(training, targetColumnName, targetEncodingMap,
             TargetEncoder.DataLeakageHandlingStrategy.KFold, foldColumn, false, 0, false, TargetEncoder.DEFAULT_BLENDING_PARAMS, 1234);
 
-    assertBitIdentical(training, trainCopy);
+    assertTrue(isBitIdentical(training, trainCopy));
 
     training.delete();
     trainCopy.delete();

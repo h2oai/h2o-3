@@ -2,6 +2,7 @@ package water.parser.orc;
 
 
 import org.joda.time.DateTimeZone;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
@@ -60,8 +61,8 @@ public class ParseTestORCCSV extends TestUtil {
                     Frame csv_frame = Scope.track(parse_test_file(csvFiles[f_index], "\\N", 0, null));
                     Frame orc_frame = Scope.track(parse_test_file(orcFiles[f_index], null, 0, null));
 
-                    assertIdenticalUpToRelTolerance(orc_frame, csv_frame, 0, 
-                        "Fails: " + csvFiles[f_index] + " != " + orcFiles[f_index]);
+                    assertTrue("Fails: " + csvFiles[f_index] + " != " + orcFiles[f_index],
+                        TestUtil.isBitIdentical(orc_frame, csv_frame));  // both frames should equal
                 }
             } finally {
                 Scope.exit();

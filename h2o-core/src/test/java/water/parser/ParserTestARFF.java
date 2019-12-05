@@ -115,7 +115,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file_single_quotes("smalldata/junit/arff/iris.arff");
       k1 = parse_test_file_single_quotes("smalldata/junit/cars.csv");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertFalse("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -128,7 +128,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/iris.arff");
       k1 = parse_test_file("smalldata/junit/iris.csv");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
       Assert.assertTrue("column names do not match!", Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
@@ -146,10 +146,10 @@ public class ParserTestARFF extends TestUtil {
       k3 = parse_test_file("smalldata/junit/arff/iris.arff", skipped_columns);
       k4 = parse_test_file("smalldata/junit/iris.csv", skipped_columns);
       k1 = parse_test_file("smalldata/junit/iris.csv");
-      TestUtil.assertBitIdentical(k1, k2);
-      TestUtil.assertBitIdentical(k3, k4);
-      TestUtil.assertBitIdentical(k1, k4);
-      Assert.assertArrayEquals("column names do not match!", k2.names(), k1.names());
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k3, k4));
+      Assert.assertTrue("parsed values do not match!", !(TestUtil.isBitIdentical(k1, k4)));
+      Assert.assertTrue("column names do not match!", Arrays.equals(k2.names(), k1.names()));
       Scope.track(k1, k2, k3, k4);
     } finally {
       Scope.exit();
@@ -168,7 +168,7 @@ public class ParserTestARFF extends TestUtil {
         skipped_columns[cindex]=cindex;
       k1 = parse_test_file("smalldata/junit/iris.csv", skipped_columns);
       Assert.assertTrue("Exception should have been thrown!", 1 == 2);
-      assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
     } catch(Exception ex) {
       System.out.println(ex);
     } finally {
@@ -445,7 +445,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/test_uuid.arff");
       k1 = parse_test_file("smalldata/junit/test_uuid.csv");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
@@ -484,7 +484,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/iris_spacesep.arff");
       k1 = parse_test_file("smalldata/junit/iris.csv");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
@@ -498,7 +498,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/iris_weirdsep.arff");
       k1 = parse_test_file("smalldata/junit/iris.csv");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
@@ -512,7 +512,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/iris_weirdsep2.arff");
       k1 = parse_test_file("smalldata/junit/iris.csv");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
@@ -527,7 +527,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file("smalldata/junit/arff/time.arff");
       k1 = parse_test_file("smalldata/junit/time.csv");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
@@ -542,7 +542,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/arff/folder1/");
       k1 = parse_test_file  ("smalldata/junit/arff/iris.arff");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1, k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
@@ -557,7 +557,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/arff/folder2/" );
       k1 = parse_test_file("smalldata/junit/arff/iris.arff");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
@@ -572,7 +572,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/arff/folder3/" );
       k1 = parse_test_file("smalldata/junit/arff/iris.arff");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();
@@ -587,7 +587,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/arff/folder4/" );
       k1 = parse_test_file("smalldata/junit/arff/iris.arff");
-      TestUtil.assertBitIdentical(k1, k2);
+      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
       Assert.assertTrue("column names do not match!",  Arrays.equals(k2.names(), k1.names()));
     } finally {
       if( k1 != null ) k1.delete();

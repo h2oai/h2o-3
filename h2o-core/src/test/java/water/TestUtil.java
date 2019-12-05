@@ -308,42 +308,28 @@ public class TestUtil extends Iced {
 
   // ==== Data Frame Creation Utilities ====
 
-  /** 
-   * Compare 2 frames
+  /** Compare 2 frames
    *  @param fr1 Frame
    *  @param fr2 Frame
    *  @param epsilon Relative tolerance for floating point numbers
-   */
-  public static void assertIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon) {
-    assertIdenticalUpToRelTolerance(fr1, fr2, epsilon, true, "");
-  }
-
-  public static void assertIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon, String messagePrefix) {
-    assertIdenticalUpToRelTolerance(fr1, fr2, epsilon, true, messagePrefix);
-  }
-
-  public static void assertIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon, boolean expected) {
-    assertIdenticalUpToRelTolerance(fr1, fr2, epsilon, expected, "");
-  }
-
-  public static void assertIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon, boolean expected, String messagePrefix) {
-    if (fr1 == fr2) return;
-    assertEquals("Number of columns differ.", fr1.numCols(), fr2.numCols());
-    assertEquals("Number of rows differ.", fr1.numRows(), fr2.numRows());
+   *  @return true if equal  */
+  public static boolean isIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon) {
+    if (fr1 == fr2) return true;
+    if( fr1.numCols() != fr2.numCols() ) return false;
+    if( fr1.numRows() != fr2.numRows() ) return false;
     Scope.enter();
     if( !fr1.isCompatible(fr2) ) fr1.makeCompatible(fr2);
-    Cmp1 cmp = new Cmp1(epsilon, messagePrefix).doAll(new Frame(fr1).add(fr2));
+    boolean identical = !(new Cmp1(epsilon).doAll(new Frame(fr1).add(fr2))._unequal);
     Scope.exit();
-    assertTrue(cmp._message, expected == !cmp._unequal);
+    return identical;
   }
 
-  /** 
-   * Compare 2 frames
+  /** Compare 2 frames
    *  @param fr1 Frame
    *  @param fr2 Frame
-   */
-  public static void assertBitIdentical(Frame fr1, Frame fr2) {
-    assertIdenticalUpToRelTolerance(fr1, fr2, 0);
+   *  @return true if equal  */
+  public static boolean isBitIdentical(Frame fr1, Frame fr2) {
+    return isIdenticalUpToRelTolerance(fr1,fr2,0);
   }
 
   static File[] contentsOf(String name, File folder) {
@@ -914,20 +900,15 @@ public class TestUtil extends Iced {
 
   protected static class Cmp1 extends MRTask<Cmp1> {
     final double _epsilon;
-    final String _messagePrefix;
-    public Cmp1( double epsilon ) { _epsilon = epsilon; _messagePrefix = ""; }
-    public Cmp1( double epsilon, String msg ) { _epsilon = epsilon; _messagePrefix = msg + " "; }
+    public Cmp1( double epsilon ) { _epsilon = epsilon; }
     public boolean _unequal;
-    public String _message;
     @Override public void map( Chunk chks[] ) {
       for( int cols=0; cols<chks.length>>1; cols++ ) {
         Chunk c0 = chks[cols                 ];
         Chunk c1 = chks[cols+(chks.length>>1)];
         for( int rows = 0; rows < chks[0]._len; rows++ ) {
-          String msgBase = _messagePrefix + "At [" + rows + ", " + cols + "]: ";
           if (c0.isNA(rows) != c1.isNA(rows)) {
             _unequal = true;
-            _message = msgBase + "c0.isNA " + c0.isNA(rows) + " != c1.isNA " + c1.isNA(rows);
             return;
           } else if (!(c0.isNA(rows) && c1.isNA(rows))) {
             if (c0 instanceof C16Chunk && c1 instanceof C16Chunk) {
@@ -935,7 +916,6 @@ public class TestUtil extends Iced {
               long hi0 = c0.at16h(rows), hi1 = c1.at16h(rows);
               if (lo0 != lo1 || hi0 != hi1) {
                 _unequal = true;
-                _message = msgBase + " lo0 " + lo0 + " != lo1 " + lo1 + " || hi0 " + hi0 + " != hi1 " + hi1;
                 return;
               }
             } else if (c0 instanceof CStrChunk && c1 instanceof CStrChunk) {
@@ -944,21 +924,18 @@ public class TestUtil extends Iced {
               c1.atStr(s1, rows);
               if (s0.compareTo(s1) != 0) {
                 _unequal = true;
-                _message = msgBase + " s0 " + s0 + " != s1 " + s1;
                 return;
               }
             } else if ((c0 instanceof C8Chunk) && (c1 instanceof C8Chunk)) {
               long d0 = c0.at8(rows), d1 = c1.at8(rows);
               if (d0 != d1) {
                 _unequal = true;
-                _message = msgBase + " d0 " + d0 + " != d1 " + d1;
                 return;
               }
             } else {
               double d0 = c0.atd(rows), d1 = c1.atd(rows);
               if (!(Math.abs(d0 - d1) <= Math.abs(d0 + d1) * _epsilon)) {
                 _unequal = true;
-                _message = msgBase + " d0 " + d0 + " != d1 " + d1;
                 return;
               }
             }
@@ -966,13 +943,7 @@ public class TestUtil extends Iced {
         }
       }
     }
-    @Override public void reduce( Cmp1 cmp ) {
-      if (_unequal) return;
-      if (cmp._unequal) {
-        _unequal = true;
-        _message = cmp._message;
-      }
-    }
+    @Override public void reduce( Cmp1 cmp ) { _unequal |= cmp._unequal; }
   }
 
   public static void assertFrameAssertion(FrameAssertion frameAssertion) {

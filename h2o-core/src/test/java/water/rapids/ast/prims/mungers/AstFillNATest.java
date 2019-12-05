@@ -106,7 +106,7 @@ public class AstFillNATest extends TestUtil {
       startMs = System.currentTimeMillis();
       Frame singleThreadResult = Scope.track(rowOper ? genFillNARow(testFrame, maxlen) : genFillNACol(testFrame, maxlen));
       System.out.println("Time(ms) taken to perform single-thread fillna is "+(System.currentTimeMillis()-startMs));
-      assertBitIdentical(res, singleThreadResult);
+      isBitIdentical(res, singleThreadResult);
     } finally {
       Scope.exit();
     }
@@ -582,8 +582,8 @@ public class AstFillNATest extends TestUtil {
       Scope.track(res);
       Frame ansSingleThread = rowTest?genFillNARow(origF, maxLen):genFillNACol(origF, maxLen);
       Scope.track(ansSingleThread);
-      assertBitIdentical(res, answerFrame);  // fillna result is correct
-      assertBitIdentical(ansSingleThread, answerFrame);   // fillna from single thread is correct
+      isBitIdentical(res, answerFrame);  // fillna result is correct
+      isBitIdentical(ansSingleThread, answerFrame);   // fillna from single thread is correct
     } finally {
       Scope.exit();
     }

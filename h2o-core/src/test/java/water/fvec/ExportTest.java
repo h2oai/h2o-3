@@ -56,7 +56,8 @@ public class ExportTest extends TestUtil {
         }
         assertTrue(target.exists());
         imported = parseFolder(folder);
-        TestUtil.assertBitIdentical(fr, imported);
+        assertEquals(fr.numRows(), imported.numRows());
+        assertTrue(TestUtil.isBitIdentical(fr, imported));
       } finally {
         if (rebalanced != null) rebalanced.delete();
         if (imported != null) imported.delete();

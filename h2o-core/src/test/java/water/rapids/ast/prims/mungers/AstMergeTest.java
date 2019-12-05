@@ -95,7 +95,7 @@ public class AstMergeTest extends TestUtil {
       printFrames(result);
       System.out.println("\n\nCorrect merged frame should be");
       printFrames(answer);
-      assertBitIdentical(result, answer);
+      assert isBitIdentical(result, answer):"The two frames are not the same.";
     } finally {
       Scope.exit();
     }
@@ -145,7 +145,7 @@ public class AstMergeTest extends TestUtil {
       printFrames(sortedResult);
       System.out.println("\n\nCorrect merged frame should be");
       printFrames(answer);
-      assertBitIdentical(sortedResult, answer);
+      assert isBitIdentical(sortedResult, answer):"The two frames are not the same!";
     } finally {
       Scope.exit();
     }
@@ -195,7 +195,7 @@ public class AstMergeTest extends TestUtil {
       printFrames(sortedResult);
       System.out.println("\n\nCorrect merged frame should be");
       printFrames(answer);
-      assertBitIdentical(sortedResult, answer);
+      assert isBitIdentical(sortedResult, answer):"The two frames are not the same.";
     } finally {
       Scope.exit();
     }
@@ -244,7 +244,7 @@ public class AstMergeTest extends TestUtil {
       printFrames(sortedResult);
       System.out.println("\n\nCorrect merged frame should be");
       printFrames(answer);
-      assertBitIdentical(sortedResult, answer);
+      assert isBitIdentical(sortedResult, answer):"The two frames are not the same.";
     } finally {
       Scope.exit();
     }
@@ -295,7 +295,7 @@ public class AstMergeTest extends TestUtil {
       printFrames(sortedResult);
       System.out.println("\n\nCorrect merged frame should be");
       printFrames(answer);
-      assertBitIdentical(sortedResult, answer);
+      assert isBitIdentical(sortedResult, answer):"The two frames are not the same.";
     } finally {
       Scope.exit();
     }
