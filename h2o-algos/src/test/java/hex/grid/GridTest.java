@@ -4,6 +4,7 @@ import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -28,7 +29,7 @@ public class GridTest extends TestUtil {
     TestUtil.stall_till_cloudsize(1);
   }
 
-  @Test
+  @Ignore
   public void testParallelModelTimeConstraint() {
     try {
       Scope.enter();
@@ -54,12 +55,14 @@ public class GridTest extends TestUtil {
               hyperParms,
               new GridSearch.SimpleParametersBuilderFactory(),
               new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria(), 2);
+
       Scope.track_generic(gridSearch);
       final Grid grid = gridSearch.get();
       Scope.track_generic(grid);
 
+      // According to javadoc of `RandomDiscreteValueSearchCriteria.max_runtime_secs`  each model will have one second to finish ( due to params._max_runtime_secs = 1D;) and there is no time limit for Grid
+      // It means if it is enough to finish one model with one second then we should expect whole space to be trained => assertion is probably incorrect
       assertNotEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
-      
     } finally {
       Scope.exit();
     }
@@ -134,10 +137,37 @@ public class GridTest extends TestUtil {
       Scope.track_generic(grid);
 
       assertEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
+    } finally {
+      Scope.exit();
+    }
+  }
 
-      final Job<Grid> job = GridSearch.startGridSearch(grid._key, params, hyperParms,
+  @Test
+  public void testAdaptiveParallelGridSearch() {
+    try {
+      Scope.enter();
+
+      final Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+      Scope.track(trainingFrame);
+
+      final Integer[] ntreesArr = new Integer[]{5, 50, 7, 8, 9, 10};
+      final Integer[] maxDepthArr = new Integer[]{2, 3, 4};
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_ntrees", ntreesArr);
+        put("_max_depth", maxDepthArr);
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "IsDepDelayed";
+      params._seed = 42;
+
+      final Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms,
               GridSearch.getAdaptiveParallelism());
-      final Grid secondGrid = job.get();
+      Scope.track_generic(gs);
+      final Grid secondGrid = gs.get();
+      Scope.track_generic(secondGrid);
       assertEquals(ntreesArr.length * maxDepthArr.length, secondGrid.getModelCount());
     } finally {
       Scope.exit();
@@ -450,7 +480,43 @@ public class GridTest extends TestUtil {
   }
 
   @Test
-  public void testParallelRandomSearchWithCustomMaxModels() {
+  public void test_parallel_random_search_with_max_models_being_less_than_parallelism() {
+    try {
+      Scope.enter();
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
+
+      // Setup random hyperparameter search space
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.multinomial});
+        put("_ntrees", new Integer[]{5});
+        put("_max_depth", new Integer[]{2});
+        put("_min_rows", new Integer[]{10,11,12,13,14});
+        put("_learn_rate", new Double[]{.7});
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "species";
+
+      GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      int custom_max_model = 2;
+      hyperSpaceSearchCriteria.set_max_models(custom_max_model);
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 4);
+      Scope.track_generic(gs);
+      final Grid grid1 = gs.get();
+      Scope.track_generic(grid1);
+
+      assertEquals(custom_max_model, grid1.getModelCount());
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void test_parallel_random_search_with_max_models_being_greater_than_parallelism() {
     try {
       Scope.enter();
       final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
@@ -484,6 +550,5 @@ public class GridTest extends TestUtil {
       Scope.exit();
     }
   }
-
 
 }
