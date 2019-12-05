@@ -563,20 +563,22 @@ public class Leaderboard extends Lockable<Leaderboard> {
     String[] metrics = _metrics == null ? (_sort_metric == null ? new String[0] : new String[] {_sort_metric})
                       : _metrics;
 
-    final List<LeaderboardColumnDescriptor> columns = new ArrayList<>();
-    columns.add(ModelId.DESC);
+    final List<LeaderboardColumnDescriptor> columnsDesc = new ArrayList<>();
+    final List<LeaderboardColumnDescriptor> extColumnsDesc = new ArrayList<>();
+    columnsDesc.add(ModelId.DESC);
     for (String metric: metrics) {
-      columns.add(MetricScore.getDescriptor(metric));
+      columnsDesc.add(MetricScore.getDescriptor(metric));
     }
     if (getModelCount() > 0) {
       final Key<Model> leader = getModelKeys()[0];
       LeaderboardColumn[] extColumns = (extensions.length > 0 && LeaderboardExtensionsProvider.ALL.equalsIgnoreCase(extensions[0]))
               ? getExtensions(leader)
               : Stream.of(extensions).map(e -> getExtension(leader, e)).toArray(LeaderboardColumn[]::new);
-      Stream.of(extColumns).filter(Objects::nonNull).forEach(e -> columns.add(e.getDescriptor()));
+      Stream.of(extColumns).filter(Objects::nonNull).forEach(e -> extColumnsDesc.add(e.getDescriptor()));
     }
+    columnsDesc.addAll(extColumnsDesc);
 
-    TwoDimTable table = makeTwoDimTable(tableHeader, _model_keys.length, columns.toArray(new LeaderboardColumnDescriptor[0]));
+    TwoDimTable table = makeTwoDimTable(tableHeader, _model_keys.length, columnsDesc.toArray(new LeaderboardColumnDescriptor[0]));
 
     int maxModelIdLen = Stream.of(_model_keys).mapToInt(k -> k.toString().length()).max().orElse(0);
     for (int i = 0; i < _model_keys.length; i++) {
@@ -590,7 +592,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
       addTwoDimTableRow(table, i,
               modelIDsFormatted[i],
               metrics,
-              Stream.of(extensions).map(ext -> getExtension(key, ext)).toArray(LeaderboardColumn[]::new)
+              extColumnsDesc.stream().map(ext -> getExtension(key, ext.getName())).toArray(LeaderboardColumn[]::new)
       );
     }
     return table;
@@ -616,7 +618,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
       if (includeHeader && ! printedHeader) {
         sb.append("model_id");
         sb.append(fieldSeparator);
-        String [] metrics = _metrics != null ? _metrics : new String[] {"unknown"};
+        String [] metrics = _metrics != null ? _metrics : new String[0];
         sb.append(Arrays.toString(metrics));
         sb.append(lineSeparator);
         printedHeader = true;
@@ -624,7 +626,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
 
       sb.append(key.toString());
       sb.append(fieldSeparator);
-      double[] values = _metrics != null ? getModelMetricValues(i) : new double[] {Double.NaN};
+      double[] values = _metrics != null ? getModelMetricValues(i) : new double[0];
       sb.append(Arrays.toString(values));
       sb.append(lineSeparator);
     }
