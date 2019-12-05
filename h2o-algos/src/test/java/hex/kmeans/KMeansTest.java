@@ -22,9 +22,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class KMeansTest extends TestUtil {
   public final double threshold = 1e-6;
@@ -151,7 +149,7 @@ public class KMeansTest extends TestUtil {
       parms._standardize = true;
       parms._max_iterations = 10;
       parms._user_points = points._key;
-      parms._cluster_size_constraints = new int[]{46, 50, 54};
+      parms._cluster_size_constraints = new int[]{46, 49, 55};
       parms._score_each_iteration = true;
 
       System.out.println("Constrained Kmeans strandardize true (CKT)");
@@ -164,7 +162,7 @@ public class KMeansTest extends TestUtil {
       }
       
       parms._standardize = false;
-      parms._cluster_size_constraints = new int[]{51, 50, 49};
+      parms._cluster_size_constraints = new int[]{61, 50, 39};
 
       System.out.println("Constrained Kmeans strandardize false (CKF)");
       KMeans job2 = new KMeans(parms);
@@ -196,14 +194,17 @@ public class KMeansTest extends TestUtil {
       System.out.println("| CKT | FKT | CKF | FKF |");
       for (int i=0; i<fr.numRows(); i++){
         System.out.println("|  "+predict1.vec(0).at8(i)+"  |  "+predict3.vec(0).at8(i)+"  |  "+predict2.vec(0).at8(i)+"  |  "+predict4.vec(0).at8(i)+"  |");
-        System.out.println("|  "+predict1.vec(0).at8(i)+"  |  "+predict3.vec(0).at8(i)+"  |  "+predict2.vec(0).at8(i)+"  |  "+predict4.vec(0).at8(i)+"  |");
+        assert predict1.vec(0).at8(i) == predict3.vec(0).at8(i): "Predictions should be the same for Loyd Kmenas and Constrained Kmeans.";
+        assert predict2.vec(0).at8(i) == predict4.vec(0).at8(i): "Predictions should be the same for Loyd Kmenas and Constrained Kmeans.";
       }
 
       System.out.println("\nCenters raw:");
       for (int i=0; i<kmm._output._centers_raw.length;i++){
         System.out.println("===");
         for (int j=0; j<kmm._output._centers_raw[0].length;j++) {
-          System.out.println(kmm._output._centers_raw[i][j]+" "+kmm2._output._centers_raw[i][j]+" "+kmm3._output._centers_raw[i][j]+" "+kmm4._output._centers_raw[i][j]);
+          System.out.println(kmm._output._centers_raw[i][j]+" "+kmm3._output._centers_raw[i][j]+" "+kmm2._output._centers_raw[i][j]+" "+kmm4._output._centers_raw[i][j]);
+          //assert kmm._output._centers_raw[i][j] == kmm3._output._centers_raw[i][j]: "Centers should be the same for Loyd Kmenas and Constrained Kmeans.";
+          //assert kmm2._output._centers_raw[i][j] == kmm4._output._centers_raw[i][j]: "Centers should be the same for Loyd Kmenas and Constrained Kmeans.";
         }
       }
 
@@ -759,7 +760,7 @@ public class KMeansTest extends TestUtil {
 
   @Test
   public void testNfolds() {
-    Frame tfr = null, vfr = null;
+    Frame tfr = null;
     KMeansModel kmeans = null;
 
     Scope.enter();
@@ -770,7 +771,7 @@ public class KMeansTest extends TestUtil {
       parms._train = tfr._key;
       parms._seed = 0xdecaf;
       parms._k = 3;
-      //parms._nfolds = 3;
+      parms._nfolds = 3;
 
       // Build a first model; all remaining models should be equal
       KMeans job = new KMeans(parms);
@@ -796,11 +797,50 @@ public class KMeansTest extends TestUtil {
       }
     } finally {
       if (tfr != null) tfr.remove();
-      if (vfr != null) vfr.remove();
       if (kmeans != null) {
         kmeans.deleteCrossValidationModels();
         kmeans.delete();
       }
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testNfoldsConstrained() {
+    Frame tfr = null, points = null;
+    KMeansModel kmeans = null;
+
+    Scope.enter();
+    try {
+      points = ArrayUtils.frame(ard(
+              ard(6.0,2.2,4.0,1.0,0),
+              ard(5.2,3.4,1.4,0.2,1),
+              ard(6.9,3.1,5.4,2.1,2)
+      ));
+      
+      tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+      DKV.put(tfr);
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = tfr._key;
+      parms._seed = 0xdecaf;
+      parms._k = 3;
+      parms._cluster_size_constraints = new int[]{20, 20, 20};
+      parms._nfolds = 3;
+      parms._user_points = points._key;
+      
+      KMeans job = new KMeans(parms);
+      kmeans = job.trainModel().get();
+      checkConsistency(kmeans);
+
+      ModelMetricsClustering mm = (ModelMetricsClustering)kmeans._output._cross_validation_metrics;
+      assertNotNull(mm);
+    } finally {
+      if (tfr != null) tfr.remove();
+      if (kmeans != null) {
+        kmeans.deleteCrossValidationModels();
+        kmeans.delete();
+      }
+      if(points != null) points.remove();
       Scope.exit();
     }
   }

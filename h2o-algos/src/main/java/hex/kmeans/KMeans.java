@@ -334,7 +334,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               
               // Get distances and aggregated values
               CalculateDistancesTask countDistancesTask = new CalculateDistancesTask(centers, means, mults, impute_cat, _isCats, k, hasWeightCol()).doAll(vecs2);
-              assert !hasWeightCol() || csum <= countDistancesTask._non_zero_weights : "The sum of constraints is higher than the number of data rows with non zero weights.";
+              
+              // Check if the constraint setting does not break cross validation setting
+              assert !hasWeightCol() || csum <= countDistancesTask._non_zero_weights : "The sum of constraints ("+csum+") is higher than the number of data rows with non zero weights ("+countDistancesTask._non_zero_weights+") because cross validation is set.";
               
               // Calculate center assignments
               KMeansSimplexSolver solver = new KMeansSimplexSolver(_parms._cluster_size_constraints, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), countDistancesTask._non_zero_weights);
@@ -403,13 +405,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
             centers = splitLargestCluster(centers, lo, hi, means, mults, impute_cat, vecs2, k);
         } //k-finder
         vecs2[vecs2.length-1].remove();
-
+        
         // Create metrics by scoring on training set otherwise scores are based on last Lloyd iteration
-        // maurever edit: 
-        // These lines cause the training metrics from the last iteration are replaced by another unknown metrics from DKV
-        // There should be the metrics from last Kmeans iteration
-        // If this is turn on, it causes the result metrics don't match any calculated metrics from all iterations. 
-        // Especially for Constrained Kmeans, it returns a result that does not meet the stated constraints.
+        // These lines cause the training metrics are recalculated on strange model values.
+        // Especially for Constrained Kmeans, it returns a result that does not meet the constraints set
+        // because scoring is based on calculated centroids and does not preserve the constraints
         // There is a JIRA to explore this part of code: https://0xdata.atlassian.net/browse/PUBDEV-7097
         if(!constrained) {
           model.score(_train).delete();
@@ -859,14 +859,14 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
     }
   }
 
-    private static class CalculateMetricTask extends IterationTask {
+  private static class CalculateMetricTask extends IterationTask {
 
     CalculateMetricTask(double[][] centers, double[] means, double[] mults, int[] modes, String[][] isCats, int k, boolean hasWeight) {
       super(centers, means, mults, modes, isCats, k, hasWeight);
     }
 
     @Override public void map(Chunk[] cs) {
-      int N = cs.length - (_hasWeight ? 1:0) - 3 - _centers.length /*clusterassignment*/;
+      int N = cs.length - (_hasWeight ? 1:0) - 3 /*clusterassignment*/;
       assert _centers[0].length==N;
       _lo = new double[_k][N];
       for( int clu=0; clu< _k; clu++ )

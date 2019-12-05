@@ -3,7 +3,6 @@ package hex.kmeans;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import javax.xml.bind.SchemaOutputResolver;
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -120,11 +119,8 @@ class KMeansSimplexSolver {
     public double getWeight(long edgeIndex) {
         long numberOfFrameWeights = this._numberOfPoints * this._constraintsLength;
         if (edgeIndex < numberOfFrameWeights) {
-            long i = edgeIndex % _numberOfPoints;
-            int j = _weights.numCols() - _constraintsLength - 3 + (int) Math.floor(edgeIndex / _numberOfPoints);
-            //long i = Math.round(edgeIndex / _constraintsLength);
-            //int j = (int) (edgeIndex % _constraintsLength);
-            //System.out.println(edgeIndex+" "+i+" "+j+" "+Math.floor(edgeIndex / this._numberOfPoints)+" "+ (edgeIndex % _numberOfPoints));
+            long i = Math.round(edgeIndex / _constraintsLength);
+            int j = _weights.numCols() - _constraintsLength - 3 + (int)(edgeIndex % _constraintsLength);        
             return _weights.vec(j).at(i);
         }
         return _additiveWeights.at(edgeIndex - numberOfFrameWeights);
@@ -139,11 +135,8 @@ class KMeansSimplexSolver {
         if(_hasWeightsColumn) {
             long numberOfFrameWeights = this._numberOfPoints * this._constraintsLength;
             if (edgeIndex < numberOfFrameWeights) {
-                long i = edgeIndex % _numberOfPoints;
+                long i = Math.round(edgeIndex / _constraintsLength);
                 int j = _weights.numCols() - 1 - _constraintsLength - 3;
-                //long i = Math.round(edgeIndex / _constraintsLength);
-                //int j = (int) (edgeIndex % _constraintsLength);
-                //System.out.println("e: "+edgeIndex+" i: "+i+"j: "+j+" w: "+_weights.vec(j).at8(i));
                 return _weights.vec(j).at8(i) == 1;
             }
         }
@@ -191,10 +184,10 @@ class KMeansSimplexSolver {
         if(checkIfContinue()) {
             // split calculation to block
             // place where parallelisation is needed
-            //long blockSize = (long) Math.ceil(Math.sqrt(_edgeSize));
-            //long numberOfBlocks = Math.floorDiv(_edgeSize + blockSize - 1, blockSize);
-            long blockSize = _edgeSize;
-            long numberOfBlocks = 1;
+            long blockSize = (long) Math.ceil(Math.sqrt(_edgeSize));
+            long numberOfBlocks = Math.floorDiv(_edgeSize + blockSize - 1, blockSize);
+            //long blockSize = _edgeSize;
+            //long numberOfBlocks = 1;
             if (numberOfConsecutiveBlocks < numberOfBlocks) {
                 nextBlockOfEdges = firstEdgeInBlock + blockSize;
                 long minimalIndex;
@@ -211,7 +204,6 @@ class KMeansSimplexSolver {
                     } else {
                         minimalIndex = tree.reduceWeight(fIndex, getWeight(fIndex)) < tree.reduceWeight(sIndex, getWeight(sIndex)) ? fIndex : sIndex;
                     }
-                    //assert minimalIndex != -1;
                 }
                 firstEdgeInBlock = nextBlockOfEdges;
                 if(minimalIndex == -1){
@@ -293,13 +285,10 @@ class KMeansSimplexSolver {
             long enteringEdgeSourceIndex = edge.getSourceIndex();
             long enteringEdgeTargetIndex = edge.getTargetIndex();
             NodesEdgesObject cycle = getCycle(enteringEdgeIndex, enteringEdgeSourceIndex, enteringEdgeTargetIndex);
-            //System.out.println("e: "+enteringEdgeIndex+" "+enteringEdgeSourceIndex+" "+enteringEdgeTargetIndex+" weight: "+(isNonZeroWeight(enteringEdgeIndex) ? 1 : 0));
-            //System.out.println(cycle.toString());
             Edge leavingEdge = getLeavingEdge(cycle);
             long leavingEdgeIndex = leavingEdge.getEdgeIndex();
             long leavingEdgeSourceIndex = leavingEdge.getSourceIndex();
             long leavingEdgeTargetIndex = leavingEdge.getTargetIndex();
-            //System.out.println("l: "+leavingEdgeIndex+" "+leavingEdgeSourceIndex+" "+leavingEdgeTargetIndex+" weight: "+(isNonZeroWeight(leavingEdgeIndex) ? 1 : 0));
             double residualCap = tree.getResidualCapacity(leavingEdgeIndex, leavingEdgeSourceIndex, _capacities.at(leavingEdgeIndex));
             if(residualCap != 0) {
                 tree.augmentFlow(cycle, residualCap);
@@ -360,31 +349,27 @@ class KMeansSimplexSolver {
         }
 
         for (long i = 0; i < _weights.numRows(); i++) {
-            //System.out.println("1 row "+i+" weight "+(_hasWeightsColumn ? _weights.vec(dataStopLength).at8(i) : 1)+ " edges: "+i * _constraintsLength+"-"+(i * _constraintsLength+2)+" assignments: "+tree._edgeFlow.at8(i * _constraintsLength)+" "+tree._edgeFlow.at8(i * _constraintsLength + 1)+" "+tree._edgeFlow.at8(i * _constraintsLength + 2));
-            //System.out.println("2 row "+i+" weight "+(_hasWeightsColumn ? _weights.vec(dataStopLength).at8(i) : 1)+ " edges: "+(i+_weights.numRows())+" assignments: "+tree._edgeFlow.at8(i)+" "+tree._edgeFlow.at8(i+_weights.numRows())+" "+tree._edgeFlow.at8(i + 2 * _weights.numRows()));
             if(!_hasWeightsColumn || _weights.vec(dataStopLength).at8(i) == 1) {
-                boolean assign = false;
                 for (int j = 0; j < _constraintsLength; j++) {
                     //long edgeIndex = i + j * _weights.numRows();
                     long edgeIndex = i * _constraintsLength + j;
                     if (tree._edgeFlow.at8(edgeIndex) == 1) {
                         // old assignment
-                        //_weights.vec(oldAssignmentIndex).set(i, _weights.vec(newAssignmentIndex).at(i));
+                        _weights.vec(oldAssignmentIndex).set(i, _weights.vec(newAssignmentIndex).at(i));
                         // new assignment
                         _weights.vec(newAssignmentIndex).set(i, j);
                         // distances
-                        _weights.vec(distanceAssignmentIndex).set(i, _weights.vec(_hasWeightsColumn ? dataStopLength + 1 : dataStopLength + j).at(i));
+                        _weights.vec(distanceAssignmentIndex).set(i, _weights.vec(dataStopLength + j + (_hasWeightsColumn ? 1 : 0)).at(i));
                         numberOfPointsInCluster[j]++;
-                        assign = true;
                         break;
                     }
-                }
-                if(!assign) {
-                    //System.out.println("Warning: row " + i + " has non zero weight and no cluster assignment " + tree._edgeFlow.at8(i * _constraintsLength) + " " + tree._edgeFlow.at8(i * _constraintsLength + 1) + " " + tree._edgeFlow.at8(i * _constraintsLength + 2)+" | "+tree._edgeFlow.at8(i)+" "+tree._edgeFlow.at8(i+_weights.numRows())+" "+tree._edgeFlow.at8(i + 2 * _weights.numRows()));
                 }
             }
         }
         checkConstraintsCondition(numberOfPointsInCluster);
+        for(int i=0; i<_constraintsLength; i++) {
+            _weights.remove(dataStopLength+(_hasWeightsColumn ? 1 : 0));
+        }
         return _weights;
     }
 }
@@ -446,22 +431,22 @@ class SpanningTree {
 
         for (long i = 0; i < _nodeSize; i++) {
             long demand = demands.at8(i);
-            if (demand > 0) {
-                _sources.set(_edgeSize +i, _nodeSize);
-                _targets.set(_edgeSize +i, i);
+            if (demand >= 0) {
+                _sources.set(_edgeSize + i, _nodeSize);
+                _targets.set(_edgeSize + i, i);
             } else {
-                _sources.set(_edgeSize +i, i);
-                _targets.set(_edgeSize +i, _nodeSize);
+                _sources.set(_edgeSize + i, i);
+                _targets.set(_edgeSize + i, _nodeSize);
+            }
+            if (i < _nodeSize - 1) {
+                _nextDepthFirst.set(i, i + 1);
             }
             _edgeFlow.set(_edgeSize +i, Math.abs(demand));
-            _nodePotentials.set(i, demand <= 0 ? maxCapacity : -maxCapacity);
+            _nodePotentials.set(i, demand < 0 ? maxCapacity : -maxCapacity);
             _parents.set(i, _nodeSize);
             _parentEdges.set(i, i + _edgeSize);
             _previousNodes.set(i, i - 1);
             _lastDescendants.set(i, i);
-            if (i < _nodeSize - 1) {
-                _nextDepthFirst.set(i, i + 1);
-            }
         }
         _parents.set(_nodeSize, -1);
         _subtreeSize.set(_nodeSize, _nodeSize + 1);
