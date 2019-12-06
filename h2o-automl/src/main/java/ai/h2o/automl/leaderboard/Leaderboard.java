@@ -323,7 +323,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
         if (mm == null) {
           //scores and magically stores the metrics where we're looking for it on the next line
           // optimization: as we need to score leaderboard, score from the scoring time extension if provided.
-          LeaderboardCell scoringTimePerRow = getExtension(modelKey, ScoringTimePerRow.DESC.getName(), newExtensions);
+          LeaderboardCell scoringTimePerRow = getExtension(modelKey, ScoringTimePerRow.COLUMN.getName(), newExtensions);
           if (scoringTimePerRow != null && scoringTimePerRow.getValue() == null) {
             scoringTimePerRow.fetch();
             mm = ModelMetrics.getFromDKV(model, leaderboardFrame);
@@ -522,8 +522,8 @@ public class Leaderboard extends Lockable<Leaderboard> {
     String[] rowHeaders = new String[nrows];
     for (int i = 0; i < nrows; i++) rowHeaders[i] = ""+i;
     String[] colHeaders = Stream.of(columns).map(LeaderboardColumn::getName).toArray(String[]::new);
-    String[] colTypes = Stream.of(columns).map(LeaderboardColumn::getColumnType).toArray(String[]::new);
-    String[] colFormats = Stream.of(columns).map(LeaderboardColumn::getColumnFormat).toArray(String[]::new);
+    String[] colTypes = Stream.of(columns).map(LeaderboardColumn::getType).toArray(String[]::new);
+    String[] colFormats = Stream.of(columns).map(LeaderboardColumn::getFormat).toArray(String[]::new);
     String colHeaderForRowHeader = nrows > 0 ? "#" : "-";
     return new TwoDimTable(
             tableHeader,
@@ -565,9 +565,9 @@ public class Leaderboard extends Lockable<Leaderboard> {
 
     final List<LeaderboardColumn> columns = new ArrayList<>();
     final List<LeaderboardColumn> extColumns = new ArrayList<>();
-    columns.add(ModelId.DESC);
+    columns.add(ModelId.COLUMN);
     for (String metric: metrics) {
-      columns.add(MetricScore.getDescriptor(metric));
+      columns.add(MetricScore.getColumn(metric));
     }
     if (getModelCount() > 0) {
       final Key<Model> leader = getModelKeys()[0];

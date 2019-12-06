@@ -9,13 +9,13 @@ import java.util.Map;
 
 public class MetricScore extends Iced<MetricScore> implements LeaderboardCell<Double, MetricScore> {
 
-    private static final Map<String, LeaderboardColumn> DESCRIPTORS = new HashMap<>();
+    private static final Map<String, LeaderboardColumn> COLUMNS = new HashMap<>();
 
-    public static LeaderboardColumn getDescriptor(String metric) {
-        if (!DESCRIPTORS.containsKey(metric)) {
-            DESCRIPTORS.put(metric, new LeaderboardColumn(metric, "double", "%.6f"));
+    public static LeaderboardColumn getColumn(String metric) {
+        if (!COLUMNS.containsKey(metric)) {
+            COLUMNS.put(metric, new LeaderboardColumn(metric, "double", "%.6f"));
         }
-        return DESCRIPTORS.get(metric);
+        return COLUMNS.get(metric);
     }
 
     private final Key<Model> _modelId;
@@ -31,7 +31,7 @@ public class MetricScore extends Iced<MetricScore> implements LeaderboardCell<Do
 
     @Override
     public LeaderboardColumn getColumn() {
-        return MetricScore.getDescriptor(_metric);
+        return MetricScore.getColumn(_metric);
     }
 
     @Override

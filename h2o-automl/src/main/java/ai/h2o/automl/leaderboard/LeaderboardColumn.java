@@ -3,16 +3,16 @@ package ai.h2o.automl.leaderboard;
 public class LeaderboardColumn {
 
     private final String _name;
-    private final String _columnType;
-    private final String _columnFormat;
+    private final String _type;
+    private final String _format;
 
-    public LeaderboardColumn(String name, String columnType, String columnFormat) {
+    public LeaderboardColumn(String name, String type, String format) {
         _name = name;
-        _columnType = columnType;
-        _columnFormat = columnFormat;
+        _type = type;
+        _format = format;
     }
 
     public String getName() { return _name; }
-    public String getColumnType() { return _columnType; }
-    public String getColumnFormat() { return _columnFormat; }
+    public String getType() { return _type; }
+    public String getFormat() { return _format; }
 }

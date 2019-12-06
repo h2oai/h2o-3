@@ -6,7 +6,7 @@ import water.Key;
 
 public class ModelSize extends Iced<ModelSize> implements LeaderboardCell<Long, ModelSize> {
 
-    public static final LeaderboardColumn DESC = new LeaderboardColumn("model_size_bytes", "long", "%s");
+    public static final LeaderboardColumn COLUMN = new LeaderboardColumn("model_size_bytes", "long", "%s");
 
     private final Key<Model> _modelId;
 
@@ -18,7 +18,7 @@ public class ModelSize extends Iced<ModelSize> implements LeaderboardCell<Long, 
 
     @Override
     public LeaderboardColumn getColumn() {
-        return DESC;
+        return COLUMN;
     }
 
     @Override

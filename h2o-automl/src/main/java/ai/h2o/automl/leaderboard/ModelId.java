@@ -6,7 +6,7 @@ import water.Key;
 
 public class ModelId extends Iced<ModelId> implements LeaderboardCell<String, ModelId> {
 
-    public static final LeaderboardColumn DESC = new LeaderboardColumn("model_id", "string", "%s");
+    public static final LeaderboardColumn COLUMN = new LeaderboardColumn("model_id", "string", "%s");
 
     private final Key<Model> _modelId;
 
@@ -16,7 +16,7 @@ public class ModelId extends Iced<ModelId> implements LeaderboardCell<String, Mo
 
     @Override
     public LeaderboardColumn getColumn() {
-        return DESC;
+        return COLUMN;
     }
 
     @Override
