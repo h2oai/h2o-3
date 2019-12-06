@@ -4,9 +4,9 @@ import hex.Model;
 import water.Iced;
 import water.Key;
 
-public class ModelId extends Iced<ModelId> implements LeaderboardColumn<String, ModelId> {
+public class ModelId extends Iced<ModelId> implements LeaderboardCell<String, ModelId> {
 
-    public static final LeaderboardColumnDescriptor DESC = new LeaderboardColumnDescriptor("model_id", "string", "%s");
+    public static final LeaderboardColumn DESC = new LeaderboardColumn("model_id", "string", "%s");
 
     private final Key<Model> _modelId;
 
@@ -15,7 +15,7 @@ public class ModelId extends Iced<ModelId> implements LeaderboardColumn<String, 
     }
 
     @Override
-    public LeaderboardColumnDescriptor getDescriptor() {
+    public LeaderboardColumn getColumn() {
         return DESC;
     }
 

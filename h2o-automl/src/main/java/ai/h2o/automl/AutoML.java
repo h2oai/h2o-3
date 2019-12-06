@@ -63,9 +63,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
     return new LeaderboardExtensionsProvider() {
       @Override
-      public LeaderboardColumn[] createExtensions(Model model) {
+      public LeaderboardCell[] createExtensions(Model model) {
         final AutoML aml = amlKey.get();
-        return new LeaderboardColumn[] {
+        return new LeaderboardCell[] {
                 new TrainingTime(model),
                 new ScoringTimePerRow(model, aml.getLeaderboardFrame(), aml.getTrainingFrame()),
 //                new ModelSize(model._key)

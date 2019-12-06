@@ -7,13 +7,13 @@ import water.Key;
 import java.util.HashMap;
 import java.util.Map;
 
-public class MetricScore extends Iced<MetricScore> implements LeaderboardColumn<Double, MetricScore> {
+public class MetricScore extends Iced<MetricScore> implements LeaderboardCell<Double, MetricScore> {
 
-    private static final Map<String, LeaderboardColumnDescriptor> DESCRIPTORS = new HashMap<>();
+    private static final Map<String, LeaderboardColumn> DESCRIPTORS = new HashMap<>();
 
-    public static LeaderboardColumnDescriptor getDescriptor(String metric) {
+    public static LeaderboardColumn getDescriptor(String metric) {
         if (!DESCRIPTORS.containsKey(metric)) {
-            DESCRIPTORS.put(metric, new LeaderboardColumnDescriptor(metric, "double", "%.6f"));
+            DESCRIPTORS.put(metric, new LeaderboardColumn(metric, "double", "%.6f"));
         }
         return DESCRIPTORS.get(metric);
     }
@@ -30,7 +30,7 @@ public class MetricScore extends Iced<MetricScore> implements LeaderboardColumn<
     }
 
     @Override
-    public LeaderboardColumnDescriptor getDescriptor() {
+    public LeaderboardColumn getColumn() {
         return MetricScore.getDescriptor(_metric);
     }
 

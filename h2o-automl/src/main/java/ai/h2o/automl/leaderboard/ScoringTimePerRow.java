@@ -5,9 +5,9 @@ import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 
-public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements LeaderboardColumn<Double, ScoringTimePerRow> {
+public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements LeaderboardCell<Double, ScoringTimePerRow> {
 
-    public static final LeaderboardColumnDescriptor DESC = new LeaderboardColumnDescriptor("predict_time_per_row_millis", "double", "%.6f");
+    public static final LeaderboardColumn DESC = new LeaderboardColumn("predict_time_per_row_millis", "double", "%.6f");
 
     private final Key<Model> _modelId;
     private final Key<Frame> _leaderboardFrameId;
@@ -29,7 +29,7 @@ public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements Leader
     }
 
     @Override
-    public LeaderboardColumnDescriptor getDescriptor() {
+    public LeaderboardColumn getColumn() {
         return DESC;
     }
 

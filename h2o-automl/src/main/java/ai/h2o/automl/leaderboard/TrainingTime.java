@@ -5,9 +5,9 @@ import water.Iced;
 import water.Key;
 import water.util.Log;
 
-public class TrainingTime extends Iced<TrainingTime> implements LeaderboardColumn<Long, TrainingTime> {
+public class TrainingTime extends Iced<TrainingTime> implements LeaderboardCell<Long, TrainingTime> {
 
-    public static final LeaderboardColumnDescriptor DESC = new LeaderboardColumnDescriptor("training_time_millis", "long", "%s");
+    public static final LeaderboardColumn DESC = new LeaderboardColumn("training_time_millis", "long", "%s");
 
     private final Key<Model> _modelId;
 
@@ -23,7 +23,7 @@ public class TrainingTime extends Iced<TrainingTime> implements LeaderboardColum
     }
 
     @Override
-    public LeaderboardColumnDescriptor getDescriptor() {
+    public LeaderboardColumn getColumn() {
         return DESC;
     }
 

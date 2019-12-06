@@ -7,6 +7,6 @@ public abstract class LeaderboardExtensionsProvider extends Iced<LeaderboardExte
 
     public static final String ALL = "ALL";
 
-    public abstract LeaderboardColumn[] createExtensions(Model model);
+    public abstract LeaderboardCell[] createExtensions(Model model);
 
 }

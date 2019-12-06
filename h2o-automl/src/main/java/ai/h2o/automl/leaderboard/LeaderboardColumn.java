@@ -1,16 +1,18 @@
 package ai.h2o.automl.leaderboard;
 
-import hex.Model;
-import water.Freezable;
-import water.Key;
+public class LeaderboardColumn {
 
-public interface LeaderboardColumn<V, SELF extends LeaderboardColumn> extends Freezable<SELF> {
-    LeaderboardColumnDescriptor getDescriptor();
+    private final String _name;
+    private final String _columnType;
+    private final String _columnFormat;
 
-    Key<Model> getModelId();
-    V getValue();
-    void setValue(V value);
+    public LeaderboardColumn(String name, String columnType, String columnFormat) {
+        _name = name;
+        _columnType = columnType;
+        _columnFormat = columnFormat;
+    }
 
-    default boolean isNA() { return getValue() == null; }
-    default V fetch() { return getValue(); }
+    public String getName() { return _name; }
+    public String getColumnType() { return _columnType; }
+    public String getColumnFormat() { return _columnFormat; }
 }

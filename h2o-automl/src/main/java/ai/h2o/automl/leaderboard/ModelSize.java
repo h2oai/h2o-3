@@ -4,9 +4,9 @@ import hex.Model;
 import water.Iced;
 import water.Key;
 
-public class ModelSize extends Iced<ModelSize> implements LeaderboardColumn<Long, ModelSize> {
+public class ModelSize extends Iced<ModelSize> implements LeaderboardCell<Long, ModelSize> {
 
-    public static final LeaderboardColumnDescriptor DESC = new LeaderboardColumnDescriptor("model_size_bytes", "long", "%s");
+    public static final LeaderboardColumn DESC = new LeaderboardColumn("model_size_bytes", "long", "%s");
 
     private final Key<Model> _modelId;
 
@@ -17,7 +17,7 @@ public class ModelSize extends Iced<ModelSize> implements LeaderboardColumn<Long
     }
 
     @Override
-    public LeaderboardColumnDescriptor getDescriptor() {
+    public LeaderboardColumn getColumn() {
         return DESC;
     }
 
