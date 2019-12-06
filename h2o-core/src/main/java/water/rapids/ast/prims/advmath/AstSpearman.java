@@ -5,9 +5,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
+import water.rapids.Merge;
 import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.prims.mungers.AstRankWithinGroupBy;
 import water.rapids.vals.ValNum;
 
 public class AstSpearman extends AstPrimitive<AstSpearman> {
@@ -32,43 +34,54 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     final int vecIdX = originalUnsortedFrame.find(asts[2].exec(env).getStr());
     final int vecIdY = originalUnsortedFrame.find(asts[3].exec(env).getStr());
 
-    Scope.enter();
+    final Frame unsortedFrameWithoutNAs = new Merge.RemoveNAsTask(vecIdX, vecIdY)
+            .doAll(originalUnsortedFrame.types(), originalUnsortedFrame)
+            .outputFrame(originalUnsortedFrame.names(), originalUnsortedFrame.domains());
 
-    Frame sortedX = new Frame(originalUnsortedFrame.vec(vecIdX).makeCopy());
-    Scope.track(sortedX);
-    Frame sortedY = new Frame(originalUnsortedFrame.vec(vecIdY).makeCopy());
-    Scope.track(sortedY);
+    Frame sortedX = unsortedFrameWithoutNAs;
 
-    if (!sortedX.vec(0).isCategorical()) {
-      sortedX.label("label");
-      sortedX = sortedX.sort(new int[]{0});
-      Scope.track(sortedX);
+    if (!sortedX.vec(vecIdX).isCategorical()) {
+      // Sort by X
+      final AstRankWithinGroupBy.SortnGrouby sortTaskX = new AstRankWithinGroupBy.SortnGrouby(sortedX, new int[]{},
+              new int[]{vecIdX}, new int[]{}, "rankX");
+      sortTaskX.doAll(sortTaskX._groupedSortedOut);
 
+      AstRankWithinGroupBy.RankGroups rankTaskX = new AstRankWithinGroupBy.RankGroups(sortTaskX._groupedSortedOut, sortTaskX._groupbyCols,
+              sortTaskX._sortCols, sortTaskX._chunkFirstG, sortTaskX._chunkLastG, sortTaskX._newRankCol)
+              .doAll(sortTaskX._groupedSortedOut);
+      sortedX = rankTaskX._finalResult;
+    }
+    
+    Frame sortedY = unsortedFrameWithoutNAs;
+    if (!sortedY.vec(vecIdY).isCategorical()) {
+      // Sort by Y
+      final AstRankWithinGroupBy.SortnGrouby sortTaskY = new AstRankWithinGroupBy.SortnGrouby(sortedY, new int[]{},
+              new int[]{vecIdY}, new int[]{1}, "rankY");
+      sortTaskY.doAll(sortTaskY._groupedSortedOut);
+
+      AstRankWithinGroupBy.RankGroups rankTaskY = new AstRankWithinGroupBy.RankGroups(sortTaskY._groupedSortedOut, sortTaskY._groupbyCols,
+              sortTaskY._sortCols, sortTaskY._chunkFirstG, sortTaskY._chunkLastG, sortTaskY._newRankCol)
+              .doAll(sortTaskY._groupedSortedOut);
+      sortedY = rankTaskY._finalResult;
     }
 
-    if (!sortedY.vec(0).isCategorical()) {
-      sortedY.label("label");
-      sortedY = sortedY.sort(new int[]{0});
-      Scope.track(sortedY);
+    final Vec rankX;
+    Vec rankY;
+
+    if(!sortedY.vec(vecIdX).isCategorical()) {
+      rankX = sortedX.vec("rankX");
+    } else {
+      rankX = sortedX.vec(vecIdX);
     }
 
-    assert sortedX.numRows() == sortedY.numRows();
-    final Vec orderX = Vec.makeZero(sortedX.numRows());
-    final Vec orderY = Vec.makeZero(sortedY.numRows());
-
-    final Vec xLabel = sortedX.vec("label") == null ? sortedX.vec(0) : sortedX.vec("label");
-    final Vec yLabel = sortedY.vec("label") == null ? sortedY.vec(0) : sortedY.vec("label");
-    Scope.track(xLabel);
-    Scope.track(yLabel);
-
-    for (int i = 0; i < orderX.length(); i++) {
-      orderX.set(xLabel.at8(i) - 1, i + 1);
-      orderY.set(yLabel.at8(i) - 1, i + 1);
+    if(!sortedY.vec(vecIdY).isCategorical()) {
+      rankY = sortedY.vec("rankY");
+    } else {
+      rankY = sortedY.vec(vecIdY);
     }
 
-    final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(orderX.mean(), orderY.mean())
-            .doAll(orderX, orderY);
-    Scope.exit();
+    final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(rankX.mean(), rankY.mean())
+            .doAll(rankX, rankY);
     return new ValNum(spearman.getSpearmanCorrelationCoefficient());
   }
 
