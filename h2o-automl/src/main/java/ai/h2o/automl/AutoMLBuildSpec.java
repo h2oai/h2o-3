@@ -203,12 +203,12 @@ public class AutoMLBuildSpec extends Iced {
     private static final String ROOT_PARAM = "algo_parameters";
 
     public static final class AutoMLCustomParameter<V> extends Iced {
-      public AutoMLCustomParameter(String name, V value) {
+      private AutoMLCustomParameter(String name, V value) {
         _name = name;
         _value = value;
       }
 
-      public AutoMLCustomParameter(Algo algo, String name, V value) {
+      private AutoMLCustomParameter(Algo algo, String name, V value) {
         _algo = algo;
         _name = name;
         _value = value;
