@@ -317,7 +317,9 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @return list of model keys
    */
   public Key<Model>[] getModelKeys() {
-    return _models.values().toArray(new Key[_models.size()]);
+    Key<Model>[] keys = _models.values().toArray(new Key[_models.size()]);
+    Arrays.sort(keys);
+    return keys;
   }
 
   /**
