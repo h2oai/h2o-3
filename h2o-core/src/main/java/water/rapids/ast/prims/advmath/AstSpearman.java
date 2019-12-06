@@ -1,9 +1,6 @@
 package water.rapids.ast.prims.advmath;
 
-import water.DKV;
-import water.MRTask;
-import water.Scope;
-import water.Value;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -38,8 +35,9 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     Scope.enter();
 
     Frame sortedX = new Frame(originalUnsortedFrame.vec(vecIdX).makeCopy());
-    Frame sortedY = new Frame(originalUnsortedFrame.vec(vecIdY).makeCopy());
     Scope.track(sortedX);
+    Frame sortedY = new Frame(originalUnsortedFrame.vec(vecIdY).makeCopy());
+    Scope.track(sortedY);
 
     if (!sortedX.vec(0).isCategorical()) {
       sortedX.label("label");
@@ -67,6 +65,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
       orderX.set(xLabel.at8(i) - 1, i + 1);
       orderY.set(yLabel.at8(i) - 1, i + 1);
     }
+
     final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(orderX.mean(), orderY.mean())
             .doAll(orderX, orderY);
     Scope.exit();
@@ -99,7 +98,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     // Required to later finish calculation of standard deviation
     private double _xDiffSquared = 0;
     private double _yDiffSquared = 0;
-    private double _xyAvgDiffMul = 0;
+    private double _xyMul = 0;
     // If at least one of the vectors contains NaN, such line is skipped
     private long _linesVisited;
     
@@ -121,15 +120,12 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
       for (int row = 0; row < chunks[0].len(); row++) {
         final double x = xChunk.atd(row);
         final double y = yChunk.atd(row);
-        if (Double.isNaN(x) || Double.isNaN(y)) {
-          continue; // Skip NaN values
-        }
         _linesVisited++;
 
+        _xyMul += x * y;
+        
         final double xDiffFromMean = x - _xMean;
         final double yDiffFromMean = y - _yMean;
-        _xyAvgDiffMul += xDiffFromMean * yDiffFromMean;
-
         _xDiffSquared += Math.pow(xDiffFromMean, 2);
         _yDiffSquared += Math.pow(yDiffFromMean, 2);
       }
@@ -142,19 +138,16 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
       this._xDiffSquared += mrt._xDiffSquared;
       this._yDiffSquared += mrt._yDiffSquared;
       this._linesVisited += mrt._linesVisited;
-      this._xyAvgDiffMul += mrt._xyAvgDiffMul;
+      this._xyMul += mrt._xyMul;
     }
 
     @Override
     protected void postGlobal() {
-      // X Standard deviation
-      final double xStdDev = Math.sqrt(1D / (_linesVisited - 1) * _xDiffSquared);
+      final double xStdDev = Math.sqrt(_xDiffSquared / _linesVisited);
+      final double yStdDev = Math.sqrt(_yDiffSquared / _linesVisited);
 
-      // Y Standard deviation
-      final double yStdDev = Math.sqrt(1D / (_linesVisited - 1) * _yDiffSquared);
-
-      spearmanCorrelationCoefficient = (_xyAvgDiffMul)
-              / ((_linesVisited - 1) * xStdDev * yStdDev);
+      spearmanCorrelationCoefficient = (_xyMul - (_linesVisited * _xMean * _yMean))
+              / ((_linesVisited) * xStdDev * yStdDev);
     }
 
     public double getSpearmanCorrelationCoefficient() {

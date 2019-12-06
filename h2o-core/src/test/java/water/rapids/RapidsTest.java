@@ -56,28 +56,23 @@ public class RapidsTest extends TestUtil {
       Val pearson = Rapids.exec("(spearman heightsweights 'HEIGHT' 'WEIGHT')");
       assertTrue(pearson instanceof ValNum);
 
-      assertEquals(0.48, pearson.getNum(), 1e-2);
+      assertEquals(0.454357724505124, pearson.getNum(), 1e-8);
     } finally {
       Scope.exit();
     }
   }
 
   @Test
-  public void testSpearmanWithoutDuplicatedValues() {
+  public void testSpearmanIris() {
     Scope.enter();
     try {
-      final Frame frame = new TestFrameBuilder()
-              .withName("heightsweights")
-              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
-              .withColNames("HEIGHT", "WEIGHT")
-              .withDataForCol(0, ard(175,166,170,169,188,176,171,173,174)) // No value is present twice
-              .withDataForCol(1, ard(69,55,67,52,90,57,57,68,90)) // No value is present twice
-              .build();
+      final Frame iris = TestUtil.parse_test_file(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
+      Scope.track_generic(iris);
 
-      Val pearson = Rapids.exec("(spearman heightsweights 'HEIGHT' 'WEIGHT')");
-      assertTrue(pearson instanceof ValNum);
+      final Val pearson_sepal = Rapids.exec("(spearman iris_spearman 'sepal_len' 'sepal_wid')");
+      assertTrue(pearson_sepal instanceof ValNum);
+      assertEquals(-0.1720027734934786, pearson_sepal.getNum(), 1e-8);
 
-      assertEquals(0.71431, pearson.getNum(), 1e-5);
     } finally {
       Scope.exit();
     }
