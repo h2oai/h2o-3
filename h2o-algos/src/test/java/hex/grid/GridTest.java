@@ -29,7 +29,7 @@ public class GridTest extends TestUtil {
     TestUtil.stall_till_cloudsize(1);
   }
 
-  @Ignore
+  @Test
   public void testParallelModelTimeConstraint() {
     try {
       Scope.enter();
@@ -49,20 +49,20 @@ public class GridTest extends TestUtil {
       params._train = trainingFrame._key;
       params._response_column = "IsDepDelayed";
       params._seed = 42;
-      params._max_runtime_secs = 1D;
 
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
       Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
               hyperParms,
               new GridSearch.SimpleParametersBuilderFactory(),
-              new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria(), 2);
+              searchCriteria, 2);
+
+      searchCriteria.set_max_runtime_secs(1d);
 
       Scope.track_generic(gridSearch);
       final Grid grid = gridSearch.get();
       Scope.track_generic(grid);
 
-      // According to javadoc of `RandomDiscreteValueSearchCriteria.max_runtime_secs`  each model will have one second to finish ( due to params._max_runtime_secs = 1D;) and there is no time limit for Grid
-      // It means if it is enough to finish one model with one second then we should expect whole space to be trained => assertion is probably incorrect
-      assertNotEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
+     assertNotEquals(ntreesArr.length * maxDepthArr.length, grid.getModelCount());
     } finally {
       Scope.exit();
     }
