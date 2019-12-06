@@ -36,6 +36,7 @@ include 'h2o-ext-jython-cfunc'
 include 'h2o-ext-mojo-pipeline'
 include 'h2o-ext-target-encoder'
 include 'h2o-security'
+include 'h2o-logger'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
