@@ -115,7 +115,7 @@ public class ParserTestARFF extends TestUtil {
     try {
       k2 = parse_test_file_single_quotes("smalldata/junit/arff/iris.arff");
       k1 = parse_test_file_single_quotes("smalldata/junit/cars.csv");
-      TestUtil.assertBitIdentical(k1, k2);
+      TestUtil.assertIdenticalUpToRelTolerance(k1, k2, 0, false);
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -148,7 +148,7 @@ public class ParserTestARFF extends TestUtil {
       k1 = parse_test_file("smalldata/junit/iris.csv");
       TestUtil.assertBitIdentical(k1, k2);
       TestUtil.assertBitIdentical(k3, k4);
-      TestUtil.assertBitIdentical(k1, k4);
+      TestUtil.assertIdenticalUpToRelTolerance(k1, k4, 0, false);
       Assert.assertArrayEquals("column names do not match!", k2.names(), k1.names());
       Scope.track(k1, k2, k3, k4);
     } finally {

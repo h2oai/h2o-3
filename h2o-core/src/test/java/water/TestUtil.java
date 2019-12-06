@@ -328,8 +328,12 @@ public class TestUtil extends Iced {
 
   public static void assertIdenticalUpToRelTolerance(Frame fr1, Frame fr2, double epsilon, boolean expected, String messagePrefix) {
     if (fr1 == fr2) return;
-    assertEquals("Number of columns differ.", fr1.numCols(), fr2.numCols());
-    assertEquals("Number of rows differ.", fr1.numRows(), fr2.numRows());
+    if (expected) {
+      assertEquals("Number of columns differ.", fr1.numCols(), fr2.numCols());
+      assertEquals("Number of rows differ.", fr1.numRows(), fr2.numRows());
+    } else if (fr1.numCols() != fr2.numCols() || fr1.numRows() != fr2.numRows()) {
+      return;
+    }
     Scope.enter();
     if( !fr1.isCompatible(fr2) ) fr1.makeCompatible(fr2);
     Cmp1 cmp = new Cmp1(epsilon, messagePrefix).doAll(new Frame(fr1).add(fr2));
