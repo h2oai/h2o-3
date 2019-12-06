@@ -1,8 +1,6 @@
 package hex.grid;
 
 import hex.Model;
-import hex.ModelBuilder;
-import hex.ParallelModelBuilder;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
@@ -16,11 +14,7 @@ import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.*;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.function.BiConsumer;
 
-import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
 
 public class GridTest extends TestUtil {
@@ -399,4 +393,16 @@ public class GridTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testGetModelKeys() {
+    Grid<?> grid = new Grid<>(null, null, null, null);
+    grid.putModel(3, Key.make("2"));
+    grid.putModel(2, Key.make("1"));
+    grid.putModel(1, Key.make("3"));
+
+    assertArrayEquals(
+            new Key[]{Key.make("1"), Key.make("2"), Key.make("3")},
+            grid.getModelKeys()
+    );
+  }
 }
