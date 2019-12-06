@@ -41,12 +41,9 @@ public class ParseTestMultiFileOrc extends TestUtil {
 
     @Test
     public void testParseMultiFileOrcs() {
-        final ParseSetupTransformer pst = new ParseSetupTransformer() {
-            @Override
-            public ParseSetup transformSetup(ParseSetup guessedSetup) {
-                guessedSetup.disableParallelParse = disableParallelParse;
-                return guessedSetup;
-            }
+        final ParseSetupTransformer pst = guessedSetup -> {
+            guessedSetup.disableParallelParse = disableParallelParse;
+            return guessedSetup;
         };
         Scope.enter();
         try {
@@ -57,7 +54,7 @@ public class ParseTestMultiFileOrc extends TestUtil {
                     types[index] = 4;
             }
             Frame orc_frame = Scope.track(parse_test_folder(ORC_DIR, null, 0, types, pst));
-            assertTrue(TestUtil.isIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-5));
+            assertIdenticalUpToRelTolerance(csv_frame, orc_frame, 1e-5);
         } finally {
             Scope.exit();
         }

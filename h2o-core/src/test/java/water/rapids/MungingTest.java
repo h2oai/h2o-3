@@ -41,7 +41,7 @@ public class MungingTest extends TestUtil {
       Val res = Rapids.exec(x);
       Frame finalResult  = res.getFrame();  // need to compare this to correct result
       Scope.track(finalResult);
-      assertTrue(isIdenticalUpToRelTolerance(finalResult, answerFrame, 1e-10));
+      assertIdenticalUpToRelTolerance(finalResult, answerFrame, 1e-10);
     } finally {
       Scope.exit();
     }

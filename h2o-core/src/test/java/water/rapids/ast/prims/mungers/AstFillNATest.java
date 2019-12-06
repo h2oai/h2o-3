@@ -62,7 +62,6 @@ public class AstFillNATest extends TestUtil {
   @Test
   public void testBackwardRowColLarge() {
     Scope.enter();
-
     try {
       long seed=12345;
       Session sess = new Session();
@@ -81,13 +80,12 @@ public class AstFillNATest extends TestUtil {
       Frame testFrame =  cf.execImpl().get();
       Scope.track(testFrame);
 
-      int[] maxLenArray = new int[]{0, 1, 2, 17, 10000000};
-
-      for (int maxlen:maxLenArray) {
+      int[] maxLenArray = new int[]{ 0, 1, 2, 17, 10000000};
+      for (int maxlen : maxLenArray) {
         // first perform col fillna
-        String rapidStringCol= "(h2o.fillna "+testFrame._key+" 'backward' 0 "+maxlen+")";
+        String rapidStringCol = "(h2o.fillna " + testFrame._key + " 'backward' 0 " + maxlen + ")";
         assertFillNACorrect(testFrame, rapidStringCol, maxlen, false, sess);
-        String rapidStringRow = "(h2o.fillna "+testFrame._key+" 'backward' 1 "+maxlen+")";
+        String rapidStringRow = "(h2o.fillna " + testFrame._key + " 'backward' 1 " + maxlen + ")";
         assertFillNACorrect(testFrame, rapidStringRow, maxlen, true, sess);
       }
     } finally {
@@ -106,7 +104,7 @@ public class AstFillNATest extends TestUtil {
       startMs = System.currentTimeMillis();
       Frame singleThreadResult = Scope.track(rowOper ? genFillNARow(testFrame, maxlen) : genFillNACol(testFrame, maxlen));
       System.out.println("Time(ms) taken to perform single-thread fillna is "+(System.currentTimeMillis()-startMs));
-      isBitIdentical(res, singleThreadResult);
+      assertBitIdentical(res, singleThreadResult);
     } finally {
       Scope.exit();
     }
@@ -317,6 +315,42 @@ public class AstFillNATest extends TestUtil {
               .withDataForCol(7, ard(4))
               .withDataForCol(8, ard(4))
               .withDataForCol(9, ard(4))
+              .withDataForCol(10, ard(Double.NaN))
+              .withDataForCol(11, ard(5))
+              .withDataForCol(12, ard(5))
+              .withDataForCol(13, ard(5))
+              .withDataForCol(14, ard(5))
+              .withDataForCol(15, ard(Double.NaN))
+              .withDataForCol(16, ard(Double.NaN))
+              .withDataForCol(17, ard(6))
+              .withDataForCol(18, ard(6))
+              .withDataForCol(19, ard(6))
+              .withDataForCol(20, ard(6))
+              .withDataForCol(21, ard(Double.NaN))
+              .withDataForCol(22, ard(Double.NaN))
+              .withDataForCol(23, ard(Double.NaN))
+              .withDataForCol(24, ard(7))
+              .withDataForCol(25, ard(7))
+              .withDataForCol(26, ard(7))
+              .withDataForCol(27, ard(7))
+              .withDataForCol(28, ard(Double.NaN))
+              .build());
+      Frame frMultipleNA100Fill = Scope.track(new TestFrameBuilder()
+              .withName("$frMultipleNA100Fill", sess)
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,
+                      Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,
+                      Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,
+                      Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(1))
+              .withDataForCol(1, ard(2))
+              .withDataForCol(2, ard(2))
+              .withDataForCol(3, ard(3))
+              .withDataForCol(4, ard(3))
+              .withDataForCol(5, ard(3))
+              .withDataForCol(6, ard(4))
+              .withDataForCol(7, ard(4))
+              .withDataForCol(8, ard(4))
+              .withDataForCol(9, ard(4))
               .withDataForCol(10, ard(5))
               .withDataForCol(11, ard(5))
               .withDataForCol(12, ard(5))
@@ -336,41 +370,6 @@ public class AstFillNATest extends TestUtil {
               .withDataForCol(26, ard(7))
               .withDataForCol(27, ard(7))
               .withDataForCol(28, ard(Double.NaN))
-              .build());
-      Frame frMultipleNA100Fill = Scope.track(new TestFrameBuilder()
-              .withName("$frMultipleNA100Fill", sess)
-              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,
-                      Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,
-                      Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM,
-                      Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
-              .withDataForCol(0, ard(1))
-              .withDataForCol(1, ard(2))
-              .withDataForCol(2, ard(2))
-              .withDataForCol(3, ard(3))
-              .withDataForCol(4, ard(3))
-              .withDataForCol(5, ard(3))
-              .withDataForCol(6, ard(4))
-              .withDataForCol(7, ard(4))
-              .withDataForCol(8, ard(4))
-              .withDataForCol(9, ard(5))
-              .withDataForCol(10, ard(5))
-              .withDataForCol(11, ard(5))
-              .withDataForCol(12, ard(5))
-              .withDataForCol(13, ard(5))
-              .withDataForCol(14, ard(6))
-              .withDataForCol(15, ard(6))
-              .withDataForCol(16, ard(6))
-              .withDataForCol(17, ard(6))
-              .withDataForCol(18, ard(6))
-              .withDataForCol(19, ard(6))
-              .withDataForCol(20, ard(7))
-              .withDataForCol(21, ard(7))
-              .withDataForCol(22, ard(7))
-              .withDataForCol(23, ard(7))
-              .withDataForCol(24, ard(7))
-              .withDataForCol(25, ard(7))
-              .withDataForCol(26, ard(7))
-              .withDataForCol(27, ard(Double.NaN))
               .build());
       assertNFillNACorrect(sess, frMultipleNA, frMultipleNA, 0,
               "(h2o.fillna $frMultipleNA 'backward' 1 0)", true); // h2o.fillna with maxlen 0
@@ -437,13 +436,13 @@ public class AstFillNATest extends TestUtil {
               .build());
 
       assertNFillNACorrect(sess, fr1NA, fr1NA, 0,
-              "(h2o.fillna $fr 'backward' 0 0)", false); // h2o.fillna with maxlen 0
+              "(h2o.fillna $fr2 'backward' 0 0)", false); // h2o.fillna with maxlen 0
       assertNFillNACorrect(sess, fr1NA, fr1NA1Ans, 1,
-              "(h2o.fillna $fr 'backward' 0 1)", false); // h2o.fillna with maxlen 1
+              "(h2o.fillna $fr2 'backward' 0 1)", false); // h2o.fillna with maxlen 1
       assertNFillNACorrect(sess, fr1NA, fr1NA3Ans, 3,
-              "(h2o.fillna $fr 'backward' 0 3)", false); // h2o.fillna with maxlen 3
+              "(h2o.fillna $fr2 'backward' 0 3)", false); // h2o.fillna with maxlen 3
       assertNFillNACorrect(sess, fr1NA, fr1NA100Ans, 100,
-              "(h2o.fillna $fr 'backward' 0 100)", false); // h2o.fillna with maxlen 100
+              "(h2o.fillna $fr2 'backward' 0 100)", false); // h2o.fillna with maxlen 100
 
       // frame with multiple numbers and NA blocks
       Frame frMultipleNA = Scope.track(new TestFrameBuilder()
@@ -515,11 +514,6 @@ public class AstFillNATest extends TestUtil {
     Frame newFrame = fr.deepCopy(Key.make().toString());
     long nrow = fr.numRows();
     int lastColInd = fr.numCols() - 1;
-    int naColStart = -1;
-    int lastNonNaCol = Integer.MAX_VALUE;
-    int cindex = lastColInd - 1;
-    double fillVal = Double.NaN;
-    int naBlockLen = 0;
 
     if (maxlen==0)
       return newFrame;
@@ -533,13 +527,17 @@ public class AstFillNATest extends TestUtil {
       allWriters[cind] = allVecs[cind].open();
     }
     for (long rindex = 0; rindex < nrow; rindex++) {
+      double fillVal = Double.NaN;
+      int lastNonNaCol = Integer.MAX_VALUE;
       if (!fr.vec(lastColInd).isNA(rindex)) {
         lastNonNaCol = lastColInd;
         fillVal = fr.vec(lastColInd).at(rindex);
       }
+      int naBlockLen = 0;
+      int cindex = lastColInd - 1;
       while (cindex >= 0) {    // start from second to last column
         if (fr.vec(cindex).isNA(rindex)) { // found a na, could be more to follow
-          naColStart = cindex;
+          int naColStart = cindex;
           naBlockLen++;
           cindex--;
           while ((cindex >=0) && fr.vec(cindex).isNA(rindex)) { // keep looping to find NA blocks
@@ -551,7 +549,6 @@ public class AstFillNATest extends TestUtil {
           for (int cind = naColStart; cind > cend; cind--) {
             int colIndDiff = lastNonNaCol - cind;
             if (colIndDiff <= maxlen) {
-             // newFrame.vec(cind).set(rindex, fillVal);
               allWriters[cind].set(rindex, fillVal);
             } else {
               break;  // done filling in NAs
@@ -579,11 +576,10 @@ public class AstFillNATest extends TestUtil {
       Val val = Rapids.exec(rapidString, sess);
       Assert.assertTrue(val instanceof ValFrame);
       Frame res =  Scope.track(val.getFrame());
-      Scope.track(res);
-      Frame ansSingleThread = rowTest?genFillNARow(origF, maxLen):genFillNACol(origF, maxLen);
+      Frame ansSingleThread = rowTest ? genFillNARow(origF, maxLen) : genFillNACol(origF, maxLen);
       Scope.track(ansSingleThread);
-      isBitIdentical(res, answerFrame);  // fillna result is correct
-      isBitIdentical(ansSingleThread, answerFrame);   // fillna from single thread is correct
+      assertBitIdentical(res, answerFrame);  // fillna result is correct
+      assertBitIdentical(ansSingleThread, answerFrame);   // fillna from single thread is correct
     } finally {
       Scope.exit();
     }
@@ -593,16 +589,13 @@ public class AstFillNATest extends TestUtil {
     Frame newFrame = fr.deepCopy(Key.make().toString());
     long ncol = fr.numCols();
     long lastRowInd = fr.numRows() - 1;
-    long naRowStart = -1;
-    long lastNonNaRow = Long.MAX_VALUE;
-    long rindex = lastRowInd - 1;
-    double fillVal = Double.NaN;
-    long naBlockLen = 0;
 
     if (maxlen == 0)
       return newFrame;
 
     for (int cindex = 0; cindex < ncol; cindex++) { // go through each column to do the na fill
+      long lastNonNaRow = Long.MAX_VALUE;
+      double fillVal = Double.NaN;
       Vec oneColumn = newFrame.vec(cindex);
       Vec.Writer writeVec = oneColumn.open();
       Scope.track(oneColumn);
@@ -611,9 +604,11 @@ public class AstFillNATest extends TestUtil {
         lastNonNaRow = lastRowInd;
       }
 
+      long rindex = lastRowInd - 1;
+      long naBlockLen = 0;
       while (rindex >= 0) {    // start from second to last row
         if (fr.vec(cindex).isNA(rindex)) { // found a na, could be more to follow
-          naRowStart = rindex;
+          long naRowStart = rindex;
           naBlockLen++;
           rindex--;
           while ((rindex >= 0) && fr.vec(cindex).isNA(rindex)) { // keep looping to find NA blocks

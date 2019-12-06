@@ -115,7 +115,7 @@ public class PCATest extends TestUtil {
       Scope.track_generic(modelK);
       scoreK = modelK.score(train);
       Scope.track(scoreK);
-      isBitIdentical(score, scoreK);
+      assertBitIdentical(score, scoreK);
     } finally {
       Scope.exit();
     }

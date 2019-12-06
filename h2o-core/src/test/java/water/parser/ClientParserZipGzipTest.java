@@ -29,7 +29,7 @@ public class ClientParserZipGzipTest extends TestUtil {
     Frame one_csv_directory = parse_test_file("smalldata/parser/hexdev_497/airlines_small_csv/all_airlines.csv");
 
       // H2O frames built from both sources should be equal.  Verify that here.
-    assertTrue(TestUtil.isBitIdentical(one_zip_directory, one_csv_directory));
+    TestUtil.assertBitIdentical(one_zip_directory, one_csv_directory);
 
     if (one_zip_directory != null) one_zip_directory.delete();
     if (one_csv_directory != null) one_csv_directory.delete();
