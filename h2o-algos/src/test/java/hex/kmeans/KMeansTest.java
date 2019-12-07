@@ -1,6 +1,5 @@
 package hex.kmeans;
 
-import hex.KeyValue;
 import hex.ModelMetrics;
 import hex.ModelMetricsClustering;
 import hex.SplitFrame;
@@ -129,12 +128,15 @@ public class KMeansTest extends TestUtil {
     }
   }
 
-  @Test public void testIrisConstrained() {
+  @Test 
+  public void testIrisConstrained() {
     KMeansModel kmm = null, kmm2 = null, kmm3 = null, kmm4 = null;
     Frame fr = null, points=null, predict1=null, predict2=null, predict3=null, predict4=null;
     try {
+      Scope.enter();
       fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      fr.remove(4).remove();
+      Vec vec = fr.remove(4);
+      vec.remove();
       
       
       points = ArrayUtils.frame(ard(
@@ -203,8 +205,8 @@ public class KMeansTest extends TestUtil {
         System.out.println("===");
         for (int j=0; j<kmm._output._centers_raw[0].length;j++) {
           System.out.println(kmm._output._centers_raw[i][j]+" "+kmm3._output._centers_raw[i][j]+" "+kmm2._output._centers_raw[i][j]+" "+kmm4._output._centers_raw[i][j]);
-          //assert kmm._output._centers_raw[i][j] == kmm3._output._centers_raw[i][j]: "Centers should be the same for Loyd Kmenas and Constrained Kmeans.";
-          //assert kmm2._output._centers_raw[i][j] == kmm4._output._centers_raw[i][j]: "Centers should be the same for Loyd Kmenas and Constrained Kmeans.";
+          assertEquals(kmm._output._centers_raw[i][j], kmm3._output._centers_raw[i][j], 1e-1);
+          assertEquals(kmm2._output._centers_raw[i][j], kmm4._output._centers_raw[i][j], 1e-1);
         }
       }
 
@@ -219,10 +221,12 @@ public class KMeansTest extends TestUtil {
       if( predict2 != null ) predict2.delete();
       if( predict3 != null ) predict3.delete();
       if( predict4 != null ) predict4.delete();
+      Scope.exit();
     }
   }
 
-  @Test public void testChicagoConstrained() {
+  @Test 
+  public void testChicagoConstrained() {
     KMeansModel kmm = null, kmm2 = null;
     Frame fr = null, points = null;
     try {

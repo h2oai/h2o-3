@@ -319,7 +319,7 @@ class KMeansSimplexSolver {
 
     public void checkConstraintsCondition(int[] numberOfPointsInCluster){
         for(int i = 0; i<_constraintsLength; i++){
-            //assert numberOfPointsInCluster[i] >= _demands.at8(_numberOfPoints+i) : String.format("Cluster %d has %d assigned points however should has assigned at least %d points.", i+1, numberOfPointsInCluster[i], _demands.at8(_numberOfPoints+i));
+            assert numberOfPointsInCluster[i] >= _demands.at8(_numberOfPoints+i) : String.format("Cluster %d has %d assigned points however should has assigned at least %d points.", i+1, numberOfPointsInCluster[i], _demands.at8(_numberOfPoints+i));
         }
     }
 
