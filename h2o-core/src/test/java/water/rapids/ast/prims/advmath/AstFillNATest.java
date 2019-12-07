@@ -33,7 +33,7 @@ public class AstFillNATest extends TestUtil {
     Scope.enter();
     try {
       Session sess = new Session();
-      Frame fr = Scope.track(new TestFrameBuilder()
+      Scope.track(new TestFrameBuilder()
               .withName("testFrame", sess)
               .withColNames("ColA")
               .withVecTypes(Vec.T_CAT)

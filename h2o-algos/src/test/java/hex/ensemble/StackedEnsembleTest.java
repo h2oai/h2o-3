@@ -617,17 +617,17 @@ public class StackedEnsembleTest extends TestUtil {
                 Assert.assertEquals(gridModels.length + 1, se1._output._levelone_frame_id.numCols());
                 if (blending) {
                     Assert.assertEquals(test.numRows(), se1._output._levelone_frame_id.numRows());
-                    TestUtil.isBitIdentical(new Frame(test.vec(target)), new Frame(se1._output._levelone_frame_id.vec(target)));
+                    TestUtil.assertBitIdentical(new Frame(test.vec(target)), new Frame(se1._output._levelone_frame_id.vec(target)));
                 } else {
                     Assert.assertEquals(train.numRows(), se1._output._levelone_frame_id.numRows());
-                    TestUtil.isBitIdentical(new Frame(train.vec(target)), new Frame(se1._output._levelone_frame_id.vec(target)));
+                    TestUtil.assertBitIdentical(new Frame(train.vec(target)), new Frame(se1._output._levelone_frame_id.vec(target)));
                 }
             } else {
                 Assert.assertNull(se1._output._levelone_frame_id);
             }
             se1.delete();
 
-//            building a new model would throw an exception if we deleted too much when deleting s1
+            // building a new model would throw an exception if we deleted too much when deleting s1
             GBMModel gbm = new GBM(params).trainModel().get(); deletables.add(gbm);
             StackedEnsembleModel se2 = new StackedEnsemble(seParams).trainModel().get(); deletables.add(se2);
         } finally {

@@ -97,15 +97,12 @@ public class FrameTest extends TestUtil {
     Frame y = null;
     try {
       x = testData.deepSlice(new Frame(rnd.vec(1)), null);
-//      y = testData.deepSlice(new Frame(rnd.vec(2)),null);
-      assertTrue(TestUtil.isBitIdentical(subset1, x));
-//      assertTrue(isBitIdentical(subset2,y));
+      TestUtil.assertBitIdentical(subset1, x);
     } finally {
       Scope.exit();
       testData.delete();
       rnd.delete();
       subset1.delete();
-//      subset2.delete();
       if (x != null) x.delete();
       if (y != null) y.delete();
     }

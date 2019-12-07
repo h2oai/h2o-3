@@ -13,8 +13,8 @@ def tree_algos_ntree_actual():
   prostate[1] = prostate[1].asfactor()
   prostate.summary()
   ntrees_original = 1000
-
-  prostate_gbm = H2OGradientBoostingEstimator(nfolds=5,ntrees=ntrees_original, distribution="bernoulli", stopping_metric="MSE", stopping_tolerance=0.01, stopping_rounds=5)
+  
+  prostate_gbm = H2OGradientBoostingEstimator(nfolds=5,ntrees=ntrees_original, distribution="bernoulli", stopping_metric="MSE", stopping_tolerance=0.01, stopping_rounds=5, seed=1)
   prostate_gbm.train(x=list(range(2,9)), y=1, training_frame=prostate)
   
   print("\n")
@@ -27,7 +27,7 @@ def tree_algos_ntree_actual():
   assert prostate_gbm.ntrees_actual() == prostate_gbm._model_json['output']['model_summary']['number_of_trees'][0] == prostate_gbm.summary()['number_of_trees'][0]
 
 
-  prostate_if = H2OIsolationForestEstimator(sample_rate = 0.1, max_depth = 20, ntrees=ntrees_original, stopping_metric="anomalyscore", stopping_tolerance=0.01, stopping_rounds=5)
+  prostate_if = H2OIsolationForestEstimator(sample_rate = 0.1, max_depth = 20, ntrees=ntrees_original, stopping_metric="anomalyscore", stopping_tolerance=0.01, stopping_rounds=5, seed=1)
   prostate_if.train(x=list(range(2,9)), y=1, training_frame=prostate)
 
   print("\n")
@@ -39,7 +39,7 @@ def tree_algos_ntree_actual():
   assert prostate_if.ntrees_actual() < ntrees_original
   assert prostate_if.ntrees_actual() == prostate_if._model_json['output']['model_summary']['number_of_trees'][0] == prostate_if.summary()['number_of_trees'][0]
 
-  prostate_drf = H2ORandomForestEstimator(ntrees=ntrees_original, max_depth=20, min_rows=10, stopping_metric="auc", stopping_tolerance=0.01, stopping_rounds=5)
+  prostate_drf = H2ORandomForestEstimator(ntrees=ntrees_original, max_depth=20, min_rows=10, stopping_metric="auc", stopping_tolerance=0.01, stopping_rounds=5, seed=1)
   prostate_drf.train(x=list(range(2,9)), y=1, training_frame=prostate)
 
   print("\n")

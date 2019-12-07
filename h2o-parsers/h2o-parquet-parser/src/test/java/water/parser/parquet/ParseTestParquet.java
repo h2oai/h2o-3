@@ -90,7 +90,7 @@ public class ParseTestParquet extends TestUtil {
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
       assertEquals(expected.numRows(), actual.numRows());
-      assertTrue(isBitIdentical(expected, actual));
+      assertBitIdentical(expected, actual);
     } finally {
       if (expected != null) expected.delete();
       if (actual != null) actual.delete();
@@ -122,7 +122,7 @@ public class ParseTestParquet extends TestUtil {
       assertEquals("String", actual.typesStr()[1]);
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
-      assertTrue(isBitIdentical(expected, actual));
+      assertBitIdentical(expected, actual);
 
       // no warnings were generated
       assertNull(pd._job.warns());
@@ -155,7 +155,7 @@ public class ParseTestParquet extends TestUtil {
       expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
-      assertTrue(isBitIdentical(expected, actual));
+      assertBitIdentical(expected, actual);
 
       // proper warnings were generated
       assertEquals(1, pd._job.warns().length);

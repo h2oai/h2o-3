@@ -208,9 +208,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
 
       Scope.track(transformedTrainWithTargetEncoder);
 
-      assertTrue("Transformed by `TargetEncoderModel` and `TargetEncoder` train frames should be identical",
-              isBitIdentical(transformedTrainWithModelFromBuilder, transformedTrainWithTargetEncoder));
-
+      assertBitIdentical(transformedTrainWithModelFromBuilder, transformedTrainWithTargetEncoder);
     } finally {
       removeEncodingMaps(encodingMapFromTargetEncoder, targetEncodingMapFromBuilder);
       Scope.exit();
@@ -252,7 +250,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
       removeEncodingMaps(encodingMap1, encodingMap2);
 
       Frame te2ResultSortedReordered = new Frame(te1ResultSorted.names(), te2ResultSorted.vecs(te1ResultSorted.names()));
-      assertTrue(isBitIdentical(te1ResultSorted, te2ResultSortedReordered));
+      assertBitIdentical(te1ResultSorted, te2ResultSortedReordered);
     } finally {
       Scope.exit();
     }
@@ -287,7 +285,7 @@ public class TargetEncoderBuilderTest extends TestUtil {
     for (Map.Entry<String, Frame> entry : targetEncodingMapFromBuilder.entrySet()) {
       String teColumn = entry.getKey();
       Frame correspondingEncodingFrameFromTargetEncoder = encodingMapFromTargetEncoder.get(teColumn);
-      assertTrue(isBitIdentical(entry.getValue(), correspondingEncodingFrameFromTargetEncoder));
+      assertBitIdentical(entry.getValue(), correspondingEncodingFrameFromTargetEncoder);
     }
   }
 }

@@ -21,7 +21,7 @@ test.tree_algos.bernoulli <- function() {
   # Train H2O GBM Model:
   ntrees <- 1000
   Log.info(paste("H2O GBM with parameters:\nnfolds = 5, distribution = 'bernoulli', ntrees = ", ntrees, ", stopping_metric=\"MSE\", stopping_tolerance=0.01, stopping_rounds=5\n", sep = ""))
-  prostate_gbm.h2o <- h2o.gbm(x = 3:9, y = "CAPSULE", training_frame = prostate.hex, nfolds = 5, distribution = "bernoulli", ntrees = ntrees, stopping_metric="MSE", stopping_tolerance=0.01, stopping_rounds=5)
+  prostate_gbm.h2o <- h2o.gbm(x = 3:9, y = "CAPSULE", training_frame = prostate.hex, nfolds = 5, distribution = "bernoulli", ntrees = ntrees, stopping_metric="MSE", stopping_tolerance=0.01, stopping_rounds=5, seed=1)
  
   Log.info("GBM Model: number of trees set by user before building the model is:"); print(ntrees)
   Log.info("GBM Model: number of trees built with early-stopping is:"); print(h2o.get_ntrees_actual(prostate_gbm.h2o))
@@ -31,7 +31,7 @@ test.tree_algos.bernoulli <- function() {
 
   # Train H2O Isolation Forest Model:
   Log.info(paste("H2O Isolation Forest with parameters:\nsample_rate = 0.1, max_depth = 20, ntrees = ", ntrees, ", stopping_metric=\"AUTO\", stopping_tolerance=0.01, stopping_rounds=5\n", sep = ""))
-  prostate_if.h2o <- h2o.isolationForest(sample_rate = 0.1, max_depth = 20, training_frame = prostate.hex, ntrees=ntrees, stopping_metric="AUTO", stopping_tolerance=0.01, stopping_rounds=5)
+  prostate_if.h2o <- h2o.isolationForest(sample_rate = 0.1, max_depth = 20, training_frame = prostate.hex, ntrees=ntrees, stopping_metric="AUTO", stopping_tolerance=0.01, stopping_rounds=5, seed=1)
 
   Log.info("Isolation Forest Model: number of trees set by user before building the model is:"); print(ntrees)
   Log.info("Isolation Forest Model: number of trees built with early-stopping is:"); print(h2o.get_ntrees_actual(prostate_if.h2o))
@@ -41,7 +41,7 @@ test.tree_algos.bernoulli <- function() {
 
   # Train H2O Random Forest Model:
   Log.info(paste("H2O Random Forest with parameters:\nx = 1:4, y = 5,max_depth=20, min_rows=10, ntrees = ", ntrees, ", stopping_metric=\"AUTO\", stopping_tolerance=0.01, stopping_rounds=5\n", sep = ""))
-  prostate_rf.h2o <- h2o.randomForest(x = 1:4, y = 5, ntrees=ntrees, max_depth=20, min_rows=10, training_frame = prostate.hex, stopping_metric="AUTO", stopping_tolerance=0.01, stopping_rounds=5)
+  prostate_rf.h2o <- h2o.randomForest(x = 1:4, y = 5, ntrees=ntrees, max_depth=20, min_rows=10, training_frame = prostate.hex, stopping_metric="AUTO", stopping_tolerance=0.01, stopping_rounds=5, seed=1)
 
   Log.info("Random Forest Model: number of trees set by user before building the model is:"); print(ntrees)
   Log.info("Random Forest Model: number of trees built with early-stopping is:"); print(h2o.get_ntrees_actual(prostate_rf.h2o))
