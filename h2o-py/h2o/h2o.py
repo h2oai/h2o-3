@@ -627,7 +627,7 @@ def parse_setup(raw_frames, destination_frame=None, header=0, separator=None, co
 
     :returns: a dictionary containing parse parameters guessed by the H2O backend.
     """
-    coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
+    coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "long", "numeric",
                 "categorical", "factor", "enum", "time")
     natype = U(str, [str])
     assert_is_type(raw_frames, str, [str])

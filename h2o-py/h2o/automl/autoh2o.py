@@ -559,6 +559,7 @@ class H2OAutoML(Keyed):
     #-------------------------------------------------------------------------------------------------------------------
     # Private
     #-------------------------------------------------------------------------------------------------------------------
+
     def _fetch(self):
         state = H2OAutoML._fetch_state(self.key)
         self._leader_id = state['leader_id']
@@ -597,6 +598,15 @@ class H2OAutoML(Keyed):
         except Exception as e:
             print("Failed polling AutoML progress log: {}".format(e))
 
+    @staticmethod
+    def _fetch_extended_leaderboard(aml_id, *extensions):
+        if not extensions:
+            extensions = ['ALL']
+        resp = h2o.api("GET /99/Leaderboards/%s" % aml_id, data=dict(extensions=list(extensions)))
+        dest_key = resp['project_name'].split('@', 1)[0]+"_extended_leaderboard"
+        lb = H2OAutoML._fetch_table(resp['table'], key=dest_key, progress_bar=False)
+        return h2o.assign(lb[1:], dest_key)
+
 
     @staticmethod
     def _fetch_table(table, key=None, progress_bar=True):
@@ -630,6 +640,7 @@ class H2OAutoML(Keyed):
         if should_fetch('leaderboard'):
             leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)
             leaderboard = h2o.assign(leaderboard[1:], project_name+"_leaderboard")  # removing index and reassign id to ensure persistence on backend
+            leaderboard.extended = ft.partial(H2OAutoML._fetch_extended_leaderboard, aml_id)
 
         event_log = None
         if should_fetch('event_log'):

@@ -384,6 +384,13 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   return(state)
 }
 
+.automl.fetch_extended_leaderboard <- function(run_id, extensions=NULL) {
+  if (is.null(extensions)) extensions <- list("ALL")
+  resp <- .h2o.__remoteSend(h2oRestApiVersion=99, method="GET", page=paste0("Leaderboards/", run_id), .params=list(extensions=list(extensions)))
+  dest_key <- paste0(gsub("@.*", "", resp$project_name), "_extended_leaderboard")
+  .automl.fetch_table(as.data.frame(resp$table), destination_frame=dest_key, show_progress=FALSE)
+}
+
 .automl.fetch_table <- function(table, destination_frame=NULL, show_progress=TRUE) {
   # disable the progress bar is show_progress is set to FALSE, e.g. since showing multiple progress bars is confusing to users.
   # In any case, revert back to user's original progress setting.
@@ -409,6 +416,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 
   if (should_fetch('leaderboard')) {
     leaderboard <- .automl.fetch_table(leaderboard, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE)
+    leaderboard$extended <- function(extensions=NULL) .automl.fetch_extended_leaderboard(run_id, extensions)
     # If the leaderboard is empty, it creates a dummy row so let's remove it
     if (leaderboard$model_id[1,1] == "") {
       leaderboard <- leaderboard[-1,]

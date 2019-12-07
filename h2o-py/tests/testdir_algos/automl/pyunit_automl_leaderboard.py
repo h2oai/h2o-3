@@ -166,7 +166,7 @@ def test_leaderboard_with_no_algos():
 
     lb = aml.leaderboard
     assert lb.nrows == 0
-    check_leaderboard(aml, exclude_algos, ["unknown"], None, None)
+    check_leaderboard(aml, exclude_algos, [], None, None)
 
 
 def test_leaderboard_for_binomial_with_custom_sorting():
