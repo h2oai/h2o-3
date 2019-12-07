@@ -99,9 +99,12 @@ RUN chmod 700 /usr/sbin/startup.sh && \
     sync && \
     /usr/sbin/install_hive.sh
 
-# Copy hive configs
+# Copy hive configs and data
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
 COPY ${PATH_PREFIX}/conf-tez/ /etc/tez/conf/
+COPY ${PATH_PREFIX}/../../../smalldata/airlines/AirlinesTest.csv.zip \
+     ${PATH_PREFIX}/../../../smalldata/chicago/chicagoCensus.csv \
+     /srv/data/
 
 RUN /usr/sbin/install_ldap.sh
 

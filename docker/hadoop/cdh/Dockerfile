@@ -95,8 +95,11 @@ RUN chmod 700 /usr/sbin/startup.sh && \
     /usr/sbin/mysql_configure.sh && \
     ln -sf /usr/share/java/mysql-connector-java.jar /usr/lib/hive/lib/mysql-connector-java.jar
 
-# Copy hive configs
+# Copy hive configs and data
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/
+COPY ${PATH_PREFIX}/../../../smalldata/airlines/AirlinesTest.csv.zip \
+     ${PATH_PREFIX}/../../../smalldata/chicago/chicagoCensus.csv \
+     /srv/data/
 
 RUN /usr/sbin/install_ldap.sh
 
