@@ -41,9 +41,12 @@ public class ParseTestMultiFileOrc extends TestUtil {
 
     @Test
     public void testParseMultiFileOrcs() {
-        final ParseSetupTransformer pst = guessedSetup -> {
-            guessedSetup.disableParallelParse = disableParallelParse;
-            return guessedSetup;
+        final ParseSetupTransformer pst = new ParseSetupTransformer() {
+            @Override
+            public ParseSetup transformSetup(ParseSetup guessedSetup) {
+                guessedSetup.disableParallelParse = disableParallelParse;
+                return guessedSetup;
+            }
         };
         Scope.enter();
         try {
