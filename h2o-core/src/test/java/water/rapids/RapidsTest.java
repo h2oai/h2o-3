@@ -78,47 +78,6 @@ public class RapidsTest extends TestUtil {
       Scope.exit();
     }
   }
-  
-  @Test
-  public void testSort(){
-    Scope.enter();
-    try {
-      final Frame frame = new TestFrameBuilder()
-              .withName("heightsweights")
-              .withVecTypes(Vec.T_NUM)
-              .withColNames("HEIGHT")
-              .withDataForCol(0, ard(175, 166, 170, 169, 188, 175, 176, 171, 173, 175, 173, 174, 169))
-              .build();
-
-      final AstRankWithinGroupBy.SortnGrouby sortTask = new AstRankWithinGroupBy.SortnGrouby(frame, new int[]{},
-              new int[]{0}, new int[]{1}, "rank");
-      sortTask.doAll(sortTask._groupedSortedOut);
-
-      AstRankWithinGroupBy.RankGroups rankTask = new AstRankWithinGroupBy.RankGroups(sortTask._groupedSortedOut, sortTask._groupbyCols,
-              sortTask._sortCols, sortTask._chunkFirstG, sortTask._chunkLastG, sortTask._newRankCol)
-              .doAll(sortTask._groupedSortedOut);
-      
-      //sepal_len	rank
-      //175	         9
-      //166	         1
-      //170	         4
-      //169	         2
-      //188	         13
-      //175	         9
-      //176	         12
-      //171	         5
-      //173	         6
-      //175	         9
-      //173	         6
-      //174	         8
-      //169	         2
-      final Frame sortedFrame = rankTask._finalResult;
-      assertEquals(175, sortedFrame.vec(0).at(0), 0D);
-      assertEquals(9,sortedFrame.vec("rank").at(0), 0D);
-    } finally {
-      Scope.exit();
-    }
-  }
 
   @Test
   public void testSpearmanCategoricals() {
