@@ -387,7 +387,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 .automl.fetch_extended_leaderboard <- function(run_id, extensions=NULL) {
   if (is.null(extensions)) extensions <- list("ALL")
   extensions_str <- paste0("[", paste(extensions, collapse = ","), "]")
-  resp <- .h2o.__remoteSend(h2oRestApiVersion=99, method="GET", page=paste0("Leaderboards/", run_id), .params=list(extensions=extensions))
+  resp <- .h2o.__remoteSend(h2oRestApiVersion=99, method="GET", page=paste0("Leaderboards/", run_id), .params=list(extensions=extensions_str))
   dest_key <- paste0(gsub("@.*", "", resp$project_name), "_extended_leaderboard")
   .automl.fetch_table(as.data.frame(resp$table), destination_frame=dest_key, show_progress=FALSE)
 }
