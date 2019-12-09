@@ -1,15 +1,16 @@
 package water.rapids.ast.prims.advmath;
 
-import water.*;
+import water.DKV;
+import water.MRTask;
+import water.Scope;
+import water.Value;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.Merge;
 import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.ast.prims.mungers.AstRankWithinGroupBy;
 import water.rapids.vals.ValNum;
 
 public class AstSpearman extends AstPrimitive<AstSpearman> {
@@ -34,54 +35,62 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     final int vecIdX = originalUnsortedFrame.find(asts[2].exec(env).getStr());
     final int vecIdY = originalUnsortedFrame.find(asts[3].exec(env).getStr());
 
-    final Frame unsortedFrameWithoutNAs = new Merge.RemoveNAsTask(vecIdX, vecIdY)
-            .doAll(originalUnsortedFrame.types(), originalUnsortedFrame)
-            .outputFrame(originalUnsortedFrame.names(), originalUnsortedFrame.domains());
+    Scope.enter();
 
-    Frame sortedX = unsortedFrameWithoutNAs;
+    Frame sortedX = new Frame(originalUnsortedFrame.vec(vecIdX).makeCopy());
+    Scope.track(sortedX);
+    Frame sortedY = new Frame(originalUnsortedFrame.vec(vecIdY).makeCopy());
+    Scope.track(sortedY);
 
-    if (!sortedX.vec(vecIdX).isCategorical()) {
-      // Sort by X
-      final AstRankWithinGroupBy.SortnGrouby sortTaskX = new AstRankWithinGroupBy.SortnGrouby(sortedX, new int[]{},
-              new int[]{vecIdX}, new int[]{}, "rankX");
-      sortTaskX.doAll(sortTaskX._groupedSortedOut);
+    if (!sortedX.vec(0).isCategorical()) {
+      sortedX.label("label");
+      sortedX = sortedX.sort(new int[]{0});
+      Scope.track(sortedX);
 
-      AstRankWithinGroupBy.RankGroups rankTaskX = new AstRankWithinGroupBy.RankGroups(sortTaskX._groupedSortedOut, sortTaskX._groupbyCols,
-              sortTaskX._sortCols, sortTaskX._chunkFirstG, sortTaskX._chunkLastG, sortTaskX._newRankCol)
-              .doAll(sortTaskX._groupedSortedOut);
-      sortedX = rankTaskX._finalResult;
-    }
-    
-    Frame sortedY = unsortedFrameWithoutNAs;
-    if (!sortedY.vec(vecIdY).isCategorical()) {
-      // Sort by Y
-      final AstRankWithinGroupBy.SortnGrouby sortTaskY = new AstRankWithinGroupBy.SortnGrouby(sortedY, new int[]{},
-              new int[]{vecIdY}, new int[]{1}, "rankY");
-      sortTaskY.doAll(sortTaskY._groupedSortedOut);
-
-      AstRankWithinGroupBy.RankGroups rankTaskY = new AstRankWithinGroupBy.RankGroups(sortTaskY._groupedSortedOut, sortTaskY._groupbyCols,
-              sortTaskY._sortCols, sortTaskY._chunkFirstG, sortTaskY._chunkLastG, sortTaskY._newRankCol)
-              .doAll(sortTaskY._groupedSortedOut);
-      sortedY = rankTaskY._finalResult;
     }
 
-    final Vec rankX;
-    Vec rankY;
-
-    if(!sortedY.vec(vecIdX).isCategorical()) {
-      rankX = sortedX.vec("rankX");
-    } else {
-      rankX = sortedX.vec(vecIdX);
+    if (!sortedY.vec(0).isCategorical()) {
+      sortedY.label("label");
+      sortedY = sortedY.sort(new int[]{0});
+      Scope.track(sortedY);
     }
 
-    if(!sortedY.vec(vecIdY).isCategorical()) {
-      rankY = sortedY.vec("rankY");
-    } else {
-      rankY = sortedY.vec(vecIdY);
+    assert sortedX.numRows() == sortedY.numRows();
+    final Vec orderX = Vec.makeZero(sortedX.numRows());
+    final Vec orderY = Vec.makeZero(sortedY.numRows());
+
+    final Vec xLabel = sortedX.vec("label") == null ? sortedX.vec(0) : sortedX.vec("label");
+    final Vec xValue = sortedX.vec(0);
+    final Vec yLabel = sortedY.vec("label") == null ? sortedY.vec(0) : sortedY.vec("label");
+    final Vec yValue = sortedY.vec(0);
+    Scope.track(xLabel);
+    Scope.track(yLabel);
+
+    double lastX = Double.NaN;
+    double lastY = Double.NaN;
+    long skippedX = 0;
+    long skippedY = 0;
+    for (int i = 0; i < orderX.length(); i++) {
+      if (lastX == xValue.at(i)) {
+        skippedX++;
+      } else {
+        skippedX = 0;
+      }
+      lastX = xValue.at(i);
+      orderX.set(xLabel.at8(i) - 1, i - skippedX);
+
+      if (lastY == yValue.at(i)) {
+        skippedY++;
+      } else {
+        skippedY = 0;
+      }
+      lastY = yValue.at(i);
+      orderY.set(yLabel.at8(i) - 1, i - skippedY);
     }
 
-    final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(rankX.mean(), rankY.mean())
-            .doAll(rankX, rankY);
+    final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(orderX.mean(), orderY.mean())
+            .doAll(orderX, orderY);
+    Scope.exit();
     return new ValNum(spearman.getSpearmanCorrelationCoefficient());
   }
 
