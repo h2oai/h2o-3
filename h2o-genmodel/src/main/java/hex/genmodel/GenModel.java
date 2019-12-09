@@ -102,7 +102,16 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   @Override public String[] getNames() {
     return _names;
   }
-
+  
+  public int getOrigNumCols() {
+    String[] origNames = getOrigNames();
+    if (origNames == null || origNames.length == 0)
+      return 0;
+    String responseName = getResponseName();
+    boolean hasResponse = origNames[origNames.length - 1].equals(responseName);
+    return hasResponse ? origNames.length - 1 : origNames.length;
+  }
+  
   /** The original names of all columns used, including response and offset columns. */
   @Override public String[] getOrigNames() {
     return null;

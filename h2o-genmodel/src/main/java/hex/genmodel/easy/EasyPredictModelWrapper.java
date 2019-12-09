@@ -301,21 +301,12 @@ public class EasyPredictModelWrapper implements Serializable {
       predictContributions = null;
     }
 
-    if ((m.getCategoricalEncoding() != CategoricalEncoding.AUTO) && !config.getUseExternalEncoding()) {
-      throw new UnsupportedOperationException("Categorical Encoding `" + m.getCategoricalEncoding() + 
-              "` is currently not supported by EasyPredictModelWrapper. Instantiate the wrapper with `useExternalEncoding=true` " +
-              " and apply the encoding manually before calling the predict function. For more information please refer to https://0xdata.atlassian.net/browse/PUBDEV-6929.");
-    }
+    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ? 
+            CategoricalEncoding.AUTO : m.getCategoricalEncoding();
+    Map<String, Integer> columnMapping = categoricalEncoding.createColumnMapping(m);
+    Map<Integer, CategoricalEncoder> domainMap = categoricalEncoding.createCategoricalEncoders(m, columnMapping);
 
-    Map<Integer, CategoricalEncoder> domainMap = new DomainMapConstructor(m).create();
-    // Create map of column names to index number.
-    String[] modelColumnNames = m.getNames();
-    Map<String, Integer> modelColumnNameToIndexMap = new HashMap<>(modelColumnNames.length);
-    for (int i = 0; i < modelColumnNames.length; i++) {
-      modelColumnNameToIndexMap.put(modelColumnNames[i], i);
-    }
-
-    rowDataConverter = RowDataConverterFactory.makeConverter(m, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    rowDataConverter = RowDataConverterFactory.makeConverter(m, columnMapping, domainMap, errorConsumer, config);
   }
 
   /**

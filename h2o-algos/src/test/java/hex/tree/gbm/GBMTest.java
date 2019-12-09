@@ -123,9 +123,11 @@ public class GBMTest extends TestUtil {
               .toCategoricalCol("RACE")
               .toCategoricalCol(response);
       fr.remove("ID").remove();
+      fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
       Scope.track(fr);
       DKV.put(fr);
 
+      
       GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = fr._key;
       parms._response_column = response;

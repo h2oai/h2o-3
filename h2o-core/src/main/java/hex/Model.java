@@ -2036,6 +2036,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     });
 
+    sb.nl();
+    sb.ip("@Override").nl();
+    sb.ip("public String[] getOrigNames() {").nl();
+    sb.ii(1).ip("return ORIG_NAMES;").nl();
+    sb.di(1).ip("}").nl();
+
     return sb;
   }
 
@@ -2103,7 +2109,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         );
       }
     }
-    return sb.ip("};").nl();
+    sb.ip("};").nl();
+
+    sb.nl();
+    sb.ip("@Override").nl();
+    sb.ip("public String[][] getOrigDomainValues() {").nl();
+    sb.ii(1).ip("return ORIG_DOMAINS;").nl();
+    sb.di(1).ip("}").nl();
+
+    return sb;
   }
 
   protected SBPrintStream toJavaPROB(SBPrintStream sb) {
