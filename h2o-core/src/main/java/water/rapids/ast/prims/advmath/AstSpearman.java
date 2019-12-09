@@ -12,6 +12,7 @@ import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNum;
+import water.util.FrameUtils;
 
 public class AstSpearman extends AstPrimitive<AstSpearman> {
   @Override
@@ -43,14 +44,14 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     Scope.track(sortedY);
 
     if (!sortedX.vec(0).isCategorical()) {
-      sortedX.label("label");
+      FrameUtils.labelRows(sortedX, "label");
       sortedX = sortedX.sort(new int[]{0});
       Scope.track(sortedX);
 
     }
 
     if (!sortedY.vec(0).isCategorical()) {
-      sortedY.label("label");
+      FrameUtils.labelRows(sortedY, "label");
       sortedY = sortedY.sort(new int[]{0});
       Scope.track(sortedY);
     }

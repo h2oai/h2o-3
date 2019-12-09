@@ -1748,11 +1748,6 @@ public class Frame extends Lockable<Frame> {
     return Merge.sort(this, cols, ascending);
   }
   
-  public void label(final String labelColumnName){
-    final Vec labelVec = Vec.makeSeq(1, numRows());
-      add(labelColumnName, labelVec);
-  }
-
   /**
    * A structure for fast lookup in the set of frame's vectors.
    * Purpose of this class is to avoid multiple O(n) searches in {@link Frame}'s vectors.
