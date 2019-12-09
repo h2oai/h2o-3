@@ -2,6 +2,8 @@ package hex.genmodel.algos.tree;
 
 import ai.h2o.algos.tree.INode;
 import ai.h2o.algos.tree.INodeStat;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.GenmodelBitSet;
 
@@ -40,6 +42,8 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
   // When a column is categorical, levels that are reachable to this node.
   // This in particular includes any earlier splits of the same colId.
   private BitSet inclusiveLevels;
+
+  private Logger logger = LoggerFactory.getLogger(SharedTreeNode.class);
 
   /**
    * Create a new node.
@@ -252,19 +256,23 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
   }
 
   public void print(PrintStream out, String description) {
-    out.println("        Node " + nodeNumber + (description != null ? " (" + description + ")" : ""));
-    out.println("            weight:      " + weight);
-    out.println("            depth:       " + depth);
-    out.println("            colId:       " + colId);
-    out.println("            colName:     " + ((colName != null) ? colName : ""));
-    out.println("            leftward:    " + leftward);
-    out.println("            naVsRest:    " + naVsRest);
-    out.println("            splitVal:    " + splitValue);
-    out.println("            isBitset:    " + isBitset());
-    out.println("            predValue:   " + predValue);
-    out.println("            squaredErr:  " + squaredError);
-    out.println("            leftChild:   " + ((leftChild != null) ? leftChild.getName() : ""));
-    out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
+    out.print(this.getPrintString(description));
+  }
+
+  public String getPrintString(String description) {
+    return "        Node " + nodeNumber + (description != null ? " (" + description + ")" : "") +
+            "\n            weight:      " + weight +
+            "\n            depth:       " + depth +
+            "\n            colId:       " + colId +
+            "\n            colName:     " + ((colName != null) ? colName : "") +
+            "\n            leftward:    " + leftward +
+            "\n            naVsRest:    " + naVsRest +
+            "\n            splitVal:    " + splitValue +
+            "\n            isBitset:    " + isBitset() +
+            "\n            predValue:   " + predValue +
+            "\n            squaredErr:  " + squaredError +
+            "\n            leftChild:   " + ((leftChild != null) ? leftChild.getName() : "") +
+            "\n            rightChild:  " + ((rightChild != null) ? rightChild.getName() : "");
   }
 
   void printEdges() {

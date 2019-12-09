@@ -6,6 +6,8 @@ import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.attributes.VariableImportances;
 import hex.genmodel.utils.ByteBufferWrapper;
 import hex.genmodel.utils.GenmodelBitSet;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 
 import java.util.Arrays;
 import java.util.HashMap;
@@ -21,6 +23,8 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     private static final int NsdLeft = NaSplitDir.Left.value();
 
     private ScoreTree _scoreTree;
+    
+    private static Logger logger = LoggerFactory.getLogger(SharedTreeMojoModel.class);
 
     /**
      * {@code _ntree_groups} is the number of trees requested by the user. For
@@ -640,17 +644,17 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         weight_ok = (Math.abs(node.getWeight() - sum) < 1e-5 * (node.getWeight() + sum));
         ok &= weight_ok;
       }
-      if (!ok) {
-        System.err.println("\nTree inconsistency found:");
-        if (node.depth == 1 && !weight_ok) {
-          System.err.println("Note: this is a known issue for DRF and Isolation Forest models, " +
+      if (!ok && logger.isErrorEnabled()) {
+        logger.error("\nTree inconsistency found:");
+        if (node.depth == 1 && !weight_ok) { 
+            logger.error("Note: this is a known issue for DRF and Isolation Forest models, " +
                   "please refer to https://0xdata.atlassian.net/browse/PUBDEV-6140");
         }
-        node.print(System.err, "parent");
-        node.leftChild.print(System.err, "left child");
-        node.rightChild.print(System.err, "right child");
-        System.err.println("Auxiliary tree info:");
-        System.err.println(auxInfo.toString());
+        logger.error(node.getPrintString("parent"));
+        logger.error(node.leftChild.getPrintString("left child"));
+        logger.error(node.rightChild.getPrintString("right child"));
+        logger.error("Auxiliary tree info:");
+        logger.error(auxInfo.toString());
       }
     }
 
