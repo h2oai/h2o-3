@@ -387,7 +387,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 .automl.fetch_extended_leaderboard <- function(run_id, extensions=NULL) {
   if (is.null(extensions)) extensions <- list("ALL")
   extensions_str <- paste0("[", paste(extensions, collapse = ","), "]")
-  resp <- .h2o.__remoteSend(h2oRestApiVersion=99, method="GET", page=paste0("Leaderboards/", run_id), .params=list(extensions=extensions_str))
+  resp <- .h2o.__remoteSend(h2oRestApiVersion=99, method="GET", page=paste0("Leaderboards/", run_id), .params=list(extensions=extensions))
   dest_key <- paste0(gsub("@.*", "", resp$project_name), "_extended_leaderboard")
   .automl.fetch_table(as.data.frame(resp$table), destination_frame=dest_key, show_progress=FALSE)
 }
@@ -416,8 +416,8 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
 
   if (should_fetch('leaderboard')) {
-    # leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
     leaderboard <- .automl.fetch_table(leaderboard, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE)
+    # leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
     # If the leaderboard is empty, it creates a dummy row so let's remove it
     if (leaderboard$model_id[1,1] == "") {
       leaderboard <- leaderboard[-1,]

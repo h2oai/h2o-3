@@ -7,7 +7,7 @@ import water.fvec.Frame;
 
 public class ScoringTimePerRow extends Iced<ScoringTimePerRow> implements LeaderboardCell<Double, ScoringTimePerRow> {
 
-    public static final LeaderboardColumn COLUMN = new LeaderboardColumn("predict_time_per_row_millis", "double", "%.6f");
+    public static final LeaderboardColumn COLUMN = new LeaderboardColumn("predict_time_per_row_ms", "double", "%.6f");
 
     private final Key<Model> _modelId;
     private final Key<Frame> _leaderboardFrameId;

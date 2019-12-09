@@ -302,13 +302,13 @@ def test_extended_leaderboard():
     aml.train(y=ds.target, training_frame=ds.train)
     std_columns = ["model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"]
     assert aml.leaderboard.names == std_columns
-    assert aml.leaderboard.extended().names == std_columns + ["training_time_millis", "predict_time_per_row_millis"]
-    assert aml.leaderboard.extended("training_time_millis").names == std_columns + ["training_time_millis"]
-    assert aml.leaderboard.extended("predict_time_per_row_millis", "training_time_millis").names == std_columns + ["predict_time_per_row_millis", "training_time_millis"]
+    assert aml.leaderboard.extended().names == std_columns + ["training_time_ms", "predict_time_per_row_ms"]
+    assert aml.leaderboard.extended("training_time_ms").names == std_columns + ["training_time_ms"]
+    assert aml.leaderboard.extended("predict_time_per_row_ms", "training_time_ms").names == std_columns + ["predict_time_per_row_ms", "training_time_ms"]
     lb_ext = aml.leaderboard.extended()
     assert all(lb_ext[:, 1:].isnumeric()), "metrics and extension columns should all be numeric"
-    assert (lb_ext["training_time_millis"].as_data_frame().values > 0).all()
-    assert (lb_ext["predict_time_per_row_millis"].as_data_frame().values > 0).all()
+    assert (lb_ext["training_time_ms"].as_data_frame().values > 0).all()
+    assert (lb_ext["predict_time_per_row_ms"].as_data_frame().values > 0).all()
 
 
 pyunit_utils.run_tests([

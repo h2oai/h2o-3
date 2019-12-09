@@ -555,7 +555,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
   }
 
   public TwoDimTable toTwoDimTable(String... extensions) {
-    return toTwoDimTable("Leaderboard for AutoML: " + _project_name, false, extensions);
+    return toTwoDimTable("Leaderboard for project " + _project_name, false, extensions);
   }
 
   private TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds, String... extensions) {
@@ -601,7 +601,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
   private String toString(String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader) {
     final StringBuilder sb = new StringBuilder();
     if (includeTitle) {
-      sb.append("Leaderboard for project_name \"")
+      sb.append("Leaderboard for project \"")
               .append(_project_name)
               .append("\": ");
 
@@ -639,7 +639,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
   }
 
   public String toLogString() {
-    return toTwoDimTable("Leaderboard for AutoML: " + _project_name, true).toString();
+    return toTwoDimTable("Leaderboard for project "+_project_name, true).toString();
   }
 
 }

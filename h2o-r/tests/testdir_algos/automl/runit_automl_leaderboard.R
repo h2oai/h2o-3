@@ -107,13 +107,13 @@ automl.leaderboard.suite <- function() {
                           project_name = "r_aml_lb_extended")
         std_columns <- c("model_id", "mean_per_class_error", "logloss", "rmse", "mse")
         expect_equal(names(aml@leaderboard), std_columns)
-        expect_equal(names(attr(aml@leaderboard, 'extended')()), c(std_columns, "training_time_millis", "predict_time_per_row_millis"))
-        expect_equal(names(attr(aml@leaderboard, 'extended')("training_time_millis")), c(std_columns, "training_time_millis"))
-        expect_equal(names(attr(aml@leaderboard, 'extended')(list("predict_time_per_row_millis", "training_time_millis"))), c(std_columns, "predict_time_per_row_millis", "training_time_millis"))
+        expect_equal(names(attr(aml@leaderboard, 'extended')()), c(std_columns, "training_time_ms", "predict_time_per_row_ms"))
+        expect_equal(names(attr(aml@leaderboard, 'extended')("training_time_ms")), c(std_columns, "training_time_ms"))
+        expect_equal(names(attr(aml@leaderboard, 'extended')(list("predict_time_per_row_ms", "training_time_ms"))), c(std_columns, "predict_time_per_row_ms", "training_time_ms"))
         lb_ext <- attr(aml@leaderboard, 'extended')()
         expect_true(all(sapply(lb_ext[2:length(lb_ext)], is.numeric)))
-        expect_true(all(sapply(lb_ext["training_time_millis"], function(v) v > 0)))
-        expect_true(all(sapply(lb_ext["predict_time_per_row_millis"], function(v) v > 0)))
+        expect_true(all(sapply(lb_ext["training_time_ms"], function(v) v > 0)))
+        expect_true(all(sapply(lb_ext["predict_time_per_row_ms"], function(v) v > 0)))
     }
 
     makeSuite(
