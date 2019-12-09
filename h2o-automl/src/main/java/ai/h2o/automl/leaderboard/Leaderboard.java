@@ -114,9 +114,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
   /**
    * Map listing the leaderboard extensions per model
    */
-//  private IcedHashMap<Key<Model>, LeaderboardCell[]> _extensions = new IcedHashMap();
-  private Key<Model>[] _extensions_keys = new Key[0];
-  private LeaderboardCell[][] _extensions_values = new LeaderboardCell[0][];
+  private LeaderboardCell[] _extensions_cells = new LeaderboardCell[0];
 
   /**
    * Metric used to sort this leaderboard.
@@ -393,36 +391,17 @@ public class Leaderboard extends Lockable<Leaderboard> {
     if (key == null) return;
     assert ArrayUtils.contains(_model_keys, key);
     assert Stream.of(extensions).allMatch(le -> getExtension(key, le.getColumn().getName()) == null);
-
-    int _key_idx = ArrayUtils.find(_extensions_keys, key);
-    if (_key_idx >= 0) {
-      _extensions_values[_key_idx] = ArrayUtils.append(_extensions_values[_key_idx], extensions);
-    } else {
-      _extensions_keys = ArrayUtils.append(_extensions_keys, (Key<Model>)key);
-      _extensions_values = ArrayUtils.append(_extensions_values, new LeaderboardCell[][] { extensions });
-    }
-    /*
-    if (_extensions.containsKey(key)) {
-      _extensions.replace((Key<Model>)key, ArrayUtils.append(_extensions.get(key), extensions));
-    } else {
-      _extensions.putIfAbsent((Key<Model>)key, extensions);
-    }
-    */
+    _extensions_cells = ArrayUtils.append(_extensions_cells, extensions);
   }
 
   private <M extends Model> LeaderboardCell[] getExtensions(final Key<M> key) {
-    LeaderboardCell[] cells = null;
-    int _key_idx = ArrayUtils.find(_extensions_keys, key);
-    if (_key_idx >= 0) {
-      cells = _extensions_values[_key_idx];
-    }
-//    LeaderboardCell[] ext = _extensions.get(key);
-    return cells == null ? new LeaderboardCell[0] : cells;
+    return Stream.of(_extensions_cells)
+            .filter(c -> c.getModelId().equals(key))
+            .toArray(LeaderboardCell[]::new);
   }
 
   private <M extends Model> LeaderboardCell getExtension(final Key<M> key, String extName) {
     return getExtension(key, extName, Collections.singletonMap((Key<Model>)key, getExtensions(key)));
-//      return getExtension(key, extName, _extensions);
   }
 
   private <M extends Model> LeaderboardCell getExtension(final Key<M> key, String extName, Map<Key<Model>, LeaderboardCell[]> extensions) {

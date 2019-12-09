@@ -118,11 +118,11 @@ automl.leaderboard.suite <- function() {
     }
 
     makeSuite(
-      # test.binomial,
-      # test.regression,
-      # test.multinomial,
-      # test.empty_leaderboard,
-      # test.all_algos,
+      test.binomial,
+      test.regression,
+      test.multinomial,
+      test.empty_leaderboard,
+      test.all_algos,
       test.extended_leaderboard,
     )
 }
