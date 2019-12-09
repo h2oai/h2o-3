@@ -215,6 +215,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
               && isThereEnoughTime()
               && !_job.stop_requested()
               && !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos())) {
+
+        // FIXME: ModelFeeder's <MP> type parameter is hiding GridSearch's one. Ideally would have moved ModelFeeder outside but it is too coupled with GridSearch class.
+        reconcileMaxRuntime(grid._key, hyperspaceIterator, nextModelParams);
+
         parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
       } else {
         parallelModelBuilder.noMoreModels();
@@ -231,7 +235,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     private boolean isThereEnoughTime() {
-      final boolean enoughTime = hyperspaceIterator.max_runtime_secs() > 0 && hyperspaceIterator.time_remaining_secs() > 0;
+      final boolean enoughTime = hyperspaceIterator.max_runtime_secs() == 0 || ( hyperspaceIterator.max_runtime_secs() > 0 && hyperspaceIterator.time_remaining_secs() > 0);
 
       if (!enoughTime) {
         Log.info("Grid max_runtime_secs of " + hyperspaceIterator.max_runtime_secs() + " secs has expired; stopping early.");
@@ -270,7 +274,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     final ParallelModelBuilder parallelModelBuilder = new ParallelModelBuilder(modelFeeder);
 
     List<ModelBuilder> startModels = new ArrayList<>();
-    final List<MP> mps = initialModelParameters(_parallelism, iterator);
+
+    int numberOfInitialModels = iterator.max_models() == 0 ? _parallelism : Math.min(_parallelism, iterator.max_models());
+    final List<MP> mps = initialModelParameters(numberOfInitialModels, iterator);
 
     for (int i = 0; i < mps.size(); i++) {
       final MP nextModelParameters = mps.get(i);
@@ -327,16 +333,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       int counter = grid.getModelCount();
       while (it.hasNext(model)) {
         if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
-        double max_runtime_secs = it.max_runtime_secs();
-
-        double time_remaining_secs = Double.MAX_VALUE;
-        if (max_runtime_secs > 0) {
-          time_remaining_secs = it.time_remaining_secs();
-          if (time_remaining_secs < 0) {
-            Log.info("Grid max_runtime_secs of " + max_runtime_secs + " secs has expired; stopping early.");
-            throw new Job.JobCancelledException();
-          }
-        }
 
         MP params = null;
         try {
@@ -346,18 +342,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong
 
-          // Do we need to limit the model build time?
-          if (max_runtime_secs > 0) {
-            Log.info("Grid time is limited to: " + max_runtime_secs + " for grid: " + grid._key + ". Remaining time is: " + time_remaining_secs);
-            if (params._max_runtime_secs == 0) { // unlimited
-              params._max_runtime_secs = time_remaining_secs;
-              Log.info("Due to the grid time limit, changing model max runtime to: " + params._max_runtime_secs + " secs.");
-            } else {
-              double was = params._max_runtime_secs;
-              params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs);
-              Log.info("Due to the grid time limit, changing model max runtime from: " + was + " secs to: " + params._max_runtime_secs + " secs.");
-            }
-          }
+          reconcileMaxRuntime(grid._key, it, params);
 
           try {
             ScoringInfo scoringInfo = new ScoringInfo();
@@ -403,6 +388,32 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       Log.info("For grid: " + grid._key + " built: " + grid.getModelCount() + " models.");
     } finally {
       grid.unlock(_job);
+    }
+  }
+
+  /**
+   * see {@code RandomDiscreteValueSearchCriteria.max_runtime_secs} for reconciliation logic
+   */
+  private void reconcileMaxRuntime(Key<Grid<MP>> gridKey, HyperSpaceWalker.HyperSpaceIterator<? extends Model.Parameters> it, Model.Parameters params) {
+    double grid_max_runtime_secs = it.max_runtime_secs();
+
+    double time_remaining_secs = Double.MAX_VALUE;
+    if (grid_max_runtime_secs > 0) {
+      time_remaining_secs = it.time_remaining_secs();
+      Log.info("Grid time is limited to: " + grid_max_runtime_secs + " for grid: " + gridKey + ". Remaining time is: " + time_remaining_secs);
+      if (time_remaining_secs < 0) {
+        Log.info("Grid max_runtime_secs of " + grid_max_runtime_secs + " secs has expired; stopping early.");
+        throw new Job.JobCancelledException();
+      }
+    }
+
+    if (params._max_runtime_secs > 0 ) {
+      double was = params._max_runtime_secs;
+      params._max_runtime_secs = Math.min(params._max_runtime_secs, time_remaining_secs);
+      Log.info("Due to the grid time limit, changing model max runtime from: " + was + " secs to: " + params._max_runtime_secs + " secs.");
+    } else { // params._max_runtime_secs == 0
+      params._max_runtime_secs = time_remaining_secs;
+      Log.info("Due to the grid time limit, changing model max runtime to: " + params._max_runtime_secs + " secs.");
     }
   }
 
