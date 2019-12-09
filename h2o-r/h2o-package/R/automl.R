@@ -307,7 +307,7 @@ h2o.automl <- function(x, y, training_frame,
   # POST call to AutoMLBuilder (executes the AutoML job)
   res <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "POST", page = "AutoMLBuilder", autoML = TRUE, .params = params)
 
-  poll_state = list()
+  poll_state <- list()
   poll_updates <- function(job) {
     poll_state <<- do.call(.automl.poll_updates, list(job, verbosity=verbosity, state=poll_state))
   }
@@ -386,7 +386,8 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 
 .automl.fetch_extended_leaderboard <- function(run_id, extensions=NULL) {
   if (is.null(extensions)) extensions <- list("ALL")
-  resp <- .h2o.__remoteSend(h2oRestApiVersion=99, method="GET", page=paste0("Leaderboards/", run_id), .params=list(extensions=list(extensions)))
+  extensions_str <- paste0("[", paste(extensions, collapse = ","), "]")
+  resp <- .h2o.__remoteSend(h2oRestApiVersion=99, method="GET", page=paste0("Leaderboards/", run_id), .params=list(extensions=extensions_str))
   dest_key <- paste0(gsub("@.*", "", resp$project_name), "_extended_leaderboard")
   .automl.fetch_table(as.data.frame(resp$table), destination_frame=dest_key, show_progress=FALSE)
 }
@@ -407,7 +408,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 .automl.fetch_state <- function(run_id, properties=NULL) {
   # GET AutoML job and leaderboard for project
   automl_job <- .h2o.__remoteSend(h2oRestApiVersion = 99, method = "GET", page = paste0("AutoML/", run_id))
-  project_name = automl_job$project_name
+  project_name <- automl_job$project_name
 
   leaderboard <- as.data.frame(automl_job$leaderboard_table)
   row.names(leaderboard) <- seq(nrow(leaderboard))
@@ -415,18 +416,18 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   should_fetch <- function(prop) is.null(properties) | prop %in% properties
 
   if (should_fetch('leaderboard')) {
+    # leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
     leaderboard <- .automl.fetch_table(leaderboard, destination_frame=paste0(project_name, '_leaderboard'), show_progress=FALSE)
-    leaderboard$extended <- function(extensions=NULL) .automl.fetch_extended_leaderboard(run_id, extensions)
     # If the leaderboard is empty, it creates a dummy row so let's remove it
     if (leaderboard$model_id[1,1] == "") {
       leaderboard <- leaderboard[-1,]
       warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
     }
+    attr(leaderboard, 'extended') <- function(extensions=NULL) .automl.fetch_extended_leaderboard(run_id, extensions)
   }
 
   # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
   if (should_fetch('leader') & nrow(leaderboard) > 0) {
-    leaderboard[,2:length(leaderboard)] <- as.numeric(leaderboard[,2:length(leaderboard)])  # Convert metrics to numeric
     leader <- h2o.getModel(automl_job$leaderboard$models[[1]]$name)
   } else {
     # create a phony leader

@@ -293,6 +293,24 @@ def test_AUTO_stopping_metric_with_custom_sorting_metric():
     check_model_property(non_se, 'stopping_metric', True, "RMSE")
 
 
+def test_extended_leaderboard():
+    print("Check extended leaderboard")
+    ds = prepare_data('binomial')
+    aml = H2OAutoML(project_name="py_aml_lb_extended_test",
+                    max_models=5,
+                    seed=automl_seed)
+    aml.train(y=ds.target, training_frame=ds.train)
+    std_columns = ["model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"]
+    assert aml.leaderboard.names == std_columns
+    assert aml.leaderboard.extended().names == std_columns + ["training_time_millis", "predict_time_per_row_millis"]
+    assert aml.leaderboard.extended("training_time_millis").names == std_columns + ["training_time_millis"]
+    assert aml.leaderboard.extended("predict_time_per_row_millis", "training_time_millis").names == std_columns + ["predict_time_per_row_millis", "training_time_millis"]
+    lb_ext = aml.leaderboard.extended()
+    assert all(lb_ext[:, 1:].isnumeric()), "metrics and extension columns should all be numeric"
+    assert (lb_ext["training_time_millis"].as_data_frame().values > 0).all()
+    assert (lb_ext["predict_time_per_row_millis"].as_data_frame().values > 0).all()
+
+
 pyunit_utils.run_tests([
     test_warn_on_empty_leaderboard,
     test_leaderboard_for_binomial,
@@ -306,5 +324,6 @@ pyunit_utils.run_tests([
     test_AUTO_stopping_metric_with_no_sorting_metric_binomial,
     test_AUTO_stopping_metric_with_no_sorting_metric_regression,
     test_AUTO_stopping_metric_with_auc_sorting_metric,
-    test_AUTO_stopping_metric_with_custom_sorting_metric
+    test_AUTO_stopping_metric_with_custom_sorting_metric,
+    test_extended_leaderboard,
 ])
