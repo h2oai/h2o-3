@@ -134,10 +134,7 @@ public class KMeansTest extends TestUtil {
     Frame fr = null, points=null, predict1=null, predict2=null, predict3=null, predict4=null;
     try {
       Scope.enter();
-      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
-      Vec vec = fr.remove(4);
-      vec.remove();
-      
+      fr = Scope.track(parse_test_file("smalldata/iris/iris_wheader.csv"));
       
       points = ArrayUtils.frame(ard(
               ard(6.0,2.2,4.0,1.0),
@@ -153,6 +150,7 @@ public class KMeansTest extends TestUtil {
       parms._user_points = points._key;
       parms._cluster_size_constraints = new int[]{46, 49, 55};
       parms._score_each_iteration = true;
+      parms._ignored_columns = new String[]{"class"};
 
       System.out.println("Constrained Kmeans strandardize true (CKT)");
       KMeans job = new KMeans(parms);

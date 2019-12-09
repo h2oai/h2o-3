@@ -76,7 +76,8 @@ Defining a K-Means Model
   - ``label_encoder`` or ``LabelEncoder``:  Convert every enum into the integer of its index (for example, level 0 -> 0, level 1 -> 1, etc.)
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
--  `cluster_size_constraints <algo-params/cluster_size_constraints.html>`__: Specify how many points should be at least in each cluster. The length of constraints array has to be same as number of clusters.
+
+-  `cluster_size_constraints <algo-params/cluster_size_constraints.html>`__: Specify how many points should be at least in each cluster. The length of constraints array has to be same as number of clusters (experimental).
 
 Interpreting a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -122,7 +123,15 @@ H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a
 Constrained K-Means
 ~~~~~~~~~~~~~~~~~~~
 
+Using the `cluster_size_constraints` parameter, a user can set the minimum size of each cluster during the training by an array of numbers. The size of the array must be equal as the `k` parameter.
 
+To satisfy the custom minimal cluster size, the calculation of clusters is converted to the Minimal Cost Flow problem. Instead of using the Lloyd iteration algorithm, a graph is constructed based on the distances and constraints. The goal is to go iteratively through the input edges and create an optimal spanning tree that satisfies the constraints.
+
+More information about how to convert the standard K-means algorithm to the Minimal Cost Flow problem is described in this paper: https://pdfs.semanticscholar.org/ecad/eb93378d7911c2f7b9bd83a8af55d7fa9e06.pdf.
+
+The result cluster size is guaranteed only on **training data** and only **during training**. Depends on the cluster assignment at the end of the training, the result centers are calculated. However, the result cluster assignment could be different when you score on the same data, which was used for training. Because of during scoring, the resulting cluster is assigned based on the final centers and the distances from them. **No constraints are taken into account during scoring.**
+
+**Minimum-cost flow problem can be efficiently solved in polynomial time. Currently, the performance of this implementation of the constrained K-means algorithm is not optimal because it is not fully parallelized yet. This new feature is experimental and still in progress.**
 
 FAQ
 ~~~

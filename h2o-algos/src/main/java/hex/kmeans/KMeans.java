@@ -319,7 +319,11 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         }
         
         for (int k = startK; k <= _parms._k; ++k) {
-          Log.info("Running Lloyds iteration for " + k + " centroids.");
+          if(!constrained){
+            Log.info("Running Lloyds iteration for " + k + " centroids.");
+          } else {
+            Log.info("Running Constrained K-means iteration for " + k + " centroids.");
+          }
           model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality
           double[][] lo=null, hi=null;
           boolean stop = false;

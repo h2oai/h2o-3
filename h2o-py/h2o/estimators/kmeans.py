@@ -624,7 +624,7 @@ class H2OKMeansEstimator(H2OEstimator):
     def cluster_size_constraints(self):
         """
         Specify how many points should be at least in each cluster. The length of constraints array has to be same as
-        number of clusters.
+        number of clusters (experimental).
 
         Type: ``List[int]``.
         """
