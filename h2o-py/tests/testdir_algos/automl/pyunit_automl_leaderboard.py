@@ -306,8 +306,9 @@ def test_extended_leaderboard():
     assert aml.leaderboard.extended("training_time_ms").names == std_columns + ["training_time_ms"]
     assert aml.leaderboard.extended("predict_time_per_row_ms", "training_time_ms").names == std_columns + ["predict_time_per_row_ms", "training_time_ms"]
     lb_ext = aml.leaderboard.extended()
+    print(lb_ext)
     assert all(lb_ext[:, 1:].isnumeric()), "metrics and extension columns should all be numeric"
-    assert (lb_ext["training_time_ms"].as_data_frame().values > 0).all()
+    assert (lb_ext["training_time_ms"].as_data_frame().values >= 0).all()
     assert (lb_ext["predict_time_per_row_ms"].as_data_frame().values > 0).all()
 
 
