@@ -107,7 +107,7 @@ automl.leaderboard.suite <- function() {
                           project_name = "r_aml_customlb")
         std_columns <- c("model_id", "mean_per_class_error", "logloss", "rmse", "mse")
         expect_equal(names(aml@leaderboard), std_columns)
-        expect_equal(names(h2o.geLeaderboard(aml)), std_columns)
+        expect_equal(names(h2o.get_leaderboard(aml)), std_columns)
         expect_equal(names(h2o.get_leaderboard(aml, extensions='unknown')), std_columns)
         expect_equal(names(h2o.get_leaderboard(aml, extensions='ALL')), c(std_columns, "training_time_ms", "predict_time_per_row_ms"))
         expect_equal(names(h2o.get_leaderboard(aml, extensions="training_time_ms")), c(std_columns, "training_time_ms"))
