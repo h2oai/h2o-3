@@ -31,7 +31,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
 
     try {
       Scope.enter();
-      final PearsonRankedVectors rankedVectors = rankedVectors(originalUnsortedFrame, vecIdX, vecIdY);
+      final SpearmanRankedVectors rankedVectors = rankedVectors(originalUnsortedFrame, vecIdX, vecIdY);
       final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(rankedVectors._x.mean(),
               rankedVectors._y.mean())
               .doAll(rankedVectors._x, rankedVectors._y);
@@ -48,17 +48,17 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
    * @param originalUnsortedFrame Original frame containing the vectors compared.
    * @param vecIdX                First compared vector
    * @param vecIdY                Second compared vector
-   * @return An instance of {@link PearsonRankedVectors}, holding two new vectors with row rank.
+   * @return An instance of {@link SpearmanRankedVectors}, holding two new vectors with row rank.
    */
-  private PearsonRankedVectors rankedVectors(final Frame originalUnsortedFrame, final int vecIdX, final int vecIdY) {
+  private SpearmanRankedVectors rankedVectors(final Frame originalUnsortedFrame, final int vecIdX, final int vecIdY) {
     Frame sortedX = new Frame(originalUnsortedFrame.vec(vecIdX).makeCopy());
     Scope.track(sortedX);
     Frame sortedY = new Frame(originalUnsortedFrame.vec(vecIdY).makeCopy());
     Scope.track(sortedY);
 
-    final boolean isIxOrdered = needsOrdering(sortedX.vec(0));
+    final boolean xIsOrdered = needsOrdering(sortedX.vec(0));
     final boolean yIsOrdered = needsOrdering(sortedY.vec(0));
-    if (isIxOrdered) {
+    if (xIsOrdered) {
       FrameUtils.labelRows(sortedX, "label");
       sortedX = sortedX.sort(new int[]{0});
       Scope.track(sortedX);
@@ -83,7 +83,6 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     Scope.track(xLabel);
     Scope.track(yLabel);
 
-
     final Vec.Writer orderXWriter = orderX.open();
     final Vec.Writer orderYWriter = orderY.open();
     final Vec.Reader xValueReader = xValue.new Reader();
@@ -91,12 +90,13 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     final Vec.Reader xLabelReader = xLabel.new Reader();
     final Vec.Reader yLabelReader = yLabel.new Reader();
 
+    // Put the actual rank into the vectors with ranks. Ensure equal values share the same rank.
     double lastX = Double.NaN;
     double lastY = Double.NaN;
     long skippedX = 0;
     long skippedY = 0;
     for (int i = 0; i < orderX.length(); i++) {
-      if (isIxOrdered) {
+      if (xIsOrdered) {
         if (lastX == xValueReader.at(i)) {
           skippedX++;
         } else {
@@ -118,17 +118,17 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     orderXWriter.close();
     orderYWriter.close();
 
-    return new PearsonRankedVectors(orderX, orderY);
+    return new SpearmanRankedVectors(orderX, orderY);
   }
 
   /**
    * Ranked vectors prepared to calculate Spearman's correlation coefficient
    */
-  private static class PearsonRankedVectors {
+  private static class SpearmanRankedVectors {
     private final Vec _x;
     private final Vec _y;
 
-    public PearsonRankedVectors(Vec x, Vec y) {
+    public SpearmanRankedVectors(Vec x, Vec y) {
       this._x = x;
       this._y = y;
     }
@@ -145,12 +145,10 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
   }
 
   /**
-   * A task to do calculate Pearson's correlation coefficient.
-   * The intermediate calculations required for standard deviant of both columns could be calculated by existing code,
+   * A task to do calculate Spearman's correlation coefficient. Not using the "approximation equation", but the
+   * fully-fledged equation resistant against noise from repeated values.
+   * The intermediate calculations required for standard deviation of both columns could be calculated by existing code,
    * however the point is to perform the calculations by going through the data only once.
-   * <p>
-   * Note: If one of the observation's columns used to calculate Pearson's corr. coef. contains a NaN value,
-   * the whole line is skipped.
    *
    * @see {@link water.rapids.ast.prims.advmath.AstVariance}
    */
