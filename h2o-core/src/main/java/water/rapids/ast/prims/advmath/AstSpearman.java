@@ -223,7 +223,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
       final double yStdDev = Math.sqrt(_yDiffSquared / _linesVisited);
 
       spearmanCorrelationCoefficient = (_xyMul - (_linesVisited * _xMean * _yMean))
-              / ((_linesVisited) * xStdDev * yStdDev);
+              / (_linesVisited * xStdDev * yStdDev);
     }
 
     public double getSpearmanCorrelationCoefficient() {
