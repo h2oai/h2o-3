@@ -160,6 +160,11 @@ public class Leaderboard extends Lockable<Leaderboard> {
     _sort_metric = sort_metric == null ? null : sort_metric.toLowerCase();
   }
 
+  /**
+   * Assign a {@link LeaderboardExtensionsProvider} to this leaderboard instance.
+   * @param provider the provider used to generate the optional extension columns from the leaderboard.
+   * @see LeaderboardExtensionsProvider
+   */
   public void setExtensionsProvider(LeaderboardExtensionsProvider provider) {
     _extensionsProvider = provider;
   }
@@ -381,6 +386,9 @@ public class Leaderboard extends Lockable<Leaderboard> {
   } // addModels
 
 
+  /**
+   * @see #addModels(Key[])
+   */
   @SuppressWarnings("unchecked")
   public <M extends Model> void addModel(final Key<M> key) {
     if (key == null) return;
@@ -551,6 +559,17 @@ public class Leaderboard extends Lockable<Leaderboard> {
     }
   }
 
+  /**
+   * Creates a {@link TwoDimTable} representation of the leaderboard.
+   * If no extensions are provided, then the representation will only contain the model ids and the scoring metrics.
+   * Each extension name will be represented in the table
+   * if and only if it was also made available to the leaderboard by the {@link LeaderboardExtensionsProvider},
+   * otherwise it will just be ignored.
+   * @param extensions optional columns for the leaderboard representation.
+   * @return a {@link TwoDimTable} representation of the current leaderboard.
+   * @see LeaderboardExtensionsProvider
+   * @see LeaderboardColumn
+   */
   public TwoDimTable toTwoDimTable(String... extensions) {
     return toTwoDimTable("Leaderboard for project " + _project_name, false, extensions);
   }

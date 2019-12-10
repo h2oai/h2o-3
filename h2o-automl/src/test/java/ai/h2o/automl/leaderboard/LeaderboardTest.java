@@ -145,8 +145,8 @@ public class LeaderboardTest extends water.TestUtil {
               lb_table_ext.getColTypes());
       assertArrayEquals(new String[] {"%s", "%.6f", "%.6f", "%.6f", "%.6f", "%.6f", "%.6f", "%s", "%.6f"},
               lb_table_ext.getColFormats());
-      assertTrue(lb_table_ext.get(0, 7) instanceof Long);
-      assertTrue(lb_table_ext.get(0, 8) instanceof Double);
+      assertTrue(lb_table_ext.get(0, 7/*training_time_ms*/) instanceof Long);
+      assertTrue(lb_table_ext.get(0, 8 /*predict_time_per_row_ms*/) instanceof Double);
       assertTrue((Long)lb_table_ext.get(0, 7) > 0);
       assertTrue((Double)lb_table_ext.get(0, 8) > 0);
 

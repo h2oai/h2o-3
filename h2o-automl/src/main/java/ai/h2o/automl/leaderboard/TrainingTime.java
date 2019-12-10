@@ -5,6 +5,9 @@ import water.Iced;
 import water.Key;
 import water.util.Log;
 
+/**
+ * A cell providing the time needed to train the model.
+ */
 public class TrainingTime extends Iced<TrainingTime> implements LeaderboardCell<Long, TrainingTime> {
 
     public static final LeaderboardColumn COLUMN = new LeaderboardColumn("training_time_ms", "long", "%s");

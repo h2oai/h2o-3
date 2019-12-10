@@ -7,6 +7,9 @@ import water.Key;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A cell for a scoring metric column.
+ */
 public class MetricScore extends Iced<MetricScore> implements LeaderboardCell<Double, MetricScore> {
 
     private static final Map<String, LeaderboardColumn> COLUMNS = new HashMap<>();

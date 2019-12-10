@@ -4,6 +4,9 @@ import hex.Model;
 import water.Iced;
 import water.Key;
 
+/**
+ * A cell for the model id column.
+ */
 public class ModelId extends Iced<ModelId> implements LeaderboardCell<String, ModelId> {
 
     public static final LeaderboardColumn COLUMN = new LeaderboardColumn("model_id", "string", "%s");

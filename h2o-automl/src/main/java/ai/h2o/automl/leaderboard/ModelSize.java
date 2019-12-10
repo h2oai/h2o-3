@@ -4,6 +4,9 @@ import hex.Model;
 import water.Iced;
 import water.Key;
 
+/**
+ * A cell computing lazily the size of a model.
+ */
 public class ModelSize extends Iced<ModelSize> implements LeaderboardCell<Long, ModelSize> {
 
     public static final LeaderboardColumn COLUMN = new LeaderboardColumn("model_size_bytes", "long", "%s");
@@ -45,6 +48,7 @@ public class ModelSize extends Iced<ModelSize> implements LeaderboardCell<Long, 
     public Long fetch() {
         if (getValue() == null) {
             try {
+                // PUBDEV-7124:
 //                Model model = _modelId.get();
                 // export binary model to temp folder
                 // read size

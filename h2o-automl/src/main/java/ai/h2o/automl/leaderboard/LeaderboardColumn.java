@@ -1,5 +1,8 @@
 package ai.h2o.automl.leaderboard;
 
+/**
+ * Meta info for a leaderboard column.
+ */
 public class LeaderboardColumn {
 
     private final String _name;
