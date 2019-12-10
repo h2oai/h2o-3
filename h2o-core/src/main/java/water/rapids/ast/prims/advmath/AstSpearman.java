@@ -27,12 +27,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
 
   @Override
   public Val apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
-    final Value value = DKV.get(asts[1].str());
-    if (!value.isFrame()) {
-      throw new IllegalArgumentException(String.format("The given key '%s' is not a frame.", asts[1]));
-    }
-
-    final Frame originalUnsortedFrame = value.get(Frame.class);
+    final Frame originalUnsortedFrame = stk.track(asts[1].exec(env).getFrame());
     final int vecIdX = originalUnsortedFrame.find(asts[2].exec(env).getStr());
     final int vecIdY = originalUnsortedFrame.find(asts[3].exec(env).getStr());
 

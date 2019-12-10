@@ -15,7 +15,6 @@ import water.parser.ParseSetup;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
-import water.rapids.ast.prims.mungers.AstRankWithinGroupBy;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValNums;
@@ -39,7 +38,7 @@ public class RapidsTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(1);
+    stall_till_cloudsize(5);
   }
 
   @Test
@@ -53,6 +52,7 @@ public class RapidsTest extends TestUtil {
               .withDataForCol(0, ard(175, 166, 170, 169, 188, 175, 176, 171, 173, 175, 173, 174, 169))
               .withDataForCol(1, ard(69, 55, 67, 52, 90, 53, 57, 57, 68, 73, 62, 90, 63))
               .build();
+      Scope.track(frame);
 
       Val pearson = Rapids.exec("(spearman heightsweights 'HEIGHT' 'WEIGHT')");
       assertTrue(pearson instanceof ValNum);
@@ -65,17 +65,18 @@ public class RapidsTest extends TestUtil {
 
   @Test
   public void testSpearmanIris() {
+    Session session = new Session();
     Scope.enter();
     try {
-      final Frame iris = TestUtil.parse_test_file(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
+      final Frame iris = TestUtil.parse_test_file(Key.make("iris_spearman"), "/home/pavel/wrk/h2o-3/smalldata/junit/iris.csv");
       Scope.track_generic(iris);
-
-      final Val pearson_sepal = Rapids.exec("(spearman iris_spearman 'sepal_len' 'sepal_wid')");
+      final Val pearson_sepal = Rapids.exec("(spearman iris_spearman 'sepal_len' 'sepal_wid')", session);
       assertTrue(pearson_sepal instanceof ValNum);
       assertEquals(-0.1720027734934786, pearson_sepal.getNum(), 1e-8);
 
     } finally {
       Scope.exit();
+      session.end(null);
     }
   }
 
