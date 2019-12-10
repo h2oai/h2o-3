@@ -36,8 +36,28 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     final int vecIdX = originalUnsortedFrame.find(asts[2].exec(env).getStr());
     final int vecIdY = originalUnsortedFrame.find(asts[3].exec(env).getStr());
 
-    Scope.enter();
+    try {
+      Scope.enter();
+      final PearsonRankedVectors rankedVectors = rankedVectors(originalUnsortedFrame, vecIdX, vecIdY);
+      final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(rankedVectors._x.mean(),
+              rankedVectors._y.mean())
+              .doAll(rankedVectors._x, rankedVectors._y);
+      return new ValNum(spearman.getSpearmanCorrelationCoefficient());
+    } finally {
+      Scope.exit();
+    }
 
+  }
+
+  /**
+   * Sorts and ranks the vectors of which SCC is calculated. Original Frame is not modified.
+   *
+   * @param originalUnsortedFrame Original frame containing the vectors compared.
+   * @param vecIdX                First compared vector
+   * @param vecIdY                Second compared vector
+   * @return An instance of {@link PearsonRankedVectors}, holding two new vectors with row rank.
+   */
+  private PearsonRankedVectors rankedVectors(final Frame originalUnsortedFrame, final int vecIdX, final int vecIdY) {
     Frame sortedX = new Frame(originalUnsortedFrame.vec(vecIdX).makeCopy());
     Scope.track(sortedX);
     Frame sortedY = new Frame(originalUnsortedFrame.vec(vecIdY).makeCopy());
@@ -74,7 +94,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     final Vec.Reader yValueReader = yValue.new Reader();
     final Vec.Reader xLabelReader = xLabel.new Reader();
     final Vec.Reader yLabelReader = yLabel.new Reader();
-    
+
     double lastX = Double.NaN;
     double lastY = Double.NaN;
     long skippedX = 0;
@@ -99,10 +119,20 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     orderXWriter.close();
     orderYWriter.close();
 
-    final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(orderX.mean(), orderY.mean())
-            .doAll(orderX, orderY);
-    Scope.exit();
-    return new ValNum(spearman.getSpearmanCorrelationCoefficient());
+    return new PearsonRankedVectors(orderX, orderY);
+  }
+
+  /**
+   * Ranked vectors prepared to calculate Spearman's correlation coefficient
+   */
+  private static class PearsonRankedVectors {
+    private final Vec _x;
+    private final Vec _y;
+
+    public PearsonRankedVectors(Vec x, Vec y) {
+      this._x = x;
+      this._y = y;
+    }
   }
 
 
