@@ -127,7 +127,7 @@ automl.leaderboard.suite <- function() {
       test.multinomial,
       test.empty_leaderboard,
       test.all_algos,
-      test.extended_leaderboard,
+      test.custom_leaderboard,
     )
 }
 
