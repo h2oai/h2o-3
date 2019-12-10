@@ -34,7 +34,7 @@ import sphinx_rtd_theme
 # ones.
 extensions = [
     'sphinx.ext.autodoc',
-    'sphinxcontrib.osexample',
+#    'sphinxcontrib.osexample',
     'sphinx.ext.mathjax',
     'sphinx.ext.todo',
     'sphinx_tabs.tabs'
