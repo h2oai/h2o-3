@@ -528,8 +528,8 @@ h2o.getAutoML <- function(...) {
 #' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
 #' aml <- h2o.automl(y = "Class", project_name="aml_housevotes",
 #'                   training_frame = votes_hf, max_runtime_secs = 30)
-#' lb_all <- h2o.getLeaderboard(aml, 'ALL')
-#' lb_custom <- h2o.getLeaderboard(aml, c('predict_time_per_row_ms', 'training_time_ms'))
+#' lb_all <- h2o.h2o.get_leaderboard(aml, 'ALL')
+#' lb_custom <- h2o.h2o.get_leaderboard(aml, c('predict_time_per_row_ms', 'training_time_ms'))
 #' }
 #' @export
 h2o.get_leaderboard <- function(aml, extensions=NULL) {
