@@ -67,27 +67,37 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     Scope.track(xLabel);
     Scope.track(yLabel);
 
+
+    final Vec.Writer orderXWriter = orderX.open();
+    final Vec.Writer orderYWriter = orderY.open();
+    final Vec.Reader xValueReader = xValue.new Reader();
+    final Vec.Reader yValueReader = yValue.new Reader();
+    final Vec.Reader xLabelReader = xLabel.new Reader();
+    final Vec.Reader yLabelReader = yLabel.new Reader();
+    
     double lastX = Double.NaN;
     double lastY = Double.NaN;
     long skippedX = 0;
     long skippedY = 0;
     for (int i = 0; i < orderX.length(); i++) {
-      if (lastX == xValue.at(i)) {
+      if (lastX == xValueReader.at(i)) {
         skippedX++;
       } else {
         skippedX = 0;
       }
-      lastX = xValue.at(i);
-      orderX.set(xLabel.at8(i) - 1, i - skippedX);
+      lastX = xValueReader.at(i);
+      orderXWriter.set(xLabelReader.at8(i) - 1, i - skippedX);
 
-      if (lastY == yValue.at(i)) {
+      if (lastY == yValueReader.at(i)) {
         skippedY++;
       } else {
         skippedY = 0;
       }
-      lastY = yValue.at(i);
-      orderY.set(yLabel.at8(i) - 1, i - skippedY);
+      lastY = yValueReader.at(i);
+      orderYWriter.set(yLabelReader.at8(i) - 1, i - skippedY);
     }
+    orderXWriter.close();
+    orderYWriter.close();
 
     final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(orderX.mean(), orderY.mean())
             .doAll(orderX, orderY);
