@@ -315,7 +315,7 @@ h2o.automl <- function(x, y, training_frame,
   .automl.poll_updates(h2o.get_job(res$job$key$name), verbosity, poll_state) # ensure the last update is retrieved
 
   # GET AutoML object
-  aml <- h2o.getAutoML(project_name = res$job$dest$name)
+  aml <- h2o.get_automl(project_name = res$job$dest$name)
   attr(aml, "id") <- res$job$dest$name
   return(aml)
 }
@@ -475,7 +475,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 #' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
 #' aml <- h2o.automl(y = "Class", project_name="aml_housevotes",
 #'                   training_frame = votes_hf, max_runtime_secs = 30)
-#' automl_retrieved <- h2o.getAutoML("aml_housevotes")
+#' automl_retrieved <- h2o.get_automl("aml_housevotes")
 #' }
 #' @export
 h2o.get_automl <- function(project_name) {
