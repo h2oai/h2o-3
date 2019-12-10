@@ -14,6 +14,9 @@ import water.rapids.vals.ValNum;
 import water.util.FrameUtils;
 import water.util.VecUtils;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
+
 public class AstSpearman extends AstPrimitive<AstSpearman> {
   @Override
   public int nargs() {
@@ -35,7 +38,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
       Scope.enter();
       final SpearmanRankedVectors rankedVectors = rankedVectors(originalUnsortedFrame, vecIdX, vecIdY);
       // Means must be calculated separately - those are not calculated for categorical columns in rollup stats.
-      final double[] means = VecUtils.calculateMeans(rankedVectors._x, rankedVectors._y);
+      final double[] means = calculateMeans(rankedVectors._x, rankedVectors._y);
       final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(means[0], means[1])
               .doAll(rankedVectors._x, rankedVectors._y);
       return new ValNum(spearman.getSpearmanCorrelationCoefficient());
@@ -225,6 +228,82 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
 
     public double getSpearmanCorrelationCoefficient() {
       return spearmanCorrelationCoefficient;
+    }
+  }
+
+  /**
+   * Calculates means of given numerical Vectors. Provided there is a NaN on a row in any of the give vectors,
+   * the row is skipped and involved in the mean calculation.
+   *
+   * @param vecs An array of {@link Vec}, must not be empty, nor null. All vectors must be of same length.
+   * @return An array of doubles with means for given vectors in the order they were given as arguments.
+   * @throws IllegalArgumentException Zero vectors provided,
+   */
+  private static double[] calculateMeans(final Vec... vecs) throws IllegalArgumentException {
+    if (vecs.length < 1) {
+      throw new IllegalArgumentException("There are no vectors to calculate means from.");
+    }
+
+    final long referenceVectorLength = vecs[0].length();
+
+    for (int i = 0; i < vecs.length; i++) {
+      if (!vecs[i].isCategorical() && !vecs[i].isNumeric()) {
+        throw new IllegalArgumentException(String.format("Given vector '%s' is not numerical or categorical.",
+                vecs[i]._key.toString()));
+      }
+      if (referenceVectorLength != vecs[i].length()) {
+        throw new IllegalArgumentException("Vectors to calculate means from do not have the same length." +
+                String.format(" Vector '%s' is of length '%d'", vecs[i]._key.toString(), vecs[i].length()));
+      }
+    }
+
+    return new MeanTask()
+            .doAll(vecs)._means;
+  }
+
+  /**
+   * Calculates means of given numerical Vectors. Provided there is a NaN on a row in any of the give vectors,
+   * the row is skipped and involved in the mean calculation.
+   */
+  private static class MeanTask extends MRTask<MeanTask> {
+
+    private double[] _means;
+    private long _linesVisited = 0;
+
+    @Override
+    public void map(Chunk[] cs) {
+      // Sums might get big, BigDecimal ensures local accuracy and no overflow
+      final BigDecimal[] averages = new BigDecimal[cs.length];
+      for (int i = 0; i < averages.length; i++) {
+        averages[i] = new BigDecimal(0, MathContext.DECIMAL128);
+      }
+
+      row:
+      for (int row = 0; row < cs[0].len(); row++) {
+        final double[] values = new double[cs.length];
+        for (int col = 0; col < cs.length; col++) {
+          values[col] = cs[col].atd(row);
+          if (Double.isNaN(values[col])) break row; // If a NaN is detected in any of the columns, just skip the row
+        }
+        _linesVisited++;
+        for (int i = 0; i < values.length; i++) {
+          averages[i] = averages[i].add(new BigDecimal(values[i], MathContext.DECIMAL128), MathContext.DECIMAL128);
+        }
+      }
+
+      this._means = new double[cs.length];
+      for (int i = 0; i < averages.length; i++) {
+        this._means[i] = averages[i].divide(new BigDecimal(_linesVisited), MathContext.DECIMAL64).doubleValue();
+      }
+    }
+
+    @Override
+    public void reduce(MeanTask mrt) {
+      final int numChunks = _means.length;
+      for (int i = 0; i < numChunks; i++) {
+        _means[i] = (_means[i] * _linesVisited + mrt._means[i] * mrt._linesVisited) / (_linesVisited + mrt._linesVisited);
+      }
+      _linesVisited += mrt._linesVisited;
     }
   }
 }
