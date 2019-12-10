@@ -38,7 +38,7 @@ public class RapidsTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
-    stall_till_cloudsize(5);
+    stall_till_cloudsize(1);
   }
 
   @Test
@@ -56,7 +56,6 @@ public class RapidsTest extends TestUtil {
 
       Val pearson = Rapids.exec("(spearman heightsweights 'HEIGHT' 'WEIGHT')");
       assertTrue(pearson instanceof ValNum);
-
       assertEquals(0.454357724505124, pearson.getNum(), 1e-8);
     } finally {
       Scope.exit();
@@ -91,7 +90,7 @@ public class RapidsTest extends TestUtil {
       Val pearson = Rapids.exec("(spearman iris_pearson 'sepal_len' 'class')");
       assertTrue(pearson instanceof ValNum);
 
-      assertEquals(0.79808, pearson.getNum(), 1e-5);
+      assertEquals(0.796932203878841, pearson.getNum(), 1e-8);
     } finally {
       Scope.exit();
     }

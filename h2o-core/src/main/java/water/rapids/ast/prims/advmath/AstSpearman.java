@@ -1,9 +1,7 @@
 package water.rapids.ast.prims.advmath;
 
-import water.DKV;
 import water.MRTask;
 import water.Scope;
-import water.Value;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -58,22 +56,25 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     Frame sortedY = new Frame(originalUnsortedFrame.vec(vecIdY).makeCopy());
     Scope.track(sortedY);
 
-    if (!sortedX.vec(0).isCategorical()) {
+    final boolean isIxOrdered = needsOrdering(sortedX.vec(0));
+    final boolean yIsOrdered = needsOrdering(sortedY.vec(0));
+    if (isIxOrdered) {
       FrameUtils.labelRows(sortedX, "label");
       sortedX = sortedX.sort(new int[]{0});
       Scope.track(sortedX);
 
     }
 
-    if (!sortedY.vec(0).isCategorical()) {
+    if (yIsOrdered) {
       FrameUtils.labelRows(sortedY, "label");
       sortedY = sortedY.sort(new int[]{0});
       Scope.track(sortedY);
     }
 
     assert sortedX.numRows() == sortedY.numRows();
-    final Vec orderX = Vec.makeZero(sortedX.numRows());
-    final Vec orderY = Vec.makeZero(sortedY.numRows());
+    // H2O does not count mean on categorical columns
+    final Vec orderX = needsOrdering(sortedX.vec(0)) ? Vec.makeZero(sortedX.numRows()) : originalUnsortedFrame.vec(vecIdX).makeCopy(null, Vec.T_NUM);
+    final Vec orderY = needsOrdering(sortedY.vec(0)) ? Vec.makeZero(sortedY.numRows()) : originalUnsortedFrame.vec(vecIdY).makeCopy(null, Vec.T_NUM);
 
     final Vec xLabel = sortedX.vec("label") == null ? sortedX.vec(0) : sortedX.vec("label");
     final Vec xValue = sortedX.vec(0);
@@ -95,21 +96,24 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     long skippedX = 0;
     long skippedY = 0;
     for (int i = 0; i < orderX.length(); i++) {
-      if (lastX == xValueReader.at(i)) {
-        skippedX++;
-      } else {
-        skippedX = 0;
+      if (isIxOrdered) {
+        if (lastX == xValueReader.at(i)) {
+          skippedX++;
+        } else {
+          skippedX = 0;
+        }
+        lastX = xValueReader.at(i);
+        orderXWriter.set(xLabelReader.at8(i) - 1, i - skippedX);
       }
-      lastX = xValueReader.at(i);
-      orderXWriter.set(xLabelReader.at8(i) - 1, i - skippedX);
-
-      if (lastY == yValueReader.at(i)) {
-        skippedY++;
-      } else {
-        skippedY = 0;
+      if (yIsOrdered) {
+        if (lastY == yValueReader.at(i)) {
+          skippedY++;
+        } else {
+          skippedY = 0;
+        }
+        lastY = yValueReader.at(i);
+        orderYWriter.set(yLabelReader.at8(i) - 1, i - skippedY);
       }
-      lastY = yValueReader.at(i);
-      orderYWriter.set(yLabelReader.at8(i) - 1, i - skippedY);
     }
     orderXWriter.close();
     orderYWriter.close();
@@ -128,6 +132,10 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
       this._x = x;
       this._y = y;
     }
+  }
+
+  private boolean needsOrdering(final Vec vec) {
+    return !vec.isCategorical();
   }
 
 
