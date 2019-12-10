@@ -478,7 +478,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 #' automl_retrieved <- h2o.getAutoML("aml_housevotes")
 #' }
 #' @export
-h2o.getAutoML <- function(project_name) {
+h2o.get_automl <- function(project_name) {
 
   state <- .automl.fetch_state(project_name)
 
@@ -497,6 +497,14 @@ h2o.getAutoML <- function(project_name) {
              modeling_steps = state$modeling_steps,
              training_info = training_info
   ))
+}
+
+
+#' @rdname h2o.get_automl
+#' @export
+h2o.getAutoML <- function(...) {
+  .Deprecated("h2o.get_automl")
+  h2o.get_automl(...)
 }
 
 #' Retrieve the leaderboard from the AutoML instance.
@@ -524,6 +532,6 @@ h2o.getAutoML <- function(project_name) {
 #' lb_custom <- h2o.getLeaderboard(aml, c('predict_time_per_row_ms', 'training_time_ms'))
 #' }
 #' @export
-h2o.getLeaderboard <- function(aml, extensions=NULL) {
+h2o.get_leaderboard <- function(aml, extensions=NULL) {
   return(.automl.fetch_leaderboard(attr(aml, 'id'), extensions))
 }
