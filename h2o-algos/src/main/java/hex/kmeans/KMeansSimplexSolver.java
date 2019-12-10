@@ -184,10 +184,8 @@ class KMeansSimplexSolver {
         if(checkIfContinue()) {
             // split calculation to block
             // place where parallelisation is needed
-            long blockSize = (long) Math.ceil(Math.sqrt(_edgeSize));
+            long blockSize = 20 * _constraintsLength;
             long numberOfBlocks = Math.floorDiv(_edgeSize + blockSize - 1, blockSize);
-            //long blockSize = _edgeSize;
-            //long numberOfBlocks = 1;
             if (numberOfConsecutiveBlocks < numberOfBlocks) {
                 nextBlockOfEdges = firstEdgeInBlock + blockSize;
                 long minimalIndex;

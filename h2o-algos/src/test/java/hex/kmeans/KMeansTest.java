@@ -160,28 +160,50 @@ public class KMeansTest extends TestUtil {
         System.out.println(kmm._output._size[i]+">="+parms._cluster_size_constraints[i]);
         assert kmm._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm._output._size[i]+".";
       }
-      
-      parms._standardize = false;
-      parms._cluster_size_constraints = new int[]{61, 50, 39};
 
-      System.out.println("Constrained Kmeans strandardize false (CKF)");
-      KMeans job2 = new KMeans(parms);
-      kmm2 = (KMeansModel) Scope.track_generic(job2.trainModel().get());
+      KMeansModel.KMeansParameters parms3 = new KMeansModel.KMeansParameters();
+      parms3._train = fr._key;
+      parms3._k = 3;
+      parms3._standardize = true;
+      parms3._max_iterations = 10;
+      parms3._user_points = points._key;
+      parms3._score_each_iteration = true;
+      parms3._ignored_columns = new String[]{"class"};
       
-      for(int i=0; i<parms._k; i++) {
-        System.out.println(kmm2._output._size[i]+">="+parms._cluster_size_constraints[i]);
-        assert kmm2._output._size[i] >= parms._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms._cluster_size_constraints[i]+" but is "+kmm2._output._size[i]+".";
-      }
-
-      parms._standardize = true;
-      parms._cluster_size_constraints = null;
       System.out.println("Loyd Kmeans strandardize true (FKT)");
-      KMeans job3 = new KMeans(parms);
+      KMeans job3 = new KMeans(parms3);
       kmm3 = (KMeansModel) Scope.track_generic(job3.trainModel().get());
 
-      parms._standardize = false;
+      KMeansModel.KMeansParameters parms2 = new KMeansModel.KMeansParameters();
+      parms2._train = fr._key;
+      parms2._k = 3;
+      parms2._standardize = false;
+      parms2._max_iterations = 10;
+      parms2._user_points = points._key;
+      parms2._score_each_iteration = true;
+      parms2._ignored_columns = new String[]{"class"};
+      parms2._cluster_size_constraints = new int[]{61, 50, 39};
+
+      System.out.println("Constrained Kmeans strandardize false (CKF)");
+      KMeans job2 = new KMeans(parms2);
+      kmm2 = (KMeansModel) Scope.track_generic(job2.trainModel().get());
+
+      for(int i=0; i<parms2._k; i++) {
+        System.out.println(kmm2._output._size[i]+">="+parms2._cluster_size_constraints[i]);
+        assert kmm2._output._size[i] >= parms2._cluster_size_constraints[i] : "Minimal size of cluster "+(i+1)+" should be "+parms2._cluster_size_constraints[i]+" but is "+kmm2._output._size[i]+".";
+      }
+
+      KMeansModel.KMeansParameters parms4 = new KMeansModel.KMeansParameters();
+      parms4._train = fr._key;
+      parms4._k = 3;
+      parms4._standardize = false;
+      parms4._max_iterations = 10;
+      parms4._user_points = points._key;
+      parms4._score_each_iteration = true;
+      parms4._ignored_columns = new String[]{"class"};
+      
       System.out.println("Loyd Kmeans strandardize false (FKF)");
-      KMeans job4 = new KMeans(parms);
+      KMeans job4 = new KMeans(parms4);
       kmm4 = (KMeansModel) Scope.track_generic(job4.trainModel().get());
 
 
@@ -191,9 +213,9 @@ public class KMeansTest extends TestUtil {
       predict4 = kmm4.score(fr);
 
       System.out.println("\nPredictions:");
-      System.out.println("| CKT | FKT | CKF | FKF |");
+      System.out.println("  | CKT | FKT | CKF | FKF |");
       for (int i=0; i<fr.numRows(); i++){
-        System.out.println("|  "+predict1.vec(0).at8(i)+"  |  "+predict3.vec(0).at8(i)+"  |  "+predict2.vec(0).at8(i)+"  |  "+predict4.vec(0).at8(i)+"  |");
+        System.out.println(i+ " |  "+predict1.vec(0).at8(i)+"  |  "+predict3.vec(0).at8(i)+"  |  "+predict2.vec(0).at8(i)+"  |  "+predict4.vec(0).at8(i)+"  |");
         assert predict1.vec(0).at8(i) == predict3.vec(0).at8(i): "Predictions should be the same for Loyd Kmenas and Constrained Kmeans.";
         assert predict2.vec(0).at8(i) == predict4.vec(0).at8(i): "Predictions should be the same for Loyd Kmenas and Constrained Kmeans.";
       }
@@ -202,7 +224,7 @@ public class KMeansTest extends TestUtil {
       for (int i=0; i<kmm._output._centers_raw.length;i++){
         System.out.println("===");
         for (int j=0; j<kmm._output._centers_raw[0].length;j++) {
-          System.out.println(kmm._output._centers_raw[i][j]+" "+kmm3._output._centers_raw[i][j]+" "+kmm2._output._centers_raw[i][j]+" "+kmm4._output._centers_raw[i][j]);
+          System.out.println(kmm._output._centers_raw[i][j]+" == "+kmm3._output._centers_raw[i][j]+" | "+kmm2._output._centers_raw[i][j]+" == "+kmm4._output._centers_raw[i][j]);
           assertEquals(kmm._output._centers_raw[i][j], kmm3._output._centers_raw[i][j], 1e-1);
           assertEquals(kmm2._output._centers_raw[i][j], kmm4._output._centers_raw[i][j], 1e-1);
         }
@@ -242,6 +264,7 @@ public class KMeansTest extends TestUtil {
       parms._cluster_size_constraints = new int[]{1000, 3000, 1000};
       parms._user_points = points._key;
       parms._standardize = true;
+      parms._max_iterations = 10;
 
       KMeans job = new KMeans(parms);
       kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());

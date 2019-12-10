@@ -273,8 +273,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         model.delete_and_lock(_job);
 
         int startK = _parms._estimate_k ? 1 : _parms._k;
-
-        //
+        
         final Vec vecs[] = _train.vecs();
         // mults & means for standardization
         final double[] means = _train.means();  // means are used to impute NAs
@@ -327,7 +326,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           model._output._iterations = 0;  // Loop ends only when iterations > max_iterations with strict inequality
           double[][] lo=null, hi=null;
           boolean stop = false;
-          do { 
+          do {
             assert(centers.length == k);
             IterationTask task;
             if(!constrained) {
