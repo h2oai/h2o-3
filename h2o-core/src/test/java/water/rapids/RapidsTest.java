@@ -45,12 +45,13 @@ public class RapidsTest extends TestUtil {
   public void testSpearman() {
     Scope.enter();
     try {
+      // The last values in both vecs test ignorance of rows with at least one NaN.
       final Frame frame = new TestFrameBuilder()
               .withName("heightsweights")
               .withVecTypes(Vec.T_NUM, Vec.T_NUM)
               .withColNames("HEIGHT", "WEIGHT")
-              .withDataForCol(0, ard(175, 166, 170, 169, 188, 175, 176, 171, 173, 175, 173, 174, 169))
-              .withDataForCol(1, ard(69, 55, 67, 52, 90, 53, 57, 57, 68, 73, 62, 90, 63))
+              .withDataForCol(0, ard(175, 166, 170, 169, 188, 175, 176, 171, 173, 175, 173, 174, 169, Double.NaN))
+              .withDataForCol(1, ard(69, 55, 67, 52, 90, 53, 57, 57, 68, 73, 62, 90, 63, Double.MAX_VALUE))
               .build();
       Scope.track(frame);
 
@@ -83,7 +84,6 @@ public class RapidsTest extends TestUtil {
   public void testSpearmanCategoricals() {
     Scope.enter();
     try {
-
       final Frame frame = TestUtil.parse_test_file(Key.make("iris_pearson"), "smalldata/junit/iris.csv");
       Scope.track_generic(frame);
 

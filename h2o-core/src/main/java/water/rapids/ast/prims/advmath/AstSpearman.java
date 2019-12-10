@@ -6,11 +6,13 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
+import water.rapids.Merge;
 import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValNum;
 import water.util.FrameUtils;
+import water.util.VecUtils;
 
 public class AstSpearman extends AstPrimitive<AstSpearman> {
   @Override
@@ -32,8 +34,9 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     try {
       Scope.enter();
       final SpearmanRankedVectors rankedVectors = rankedVectors(originalUnsortedFrame, vecIdX, vecIdY);
-      final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(rankedVectors._x.mean(),
-              rankedVectors._y.mean())
+      // Means must be calculated separately - those are not calculated for categorical columns in rollup stats.
+      final double[] means = VecUtils.calculateMeans(rankedVectors._x, rankedVectors._y);
+      final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(means[0], means[1])
               .doAll(rankedVectors._x, rankedVectors._y);
       return new ValNum(spearman.getSpearmanCorrelationCoefficient());
     } finally {
@@ -51,9 +54,16 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
    * @return An instance of {@link SpearmanRankedVectors}, holding two new vectors with row rank.
    */
   private SpearmanRankedVectors rankedVectors(final Frame originalUnsortedFrame, final int vecIdX, final int vecIdY) {
-    Frame sortedX = new Frame(originalUnsortedFrame.vec(vecIdX).makeCopy());
+
+    Frame comparedVecsWithNas = new Frame(originalUnsortedFrame.vec(vecIdX).makeCopy(),
+            originalUnsortedFrame.vec(vecIdY).makeCopy());
+    Frame unsortedFrameWithoutNAs = new Merge.RemoveNAsTask(0, 1)
+            .doAll(comparedVecsWithNas.types(), comparedVecsWithNas)
+            .outputFrame(comparedVecsWithNas.names(), comparedVecsWithNas.domains());
+
+    Frame sortedX = new Frame(unsortedFrameWithoutNAs.vec(0).makeCopy());
     Scope.track(sortedX);
-    Frame sortedY = new Frame(originalUnsortedFrame.vec(vecIdY).makeCopy());
+    Frame sortedY = new Frame(unsortedFrameWithoutNAs.vec(1).makeCopy());
     Scope.track(sortedY);
 
     final boolean xIsOrdered = needsOrdering(sortedX.vec(0));
@@ -72,9 +82,8 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     }
 
     assert sortedX.numRows() == sortedY.numRows();
-    // H2O does not count mean on categorical columns
-    final Vec orderX = needsOrdering(sortedX.vec(0)) ? Vec.makeZero(sortedX.numRows()) : originalUnsortedFrame.vec(vecIdX).makeCopy(null, Vec.T_NUM);
-    final Vec orderY = needsOrdering(sortedY.vec(0)) ? Vec.makeZero(sortedY.numRows()) : originalUnsortedFrame.vec(vecIdY).makeCopy(null, Vec.T_NUM);
+    final Vec orderX = needsOrdering(sortedX.vec(0)) ? Vec.makeZero(sortedX.numRows()) : originalUnsortedFrame.vec(vecIdX);
+    final Vec orderY = needsOrdering(sortedY.vec(0)) ? Vec.makeZero(sortedY.numRows()) : originalUnsortedFrame.vec(vecIdY);
 
     final Vec xLabel = sortedX.vec("label") == null ? sortedX.vec(0) : sortedX.vec("label");
     final Vec xValue = sortedX.vec(0);
