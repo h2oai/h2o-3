@@ -101,16 +101,20 @@ automl.leaderboard.suite <- function() {
         }
     }
 
-    test.extended_leaderboard <- function() {
+    test.custom_leaderboard <- function() {
         fr <- as.h2o(iris)
         aml <- h2o.automl(y = 5, training_frame = fr, max_models = 5,
-                          project_name = "r_aml_lb_extended")
+                          project_name = "r_aml_customlb")
         std_columns <- c("model_id", "mean_per_class_error", "logloss", "rmse", "mse")
         expect_equal(names(aml@leaderboard), std_columns)
-        expect_equal(names(attr(aml@leaderboard, 'extended')()), c(std_columns, "training_time_ms", "predict_time_per_row_ms"))
-        expect_equal(names(attr(aml@leaderboard, 'extended')("training_time_ms")), c(std_columns, "training_time_ms"))
-        expect_equal(names(attr(aml@leaderboard, 'extended')(list("predict_time_per_row_ms", "training_time_ms"))), c(std_columns, "predict_time_per_row_ms", "training_time_ms"))
-        lb_ext <- attr(aml@leaderboard, 'extended')()
+        expect_equal(names(h2o.getLeaderboard(aml)), std_columns)
+        expect_equal(names(h2o.getLeaderboard(aml, extensions='unknown')), std_columns)
+        expect_equal(names(h2o.getLeaderboard(aml, extensions='ALL')), c(std_columns, "training_time_ms", "predict_time_per_row_ms"))
+        expect_equal(names(h2o.getLeaderboard(aml, extensions="training_time_ms")), c(std_columns, "training_time_ms"))
+        expect_equal(names(h2o.getLeaderboard(aml, extensions=c("predict_time_per_row_ms","training_time_ms"))), c(std_columns, "predict_time_per_row_ms", "training_time_ms"))
+        expect_equal(names(h2o.getLeaderboard(aml, extensions=list("unkown","training_time_ms"))), c(std_columns, "training_time_ms"))
+
+        lb_ext <- h2o.getLeaderboard(aml, 'ALL')
         print(lb_ext)
         expect_true(all(sapply(lb_ext[2:length(lb_ext)], is.numeric)))
         expect_true(all(sapply(lb_ext["training_time_ms"], function(v) v >= 0)))

@@ -384,8 +384,12 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   return(state)
 }
 
-.automl.fetch_extended_leaderboard <- function(run_id, extensions=NULL) {
-  if (is.null(extensions)) extensions <- list("ALL")
+.automl.fetch_leaderboard <- function(run_id, extensions=NULL) {
+  if (is.null(extensions)) {
+    extensions <- list()
+  } else if (is.character(extensions)) {
+    extensions <- as.list(extensions)
+  }
   extensions_str <- paste0("[", paste(extensions, collapse = ","), "]")
   resp <- .h2o.__remoteSend(h2oRestApiVersion=99, method="GET", page=paste0("Leaderboards/", run_id), .params=list(extensions=extensions_str))
   dest_key <- paste0(gsub("@.*", "", resp$project_name), "_extended_leaderboard")
@@ -423,7 +427,6 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
       leaderboard <- leaderboard[-1,]
       warning("The leaderboard contains zero models: try running AutoML for longer (the default is 1 hour).")
     }
-    attr(leaderboard, 'extended') <- function(extensions=NULL) .automl.fetch_extended_leaderboard(run_id, extensions)
   }
 
   # If leaderboard is not empty, grab the leader model, otherwise create a "dummy" leader
@@ -494,4 +497,33 @@ h2o.getAutoML <- function(project_name) {
              modeling_steps = state$modeling_steps,
              training_info = training_info
   ))
+}
+
+#' Retrieve the leaderboard from the AutoML instance.
+#'
+#' Contrary to the default leaderboard attached to the automl instance, this one can return columns other than the metrics.
+#'
+#' @param aml A H2OAutoML instance for which to return the leaderboard.
+#' @param extensions A string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
+#' Currently supported extensions are:
+#' \itemize{
+#' \item{'ALL': adds all columns below.}
+#' \item{'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).}
+#' \item{'predict_time_per_row_ms': column providing the average prediction time by the model for a single row.}
+#' }
+#' @return An H2OFrame representing the leaderboard.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
+#' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
+#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes",
+#'                   training_frame = votes_hf, max_runtime_secs = 30)
+#' lb_all <- h2o.getLeaderboard(aml, 'ALL')
+#' lb_custom <- h2o.getLeaderboard(aml, c('predict_time_per_row_ms', 'training_time_ms'))
+#' }
+#' @export
+h2o.getLeaderboard <- function(aml, extensions=NULL) {
+  return(.automl.fetch_leaderboard(attr(aml, 'id'), extensions))
 }

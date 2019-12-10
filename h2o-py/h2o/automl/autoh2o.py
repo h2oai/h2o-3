@@ -599,11 +599,13 @@ class H2OAutoML(Keyed):
             print("Failed polling AutoML progress log: {}".format(e))
 
     @staticmethod
-    def _fetch_extended_leaderboard(aml_id, *extensions):
-        if not extensions:
-            extensions = ['ALL']
-        resp = h2o.api("GET /99/Leaderboards/%s" % aml_id, data=dict(extensions=list(extensions)))
-        dest_key = resp['project_name'].split('@', 1)[0]+"_extended_leaderboard"
+    def _fetch_leaderboard(aml_id, extensions=None):
+        assert_is_type(extensions, None, str, [str])
+        extensions = ([] if extensions is None
+                      else [extensions] if is_type(extensions, str)
+                      else extensions)
+        resp = h2o.api("GET /99/Leaderboards/%s" % aml_id, data=dict(extensions=extensions))
+        dest_key = resp['project_name'].split('@', 1)[0]+"_custom_leaderboard"
         lb = H2OAutoML._fetch_table(resp['table'], key=dest_key, progress_bar=False)
         return h2o.assign(lb[1:], dest_key)
 
@@ -640,7 +642,6 @@ class H2OAutoML(Keyed):
         if should_fetch('leaderboard'):
             leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)
             leaderboard = h2o.assign(leaderboard[1:], project_name+"_leaderboard")  # removing index and reassign id to ensure persistence on backend
-            leaderboard.extended = ft.partial(H2OAutoML._fetch_extended_leaderboard, aml_id)
 
         event_log = None
         if should_fetch('event_log'):
@@ -665,3 +666,23 @@ def get_automl(project_name):
     :returns: A dictionary containing the project_name, leader model, leaderboard, event_log.
     """
     return H2OAutoML._fetch_state(project_name)
+
+
+def get_leaderboard(aml, extensions=None):
+    """
+    Retrieve the leaderboard from the AutoML instance.
+    Contrary to the default leaderboard attached to the automl instance, this one can return columns other than the metrics.
+    :param H2OAutoML aml: the instance for which to return the leaderboard.
+    :param extensions: a string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
+        Currently supported extensions are:
+        - 'ALL': adds all columns below.
+        - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
+        - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
+    :return: An H2OFrame representing the leaderboard.
+    :examples:
+    >>> aml = H2OAutoML(max_runtime_secs=30)
+    >>> aml.train(y=y, training_frame=train)
+    >>> lb_all = h2o.automl.get_leaderboard(aml, 'ALL')
+    >>> lb_custom = h2o.automl.get_leaderboard(aml, ['predict_time_per_row_ms', 'training_time_ms'])
+    """
+    return H2OAutoML._fetch_leaderboard(aml.key, extensions)
