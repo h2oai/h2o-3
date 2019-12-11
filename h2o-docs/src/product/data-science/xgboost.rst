@@ -1,8 +1,6 @@
 XGBoost
 -------
 
-**Note**: This section is a work in progress.
-
 Introduction
 ~~~~~~~~~~~~
 
