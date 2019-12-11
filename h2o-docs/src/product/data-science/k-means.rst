@@ -120,21 +120,6 @@ H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a
 
  :math:`\big[0.02 + \frac{10}{number\_of\_training\_rows} + \frac{2.5}{number\_of\_model\_features^{2}}\big]`
 
-Constrained K-Means - experimental
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Using the `cluster_size_constraints` parameter, a user can set the minimum size of each cluster during the training by an array of numbers. The size of the array must be equal as the `k` parameter.
-
-To satisfy the custom minimal cluster size, the calculation of clusters is converted to the Minimal Cost Flow problem. Instead of using the Lloyd iteration algorithm, a graph is constructed based on the distances and constraints. The goal is to go iteratively through the input edges and create an optimal spanning tree that satisfies the constraints.
-
-More information about how to convert the standard K-means algorithm to the Minimal Cost Flow problem is described in this paper: https://pdfs.semanticscholar.org/ecad/eb93378d7911c2f7b9bd83a8af55d7fa9e06.pdf.
-
-The result cluster size is guaranteed only on **training data** and only **during training**. Depends on the cluster assignment at the end of the training, the result centers are calculated. However, the result cluster assignment could be different when you score on the same data, which was used for training. Because of during scoring, the resulting cluster is assigned based on the final centers and the distances from them. **No constraints are taken into account during scoring.**
-
-If `nfolds` and `cluster_size_constraints` parameters are set simultaneously, the sum of constraints has to be less than a number of data points in one fold.
-
-**Minimum-cost flow problem can be efficiently solved in polynomial time. Currently, the performance of this implementation of the constrained K-means algorithm is not optimal because it is not fully parallelized yet. This new feature is experimental and still in progress.**
-
 FAQ
 ~~~
 
