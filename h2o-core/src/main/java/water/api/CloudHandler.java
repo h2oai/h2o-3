@@ -61,6 +61,5 @@ class CloudHandler extends Handler {
 
     return cloud;
   }
-  
 }
 
