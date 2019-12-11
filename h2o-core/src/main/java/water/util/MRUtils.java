@@ -223,6 +223,9 @@ public class MRUtils {
       numrows += sampling_ratios[i] * dist[i];
     }
     if (Float.isNaN(numrows)) {
+      Log.err("Total number of sampled rows was NaN. " +
+              "Sampling ratios: " + Arrays.toString(sampling_ratios) + 
+              "; Dist: " + Arrays.toString(dist));
       throw new IllegalArgumentException("Error during sampling - too few points?");
     }
 
