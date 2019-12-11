@@ -61,12 +61,6 @@ class CloudHandler extends Handler {
 
     return cloud;
   }
-
-  @SuppressWarnings("unused") // called through reflection by RequestServer
-  public CloudV3 lock(int version, CloudV3 cloud) {
-    Paxos.lockCloud("requested via REST api");
-    return cloud;
-  }
   
 }
 
