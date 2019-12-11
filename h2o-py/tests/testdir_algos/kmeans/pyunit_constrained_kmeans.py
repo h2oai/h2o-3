@@ -10,7 +10,7 @@ from h2o.estimators.kmeans import H2OKMeansEstimator
 
 def test_constrained_kmeans_iris():
 
-    iris_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris.csv"))
+    iris_h2o = h2o.import_file(path=pyunit_utils.locate("smalldata/iris/iris_wheader.csv"))
     
     k = 3
 

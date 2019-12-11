@@ -135,11 +135,11 @@ public class KMeansTest extends TestUtil {
     try {
       Scope.enter();
       fr = Scope.track(parse_test_file("smalldata/iris/iris_wheader.csv"));
-      
+
       points = ArrayUtils.frame(ard(
-              ard(6.0,2.2,4.0,1.0),
-              ard(5.2,3.4,1.4,0.2),
-              ard(6.9,3.1,5.4,2.1)
+              ard(4.9, 3.0, 1.4, 0.2),
+              ard(5.6, 2.5, 3.9, 1.1),
+              ard(6.5, 3.0, 5.2, 2.0)
       ));
 
       KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
@@ -148,7 +148,7 @@ public class KMeansTest extends TestUtil {
       parms._standardize = true;
       parms._max_iterations = 10;
       parms._user_points = points._key;
-      parms._cluster_size_constraints = new int[]{46, 49, 55};
+      parms._cluster_size_constraints = new int[]{49, 46, 55};
       parms._score_each_iteration = true;
       parms._ignored_columns = new String[]{"class"};
 
@@ -182,7 +182,7 @@ public class KMeansTest extends TestUtil {
       parms2._user_points = points._key;
       parms2._score_each_iteration = true;
       parms2._ignored_columns = new String[]{"class"};
-      parms2._cluster_size_constraints = new int[]{61, 50, 39};
+      parms2._cluster_size_constraints = new int[]{50, 61, 39};
 
       System.out.println("Constrained Kmeans strandardize false (CKF)");
       KMeans job2 = new KMeans(parms2);
