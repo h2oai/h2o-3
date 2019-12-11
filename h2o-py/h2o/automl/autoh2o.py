@@ -684,5 +684,6 @@ def get_leaderboard(aml, extensions=None):
     >>> aml.train(y=y, training_frame=train)
     >>> lb_all = h2o.automl.get_leaderboard(aml, 'ALL')
     >>> lb_custom = h2o.automl.get_leaderboard(aml, ['predict_time_per_row_ms', 'training_time_ms'])
+    >>> lb_custom_sorted = lb_custom.sort(by='predict_time_per_row_ms')
     """
     return H2OAutoML._fetch_leaderboard(aml.key, extensions)
