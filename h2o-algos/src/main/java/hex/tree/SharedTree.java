@@ -232,7 +232,8 @@ public abstract class SharedTree<
                 throw new IllegalArgumentException("class_sampling_factors must have " + _train.lastVec().domain().length + " elements");
               trainSamplingFactors = _parms._class_sampling_factors.clone(); //clone: don't modify the original
             }
-            Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, false);
+            boolean verboseSampling = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.sharedTree.sampleFrameStratified.verbose");
+            Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, verboseSampling);
             if (stratified != _train) {
               _train = stratified;
               _response = stratified.vec(_parms._response_column);
