@@ -24,12 +24,12 @@ rm -fr $OUTDIR
 $MKDIR -p $OUTDIR
 
 function cleanup () {
-  kill -9 ${PID_11} ${PID_21} ${PID_31} ${PID_41} ${PID_51} 1> /dev/null 2>&1
-  kill -9 ${PID_12} ${PID_22} ${PID_32} ${PID_42} ${PID_52} 1> /dev/null 2>&1
-  kill -9 ${PID_13} ${PID_23} ${PID_33} ${PID_43} ${PID_53} 1> /dev/null 2>&1
+  kill -9 ${PID_11} 1> /dev/null 2>&1
+  kill -9 ${PID_12} 1> /dev/null 2>&1
+  kill -9 ${PID_13} 1> /dev/null 2>&1
   wait 1> /dev/null 2>&1
   RC="`paste $OUTDIR/status.* | sed 's/[[:blank:]]//g'`"
-  if [ "$RC" != "00000" ]; then
+  if [ "$RC" != "0" ]; then
     cat $OUTDIR/out.*
     echo h2o-ext-target-encoder junit tests FAILED
     exit 1
