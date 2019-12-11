@@ -3,14 +3,32 @@ package water.runner;
 import org.junit.Ignore;
 import water.*;
 import water.util.ArrayUtils;
-import water.util.Log;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Set;
 
 @Ignore
-public class CheckKeysTask extends KeysMRTask<CheckKeysTask> {
+public class CheckKeysTask extends MRTask<CheckKeysTask> {
 
     Key[] leakedKeys;
+
+    /**
+     * Determines if a key leak is ignorable
+     *
+     * @param key   A leaked key
+     * @param value An instance of {@link Value} associated with the key
+     * @return True if the leak is considered to be ignorable, otherwise false
+     */
+    protected static boolean isIgnorableKeyLeak(final Key key, final Value value) {
+
+        return value == null || value.isVecGroup() || value.isESPCGroup() || key.equals(Job.LIST) ||
+                (value.isJob() && value.<Job>get().isStopped());
+    }
+
+    @Override
+    public void reduce(CheckKeysTask mrt) {
+        leakedKeys = ArrayUtils.append(leakedKeys, mrt.leakedKeys);
+    }
 
     @Override
     protected void setupLocal() {
@@ -33,11 +51,6 @@ public class CheckKeysTask extends KeysMRTask<CheckKeysTask> {
             }
             if (leakedKeysPointer < numLeakedKeys) leakedKeys = Arrays.copyOfRange(leakedKeys, 0, leakedKeysPointer);
         }
-        
-    }
-    
-    @Override
-    public void reduce(CheckKeysTask mrt) {
-        leakedKeys = ArrayUtils.append(leakedKeys, mrt.leakedKeys);
+
     }
 }
