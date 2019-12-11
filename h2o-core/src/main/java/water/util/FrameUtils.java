@@ -19,7 +19,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.zip.GZIPOutputStream;
 
 public class FrameUtils {
 
@@ -1032,5 +1031,17 @@ public class FrameUtils {
     public double getWeightedSigma() {
       return _weightedSigma;
     }
+  }
+
+  /**
+   * Labels frame's rows with a sequence starting with 1 & sending with total number of rows in the frame.
+   * A vector is added to the frame given, no data are duplicated.
+   *
+   * @param frame           Frame to label
+   * @param labelColumnName Name of the label column
+   */
+  public static void labelRows(final Frame frame, final String labelColumnName) {
+    final Vec labelVec = Vec.makeSeq(1, frame.numRows());
+    frame.add(labelColumnName, labelVec);
   }
 }

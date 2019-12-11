@@ -1747,7 +1747,7 @@ public class Frame extends Lockable<Frame> {
   public Frame sort(int[] cols, int[] ascending) {
     return Merge.sort(this, cols, ascending);
   }
-
+  
   /**
    * A structure for fast lookup in the set of frame's vectors.
    * Purpose of this class is to avoid multiple O(n) searches in {@link Frame}'s vectors.
