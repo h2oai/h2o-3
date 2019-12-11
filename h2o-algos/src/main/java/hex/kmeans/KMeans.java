@@ -304,7 +304,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           vecs2 = Arrays.copyOf(vecs, vecs.length+1);
           vecs2[vecs2.length-1] = vecs2[0].makeCon(-1);
         } else {
-          int newVecLength = vecs.length + centers.length + 3;
+          int newVecLength = vecs.length + 2 * centers.length + 3; // data (+ weight column) + distances + edge indices + result distance + old assignment + new assignment
           vecs2 = Arrays.copyOf(vecs, newVecLength);
           for (int i = vecs.length; i < newVecLength; i++) {
             vecs2[i] = vecs2[0].makeCon(Double.MAX_VALUE);
@@ -835,7 +835,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
 
     @Override
     public void map(Chunk[] cs) {
-      int N = cs.length - (_hasWeight ? 1 : 0) - 3 - _centers.length /*data + weight column + distances + old assignment + new assignment  */;
+      int N = cs.length - (_hasWeight ? 1 : 0) - 3 - 2*_centers.length /*data + weight column + distances + edge indices + old assignment + new assignment  */;
       assert _centers[0].length == N;
       int vecsStart = _hasWeight ? N+1 : N;
       

@@ -1,9 +1,14 @@
 package hex.kmeans;
 
+import water.Iced;
+import water.MRTask;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 /**
@@ -18,8 +23,8 @@ class KMeansSimplexSolver {
     public long _resultSize;
 
     // Input graph to store K-means configuration
-    public Vec _nodes; // store data points indices, constraints + additive node
-    public Vec _edges; // store edges indices between data points and constraints (distances * precision), edges between constraints and additive node
+    //public Vec _nodes; // store data points indices, constraints + additive node
+    //public Vec _edges; // store edges indices between data points and constraints (distances * precision), edges between constraints and additive node
     public Vec _demands; // store demand of all nodes (-1 for data points, constraints values for constraints nodes, )
     public Vec _capacities; // store capacities of all edges + edges from all node to leader node
     public Frame _weights; // input data + weight column, calculated distances from all points to all centres + columns to store result of cluster assignments 
@@ -50,14 +55,14 @@ class KMeansSimplexSolver {
         this._edgeSize = _numberOfPoints * constrains.length + constrains.length;
         this._constraintsLength = constrains.length;
 
-        this._nodes = Vec.makeCon(0, _nodeSize, Vec.T_NUM);
-        this._edges = Vec.makeCon(0, _edgeSize, Vec.T_NUM);
+        //this._nodes = Vec.makeCon(0, _nodeSize, Vec.T_NUM);
+        //this._edges = Vec.makeCon(0, _edgeSize, Vec.T_NUM);
         this._demands = Vec.makeCon(0, _nodeSize, Vec.T_NUM);
         this._capacities = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
         this._resultSize = this._numberOfPoints * _constraintsLength;
         this._hasWeightsColumn = hasWeights;
         this._numberOfNonZeroWeightPoints = numberOfNonZeroWeightPoints;
-
+        
         this._weights = weights;
         this._additiveWeights = Vec.makeCon(0, _nodeSize + _constraintsLength, Vec.T_NUM);
         this._sumWeights = sumDistances;
@@ -65,7 +70,7 @@ class KMeansSimplexSolver {
         long constraintsSum = 0;
         _maxAbsDemand = Double.MIN_VALUE;
         for (long i = 0; i < _nodeSize; i++) {
-            _nodes.set(i, i);
+            //_nodes.set(i, i);
             if (i < _numberOfPoints) {
                 _demands.set(i, -1);
             } else {
@@ -82,10 +87,18 @@ class KMeansSimplexSolver {
                 }
             }
         }
-
-        for (long i = 0; i < _edgeSize; i++) {
-            _edges.set(i, i);
+        
+        int edgeIndexStart = _weights.numCols() - 3 - _constraintsLength;
+        long edgeIndex = 0; 
+        for (long i = 0; i < _weights.numRows(); i++) {
+            for(int j=0; j < _constraintsLength; j++){
+                _weights.vec(edgeIndexStart+j).set(i, edgeIndex++);
+            }
         }
+
+        //for (long i = 0; i < _edgeSize; i++) {
+           // _edges.set(i, i);
+        //}
 
         this.tree = new SpanningTree(_nodeSize, _edgeSize, _constraintsLength);
     }
@@ -120,7 +133,7 @@ class KMeansSimplexSolver {
         long numberOfFrameWeights = this._numberOfPoints * this._constraintsLength;
         if (edgeIndex < numberOfFrameWeights) {
             long i = Math.round(edgeIndex / _constraintsLength);
-            int j = _weights.numCols() - _constraintsLength - 3 + (int)(edgeIndex % _constraintsLength);        
+            int j = _weights.numCols() - 2 * _constraintsLength - 3 + (int)(edgeIndex % _constraintsLength);        
             return _weights.vec(j).at(i);
         }
         return _additiveWeights.at(edgeIndex - numberOfFrameWeights);
@@ -136,33 +149,13 @@ class KMeansSimplexSolver {
             long numberOfFrameWeights = this._numberOfPoints * this._constraintsLength;
             if (edgeIndex < numberOfFrameWeights) {
                 long i = Math.round(edgeIndex / _constraintsLength);
-                int j = _weights.numCols() - 1 - _constraintsLength - 3;
+                int j = _weights.numCols() - 1 - 2 * _constraintsLength - 3;
                 return _weights.vec(j).at8(i) == 1;
             }
         }
         return true;
     }
-
-    /**
-     * Find minimal reduced weight to select entering edge to find cycle
-     * @param from
-     * @param to
-     * @return
-     */
-    public long findMinimalReducedWeight(long from, long to) {
-        double minimalWeight = Double.MAX_VALUE;
-        long minimalIndex = -1;
-        for (long i = from; i < to; i++) {
-            double tmpWeight = tree.reduceWeight(i, getWeight(i));
-            boolean countValue = !_hasWeightsColumn || isNonZeroWeight(i);
-            if (countValue && tmpWeight < minimalWeight) {
-                minimalWeight = tmpWeight;
-                minimalIndex = i;
-            }
-        }
-        return minimalIndex;
-    }
-
+    
     /**
      * Check edges flow where constraints flows and additive node flow should be zero at the end of calculation.
      * @return true if the flows are not zero yet
@@ -176,54 +169,33 @@ class KMeansSimplexSolver {
         return false;
     }
 
+    public long findMinimalReducedWeight() {
+        FindMinimalWeightTask t = new FindMinimalWeightTask(tree, _hasWeightsColumn, _constraintsLength).doAll(_weights);
+        double minimalWeight = t.minimalWeight;
+        long minimalIndex = t.minimalIndex;
+        long additiveEdgesIndexStart = _weights.vec(0).length() * _constraintsLength;
+        for(long i = additiveEdgesIndexStart; i < _edgeSize; i++){
+            double tmpWeight = tree.reduceWeight(i, getWeight(i));
+            boolean countValue = !_hasWeightsColumn || isNonZeroWeight(i);
+            if (countValue && tmpWeight < minimalWeight) {
+                minimalWeight = tmpWeight;
+                minimalIndex = i;
+            }
+        }
+        return minimalIndex;
+    }
+
     /**
      * Find next entering edge to find cycle.
      * @return index of the edge
      */
     public Edge findNextEnteringEdge() {
         if(checkIfContinue()) {
-            // split calculation to block
-            // place where parallelisation is needed
-            //long blockSize = (long) Math.ceil(Math.sqrt(_edgeSize));
-            //long numberOfBlocks = Math.floorDiv(_edgeSize + blockSize - 1, blockSize);
-            long blockSize = _edgeSize;
-            long numberOfBlocks = 1;
-            if (numberOfConsecutiveBlocks < numberOfBlocks) {
-                nextBlockOfEdges = firstEdgeInBlock + blockSize;
-                long minimalIndex;
-                if (nextBlockOfEdges <= _edgeSize) {
-                    minimalIndex = findMinimalReducedWeight(firstEdgeInBlock, nextBlockOfEdges);
-                } else {
-                    nextBlockOfEdges -= _edgeSize;
-                    long fIndex = findMinimalReducedWeight(firstEdgeInBlock, _edgeSize);
-                    long sIndex = findMinimalReducedWeight(0, nextBlockOfEdges);
-                    if (fIndex == -1) {
-                        minimalIndex = sIndex;
-                    } else if (sIndex == -1) {
-                        minimalIndex = fIndex;
-                    } else {
-                        minimalIndex = tree.reduceWeight(fIndex, getWeight(fIndex)) < tree.reduceWeight(sIndex, getWeight(sIndex)) ? fIndex : sIndex;
-                    }
-                }
-                firstEdgeInBlock = nextBlockOfEdges;
-                if(minimalIndex == -1){
-                    numberOfConsecutiveBlocks += 1;
-                    return findNextEnteringEdge();
-                }
-                double minimalWeight = tree.reduceWeight(minimalIndex, getWeight(minimalIndex));
-                if (minimalWeight >= 0) {
-                    numberOfConsecutiveBlocks += 1;
-                    return findNextEnteringEdge();
-                } else {
-                    numberOfConsecutiveBlocks = 0;
-                    if (tree._edgeFlow.at8(minimalIndex) == 0) {
-                        return new Edge(minimalIndex, tree._sources.at8(minimalIndex), tree._targets.at8(minimalIndex));
-                    } else {
-                        return new Edge(minimalIndex, tree._targets.at8(minimalIndex), tree._sources.at8(minimalIndex));
-                    }
-                }
+            long minimalIndex = findMinimalReducedWeight();
+            if (tree._edgeFlow.at8(minimalIndex) == 0) {
+                return new Edge(minimalIndex, tree._sources.at8(minimalIndex), tree._targets.at8(minimalIndex));
             } else {
-                return null;
+                return new Edge(minimalIndex, tree._targets.at8(minimalIndex), tree._sources.at8(minimalIndex));
             }
         }
         return null;
@@ -341,7 +313,7 @@ class KMeansSimplexSolver {
         int distanceAssignmentIndex = _weights.numCols() - 3;
         int oldAssignmentIndex = _weights.numCols() - 2;
         int newAssignmentIndex = _weights.numCols() - 1;
-        int dataStopLength = _weights.numCols() - (_hasWeightsColumn ? 1 : 0) - _constraintsLength - 3;
+        int dataStopLength = _weights.numCols() - (_hasWeightsColumn ? 1 : 0) - 2 * _constraintsLength - 3;
 
         int[] numberOfPointsInCluster = new int[_constraintsLength];
         for(int i = 0; i<_constraintsLength; i++){
@@ -367,7 +339,8 @@ class KMeansSimplexSolver {
             }
         }
         checkConstraintsCondition(numberOfPointsInCluster);
-        for(int i=0; i<_constraintsLength; i++) {
+        //remove distances columns
+        for(int i = 0; i < 2 * _constraintsLength; i++) {
             _weights.remove(dataStopLength+(_hasWeightsColumn ? 1 : 0));
         }
         return _weights;
@@ -377,7 +350,7 @@ class KMeansSimplexSolver {
 /**
  * Class to store calculation of flow in minimal cost flow problem.
  */
-class SpanningTree {
+class SpanningTree extends Iced<SpanningTree> {
 
     public long _nodeSize;
     public long _edgeSize;
@@ -418,8 +391,8 @@ class SpanningTree {
         for (long i = 0; i < _nodeSize; i++) {
             if (i < numberOfPoints) {
                 for (int j = 0; j < _secondLayerSize; j++) {
-                    _sources.set(i* _secondLayerSize +j, i);
-                    _targets.set(i* _secondLayerSize +j, numberOfPoints + j);
+                    _sources.set(i * _secondLayerSize + j, i);
+                    _targets.set(i * _secondLayerSize + j, numberOfPoints + j);
                 }
             } else {
                 if (i < _nodeSize - 1) {
@@ -745,5 +718,52 @@ class NodesEdgesObject {
         }
         sb.deleteCharAt(sb.length()-1);
         return sb.toString();
+    }
+}
+
+
+/**
+ * Map Reduce task to find minimal reduced weight (distance).
+ */
+class FindMinimalWeightTask extends MRTask<FindMinimalWeightTask> {
+    // IN
+    SpanningTree _tree;
+    boolean _hasWeightsColumn;
+    int _constraintsLength;
+
+    //OUT
+    double minimalWeight = Double.MAX_VALUE;
+    long minimalIndex = -1;
+
+    FindMinimalWeightTask(SpanningTree tree, boolean hasWeightsColumn, int constraintsLength) {
+        _tree = tree;
+        _hasWeightsColumn = hasWeightsColumn;
+        _constraintsLength = constraintsLength;
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+        int startDistancesIndex = cs.length - (_hasWeightsColumn ? 1 : 0) - 2*_constraintsLength - 3;
+        int startEdgeIndex = cs.length - 3 - _constraintsLength;
+        for (int i = 0; i < cs[0]._len; i++) {
+            for (int j = 0; j < _constraintsLength; j++) {
+                double weight = cs[startDistancesIndex + j].atd(i);
+                long edgeIndex = cs[startEdgeIndex + j].at8(i);
+                double tmpWeight = _tree.reduceWeight(edgeIndex, weight);
+                boolean countValue = !_hasWeightsColumn || cs[startDistancesIndex-1].at8(i) == 1;
+                if (countValue && tmpWeight < minimalWeight) {
+                    minimalWeight = tmpWeight;
+                    minimalIndex = edgeIndex;
+                }
+            }
+        }
+    }
+
+    @Override
+    public void reduce(FindMinimalWeightTask mrt) {
+        if (mrt.minimalWeight < minimalWeight) {
+            minimalIndex = mrt.minimalIndex;
+            minimalWeight = mrt.minimalWeight;
+        }
     }
 }
