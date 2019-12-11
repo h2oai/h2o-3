@@ -882,7 +882,6 @@ public class KMeansTest extends TestUtil {
       parms._train = f._key;
       parms._seed = 0xcaf;
       parms._k = 3;
-      parms._standardize = false;
 
       KMeans job = new KMeans(parms);
       KMeansModel kmeans = (KMeansModel) Scope.track_generic(job.trainModel().get());
