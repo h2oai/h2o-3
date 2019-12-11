@@ -463,6 +463,8 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   ))
 }
 
+.is.H2OAutoML <- function(object) base::`&&`(!missing(object), class(object)=="H2OAutoML")
+
 #' Get an R object that is a subclass of \linkS4class{H2OAutoML}
 #'
 #' @param project_name A string indicating the project_name of the automl instance to retrieve.
@@ -511,8 +513,8 @@ h2o.getAutoML <- function(project_name) {
 #'
 #' Contrary to the default leaderboard attached to the automl instance, this one can return columns other than the metrics.
 #'
-#' @param aml A H2OAutoML instance for which to return the leaderboard.
-#' @param extensions A string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
+#' @param object The object for which to return the leaderboard. Currently, only H2OAutoML instances are supported.
+#' @param extra_columns A string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
 #' Currently supported extensions are:
 #' \itemize{
 #' \item{'ALL': adds all columns below.}
@@ -532,6 +534,7 @@ h2o.getAutoML <- function(project_name) {
 #' lb_custom <- h2o.get_leaderboard(aml, c('predict_time_per_row_ms', 'training_time_ms'))
 #' }
 #' @export
-h2o.get_leaderboard <- function(aml, extensions=NULL) {
-  return(.automl.fetch_leaderboard(attr(aml, 'id'), extensions))
+h2o.get_leaderboard <- function(object, extra_columns=NULL) {
+  if (!.is.H2OAutoML(object)) stop("Only H2OAutoML instances are currently supported.")
+  return(.automl.fetch_leaderboard(attr(object, 'id'), extra_columns))
 }

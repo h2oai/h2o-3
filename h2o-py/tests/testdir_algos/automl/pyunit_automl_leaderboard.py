@@ -303,13 +303,13 @@ def test_custom_leaderboard():
     std_columns = ["model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"]
     assert aml.leaderboard.names == std_columns
     assert get_leaderboard(aml).names == std_columns
-    assert get_leaderboard(aml, extensions=[]).names == std_columns
-    assert get_leaderboard(aml, extensions='ALL').names == std_columns + ["training_time_ms", "predict_time_per_row_ms"]
-    assert get_leaderboard(aml, extensions="unknown").names == std_columns
-    assert get_leaderboard(aml, extensions=["training_time_ms"]).names == std_columns + ["training_time_ms"]
-    assert get_leaderboard(aml, extensions=["predict_time_per_row_ms", "training_time_ms"]).names == std_columns + ["predict_time_per_row_ms", "training_time_ms"]
-    assert get_leaderboard(aml, extensions=["unknown", "training_time_ms"]).names == std_columns + ["training_time_ms"]
-    lb_ext = get_leaderboard(aml, extensions='ALL')
+    assert get_leaderboard(aml, extra_columns=[]).names == std_columns
+    assert get_leaderboard(aml, extra_columns='ALL').names == std_columns + ["training_time_ms", "predict_time_per_row_ms"]
+    assert get_leaderboard(aml, extra_columns="unknown").names == std_columns
+    assert get_leaderboard(aml, extra_columns=["training_time_ms"]).names == std_columns + ["training_time_ms"]
+    assert get_leaderboard(aml, extra_columns=["predict_time_per_row_ms", "training_time_ms"]).names == std_columns + ["predict_time_per_row_ms", "training_time_ms"]
+    assert get_leaderboard(aml, extra_columns=["unknown", "training_time_ms"]).names == std_columns + ["training_time_ms"]
+    lb_ext = get_leaderboard(aml, extra_columns='ALL')
     print(lb_ext)
     assert all(lb_ext[:, 1:].isnumeric()), "metrics and extension columns should all be numeric"
     assert (lb_ext["training_time_ms"].as_data_frame().values >= 0).all()

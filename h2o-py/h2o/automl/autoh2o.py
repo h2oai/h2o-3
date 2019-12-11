@@ -668,12 +668,12 @@ def get_automl(project_name):
     return H2OAutoML._fetch_state(project_name)
 
 
-def get_leaderboard(aml, extensions=None):
+def get_leaderboard(aml, extra_columns=None):
     """
     Retrieve the leaderboard from the AutoML instance.
     Contrary to the default leaderboard attached to the automl instance, this one can return columns other than the metrics.
     :param H2OAutoML aml: the instance for which to return the leaderboard.
-    :param extensions: a string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
+    :param extra_columns: a string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
         Currently supported extensions are:
         - 'ALL': adds all columns below.
         - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
@@ -686,4 +686,5 @@ def get_leaderboard(aml, extensions=None):
     >>> lb_custom = h2o.automl.get_leaderboard(aml, ['predict_time_per_row_ms', 'training_time_ms'])
     >>> lb_custom_sorted = lb_custom.sort(by='predict_time_per_row_ms')
     """
-    return H2OAutoML._fetch_leaderboard(aml.key, extensions)
+    assert_is_type(aml, H2OAutoML)
+    return H2OAutoML._fetch_leaderboard(aml.key, extra_columns)
