@@ -68,7 +68,7 @@ public class RapidsTest extends TestUtil {
     Session session = new Session();
     Scope.enter();
     try {
-      final Frame iris = TestUtil.parse_test_file(Key.make("iris_spearman"), "/home/pavel/wrk/h2o-3/smalldata/junit/iris.csv");
+      final Frame iris = TestUtil.parse_test_file(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
       Scope.track_generic(iris);
       final Val pearson_sepal = Rapids.exec("(spearman iris_spearman 'sepal_len' 'sepal_wid')", session);
       assertTrue(pearson_sepal instanceof ValNum);
