@@ -27,7 +27,7 @@ public class GridTest extends TestUtil {
 
   @BeforeClass
   public static void setUp() {
-    stall_till_cloudsize(2);
+    stall_till_cloudsize(1);
   }
 
   @Test
