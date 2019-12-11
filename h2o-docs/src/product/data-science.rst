@@ -25,7 +25,6 @@ Supervised
    data-science/drf
    data-science/glm
    data-science/gbm
-   data-science/hglm
    data-science/naive-bayes
    data-science/stacked-ensembles
    data-science/svm

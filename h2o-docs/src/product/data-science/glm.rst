@@ -6,6 +6,8 @@ Introduction
 
 Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. In addition to the Gaussian (i.e. normal) distribution, these include Poisson, binomial, and gamma distributions. Each serves a different purpose, and depending on distribution and link function choice, can be used either for prediction or classification.
 
+Introduced in 3.28.0.1, Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). HGLM allows you to specify both fixed and random effects, which allows fitting correlated to random effects as well as random regression models. HGLM can be used for linear mixed models and for generalized linear mixed models with random effects for a variety of links and a variety of distributions for both the outcomes and the random effects. 
+
 The GLM suite includes:
 
 -  Gaussian regression
@@ -17,6 +19,8 @@ The GLM suite includes:
 -  Ordinal regression
 -  Negative Binomial regression
 -  Tweedie distribution
+
+**Note**: The initial release of HGLM supports only the Gaussian family and random family.
 
 Defining a GLM Model
 ~~~~~~~~~~~~~~~~~~~~
@@ -53,6 +57,8 @@ Defining a GLM Model
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
+- **random_columns**: An array of random columns to be used for HGLM.
+
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant
    training columns, since no information can be gained from them. This
    option is enabled by default.
@@ -78,6 +84,8 @@ Defining a GLM Model
    -  If the family is **negativebinomial**, the response must be numeric and non-negative (**Int**).
    -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
    -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
+
+-  **rand_family**: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family={"[gaussisan]"}`` is supported.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
    specified for **Family**) Specify the Tweedie variance power.
@@ -132,6 +140,14 @@ Defining a GLM Model
    -  If the family is **Quasibinomial**, then only **Logit** is supported.
    -  If the family is **Ordinal**, then only **Ologit** is supported
    -  If the family is **Negative Binomial**, then only **Log** and **Identity** are supported.
+
+-  **rand_link**: The link function for random component in HGLM specified as an array. Available options include ``identity`` and ``family_default``. 
+
+-  **startval**: The initial starting values for fixed and randomized coefficients in HGLM specified as a double array. 
+
+-  **calc_like**: Specify whether to return likelihood function value for HGLM. This is disabled by default.
+
+-  `hglm <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built; if disabled (default), then a GLM mdoel will be built. 
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
    
@@ -983,6 +999,8 @@ Ecological modeling 133.3 (2000):
 Regression and Discriminant Analysis.” Journal of the American
 Statistical Association 73.364 (April, 2012):
 699–705. <http://math.arizona.edu/~hzhang/math574m/LogitOrLDA.pdf>`__
+
+Rönnegård, Lars, Shen, Xia, and Moudud, Alam. "The hglm Package (Version 2.0)." https://cran.r-project.org/package=hglm.
 
 Snee, Ronald D. “Validation of Regression Models: Methods and Examples.”
 Technometrics 19.4 (1977): 415-428.
