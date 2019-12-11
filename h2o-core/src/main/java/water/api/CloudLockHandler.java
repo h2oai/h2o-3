@@ -1,12 +1,12 @@
 package water.api;
 
 import water.Paxos;
-import water.api.schemas3.CloudV3;
+import water.api.schemas3.CloudLockV3;
 
 class CloudLockHandler extends Handler {
   
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public CloudV3 lock(int version, CloudV3 cloud) {
+  public CloudLockV3 lock(int version, CloudLockV3 cloud) {
     Paxos.lockCloud("requested via REST api");
     return cloud;
   }
