@@ -109,7 +109,12 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   @Override
   public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
     GradBooster booster = _predictor.getBooster();
-    return _computeGraph(booster, treeNumber);
+    return computeGraph(booster, treeNumber);
+  }
+
+  @Override
+  public SharedTreeGraph convert(final int treeNumber, final String treeClass, final ConvertTreeOptions options) {
+    return convert(treeNumber, treeClass); // Options currently do not apply to XGBoost trees conversion
   }
 
   private class OneHotEncoderFactory {

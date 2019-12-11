@@ -2,6 +2,7 @@ package hex.genmodel.tools;
 
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
+import hex.genmodel.algos.tree.ConvertTreeOptions;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 
@@ -9,8 +10,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.HashMap;
-import java.util.Map;
 
 /**
  * Print dot (graphviz) representation of one or more trees in a DRF or GBM model.
@@ -199,7 +198,8 @@ public class PrintMojo {
 
     if(genModel instanceof SharedTreeGraphConverter){
       SharedTreeGraphConverter treeBackedModel = (SharedTreeGraphConverter) genModel;
-      final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null);
+      ConvertTreeOptions options = new ConvertTreeOptions().withTreeConsistencyCheckEnabled();
+      final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null, options);
       if (printRaw) {
         g.print();
       }

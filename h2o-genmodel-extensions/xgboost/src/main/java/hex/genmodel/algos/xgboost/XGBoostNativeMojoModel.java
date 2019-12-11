@@ -154,6 +154,6 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       e.printStackTrace();
     }
 
-    return _computeGraph(booster, treeNumber);
+    return computeGraph(booster, treeNumber);
   }
 }
