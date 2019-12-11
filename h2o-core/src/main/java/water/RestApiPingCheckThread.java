@@ -13,15 +13,17 @@ public class RestApiPingCheckThread extends Thread {
   @Override
   public void run() {
     while (!Thread.currentThread().isInterrupted()) {
-      if (H2O.CLOUD._memary.length != 0 && H2O.SELF == H2O.CLOUD.leader()) {
-        if (isTimeoutExceeded(PingHandler.lastAccessed, H2O.ARGS.rest_api_ping_timeout)) {
-          Log.fatal("Stopping H2O cluster since we haven't received any REST api request on 3/Ping!");
-          H2O.shutdown(-1);
+      if (Paxos._cloudLocked) {
+        if (H2O.SELF == H2O.CLOUD.leader()) {
+          if (isTimeoutExceeded(PingHandler.lastAccessed, H2O.ARGS.rest_api_ping_timeout)) {
+            Log.fatal("Stopping H2O cluster since we haven't received any REST api request on 3/Ping!");
+            H2O.shutdown(-1);
+          }
+        } else {
+          // Cloud is locked, but we are not leader, we can stop the thread
+          Thread.currentThread().interrupt();
+          continue;
         }
-      } else if (H2O.CLOUD._memary.length != 0 && Paxos._cloudLocked) {
-        // Cloud is locked, but we are not leader, we can stop the thread
-        Thread.currentThread().interrupt();
-        continue;
       }
       try {
         Thread.sleep(H2O.ARGS.rest_api_ping_timeout);
