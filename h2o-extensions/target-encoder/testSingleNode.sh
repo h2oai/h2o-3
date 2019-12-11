@@ -24,7 +24,7 @@ $MKDIR -p $OUTDIR
 
 function cleanup () {
   RC="`paste $OUTDIR/status.* | sed 's/[[:blank:]]//g'`"
-  if [ "$RC" != "00000" ]; then
+  if [ "$RC" != "0" ]; then
     cat $OUTDIR/out.*
     echo ${PROJECT_NAME} junit tests FAILED
     exit 1
@@ -60,7 +60,7 @@ MAX_MEM=${H2O_JVM_XMX:-2200m}
 if [ $JACOCO_ENABLED = true ]
 then
     AGENT="../jacoco/jacocoagent.jar"
-    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-algos.exec"
+    COVERAGE="-javaagent:$AGENT=destfile=build/jacoco/h2o-ext-target-encoder.exec"
     MAX_MEM=${H2O_JVM_XMX:-8g}
 else
     COVERAGE=""
@@ -74,7 +74,7 @@ echo "$JVM" > $OUTDIR/jvm_cmd.txt
 
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)
-JUNIT_TESTS_BIG="hex.word2vec.Word2VecTest"
+JUNIT_TESTS_BIG=""
 
 # Runner
 # Default JUnit runner is org.junit.runner.JUnitCore
@@ -85,7 +85,7 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # Cut the   "water/MRThrow.java" down to "water/MRThrow"
 # Slash/dot "water/MRThrow"      becomes "water.MRThrow"
 
-# On this h2o-algos testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
+# On this h2o-ext-target-encoder testMultiNode.sh only, force the tests.txt to be in the same order for all machines.
 # If sorted, the result of the cd/grep varies by machine. 
 # If randomness is desired, replace sort with the unix 'shuf'
 # Use /usr/bin/sort because of cygwin on windows. 
