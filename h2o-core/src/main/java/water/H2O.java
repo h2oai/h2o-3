@@ -1645,6 +1645,7 @@ final public class H2O {
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
     List<String> launchStrings = ManagementFactory.getRuntimeMXBean().getInputArguments();
     Log.info("JVM launch parameters: "+launchStrings);
+    Log.info("JVM process id: " + ManagementFactory.getRuntimeMXBean().getName());
     Log.info("OS version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
