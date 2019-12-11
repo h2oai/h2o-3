@@ -156,3 +156,4 @@ water.api.schemas3.GridExportV3
 water.api.schemas3.GridImportV3
 water.api.schemas3.PingV3
 water.api.schemas3.PingV3$NodeMemoryInfoV3
+water.api.schemas3.CloudLockV3
