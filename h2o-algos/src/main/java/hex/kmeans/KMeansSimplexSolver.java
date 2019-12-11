@@ -6,12 +6,11 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 /**
+ * Experimental code. Polynomial implementation - slow performance. Need to be parallelize!
  * Calculate Minimal Cost Flow problem using simplex method with go through spanning tree.
  * Used to solve minimal cluster size constraints in K-means.
  */
@@ -23,8 +22,6 @@ class KMeansSimplexSolver {
     public long _resultSize;
 
     // Input graph to store K-means configuration
-    //public Vec _nodes; // store data points indices, constraints + additive node
-    //public Vec _edges; // store edges indices between data points and constraints (distances * precision), edges between constraints and additive node
     public Vec _demands; // store demand of all nodes (-1 for data points, constraints values for constraints nodes, )
     public Vec _capacities; // store capacities of all edges + edges from all node to leader node
     public Frame _weights; // input data + weight column, calculated distances from all points to all centres + columns to store result of cluster assignments 
@@ -37,13 +34,8 @@ class KMeansSimplexSolver {
     // Spanning tree to calculate min cost flow
     public SpanningTree tree;
 
-    // variables to split calculation in smaller blocks to speed up calculation
-    long numberOfConsecutiveBlocks = 0;
-    long firstEdgeInBlock = 0;
-    long nextBlockOfEdges;
-
     /**
-     * Construct K-means solver.
+     * Construct K-means simplex solver.
      * @param constrains
      * @param weights
      * @param sumDistances
@@ -55,8 +47,6 @@ class KMeansSimplexSolver {
         this._edgeSize = _numberOfPoints * constrains.length + constrains.length;
         this._constraintsLength = constrains.length;
 
-        //this._nodes = Vec.makeCon(0, _nodeSize, Vec.T_NUM);
-        //this._edges = Vec.makeCon(0, _edgeSize, Vec.T_NUM);
         this._demands = Vec.makeCon(0, _nodeSize, Vec.T_NUM);
         this._capacities = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
         this._resultSize = this._numberOfPoints * _constraintsLength;
@@ -70,7 +60,6 @@ class KMeansSimplexSolver {
         long constraintsSum = 0;
         _maxAbsDemand = Double.MIN_VALUE;
         for (long i = 0; i < _nodeSize; i++) {
-            //_nodes.set(i, i);
             if (i < _numberOfPoints) {
                 _demands.set(i, -1);
             } else {
@@ -95,10 +84,6 @@ class KMeansSimplexSolver {
                 _weights.vec(edgeIndexStart+j).set(i, edgeIndex++);
             }
         }
-
-        //for (long i = 0; i < _edgeSize; i++) {
-           // _edges.set(i, i);
-        //}
 
         this.tree = new SpanningTree(_nodeSize, _edgeSize, _constraintsLength);
     }
@@ -348,6 +333,7 @@ class KMeansSimplexSolver {
 }
 
 /**
+ * Experimental
  * Class to store calculation of flow in minimal cost flow problem.
  */
 class SpanningTree extends Iced<SpanningTree> {
@@ -743,7 +729,7 @@ class FindMinimalWeightTask extends MRTask<FindMinimalWeightTask> {
 
     @Override
     public void map(Chunk[] cs) {
-        int startDistancesIndex = cs.length - (_hasWeightsColumn ? 1 : 0) - 2*_constraintsLength - 3;
+        int startDistancesIndex = cs.length - 2 * _constraintsLength - 3;
         int startEdgeIndex = cs.length - 3 - _constraintsLength;
         for (int i = 0; i < cs[0]._len; i++) {
             for (int j = 0; j < _constraintsLength; j++) {

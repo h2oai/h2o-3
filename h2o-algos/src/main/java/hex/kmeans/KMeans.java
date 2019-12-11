@@ -342,6 +342,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               assert !hasWeightCol() || csum <= countDistancesTask._non_zero_weights : "The sum of constraints ("+csum+") is higher than the number of data rows with non zero weights ("+countDistancesTask._non_zero_weights+") because cross validation is set.";
               
               // Calculate center assignments
+              // Experimental code. Polynomial implementation - slow performance. Need to be parallelize!
               KMeansSimplexSolver solver = new KMeansSimplexSolver(_parms._cluster_size_constraints, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), countDistancesTask._non_zero_weights);
               
               // Get cluster assignments
