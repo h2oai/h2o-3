@@ -83,6 +83,10 @@ public class RegisterV3Api extends AbstractRegister {
             "HEAD /3/Cloud", CloudHandler.class, "head",
             "Determine the status of the nodes in the H2O cloud.");
 
+    context.registerEndpoint("lock",
+        "POST /3/lock", CloudHandler.class, "lock",
+        "Lock the cloud.");
+
     context.registerEndpoint("jobs",
             "GET /3/Jobs", JobsHandler.class, "list",
             "Get a list of all the H2O Jobs (long-running actions).");
