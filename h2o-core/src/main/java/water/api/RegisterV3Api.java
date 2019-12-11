@@ -84,7 +84,7 @@ public class RegisterV3Api extends AbstractRegister {
             "Determine the status of the nodes in the H2O cloud.");
 
     context.registerEndpoint("cloudLock",
-        "POST /3/CloudLock", CloudHandler.class, "lock",
+        "POST /3/CloudLock", CloudLockHandler.class, "lock",
         "Lock the cloud.");
 
     context.registerEndpoint("jobs",
