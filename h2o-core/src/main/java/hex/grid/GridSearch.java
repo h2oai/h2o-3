@@ -10,7 +10,9 @@ import water.fvec.Frame;
 import water.util.Log;
 import water.util.PojoUtils;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -182,7 +184,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     @Override
-    public void onBuildSucces(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
+    public void onBuildSuccess(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
       try {
         parallelSearchGridLock.lock();
         constructScoringInfo(finishedModel);
@@ -195,7 +197,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       } finally {
         parallelSearchGridLock.unlock();
       }
-      attemptBuildNextModel(parallelModelBuilder, finishedModel);
     }
 
     @Override
@@ -207,23 +208,39 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       } finally {
         parallelSearchGridLock.unlock();
       }
+    }
+
+    @Override
+    public void postBuildSuccess(Model finishedModel, ParallelModelBuilder parallelModelBuilder) {
+      attemptBuildNextModel(parallelModelBuilder, finishedModel);
+    }
+
+    @Override
+    public void postBuildFailure(ParallelModelBuilder.ModelBuildFailure modelBuildFailure, ParallelModelBuilder parallelModelBuilder) {
       attemptBuildNextModel(parallelModelBuilder, null);
     }
 
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
-      // Attempt to train next model
-      final MP nextModelParams = getNextModelParams(hyperspaceIterator, previousModel, grid);
-      if (nextModelParams != null
-              && isThereEnoughTime()
-              && !_job.stop_requested()
-              && !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos())) {
 
-        // FIXME: ModelFeeder's <MP> type parameter is hiding GridSearch's one. Ideally would have moved ModelFeeder outside but it is too coupled with GridSearch class.
-        reconcileMaxRuntime(grid._key, hyperspaceIterator, nextModelParams);
+      synchronized (hyperspaceIterator) {
+        int numberOfExpectedToCompleteModels = parallelModelBuilder.getModelInProgressCounterNative().get();
+        int numberOfCompletedModels = parallelModelBuilder.getModelCompletedCounterNative().get();
 
-        parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
-      } else {
-        parallelModelBuilder.noMoreModels();
+        if (hyperspaceIterator.hasNext(previousModel)
+                && isThereEnoughTime()
+                && (hyperspaceIterator.max_models() == 0 || numberOfCompletedModels + numberOfExpectedToCompleteModels < hyperspaceIterator.max_models())
+                && !_job.stop_requested()
+                && (previousModel == null || !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos()))) {
+
+          final MP nextModelParams = getNextModelParams(hyperspaceIterator, previousModel, grid);
+
+          // FIXME: ModelFeeder's <MP> type parameter is hiding GridSearch's one. Ideally would have moved ModelFeeder outside but it is too coupled with GridSearch class.
+          reconcileMaxRuntime(grid._key, hyperspaceIterator, nextModelParams);
+
+          parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
+        } else {
+          parallelModelBuilder.noMoreModels();
+        }
       }
     }
 
@@ -277,7 +294,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     List<ModelBuilder> startModels = new ArrayList<>();
 
-    int numberOfInitialModels = iterator.max_models() == 0 ? _parallelism : Math.min(_parallelism, iterator.max_models());
+    int maxHyperSpaceSize = (int) _hyperSpaceWalker.getMaxHyperSpaceSize();
+    int maxModelsBasedOnParallelism = iterator.max_models() == 0 ? _parallelism : Math.min(_parallelism, iterator.max_models());
+    int numberOfInitialModels = Math.min(maxHyperSpaceSize, maxModelsBasedOnParallelism);
     final List<MP> mps = initialModelParameters(numberOfInitialModels, iterator);
 
     for (int i = 0; i < mps.size(); i++) {
@@ -718,10 +737,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
   }
 
-  /**
-   * Constant for adaptive parallelism level - number of models built in parallel is decided by H2O.
-   */
-  public static final int ADAPTIVE_PARALLELISM_LEVEL = 0;
   public static final int SEQUENTIAL_MODEL_BUILDING = 1;
 
   /**

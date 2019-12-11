@@ -2,10 +2,11 @@ package hex;
 
 import jsr166y.ForkJoinTask;
 import water.Iced;
-import water.util.IcedAtomicInt;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Dispatcher for parallel model building. Starts building models every time the run method is invoked.
@@ -18,13 +19,31 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
   public static abstract class ParallelModelBuilderCallback<D extends ParallelModelBuilderCallback> extends Iced<D> {
 
-    public abstract void onBuildSucces(final Model model, final ParallelModelBuilder parallelModelBuilder);
+    public abstract void onBuildSuccess(final Model model, final ParallelModelBuilder parallelModelBuilder);
+
+    public void postBuildSuccess(final Model model, final ParallelModelBuilder parallelModelBuilder) {};
 
     public abstract void onBuildFailure(final ModelBuildFailure modelBuildFailure, final ParallelModelBuilder parallelModelBuilder);
+
+    public void postBuildFailure(final ModelBuildFailure modelBuildFailure, final ParallelModelBuilder parallelModelBuilder) {};
   }
 
   private final transient ParallelModelBuilderCallback _callback;
-  private final transient IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
+
+  public AtomicInteger getModelInProgressCounterNative() {
+    return _modelInProgressCounterNative;
+  }
+
+  //  private final transient IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt(); // TODO remove after tests. Should be fine not to use Iced version as ParallelModelBuilder itself is not going to be distributed
+  private final  AtomicInteger _modelInProgressCounterNative = new AtomicInteger(); // TODO rename Native
+
+  public AtomicInteger getModelCompletedCounterNative() {
+    return _modelCompletedCounterNative;
+  }
+
+  //  private final transient IcedAtomicInt _modelCompletedCounter = new IcedAtomicInt();
+  private final  AtomicInteger _modelCompletedCounterNative = new AtomicInteger();
+
   private final transient AtomicBoolean _completed = new AtomicBoolean(false);
   private final transient ParallelModelBuiltListener _parallelModelBuiltListener;
 
@@ -42,7 +61,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
    */
   public void run(final Collection<ModelBuilder> modelBuilders) {
       for (final ModelBuilder modelBuilder : modelBuilders) {
-        _modelInProgressCounter.incrementAndGet();
+        _modelInProgressCounterNative.incrementAndGet();
 
         // Set the callbacks
         modelBuilder.setModelBuilderListener(_parallelModelBuiltListener);
@@ -56,24 +75,27 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     @Override
     public void onModelSuccess(Model model) {
       try {
-        _callback.onBuildSucces(model, ParallelModelBuilder.this);
+        _callback.onBuildSuccess(model, ParallelModelBuilder.this);
       } finally {
-        _modelInProgressCounter.decrementAndGet();
+        _modelCompletedCounterNative.incrementAndGet();
+        _modelInProgressCounterNative.decrementAndGet();
+
+        _callback.postBuildSuccess(model, ParallelModelBuilder.this);
       }
       attemptComplete();
     }
 
     @Override
     public void onModelFailure(Throwable cause, Model.Parameters parameters) {
+      ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
       try {
-        final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
         _callback.onBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
       } finally {
-        _modelInProgressCounter.decrementAndGet();
+        _modelInProgressCounterNative.decrementAndGet();
       }
+      _callback.postBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
       attemptComplete();
     }
-    
   }
 
   /**
@@ -105,10 +127,9 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
   }
   
   private void attemptComplete(){
-    if(!_completed.get() || _modelInProgressCounter.get() != 0) return;
+    if(!_completed.get() || _modelInProgressCounterNative.get() != 0) return;
     complete(this);
   }
-
 
   @Override
   public ParallelModelBuilder getRawResult() {
