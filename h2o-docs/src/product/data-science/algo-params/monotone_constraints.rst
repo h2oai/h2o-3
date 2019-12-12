@@ -1,7 +1,7 @@
 ``monotone_constraints``
 ------------------------
 
-- Available in: GBM, XGBoost
+- Available in: AutoML, GBM, XGBoost
 - Hyperparameter: no
 
 Description
