@@ -13,8 +13,8 @@ This option specifies the metric used to sort the Leaderboard by at the end of a
 
 Available options for ``sort_metric`` include the following:
 
-- ``aucpr``
 - ``AUTO``: This defaults to ``AUC`` for binary classification, ``mean_per_class_error`` for multinomial classification, and ``deviance`` for regression.
+- ``aucpr``
 - ``deviance`` (mean residual deviance)
 - ``logloss``
 - ``MSE``

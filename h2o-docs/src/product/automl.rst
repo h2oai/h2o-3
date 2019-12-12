@@ -74,8 +74,8 @@ Optional Miscellaneous Parameters
 
 -  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
     
-    - ``aucpr``
     - ``AUTO``: This defaults to ``logloss`` for classification and ``deviance`` for regression.
+    - ``aucpr``
     - ``deviance`` (mean residual deviance)
     - ``logloss``
     - ``MSE``
@@ -93,8 +93,8 @@ Optional Miscellaneous Parameters
 
 - `sort_metric <data-science/algo-params/sort_metric.html>`__: Specifies the metric used to sort the Leaderboard by at the end of an AutoML run. Available options include:
 
-    - ``aucpr``
     - ``AUTO``: This defaults to ``AUC`` for binary classification, ``mean_per_class_error`` for multinomial classification, and ``deviance`` for regression.
+    - ``aucpr``
     - ``deviance`` (mean residual deviance)
     - ``logloss``
     - ``MSE``
