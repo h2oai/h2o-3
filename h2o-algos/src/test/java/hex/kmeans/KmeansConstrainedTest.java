@@ -212,7 +212,7 @@ public class KmeansConstrainedTest extends TestUtil {
     }
 
     @Test
-    public void testChicagoConstrained() {
+    public void testWeatherChicagoConstrained() {
         KMeansModel kmm = null, kmm2 = null;
         Frame fr = null, points = null;
         try {
@@ -230,7 +230,7 @@ public class KmeansConstrainedTest extends TestUtil {
             parms._cluster_size_constraints = new int[]{1000, 3000, 1000};
             parms._user_points = points._key;
             parms._standardize = true;
-            parms._max_iterations = 10;
+            parms._max_iterations = 3;
 
             KMeans job = new KMeans(parms);
             kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());
