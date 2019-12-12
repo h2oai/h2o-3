@@ -323,7 +323,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
         boolean isMultinode = H2O.CLOUD.size() > 1;
         _eventLog.warn(Stage.ModelTraining,
                 isMultinode ? "AutoML: "+algo.name()+" is not available in multi-node cluster; skipping it."
-                        + " See http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html#experimental-features for more details."
+                        + " See http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html#experimental-features for details."
                         : "AutoML: "+algo.name()+" is not available; skipping it."
         );
         skippedAlgos.add(algo);
