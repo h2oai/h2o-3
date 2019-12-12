@@ -2307,7 +2307,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           final int ntrees = treemodel.getNTreeGroups();
           trees = new SharedTreeGraph[ntrees];
           for (int t = 0; t < ntrees; t++)
-            trees[t] = treemodel._computeGraph(t);
+            trees[t] = treemodel.computeGraph(t);
         }
 
         EasyPredictModelWrapper epmw;

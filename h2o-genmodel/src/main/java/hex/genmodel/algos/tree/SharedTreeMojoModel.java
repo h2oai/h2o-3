@@ -317,7 +317,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
     //------------------------------------------------------------------------------------------------------------------
 
     private static void computeTreeGraph(SharedTreeSubgraph sg, SharedTreeNode node, byte[] tree, ByteBufferWrapper ab, HashMap<Integer, AuxInfo> auxMap,
-                                         String names[], String[][] domains) {
+                                         String names[], String[][] domains, ConvertTreeOptions options) {
         int nodeType = ab.get1U();
         int colId = ab.get2();
         if (colId == 65535) {
@@ -398,7 +398,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 auxInfo.predR = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains, options);
             }
         }
 
@@ -421,7 +421,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 auxInfo.predL = leafValue;
             }
             else {
-                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains);
+                computeTreeGraph(sg, newNode, tree, ab2, auxMap, names, domains, options);
             }
         }
         if (node.getNodeNumber() == 0) {
@@ -431,7 +431,9 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
           node.setSquaredError(auxInfo.sqErrR + auxInfo.sqErrL);
           node.setWeight(auxInfo.weightL + auxInfo.weightR);
         }
-        checkConsistency(auxInfo, node);
+        if (options._checkTreeConsistency) {
+          checkConsistency(auxInfo, node);
+        }
     }
 
     /**
@@ -439,7 +441,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
      *
      * @return A graph of the forest.
      */
-    public SharedTreeGraph _computeGraph(int treeToPrint) {
+    public SharedTreeGraph computeGraph(int treeToPrint, ConvertTreeOptions options) {
         SharedTreeGraph g = new SharedTreeGraph();
 
         if (treeToPrint >= _ntree_groups) {
@@ -461,7 +463,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
                 String treeName = treeName(j, i, domainValues);
                 SharedTreeSubgraph sg = g.makeSubgraph(treeName);
                 computeTreeGraph(sg, _compressed_trees[itree], _compressed_trees_aux[itree],
-                        getNames(), getDomainValues());
+                        getNames(), getDomainValues(), options);
             }
 
             if (treeToPrint >= 0) {
@@ -472,22 +474,37 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
         return g;
     }
 
-    public static SharedTreeSubgraph computeTreeGraph(int treeNum, String treeName, byte[] tree, byte[] auxTreeInfo,
-                                                      String names[], String[][] domains) {
-      SharedTreeSubgraph sg = new SharedTreeSubgraph(treeNum, treeName);
-      computeTreeGraph(sg, tree, auxTreeInfo, names, domains);
-      return sg;
+    public SharedTreeGraph computeGraph(int treeId) {
+      return computeGraph(treeId, ConvertTreeOptions.DEFAULT);
     }
 
+    @Deprecated
+    @SuppressWarnings("unused")
+    public SharedTreeGraph _computeGraph(int treeId) {
+      return computeGraph(treeId);
+    }
+
+    public static SharedTreeSubgraph computeTreeGraph(int treeNum, String treeName, byte[] tree, byte[] auxTreeInfo,
+                                                      String names[], String[][] domains) {
+      return computeTreeGraph(treeNum, treeName, tree, auxTreeInfo, names, domains, ConvertTreeOptions.DEFAULT);
+    }
+
+    public static SharedTreeSubgraph computeTreeGraph(int treeNum, String treeName, byte[] tree, byte[] auxTreeInfo,
+                                                      String names[], String[][] domains, ConvertTreeOptions options) {
+      SharedTreeSubgraph sg = new SharedTreeSubgraph(treeNum, treeName);
+      computeTreeGraph(sg, tree, auxTreeInfo, names, domains, options);
+      return sg;
+    }
+  
     private static void computeTreeGraph(SharedTreeSubgraph sg, byte[] tree, byte[] auxTreeInfo,
-                                         String names[], String[][] domains) {
+                                         String names[], String[][] domains, ConvertTreeOptions options) {
       SharedTreeNode node = sg.makeRootNode();
       node.setSquaredError(Float.NaN);
       node.setPredValue(Float.NaN);
       ByteBufferWrapper ab = new ByteBufferWrapper(tree);
       ByteBufferWrapper abAux = new ByteBufferWrapper(auxTreeInfo);
       HashMap<Integer, AuxInfo> auxMap = readAuxInfos(abAux);
-      computeTreeGraph(sg, node, tree, ab, auxMap, names, domains);
+      computeTreeGraph(sg, node, tree, ab, auxMap, names, domains, options);
     }
 
     private static HashMap<Integer, AuxInfo> readAuxInfos(ByteBufferWrapper abAux) {
@@ -953,7 +970,12 @@ public abstract class SharedTreeMojoModel extends MojoModel implements SharedTre
 
     @Override
     public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
-        return _computeGraph(treeNumber);
+        return computeGraph(treeNumber);
+    }
+
+    @Override
+    public SharedTreeGraph convert(final int treeNumber, final String treeClass, ConvertTreeOptions options) {
+      return computeGraph(treeNumber, options);
     }
 
     /**

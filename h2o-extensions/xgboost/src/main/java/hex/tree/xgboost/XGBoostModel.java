@@ -6,20 +6,14 @@ import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
-import hex.genmodel.algos.tree.SharedTreeGraph;
-import hex.genmodel.algos.tree.SharedTreeGraphConverter;
-import hex.genmodel.algos.tree.SharedTreeNode;
-import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLMModel;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
-import water.api.API;
-import water.api.schemas3.KeyV3;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -651,6 +645,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
 
+  @Override
+  public SharedTreeGraph convert(int treeNumber, String treeClass, ConvertTreeOptions options) {
+    return convert(treeNumber, treeClass); // options are currently not applicable to in-H2O conversion
+  }
 
   private int getXGBoostClassIndex(final String treeClass) {
     final ModelCategory modelCategory = _output.getModelCategory();
