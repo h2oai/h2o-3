@@ -26,66 +26,66 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the iris dataset:
-	# this dataset is used to classify the type of iris plant
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Iris
-	iris <-h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+		# import the iris dataset:
+		# this dataset is used to classify the type of iris plant
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Iris
+		iris <-h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 
-	# convert response column to a factor
-	iris['class'] <-as.factor(iris['class'])
+		# convert response column to a factor
+		iris['class'] <-as.factor(iris['class'])
 
-	# set the predictor names 
-	predictors <-colnames(iris)[-length(iris)]
+		# set the predictor names 
+		predictors <-colnames(iris)[-length(iris)]
 
-	# split into train and validation
-	iris_splits <- h2o.splitFrame(data = iris, ratios = .8, seed = 1234)
-	train <- iris_splits[[1]]
-	valid <- iris_splits[[2]]
+		# split into train and validation
+		iris_splits <- h2o.splitFrame(data = iris, ratios = .8, seed = 1234)
+		train <- iris_splits[[1]]
+		valid <- iris_splits[[2]]
 
-	# try using the `estimate_k` parameter:
-	# set k to the upper limit of classes you'd like to consider
-	# set standardize to False as well since the scales for each feature are very close
-	iris_kmeans <- h2o.kmeans(x = predictors, k = 10, estimate_k = T, standardize = F, 
-	                          training_frame = train, validation_frame=valid, seed = 1234)
+		# try using the `estimate_k` parameter:
+		# set k to the upper limit of classes you'd like to consider
+		# set standardize to False as well since the scales for each feature are very close
+		iris_kmeans <- h2o.kmeans(x = predictors, k = 10, estimate_k = T, standardize = F, 
+		                          training_frame = train, validation_frame=valid, seed = 1234)
 
-	# print the model summary to see the number of clusters chosen
-	summary(iris_kmeans)
+		# print the model summary to see the number of clusters chosen
+		summary(iris_kmeans)
 
 
 	
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.kmeans import H2OKMeansEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.kmeans import H2OKMeansEstimator
+		h2o.init()
 
-	# import the iris dataset:
-	# this dataset is used to classify the type of iris plant
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Iris
-	iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+		# import the iris dataset:
+		# this dataset is used to classify the type of iris plant
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Iris
+		iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 
-	# convert response column to a factor
-	iris['class'] = iris['class'].asfactor()
+		# convert response column to a factor
+		iris['class'] = iris['class'].asfactor()
 
-	# set the predictor names 
-	predictors = iris.columns[:-1]
+		# set the predictor names 
+		predictors = iris.columns[:-1]
 
-	# split into train and validation sets
-	train, valid = iris.split_frame(ratios = [.8], seed = 1234)
+		# split into train and validation sets
+		train, valid = iris.split_frame(ratios = [.8], seed = 1234)
 
-	# try using the `estimate_k` parameter:
-	# set k to the upper limit of classes you'd like to consider
-	# set standardize to False as well since the scales for each feature are very close
-	# initialize the estimator then train the model
-	iris_kmeans = H2OKMeansEstimator(k = 10, estimate_k = True, standardize = False, seed = 1234)
-	iris_kmeans.train(x = predictors, training_frame = train, validation_frame=valid)
+		# try using the `estimate_k` parameter:
+		# set k to the upper limit of classes you'd like to consider
+		# set standardize to False as well since the scales for each feature are very close
+		# initialize the estimator then train the model
+		iris_kmeans = H2OKMeansEstimator(k = 10, estimate_k = True, standardize = False, seed = 1234)
+		iris_kmeans.train(x = predictors, training_frame = train, validation_frame=valid)
 
-	# print the model summary to see the number of clusters chosen
-	iris_kmeans.summary()
+		# print the model summary to see the number of clusters chosen
+		iris_kmeans.summary()
 

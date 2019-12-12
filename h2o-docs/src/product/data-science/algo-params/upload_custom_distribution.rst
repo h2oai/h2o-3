@@ -40,18 +40,18 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: python
+.. tabs::
+   .. code-tab:: python
 
-	import h2o
-	h2o.init()
+		import h2o
+		h2o.init()
 
-	# upload the custom distribution
-	from h2o.utils.distributions import CustomDistributionGaussian
-	custom_dist_func = h2o.upload_custom_distribution(CustomDistributionGaussian, 
-	                                                  func_name="gaussian", 
-	                                                  func_file="dist_gaussian.py")
+		# upload the custom distribution
+		from h2o.utils.distributions import CustomDistributionGaussian
+		custom_dist_func = h2o.upload_custom_distribution(CustomDistributionGaussian, 
+		                                                  func_name="gaussian", 
+		                                                  func_file="dist_gaussian.py")
 
-	# view a reference to the uploaded custom distribution function
-	print(custom_dist_func)
-	python:gaussian=dist_gaussian.CustomDistributionGaussianWrapper
+		# view a reference to the uploaded custom distribution function
+		print(custom_dist_func)
+		python:gaussian=dist_gaussian.CustomDistributionGaussianWrapper

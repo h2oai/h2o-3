@@ -19,41 +19,41 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the prostate dataset:
-	prostate = h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+		# import the prostate dataset:
+		prostate = h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-	# convert the CAPSULE column to a factor
-	prostate$CAPSULE <- as.factor(prostate$CAPSULE)
-	response <- "CAPSULE"
+		# convert the CAPSULE column to a factor
+		prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+		response <- "CAPSULE"
 
-	# train a model using the monotone_constraints option
-	prostate.gbm <- h2o.gbm(y=response, 
-                        	monotone_constraints=list(AGE = 1), 
-                        	seed=1234, 
-                        	training_frame=prostate)
+		# train a model using the monotone_constraints option
+		prostate.gbm <- h2o.gbm(y=response, 
+	                        	monotone_constraints=list(AGE = 1), 
+	                        	seed=1234, 
+	                        	training_frame=prostate)
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.gbm import H2OGradientBoostingEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		h2o.init()
 
-	# import the prostate dataset:
-	prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+		# import the prostate dataset:
+		prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-	# convert the CAPSULE column to a factor
-	prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
-	response = "CAPSULE"
-	seed = 1234
-	
-	# train a model using the monotone_constraints option
-	monotone_constraints={"AGE":1}
-	gbm_model = H2OGradientBoostingEstimator(seed=seed, monotone_constraints=monotone_constraints)
-	gbm_model.train(y=response, ignored_columns=["ID"], training_frame=prostate)
+		# convert the CAPSULE column to a factor
+		prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+		response = "CAPSULE"
+		seed = 1234
+		
+		# train a model using the monotone_constraints option
+		monotone_constraints={"AGE":1}
+		gbm_model = H2OGradientBoostingEstimator(seed=seed, monotone_constraints=monotone_constraints)
+		gbm_model.train(y=response, ignored_columns=["ID"], training_frame=prostate)

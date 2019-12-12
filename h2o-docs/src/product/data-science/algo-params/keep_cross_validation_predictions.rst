@@ -24,64 +24,64 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the cars dataset:
-	# this dataset is used to classify whether or not a car is economical based on
-	# the car's displacement, power, weight, and acceleration, and the year it was made
-	cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+		# import the cars dataset:
+		# this dataset is used to classify whether or not a car is economical based on
+		# the car's displacement, power, weight, and acceleration, and the year it was made
+		cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# convert response column to a factor
-	cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+		# convert response column to a factor
+		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
-	# set the predictor names and the response column name
-	predictors <- c("displacement","power","weight","acceleration","year")
-	response <- "economy_20mpg"
+		# set the predictor names and the response column name
+		predictors <- c("displacement","power","weight","acceleration","year")
+		response <- "economy_20mpg"
 
-	# split into train and validation sets
-	cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-	train <- cars.split[[1]]
-	valid <- cars.split[[2]]
+		# split into train and validation sets
+		cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+		train <- cars.split[[1]]
+		valid <- cars.split[[2]]
 
-	# try using the `keep_cross_validation_predictions` (boolean parameter):
-	# train your model, set nfolds parameter
-	cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-	                    nfolds = 5, keep_cross_validation_predictions= TRUE, seed = 1234)
+		# try using the `keep_cross_validation_predictions` (boolean parameter):
+		# train your model, set nfolds parameter
+		cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
+		                    nfolds = 5, keep_cross_validation_predictions= TRUE, seed = 1234)
 
-	# print the cross-validation predictions
-	h2o.cross_validation_predictions(cars_gbm)
+		# print the cross-validation predictions
+		h2o.cross_validation_predictions(cars_gbm)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.gbm import H2OGradientBoostingEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		h2o.init()
 
-	# import the cars dataset:
-	# this dataset is used to classify whether or not a car is economical based on
-	# the car's displacement, power, weight, and acceleration, and the year it was made
-	cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+		# import the cars dataset:
+		# this dataset is used to classify whether or not a car is economical based on
+		# the car's displacement, power, weight, and acceleration, and the year it was made
+		cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# convert response column to a factor
-	cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+		# convert response column to a factor
+		cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 
-	# set the predictor names and the response column name
-	predictors = ["displacement","power","weight","acceleration","year"]
-	response = "economy_20mpg"
+		# set the predictor names and the response column name
+		predictors = ["displacement","power","weight","acceleration","year"]
+		response = "economy_20mpg"
 
-	# split into train and validation sets
-	train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+		# split into train and validation sets
+		train, valid = cars.split_frame(ratios = [.8], seed = 1234)
 
-	# try using the `keep_cross_validation_predictions` (boolean parameter):
-	# first initialize your estimator, set nfolds parameter
-	cars_gbm = H2OGradientBoostingEstimator(keep_cross_validation_predictions = True, nfolds = 5, seed = 1234)
+		# try using the `keep_cross_validation_predictions` (boolean parameter):
+		# first initialize your estimator, set nfolds parameter
+		cars_gbm = H2OGradientBoostingEstimator(keep_cross_validation_predictions = True, nfolds = 5, seed = 1234)
 
-	# then train your model
-	cars_gbm.train(x = predictors, y = response, training_frame = train)
+		# then train your model
+		cars_gbm.train(x = predictors, y = response, training_frame = train)
 
-	# print the cross-validation predictions
-	cars_gbm.cross_validation_predictions()
+		# print the cross-validation predictions
+		cars_gbm.cross_validation_predictions()
