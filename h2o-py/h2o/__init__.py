@@ -4,7 +4,6 @@
 """
 :mod:`h2o` -- module for using H2O services.
 
-(please add description).
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
