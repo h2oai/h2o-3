@@ -2,6 +2,7 @@ package hex.kmeans;
 
 import hex.ModelMetricsClustering;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -211,7 +212,7 @@ public class KmeansConstrainedTest extends TestUtil {
         }
     }
 
-    @Test
+    @Test @Ignore
     public void testWeatherChicagoConstrained() {
         KMeansModel kmm = null, kmm2 = null;
         Frame fr = null, points = null;
