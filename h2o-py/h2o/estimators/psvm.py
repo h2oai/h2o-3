@@ -43,6 +43,14 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Id of the training data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> train, valid = splice.split_frame(ratios=[0.8])
+        >>> svm = H2OSupportVectorMachineEstimator(disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=train)
+        >>> svm.mse()
         """
         return self._parms.get("training_frame")
 
@@ -57,6 +65,14 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Id of the validation data frame.
 
         Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> train, valid = splice.split_frame(ratios=[0.8])
+        >>> svm = H2OSupportVectorMachineEstimator(disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=train, validation_frame=valid)
+        >>> svm.mse()
         """
         return self._parms.get("validation_frame")
 
@@ -101,6 +117,16 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Ignore constant columns.
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.01,
+        ...                                        rank_ratio=0.1,
+        ...                                        ignore_const_cols=False,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice)
+        >>> svm.mse()
         """
         return self._parms.get("ignore_const_cols")
 
@@ -116,6 +142,16 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Penalty parameter C of the error term
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.01,
+        ...                                        rank_ratio=0.1,
+        ...                                        hyper_param=0.01,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice)
+        >>> svm.mse()
         """
         return self._parms.get("hyper_param")
 
@@ -131,6 +167,17 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Type of used kernel
 
         One of: ``"gaussian"``  (default: ``"gaussian"``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.1,
+        ...                                        rank_ratio=0.1,
+        ...                                        hyper_param=0.01,
+        ...                                        kernel_type="gaussian",
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice) 
+        >>> svm.mse()
         """
         return self._parms.get("kernel_type")
 
@@ -146,6 +193,15 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features)
 
         Type: ``float``  (default: ``-1``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.01,
+        ...                                        rank_ratio=0.1,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice)
+        >>> svm.mse()
         """
         return self._parms.get("gamma")
 
@@ -161,6 +217,15 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use sqrt(#rows)).
 
         Type: ``float``  (default: ``-1``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.01,
+        ...                                        rank_ratio=0.1,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice)
+        >>> svm.mse()
         """
         return self._parms.get("rank_ratio")
 
@@ -176,6 +241,16 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Weight of positive (+1) class of observations
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.1,
+        ...                                        rank_ratio=0.1,
+        ...                                        positive_weight=0.1,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice)   
+        >>> svm.mse()
         """
         return self._parms.get("positive_weight")
 
@@ -191,6 +266,16 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Weight of positive (-1) class of observations
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.1,
+        ...                                        rank_ratio=0.1,
+        ...                                        negative_weight=10,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice)  
+        >>> svm.mse()
         """
         return self._parms.get("negative_weight")
 
@@ -206,6 +291,16 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Disable calculating training metrics (expensive on large datasets)
 
         Type: ``bool``  (default: ``True``).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OSupportVectorMachineEstimator
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.01,
+        ...                                        rank_ratio=0.1,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice)
+        >>> svm.mse()
         """
         return self._parms.get("disable_training_metrics")
 
@@ -221,6 +316,16 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Threshold for accepting a candidate observation into the set of support vectors
 
         Type: ``float``  (default: ``0.0001``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.01,
+        ...                                        rank_ratio=0.1,
+        ...                                        sv_threshold=0.01,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice) 
+        >>> svm.mse()
         """
         return self._parms.get("sv_threshold")
 
@@ -236,6 +341,14 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Convergence threshold of the Incomplete Cholesky Factorization (ICF)
 
         Type: ``float``  (default: ``1e-05``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(disable_training_metrics=False,
+        ...                                        fact_threshold=1e-7)
+        >>> svm.train(y="C1", training_frame=splice)
+        >>> svm.mse()
         """
         return self._parms.get("fact_threshold")
 
@@ -251,6 +364,14 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Convergence threshold for primal-dual residuals in the IPM iteration
 
         Type: ``float``  (default: ``0.001``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(disable_training_metrics=False,
+        ...                                        fact_threshold=1e-7)
+        >>> svm.train(y="C1", training_frame=splice)
+        >>> svm.mse()
         """
         return self._parms.get("feasible_threshold")
 
@@ -266,6 +387,16 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Feasibility criterion of the surrogate duality gap (eta)
 
         Type: ``float``  (default: ``0.001``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.01,
+        ...                                        rank_ratio=0.1,
+        ...                                        surrogate_gap_threshold=0.1,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice) 
+        >>> svm.mse()
         """
         return self._parms.get("surrogate_gap_threshold")
 
@@ -281,6 +412,15 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Increasing factor mu
 
         Type: ``float``  (default: ``10``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.1,
+        ...                                        mu_factor=100.5,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice) 
+        >>> svm.mse()
         """
         return self._parms.get("mu_factor")
 
@@ -296,6 +436,17 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Maximum number of iteration of the algorithm
 
         Type: ``int``  (default: ``200``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.1,
+        ...                                        rank_ratio=0.1,
+        ...                                        hyper_param=0.01,
+        ...                                        max_iterations=20,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice)  
+        >>> svm.mse()
         """
         return self._parms.get("max_iterations")
 
@@ -311,6 +462,16 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
         Seed for pseudo random number generator (if applicable)
 
         Type: ``int``  (default: ``-1``).
+
+        :examples:
+
+        >>> splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+        >>> svm = H2OSupportVectorMachineEstimator(gamma=0.1,
+        ...                                        rank_ratio=0.1,
+        ...                                        seed=1234,
+        ...                                        disable_training_metrics=False)
+        >>> svm.train(y="C1", training_frame=splice)
+        >>> svm.model_performance
         """
         return self._parms.get("seed")
 
