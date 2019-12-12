@@ -70,6 +70,7 @@ Optional Miscellaneous Parameters
 
 -  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
     
+    - ``aucpr``
     - ``AUTO``: This defaults to ``logloss`` for classification and ``deviance`` for regression.
     - ``deviance`` (mean residual deviance)
     - ``logloss``
