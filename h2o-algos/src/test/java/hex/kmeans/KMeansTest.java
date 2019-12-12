@@ -674,6 +674,7 @@ public class KMeansTest extends TestUtil {
       parms._standardize = true;
       parms._max_iterations = 1;
       parms._init = KMeans.Initialization.Random;
+      parms._seed = 42;
 
       KMeans job = new KMeans(parms);
       kmeans = job.trainModel().get();
