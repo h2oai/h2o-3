@@ -22,7 +22,8 @@ public enum Algo {
     boolean enabled() {
       // on single node, XGBoost is enabled by default if the extension is enabled.
       // on multinode, the same condition applies, but only on Linux by default: needs to be activated explicitly for other platforms.
-      boolean enabledOnMultinode = Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, isLinux() ? "true" : "false"));
+      // 2019-12-12: temporarily disabled on Linux multinode until XGBoost issue is fixed.
+      boolean enabledOnMultinode = Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, isLinux() ? "false" : "false"));
       return ExtensionManager.getInstance().isCoreExtensionEnabled(this.name()) && (H2O.CLOUD.size() == 1 || enabledOnMultinode);
     }
   },
