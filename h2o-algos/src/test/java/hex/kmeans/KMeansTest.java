@@ -676,9 +676,9 @@ public class KMeansTest extends TestUtil {
       parms._init = KMeans.Initialization.Random;
 
       KMeans job = new KMeans(parms);
-      kmeans = (KMeansModel) Scope.track_generic(job.trainModel().get());
+      kmeans = job.trainModel().get();
 
-      assert  kmeans._output._training_metrics.frame()._key != null;
+      Assert.assertNotNull("The training metrics frame key should not be null.", kmeans._output._training_metrics.frame()._key);
 
     } finally {
       if( fr  != null ) fr.delete();
