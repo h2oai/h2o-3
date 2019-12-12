@@ -90,7 +90,7 @@ class H2OFrame(Keyed):
     def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
                  column_names=None, column_types=None, na_strings=None, skipped_columns=None):
     
-        coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
+        coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "long", "numeric",
                     "categorical", "factor", "enum", "time")
         assert_is_type(python_obj, None, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
         assert_is_type(destination_frame, None, str)

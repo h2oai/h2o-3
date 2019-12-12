@@ -1,8 +1,8 @@
 package water.automl.api.schemas3;
 
-import ai.h2o.automl.EventLogEntry;
-import ai.h2o.automl.EventLogEntry.Level;
-import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.events.EventLogEntry;
+import ai.h2o.automl.events.EventLogEntry.Level;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import water.api.API;
 import water.api.EnumValuesProvider;
 import water.api.schemas3.SchemaV3;

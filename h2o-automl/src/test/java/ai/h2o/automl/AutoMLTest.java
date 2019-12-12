@@ -562,7 +562,7 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
-  @Test public void testTestAlgosHaveDefaultParametersEnforcingReproducibility() {
+  @Test public void testAlgosHaveDefaultParametersEnforcingReproducibility() {
     AutoML aml=null;
     Frame fr=null;
     try {

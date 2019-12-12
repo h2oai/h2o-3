@@ -1,17 +1,16 @@
-package ai.h2o.automl;
+package ai.h2o.automl.events;
 
-import ai.h2o.automl.EventLogEntry.Level;
-import ai.h2o.automl.EventLogEntry.Stage;
-import org.apache.commons.lang.time.DateUtils;
+import ai.h2o.automl.AutoML;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry;
+import ai.h2o.automl.events.EventLogEntry.Level;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
 import water.util.TwoDimTable;
-
-import java.util.Calendar;
-import java.util.Date;
 
 public class EventLogTest extends water.TestUtil {
 

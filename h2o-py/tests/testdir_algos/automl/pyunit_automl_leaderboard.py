@@ -5,7 +5,7 @@ import h2o
 import random
 import sys
 from tests import pyunit_utils
-from h2o.automl import H2OAutoML
+from h2o.automl import H2OAutoML, get_leaderboard
 
 """
 This test is used to check leaderboard, especially sorting logic and filtered algos
@@ -166,7 +166,7 @@ def test_leaderboard_with_no_algos():
 
     lb = aml.leaderboard
     assert lb.nrows == 0
-    check_leaderboard(aml, exclude_algos, ["unknown"], None, None)
+    check_leaderboard(aml, exclude_algos, [], None, None)
 
 
 def test_leaderboard_for_binomial_with_custom_sorting():
@@ -293,6 +293,29 @@ def test_AUTO_stopping_metric_with_custom_sorting_metric():
     check_model_property(non_se, 'stopping_metric', True, "RMSE")
 
 
+def test_custom_leaderboard():
+    print("Check custom leaderboard")
+    ds = prepare_data('binomial')
+    aml = H2OAutoML(project_name="py_aml_custom_lb_test",
+                    max_models=5,
+                    seed=automl_seed)
+    aml.train(y=ds.target, training_frame=ds.train)
+    std_columns = ["model_id", "auc", "logloss", "aucpr", "mean_per_class_error", "rmse", "mse"]
+    assert aml.leaderboard.names == std_columns
+    assert get_leaderboard(aml).names == std_columns
+    assert get_leaderboard(aml, extra_columns=[]).names == std_columns
+    assert get_leaderboard(aml, extra_columns='ALL').names == std_columns + ["training_time_ms", "predict_time_per_row_ms"]
+    assert get_leaderboard(aml, extra_columns="unknown").names == std_columns
+    assert get_leaderboard(aml, extra_columns=["training_time_ms"]).names == std_columns + ["training_time_ms"]
+    assert get_leaderboard(aml, extra_columns=["predict_time_per_row_ms", "training_time_ms"]).names == std_columns + ["predict_time_per_row_ms", "training_time_ms"]
+    assert get_leaderboard(aml, extra_columns=["unknown", "training_time_ms"]).names == std_columns + ["training_time_ms"]
+    lb_ext = get_leaderboard(aml, extra_columns='ALL')
+    print(lb_ext)
+    assert all(lb_ext[:, 1:].isnumeric()), "metrics and extension columns should all be numeric"
+    assert (lb_ext["training_time_ms"].as_data_frame().values >= 0).all()
+    assert (lb_ext["predict_time_per_row_ms"].as_data_frame().values > 0).all()
+
+
 pyunit_utils.run_tests([
     test_warn_on_empty_leaderboard,
     test_leaderboard_for_binomial,
@@ -306,5 +329,6 @@ pyunit_utils.run_tests([
     test_AUTO_stopping_metric_with_no_sorting_metric_binomial,
     test_AUTO_stopping_metric_with_no_sorting_metric_regression,
     test_AUTO_stopping_metric_with_auc_sorting_metric,
-    test_AUTO_stopping_metric_with_custom_sorting_metric
+    test_AUTO_stopping_metric_with_custom_sorting_metric,
+    test_custom_leaderboard,
 ])
