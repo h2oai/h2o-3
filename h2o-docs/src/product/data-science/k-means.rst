@@ -118,8 +118,6 @@ H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a
 
  :math:`\big[0.02 + \frac{10}{number\_of\_training\_rows} + \frac{2.5}{number\_of\_model\_features^{2}}\big]`
 
-
-
 FAQ
 ~~~
 
