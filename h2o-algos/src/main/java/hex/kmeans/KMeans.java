@@ -357,7 +357,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         vecs2[vecs2.length-1].remove();
 
         // Create metrics by scoring on training set otherwise scores are based on last Lloyd iteration
-        model.score(_train).delete();
+        model.score(_parms.train()).delete();
         model._output._training_metrics = ModelMetrics.getFromDKV(model,_parms.train());
 
         Log.info(model._output._model_summary);
