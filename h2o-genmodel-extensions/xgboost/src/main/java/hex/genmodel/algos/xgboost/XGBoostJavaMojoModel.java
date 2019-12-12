@@ -15,6 +15,7 @@ import hex.genmodel.PredictContributions;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -112,7 +113,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     return _computeGraph(booster, treeNumber);
   }
 
-  private class OneHotEncoderFactory {
+  private class OneHotEncoderFactory implements Serializable {
     private final int[] _catMap;
     private final float _notHot;
 
