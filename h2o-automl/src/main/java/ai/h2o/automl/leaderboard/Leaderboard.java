@@ -575,12 +575,11 @@ public class Leaderboard extends Lockable<Leaderboard> {
   }
 
   private TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds, String... extensions) {
-    String[] modelIDsFormatted = new String[_model_keys.length];
-    String[] metrics = _metrics == null ? (_sort_metric == null ? new String[0] : new String[] {_sort_metric})
-                      : _metrics;
-
+    final Key<Model>[] modelKeys = _model_keys.clone(); // leaderboard can be retrieved when AutoML is still running: freezing current models state.
     final List<LeaderboardColumn> columns = new ArrayList<>();
     final List<LeaderboardColumn> extColumns = new ArrayList<>();
+    String[] metrics = _metrics == null ? (_sort_metric == null ? new String[0] : new String[] {_sort_metric})
+                      : _metrics;
     columns.add(ModelId.COLUMN);
     for (String metric: metrics) {
       columns.add(MetricScore.getColumn(metric));
@@ -594,11 +593,12 @@ public class Leaderboard extends Lockable<Leaderboard> {
     }
     columns.addAll(extColumns);
 
-    TwoDimTable table = makeTwoDimTable(tableHeader, _model_keys.length, columns.toArray(new LeaderboardColumn[0]));
+    TwoDimTable table = makeTwoDimTable(tableHeader, modelKeys.length, columns.toArray(new LeaderboardColumn[0]));
 
-    int maxModelIdLen = Stream.of(_model_keys).mapToInt(k -> k.toString().length()).max().orElse(0);
-    for (int i = 0; i < _model_keys.length; i++) {
-      Key<Model> key = _model_keys[i];
+    int maxModelIdLen = Stream.of(modelKeys).mapToInt(k -> k.toString().length()).max().orElse(0);
+    final String[] modelIDsFormatted = new String[modelKeys.length];
+    for (int i = 0; i < modelKeys.length; i++) {
+      Key<Model> key = modelKeys[i];
       if (leftJustifyModelIds) {
         // %-s doesn't work in TwoDimTable.toString(), so fake it here:
         modelIDsFormatted[i] = org.apache.commons.lang.StringUtils.rightPad(key.toString(), maxModelIdLen);
