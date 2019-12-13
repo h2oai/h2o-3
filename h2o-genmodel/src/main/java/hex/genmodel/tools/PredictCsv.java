@@ -471,7 +471,7 @@ public class PredictCsv {
   private void parseArgs(String[] args) {
     try {
       String pojoMojoModelNames = ""; // store Pojo/Mojo/Model names
-      int loadType = -1; // 0: load pojo, 1: load mojo, 2: load model
+      int loadType = 0; // 0: load pojo, 1: load mojo, 2: load model, -1: special value when PredictCsv is used embedded and instance of Model is passed directly
       for (int i = 0; i < args.length; i++) {
         String s = args[i];
         if (s.equals("--header")) continue;
