@@ -33,7 +33,7 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .estimators.word2vec import H2OWord2vecEstimator
 from .estimators.isolation_forest import H2OIsolationForestEstimator
-from .exceptions import H2OConnectionError, H2OError
+from .exceptions import H2OConnectionError, H2OValueError, H2OError
 from .expr import ExprNode
 from .frame import H2OFrame
 from .grid.grid_search import H2OGridSearch
