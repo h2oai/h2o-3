@@ -1426,6 +1426,33 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testMojoSerializable() throws IOException {
+    Scope.enter();
+    try {
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = tfr._key;
+      parms._response_column = "AGE";
+      parms._ignored_columns = new String[]{"ID"};
+      parms._seed = 42;
+      parms._ntrees = 7;
+
+      XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+
+      XGBoostMojoModel mojo = getMojo(model);
+
+      ByteArrayOutputStream bos = new ByteArrayOutputStream();
+      try (ObjectOutput out = new ObjectOutputStream(bos)) {
+        out.writeObject(mojo);
+      }
+      assertNotNull(bos.toByteArray());
+    } finally {
+      Scope.exit();
+    }
+  }
+
   /**
    * PUBDEV-5816: Tests correctness of training metrics returned for Multinomial XGBoost models
    */
