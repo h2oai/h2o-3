@@ -21,6 +21,8 @@ Download at:
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7065'>PUBDEV-7065</a>] - The AutoML backend no longer accepts `ignored_columns` that contain one of response column, fold column, or weights column.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7133'>PUBDEV-7133</a>] - XGBoost MOJO now works correctly in Spark. (STILL OPEN)
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7134'>PUBDEV-7134</a>] - The REST API ping thread now starts after the cluster is up.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7137'>PUBDEV-7137</a>] - Fixed an NPE at hex.tree.TreeHandler.fillNodeCategoricalSplitDescription(TreeHandler.java:272) (STILL OPEN)
@@ -191,7 +193,7 @@ Download at:
 <li>Added modeling_plan option to list of AutoML parameters.</li>
 </ul> (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7142'>PUBDEV-7142</a>] - MOJOs are now available for PCA. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7142'>PUBDEV-7142</a>] - MOJOs are now available for PCA.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7143'>PUBDEV-7143</a>] - MOJO models are now available for XGBoost.
 </li>
