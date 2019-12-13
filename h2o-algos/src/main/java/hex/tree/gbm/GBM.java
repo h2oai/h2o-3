@@ -556,7 +556,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       // where huberDelta is the alpha-percentile of the residual across all observations
       Frame tmpFrame2 = new Frame(_train.vecs());
       tmpFrame2.add("resMinusMedianRes", diffMinusMedianDiff);
-      double[] huberGamma = new HuberLeafMath(frameMap, huberDelta,strata).doAll(tmpFrame2)._huberGamma;
+      double[] huberGamma = new HuberLeafMath(frameMap, huberDelta, strata).doAll(tmpFrame2)._huberGamma;
 
       // now assign the median per leaf + the above _huberCorrection[i] to each leaf
       final DTree tree = ktrees[0];
@@ -954,8 +954,9 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     @Override
     public void map(Chunk[] cs) {
-      if (_strataMin < 0 || _strataMax < 0) {
+      if (_strata.length() == 0) {
         Log.warn("No Huber math can be done since there's no strata.");
+        _huberGamma = new double[0];
         return;
       }
       final int nstrata = _strataMax - _strataMin + 1;
