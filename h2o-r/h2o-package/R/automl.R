@@ -32,7 +32,7 @@
 #' @param max_runtime_secs_per_model Maximum runtime in seconds dedicated to each individual model training process. Use 0 to disable. Defaults to 0.
 #' @param max_models Maximum number of models to build in the AutoML process (does not include Stacked Ensembles). Defaults to NULL (no strict limit).
 #' @param stopping_metric Metric to use for early stopping ("AUTO" is logloss for classification, deviance for regression).
-#'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to AUTO.
+#'        Must be one of "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error". Defaults to "AUTO".
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much). This value defaults to 0.001 if the
 #'        dataset is at least 1 million rows; otherwise it defaults to a bigger value determined by the size of the dataset and the non-NA-rate.  In that case, the value is computed
 #'        as 1/sqrt(nrows * non-NA-rate).
@@ -55,7 +55,7 @@
 #' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation predictions. This needs to be set to TRUE if running the same AutoML object for repeated runs because CV predictions are required to build additional Stacked Ensemble models in AutoML. This option defaults to FALSE.
 #' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to FALSE.
 #' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep fold assignments in the models. Deleting them will save memory in the H2O cluster. Defaults to FALSE.
-#' @param sort_metric Metric to sort the leaderboard by. For binomial classification choose between "AUC", "logloss", "mean_per_class_error", "RMSE", "MSE".
+#' @param sort_metric Metric to sort the leaderboard by. For binomial classification choose between "AUC", "AUCPR", "logloss", "mean_per_class_error", "RMSE", "MSE".
 #'        For regression choose between "mean_residual_deviance", "RMSE", "MSE", "MAE", and "RMSLE". For multinomial classification choose between
 #'        "mean_per_class_error", "logloss", "RMSE", "MSE". Default is "AUTO". If set to "AUTO", then "AUC" will be used for binomial classification,
 #'        "mean_per_class_error" for multinomial classification, and "mean_residual_deviance" for regression.
@@ -87,7 +87,7 @@ h2o.automl <- function(x, y, training_frame,
                        max_runtime_secs = NULL,
                        max_runtime_secs_per_model = NULL,
                        max_models = NULL,
-                       stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "mean_per_class_error"),
+                       stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error"),
                        stopping_tolerance = NULL,
                        stopping_rounds = 3,
                        seed = NULL,
@@ -100,7 +100,7 @@ h2o.automl <- function(x, y, training_frame,
                        keep_cross_validation_predictions = FALSE,
                        keep_cross_validation_models = FALSE,
                        keep_cross_validation_fold_assignment = FALSE,
-                       sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "mean_per_class_error"),
+                       sort_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "mean_per_class_error"),
                        export_checkpoints_dir = NULL,
                        verbosity = "warn")
 {

@@ -89,7 +89,7 @@ class H2OAutoML(Keyed):
         :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
           The available options are:
           ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
-          ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``"lift_top_group"``,
+          ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``aucpr``, ``"lift_top_group"``,
           ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``.
         :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
           to stop the AutoML run if the improvement is less than this value. This value defaults to ``0.001``
@@ -128,7 +128,7 @@ class H2OAutoML(Keyed):
           in the H2O cluster. This option defaults to ``False``.
         :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, 
           ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression). For binomial classification choose between 
-          ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
+          ``auc``, ``aucpr``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
           ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
@@ -530,7 +530,7 @@ class H2OAutoML(Keyed):
 
         :param path:  An absolute path to the directory where POJO should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name Custom name of genmodel jar
+        :param genmodel_name: Custom name of genmodel jar
         :returns: name of the POJO file written.
         """
 
@@ -542,7 +542,7 @@ class H2OAutoML(Keyed):
 
         :param path: the path where MOJO file should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name Custom name of genmodel jar
+        :param genmodel_name: Custom name of genmodel jar
         :returns: name of the MOJO file written.
         """
 
