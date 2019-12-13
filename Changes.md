@@ -2,9 +2,9 @@
 
 ## H2O
 
-### TBD (3.28.0.1) - 12/13/2019
+### Yu (3.28.0.1) - 12/13/2019
 
-Download at: 
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.html</a>
 
 <h4>Bug</h4>
 
@@ -15,17 +15,17 @@ Download at:
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6940'>PUBDEV-6940</a>] - Updated the list of stopping metric options for AutoML in Flow. Also added support for the aucpr stopping metric in AutoML.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6966'>PUBDEV-6966</a>] - When training a K-Means model, the framename is no longer missing in the training metrics. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6966'>PUBDEV-6966</a>] - When training a K-Means model, the framename is no longer missing in the training metrics.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6998'>PUBDEV-6998</a>] - In AutoML, the `project_name` is now restricted to the same constraints as h2o frames. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7065'>PUBDEV-7065</a>] - The AutoML backend no longer accepts `ignored_columns` that contain one of response column, fold column, or weights column.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7133'>PUBDEV-7133</a>] - XGBoost MOJO now works correctly in Spark. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7133'>PUBDEV-7133</a>] - XGBoost MOJO now works correctly in Spark.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7134'>PUBDEV-7134</a>] - The REST API ping thread now starts after the cluster is up.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7137'>PUBDEV-7137</a>] - Fixed an NPE at hex.tree.TreeHandler.fillNodeCategoricalSplitDescription(TreeHandler.java:272) (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7137'>PUBDEV-7137</a>] - Fixed an NPE at hex.tree.TreeHandler.fillNodeCategoricalSplitDescription(TreeHandler.java:272)
 </li>
 </ul>
 
@@ -34,7 +34,7 @@ Download at:
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5351'>PUBDEV-5351</a>] - Extended MOJO support for PCA
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6509'>PUBDEV-6509</a>] - Added support for Mixed Effects/Hierarchical GLMs. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6509'>PUBDEV-6509</a>] - We are very excited to add HGLM (Hierarchical GLM) to our open source offering. As this is the first release, we only implemented the Gaussian family. However, stay tuned or better yet, tell us what distributions you want to see next. Try it out and send us your feedback! (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6513'>PUBDEV-6513</a>] - MOJO Import is now available for XGBoost.
 </li>
@@ -184,7 +184,7 @@ Download at:
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7116'>PUBDEV-7116</a>] - Added examples to the PSVM section in the Python documentation.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7128'>PUBDEV-7128</a>] - Added documentation for HGLM in the GLM chapter. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7128'>PUBDEV-7128</a>] - Added documentation for HGLM in the GLM chapter. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7141'>PUBDEV-7141</a>] - Improved AutoML documentation: 
 <ul>
