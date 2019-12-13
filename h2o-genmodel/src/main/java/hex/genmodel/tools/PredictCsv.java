@@ -40,8 +40,7 @@ public class PredictCsv {
 
   public static void main(String[] args) {
     // Parse command line arguments
-    PredictCsv main = new PredictCsv();
-    main.parseArgs(args);
+    PredictCsv main = make(args, null);
 
     // Run the main program
     try {
@@ -54,6 +53,18 @@ public class PredictCsv {
     System.exit(0);
   }
 
+  public static PredictCsv make(String[] args, GenModel model) {
+    PredictCsv predictor = new PredictCsv();
+    predictor.parseArgs(args);
+    if (model != null) {
+      try {
+        predictor.setModel(model);
+      } catch (IOException e) {
+        throw new RuntimeException(e);
+      }
+    }
+    return predictor;
+  }
 
   private static RowData formatDataRow(String[] splitLine, String[] inputColumnNames) {
     // Assemble the input values for the row.
@@ -95,7 +106,7 @@ public class PredictCsv {
   }
 
 
-  private void run() throws Exception {
+  public void run() throws Exception {
     ModelCategory category = model.getModelCategory();
     CSVReader reader = new CSVReader(new FileReader(inputCSVFileName), separator);
     BufferedWriter output = new BufferedWriter(new FileWriter(outputCSVFileName));
@@ -355,17 +366,24 @@ public class PredictCsv {
     }
   }
 
-  private void loadPojo(String className) throws Exception {
-    GenModel genModel = (GenModel) Class.forName(className).newInstance();
-    EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config().setModel(genModel).setConvertUnknownCategoricalLevelsToNa(true).setConvertInvalidNumbersToNa(setInvNumNA);
+  private void setModel(GenModel genModel) throws IOException {
+    EasyPredictModelWrapper.Config config = new EasyPredictModelWrapper.Config()
+            .setModel(genModel)
+            .setConvertUnknownCategoricalLevelsToNa(true)
+            .setConvertInvalidNumbersToNa(setInvNumNA);
 
     if (getTreePath)
       config.setEnableLeafAssignment(true);
 
     if (returnGLRMReconstruct)
       config.setEnableGLRMReconstrut(true);
-    
+
     model = new EasyPredictModelWrapper(config);
+  } 
+
+  private void loadPojo(String className) throws Exception {
+    GenModel genModel = (GenModel) Class.forName(className).newInstance();
+    setModel(genModel);
   }
 
   private void loadMojo(String modelName) throws IOException {
@@ -453,7 +471,7 @@ public class PredictCsv {
   private void parseArgs(String[] args) {
     try {
       String pojoMojoModelNames = ""; // store Pojo/Mojo/Model names
-      int loadType = 0; // 0: load pojo, 1: load mojo, 2: load model
+      int loadType = -1; // 0: load pojo, 1: load mojo, 2: load model
       for (int i = 0; i < args.length; i++) {
         String s = args[i];
         if (s.equals("--header")) continue;
@@ -465,7 +483,9 @@ public class PredictCsv {
           setInvNumNA=true;
         else if (s.equals("--leafNodeAssignment"))
           getTreePath = true;
-        else {
+        else if (s.equals("--embedded")) {
+          loadType = -1;
+        } else {
           i++;
           if (i >= args.length) usage();
           String sarg = args[i];
@@ -484,9 +504,10 @@ public class PredictCsv {
         }
       }
       switch(loadType) {
-        case 0: loadPojo(pojoMojoModelNames); break;
-        case 1: loadMojo(pojoMojoModelNames); break;
-        case 2: loadModel(pojoMojoModelNames); break;
+        case -1: break;
+        case  0: loadPojo(pojoMojoModelNames); break;
+        case  1: loadMojo(pojoMojoModelNames); break;
+        case  2: loadModel(pojoMojoModelNames); break;
       }
     } catch (Exception e) {
       e.printStackTrace();

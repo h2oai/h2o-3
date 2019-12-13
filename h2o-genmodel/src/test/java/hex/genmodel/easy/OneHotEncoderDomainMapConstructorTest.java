@@ -24,9 +24,9 @@ public class OneHotEncoderDomainMapConstructorTest {
   @Test
   public void create() {
     Map<String, Integer> columnNameToIndex = new HashMap<>();
-    columnNameToIndex.put("col1", 0);
-    columnNameToIndex.put("col2", 3);
-    columnNameToIndex.put("col3", 4);
+    columnNameToIndex.put("col1", 1);
+    columnNameToIndex.put("col2", 0);
+    columnNameToIndex.put("col3", 5);
     
     when(mockModel.getOrigNames()).thenReturn(new String[]{"col1", "col2", "col3", "response"});
     when(mockModel.getOrigDomainValues()).thenReturn(new String[][]{
@@ -38,7 +38,7 @@ public class OneHotEncoderDomainMapConstructorTest {
     when(mockModel.getOrigNumCols()).thenReturn(3);
     
     Map<Integer, CategoricalEncoder> dm = CategoricalEncoding.OneHotExplicit.createCategoricalEncoders(mockModel, columnNameToIndex);
-    assertEquals(new HashSet<>(Arrays.asList(0, 2)), dm.keySet());
+    assertEquals(new HashSet<>(Arrays.asList(1, 5)), dm.keySet());
     for (CategoricalEncoder ce : dm.values()) {
       assertTrue(ce instanceof OneHotEncoder);
     }
