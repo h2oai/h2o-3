@@ -440,7 +440,7 @@ AutoML performs hyperparameter search over a variety of H2O algorithms in order 
 **Deep Learning Hyperparameters**
 
 -  ``epochs``
--  ``adaptivate_rate``
+-  ``adaptive_rate``
 -  ``activation``
 -  ``rho``
 -  ``epsilon``
