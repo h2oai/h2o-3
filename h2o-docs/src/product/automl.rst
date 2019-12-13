@@ -75,14 +75,14 @@ Optional Miscellaneous Parameters
 -  `stopping_metric <data-science/algo-params/stopping_metric.html>`__: Specify the metric to use for early stopping. Defaults to ``AUTO``. The available options are:
     
     - ``AUTO``: This defaults to ``logloss`` for classification and ``deviance`` for regression.
-    - ``aucpr``
     - ``deviance`` (mean residual deviance)
     - ``logloss``
     - ``MSE``
     - ``RMSE``
     - ``MAE``
     - ``RMSLE``
-    - ``AUC``
+    - ``AUC`` (area under the ROC curve)
+    - ``AUCPR`` (area under the Precision-Recall curve)
     - ``lift_top_group``
     - ``misclassification``
     - ``mean_per_class_error``
@@ -94,14 +94,14 @@ Optional Miscellaneous Parameters
 - `sort_metric <data-science/algo-params/sort_metric.html>`__: Specifies the metric used to sort the Leaderboard by at the end of an AutoML run. Available options include:
 
     - ``AUTO``: This defaults to ``AUC`` for binary classification, ``mean_per_class_error`` for multinomial classification, and ``deviance`` for regression.
-    - ``aucpr``
     - ``deviance`` (mean residual deviance)
     - ``logloss``
     - ``MSE``
     - ``RMSE``
     - ``MAE``
     - ``RMSLE``
-    - ``AUC``
+    - ``AUC`` (area under the ROC curve)
+    - ``AUCPR`` (area under the Precision-Recall curve)
     - ``mean_per_class_error``
 
 - `seed <data-science/algo-params/seed.html>`__: Integer. Set a seed for reproducibility. AutoML can only guarantee reproducibility under certain conditions.  H2O Deep Learning models are not reproducible by default for performance reasons, so if the user requires reproducibility, then ``exclude_algos`` must contain ``"DeepLearning"``.  In addition ``max_models`` must be used because ``max_runtime_secs`` is resource limited, meaning that if the available compute resources are not the same between runs, AutoML may be able to train more models on one run vs another.  Defaults to ``NULL/None``.

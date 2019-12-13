@@ -14,14 +14,14 @@ This option specifies the metric used to sort the Leaderboard by at the end of a
 Available options for ``sort_metric`` include the following:
 
 - ``AUTO``: This defaults to ``AUC`` for binary classification, ``mean_per_class_error`` for multinomial classification, and ``deviance`` for regression.
-- ``aucpr``
 - ``deviance`` (mean residual deviance)
 - ``logloss``
 - ``MSE``
 - ``RMSE``
 - ``MAE``
 - ``RMSLE``
-- ``AUC``
+- ``AUC`` (area under the ROC curve)
+- ``AUCPR`` (area under the Precision-Recall curve)
 - ``mean_per_class_error``
 
 For binomial classification choose between ``AUC``, ``"logloss"``, ``"mean_per_class_error"``, ``"RMSE"``, ``"MSE"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"RMSE"``, ``"MSE"``.  For regression choose between ``"deviance"``, ``"RMSE"``, ``"MSE"``, ``"MAE"``, ``"RMLSE"``.

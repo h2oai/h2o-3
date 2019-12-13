@@ -17,7 +17,7 @@ When building a model, this option specifes the maximum runtime in seconds that 
 
 When performing a grid search, this option specifies the maximum runtime in seconds for the entire grid. This option can also be combined with ``max_runtime_secs`` in the model parameters. If ``max_runtime_secs`` is not set in the model parameters, then each model build is launched with a limit equal to the remainder of the grid time. On the other hand, if ``max_runtime_secs`` is set in the model parameters, then each build is launched with a limit equal to the minimum of the model time limit and the remaining time for the grid.
 
-Specifying ``max_runtime_secs=0`` (AutoML default) disables this option, thus allowing for an unlimited amount of runtime.
+Specifying ``max_runtime_secs=0`` disables this option, thus allowing for an unlimited amount of runtime.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
