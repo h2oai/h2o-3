@@ -662,4 +662,29 @@ public class KMeansTest extends TestUtil {
     }
   }
 
+  @Test public void testTrainingMetricFrameIsNotNullPubdev6996() {
+    KMeansModel kmeans = null;
+    Frame fr = null;
+    try {
+      fr = parse_test_file("smalldata/iris/iris_wheader.csv");
+
+      KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+      parms._train = fr._key;
+      parms._k = 3;
+      parms._standardize = true;
+      parms._max_iterations = 1;
+      parms._init = KMeans.Initialization.Random;
+      parms._seed = 42;
+
+      KMeans job = new KMeans(parms);
+      kmeans = job.trainModel().get();
+
+      Assert.assertNotNull("The training metrics frame key should not be null.", kmeans._output._training_metrics.frame()._key);
+
+    } finally {
+      if( fr  != null ) fr.delete();
+      if( kmeans != null ) kmeans.delete();
+    }
+  }
+
 }
