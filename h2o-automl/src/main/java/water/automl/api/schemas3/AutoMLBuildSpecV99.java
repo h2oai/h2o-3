@@ -192,9 +192,11 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
               StoppingMetric.AUC,
               StoppingMetric.AUCPR,
               StoppingMetric.deviance,
+              StoppingMetric.lift_top_group,
               StoppingMetric.logloss,
               StoppingMetric.MAE,
               StoppingMetric.mean_per_class_error,
+              StoppingMetric.misclassification,
               StoppingMetric.MSE,
               StoppingMetric.RMSE,
               StoppingMetric.RMSLE
