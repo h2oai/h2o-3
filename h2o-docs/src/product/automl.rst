@@ -467,5 +467,4 @@ AutoML performs hyperparameter search over a variety of H2O algorithms in order 
 Additional Information
 ----------------------
 
-AutoML development is tracked `here <https://0xdata.atlassian.net/issues/?filter=20700>`__. This page lists all open or in-progress AutoML JIRA tickets.|
- |
+AutoML development is tracked `here <https://0xdata.atlassian.net/issues/?filter=20700>`__. This page lists all open or in-progress AutoML JIRA tickets.
