@@ -22,6 +22,9 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Table of Coefficients")
     TwoDimTableV3 coefficients_table;
 
+    @API(help="Table of Random Coefficients for HGLM")
+    TwoDimTableV3 random_coefficients_table;
+
     @API(help="Table of Coefficients with coefficients denoted with class names for GLM multinonimals only.")
     TwoDimTableV3 coefficients_table_multinomials_with_class_names;  // same as coefficients_table but with real class names.
 
@@ -166,6 +169,20 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
           coeffs_table.columns[tableIndex+nclass].name = new String(colNames[tableIndex-1+nclass]);
       }
     }
+    
+    public TwoDimTable buildRandomCoefficients2DTable(double[] ubeta, String[] randomColNames) {
+      String [] colTypes = new String[]{"double"};
+      String [] colFormats = new String[]{"%5f"};
+      String [] colnames = new String[]{"Random Coefficients"};
+      TwoDimTable tdt = new TwoDimTable("HGLM Random Coefficients",
+              "HGLM random coefficients", randomColNames, colnames, colTypes, colFormats,
+              "names");
+      // fill in coefficients
+      for (int i = 0; i < ubeta.length; ++i) {
+        tdt.set(i, 0, ubeta[i]);
+      }
+      return tdt;
+    }
 
     @Override
     public GLMModelOutputV3 fillFromImpl(GLMModel.GLMOutput impl) {
@@ -179,6 +196,10 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
       // put intercept as the first
       String [] ns = ArrayUtils.append(new String[]{"Intercept"},Arrays.copyOf(names,names.length-1));
       coefficients_table = new TwoDimTableV3();
+      if ((impl.ubeta() != null) && (impl.randomcoefficientNames()!= null)) {
+        random_coefficients_table = new TwoDimTableV3();
+        random_coefficients_table.fillFromImpl(buildRandomCoefficients2DTable(impl.ubeta(), impl.randomcoefficientNames()));
+      }
       final double [] magnitudes;
       double [] beta = impl.beta();
       if(beta == null) beta = MemoryManager.malloc8d(names.length);
@@ -198,8 +219,6 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
         colnames = ArrayUtils.append(colnames,"Standardized Coefficients");
       }
       TwoDimTable tdt = new TwoDimTable("Coefficients","glm coefficients", ns, colnames, colTypes, colFormats, "names");
-      // fill in coefficients
-
       tdt.set(0, 0, beta[beta.length - 1]);
       for (int i = 0; i < beta.length - 1; ++i) {
         tdt.set(i + 1, 0, beta[i]);

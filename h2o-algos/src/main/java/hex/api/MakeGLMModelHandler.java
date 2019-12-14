@@ -36,7 +36,6 @@ public class MakeGLMModelHandler extends Handler {
     GLMModel m = new GLMModel(args.dest != null?args.dest.key():Key.make(),model._parms,null, model._ymu, Double.NaN, Double.NaN, -1);
     DataInfo dinfo = model.dinfo();
     dinfo.setPredictorTransform(TransformType.NONE);
-    // GLMOutput(DataInfo dinfo, String[] column_names, String[][] domains, String[] coefficient_names, boolean binomial) {
     m._output = new GLMOutput(model.dinfo(),model._output._names,model._output._column_types,  model._output._domains, model._output.coefficientNames(), model._output._binomial, beta);
     DKV.put(m._key, m);
     GLMModelV3 res = new GLMModelV3();

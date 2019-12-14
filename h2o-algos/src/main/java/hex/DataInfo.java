@@ -929,6 +929,25 @@ public class DataInfo extends Keyed<DataInfo> {
 
       return res;
     }
+
+    /***
+     * For HGLM, will perform multiplication of w*data part and not the random columns.
+     * @param w
+     * @param rowContent
+     * @param catOffsets
+     * @return
+     */
+    public double[] scalarProduct(double w, double[] rowContent, int catOffsets) { // multiple a row with scaler w
+      rowContent[0] = w;  // intercept term
+      for (int i = 0; i < nBins; ++i) {
+        rowContent[binIds[i]+1] = w;  // value is absolute
+      }
+
+      for (int i = 0; i < numVals.length; ++i)
+        rowContent[i+catOffsets+1] += numVals[i]*w;
+
+      return rowContent;
+    }
     public final double twoNormSq() {
       assert !_intercept;
       assert numIds == null;

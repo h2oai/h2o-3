@@ -345,6 +345,12 @@ class ModelBase(h2o_meta(Keyed)):
         return self._model_json["output"]["catoffsets"]
 
 
+    def training_model_metrics(self):
+        """
+        Return training model metrics for any model.
+        """
+        return self._model_json["output"]["training_metrics"]._metric_json
+    
     def model_performance(self, test_data=None, train=False, valid=False, xval=False):
         """
         Generate model metrics for this model on test_data.

@@ -29,11 +29,13 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "fold_column",
             "response_column",
             "ignored_columns",
+            "random_columns", // HGLM denote random columns, array
             "ignore_const_cols",
             "score_each_iteration",
             "offset_column",
             "weights_column",
             "family",
+            "rand_family", // distribution of random component, array
             "tweedie_variance_power",
             "tweedie_link_power",
             "theta", // equals to 1/r and should be > 0 and <=1, used by negative binomial
@@ -54,7 +56,11 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "objective_epsilon",
             "beta_epsilon",
             "gradient_epsilon",
-            "link",
+            "link", 
+            "rand_link", // link function for random components, array
+            "startval",  // initial starting values for fixed and randomized coefficients, double array
+            "calc_like", // HGLM, true will return likelhood function value
+            "HGLM",  // boolean: true - enabled HGLM, false - normal GLM
             "prior",
             "lambda_min_ratio",
             "beta_constraints",
@@ -80,6 +86,10 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasibinomial","ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
+    
+    @API(help = "Random Component Family array.  One for each random component. Only support gaussian for now.", values ={"[gaussian]"},
+            level = Level.critical, gridable=true)
+    public GLMParameters.Family[] rand_family;
 
     @API(help = "Tweedie variance power", level = Level.critical, gridable = true)
     public double tweedie_variance_power;
@@ -144,19 +154,28 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     @API(help="Likelihood divider in objective value computation, default is 1/nobs")
     public double obj_reg;
 
-    @API(help = "Link function.", level = Level.secondary, values = {"family_default", "identity", "logit", "log", "inverse",
-            "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
+    @API(help = "Link function.", level = Level.secondary, values = {"family_default", "identity", "logit", "log",
+            "inverse", "tweedie", "ologit"}) //"oprobit", "ologlog": will be supported.
     public GLMParameters.Link link;
+    
+    @API(help = "Link function array for random component in HGLM.", values = {"[identity]", "[family_default]"},level = Level.secondary, gridable=true)   
+    public GLMParameters.Link[] rand_link; // link function for random components
+
+    @API(help = "double array to initialize fixed and random coefficients for HGLM.", gridable=true)
+    public double[] startval;
+    
+    @API(help = "random columns indices for HGLM.")
+    public int[] random_columns;
+
+    @API(help = "if true, will return likelihood function value for HGLM.") // not gridable
+    public boolean calc_like;
 
     @API(help="Include constant term in the model", level = Level.expert)
     public boolean intercept;
 
-//    @API(help = "Tweedie variance power", level = Level.secondary)
-//    public double tweedie_variance_power;
-//
-//    @API(help = "Tweedie link power", level = Level.secondary)
-//    public double tweedie_link_power;
-
+    @API(help="If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned", level = Level.critical)
+    public boolean HGLM;
+    
     @API(help = "Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean of response does not reflect reality.", level = Level.expert)
     public double prior;
 

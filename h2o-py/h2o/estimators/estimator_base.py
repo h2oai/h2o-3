@@ -297,8 +297,12 @@ class H2OEstimator(ModelBase):
         m = model_class()
         m._id = model_id
         m._model_json = model_json
-        m._have_pojo = model_json.get('have_pojo', True)
-        m._have_mojo = model_json.get('have_mojo', True)
+        if (model_json["algo"]=="glm") and self.HGLM:
+            m._have_pojo = False
+            m._have_mojo = False
+        else:
+            m._have_pojo = model_json.get('have_pojo', True)
+            m._have_mojo = model_json.get('have_mojo', True)
         m._metrics_class = metrics_class
         m._parms = self._parms
         m._estimator_type = self._estimator_type

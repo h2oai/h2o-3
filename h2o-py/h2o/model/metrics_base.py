@@ -73,7 +73,8 @@ class MetricsBase(h2o_meta()):
             return
         metric_type = self._metric_json['__meta']['schema_type']
         types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric', 'ModelMetricsBinomialGLM',
-                       'ModelMetricsBinomialGLMGeneric']
+                       'ModelMetricsBinomialGLMGeneric', 'ModelMetricsHGLMGaussianGaussian', 
+                       'ModelMetricsHGLMGaussianGaussianGeneric']
         types_w_clustering = ['ModelMetricsClustering']
         types_w_mult = ['ModelMetricsMultinomial', 'ModelMetricsMultinomialGeneric']
         types_w_ord = ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']
@@ -117,11 +118,29 @@ class MetricsBase(h2o_meta()):
         if metric_type in types_w_mult or metric_type in ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']:
             print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
         if metric_type in types_w_glm:
-            print("Null degrees of freedom: " + str(self.null_degrees_of_freedom()))
-            print("Residual degrees of freedom: " + str(self.residual_degrees_of_freedom()))
-            print("Null deviance: " + str(self.null_deviance()))
-            print("Residual deviance: " + str(self.residual_deviance()))
-            print("AIC: " + str(self.aic()))
+            if metric_type == 'ModelMetricsHGLMGaussianGaussian': # print something for HGLM
+                print("Standard error of fixed columns: "+str(self.hglm_metric("sefe")))
+                print("Standard error of random columns: "+str(self.hglm_metric("sere")))
+                print("Coefficients for fixed columns: "+str(self.hglm_metric("fixedf")))
+                print("Coefficients for random columns: "+str(self.hglm_metric("ranef")))
+                print("Random column indices: "+str(self.hglm_metric("randc")))
+                print("Dispersion parameter of the mean model (residual variance for LMM): "+str(self.hglm_metric("varfix")))
+                print("Dispersion parameter of the random columns (variance of random columns): "+str(self.hglm_metric("varranef")))
+                print("Convergence reached for algorithm: "+str(self.hglm_metric("converge")))
+                print("Deviance degrees of freedom for mean part of the model: "+str(self.hglm_metric("dfrefe")))
+                print("Estimates and standard errors of the linear prediction in the dispersion model: "+str(self.hglm_metric("summvc1")))
+                print("Estimates and standard errors of the linear predictor for the dispersion parameter of the random columns: "+str(self.hglm_metric("summvc2")))
+                print("Index of most influential observation (-1 if none): "+str(self.hglm_metric("bad")))
+                print("H-likelihood: "+str(self.hglm_metric("hlik")))
+                print("Profile log-likelihood profiled over random columns: "+str(self.hglm_metric("pvh")))
+                print("Adjusted profile log-likelihood profiled over fixed and random effects: "+str(self.hglm_metric("pbvh")))
+                print("Conditional AIC: "+str(self.hglm_metric("caic")))
+            else:
+                print("Null degrees of freedom: " + str(self.null_degrees_of_freedom()))
+                print("Residual degrees of freedom: " + str(self.residual_degrees_of_freedom()))
+                print("Null deviance: " + str(self.null_deviance()))
+                print("Residual deviance: " + str(self.residual_deviance()))
+                print("AIC: " + str(self.aic()))
         if metric_type in types_w_bin:
             print("AUC: " + str(self.auc()))
             print("AUCPR: " + str(self.aucpr()))
@@ -219,8 +238,12 @@ class MetricsBase(h2o_meta()):
         if MetricsBase._has(self._metric_json, "residual_deviance"):
             return self._metric_json["residual_deviance"]
         return None
-
-
+    
+    def hglm_metric(self, metric_string):
+        if MetricsBase._has(self._metric_json, metric_string):
+            return self._metric_json[metric_string]
+        return None
+    
     def residual_degrees_of_freedom(self):
         """The residual DoF if the model has residual deviance, otherwise None."""
         if MetricsBase._has(self._metric_json, "residual_degrees_of_freedom"):
@@ -331,6 +354,11 @@ class H2OOrdinalModelMetrics(MetricsBase):
     def hit_ratio_table(self):
         """Retrieve the Hit Ratios."""
         return self._metric_json['hit_ratio_table']
+
+
+class H2OHGLMModelMetrics(MetricsBase):
+    def __init__(self, metric_json, on=None, algo="HGLM Gaussian Gaussian"):
+        super(H2OHGLMModelMetrics, self).__init__(metric_json, on, algo)
 
 
 class H2OBinomialModelMetrics(MetricsBase):
