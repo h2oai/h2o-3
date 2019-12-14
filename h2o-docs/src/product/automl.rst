@@ -250,7 +250,7 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
     lb = aml.leaderboard
 
     # Optionally edd extra model information to the leaderboard
-    # lb = get_leaderboard(aml, extra_columns='ALL')
+    lb = get_leaderboard(aml, extra_columns='ALL')
 
     # Print all rows (instead of default 10 rows)
     lb.head(rows=lb.nrows)
