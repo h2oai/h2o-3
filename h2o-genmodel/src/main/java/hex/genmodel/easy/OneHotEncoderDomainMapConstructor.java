@@ -22,7 +22,7 @@ public class OneHotEncoderDomainMapConstructor extends DomainMapConstructor {
       String[] colDomainValues = domainValues[i];
       int targetOffsetIndex = _columnNameToIndex.get(columnNames[i]);
       if (colDomainValues != null) {
-        domainMap.put(i, new OneHotEncoder(columnNames[i], targetOffsetIndex, colDomainValues));
+        domainMap.put(targetOffsetIndex, new OneHotEncoder(columnNames[i], targetOffsetIndex, colDomainValues));
       }
     }
     return domainMap;

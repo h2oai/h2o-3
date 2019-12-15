@@ -1,6 +1,7 @@
 package hex.tree.gbm;
 
 import hex.*;
+import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
@@ -10,11 +11,13 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
+import hex.genmodel.tools.PredictCsv;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import water.*;
@@ -23,12 +26,14 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
+import water.parser.ParseSetup;
 import water.util.*;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URI;
 import java.util.*;
 
 import static hex.genmodel.utils.DistributionFamily.*;
@@ -41,6 +46,9 @@ public class GBMTest extends TestUtil {
   @Rule
   public transient ExpectedException expectedException = ExpectedException.none();
 
+  @Rule
+  public transient TemporaryFolder temporaryFolder = new TemporaryFolder();
+  
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
 
   @Parameterized.Parameters(name = "{index}: gbm({0})")
@@ -115,18 +123,19 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void testOneHotExplicitWithPOJO() {
+  @Test public void testOneHotExplicitWithPOJO() throws Exception {
     try {
       Scope.enter();
       final String response = "CAPSULE";
-      Frame fr = parse_test_file("./smalldata/logreg/prostate.csv")
+      final String testFile = "./smalldata/logreg/prostate.csv";
+      Frame fr = parse_test_file(testFile)
               .toCategoricalCol("RACE")
+              .toCategoricalCol("GLEASON")
               .toCategoricalCol(response);
       fr.remove("ID").remove();
       fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
       Scope.track(fr);
       DKV.put(fr);
-
       
       GBMModel.GBMParameters parms = makeGBMParameters();
       parms._train = fr._key;
@@ -144,6 +153,28 @@ public class GBMTest extends TestUtil {
       // Build a POJO & MOJO, validate same results
       Assert.assertTrue(gbm.testJavaScoring(fr, scored,1e-15));
 
+      File pojoScoringOutput = temporaryFolder.newFile(gbm._key + "_scored.csv");
+
+      String modelName = JCodeGen.toJavaId(gbm._key.toString());
+      String pojoSource = gbm.toJava(false, true);
+      Class pojoClass = JCodeGen.compile(modelName, pojoSource);
+
+      PredictCsv predictor = PredictCsv.make(
+              new String[]{
+              "--embedded",
+              "--input", TestUtil.makeNfsFileVec(testFile).getPath(),
+              "--output", pojoScoringOutput.getAbsolutePath(),
+              "--decimal"}, (GenModel) pojoClass.newInstance());
+      predictor.run();
+      Frame scoredWithMojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+        @Override
+        public ParseSetup transformSetup(ParseSetup guessedSetup) {
+          return guessedSetup.setCheckHeader(1);
+        }
+      }));
+
+      scoredWithMojo.setNames(scored.names());
+      assertFrameEquals(scored, scoredWithMojo, 1e-8);
     } finally {
       Scope.exit();
     }
