@@ -91,10 +91,11 @@ public class EventLog extends Keyed<EventLog> {
   }
 
   public TwoDimTable toTwoDimTable(String tableHeader) {
-    TwoDimTable table = EventLogEntry.makeTwoDimTable(tableHeader, _events.length);
+    final EventLogEntry[] events = _events.clone();
+    TwoDimTable table = EventLogEntry.makeTwoDimTable(tableHeader, events.length);
 
-    for (int i = 0; i < _events.length; i++)
-      _events[i].addTwoDimTableRow(table, i);
+    for (int i = 0; i < events.length; i++)
+      events[i].addTwoDimTableRow(table, i);
     return table;
   }
 
