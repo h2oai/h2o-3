@@ -1355,8 +1355,6 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
 #' Retrieve HGLM ModelMetrics
 #'
 #' @param object an H2OModel object or H2OModelMetrics.
-#'
-#' }
 #' @export
 h2o.HGLMMetrics <- function(object) {
     if( is(object, "H2OModel") ) {
