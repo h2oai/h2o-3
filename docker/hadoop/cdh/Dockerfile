@@ -51,7 +51,7 @@ RUN apt-key add archive.key && \
     add-apt-repository -y ppa:deadsnakes && \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
-        mysql-server libmysql-java libmysqlclient-dev \
+        postgresql libpostgresql-jdbc-java \
         hadoop-conf-pseudo python-pip python-dev python-virtualenv \
         sudo unzip html2text slapd ldap-utils libkrb5-dev \
         vim
@@ -89,11 +89,9 @@ RUN chmod 700 /usr/sbin/startup.sh && \
     chown -R hive:hive /opt/hive-scripts && \
     chmod +x /usr/sbin/install_hive.sh && \
     chmod +x /usr/sbin/install_ldap.sh && \
-    chmod +x /usr/sbin/mysql_configure.sh && \
     sync && \
     /usr/sbin/install_hive.sh && \
-    /usr/sbin/mysql_configure.sh && \
-    ln -sf /usr/share/java/mysql-connector-java.jar /usr/lib/hive/lib/mysql-connector-java.jar
+    ln -sf /usr/share/java/postgresql-jdbc4.jar /usr/lib/hive/lib/postgresql-jdbc4.jar
 
 # Copy hive configs
 COPY ${PATH_PREFIX}/../common/conf-hive/ /etc/${HIVE_PACKAGE}/conf/

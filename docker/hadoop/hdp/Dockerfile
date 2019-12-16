@@ -34,7 +34,7 @@ RUN \
     apt-get update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -y \
         hadoop-conf-pseudo python-pip python-dev python-virtualenv \
-        mysql-server libmysql-java libmysqlclient-dev \
+        postgresql libpostgresql-jdbc-java \
         sudo unzip html2text slapd ldap-utils libkrb5-dev \
         vim
 
