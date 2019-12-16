@@ -28,12 +28,6 @@ check.verify.parameters.slot <- function() {
     print(wss.org)
     print(wss.cpy)
     expect_equal(wss.org, wss.cpy)
-
-    Log.info("check that we can replace the old model, and the model_id parameter is mapped from Key<Model> to character properly")
-
-    iris.km.cpy <- do.call("h2o.kmeans", parameters_unmunged)
-    print(h2o.ls()[,1])
-    expect_equal(length(h2o.ls()[,1]), 5)
     
 }
 

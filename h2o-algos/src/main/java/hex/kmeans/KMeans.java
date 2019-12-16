@@ -416,8 +416,8 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         // because scoring is based on calculated centroids and does not preserve the constraints
         // There is a JIRA to explore this part of code: https://0xdata.atlassian.net/browse/PUBDEV-7097
         if(!constrained) {
-          model.score(_train).delete();
-          model._output._training_metrics = ModelMetrics.getFromDKV(model, _train);
+          model.score(_parms.train()).delete();
+          model._output._training_metrics = ModelMetrics.getFromDKV(model,_parms.train());
         }
 
         model.update(_job); // Update model in K/V store
