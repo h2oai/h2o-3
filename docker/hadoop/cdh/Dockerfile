@@ -71,7 +71,7 @@ RUN \
   /usr/bin/activate_java_8
 
 # Copy hadoop configs
-COPY ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}/
+COPY ${PATH_PREFIX}/../common/conf/ ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}/
 
 # Initialize namenode
 RUN service hadoop-hdfs-namenode init
