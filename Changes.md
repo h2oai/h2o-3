@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Yu (3.28.0.1) - 12/13/2019
+### Yu (3.28.0.1) - 12/16/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.html</a>
 
@@ -19,6 +19,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6998'>PUBDEV-6998</a>] - In AutoML, the `project_name` is now restricted to the same constraints as h2o frames. 
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7064'>PUBDEV-7064</a>] - In GBM, fixed an NPE that occurred when sample rate < 1.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7065'>PUBDEV-7065</a>] - The AutoML backend no longer accepts `ignored_columns` that contain one of response column, fold column, or weights column.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7133'>PUBDEV-7133</a>] - XGBoost MOJO now works correctly in Spark.
@@ -34,7 +36,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-5351'>PUBDEV-5351</a>] - Extended MOJO support for PCA
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6509'>PUBDEV-6509</a>] - We are very excited to add HGLM (Hierarchical GLM) to our open source offering. As this is the first release, we only implemented the Gaussian family. However, stay tuned or better yet, tell us what distributions you want to see next. Try it out and send us your feedback! (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6509'>PUBDEV-6509</a>] - We are very excited to add HGLM (Hierarchical GLM) to our open source offering. As this is the first release, we only implemented the Gaussian family. However, stay tuned or better yet, tell us what distributions you want to see next. Try it out and send us your feedback!
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6513'>PUBDEV-6513</a>] - MOJO Import is now available for XGBoost.
 </li>
@@ -88,8 +90,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6195'>PUBDEV-6195</a>] - Added a warning message to AutoML if the leaderboard is empty due to too little time for training.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6542'>PUBDEV-6542</a>] - Improved leak detection in JUnit tests.
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6612'>PUBDEV-6612</a>] - In AutoML, blending frame details were added to event_log.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6754'>PUBDEV-6754</a>] - If early stopping is enabled, GBM can reset the ntree value. In these cases, added an `ntrees_actual` (Python)/`get_ntrees_actual` (R) method to provide the actual ntree value (whether CV is enabled or not) rather than the original ntree value set by the user before building a model. 
@@ -107,6 +107,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7066'>PUBDEV-7066</a>] - The `mae`, `rmsle`, and `aucpr` stopping metrics are now available in Grid Search.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7073'>PUBDEV-7073</a>] - When creating a hex.genmodel.easy.EasyPredictModelWrapper with contributions enabled, H2O now uses slf4j in the library, giving more control to users about when/where warnings will be printed.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7148'>PUBDEV-7148</a>] - Moved the order of AUCPR in the list of values for `stopping_metric` to right after AUC. (STILL OPEN) 
 </li>
 </ul>
 
@@ -191,7 +193,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 <li>aucpr is now an available stopping metric and sort metric for AutoML.</li>
 <li>monotone_constraints can now be specified in AutoML.</li>
 <li>Added modeling_plan option to list of AutoML parameters.</li>
-</ul> (STILL OPEN)
+</ul>
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7142'>PUBDEV-7142</a>] - MOJOs are now available for PCA.
 </li>
@@ -202,9 +204,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7146'>PUBDEV-7146</a>] - Added Java 13 to list of supported Java versions.
 </li>
 </ul>
-
-
-
 
 ### Yau (3.26.0.11) - 12/05/2019
 
