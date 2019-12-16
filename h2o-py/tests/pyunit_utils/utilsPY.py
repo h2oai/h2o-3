@@ -3573,11 +3573,11 @@ def compare_frames_local(f1, f2, prob=0.5, tol=1e-6, returnResult=False):
             if returnResult:
                 result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
                 if not(result):
-                    return False;
+                    return False
             else:
                 result = compare_frames_local_onecolumn_NA_enum(f1[colInd], f2[colInd], prob=prob, tol=tol, returnResult=returnResult)
                 if not(result):
-                    return False;
+                    return False
         elif (typeDict[frameNames[colInd]]==u'string'):
             if returnResult:
                 result =  compare_frames_local_onecolumn_NA_string(f1[colInd], f2[colInd], prob=prob, returnResult=returnResult)
