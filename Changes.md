@@ -29,8 +29,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7137'>PUBDEV-7137</a>] - Fixed an NPE at hex.tree.TreeHandler.fillNodeCategoricalSplitDescription(TreeHandler.java:272)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7150'>PUBDEV-7150</a>] - Fixed an AIOOB error that occurred in AutoML when fetching the eventLog. 
-</li>
 </ul>
 
 <h4>New Feature</h4>
