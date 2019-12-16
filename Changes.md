@@ -108,7 +108,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7073'>PUBDEV-7073</a>] - When creating a hex.genmodel.easy.EasyPredictModelWrapper with contributions enabled, H2O now uses slf4j in the library, giving more control to users about when/where warnings will be printed.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7148'>PUBDEV-7148</a>] - Moved the order of AUCPR in the list of values for `stopping_metric` to right after AUC. (STILL OPEN) 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7148'>PUBDEV-7148</a>] - Moved the order of AUCPR in the list of values for `stopping_metric` to right after AUC.
 </li>
 </ul>
 
