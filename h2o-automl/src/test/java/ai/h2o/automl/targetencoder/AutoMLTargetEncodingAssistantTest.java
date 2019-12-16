@@ -2,20 +2,18 @@ package ai.h2o.automl.targetencoder;
 
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.targetencoder.strategy.FixedTEParamsStrategy;
-import ai.h2o.automl.targetencoder.strategy.GridBasedTEParamsSelectionStrategy;
 import ai.h2o.automl.targetencoder.strategy.HPsSelectionStrategy;
-import ai.h2o.targetencoding.BlendingParams;
-import ai.h2o.targetencoding.TargetEncoder;
+import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
 import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import static ai.h2o.automl.targetencoder.AutoMLBenchmarkHelper.getPreparedTitanicFrame;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
 
@@ -48,7 +46,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
     autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
     ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, 1234);
-    modelBuilder.init(false);
+    modelBuilder.findBestTEParams(false);
 
     AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(train,
             null,
@@ -65,9 +63,9 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
 
     Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
 
-    teAssistantSpy.init();
+    teAssistantSpy.findBestTEParams();
 
-    teAssistantSpy.performAutoTargetEncoding();
+    teAssistantSpy.applyTE();
 
     assertTrue(modelBuilder.train().vec("home.dest_te") != null);
 
@@ -104,7 +102,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
     autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
     ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumnName, 1234);
-    modelBuilder.init(false);
+    modelBuilder.findBestTEParams(false);
 
     AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(fr,
             null,
@@ -121,9 +119,9 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
 
     Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
 
-    teAssistantSpy.init();
+    teAssistantSpy.findBestTEParams();
 
-    teAssistantSpy.performAutoTargetEncoding();
+    teAssistantSpy.applyTE();
 
     assertTrue(modelBuilder.train().vec("home.dest_te") != null);
 
@@ -164,7 +162,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
     autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
     ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumnName, 1234);
-    modelBuilder.init(false);
+    modelBuilder.findBestTEParams(false);
 
     AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(fr,
             null,
@@ -181,9 +179,9 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
 
     Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
 
-    teAssistantSpy.init();
+    teAssistantSpy.findBestTEParams();
 
-    teAssistantSpy.performAutoTargetEncoding();
+    teAssistantSpy.applyTE();
 
     assertTrue(modelBuilder.train().vec("home.dest_te") != null);
 
@@ -225,7 +223,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
     autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
     ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumnName, 1234);
-    modelBuilder.init(false);
+    modelBuilder.findBestTEParams(false);
 
     AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(fr,
             null,
@@ -242,9 +240,9 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
 
     Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
 
-    teAssistantSpy.init();
+    teAssistantSpy.findBestTEParams();
 
-    teAssistantSpy.performAutoTargetEncoding();
+    teAssistantSpy.applyTE();
 
     assertTrue(modelBuilder.train().vec("home.dest_te") != null);
 
@@ -258,7 +256,7 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
 
   // Fixed selection strategy
   @Test
-  public void performAutoTargetEncoding_validation_frame_fixed_application_strategy() throws AutoMLTargetEncodingAssistant.NoColumnsToEncodeException {
+  public void performAutoTargetEncoding_validation_frame_fixed_application_strategy() throws AutoMLTargetEncoderAssistant.NoColumnsToEncodeException {
     String responseColumnName = "survived";
     Frame fr = getPreparedTitanicFrame(responseColumnName);
 
@@ -287,23 +285,22 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
 
     // Fixed selection strategy
     autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.Fixed;
-    TargetEncodingParams targetEncodingParams = new TargetEncodingParams(new BlendingParams(5, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.01);
+    TargetEncoderModel.TargetEncoderParameters targetEncodingParams = TargetEncodingTestFixtures.randomTEParams();
     autoMLBuildSpec.te_spec.fixedTEParams = targetEncodingParams;
 
-    AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(fr,
+    AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(fr,
             null,
             null,
             autoMLBuildSpec,
             modelBuilder);
 
-    teAssistant.init();
+    teAssistant.findBestTEParams();
 
     assertTrue(teAssistant.getTeParamsSelectionStrategy() instanceof FixedTEParamsStrategy);
 
-    TargetEncodingParams bestParams = teAssistant.getTeParamsSelectionStrategy().getBestParams(null);
-    assertArrayEquals(thresholdTEApplicationStrategy.getColumnsToEncode(), bestParams.getColumnsToEncode());
-    assertEquals(targetEncodingParams.getBlendingParams().getK(), bestParams.getBlendingParams().getK(), 1e-5);
-    assertEquals(targetEncodingParams.getBlendingParams().getF(), bestParams.getBlendingParams().getF(), 1e-5);
+    TargetEncoderModel.TargetEncoderParameters bestParams = teAssistant.getTeParamsSelectionStrategy().getBestParams(null);
+    assertEquals(targetEncodingParams._k, bestParams._k, 1e-5);
+    assertEquals(targetEncodingParams._f, bestParams._f, 1e-5);
 
     modelBuilder.train().delete();
     fr.delete();

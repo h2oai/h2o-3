@@ -3,13 +3,11 @@ package ai.h2o.automl.targetencoder;
 import ai.h2o.automl.targetencoder.strategy.ModelValidationMode;
 import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderFrameHelper;
+import ai.h2o.targetencoding.TargetEncoderModel;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.splitframe.ShuffleSplitFrame;
-import water.DKV;
-import water.Iced;
-import water.Key;
-import water.Keyed;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
@@ -18,6 +16,7 @@ import water.util.TwoDimTable;
 import java.util.Map;
 
 import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.KFold;
+import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.concat;
 
@@ -27,24 +26,32 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
 
   }
 
-  public double evaluateForCVMode(TargetEncodingParams teParams, ModelBuilder clonedModelBuilder, long seedForFoldColumn) {
+  public double evaluate(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder modelBuilder, ModelValidationMode modelValidationMode, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {
+    switch (modelValidationMode) {
+      case CV:
+        assert leaderboard == null : "Leaderboard frame should not be provided in case of CV evaluations in AutoML";
+        return evaluateForCVMode(teParams, modelBuilder, columnNamesToEncode, seedForFoldColumn);
+      case VALIDATION_FRAME:
+      default:
+        return evaluateForValidationFrameMode(teParams, modelBuilder, leaderboard, columnNamesToEncode, seedForFoldColumn);
+    }
+  }
+
+  public double evaluateForCVMode(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder clonedModelBuilder, String[] columnNamesToEncode, long seedForFoldColumn) {
 
     double score = 0;
-    if (teParams.getColumnsToEncode().length != 0) {
+    if (columnNamesToEncode.length != 0) {
       Map<String, Frame> encodingMap = null;
       Frame trainEncoded = null;
-      Key<Frame> trainPreviousKey = null;
-      Frame originalTrainingData = clonedModelBuilder.train();
 
-      Frame trainCopy = originalTrainingData.deepCopy(Key.make("train_frame_copy_for_evaluation" + Key.make()).toString());
-      DKV.put(trainCopy);
+      Frame trainCopy = clonedModelBuilder.train();
 
       String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
       try {
         String responseColumn = clonedModelBuilder._parms._response_column;
-        String[] teColumnsToExclude = teParams.getColumnsToEncode();
-        TargetEncoder tec = new TargetEncoder(teParams.getColumnsToEncode());
-        TargetEncoder.DataLeakageHandlingStrategy holdoutType = teParams.getHoldoutType();
+        String[] teColumnsToExclude = columnNamesToEncode;
+        TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
+        TargetEncoder.DataLeakageHandlingStrategy holdoutType = teParams._data_leakage_handling;
 
         String foldColumnForTE = null;
 
@@ -59,7 +66,8 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
             //TODO consider optimising this as encoding map will be the same for whole runs as long as we only use KFold scenario with same seed for fold assignments
             encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
 
-            trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, teParams.getBlendingParams(), seedForFoldColumn);
+            trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams._blending, teParams._noise_level, true, teParams.getBlendingParameters(), seedForFoldColumn);
+            Scope.track(trainEncoded);
             break;
           case LeaveOneOut:
           case None:
@@ -71,11 +79,6 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
         clonedModelBuilder._parms._ignored_columns = concat(concat(originalIgnoredColumns, teColumnsToExclude), new String[]{foldColumnForTE});
 
         clonedModelBuilder.setTrain(trainEncoded);
-
-        trainPreviousKey = clonedModelBuilder._parms._train;
-        clonedModelBuilder._parms.setTrain(trainEncoded._key);
-        trainPreviousKey.get().delete();
-
         score += scoreCV(clonedModelBuilder);
       } catch (Exception ex) {
         throw ex;
@@ -83,8 +86,6 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
         //Setting back original data
         clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns;
 
-        trainCopy.delete();
-        if (trainEncoded != null) trainEncoded.delete();
         if (encodingMap == null) {
           Log.debug("Illegal state. encodingMap == null.");
         } else {
@@ -94,14 +95,10 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
     } else {
       score += scoreCV(clonedModelBuilder);
     }
-    //Cleanup for cloned builder
-    clonedModelBuilder.train().delete();
-    if (clonedModelBuilder._parms.train() != null) clonedModelBuilder._parms.train().delete();
-
     return score;
   }
 
-  private double scoreCV(ModelBuilder modelBuilder) {
+  private double scoreCV(ModelBuilder modelBuilder) { // TODO move it in when no need to call scoreCV twice
     Model retrievedModel = null;
     Keyed model = modelBuilder.trainModel().get();
     retrievedModel = DKV.getGet(model._key);
@@ -125,41 +122,26 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
     return mmb.auc();
   }
 
-  public double evaluateForValidationFrameMode(TargetEncodingParams teParams, ModelBuilder clonedModelBuilder, Frame leaderboard, long seedForFoldColumn) {
+  public double evaluateForValidationFrameMode(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder clonedModelBuilder, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {
     double score = 0;
-    if (teParams.getColumnsToEncode().length != 0) {
+    if (columnNamesToEncode.length != 0) {
       Map<String, Frame> encodingMap = null;
-      Frame trainEncoded = null;
-      Frame validEncoded = null;
-      Frame leaderBoardEncoded = null;
+      Frame trainEncoded, validEncoded, leaderBoardEncoded = null;
 
-      // As original modelBuilder could be set up in a different way... let say nfolds = 0
-      // we need to take into consideration the fact that training frame is going to be different every time as we split validation and leaderboard from it
-      Frame originalTrainingData = clonedModelBuilder._parms.train();
-      Frame originalValidationData = clonedModelBuilder._parms.valid();
-
-      Frame trainCopy = originalTrainingData.deepCopy(Key.make("train_frame_copy_for_evaluation" + Key.make()).toString());
-      DKV.put(trainCopy);
-
-      Frame validCopy = originalValidationData.deepCopy(Key.make("validation_frame_copy_for_evaluation" + Key.make()).toString());
-      DKV.put(validCopy);
-
-      Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_evaluation" + Key.make()).toString());
-      DKV.put(leaderboardCopy);
+      Frame trainCopy = clonedModelBuilder.train();
+      Frame validCopy = clonedModelBuilder.valid();
 
       String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
       String foldColumnForTE = null;
-      Key<Frame> trainPreviousKey = null;
-      Key<Frame> validPreviosKey = null;
       try {
         // We need to apply TE taking into account the way how we train and validate our models.
         // With nfolds model will assign fold column to the data but we need those folds in TE before that. So we need to generate fold column themselves and then provide it to the model.
         // But what if we already have folds from the model search level provided by user? Is it better to use different fold assignments for TE? Maybe yes - it is similar to "n-times m-folds cross-validation" idea.
 
         String responseColumn = clonedModelBuilder._parms._response_column;
-        String[] teColumnsToExclude = teParams.getColumnsToEncode();
-        TargetEncoder tec = new TargetEncoder(teParams.getColumnsToEncode());
-        TargetEncoder.DataLeakageHandlingStrategy holdoutType = teParams.getHoldoutType();
+        String[] teColumnsToExclude = columnNamesToEncode;
+        TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
+        TargetEncoder.DataLeakageHandlingStrategy holdoutType = teParams._data_leakage_handling;
 
         if (holdoutType == KFold) {
           foldColumnForTE = clonedModelBuilder._job._key.toString() + "_fold"; //TODO quite long but feels unique though
@@ -168,20 +150,18 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
           int nfolds = 5;
           addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
           // We might want to fine tune selection of the te column in Grid search as well ( even after TEApplicationStrategy)
-        }
 
-        if (holdoutType == KFold) {
           teColumnsToExclude = concat(teColumnsToExclude, new String[]{foldColumnForTE});
           encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
-          trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, teParams.getBlendingParams(), seedForFoldColumn);
-          validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnForTE, teParams.isWithBlendedAvg(), 0.0, true, teParams.getBlendingParams(), seedForFoldColumn);
-          leaderBoardEncoded = tec.applyTargetEncoding(leaderboardCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnForTE, teParams.isWithBlendedAvg(), 0.0, true, teParams.getBlendingParams(), seedForFoldColumn);
-        } else if (holdoutType == TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut) {
+          trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams._blending, teParams._noise_level, true, teParams.getBlendingParameters(), seedForFoldColumn);
+          validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnForTE, teParams._blending, 0.0, true, teParams.getBlendingParameters(), seedForFoldColumn);
+          leaderBoardEncoded = tec.applyTargetEncoding(leaderboard, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnForTE, teParams._blending, 0.0, true, teParams.getBlendingParameters(), seedForFoldColumn);
+        } else if (holdoutType == LeaveOneOut) {
           encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, null, true);
 
-          trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, teParams.isWithBlendedAvg(), teParams.getNoiseLevel(), true, teParams.getBlendingParams(), seedForFoldColumn);
-          validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, teParams.getBlendingParams(),seedForFoldColumn);
-          leaderBoardEncoded = tec.applyTargetEncoding(leaderboardCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, teParams.getBlendingParams(), seedForFoldColumn);
+          trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, LeaveOneOut, teParams._blending, teParams._noise_level, true, teParams.getBlendingParameters(), seedForFoldColumn);
+          validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams._blending, 0.0, true, teParams.getBlendingParameters(),seedForFoldColumn);
+          leaderBoardEncoded = tec.applyTargetEncoding(leaderboard, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams._blending, 0.0, true, teParams.getBlendingParameters(), seedForFoldColumn);
 
         } else { // Holdout None case might be always a looser as we use less data for training. So it is an unfair competition.
           // It would be more efficient to split it once before all the evaluations.
@@ -191,12 +171,14 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
           Frame holdoutSplitForNoneCase = trainAndHoldoutSplits[1];
           encodingMap = tec.prepareEncodingMap(holdoutSplitForNoneCase, responseColumn, null, true);
           // Note: no need to add noise for training
-          trainEncoded = tec.applyTargetEncoding(trainSplitForNoneCase, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, teParams.getBlendingParams(), seedForFoldColumn);
-          validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, teParams.getBlendingParams(), seedForFoldColumn);
-          leaderBoardEncoded = tec.applyTargetEncoding(leaderboardCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams.isWithBlendedAvg(), 0.0, true, teParams.getBlendingParams(), seedForFoldColumn);
+          trainEncoded = tec.applyTargetEncoding(trainSplitForNoneCase, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams._blending, 0.0, true, teParams.getBlendingParameters(), seedForFoldColumn);
+          validEncoded = tec.applyTargetEncoding(validCopy, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams._blending, 0.0, true, teParams.getBlendingParameters(), seedForFoldColumn);
+          leaderBoardEncoded = tec.applyTargetEncoding(leaderboard, responseColumn, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, teParams._blending, 0.0, true, teParams.getBlendingParameters(), seedForFoldColumn);
           trainSplitForNoneCase.delete();
           holdoutSplitForNoneCase.delete();
         }
+
+        Scope.track(trainEncoded, validEncoded, leaderBoardEncoded);
 
 
         clonedModelBuilder._parms._ignored_columns = concat(originalIgnoredColumns, teColumnsToExclude);
@@ -206,11 +188,6 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
         clonedModelBuilder.setTrain(trainEncoded);
         clonedModelBuilder.setValid(validEncoded);
 
-        //As we are replacing with encoded splits we need to keep track of the previous keys
-        trainPreviousKey = clonedModelBuilder._parms._train;
-        validPreviosKey = clonedModelBuilder._parms._valid;
-        clonedModelBuilder._parms.setTrain(trainEncoded._key);
-        clonedModelBuilder._parms.setValid(validEncoded._key);
         try {
           score += scoreOnTest(clonedModelBuilder, leaderBoardEncoded);
         } catch (H2OIllegalArgumentException exception) {
@@ -222,48 +199,19 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
         throw ex;
 
       } finally {
-        //Removing unused splits
-        trainPreviousKey.get().delete();
-        validPreviosKey.get().delete();
 
         clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns;
-        if (trainEncoded != null) trainEncoded.delete();
-        if (validEncoded != null) validEncoded.delete();
-        if (leaderBoardEncoded != null) leaderBoardEncoded.delete();
 
-        validCopy.delete();
-        leaderboardCopy.delete();
-        trainCopy.delete();
         if (encodingMap == null) {
           Log.debug("Illegal state. encodingMap == null.");
         } else {
           TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
         }
       }
-    } else {
-      Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_evaluation" + Key.make()).toString()); // TODO consider to avoid copy
-      DKV.put(leaderboardCopy);
+    } else { //TODO handle this case somewhere before
       score += scoreOnTest(clonedModelBuilder, leaderboard);
-      leaderboardCopy.delete();
     }
-    //Cleanup for cloned builder
-    clonedModelBuilder.train().delete();
-    clonedModelBuilder.valid().delete();
-    if(clonedModelBuilder._parms.train()!=null) clonedModelBuilder._parms.train().delete();
-    if(clonedModelBuilder._parms.valid()!=null) clonedModelBuilder._parms.valid().delete();
     return score;
-  }
-
-  public double evaluate(TargetEncodingParams teParams, ModelBuilder modelBuilder, ModelValidationMode modelValidationMode, Frame leaderboard, long seedForFoldColumn) {
-
-    switch (modelValidationMode) {
-      case CV:
-        assert leaderboard == null : "Leaderboard frame should not be provided in case of CV evaluations in AutoML";
-        return evaluateForCVMode(teParams, modelBuilder, seedForFoldColumn);
-      case VALIDATION_FRAME:
-      default:
-        return evaluateForValidationFrameMode(teParams, modelBuilder, leaderboard, seedForFoldColumn);
-    }
   }
 
   public static void printOutFrameAsTable(Frame fr) {

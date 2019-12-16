@@ -1,19 +1,18 @@
 package ai.h2o.automl.targetencoder.strategy;
 
-
-import ai.h2o.automl.targetencoder.TargetEncodingParams;
+import ai.h2o.targetencoding.TargetEncoderModel;
 import hex.ModelBuilder;
 
 public class FixedTEParamsStrategy extends TEParamsSelectionStrategy {
 
-  private TargetEncodingParams _params;
+  private TargetEncoderModel.TargetEncoderParameters _teParams;
 
-  public FixedTEParamsStrategy(TargetEncodingParams params) {
-    this._params = params;
+  public FixedTEParamsStrategy(TargetEncoderModel.TargetEncoderParameters params) {
+    _teParams = params;
   }
 
   @Override
-  public TargetEncodingParams getBestParams(ModelBuilder modelBuilder) {
-    return this._params;
+  public TargetEncoderModel.TargetEncoderParameters getBestParams(ModelBuilder modelBuilder) {
+    return _teParams;
   }
 }

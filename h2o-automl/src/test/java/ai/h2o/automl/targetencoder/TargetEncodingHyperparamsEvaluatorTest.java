@@ -1,9 +1,9 @@
 package ai.h2o.automl.targetencoder;
 
-import ai.h2o.automl.targetencoder.strategy.GridSearchTEParamsSelectionStrategy;
 import ai.h2o.automl.targetencoder.strategy.ModelValidationMode;
-import ai.h2o.automl.targetencoder.strategy.TEParamsSelectionStrategy;
 import ai.h2o.targetencoding.TargetEncoder;
+import ai.h2o.targetencoding.TargetEncoderModel;
+import ai.h2o.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
 import hex.Model;
@@ -13,12 +13,12 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 
-import java.util.HashMap;
 import java.util.Random;
 
 import static ai.h2o.automl.targetencoder.TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture;
 import static ai.h2o.automl.targetencoder.TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
 
@@ -58,63 +58,86 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
   // We test here that we can reuse model builder by cloning it.
   // Also we check that two evaluations with the same TE params return same result.
   @Test
-  public void evaluateMethodWorksWithModelBuilder() {
-    Frame fr = null;
-    Frame train = null;
-    Frame valid = null;
-    Frame leaderboard = null;
+  public void evaluate_method_works_with_cloned_modelBuilder_validation_case() {
+
     ModelBuilder modelBuilder = null;
+    Scope.enter();
     try {
-      fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(fr);
       String responseColumnName = "survived";
 
       asFactor(fr, responseColumnName);
 
       Frame[] splits = AutoMLBenchmarkHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, 2345);
-      train = splits[0];
-      valid = splits[1];
-      leaderboard = splits[2];
+      Frame train = splits[0];
+      Frame valid = splits[1];
+      Frame leaderboard = splits[2];
+      Scope.track(train, valid, leaderboard);
 
       TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(train,4, new String[]{responseColumnName});
       String[] columnsToEncode = strategy.getColumnsToEncode();
 
       TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
 
-      TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams(columnsToEncode);
+      TargetEncoderModel.TargetEncoderParameters randomTEParams = TargetEncodingTestFixtures.randomTEParams(1234);
       long builderSeed = 3456;
       modelBuilder = modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, builderSeed);
 
-
-      modelBuilder.init(false); //verifying that we can call init and then modify builder in evaluator
-      ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
+      modelBuilder.init(false); //verifying that we can call findBestTEParams and then modify builder in evaluator
 
       int seedForFoldColumn = 2345;
-      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, seedForFoldColumn);
 
+      // Copying frames outside of an evaluation
+      Frame trainCopy = train.deepCopy(Key.make("train_frame_copy_for_mb_validation_case" + Key.make()).toString());
+      DKV.put(trainCopy);
+      modelBuilder.setTrain(trainCopy);
+
+      Frame validCopy = valid.deepCopy(Key.make("valid_frame_copy_for_mb_validation_case" + Key.make()).toString());
+      DKV.put(validCopy);
+      modelBuilder.setValid(validCopy);
+
+      Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_mb_validation_case" + Key.make()).toString());
+      DKV.put(leaderboardCopy);
+      Scope.track(trainCopy, validCopy, leaderboardCopy);
+
+      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboardCopy, columnsToEncode, seedForFoldColumn);
+
+      ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
       clonedModelBuilder.init(false);
 
+      Frame trainCopy2 = train.deepCopy(Key.make("train_frame_copy_for_mb_validation_case" + Key.make()).toString());
+      DKV.put(trainCopy2);
+      clonedModelBuilder.setTrain(trainCopy2);
+
+      Frame validCopy2 = valid.deepCopy(Key.make("valid_frame_copy_for_mb_validation_case" + Key.make()).toString());
+      DKV.put(validCopy2);
+      clonedModelBuilder.setValid(validCopy2);
+
+      Frame leaderboardCopy2 = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_mb_validation_case" + Key.make()).toString());
+      DKV.put(leaderboardCopy2);
+      Scope.track(trainCopy2, validCopy2, leaderboardCopy2);
+
       // checking that we can clone/reuse modelBuilder
-      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboard, seedForFoldColumn);
+      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboardCopy2, columnsToEncode, seedForFoldColumn);
 
       assertTrue(isBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train()));
       assertTrue(auc > 0);
       assertEquals(auc, auc2, 1e-5);
     } finally {
-      if(fr!=null) fr.delete();
-      if(train!=null) train.delete();
-      if(leaderboard!=null) leaderboard.delete();
+      Scope.exit();
     }
   }
 
   @Test
-  public void evaluateMethodWorksWithModelBuilder_CV_case() {
-    Frame train = null;
+  public void evaluate_method_works_with_cloned_modelBuilder_CV_case() {
     Frame leaderboard = null;
     ModelBuilder modelBuilder = null;
+    Scope.enter();
     try {
-      train = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Frame train = parse_test_file("./smalldata/gbm_test/titanic.csv");
+      Scope.track(train);
       String responseColumnName = "survived";
-
       asFactor(train, responseColumnName);
 
       leaderboard = null;
@@ -124,43 +147,49 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
 
       TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
 
-      TargetEncodingParams randomTEParams = TargetEncodingTestFixtures.randomTEParams(columnsToEncode, TargetEncoder.DataLeakageHandlingStrategy.KFold, 1234);
+      TargetEncoderModel.TargetEncoderParameters randomTEParams = TargetEncodingTestFixtures.randomTEParams(TargetEncoder.DataLeakageHandlingStrategy.KFold, 1234);
       long builderSeed = 3456;
       modelBuilder = modelBuilderGBMWithCVFixture(train,responseColumnName, builderSeed);
 
 
-      modelBuilder.init(false); //verifying that we can call init and then modify builder in evaluator
-      ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
+      modelBuilder.init(false); //verifying that we can call findBestTEParams and then modify builder in evaluator
 
       int seedForFoldColumn = 2345;
-      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.CV, leaderboard, seedForFoldColumn);
 
+      // Model builder should contain copies of original frames and we should not care about cleanup inside evaluator
+      Frame trainCopy = train.deepCopy(Key.make("train_frame_copy_for_mb" + Key.make()).toString());
+      DKV.put(trainCopy);
+      Scope.track(trainCopy);
+      modelBuilder.setTrain(trainCopy);
+
+      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
+
+      ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
       clonedModelBuilder.init(false);
 
+      Frame trainCopy2 = train.deepCopy(Key.make("train_frame_copy_for_mb_2" + Key.make()).toString());
+      DKV.put(trainCopy2);
+      Scope.track(trainCopy2);
+      clonedModelBuilder.setTrain(trainCopy2);
+
       // checking that we can clone/reuse modelBuilder
-      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.CV, leaderboard, seedForFoldColumn);
+      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
 
       assertTrue(isBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train()));
       assertTrue(auc > 0);
       assertEquals(auc, auc2, 1e-5);
     } finally {
-      if(train!=null) train.delete();
+      Scope.exit();
     }
   }
 
   @Test
   public void checkThatForAnyHyperParametersCombinationWeGetConsistentEvaluationsFromModelBuilderFixture() {
 
+    try {
+      Scope.enter();
     //Important variable as AUC are not consistent with precision 1e-4 and less
     double precisionForAUCEvaluations = 1e-5;
-
-    HashMap<String, Object[]> _grid = new HashMap<>();
-    _grid.put("_withBlending", new Double[]{1.0});
-    _grid.put("_noise_level", new Double[]{0.0, 0.1, 0.01});
-    _grid.put("_inflection_point", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
-    _grid.put("_smoothing", new Double[]{5.0, 10.0, 20.0});
-    _grid.put("_holdoutType", new Double[]{0.0, 1.0, 2.0});
-
     long builderSeed = new Random().nextLong();
 
     TargetEncodingHyperparamsEvaluator targetEncodingHyperparamsEvaluator = new TargetEncodingHyperparamsEvaluator();
@@ -168,38 +197,38 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
     Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
     String responseColumnName = "survived";
     asFactor(fr, responseColumnName);
+    Scope.track(fr);
     ModelBuilder modelBuilder = modelBuilderGBMWithCVFixture(fr, responseColumnName, builderSeed);
-    modelBuilder.init(false); // Should we init before cloning? Like in real use case we clone after initialisation of the original modelBuilder.
+    modelBuilder.init(false); // Should we findBestTEParams before cloning? Like in real use case we clone after initialisation of the original modelBuilder.
 
-    for (int teParamAttempt = 0; teParamAttempt < 3; teParamAttempt++) {
+    for (int teParamAttempt = 0; teParamAttempt < 1; teParamAttempt++) {
       long testSeed = new Random().nextLong();
 
-      TEParamsSelectionStrategy.RandomGridEntrySelector randomGridEntrySelector = new TEParamsSelectionStrategy.RandomGridEntrySelector(_grid, testSeed);
-      GridSearchTEParamsSelectionStrategy.GridEntry selected = null;
-      try {
-        selected = randomGridEntrySelector.getNext();
-      } catch (TEParamsSelectionStrategy.RandomGridEntrySelector.GridSearchCompleted ex) {
+      TargetEncoderModel.TargetEncoderParameters teParams = TargetEncodingTestFixtures.randomTEParams(TargetEncoder.DataLeakageHandlingStrategy.KFold, testSeed);
 
-      }
-
-      TargetEncodingParams param = new TargetEncodingParams(selected.getItem());
+      AllCategoricalTEApplicationStrategy allCategoricalTEApplicationStrategy = new AllCategoricalTEApplicationStrategy(fr, new String[]{responseColumnName});
 
       double lastResult = 0.0;
-      for (int evaluationAttempt = 0; evaluationAttempt < 3; evaluationAttempt++) {
+      for (int evaluationAttempt = 0; evaluationAttempt < 1; evaluationAttempt++) {
         ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
         clonedModelBuilder.init(false);
+        double evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(teParams,
+                clonedModelBuilder,
+                ModelValidationMode.CV,
+                null,
+                allCategoricalTEApplicationStrategy.getColumnsToEncode(),
+                testSeed);
 
-        double evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(param, clonedModelBuilder, ModelValidationMode.CV, null, testSeed);
         if(lastResult == 0.0) lastResult = evaluationResult;
         else {
-
           assertEquals("evaluationAttempt #" + evaluationAttempt + " for teParamAttempt #" +
-                  teParamAttempt + " has failed. " + param , lastResult, evaluationResult, precisionForAUCEvaluations);
+                  teParamAttempt + " has failed. " + teParams , lastResult, evaluationResult, precisionForAUCEvaluations);
         }
       }
     }
-
-    fr.delete();
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test

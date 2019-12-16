@@ -1,7 +1,7 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.targetencoder.TargetEncodingParams;
 import ai.h2o.automl.targetencoder.strategy.HPsSelectionStrategy;
+import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
@@ -351,7 +351,7 @@ public class AutoMLBuildSpec extends Iced {
     public boolean enabled = true;
     public TEApplicationStrategy application_strategy;
     public HPsSelectionStrategy params_selection_strategy;
-    public TargetEncodingParams fixedTEParams;
+    public TargetEncoderModel.TargetEncoderParameters fixedTEParams;
     public double early_stopping_ratio = 1.0;
     public double ratio_of_hyperspace_to_explore;
     public boolean search_over_columns = true;
