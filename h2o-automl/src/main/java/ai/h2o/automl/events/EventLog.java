@@ -71,9 +71,10 @@ public class EventLog extends Keyed<EventLog> {
   /** Add a EventLogEntry, but don't log. */
   public void addEvent(EventLogEntry event) {
     EventLogEntry[] oldEvents = _events;
-    _events = new EventLogEntry[_events.length + 1];
-    System.arraycopy(oldEvents, 0, _events, 0, oldEvents.length);
-    _events[oldEvents.length] = event;
+    EventLogEntry[] newEvents = new EventLogEntry[_events.length + 1];
+    System.arraycopy(oldEvents, 0, newEvents, 0, oldEvents.length);
+    newEvents[oldEvents.length] = event;
+    _events = newEvents;
   } // addEvent
 
   /**
