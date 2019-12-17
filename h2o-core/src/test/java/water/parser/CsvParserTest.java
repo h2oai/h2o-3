@@ -616,13 +616,51 @@ public class CsvParserTest extends TestUtil {
         Log.info(smallChunkSizeResultFrame.toString());
         assertEquals(6, smallChunkSizeResultFrame.numRows());
         assertEquals(6, smallChunkSizeResultFrame.numCols());
-        
-        
+
+
       } finally {
         Scope.exit();
       }
     }
 
+  }
+
+  
+  @Test
+  public void testPubdev7149() {
+
+    ParseSetup parseSetup = new ParseSetup();
+    parseSetup._parse_type = DefaultParserProviders.CSV_INFO;
+    parseSetup._check_header = ParseSetup.NO_HEADER;
+    parseSetup._separator = ',';
+    parseSetup._column_types = new byte[]{Vec.T_STR};
+    parseSetup._column_names = new String[]{"C1"};
+    parseSetup._number_columns = 1;
+    CsvParser csvParser = new CsvParser(parseSetup, null);
+
+    final String parsedString = "\"text\"\n" +
+            "\"$\"";
+    final Parser.ByteAryData byteAryData = new Parser.ByteAryData(StringUtils.bytesOf(parsedString), 0);
+    final PreviewParseWriter parseWriter = new PreviewParseWriter(parseSetup._number_columns);
+    final PreviewParseWriter outWriter = (PreviewParseWriter) csvParser.parseChunk(0, byteAryData, parseWriter);
+
+
+    assertEquals(2, outWriter.lineNum());
+    assertEquals(0, outWriter._invalidLines);
+    assertFalse(outWriter.hasErrors());
+
+    for (int lineIndex = 1; lineIndex < 2; lineIndex++) {
+      for (int colIndex = 0; colIndex < parseSetup._number_columns; colIndex++) {
+        assertNotNull(outWriter._data[lineIndex][colIndex]);
+        assertFalse(outWriter._data[lineIndex][colIndex].isEmpty());
+      }
+    }
+
+    //Make sure internal quotes are parsed well
+    assertEquals(1, outWriter._data[1].length);
+    assertEquals(1, outWriter._data[2].length);
+    assertEquals("text", outWriter._data[1][0]);
+    assertEquals("$", outWriter._data[2][0]);
   }
 
 }
