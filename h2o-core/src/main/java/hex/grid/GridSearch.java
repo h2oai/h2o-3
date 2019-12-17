@@ -223,8 +223,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
 
       synchronized (hyperspaceIterator) {
-        int numberOfExpectedToCompleteModels = parallelModelBuilder.getModelInProgressCounterNative().get();
-        int numberOfCompletedModels = parallelModelBuilder.getModelCompletedCounterNative().get();
+        int numberOfExpectedToCompleteModels = parallelModelBuilder.getModelInProgressCounter().get();
+        int numberOfCompletedModels = parallelModelBuilder.getModelCompletedCounter().get();
 
         if (hyperspaceIterator.hasNext(previousModel)
                 && isThereEnoughTime()

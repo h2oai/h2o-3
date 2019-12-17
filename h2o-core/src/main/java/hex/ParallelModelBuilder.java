@@ -30,19 +30,17 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
   private final transient ParallelModelBuilderCallback _callback;
 
-  public AtomicInteger getModelInProgressCounterNative() {
-    return _modelInProgressCounterNative;
+  public AtomicInteger getModelInProgressCounter() {
+    return _modelInProgressCounter;
   }
 
-  //  private final transient IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt(); // TODO remove after tests. Should be fine not to use Iced version as ParallelModelBuilder itself is not going to be distributed
-  private final  AtomicInteger _modelInProgressCounterNative = new AtomicInteger(); // TODO rename Native
+  private final  AtomicInteger _modelInProgressCounter = new AtomicInteger();
 
-  public AtomicInteger getModelCompletedCounterNative() {
-    return _modelCompletedCounterNative;
+  public AtomicInteger getModelCompletedCounter() {
+    return _modelCompletedCounter;
   }
 
-  //  private final transient IcedAtomicInt _modelCompletedCounter = new IcedAtomicInt();
-  private final  AtomicInteger _modelCompletedCounterNative = new AtomicInteger();
+  private final  AtomicInteger _modelCompletedCounter = new AtomicInteger();
 
   private final transient AtomicBoolean _completed = new AtomicBoolean(false);
   private final transient ParallelModelBuiltListener _parallelModelBuiltListener;
@@ -61,7 +59,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
    */
   public void run(final Collection<ModelBuilder> modelBuilders) {
       for (final ModelBuilder modelBuilder : modelBuilders) {
-        _modelInProgressCounterNative.incrementAndGet();
+        _modelInProgressCounter.incrementAndGet();
 
         // Set the callbacks
         modelBuilder.setModelBuilderListener(_parallelModelBuiltListener);
@@ -77,8 +75,8 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
       try {
         _callback.onBuildSuccess(model, ParallelModelBuilder.this);
       } finally {
-        _modelCompletedCounterNative.incrementAndGet();
-        _modelInProgressCounterNative.decrementAndGet();
+        _modelCompletedCounter.incrementAndGet();
+        _modelInProgressCounter.decrementAndGet();
 
         _callback.postBuildSuccess(model, ParallelModelBuilder.this);
       }
@@ -91,7 +89,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
       try {
         _callback.onBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
       } finally {
-        _modelInProgressCounterNative.decrementAndGet();
+        _modelInProgressCounter.decrementAndGet();
       }
       _callback.postBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
       attemptComplete();
@@ -127,7 +125,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
   }
   
   private void attemptComplete(){
-    if(!_completed.get() || _modelInProgressCounterNative.get() != 0) return;
+    if(!_completed.get() || _modelInProgressCounter.get() != 0) return;
     complete(this);
   }
 
