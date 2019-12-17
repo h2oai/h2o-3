@@ -223,14 +223,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
 
       synchronized (hyperspaceIterator) {
-        int numberOfExpectedToCompleteModels = parallelModelBuilder.getModelInProgressCounter().get();
-        int numberOfCompletedModels = parallelModelBuilder.getModelCompletedCounter().get();
-
         if (hyperspaceIterator.hasNext(previousModel)
                 && isThereEnoughTime()
-                && (hyperspaceIterator.max_models() == 0 || numberOfCompletedModels + numberOfExpectedToCompleteModels < hyperspaceIterator.max_models())
+                && !hasReachedMaxModels(parallelModelBuilder)
                 && !_job.stop_requested()
-                && (previousModel == null || !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos()))) {
+                && !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos())) {
 
           final MP nextModelParams = getNextModelParams(hyperspaceIterator, previousModel, grid);
 
@@ -242,6 +239,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           parallelModelBuilder.noMoreModels();
         }
       }
+    }
+
+    private boolean hasReachedMaxModels(ParallelModelBuilder parallelModelBuilder) {
+      int numberOfInProgressModels = parallelModelBuilder.getModelInProgressCounter().get();
+      int numberOfCompletedModels = parallelModelBuilder.getModelCompletedCounter().get();
+      return !(hyperspaceIterator.max_models() == 0 || numberOfCompletedModels + numberOfInProgressModels < hyperspaceIterator.max_models());
     }
 
     private void constructScoringInfo(final Model model) {

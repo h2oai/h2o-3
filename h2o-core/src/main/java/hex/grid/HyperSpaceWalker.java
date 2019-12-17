@@ -453,7 +453,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
     @Override
     public boolean stopEarly(Model model, ScoringInfo[] sk) {
-      return ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk),
+      return model !=null && ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk),
               search_criteria().stopping_rounds(),
               ScoreKeeper.ProblemType.forSupervised(model._output.isClassifier()),
               search_criteria().stopping_metric(),
