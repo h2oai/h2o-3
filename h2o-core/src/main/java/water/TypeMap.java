@@ -246,8 +246,11 @@ public class TypeMap {
    *  tests, do-not-modify since it's The Golden Instance and shared. */
   public static Freezable theFreezable(int id) {
     try {
+      Log.debug(String.format("Attempt to find Freezable for id '%d' ", id));
       Icer f = goForGold(id);
-      return (f==null ? getIcer(id, classForName(className(id))) : f).theFreezable();
+      Log.debug(String.format("Found '%s' Icer among GOLDEN icer instances for type id '%d'",
+              f, id));
+      return (f == null ? getIcer(id, classForName(className(id))) : f).theFreezable();
     } catch( ClassNotFoundException e ) {
       throw Log.throwErr(e);
     }

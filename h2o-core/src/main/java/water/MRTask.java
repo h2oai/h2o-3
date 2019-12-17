@@ -4,6 +4,7 @@ import jsr166y.CountedCompleter;
 import jsr166y.ForkJoinPool;
 import water.fvec.*;
 import water.util.DistributedException;
+import water.util.Log;
 import water.util.PrettyPrint;
 import water.fvec.Vec.VectorGroup;
 
@@ -473,8 +474,10 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
           block();
         join(); // Throw any exception the map call threw
       } catch (InterruptedException ignore) {
+        Log.err(ignore);
         // do nothing
       } catch (Throwable re) {
+        Log.err(re);
         onExceptionalCompletion(re,null); // block for left and rite
         throw (re instanceof DistributedException)?new DistributedException(re.getMessage(),re.getCause()):new DistributedException(re);
       }

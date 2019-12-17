@@ -4,6 +4,7 @@ import javassist.*;
 import sun.misc.Unsafe;
 import water.api.API;
 import water.nbhm.UtilUnsafe;
+import water.util.Log;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -58,6 +59,8 @@ public class Weaver {
 
   static Class classForName(String className) throws ClassNotFoundException {
     ClassLoader c = CLASSLOADERS.get(className);  // was this class dynamically loaded?
+    Log.debug(String.format("Found dynamic class loader '%s' for class name '%s'.", 
+            c, className));
     if( c==null ) return Class.forName(className); // class not dynamically loaded, use Weaver's ClassLoader
     return Class.forName(className,true,c);
   }
