@@ -378,7 +378,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     sb.append("(");
     sb.append("timestamp=").append(_timestamp);
     if (_heartbeat != null) {
-      sb.append(", ").append("watchdog=").append(_heartbeat._watchdog_client);
       sb.append(", ").append("cloud_name_hash=").append(_heartbeat._cloud_name_hash);
     }
     sb.append(")");
