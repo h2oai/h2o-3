@@ -76,37 +76,36 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   }
 
   public void setTESearchSpace(ModelValidationMode modelValidationMode) {
+    _modelValidationMode = modelValidationMode;
 
-      HashMap<String, Object[]> grid = new HashMap<>();
-      grid.put("blending", new Double[]{1.0/*, false*/}); // NOTE: we can postpone implementation of hierarchical hyperparameter spaces... as in most cases blending is helpful.
-      grid.put("noise_level", new Double[]{0.0, 0.01,  0.1});
-      grid.put("k", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
-      grid.put("f", new Double[]{5.0, 10.0, 20.0});
+    HashMap<String, Object[]> grid = new HashMap<>();
+    grid.put("blending", new Boolean[]{true, false});
+    grid.put("noise_level", new Double[]{0.0, 0.01, 0.1});
+    grid.put("k", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
+    grid.put("f", new Double[]{5.0, 10.0, 20.0});
 
-      switch (modelValidationMode) {
-        case CV:
-          grid.put("data_leakage_handling", new TargetEncoder.DataLeakageHandlingStrategy[]{TargetEncoder.DataLeakageHandlingStrategy.KFold});
-          break;
-        case VALIDATION_FRAME:
-          // TODO apply filtering. When we choose holdoutType=None we don't need to search for noise
-          grid.put("data_leakage_handling", new TargetEncoder.DataLeakageHandlingStrategy[]{TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, TargetEncoder.DataLeakageHandlingStrategy.None});
-          break;
-      }
-
-      _modelValidationMode = modelValidationMode;
-
+    switch (_modelValidationMode) {
+      case CV:
+        grid.put("data_leakage_handling", new TargetEncoder.DataLeakageHandlingStrategy[]{TargetEncoder.DataLeakageHandlingStrategy.KFold});
+        break;
+      case VALIDATION_FRAME:
+        // TODO apply filtering. When we choose holdoutType=None we don't need to search for noise
+        grid.put("data_leakage_handling", new TargetEncoder.DataLeakageHandlingStrategy[]{TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, TargetEncoder.DataLeakageHandlingStrategy.None});
+        break;
+    }
 
     TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
 
-    GridSearchHandler.DefaultModelParametersBuilderFactory<TargetEncoderModel.TargetEncoderParameters, TargetEncoderV3.TargetEncoderParametersV3> modelParametersBuilderFactory = new GridSearchHandler.DefaultModelParametersBuilderFactory<>();
+    GridSearchHandler.DefaultModelParametersBuilderFactory<TargetEncoderModel.TargetEncoderParameters, TargetEncoderV3.TargetEncoderParametersV3> modelParametersBuilderFactory =
+            new GridSearchHandler.DefaultModelParametersBuilderFactory<>();
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
     HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(parameters, grid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
 
     _walker = walker;
 
-      Log.info("Size of TE hyperspace to explore " + walker.getMaxHyperSpaceSize());
-    int expectedNumberOfEntries = (int)( Math.max(1, walker.getMaxHyperSpaceSize() * _ratioOfHyperSpaceToExplore));
+    Log.info("Size of TE hyperspace to explore " + walker.getMaxHyperSpaceSize());
+    int expectedNumberOfEntries = (int) (Math.max(1, walker.getMaxHyperSpaceSize() * _ratioOfHyperSpaceToExplore));
     _evaluatedQueue = new PriorityQueue<>(expectedNumberOfEntries, new EvaluatedComparator(_theBiggerTheBetter));
   }
 
@@ -121,24 +120,20 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
 
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = _walker.iterator();
 
-    //TODO remove exporter related logic before merging
-    //HPSearchPerformanceExporter exporter = new HPSearchPerformanceExporter();
-
-    //TODO Consider adding stratified sampling here
 //    try {
       while (earlyStopper.proceed()) {
 
-        TargetEncoderModel.TargetEncoderParameters selected = iterator.nextModelParameters(null);
+        TargetEncoderModel.TargetEncoderParameters nextModelParameters = iterator.nextModelParameters(null);
 
-        ModelBuilder clonedModelBuilder = ModelBuilder.make(selected); // TODO move inside evaluator?
+        ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
 
-        clonedModelBuilder.init(false); // in _evaluator we assume that findBestTEParams() has been already called
+        clonedModelBuilder.init(false);
 
-        double evaluationResult = _evaluator.evaluate(selected, clonedModelBuilder, _modelValidationMode, _leaderboardData, _columnNamesToEncode, _seed);
+        double evaluationResult = _evaluator.evaluate(nextModelParameters, clonedModelBuilder, _modelValidationMode, _leaderboardData, _columnNamesToEncode, _seed);
 
         earlyStopper.update(evaluationResult);
 
-        _evaluatedQueue.add(new Evaluated<>(selected, evaluationResult, earlyStopper.getTotalAttemptsCount()));
+        _evaluatedQueue.add(new Evaluated<>(nextModelParameters, evaluationResult, earlyStopper.getTotalAttemptsCount()));
       }
 //    } catch (RandomGridEntrySelector.GridSearchCompleted ex) { // TODO consider to wrap in try-catch
       // just proceed by returning best gridEntry found so far

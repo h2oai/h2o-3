@@ -22,18 +22,34 @@ import static ai.h2o.targetencoding.TargetEncoderFrameHelper.concat;
 
 
 public class TargetEncodingHyperparamsEvaluator extends Iced {
-  public TargetEncodingHyperparamsEvaluator() {
-
-  }
 
   public double evaluate(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder modelBuilder, ModelValidationMode modelValidationMode, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {
-    switch (modelValidationMode) {
-      case CV:
-        assert leaderboard == null : "Leaderboard frame should not be provided in case of CV evaluations in AutoML";
-        return evaluateForCVMode(teParams, modelBuilder, columnNamesToEncode, seedForFoldColumn);
-      case VALIDATION_FRAME:
-      default:
-        return evaluateForValidationFrameMode(teParams, modelBuilder, leaderboard, columnNamesToEncode, seedForFoldColumn);
+    Scope.enter();
+    try {
+      Frame trainCopy = modelBuilder._parms.train().deepCopy(Key.make("train_frame_copy_for_mb_validation_case" + Key.make()).toString());
+      DKV.put(trainCopy);
+      Scope.track(trainCopy);
+      modelBuilder.setTrain(trainCopy);
+
+      switch (modelValidationMode) {
+        case CV:
+          assert leaderboard == null : "Leaderboard frame should not be provided in case of CV evaluations in AutoML";
+          return evaluateForCVMode(teParams, modelBuilder, columnNamesToEncode, seedForFoldColumn);
+        case VALIDATION_FRAME:
+        default:
+          Frame validCopy = modelBuilder._parms.valid().deepCopy(Key.make("valid_frame_copy_for_mb_validation_case" + Key.make()).toString()); //TODO  change keys
+          DKV.put(validCopy);
+          modelBuilder.setValid(validCopy);
+
+          Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_mb_validation_case" + Key.make()).toString());
+          DKV.put(leaderboardCopy);
+
+          Scope.track(validCopy, leaderboardCopy);
+
+          return evaluateForValidationFrameMode(teParams, modelBuilder, leaderboardCopy, columnNamesToEncode, seedForFoldColumn);
+      }
+    } finally {
+      Scope.exit();
     }
   }
 

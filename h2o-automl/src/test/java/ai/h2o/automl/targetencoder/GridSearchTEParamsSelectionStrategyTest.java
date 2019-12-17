@@ -67,7 +67,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
         train = fr;
         break;
       case VALIDATION_FRAME:
-        Frame splits[] = AutoMLBenchmarkHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15,0.15}, 2345L);
+        Frame[] splits = AutoMLBenchmarkHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, 2345L);
         train = splits[0];
         valid = splits[1];
         leaderboard = splits[2];

@@ -65,17 +65,18 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     @Override
     public String toString() {
-      String representation = null;
-      if (_blending) {
-        representation = "TE params: "
+      //TODO refactor this after hyperparams filtering is merged
+//      String representation = null;
+//      if (_blending) {
+        String representation = "TE params: "
                 + "holdout_type = " + _data_leakage_handling
                 + ", blending = " + _blending
                 + ", inflection_point = " + _k
                 + ", smoothing = " + _f
                 + ", noise_level = " + _noise_level;
-      } else {
-        representation = "TE params: holdout_type = " + _data_leakage_handling + " , noise_level = " + _noise_level;
-      }
+//      } else {
+//        representation = "TE params(blending is disabled): holdout_type = " + _data_leakage_handling + " , noise_level = " + _noise_level;
+//      }
       return representation;
     }
   }
