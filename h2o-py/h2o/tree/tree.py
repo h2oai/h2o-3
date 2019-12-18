@@ -4,44 +4,46 @@ from h2o.estimators import H2OXGBoostEstimator
 
 class H2OTree():
     """
-    Represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest, XGBoost, Isolation Forest).
+    Represents a model of a Tree built by one of H2O's tree algorithms (GBM, Random Forest, XGBoost, Isolation Forest).
     
-    The internal structure mimics behavior of Scikit's internal tree representation and contains all the information available about every node in the graph.
+    The internal structure mimics the behavior of Scikit's internal tree representation and contains all the information available about every node in the graph.
     (https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html)
-    It provides both human-readable output and format suitable for machine processing.
+    It provides both human-readable output and formatting suitable for machine processing.
     
-    In the fetched object, there two representations of the graph contained:
-    - graph-oriented representation, starting with a root node with edges,
-    - array/vector representation, useful for quick machine processing of the tree’s structure.
+    In the fetched object, there are two representations of the graph contained:
+
+    - graph-oriented representation, starting with a root node with edges
+    - array/vector representation, useful for quick machine processing of the tree’s structure
     
-    Every graph starts wit ha root node, which is in fact an instance of H2OSplitNode and is naturally the very beginning of all decision paths in graph.
+    Every graph starts with a root node, which is in fact an instance of H2OSplitNode and is naturally the very beginning of all decision paths in the graph.
     It points to its children, which again point to their children, unless an H2OLeafNode is hit. Nodes are always numbered from the top of the tree down to the lowest level, from left to right.
     
-    At tree level, the following information is provided:
-    - Number of nodes in the tree,
-    - Model the tree belongs to,
-    - Tree class (if applicable),
-    - Pointer to a root node for tree traversal (breadth-first, depth-first) and manual tree walking.
+    At the tree level, the following information is provided:
+
+    - Number of nodes in the tree
+    - Model the tree belongs to
+    - Tree class (if applicable,
+    - Pointer to a root node for tree traversal (breadth-first, depth-first) and manual tree walking
     
     Each node in the tree is uniquely identified by an ID, regardless of its type. Also for each node type, a human-redable description is available. There are two types nodes distinguished:
-    - Split node,
-    - Leaf node.
     
-    -------------    
-    A split node is a single non-terminal node with either numerical or categorical feature split. The root node is guaranteed to be a split node, as a zero-depth tree t of cardinality |t| = 1 contains no decisions at all. 
+    - Split node
+    - Leaf node
+        
+    **Split Node**: A split node is a single non-terminal node with either numerical or categorical feature split. The root node is guaranteed to be a split node, as a zero-depth tree :math:`t` of cardinality :math:`|t| = 1` contains no decisions at all. 
     Every split node consists of:
     
-    1. H2O-specific node identifier (ID - all nodes have it),
-    2. Left child node & right child node,
-    3. Split feature name (split column name),
-    4. Split threshold (mainly for numerical splits),
-    5. Categorical features split (categorical splits only),
-    6. Direction of NA values (which way NA values go - left child, right child or nowhere).
+    1. H2O-specific node identifier (ID - all nodes have it)
+    2. Left child node & right child node
+    3. Split feature name (split column name)
+    4. Split threshold (mainly for numerical splits)
+    5. Categorical features split (categorical splits only)
+    6. Direction of NA values (which way NA values go - left child, right child, or nowhere)
     
-    -------------
-    A leaf node is a single node with no children, thus being a terminal node at the end of the decision path in a tree. Leaf node consists of:
-    1. H2O-specific node identifier (ID - all nodes have it),
-    2. Prediction value (floating point number).
+    **Leaf Node**: A leaf node is a single node with no children, thus being a terminal node at the end of the decision path in a tree. Leaf node consists of:
+
+    1. H2O-specific node identifier (ID - all nodes have it)
+    2. Prediction value (floating point number)
     
     :param model: The model this tree is related to.
     :param tree_number: An integer representing the order in which the tree has been built in the model.
@@ -89,7 +91,7 @@ class H2OTree():
         """
         An array with left child nodes of tree's nodes.  Holds indices of each node’s left child.
         
-        Use node's ID to obtain index of the left child for given node in the underlying array. 
+        Use the node's ID to obtain the index of the left child for a given node in the underlying array. 
 
         :examples:
 
@@ -130,7 +132,7 @@ class H2OTree():
     def node_ids(self):
         """
         Array with identification numbers of nodes. Node IDs are generated by H2O.
-        Serves as node’s unique identifier inside H2O (may differ from index)
+        Serves as the node’s unique identifier inside H2O. (May differ from index.)
         Nodes are always numbered from the top of the tree down to the lowest level, from left to right.
         
         :examples:
@@ -154,7 +156,7 @@ class H2OTree():
         Contains split threshold if the split is based on numerical column.
         For categorical splits, it contains a list of categorical levels for transition from the parent node.
         
-        Use node's ID to access description for given node in the underlying array.
+        Use the node's ID to access the description for a given node in the underlying array.
 
         :examples:
         
@@ -215,7 +217,7 @@ class H2OTree():
         is exactly one class per categorical level, the name of tree's class is equal to the corresponding 
         categorical level of the response column.
         
-        In the case of regression and binomial, the name of the categorical level is ignored can be omitted, as 
+        In the case of regression and binomial, the name of the categorical level is ignored and can be omitted, as 
         there is exactly one tree built in both cases.
 
         :examples:
@@ -235,10 +237,10 @@ class H2OTree():
     @property
     def thresholds(self):
         """
-        Node split thresholds. Split thresholds are not only related to numerical splits, but might be present
+        Node split thresholds. Split thresholds are not only related to numerical splits but might be present
         in case of categorical split as well.
         
-        Use node's ID to access threshold for given node in the underlying array.
+        Use the node's ID to access the threshold for a given node in the underlying array.
 
         :examples:
 
@@ -257,9 +259,9 @@ class H2OTree():
     @property
     def features(self):
         """
-        Names of the feature/column used for the split. Array tells which feature is used for the split on given node.
+        Names of the feature/column used for the split. The array tells which feature is used for the split on a given node.
         
-        Use node's ID to access split feature for given node in the underlying array. 
+        Use the node's ID to access the split feature for a given node in the underlying array. 
 
         :examples:
 
@@ -278,10 +280,10 @@ class H2OTree():
     @property
     def levels(self):
         """
-        Categorical levels on split from parent's node belonging into this node. None for root node or
-        non-categorical splits. Show list of categorical levels inherited by each node from parent
+        Categorical levels on the split from the parent's node belonging into this node. None for root node or
+        non-categorical splits. Show list of categorical levels inherited by each node from the parent.
         
-        Use node's ID to access inherited categorical levels for given node in the underlying array. 
+        Use the node's ID to access inherited categorical levels for a given node in the underlying array. 
 
         :examples:
 
@@ -300,10 +302,10 @@ class H2OTree():
     @property
     def nas(self):
         """
-        NA value direction on split. Representing if NA values go to the left node or right node. The value may be None if node is a leaf
-        or there is no possibility of an NA value occuring during a split, typically due to filtering all NAs out to a different path in the graph.
+        NA value direction on split. Shows whether NA values go to the left node or the right node. The value may be None if node is a leaf
+        or if there is no possibility of an NA value occuring during a split, typically due to filtering all NAs out to a different path in the graph.
         
-        Use node's ID to access NA direction for given node in the underlying array. 
+        Use the node's ID to access NA direction for a given node in the underlying array. 
 
         :examples:
 
@@ -343,7 +345,7 @@ class H2OTree():
         """
         Values predicted on tree's nodes.
         
-        Use node's ID to access predictions for given node in the underlying array. 
+        Use the node's ID to access predictions for a given node in the underlying array. 
 
         :examples:
 
@@ -437,7 +439,7 @@ class H2OTree():
 
     def __len__(self):
         """
-        Returns number of nodes inside the tree
+        Returns number of nodes inside the tree.
         
         :examples:
         
@@ -477,7 +479,7 @@ class H2OTree():
 
 class H2ONode():
     """
-    Represents a single abstract node in an H2OTree
+    Represents a single abstract node in an H2OTree.
 
     :param id: Node's unique identifier (integer). Generated by H2O.
 
@@ -581,7 +583,7 @@ class H2OLeafNode(H2ONode):
 
     @property
     def prediction(self):
-        """Prediction value in the terminal node (numeric floating point)
+        """Prediction value in the terminal node (numeric floating point).
 
         :examples:
 
@@ -640,7 +642,7 @@ class H2OSplitNode(H2ONode):
     :param left_child: Integer identifier of the left child node, if there is any. Otherwise None.
     :param right_child: Integer identifier of the right child node, if there is and. Otherwise None.
     :param split_feature: The name of the column this node splits on.
-    :param na_direction: The direction of NA values. LEFT means NA values go to the left child node, RIGHT means NA values go to the right child node. A value of None means occurence of NA for the given split column is not possible on this node due to an earlier split on the very same feature.
+    :param na_direction: The direction of NA values. LEFT means NA values go to the left child node; RIGHT means NA values go to the right child node. A value of None means occurence of NA for the given split column is not possible on this node due to an earlier split on the very same feature.
     :param left_levels: Categorical levels on the edge from this node to the left child node. None for non-categorical splits.
     :param right_levels: Categorical levels on the edge from this node to the right cild node. None for non-categorical splits.
 
@@ -840,7 +842,7 @@ class H2OSplitNode(H2ONode):
     @property
     def na_direction(self):
         """
-        The direction of NA values. LEFT means NA values go to the left child node, RIGH means NA values go to the right child node. A value of None means occurance of NA for the given split column is not possible on this node due to an earlier split on the very same feature.
+        The direction of NA values. LEFT means NA values go to the left child node; RIGHT means NA values go to the right child node. A value of None means occurance of NA for the given split column is not possible on this node due to an earlier split on the very same feature.
 
         :examples:
 
