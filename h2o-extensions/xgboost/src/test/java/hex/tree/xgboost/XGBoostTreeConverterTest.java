@@ -159,7 +159,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
     }
 
     @Test
-    public void testXGBoostBinomialClass() {
+    public void testXGBoostBinomialClass_noTreeClassSpecified() {
         Scope.enter();
         try {
             final Frame frame = parse_test_file("./smalldata/testng/airlines_train.csv");
@@ -192,7 +192,7 @@ public class XGBoostTreeConverterTest extends TestUtil {
     }
 
     @Test
-    public void testXGBoostBinomialRegression() {
+    public void testXGBoostRegression_noTreeClassSpecified() {
         Scope.enter();
         try {
             final Frame frame = parse_test_file("./smalldata/testng/airlines_train.csv");
@@ -217,6 +217,41 @@ public class XGBoostTreeConverterTest extends TestUtil {
             final TreeHandler treeHandler = new TreeHandler();
             final TreeV3 args = new TreeV3();
             args.model = new KeyV3.ModelKeyV3(model._key);
+            final TreeV3 tree = treeHandler.getTree(3, args);
+            assertNotNull(tree);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testXGBoostMultinomial_noTreeClassSpecified() {
+        Scope.enter();
+        try {
+            final Frame frame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            Scope.track(frame);
+            String response = "Origin";
+
+            XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+            parms._ntrees = 1;
+            parms._max_depth = 5;
+            parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier"};
+            parms._train = frame._key;
+            parms._response_column = response;
+            parms._reg_lambda = 0;
+
+            final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms)
+                    .trainModel()
+                    .get();
+            Scope.track_generic(model);
+
+            final TreeHandler treeHandler = new TreeHandler();
+            final TreeV3 args = new TreeV3();
+            args.model = new KeyV3.ModelKeyV3(model._key);
+            
+            // Tree class must be specified for multinomial.
+            expectedException.expect(IllegalArgumentException.class);
+            expectedException.expectMessage("Model category 'Multinomial' requires tree class to be specified.");
             final TreeV3 tree = treeHandler.getTree(3, args);
             assertNotNull(tree);
         } finally {
