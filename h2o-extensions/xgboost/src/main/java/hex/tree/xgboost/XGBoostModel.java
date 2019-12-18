@@ -656,8 +656,18 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       throw new IllegalArgumentException("There should be no tree class specified for regression.");
     }
     if ((treeClass == null || treeClass.isEmpty())) {
-      if (ModelCategory.Regression.equals(modelCategory)) return 0;
-      else throw new IllegalArgumentException("Non-regressional models require tree class specified.");
+      // Binomial & regression problems do not require tree class to be specified, as there is only one available.
+      // Such class is selected automatically for the user.
+      switch (modelCategory) {
+        case Binomial:
+        case Regression:
+          return 0;
+        default:
+          // If the user does not specify tree class explicitely and there are multiple options to choose from,
+          // throw an error.
+          throw new IllegalArgumentException(String.format("Model category '%s' requires tree class to be specified.",
+                  modelCategory));
+      }
     }
 
     final String[] domain = _output._domains[_output._domains.length - 1];
