@@ -210,7 +210,7 @@ MAIN_LOOP:
             str.addChar();
             if (c == quotes) {
               state = COND_QUOTE;
-              break;
+              continue MAIN_LOOP;
             }
             if ((quotes != 0) || ((!isEOL(c) && (c != CHAR_SEPARATOR)))) {
               state = STRING;
