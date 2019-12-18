@@ -5,13 +5,50 @@ from h2o.estimators import H2OXGBoostEstimator
 class H2OTree():
     """
     Represents a model of a Tree built by one of H2O's algorithms (GBM, Random Forest, XGBoost, Isolation Forest).
-
+    
+    The internal structure mimics behavior of Scikit's internal tree representation and contains all the information available about every node in the graph.
+    (https://scikit-learn.org/stable/auto_examples/tree/plot_unveil_tree_structure.html)
+    It provides both human-readable output and format suitable for machine processing.
+    
+    In the fetched object, there two representations of the graph contained:
+    - graph-oriented representation, starting with a root node with edges,
+    - array/vector representation, useful for quick machine processing of the tree’s structure.
+    
+    Every graph starts wit ha root node, which is in fact an instance of H2OSplitNode and is naturally the very beginning of all decision paths in graph.
+    It points to its children, which again point to their children, unless an H2OLeafNode is hit. Nodes are always numbered from the top of the tree down to the lowest level, from left to right.
+    
+    At tree level, the following information is provided:
+    - Number of nodes in the tree,
+    - Model the tree belongs to,
+    - Tree class (if applicable),
+    - Pointer to a root node for tree traversal (breadth-first, depth-first) and manual tree walking.
+    
+    Each node in the tree is uniquely identified by an ID, regardless of its type. Also for each node type, a human-redable description is available. There are two types nodes distinguished:
+    - Split node,
+    - Leaf node.
+    
+    -------------    
+    A split node is a single non-terminal node with either numerical or categorical feature split. The root node is guaranteed to be a split node, as a zero-depth tree t of cardinality |t| = 1 contains no decisions at all. 
+    Every split node consists of:
+    
+    1. H2O-specific node identifier (ID - all nodes have it),
+    2. Left child node & right child node,
+    3. Split feature name (split column name),
+    4. Split threshold (mainly for numerical splits),
+    5. Categorical features split (categorical splits only),
+    6. Direction of NA values (which way NA values go - left child, right child or nowhere).
+    
+    -------------
+    A leaf node is a single node with no children, thus being a terminal node at the end of the decision path in a tree. Leaf node consists of:
+    1. H2O-specific node identifier (ID - all nodes have it),
+    2. Prediction value (floating point number).
+    
     :param model: The model this tree is related to.
     :param tree_number: An integer representing the order in which the tree has been built in the model.
-    :param tree_class: A string representing the name of the tree's class. The number of tree classes equals the number of levels in categorical response column. As there is exactly one class per categorical level, the name of the tree's class is equal to the corresponding categorical level of the response column. In case of regression and binomial models, the name of the categorical level is ignored and can be omitted, as there is exactly one tree built in both cases.
+    :param tree_class: A string representing the name of the tree's class. Specifies the class of the tree requested. Required for multi-class classification. The number of tree classes equals the number of levels in categorical response column. As there is exactly one class per categorical level, the name of the tree's class is equal to the corresponding categorical level of the response column. In case of regression and binomial models, the name of the categorical level is ignored and can be omitted.
 
     :examples:
-
+    
     >>> from h2o.tree import H2OTree
     >>> from h2o.estimators import H2OGradientBoostingEstimator
     >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv")
@@ -19,10 +56,12 @@ class H2OTree():
     >>> gbm.train(x=["Origin", "Dest"],
     ...           y="IsDepDelayed",
     ...           training_frame=airlines)
-    >>> tree = H2OTree(gbm, 0 , "NO")
+    >>> # Obtaining a tree is a matter of a single call
+    >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
     >>> tree.model_id
     >>> tree.tree_number
     >>> tree.tree_class
+    
     """
 
     def __init__(self, model, tree_number, tree_class=None):
@@ -47,7 +86,10 @@ class H2OTree():
 
     @property
     def left_children(self):
-        """An array with left child nodes of tree's nodes.
+        """
+        An array with left child nodes of tree's nodes.  Holds indices of each node’s left child.
+        
+        Use node's ID to obtain index of the left child for given node in the underlying array. 
 
         :examples:
 
@@ -58,14 +100,17 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.left_children
         """
         return self._left_children
 
     @property
     def right_children(self):
-        """An array with right child nodes of tree's nodes.
+        """
+        An array with right child nodes of tree's nodes. Holds indices of each node’s right child.
+        
+        Use node's ID to obtain index of the right child for given node in the underlying array. 
 
         :examples:
 
@@ -76,15 +121,18 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.right_children
         """
         return self._right_children
 
     @property
     def node_ids(self):
-        """Array with identification numbers of nodes. Node IDs are generated by H2O.
-
+        """
+        Array with identification numbers of nodes. Node IDs are generated by H2O.
+        Serves as node’s unique identifier inside H2O (may differ from index)
+        Nodes are always numbered from the top of the tree down to the lowest level, from left to right.
+        
         :examples:
 
         >>> from h2o.tree import H2OTree
@@ -94,16 +142,19 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.node_ids
         """
         return self._node_ids
 
     @property
     def descriptions(self):
-        """Descriptions for each node to be found in the tree.
+        """
+        Descriptions for each node to be found in the tree, in human-readable format. Provides a human-readable summary of each node.
         Contains split threshold if the split is based on numerical column.
         For categorical splits, it contains a list of categorical levels for transition from the parent node.
+        
+        Use node's ID to access description for given node in the underlying array.
 
         :examples:
         
@@ -114,7 +165,7 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.descriptions
         """
         return self._descriptions
@@ -133,7 +184,7 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.model_id
         """
         return self._model_id
@@ -151,7 +202,7 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.tree_number
         """
         return self._tree_number
@@ -176,15 +227,18 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.tree_class
         """
         return self._tree_class
 
     @property
     def thresholds(self):
-        """Node split thresholds. Split thresholds are not only related to numerical splits, but might be present
+        """
+        Node split thresholds. Split thresholds are not only related to numerical splits, but might be present
         in case of categorical split as well.
+        
+        Use node's ID to access threshold for given node in the underlying array.
 
         :examples:
 
@@ -195,14 +249,17 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.thresholds
         """
         return self._thresholds
 
     @property
     def features(self):
-        """Names of the feature/column used for the split.
+        """
+        Names of the feature/column used for the split. Array tells which feature is used for the split on given node.
+        
+        Use node's ID to access split feature for given node in the underlying array. 
 
         :examples:
 
@@ -213,16 +270,18 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.features
         """
         return self._features
 
     @property
     def levels(self):
-        """Categorical levels on split from parent's node belonging into this node. None for root node or
-        non-categorical splits.
-
+        """
+        Categorical levels on split from parent's node belonging into this node. None for root node or
+        non-categorical splits. Show list of categorical levels inherited by each node from parent
+        
+        Use node's ID to access inherited categorical levels for given node in the underlying array. 
 
         :examples:
 
@@ -233,15 +292,18 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.levels
         """
         return self._levels
 
     @property
     def nas(self):
-        """Representing if NA values go to the left node or right node. The value may be None if node is a leaf
-        or there is no possibility of an NA value appearing on a node.
+        """
+        NA value direction on split. Representing if NA values go to the left node or right node. The value may be None if node is a leaf
+        or there is no possibility of an NA value occuring during a split, typically due to filtering all NAs out to a different path in the graph.
+        
+        Use node's ID to access NA direction for given node in the underlying array. 
 
         :examples:
 
@@ -252,7 +314,7 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.nas
         """
         return self._nas
@@ -260,7 +322,7 @@ class H2OTree():
     @property
     def root_node(self):
         """An instance of H2ONode representing the beginning of the tree behind the model.
-        Allows further tree traversal.
+        Allows further tree traversal. 
 
         :examples:
 
@@ -271,14 +333,17 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.root_node
          """
         return self._root_node
 
     @property
     def predictions(self):
-        """Values predicted on tree's nodes.
+        """
+        Values predicted on tree's nodes.
+        
+        Use node's ID to access predictions for given node in the underlying array. 
 
         :examples:
 
@@ -289,7 +354,7 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.predictions
         """
         return self._predictions
@@ -371,6 +436,21 @@ class H2OTree():
         return node_ids
 
     def __len__(self):
+        """
+        Returns number of nodes inside the tree
+        
+        :examples:
+        
+        >>> from h2o.tree import H2OTree
+        >>> from h2o.estimators import H2OGradientBoostingEstimator
+        >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv")
+        >>> gbm = H2OGradientBoostingEstimator(ntrees=1)
+        >>> gbm.train(x=["Origin", "Dest"],
+        ...           y="IsDepDelayed",
+        ...           training_frame=airlines)
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
+        >>> len(tree)
+        """
         return len(self._node_ids)
 
     def __str__(self):
@@ -389,7 +469,7 @@ class H2OTree():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0 , "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.show()
         """
         print(self.__str__())
@@ -411,7 +491,7 @@ class H2ONode():
     >>> gbm.train(x=["Origin", "Dest"],
     ...           y="IsDepDelayed",
     ...           training_frame=airlines)
-    >>> tree = H2OTree(gbm, 0 , "NO")
+    >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
     >>> tree.node_ids
     """
 
@@ -432,7 +512,7 @@ class H2ONode():
         >>> gbm.train(x=["Origin", "Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.node_ids
         >>> node0 = H2ONode(0)
         >>> node0
@@ -461,7 +541,7 @@ class H2OLeafNode(H2ONode):
     ...           y="IsDepDelayed",
     ...           training_frame=airlines)
     # Retrieve the node ids      
-    >>> tree = H2OTree(gbm, 0, "NO")
+    >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
     >>> tree.node_ids
     # Retrieve the predictions
     >>> tree.predictions
@@ -488,7 +568,7 @@ class H2OLeafNode(H2ONode):
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
         # Retrieve the node ids      
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.node_ids
         # Retrieve the predictions
         >>> tree.predictions
@@ -514,7 +594,7 @@ class H2OLeafNode(H2ONode):
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
         # Retrieve the node ids      
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.node_ids
         # Retrieve the predictions
         >>> tree.predictions
@@ -541,7 +621,7 @@ class H2OLeafNode(H2ONode):
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
         # Retrieve the predictions
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> tree.predictions
         # Retrieve predicted value for a node
         >>> leaf_node = H2OLeafNode(0, -0.23001842)
@@ -574,7 +654,7 @@ class H2OSplitNode(H2ONode):
     >>> gbm.train(x=["Origin","Dest"],
     ...           y="IsDepDelayed",
     ...           training_frame=airlines)
-    >>> tree = H2OTree(gbm, 0, "NO")
+    >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
     >>> threshold = 'nan'
     >>> left_child = 9
     >>> right_child = 10
@@ -613,7 +693,7 @@ class H2OSplitNode(H2ONode):
         >>> gbm.train(x=["Origin","Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> threshold = 'nan'
         >>> left_child = 9
         >>> right_child = 10
@@ -632,7 +712,9 @@ class H2OSplitNode(H2ONode):
 
     @property
     def threshold(self):
-        """Split threshold, typically when the split column is numerical.
+        """
+        Split threshold for each node. Not only numerical features have numerical split. For splits on categorical features,
+        the numerical split threshold represents an index in the categorical feature's domain.
 
         :examples:
 
@@ -644,7 +726,7 @@ class H2OSplitNode(H2ONode):
         >>> gbm.train(x=["Origin","Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> threshold = 'nan'
         >>> left_child = 9
         >>> right_child = 10
@@ -676,7 +758,7 @@ class H2OSplitNode(H2ONode):
         >>> gbm.train(x=["Origin","Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> threshold = 'nan'
         >>> left_child = 9
         >>> right_child = 10
@@ -707,7 +789,7 @@ class H2OSplitNode(H2ONode):
         >>> gbm.train(x=["Origin","Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> threshold = 'nan'
         >>> left_child = 9
         >>> right_child = 10
@@ -738,7 +820,7 @@ class H2OSplitNode(H2ONode):
         >>> gbm.train(x=["Origin","Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> threshold = 'nan'
         >>> left_child = 9
         >>> right_child = 10
@@ -770,7 +852,7 @@ class H2OSplitNode(H2ONode):
         >>> gbm.train(x=["Origin","Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> threshold = 'nan'
         >>> left_child = 9
         >>> right_child = 10
@@ -802,7 +884,7 @@ class H2OSplitNode(H2ONode):
         >>> gbm.train(x=["Origin","Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> threshold = 'nan'
         >>> left_child = 9
         >>> right_child = 10
@@ -834,7 +916,7 @@ class H2OSplitNode(H2ONode):
         >>> gbm.train(x=["Origin","Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> threshold = 'nan'
         >>> left_child = 9
         >>> right_child = 10
@@ -894,7 +976,7 @@ class H2OSplitNode(H2ONode):
         >>> gbm.train(x=["Origin","Dest"],
         ...           y="IsDepDelayed",
         ...           training_frame=airlines)
-        >>> tree = H2OTree(gbm, 0, "NO")
+        >>> tree = H2OTree(model = gbm, tree_number = 0 , tree_class = "NO")
         >>> threshold = 'nan'
         >>> left_child = 9
         >>> right_child = 10
