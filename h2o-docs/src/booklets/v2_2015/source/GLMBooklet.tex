@@ -1564,7 +1564,7 @@ H2O supports binomial models only; any extra levels in the test response will ge
 \item \texttt{non\_negative}: Forces coefficients to have non-negative values.
 \item \texttt{remove\_collinear\_columns}: Specify whether to automatically remove collinear columns during model building. When enabled, collinear columns will be dropped from the model and will have a 0 coefficient in the returned model. This can only be set if there is no regularization.
 \item \texttt{interactions}: Optionally specify a list of predictor column indices to interact. All pairwise combinations will be computed for this list.
-\item \texttt{hglm}:  Specify whether to build a hierarchical generalized linear model. HGLM produces estimates for fixed effects, random effects, variance components and their standard errors. It also produces diagnostics, such as variances and leverages. This option is disabled by default. Note that HGLM currently supports only the Gaussian family and random family.
+\item \texttt{hglm}: Specify whether to build a hierarchical generalized linear model. HGLM produces estimates for fixed effects, random effects, variance components and their standard errors. It also produces diagnostics, such as variances and leverages. This option is disabled by default. Note that HGLM currently supports only the Gaussian family and random family.
 \end{itemize}
 %Additional: 
 %Strong Rules Enables: Uses strong rules to filter out inactive columns. Default is true. 
