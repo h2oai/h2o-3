@@ -617,7 +617,7 @@ The two variance components are estimated iteratively by applying a gamma GLM to
 
  H_a=T_a (T_a^T W^{-1} T_a )^{-1} T_a^T W^{-1}
 
-Estimation of Fixed Effect Dispersion Paramter/Variance
+Estimation of Fixed Effect Dispersion Parameter/Variance
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 A gamma GLM is used to fit the dispersion part of the model with response
