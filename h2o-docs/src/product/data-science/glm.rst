@@ -682,7 +682,7 @@ H2O provides the following model metrics at the end of each HGLM experiment:
 12. likelihood: if calc_hlik is true, the following four values are returned:
 
  - hlik: log-h-likelihood;
- - pvh: adjusted profile log-likelihood profied over the random effects;
+ - pvh: adjusted profile log-likelihood profiled over the random effects;
  - pbvh: adjusted profile log-likelihood profiled over fixed and random effects;
  - caic: conditional AIC.
 

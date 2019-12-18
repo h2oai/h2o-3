@@ -747,11 +747,11 @@ H2O provides the following model metrics at the end of each HGLM experiment:
     \item dfrefe: deviance degrees of freedom for the mean part of model
     \item sumvc1: estimates and standard errors of linear predictor in the dispersion model
     \item summvc2: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
-    \item likelihood: if \textttt{calc_hlik} is true, the following four values are returned:
+    \item likelihood: if \texttt{calc\_hlik} is true, the following four values are returned:
     
     	\begin{itemize}
 		\item hlik: log-h-likelihood;
-                 \item pvh: adjusted profile log-likelihood profied over the random effects;
+                 \item pvh: adjusted profile log-likelihood profiled over the random effects;
                  \item pbvh: adjusted profile log-likelihood profiled over fixed and random effects;
                  \item caic: conditional AIC.
 	\end{itemize}
@@ -769,75 +769,6 @@ This mapping is done in four steps:
 \item Estimate $\delta_e^2(\text {tau})$.
 \item Estimate $\delta_u^2(\text {phi})$.
 \end{enumerate}
-
-\textbf{Step 1}: Initialize starting values by the system.
-
-Following the implementation from R, when a user fails to specify starting values for $psi$, $\beta$, $\mu$, $\delta_e^2$, $\delta_u^2$, we will do it for the users as follows:
-
-	\begin{enumerate}
-        \item A GLM model is built with just the fixed columns and response.
-        \item Next init_sig_e($\delta_e^2$)/tau is set to 0.6*residual_deviance() / residual_degrees_of_freedom().
-        \item init_sig_u($\delta_u^2$) is set to 0.66*init_sig_e.
-        \item For numerical stability, we restrict the magnitude to init\_sig\_e and init\_sig\_u to >= 0.1.
-        \item Set phi = vector of length number of random columns of value init_sig\_u / (number of random columns).
-        \item Set $\beta$ to the GLM model coefficients, $\mu$ to be a zero vector.
-        \item Set psi to be a zero vector.
-        \end{enumerate}
-
-\textbf{Step 2}: Step 2: Estimate $\delta = \beta \choose u$.
-
-Given the current values of $\delta_e^2, \delta_u^2$, we will solve for $\delta$ = $\beta \choose u$. Instead of solving $\delta$ from $T_a^T W^{-1} T_a \delta=T_a^T W^{-1} y_a$, a different set of formulae are used. A loop is used to solve for the coefficients:
-
-\begin{enumerate}
-\item The following variables are generated:
-	
-	\begin{itemize}
-		\item $v.i= g_r^{-1} (u_i)$ where $u_i$ are the random coefficients of the random effects/columns and $g_r^{-1}$ can be considered as the inverse link function.
-                \item $tau$ is a vector of length number of data containing init.sig.e;
-                \item $eta.i=X_i \beta+offset$ and store the previous $eta.i$ as $eta.o$.
-                \item $mu.i=g^{-1} (eta.i)$.
-                \item dmu_deta is derivative of $g^{-1} (eta.i)$ with respect to $eta.i$, which is 1 for identity link.
-                \item $z_i=eta.i-offset+(y_i-mu.i)/\text {dmu_deta}$
-                \item $zmi= \text{psi}$
-                \item $augZ =$ $zi \choose zmi$.
-                \item du_dv is the derivative of $g_r^{-1} (u_i)$ with respect to $v.i.$ Again, for identity link, this is 1.
-                \item The weight $W =$ $wdata \choose wpsi$ where $wdata = \frac {d \text{mu_deta}^2}{\text {prior_weight*family}\$\text{variance}(mu.i)*tau}$ and $wpsi = \frac {d \text{u_dv}^2}{\text {prior_weight*family}\$\text{variance(psi)*phi}}$
-       \end{itemize}
-       
-\item Finally the following formula is used to solve for the parameters: $augXZ \cdot \delta=augZW$ where $augXZ=T_a \cdot W$ and $augZW=augZ \cdot W$:
-
-	\begin{itemize}
-		\item Use QR decomposition to augXZ and obtain: $QR \delta = augZW$.
-                \item Use backward solve to obtain the coefficients $\delta$ from $R \delta = Q^T augZW$.
-                \item Calculate $hv=\text{rowsum}(Q)$ of length n+number of expanded and store in returnFrame.
-                \item Calculate $dev = prior weight*(y_i-mu.i)^2 \choose (psi -u_i )^2$ of length n+number of expanded random columns and store in returnFrame.
-                \item Calculate $resid= \frac {(y-mu.i)} {\sqrt \frac {sum(dev)(1-hv)}{n-p}}$ of length n and store in returnFrame.
-                \item Go back to step 1 unless $\Sigma_i(eta.i-eta.o)^2 / \Sigma_i(eta.i)^2<1e-6$ or a timeout event has occurred.
-       \end{itemize}
-       
-\end{enumerate}
-       
-\textbf{Step 3}: Estimate $\delta_e^2(\text {tau})$
-
-With the newly estimated fixed and random coefficients, we will estimate the dispersion parameter for the fixed effects/columns by building a gamma GLM:
-
-\begin{enumerate}
-\item Generate a training frame with constant predictor column of 1 to force GLM model to generate only the intercept term:
-
-	\begin{itemize}
-		\item Response column as $dev/(1-hv)$.
-		\item Weight column as $(1-hv)/2$.
-		\item Predictor column of ones.
-		\item The length of the training frame is the number of data rows.
-	\end{itemize}
-	
-        \item Build a gamma GLM with $family=gamma$ and $link=log$.
-        \item Set $tau = \text {exp (intercept value)}$.
-        \item Assign estimation standard error and sigma from the GLM standard error calculation for coefficients.
-
-\textbf{Step 4}: Estimate $\delta_u^2(\text {phi})$.
-
-Again, a gamma GLM model is used here. In addition, the error estimates are generated for each random column. Exactly the same steps are used here as in Step 3. The only difference is that we are looking at the $dev,hv$ corresponding to the expanded random columns/effects.
 
 %----------------------------------------------------------------------
 %----------------------------------------------------------------------
