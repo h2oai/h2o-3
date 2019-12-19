@@ -19,7 +19,7 @@ class BuildConfig {
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '73'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '74'
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'
@@ -313,7 +313,15 @@ class BuildConfig {
       if (useKRB) {
           krbSuffix = '-krb'
       }
-      return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${krbSuffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
+    return getSmokeHadoopImageImpl(distribution, version, krbSuffix)
+  }
+  
+  String getHadoopEdgeNodeImage() {
+    return getSmokeHadoopImageImpl("hdp", "2.2", "-0xd-edge")
+  }
+  
+  String getSmokeHadoopImageImpl(final distribution, final version, final suffix) {
+    return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${suffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
   }
 
   static enum JenkinsMaster {
