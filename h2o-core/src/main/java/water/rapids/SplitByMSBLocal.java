@@ -10,6 +10,8 @@ import water.util.PrettyPrint;
 import java.math.BigInteger;
 import java.util.Arrays;
 import java.util.Hashtable;
+import static java.math.BigInteger.ONE;
+import static java.math.BigInteger.ZERO;
 
 class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
   private final boolean _isLeft;
@@ -134,7 +136,7 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
     for (int r=0; r<chk[0]._len; r++) {    // tight, branch free and cache efficient (surprisingly)
       int MSBvalue = 0;  // default for NA
      //long thisx = 0;
-      BigInteger thisx = BigInteger.ZERO;
+      BigInteger thisx = ZERO;
       if (!chk[0].isNA(r)) {
         // TODO: restore branch-free again, go by column and retain original
         // compression with no .at8()
@@ -145,8 +147,8 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
           // able to use as raw, but when we can maybe can do in bulk
         } else {    // dealing with numeric columns (int or double) or enum
           thisx = isIntCols[0] ?
-                  BigInteger.valueOf(_ascending[0]*chk[0].at8(r)).subtract(_base[0]).add(BigInteger.ONE):
-                  MathUtils.convertDouble2BigInteger(_ascending[0]*chk[0].atd(r)).subtract(_base[0]).add(BigInteger.ONE);
+                  BigInteger.valueOf(_ascending[0]*chk[0].at8(r)).subtract(_base[0]).add(ONE):
+                  MathUtils.convertDouble2BigInteger(_ascending[0]*chk[0].atd(r)).subtract(_base[0]).add(ONE);
           MSBvalue = thisx.shiftRight(_shift).intValue();
         }
       }
@@ -174,8 +176,8 @@ class SplitByMSBLocal extends MRTask<SplitByMSBLocal> {
         if (_isLeft && _id_maps[c] != null) thisx = BigInteger.valueOf(_id_maps[c][(int)chk[c].at8(r)] + 1);
         else {
           thisx =  isIntCols[c]?
-                  BigInteger.valueOf(_ascending[c]*chk[c].at8(r)).subtract(_base[c]).add(BigInteger.ONE):
-                  MathUtils.convertDouble2BigInteger(_ascending[c]*chk[c].atd(r)).subtract(_base[c]).add(BigInteger.ONE);
+                  BigInteger.valueOf(_ascending[c]*chk[c].at8(r)).subtract(_base[c]).add(ONE):
+                  MathUtils.convertDouble2BigInteger(_ascending[c]*chk[c].atd(r)).subtract(_base[c]).add(ONE);
         }
         keyArray = thisx.toByteArray();  // switched already here.
         offIndex = keyArray.length > 8 ? -1 : _bytesUsed[c] - keyArray.length;

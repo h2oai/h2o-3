@@ -12,6 +12,8 @@ import water.util.Log;
 import water.util.MathUtils;
 
 import java.math.BigInteger;
+import static java.math.BigInteger.ZERO;
+import static java.math.BigInteger.ONE;
 
 
 // counted completer so that left and right index can run at the same time
@@ -117,7 +119,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     for (int i=0; i<_whichCols.length; i++) {
       Vec col = _DF.vec(_whichCols[i]);
       // TODO: strings that aren't already categoricals and fixed precision double.
-      BigInteger max=BigInteger.ZERO;
+      BigInteger max=ZERO;
 
       _isInt[i] = col.isCategorical() || col.isInt();
       _isCategorical[i] = col.isCategorical();
@@ -125,7 +127,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
         // simpler and more robust for now for all categorical bases to be 0,
         // even though some subsets may be far above 0; i.e. forgo uncommon
         // efficiency savings for now
-        _base[i] = BigInteger.ZERO;
+        _base[i] = ZERO;
         if (_isLeft) {
           // the left's levels have been matched to the right's levels and we
           // store the mapped values so it's that mapped range we need here (or
@@ -207,7 +209,7 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
   private long computeShift( final BigInteger max, final int i )  {
     int biggestBit = 0;
 
-    int rangeD = max.subtract(_base[i]).add(BigInteger.ONE).add(BigInteger.ONE).bitLength();
+    int rangeD = max.subtract(_base[i]).add(ONE).add(ONE).bitLength();
     biggestBit = _isInt[i] ? rangeD : (rangeD == 64 ? 64 : rangeD + 1);
 
     // TODO: feed back to R warnings()
@@ -217,12 +219,12 @@ class RadixOrder extends H2O.H2OCountedCompleter<RadixOrder> {
     long MSBwidth = 1L << _shift[i];
 
     BigInteger msbWidth = BigInteger.valueOf(MSBwidth);
-    if (_base[i].mod(msbWidth).compareTo(BigInteger.ZERO) != 0) {
-      _base[i] =  _isInt[i]? msbWidth.multiply(_base[i].divide(msbWidth).add(_base[i].signum()<0?BigInteger.valueOf(-1L):BigInteger.ZERO))
+    if (_base[i].mod(msbWidth).compareTo(ZERO) != 0) {
+      _base[i] =  _isInt[i]? msbWidth.multiply(_base[i].divide(msbWidth).add(_base[i].signum()<0?BigInteger.valueOf(-1L):ZERO))
               :msbWidth.multiply (_base[i].divide(msbWidth));; // dealing with unsigned integer here
-      assert _base[i].mod(msbWidth).compareTo(BigInteger.ZERO) == 0;
+      assert _base[i].mod(msbWidth).compareTo(ZERO) == 0;
     }
-    return max.subtract(_base[i]).add(BigInteger.ONE).shiftRight(_shift[i]).intValue();
+    return max.subtract(_base[i]).add(ONE).shiftRight(_shift[i]).intValue();
   }
 
   private static class SendSplitMSB extends MRTask<SendSplitMSB> {
