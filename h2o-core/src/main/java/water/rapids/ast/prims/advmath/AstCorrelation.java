@@ -9,8 +9,9 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
-import water.rapids.ast.AstFunction;
 import water.util.ArrayUtils;
+
+import java.util.Arrays;
 
 /**
  * Calculate Pearson's Correlation Coefficient between columns of a frame
@@ -24,11 +25,13 @@ public class AstCorrelation extends AstPrimitive {
     return new String[]{"ary", "x", "y", "use"};
   }
 
-  private enum Mode {Everything, AllObs, CompleteObs}
+  protected enum Mode {Everything, AllObs, CompleteObs}
+
+  private enum Measure {Pearson, Spearman}
 
   @Override
   public int nargs() {
-    return 1 + 3; /* (cor X Y use) */
+    return 1 + 4; /* (cor X Y use) */
   }
 
   @Override
@@ -59,7 +62,28 @@ public class AstCorrelation extends AstPrimitive {
         throw new IllegalArgumentException("unknown use mode: " + use);
     }
 
-    return fry.numRows() == 1 ? scalar(frx, fry, mode) : array(frx, fry, mode);
+    final Measure measure = getMeasureFromUserInput(stk.track(asts[4].exec(env)).getStr());
+    switch (measure) {
+      case Pearson:
+        return fry.numRows() == 1 ? scalar(frx, fry, mode) : array(frx, fry, mode);
+      case Spearman:
+        return new ValFrame(SpearmanCorrelation.calculate(frx, fry, mode));
+      default:
+        throw new IllegalStateException(String.format("Given measure input'%s' is not supported. Available options are: %s",
+                measure, Arrays.toString(Measure.values())));
+    }
+  }
+
+  public Measure getMeasureFromUserInput(final String measureUserInput) {
+    switch (measureUserInput) {
+      case "Pearson":
+        return Measure.Pearson;
+      case "Spearman":
+        return Measure.Spearman;
+      default:
+        throw new IllegalArgumentException(String.format("Unknown correlation measure '%s'. Available options are: %s",
+                measureUserInput, Arrays.toString(Measure.values())));
+    }
   }
 
   // Pearson Correlation for one row, which will return a scalar value.
@@ -127,9 +151,12 @@ public class AstCorrelation extends AstPrimitive {
     if (mode.equals(Mode.Everything) || mode.equals(Mode.AllObs)) {
 
       if (mode.equals(Mode.AllObs)) {
-        for (Vec v : vecxs)
-          if (v.naCnt() != 0)
-            throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
+        for (int i = 0; i < vecxs.length; i++) {
+          if (vecxs[i].naCnt() != 0 || vecys[i].naCnt() != 0) { // Need to check both frames if frx != fry
+            throw new IllegalArgumentException("Mode is 'AllObs' but NAs are present");
+          }
+        }
+
       }
 
       //Set up CoVarTask

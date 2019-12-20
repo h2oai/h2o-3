@@ -1,72 +1,132 @@
 package water.rapids.ast.prims.advmath;
 
+import water.Key;
 import water.MRTask;
 import water.Scope;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.rapids.Env;
 import water.rapids.Merge;
-import water.rapids.Val;
-import water.rapids.ast.AstPrimitive;
-import water.rapids.ast.AstRoot;
-import water.rapids.vals.ValNum;
 import water.util.FrameUtils;
-import water.util.VecUtils;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
+import java.util.Objects;
 
-public class AstSpearman extends AstPrimitive<AstSpearman> {
-  @Override
-  public int nargs() {
-    return 1 + 3; // Frame ID and ID of two numerical vectors to calculate SCC on.
+public class SpearmanCorrelation {
+
+  public static Frame calculate(final Frame frameX, Frame frameY, final AstCorrelation.Mode mode) {
+    Objects.requireNonNull(frameX);
+    Objects.requireNonNull(frameY);
+
+    final Frame correlationMatrix = createCorrelationMatrix(frameX);
+    final boolean framesAreEqual = frameX == frameY; // TODO: Client APIs create new frames with no keys to compare
+
+    checkCorrelationDoable(frameX, frameY, mode);
+
+    for (int vecIdX = 0; vecIdX < frameX.numCols(); vecIdX++) {
+      for (int vecIdY = 0; vecIdY < frameX.numCols(); vecIdY++) {
+        Scope.enter();
+        try {
+          if (framesAreEqual && vecIdX == vecIdY) {
+            // If the correlation is calculated within frame frame, comparing the same vecs always resultings in 1.0
+            // correlation coefficient. Therefore, there is no need to calculate it.
+            correlationMatrix.vec(vecIdX)
+                    .set(vecIdY, 1d);
+          } else if (isNaNCorrelation(frameX.vec(vecIdX), frameY.vec(vecIdY), mode)) {
+            correlationMatrix.vec(vecIdX)
+                    .set(vecIdY, Double.NaN);
+          } else {
+            // Actual SCC calculation
+            final SpearmanRankedVectors rankedVectors = rankedVectors(frameX, frameY, vecIdX, vecIdY, mode);
+            // Means must be calculated separately - those are not calculated for categorical columns in rollup stats.
+            final double[] means = calculateMeans(rankedVectors._x, rankedVectors._y);
+            final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(means[0], means[1])
+                    .doAll(rankedVectors._x, rankedVectors._y);
+
+            correlationMatrix.vec(vecIdX)
+                    .set(vecIdY, spearman.getSpearmanCorrelationCoefficient());
+          }
+        } finally {
+          Scope.exit();
+        }
+      }
+    }
+
+    return correlationMatrix;
   }
 
-  @Override
-  public String[] args() {
-    return new String[]{"frame", "first_column", "second_column"};
-  }
+  /**
+   * @param frameX Frame Y candiate for SCC calculation
+   * @param frameY Frame Y candidate for SCC calculation
+   * @param mode   An instance of {@link AstCorrelation.Mode}
+   * @return False if AstCorrelation.Mode is set to AllObs and any of the vectors in compared frames contains NaNs, otherwise True.
+   * @throws IllegalArgumentException Whe the {@link AstCorrelation.Mode} is set to AllObs and any of the vectors contains NaN
+   */
+  private static void checkCorrelationDoable(final Frame frameX, final Frame frameY, final AstCorrelation.Mode mode)
+          throws IllegalArgumentException {
+    if (!AstCorrelation.Mode.AllObs.equals(mode)) return;
 
-  @Override
-  public Val apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
-    final Frame originalUnsortedFrame = stk.track(asts[1].exec(env).getFrame());
-    final int vecIdX = originalUnsortedFrame.find(asts[2].exec(env).getStr());
-    final int vecIdY = originalUnsortedFrame.find(asts[3].exec(env).getStr());
+    final Vec[] vecsX = frameX.vecs();
+    final Vec[] vecsY = frameY.vecs();
 
-    try {
-      Scope.enter();
-      final SpearmanRankedVectors rankedVectors = rankedVectors(originalUnsortedFrame, vecIdX, vecIdY);
-      // Means must be calculated separately - those are not calculated for categorical columns in rollup stats.
-      final double[] means = calculateMeans(rankedVectors._x, rankedVectors._y);
-      final SpearmanCorrelationCoefficientTask spearman = new SpearmanCorrelationCoefficientTask(means[0], means[1])
-              .doAll(rankedVectors._x, rankedVectors._y);
-      return new ValNum(spearman.getSpearmanCorrelationCoefficient());
-    } finally {
-      Scope.exit();
+    assert vecsX.length == vecsY.length;
+
+    for (int i = 0; i < vecsX.length; i++) {
+      if (vecsX[i].naCnt() != 0 || vecsY[i].naCnt() != 0) {
+        throw new IllegalArgumentException("Mode is 'AllObs' but NAs are present");
+      }
     }
 
   }
 
   /**
+   * @param vecX Vec X candiate for SCC calculation
+   * @param vecY Vec Y candidate for SCC calculation
+   * @param mode An instance of {@link AstCorrelation.Mode}
+   * @return True if AstCorrelation.Mode is set to EVERYTHING and any of the vectors compared contains NaNs, otherwise False.
+   */
+  private static boolean isNaNCorrelation(final Vec vecX, final Vec vecY, final AstCorrelation.Mode mode) {
+    return AstCorrelation.Mode.Everything.equals(mode) && (vecX.naCnt() > 0 || vecY.naCnt() > 0);
+  }
+
+  private static Frame createCorrelationMatrix(final Frame originalUnsortedFrame) {
+    // Correlation matrix is always a squared matrix, the size is known beforehand
+    final Vec[] correlationVecs = new Vec[originalUnsortedFrame.numCols()];
+
+    for (int i = 0; i < originalUnsortedFrame.numCols(); i++) {
+      correlationVecs[i] = Vec.makeCon(Double.NaN, originalUnsortedFrame.numCols());
+    }
+
+    return new Frame(Key.make(), correlationVecs, false);
+  }
+
+  /**
    * Sorts and ranks the vectors of which SCC is calculated. Original Frame is not modified.
    *
-   * @param originalUnsortedFrame Original frame containing the vectors compared.
-   * @param vecIdX                First compared vector
-   * @param vecIdY                Second compared vector
+   * @param frameX Original frame containing the vectors compared.
+   * @param vecIdX First compared vector
+   * @param vecIdY Second compared vector
    * @return An instance of {@link SpearmanRankedVectors}, holding two new vectors with row rank.
    */
-  private SpearmanRankedVectors rankedVectors(final Frame originalUnsortedFrame, final int vecIdX, final int vecIdY) {
+  private static SpearmanRankedVectors rankedVectors(final Frame frameX, final Frame frameY, final int vecIdX, final int vecIdY,
+                                                     final AstCorrelation.Mode mode) {
 
-    Frame comparedVecsWithNas = new Frame(originalUnsortedFrame.vec(vecIdX).makeCopy(),
-            originalUnsortedFrame.vec(vecIdY).makeCopy());
-    Frame unsortedFrameWithoutNAs = new Merge.RemoveNAsTask(0, 1)
-            .doAll(comparedVecsWithNas.types(), comparedVecsWithNas)
-            .outputFrame(comparedVecsWithNas.names(), comparedVecsWithNas.domains());
+    Frame comparedVecsWithNas = new Frame(frameX.vec(vecIdX).makeCopy(),
+            frameY.vec(vecIdY).makeCopy());
+    Frame unsortedVecs;
 
-    Frame sortedX = new Frame(unsortedFrameWithoutNAs.vec(0).makeCopy());
+    if (AstCorrelation.Mode.CompleteObs.equals(mode)) {
+      unsortedVecs = comparedVecsWithNas;
+    } else {
+      unsortedVecs = new Merge.RemoveNAsTask(0, 1)
+              .doAll(comparedVecsWithNas.types(), comparedVecsWithNas)
+              .outputFrame(comparedVecsWithNas.names(), comparedVecsWithNas.domains());
+    }
+
+    Frame sortedX = new Frame(unsortedVecs.vec(0).makeCopy());
     Scope.track(sortedX);
-    Frame sortedY = new Frame(unsortedFrameWithoutNAs.vec(1).makeCopy());
+    Frame sortedY = new Frame(unsortedVecs.vec(1).makeCopy());
     Scope.track(sortedY);
 
     final boolean xIsOrdered = needsOrdering(sortedX.vec(0));
@@ -85,8 +145,8 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     }
 
     assert sortedX.numRows() == sortedY.numRows();
-    final Vec orderX = needsOrdering(sortedX.vec(0)) ? Vec.makeZero(sortedX.numRows()) : originalUnsortedFrame.vec(vecIdX);
-    final Vec orderY = needsOrdering(sortedY.vec(0)) ? Vec.makeZero(sortedY.numRows()) : originalUnsortedFrame.vec(vecIdY);
+    final Vec orderX = needsOrdering(sortedX.vec(0)) ? Vec.makeZero(sortedX.numRows()) : frameX.vec(vecIdX);
+    final Vec orderY = needsOrdering(sortedY.vec(0)) ? Vec.makeZero(sortedY.numRows()) : frameX.vec(vecIdY);
 
     final Vec xLabel = sortedX.vec("label") == null ? sortedX.vec(0) : sortedX.vec("label");
     final Vec xValue = sortedX.vec(0);
@@ -146,15 +206,10 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     }
   }
 
-  private boolean needsOrdering(final Vec vec) {
+  private static boolean needsOrdering(final Vec vec) {
     return !vec.isCategorical();
   }
 
-
-  @Override
-  public String str() {
-    return "spearman";
-  }
 
   /**
    * A task to do calculate Spearman's correlation coefficient. Not using the "approximation equation", but the
@@ -177,7 +232,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
     private double _xyMul = 0;
     // If at least one of the vectors contains NaN, such line is skipped
     private long _linesVisited;
-    
+
     /**
      * @param xMean Mean value of the first 'x' vector, with NaNs skipped
      * @param yMean Mean value of the second 'y' vector, with NaNs skipped
@@ -199,7 +254,7 @@ public class AstSpearman extends AstPrimitive<AstSpearman> {
         _linesVisited++;
 
         _xyMul += x * y;
-        
+
         final double xDiffFromMean = x - _xMean;
         final double yDiffFromMean = y - _yMean;
         _xDiffSquared += Math.pow(xDiffFromMean, 2);
