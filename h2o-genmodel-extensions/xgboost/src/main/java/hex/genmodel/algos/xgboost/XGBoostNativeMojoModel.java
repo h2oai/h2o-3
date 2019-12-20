@@ -22,7 +22,8 @@ import java.util.Collections;
  * Please note: user is advised to explicitly release the native resources of XGBoost by calling close method on the instance.
  */
 public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
-  Booster _booster;
+  
+  private Booster _booster;
 
   public XGBoostNativeMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -38,20 +39,25 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
   }
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {
-    return score0(doubles, offset, preds,
-            _boosterType, _ntrees,
-            _booster, _nums, _cats, _catOffsets, _useAllFactorLevels,
-            _nclasses, _priorClassDistrib, _defaultThreshold, _sparse);
+    if (offset != 0 && _mojo_version == 1.00) {
+      throw new UnsupportedOperationException("Unsupported: offset != 0");
+    }
+    return score0(
+        doubles, offset, preds,
+        _boosterType, _ntrees,
+        _booster, _nums, _cats, _catOffsets, _useAllFactorLevels,
+        _nclasses, _priorClassDistrib, _defaultThreshold, _sparse
+    );
   }
 
-  public static double[] score0(double[] doubles, double offset, double[] preds,
-                                String _boosterType, int _ntrees,
-                                Booster _booster, int _nums, int _cats,
-                                int[] _catOffsets, boolean _useAllFactorLevels,
-                                int nclasses, double[] _priorClassDistrib,
-                                double _defaultThreshold, final boolean _sparse) {
-    if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
-
+  public static double[] score0(
+      double[] doubles, double offset, double[] preds,
+      String _boosterType, int _ntrees, 
+      Booster _booster, int _nums, int _cats,
+      int[] _catOffsets, boolean _useAllFactorLevels,
+      int nclasses, double[] _priorClassDistrib,
+      double _defaultThreshold, final boolean _sparse
+  ) {
     int cats = _catOffsets == null ? 0 : _catOffsets[_cats];
     // convert dense doubles to expanded floats
     final float[] floats = new float[_nums + cats]; //TODO: use thread-local storage
@@ -60,6 +66,9 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
     DMatrix dmat = null;
     try {
       dmat = new DMatrix(floats,1, floats.length, _sparse ? 0 : Float.NaN);
+      if (offset != 0) {
+        dmat.setBaseMargin(new float[] {  (float) offset });
+      }
       final DMatrix row = dmat;
       final int treeLimit;
       if ("dart".equals(_boosterType)) {
@@ -133,7 +142,7 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       System.exit(1);
     }
     String mojoFile = args[1];
-    boolean withStats = args.length > 2 ? Boolean.valueOf(args[2]) : false;
+    boolean withStats = args.length > 2 && Boolean.parseBoolean(args[2]);
     String format = args.length > 3 ? args[3] : "text";
 
     XGBoostNativeMojoModel mojoModel = (XGBoostNativeMojoModel) MojoModel.load(mojoFile);

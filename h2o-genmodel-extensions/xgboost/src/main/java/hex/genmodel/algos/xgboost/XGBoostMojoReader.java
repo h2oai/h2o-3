@@ -70,7 +70,7 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
   }
 
   @Override public String mojoVersion() {
-    return "1.00";
+    return "1.10";
   }
 
   @Override

@@ -161,8 +161,10 @@ public class XGBoostUtilsTest extends TestUtil {
                 .withDataForCol(2, ard(0, 3, 0))
                 .build());
         final DMatrix response = XGBoostUtils.convertFrameToDMatrix(
-            new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false),
-            frame, "C3", null, true
+            new DataInfo(
+                frame, null, true, DataInfo.TransformType.NONE, false, 
+                false, false), 
+            frame, "C3", null, null, true
         );
         assertNotNull(response);
         assertEquals(3, response.rowNum());
@@ -191,7 +193,6 @@ public class XGBoostUtilsTest extends TestUtil {
         final Vec vec = frame.anyVec();
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
-        float[] weights = null;
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
         final int nrows = (int) vec.length();
 
@@ -210,8 +211,9 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-                frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions, 
-                frame.vec(response), resp, weights);
+                frame, chunksIds, null, null, di, sparseMatrix, sparseMatrixDimensions, 
+                frame.vec(response), resp, null, null
+        );
 
         assertEquals(3, actualRows);
 
@@ -246,7 +248,6 @@ public class XGBoostUtilsTest extends TestUtil {
         final Vec vec = frame.anyVec();
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
-        float[] weights = null;
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
         final int nrows = (int) vec.length();
 
@@ -265,8 +266,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions,
-                frame.vec(response), resp, weights);
+            frame, chunksIds, null, null, di, sparseMatrix, sparseMatrixDimensions,
+                frame.vec(response), resp, null, null);
 
         assertEquals(3, actualRows);
 
@@ -304,7 +305,6 @@ public class XGBoostUtilsTest extends TestUtil {
         final Vec vec = frame.anyVec();
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
-        float[] weights = null;
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
         final int nrows = (int) vec.length();
 
@@ -324,8 +324,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions,
-            frame.vec(response), resp, weights);
+            frame, chunksIds, null, null, di, sparseMatrix, sparseMatrixDimensions,
+            frame.vec(response), resp, null, null);
 
         assertEquals(3, actualRows);
 
@@ -363,7 +363,6 @@ public class XGBoostUtilsTest extends TestUtil {
         final Vec vec = frame.anyVec();
         final int[] chunksIds = VecUtils.getLocalChunkIds(frame.anyVec());
         float[] resp = new float[(int) vec.length()];
-        float[] weights = null;
         final DataInfo di = new DataInfo(frame, null, true, DataInfo.TransformType.NONE, false, false, false);
         final int nrows = (int) vec.length();
 
@@ -384,8 +383,8 @@ public class XGBoostUtilsTest extends TestUtil {
 
         // Initialize allocated matrices with actual data
         int actualRows = SparseMatrixFactory.initializeFromChunkIds(
-            frame, chunksIds, null, di, sparseMatrix, sparseMatrixDimensions,
-            frame.vec(response), resp, weights);
+            frame, chunksIds, null, null, di, sparseMatrix, sparseMatrixDimensions,
+            frame.vec(response), resp, null, null);
 
         assertEquals(3, actualRows);
 

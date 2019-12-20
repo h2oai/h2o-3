@@ -151,9 +151,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (expensive) {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
-      if (hasOffsetCol()) {
-        error("_offset_column", "Offset is not supported for XGBoost.");
-      }
     }
 
     if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
@@ -262,7 +259,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (parms._weights_column != null && parms._offset_column != null) {
       Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
     }
-    if (parms._weights_column != null && parms._offset_column == null /*FIXME: offset not yet implemented*/) {
+    if (parms._weights_column != null && parms._offset_column == null) {
       dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
       if (nClasses == 1)
         dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
