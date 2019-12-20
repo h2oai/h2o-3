@@ -46,7 +46,7 @@ def cor_test():
     cor_np = h2o.H2OFrame(np.corrcoef(ranked.as_matrix(), rowvar=0))
     print("\n NumPy:")
     print(cor_np)
-    cor_h2o = iris_h2o[0:4].cor(measure="Spearman")
+    cor_h2o = iris_h2o[0:4].cor(method="Spearman")
     print("\n H2O:")
     print(cor_h2o)
     cor_diff = abs(cor_h2o - cor_np)

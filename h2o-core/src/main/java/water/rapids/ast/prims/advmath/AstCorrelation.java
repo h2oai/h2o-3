@@ -27,7 +27,7 @@ public class AstCorrelation extends AstPrimitive {
 
   protected enum Mode {Everything, AllObs, CompleteObs}
 
-  private enum Measure {Pearson, Spearman}
+  private enum Method {Pearson, Spearman}
 
   @Override
   public int nargs() {
@@ -62,27 +62,27 @@ public class AstCorrelation extends AstPrimitive {
         throw new IllegalArgumentException("unknown use mode: " + use);
     }
 
-    final Measure measure = getMeasureFromUserInput(stk.track(asts[4].exec(env)).getStr());
-    switch (measure) {
+    final Method method = getMethodFromUserInput(stk.track(asts[4].exec(env)).getStr());
+    switch (method) {
       case Pearson:
         return fry.numRows() == 1 ? scalar(frx, fry, mode) : array(frx, fry, mode);
       case Spearman:
         return new ValFrame(SpearmanCorrelation.calculate(frx, fry, mode));
       default:
-        throw new IllegalStateException(String.format("Given measure input'%s' is not supported. Available options are: %s",
-                measure, Arrays.toString(Measure.values())));
+        throw new IllegalStateException(String.format("Given method input'%s' is not supported. Available options are: %s",
+                method, Arrays.toString(Method.values())));
     }
   }
 
-  public Measure getMeasureFromUserInput(final String measureUserInput) {
-    switch (measureUserInput) {
+  public Method getMethodFromUserInput(final String methodUserInput) {
+    switch (methodUserInput) {
       case "Pearson":
-        return Measure.Pearson;
+        return Method.Pearson;
       case "Spearman":
-        return Measure.Spearman;
+        return Method.Spearman;
       default:
-        throw new IllegalArgumentException(String.format("Unknown correlation measure '%s'. Available options are: %s",
-                measureUserInput, Arrays.toString(Measure.values())));
+        throw new IllegalArgumentException(String.format("Unknown correlation method '%s'. Available options are: %s",
+                methodUserInput, Arrays.toString(Method.values())));
     }
   }
 
