@@ -618,7 +618,7 @@ The two variance components are estimated iteratively by applying a gamma GLM to
  H_a=T_a (T_a^T W^{-1} T_a )^{-1} T_a^T W^{-1}
 
 Estimation of Fixed Effect Dispersion Parameter/Variance
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 A gamma GLM is used to fit the dispersion part of the model with response
 :math:`y_{d,i}=(e_i^2)⁄(1-h_i )` where :math:`E(y_d )=u_d` and :math:`u_d≡\phi` (i.e., :math:`\delta_e^2` for a Gaussian response). The GLM model for the dispersion parameter is then specified by the link function :math:`g_d (.)` and the linear predictor :math:`X_d \beta_d` with prior weights for :math:`(1-h_i )⁄2` for :math:`g_d (u_d )=X_d \beta_d`. Because we are not using a dispersion model, :math:`X_d \beta_d` will only contain the intercept term.
@@ -668,25 +668,25 @@ HGLM Model Metrics
 
 H2O provides the following model metrics at the end of each HGLM experiment:
 
-1. fixef: fixed effects coefficients
-2. ranef: random effects coefficients
-3. randc: vector of random column indices
-4. varfix: dispersion parameter of the mean model
-5. varranef: dispersion parameter of the random effects
-6. converge: true if algorithm has converge, otherwise false
-7. sefe: standard errors of fixed effects
-8. sere: standard errors of random effects
-9. dfrefe: deviance degrees of freedom for the mean part of model
-10. sumvc1: estimates and standard errors of linear predictor in the dispersion model
-11. summvc2: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
-12. likelihood: if calc_hlik is true, the following four values are returned:
+- fixef: fixed effects coefficients
+- ranef: random effects coefficients
+- randc: vector of random column indices
+- varfix: dispersion parameter of the mean model
+- varranef: dispersion parameter of the random effects
+- converge: true if algorithm has converge, otherwise false
+- sefe: standard errors of fixed effects
+- sere: standard errors of random effects
+- dfrefe: deviance degrees of freedom for the mean part of model
+- sumvc1: estimates and standard errors of linear predictor in the dispersion model
+- summvc2: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
+- likelihood: if ``calc_like`` is true, the following four values are returned:
 
- - hlik: log-h-likelihood;
- - pvh: adjusted profile log-likelihood profiled over the random effects;
- - pbvh: adjusted profile log-likelihood profiled over fixed and random effects;
- - caic: conditional AIC.
+   - hlik: log-h-likelihood;
+   - pvh: adjusted profile log-likelihood profiled over the random effects;
+   - pbvh: adjusted profile log-likelihood profiled over fixed and random effects;
+   - caic: conditional AIC.
 
-13. bad: row index of the most influential observation.
+- bad: row index of the most influential observation.
 
 Mapping of Fitting Algorithm to the H2O-3 Implementation
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''

@@ -735,7 +735,7 @@ where $Z^* = ZL$ and $L$ is the Cholesky factorization of $A$. Hence, if you hav
 
 H2O provides the following model metrics at the end of each HGLM experiment:
 
-\begin{enumerate}
+\begin{itemize}
     \item fixef: fixed effects coefficients
     \item ranef: random effects coefficients
     \item randc: vector of random column indices
@@ -747,7 +747,7 @@ H2O provides the following model metrics at the end of each HGLM experiment:
     \item dfrefe: deviance degrees of freedom for the mean part of model
     \item sumvc1: estimates and standard errors of linear predictor in the dispersion model
     \item summvc2: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
-    \item likelihood: if \texttt{calc\_hlik} is true, the following four values are returned:
+    \item likelihood: if \texttt{calc\_like} is true, the following four values are returned:
     
     	\begin{itemize}
 		\item hlik: log-h-likelihood;
@@ -757,7 +757,7 @@ H2O provides the following model metrics at the end of each HGLM experiment:
 	\end{itemize}
 	
     \item bad: row index of the most influential observation.
-\end{enumerate}
+\end{itemize}
 
 \subsubsection{Mapping of Fitting Algorithm to the H2O-3 Implementation}
 
