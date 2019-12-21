@@ -1,10 +1,10 @@
 package water.rapids;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
@@ -19,6 +19,8 @@ import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.rapids.vals.ValNums;
 import water.rapids.vals.ValStrs;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.Log;
@@ -29,17 +31,15 @@ import java.util.Arrays;
 import java.util.Random;
 
 import static org.junit.Assert.*;
+import static water.TestUtil.*;
 import static water.rapids.Rapids.IllegalASTException;
 
-
-public class RapidsTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class RapidsTest {
   @Rule
   public transient ExpectedException ee = ExpectedException.none();
 
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
 
   @Test
   public void testSpearman() {
@@ -68,7 +68,7 @@ public class RapidsTest extends TestUtil {
     Session session = new Session();
     Scope.enter();
     try {
-      final Frame iris = TestUtil.parse_test_file(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
+      final Frame iris = parse_test_file(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
       Scope.track_generic(iris);
       final Val pearson_sepal = Rapids.exec("(spearman iris_spearman 'sepal_len' 'sepal_wid')", session);
       assertTrue(pearson_sepal instanceof ValNum);
@@ -84,7 +84,7 @@ public class RapidsTest extends TestUtil {
   public void testSpearmanCategoricals() {
     Scope.enter();
     try {
-      final Frame frame = TestUtil.parse_test_file(Key.make("iris_pearson"), "smalldata/junit/iris.csv");
+      final Frame frame = parse_test_file(Key.make("iris_pearson"), "smalldata/junit/iris.csv");
       Scope.track_generic(frame);
 
       Val pearson = Rapids.exec("(spearman iris_pearson 'sepal_len' 'class')");
