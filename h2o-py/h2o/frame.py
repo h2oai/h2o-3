@@ -204,7 +204,7 @@ class H2OFrame(Keyed):
         :param int cols: number of columns to fetch (all by default)
         :param full_cols: number of columns to fetch together with backed data
         :param int cols_offset: offset to fetch rows from (0 by default)
-        :param bool light: wether to use light frame endpoint or not
+        :param bool light: whether to use light frame endpoint or not
         :returns: an existing H2OFrame with the id provided; or None if such frame doesn't exist.
 
         :examples:
