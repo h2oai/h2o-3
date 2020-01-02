@@ -1,5 +1,6 @@
 def call(final pipelineContext, final stageConfig) {
     def branch = env.BRANCH_NAME.replaceAll("\\/", "-")
+    def workDir = "/user/jenkins/workspaces/$branch"
     withCredentials([usernamePassword(credentialsId: 'mr-0xd-admin-credentials', usernameVariable: 'ADMIN_USERNAME', passwordVariable: 'ADMIN_PASSWORD')]) {
         stageConfig.customBuildAction = """
             export HADOOP_CONF_DIR=/etc/hadoop/conf/
@@ -26,6 +27,11 @@ def call(final pipelineContext, final stageConfig) {
                 exit 1
             fi
             echo "Cloud IP:PORT ----> \$CLOUD_IP:\$CLOUD_PORT"
+    
+            echo "Prepare workdir"
+            hdfs dfs -rm -r -f $workDir
+            hdfs dfs -mkdir -p $workDir
+            export HDFS_WORKSPACE=$workDir
     
             echo "Running Make"
             make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target} check-leaks
