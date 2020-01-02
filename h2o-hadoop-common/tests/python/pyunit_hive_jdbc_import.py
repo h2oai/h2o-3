@@ -2,10 +2,9 @@
 
 import sys
 import os
-import h2o
-sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
+sys.path.insert(1, os.path.join("../../../h2o-py"))
 from tests import pyunit_utils
-from numpy import isclose
+import h2o
 
 def adapt_frame(dataset, table_name="table_for_h2o_import"):
     dataset[table_name + ".community_area_name"] = dataset[table_name + ".community_area_name"].asfactor()

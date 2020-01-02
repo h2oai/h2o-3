@@ -58,8 +58,6 @@ def contains_log_file(dir):
     return False
 
 def hadoop_download_logs():
-
-
     # Check if we are running inside the H2O network by seeing if we can touch
     # the namenode.
     hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
