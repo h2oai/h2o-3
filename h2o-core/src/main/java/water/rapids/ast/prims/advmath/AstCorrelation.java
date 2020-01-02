@@ -163,10 +163,10 @@ public class AstCorrelation extends AstPrimitive {
     if (mode.equals(Mode.Everything) || mode.equals(Mode.AllObs)) {
 
       if (mode.equals(Mode.AllObs)) {
-        for (int i = 0; i < vecxs.length; i++) {
-          if (vecxs[i].naCnt() != 0 || vecys[i].naCnt() != 0) { // Need to check both frames if frx != fry
-            throw new IllegalArgumentException("Mode is 'AllObs' but NAs are present");
-          }
+        if (mode.equals(Mode.AllObs)) {
+          for (Vec v : vecxs)
+            if (v.naCnt() != 0)
+              throw new IllegalArgumentException("Mode is 'all.obs' but NAs are present");
         }
 
       }
