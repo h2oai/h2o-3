@@ -67,7 +67,7 @@ public class AstCorrelation extends AstPrimitive {
       case Pearson:
         return fry.numRows() == 1 ? scalar(frx, fry, mode) : array(frx, fry, mode);
       case Spearman:
-        return new ValFrame(SpearmanCorrelation.calculate(frx, fry, mode));
+        return spearman(frx, fry, mode);
       default:
         throw new IllegalStateException(String.format("Given method input'%s' is not supported. Available options are: %s",
                 method, Arrays.toString(Method.values())));
@@ -83,6 +83,18 @@ public class AstCorrelation extends AstPrimitive {
       default:
         throw new IllegalArgumentException(String.format("Unknown correlation method '%s'. Available options are: %s",
                 methodUserInput, Arrays.toString(Method.values())));
+    }
+  }
+
+  private Val spearman(final Frame frameX, final Frame frameY, final Mode mode) {
+    final Frame calculate = SpearmanCorrelation.calculate(frameX, frameY, mode);
+
+    if (frameY.numCols() == 1) {
+      // If there are only two columns compared, return a single number with the correlation coefficient
+      return new ValNum(calculate.vec(0).at(0));
+    } else {
+      // Otherwise just return the correlation matrix
+      return new ValFrame(calculate);
     }
   }
 
