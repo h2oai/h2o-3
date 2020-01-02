@@ -1,5 +1,6 @@
 import sys
 sys.path.insert(1,"../../../")
+import math
 import h2o
 from tests import pyunit_utils
 ##
@@ -53,6 +54,27 @@ def cor_test():
 
     max = cor_diff.max()
     assert max < .00000000001, "expected equal correlations"
+
+    weather = h2o.import_file(pyunit_utils.locate("smalldata/junit/weather.csv"))
+    ## Spearman with NAs - mode all.obs
+    EXPECTED_ERROR_MSG = "Mode is 'AllObs' but NAs are present"
+    try:
+        weather.cor(method="Spearman", use="all.obs")
+        assert False
+    except h2o.exceptions.H2OResponseError as e:
+        assert EXPECTED_ERROR_MSG in e.args[0].dev_msg, "dev_msg should contain '%s'. Actual dev_msg is '%s'" % (
+            EXPECTED_ERROR_MSG, e.args[0].dev_msg)
+
+        ## Spearman with NAs - mode "everything" (default)
+    cor_h2o = weather.cor(method="Spearman", use="everything")
+    assert math.isnan(cor_h2o[2, 2])
+    print(cor_h2o)
+
+    ## Spearman with NAs - mode "complete.obs" - observations with NaNs are discarded
+    cor_h2o = weather.cor(method="Spearman", use="complete.obs")
+    assert not math.isnan(cor_h2o[2, 2])
+    print(cor_h2o)
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(cor_test)
