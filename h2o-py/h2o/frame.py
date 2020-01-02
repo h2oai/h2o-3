@@ -3285,7 +3285,7 @@ class H2OFrame(Keyed):
         if y is None:
             y = self
         if use is None: use = "complete.obs" if na_rm else "everything"
-        if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use)._eager_scalar()
+        if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use, method)._eager_scalar()
         return H2OFrame._expr(expr=ExprNode("cor", self, y, use, method))._frame()
 
 
