@@ -4,6 +4,18 @@
 #' @param word2vec A word2vec model.
 #' @param word A single word to find synonyms for.
 #' @param count The top `count` synonyms will be returned.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' job.titles.path = "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/craigslistJobTitles.csv"
+#' job.titles <- h2o.importFile(job.titles.path, destination_frame = "jobtitles",
+#'                              col.names = c("category", "jobtitle"), 
+#'                              col.types = c("String", "String"), header = TRUE)
+#' words <- h2o.tokenize(job.titles, " ")
+#' vec <- h2o.word2vec(training_frame = words)
+#' h2o.findSynonyms(vec, "teacher", count = 20)
+#' }
 #' @export
 h2o.findSynonyms <- function(word2vec, word, count = 20) {
     if (!is(word2vec, "H2OModel")) stop("`word2vec` must be a word2vec model")

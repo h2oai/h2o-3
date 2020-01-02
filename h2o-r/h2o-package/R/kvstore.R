@@ -129,6 +129,30 @@ h2o.rm <- function(ids, cascade=TRUE) {
 #' Get the reference to a frame with the given id in the H2O instance.
 #'
 #' @param id A string indicating the unique frame of the dataset to retrieve.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' train <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' y <- "species"
+#' x <- setdiff(names(train), y)
+#' train[,y] <- as.factor(train[,y])
+#' nfolds <- 5
+#' num_base_models <- 2
+#' my_gbm <- h2o.gbm(x = x, y = y, training_frame = train, 
+#'                   distribution = "multinomial", ntrees = 10, 
+#'                   max_depth = 3, min_rows = 2, learn_rate = 0.2, 
+#'                   nfolds = nfolds, fold_assignment = "Modulo", 
+#'                   keep_cross_validation_predictions = TRUE, seed = 1)
+#' my_rf <- h2o.randomForest(x = x, y = y, training_frame = train, 
+#'                           ntrees = 50, nfolds = nfolds, fold_assignment = "Modulo", 
+#'                           keep_cross_validation_predictions = TRUE, seed = 1)
+#' stack <- h2o.stackedEnsemble(x = x, y = y, training_frame = train, 
+#'                              model_id = "my_ensemble_l1", 
+#'                              base_models = list(my_gbm@model_id, my_rf@model_id), 
+#'                              keep_levelone_frame = TRUE)
+#' h2o.getFrame(stack@model$levelone_frame_id$name)
+#' }
 #' @export
 h2o.getFrame <- function(id) {
   fr <- .newH2OFrame(id,id,-1,-1)

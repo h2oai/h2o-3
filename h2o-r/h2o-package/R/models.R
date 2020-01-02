@@ -1182,6 +1182,7 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 #' @param xval Retrieve the cross-validation AIC
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
@@ -1437,6 +1438,22 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' Note: standardize = True by default. If set to False, then coef() returns the coefficients that are fit directly.
 #'
 #' @param object an \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "cylinders"
+#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars.split[[1]]
+#' valid <- cars.split[[2]]
+#' cars_glm <- h2o.glm(balance_classes = TRUE, 
+#'                     seed = 1234, 
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = train, 
+#'                     validation_frame = valid)
+#' h2o.coef(cars_glm)
+#' }
 #' @export
 h2o.coef <- function(object) {
   if (is(object, "H2OModel") && object@algorithm %in% c("glm", "coxph")) {
@@ -1455,6 +1472,22 @@ h2o.coef <- function(object) {
 #' Return coefficients fitted on the standardized data (requires standardize = True, which is on by default). These coefficients can be used to evaluate variable importance.
 #'
 #' @param object an \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "cylinders"
+#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars.split[[1]]
+#' valid <- cars.split[[2]]
+#' cars_glm <- h2o.glm(balance_classes = TRUE, 
+#'                     seed = 1234, 
+#'                     x = predictors, 
+#'                     y = response, 
+#'                     training_frame = train, 
+#'                     validation_frame = valid)
+#' h2o.coef(cars_glm)
+#' }
 #' @export
 h2o.coef_norm <- function(object) {
   if (is(object, "H2OModel") && object@algorithm == "glm") {
@@ -1749,6 +1782,23 @@ h2o.rmsle <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param train Retrieve the training Log Loss
 #' @param valid Retrieve the validation Log Loss
 #' @param xval Retrieve the cross-validation Log Loss
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "economy_20mpg"
+#' cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
+#' train <- cars.splits[[1]]
+#' valid <- cars.splits[[2]]
+#' car_drf <- h2o.randomForest(x = predictors, 
+#'                             y = response, 
+#'                             training_frame = train, 
+#'                             validation_frame = valid)
+#' h2o.logloss(car_drf, train = TRUE, valid = TRUE)
+#' }
 #' @export
 h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$logloss )
@@ -1908,6 +1958,23 @@ h2o.weights <- function(object, matrix_id=1){
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
 #' @param vector_id An integer, ranging from 1 to number of layers + 1, that specifies the bias vector to return.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' census <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv")
+#' census[,1] <- as.factor(census[,1])
+#' dlmodel<-h2o.deeplearning(x=c(1:3),
+#'                           y=4,
+#'                           hidden=c(17,191),
+#'                           epochs=1, 
+#'                           training_frame=census,
+#'                           balance_classes=F, 
+#'                           reproducible=T, 
+#'                           seed=1234, 
+#'                           export_weights_and_biases=T)
+#' h2o.biases(dlmodel,vector_id=1)
+#' }
 #' @export
 h2o.biases <- function(object, vector_id=1){
   o <- object
@@ -1933,6 +2000,18 @@ h2o.biases <- function(object, vector_id=1){
 #' @param train Retrieve the training Hit Ratio
 #' @param valid Retrieve the validation Hit Ratio
 #' @param xval Retrieve the cross-validation Hit Ratio
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' iris <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv")
+#' iris.split <- h2o.splitFrame(data = iris, ratios = .8, seed = 1234)
+#' train <- iris.split[[1]]
+#' valid <- iris.split[[2]]
+#' iris_xgb <- h2o.xgboost(x = 1:4, y = 5, training_frame = train, validation_frame = valid)
+#' hrt_iris <- h2o.hit_ratio_table(iris_xgb, valid = TRUE)
+#' hrt_iris
+#' }
 #' @export
 h2o.hit_ratio_table <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$hit_ratio_table )
@@ -2202,6 +2281,13 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' Retrieve the Model Centers
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' h2o.ceiling(fr[,1])
+#' }
 #' @export
 h2o.centers <- function(object) { as.data.frame(object@model$centers[,-1]) }
 
@@ -2209,6 +2295,15 @@ h2o.centers <- function(object) { as.data.frame(object@model$centers[,-1]) }
 #' Retrieve the Model Centers STD
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+#' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
+#' h2o.centersSTD(km)
+#' }
 #' @export
 h2o.centersSTD <- function(object) { as.data.frame(object@model$centers_std)[,-1] }
 
@@ -2269,6 +2364,15 @@ h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param train Retrieve the training between cluster sum of squares
 #' @param valid Retrieve the validation between cluster sum of squares
 #' @param xval Retrieve the cross-validation between cluster sum of squares
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+#' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
+#' h2o.betweenss(km, train = TRUE)
+#' }
 #' @export
 h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
@@ -2356,6 +2460,15 @@ h2o.num_iterations <- function(object) { object@model$model_summary$number_of_it
 #' @param train Retrieve the training centroid statistics
 #' @param valid Retrieve the validation centroid statistics
 #' @param xval Retrieve the cross-validation centroid statistics
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+#' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
+#' h2o.centroid_stats(km, train = TRUE)
+#' }
 #' @export
 h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
@@ -2396,6 +2509,15 @@ h2o.centroid_stats <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param train Retrieve the training cluster sizes
 #' @param valid Retrieve the validation cluster sizes
 #' @param xval Retrieve the cross-validation cluster sizes
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+#' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
+#' h2o.cluster_sizes(km, train = TRUE)
+#' }
 #' @export
 h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
@@ -3379,6 +3501,21 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @return Returns a list of H2OModel objects
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "economy_20mpg"
+#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars.split[[1]]
+#' valid <- cars.split[[2]]
+#' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
+#'                     nfolds = 5,  keep_cross_validation_models = TRUE, seed = 1234)
+#' h2o.cross_validation_models(cars_gbm)
+#' }
 #' @export
 h2o.cross_validation_models <- function(object) {
   if(!is(object, "H2OModel"))
@@ -3392,6 +3529,21 @@ h2o.cross_validation_models <- function(object) {
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @return Returns a H2OFrame
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "economy_20mpg"
+#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars.split[[1]]
+#' valid <- cars.split[[2]]
+#' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
+#'                     nfolds = 5,  keep_cross_validation_fold_assignment= TRUE, seed = 1234)
+#' h2o.cross_validation_fold_assignment(cars_gbm)
+#' }
 #' @export
 h2o.cross_validation_fold_assignment <- function(object) {
   if(!is(object, "H2OModel"))
@@ -3405,6 +3557,21 @@ h2o.cross_validation_fold_assignment <- function(object) {
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @return Returns a H2OFrame
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "economy_20mpg"
+#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars.split[[1]]
+#' valid <- cars.split[[2]]
+#' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
+#'                     nfolds = 5,  keep_cross_validation_predictions = TRUE, seed = 1234)
+#' h2o.cross_validation_holdout_predictions(cars_gbm)
+#' }
 #' @export
 h2o.cross_validation_holdout_predictions <- function(object) {
   if(!is(object, "H2OModel"))
@@ -3418,6 +3585,20 @@ h2o.cross_validation_holdout_predictions <- function(object) {
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @return Returns a list of H2OFrame objects
+#' @examples 
+#' \dontrun
+#' library(h2o)
+#' h2o.init()
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "economy_20mpg"
+#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars.split[[1]]
+#' valid <- cars.split[[2]]
+#' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
+#'                     nfolds = 5,  keep_cross_validation_predictions = TRUE, seed = 1234)
+#' h2o.cross_validation_predictions(cars_gbm)
 #' @export
 h2o.cross_validation_predictions <- function(object) {
   if(!is(object, "H2OModel"))
@@ -4020,16 +4201,20 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 
 #' Fetchces a single tree of a H2O model. This function is intended to be used on Gradient Boosting Machine models or Distributed Random Forest models.
 #'
-#' Usage example:
-#' airlines.data <- h2o.importFile(path = '/path/to/airlines_train.csv')
-#' gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model")
-#' tree <-h2o.getModelTree(gbm.model, 1, 1);
 #'
 #' @param model Model with trees
 #' @param tree_number Number of the tree in the model to fetch, starting with 1
 #' @param tree_class Name of the class of the tree (if applicable). This value is ignored for regression and binomial response column, as there is only one tree built.
 #'                   As there is exactly one class per categorical level, name of tree's class equals to the corresponding categorical level of response column.
 #' @return Returns an H2OTree object with detailed information about a tree.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' airlines.data <- h2o.importFile(path = '/path/to/airlines_train.csv')
+#' gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model")
+#' tree <-h2o.getModelTree(gbm.model, 1, 1)
+#' }
 #' @export
 h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
   url <- "Tree"
