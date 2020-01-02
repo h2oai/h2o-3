@@ -1,9 +1,9 @@
 from __future__ import print_function
 import sys
-sys.path.insert(1,"../../")
-import h2o
-from tests import pyunit_utils
 import os
+sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
+from tests import pyunit_utils
+import h2o
 import zipfile
 import shutil
 
@@ -58,29 +58,21 @@ def contains_log_file(dir):
     return False
 
 def hadoop_download_logs():
-    # Check if we are running inside the H2O network by seeing if we can touch
-    # the namenode.
-    hadoop_namenode_is_accessible = pyunit_utils.hadoop_namenode_is_accessible()
+    zip_file = h2o.download_all_logs()
+    extracted_dir = os.path.abspath("extracted")
+    print("Logs extracted into: " + extracted_dir)
+    if os.path.isdir(extracted_dir):
+        shutil.rmtree(extracted_dir)
+    zip_ref = zipfile.ZipFile(zip_file, 'r')
+    zip_ref.extractall(extracted_dir)
+    zip_ref.close()
+    nodes_log_dir = extracted_dir + "/" + os.listdir(extracted_dir)[0]
+    nodes_log_file_names = os.listdir(nodes_log_dir)
 
-    if hadoop_namenode_is_accessible:
-        results_dir = pyunit_utils.locate("results")
-        zip_file = h2o.download_all_logs()
-        extracted_dir = os.path.abspath("extracted")
-        print("Logs extracted into: " + extracted_dir)
-        if os.path.isdir(extracted_dir):
-            shutil.rmtree(extracted_dir)
-        zip_ref = zipfile.ZipFile(zip_file, 'r')
-        zip_ref.extractall(extracted_dir)
-        zip_ref.close()
-        nodes_log_dir = extracted_dir + "/" + os.listdir(extracted_dir)[0]
-        nodes_log_file_names = os.listdir(nodes_log_dir)
-
-        for f in expected_log_files(nodes_log_dir, nodes_log_file_names, "INFO"):
-            print("Checking if file " + f + " exists")
-            # check that all expected files exist
-            assert os.path.isfile(f) == True
-    else:
-        raise EnvironmentError
+    for f in expected_log_files(nodes_log_dir, nodes_log_file_names, "INFO"):
+        print("Checking if file " + f + " exists")
+        # check that all expected files exist
+        assert os.path.isfile(f)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(hadoop_download_logs)

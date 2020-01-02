@@ -8,7 +8,7 @@ anything make sure to follow the following rules:
 
 2) do we absolutely need to test this on multi-node?
 
-3) if your tests need any data, prepare the data in /user/jenkins/(smalldata|bigdata)
+3) if your tests need any data, prepare the data in /datasets or /user/jenkins/(smalldata|bigdata)
 
 4) does your test need to write anything to hdfs? 
    write only into /user/jenkins/test_output and try to delete everything afterwards.

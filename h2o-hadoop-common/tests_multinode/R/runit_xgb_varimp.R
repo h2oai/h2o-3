@@ -1,17 +1,8 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source("../../../h2o-r/scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This tests the stability of XGBoost models trained on
 #           frames with shuffled columns
-#----------------------------------------------------------------------
-
-
-# Check if we are running inside the H2O network by seeing if we can touch
-# the namenode.
-if (!hadoop.namenode.is.accessible()) {
-    stop("Not running on H2O internal network. No access to HDFS.")
-}
-
 #----------------------------------------------------------------------
 
 clean_data <- function(df) {
