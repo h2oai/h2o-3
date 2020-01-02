@@ -98,7 +98,7 @@ public class SpearmanCorrelation {
       correlationVecs[i] = Vec.makeCon(Double.NaN, originalUnsortedFrame.numCols());
     }
 
-    return new Frame(Key.make(), correlationVecs, false);
+    return new Frame(Key.make(), correlationVecs, true);
   }
 
   /**
