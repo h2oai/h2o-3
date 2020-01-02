@@ -1,13 +1,11 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-import sys, os
-sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
-import h2o
-from h2o.exceptions import H2OServerError
+import sys
+import os
+sys.path.insert(1, os.path.join("../../../h2o-py"))
 from tests import pyunit_utils
-import copy
+import h2o
 from h2o.estimators import H2OXGBoostEstimator
-import pandas as pd
 
 
 def xgb_repro():
