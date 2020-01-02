@@ -7,12 +7,14 @@ def call(final pipelineContext) {
   def MODE_COVERAGE_CODE = 4
   def MODE_SINGLE_TEST_CODE = 5
   def MODE_KERBEROS_CODE = 6
+  def MODE_HADOOP_MULTINODE_CODE = 7
   def MODE_MASTER_CODE = 10
   def MODE_NIGHTLY_CODE = 20
   def MODES = [
     [name: 'MODE_PR', code: MODE_PR_CODE],
     [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
     [name: 'MODE_KERBEROS', code: MODE_KERBEROS_CODE],
+    [name: 'MODE_HADOOP_MULTINODE', code: MODE_HADOOP_MULTINODE_CODE],
     [name: 'MODE_XGB', code: MODE_XGB_CODE],
     [name: 'MODE_COVERAGE', code: MODE_COVERAGE_CODE],
     [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
@@ -467,6 +469,27 @@ def call(final pipelineContext) {
     KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage ]
   }
 
+  def HADOOP_MULTINODE_STAGES = [[
+          stageName: "HADOOP MULTINODE TESTS",
+          target: "test-hadoop-multinode", timeoutValue: 60,
+          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+          additionalTestPackages: [
+                  pipelineContext.getBuildConfig().COMPONENT_PY,
+                  pipelineContext.getBuildConfig().COMPONENT_R
+          ],
+          customData: [
+                  distribution: "hdp",
+                  version: "2.2",
+                  nodes: 4,
+                  xmx: "16G",
+                  extramem: "100",
+                  name_node: "mr-0xd6.0xdata.loc",
+                  clouding_dir: "/user/jenkins/hadoop_multinode_tests"
+          ], pythonVersion: '2.7',
+          executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopMultinodeStage.groovy',
+          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage()
+  ]]
+
   def XGB_STAGES = []
   for (String osName: pipelineContext.getBuildConfig().getSupportedXGBEnvironments().keySet()) {
     final def xgbEnvs = pipelineContext.getBuildConfig().getSupportedXGBEnvironments()[osName]
@@ -539,6 +562,8 @@ def call(final pipelineContext) {
     executeInParallel(HADOOP_STAGES, pipelineContext)
   } else if (modeCode == MODE_KERBEROS_CODE) {
     executeInParallel(KERBEROS_STAGES, pipelineContext)
+  } else if (modeCode == MODE_HADOOP_MULTINODE_CODE) {
+    executeInParallel(HADOOP_MULTINODE_STAGES, pipelineContext)
   } else if (modeCode == MODE_XGB_CODE) {
     executeInParallel(XGB_STAGES, pipelineContext)
   } else if (modeCode == MODE_COVERAGE_CODE) {

@@ -445,6 +445,9 @@ test-kerberos-hadoop-3-hdp: test-hadoop-3-smoke-standalone test-hadoop-common-sm
 
 test-kerberos-hadoop-3-spnego: test-kerberos-hadoop-3-standalone test-hadoop-common-smoke-hive-spnego
 
+test-hadoop-multinode:
+	cd h2o-hadoop-common/tests_multinode/python && ../../../scripts/run.py --wipeall --usecloud "$$CLOUD_IP:$$CLOUD_PORT"
+
 coverage-junit-algos-jenkins:
 	$(call sed_test_scripts)
 	@$(MAKE) -f $(THIS_FILE) coverage-junit-algos
