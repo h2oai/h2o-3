@@ -18,6 +18,7 @@ public class SpearmanCorrelation {
   public static Frame calculate(final Frame frameX, Frame frameY, final AstCorrelation.Mode mode) {
     Objects.requireNonNull(frameX);
     Objects.requireNonNull(frameY);
+    assert frameX.numCols() == frameY.numCols();
 
     final Frame correlationMatrix = createCorrelationMatrix(frameX);
     // If the two frame contain the same vectors (key-wise), then the diagonal of the correlation matrix can be automatically filled with 1s.
@@ -27,7 +28,7 @@ public class SpearmanCorrelation {
     checkCorrelationDoable(frameX, frameY, mode);
 
     for (int vecIdX = 0; vecIdX < frameX.numCols(); vecIdX++) {
-      for (int vecIdY = 0; vecIdY < frameX.numCols(); vecIdY++) {
+      for (int vecIdY = 0; vecIdY < frameY.numCols(); vecIdY++) {
         Scope.enter();
         try {
           if (framesAreEqual && vecIdX == vecIdY) {
@@ -79,11 +80,11 @@ public class SpearmanCorrelation {
   }
 
   /**
-   * @param frameX Frame Y candiate for SCC calculation
+   * @param frameX Frame X candiate for SCC calculation
    * @param frameY Frame Y candidate for SCC calculation
    * @param mode   An instance of {@link AstCorrelation.Mode}
    * @return False if AstCorrelation.Mode is set to AllObs and any of the vectors in compared frames contains NaNs, otherwise True.
-   * @throws IllegalArgumentException Whe the {@link AstCorrelation.Mode} is set to AllObs and any of the vectors contains NaN
+   * @throws IllegalArgumentException When the {@link AstCorrelation.Mode} is set to AllObs and any of the vectors contains NaN
    */
   private static void checkCorrelationDoable(final Frame frameX, final Frame frameY, final AstCorrelation.Mode mode)
           throws IllegalArgumentException {
