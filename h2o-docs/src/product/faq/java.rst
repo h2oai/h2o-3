@@ -15,7 +15,7 @@ To see how the REST API is used with H2O:
 
 -  Write an R program for H2O using the H2O R package that uses ``h2o.startLogging()`` at the beginning. All REST API calls used are logged.
 
-The second way to use H2O with Java is to embed H2O within your Java application, similar to `Sparkling Water <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.rst>`__.
+The second way to use H2O with Java is to embed H2O within your Java application, similar to `Sparkling Water <https://github.com/h2oai/sparkling-water/blob/master/doc/src/site/sphinx/configuration/configuration_properties.rst>`__.
 
 --------------
 
