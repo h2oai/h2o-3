@@ -47,15 +47,22 @@ public class RapidsTest extends TestUtil {
     try {
       final Frame iris = TestUtil.parse_test_file(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
       Scope.track_generic(iris);
-      final Val spearman_sepal = Rapids.exec("(cor iris_spearman iris_spearman \"complete.obs\" \"Spearman\")", session);
-      assertTrue(spearman_sepal instanceof ValFrame);
+      final Val spearmanMatrix = Rapids.exec("(cor iris_spearman iris_spearman \"complete.obs\" \"Spearman\")", session);
+      assertTrue(spearmanMatrix instanceof ValFrame);
       // Only two columns verified by hand
-      assertEquals(-0.17200277349347703, spearman_sepal.getFrame().vec(0).at(1), 1e-8);
-      assertEquals(0.882408773196076, spearman_sepal.getFrame().vec(0).at(2), 1e-8);
+      assertEquals(-0.17200277349347703, spearmanMatrix.getFrame().vec(0).at(1), 1e-8);
+      assertEquals(0.882408773196076, spearmanMatrix.getFrame().vec(0).at(2), 1e-8);
 
       // Categorical column test
       assertTrue(iris.vec(4).isCategorical());
-      assertEquals(0.796932203878841, spearman_sepal.getFrame().vec(0).at(4), 1e-8);
+      assertEquals(0.796932203878841, spearmanMatrix.getFrame().vec(0).at(4), 1e-8);
+
+      // Test non-squared correlation matrix
+      final Val spearmanNonSquared = Rapids.exec("(cor (cols iris_spearman [1]) (cols iris_spearman [2 3]) \"complete.obs\" \"Spearman\")", session);
+      assertTrue(spearmanNonSquared instanceof ValFrame);
+      final Frame spearman_non_squared_frame = spearmanNonSquared.getFrame();
+      assertEquals(1, spearman_non_squared_frame.numCols());
+      assertEquals(2, spearman_non_squared_frame.anyVec().length());
     } finally {
       Scope.exit();
       session.end(null);

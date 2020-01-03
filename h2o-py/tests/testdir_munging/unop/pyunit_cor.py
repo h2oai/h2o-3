@@ -65,7 +65,7 @@ def cor_test():
         assert EXPECTED_ERROR_MSG in e.args[0].dev_msg, "dev_msg should contain '%s'. Actual dev_msg is '%s'" % (
             EXPECTED_ERROR_MSG, e.args[0].dev_msg)
 
-        ## Spearman with NAs - mode "everything" (default)
+    ## Spearman with NAs - mode "everything" (default)
     cor_h2o = weather.cor(method="Spearman", use="everything")
     assert math.isnan(cor_h2o[2, 2])
     print(cor_h2o)

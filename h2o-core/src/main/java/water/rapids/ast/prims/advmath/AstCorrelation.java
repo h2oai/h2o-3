@@ -82,14 +82,14 @@ public class AstCorrelation extends AstPrimitive {
   }
 
   private Val spearman(final Frame frameX, final Frame frameY, final Mode mode) {
-    final Frame calculate = SpearmanCorrelation.calculate(frameX, frameY, mode);
+    final Frame spearmanMatrix = SpearmanCorrelation.calculate(frameX, frameY, mode);
 
     if (frameY.numCols() == 1) {
       // If there are only two columns compared, return a single number with the correlation coefficient
-      return new ValNum(calculate.vec(0).at(0));
+      return new ValNum(spearmanMatrix.vec(0).at(0));
     } else {
       // Otherwise just return the correlation matrix
-      return new ValFrame(calculate);
+      return new ValFrame(spearmanMatrix);
     }
   }
 
