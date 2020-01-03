@@ -618,7 +618,7 @@ The two variance components are estimated iteratively by applying a gamma GLM to
  H_a=T_a (T_a^T W^{-1} T_a )^{-1} T_a^T W^{-1}
 
 Estimation of Fixed Effect Dispersion Parameter/Variance
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''
+''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 A gamma GLM is used to fit the dispersion part of the model with response
 :math:`y_{d,i}=(e_i^2)⁄(1-h_i )` where :math:`E(y_d )=u_d` and :math:`u_d≡\phi` (i.e., :math:`\delta_e^2` for a Gaussian response). The GLM model for the dispersion parameter is then specified by the link function :math:`g_d (.)` and the linear predictor :math:`X_d \beta_d` with prior weights for :math:`(1-h_i )⁄2` for :math:`g_d (u_d )=X_d \beta_d`. Because we are not using a dispersion model, :math:`X_d \beta_d` will only contain the intercept term.

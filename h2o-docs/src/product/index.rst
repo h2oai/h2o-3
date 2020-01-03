@@ -126,11 +126,6 @@ Additional Resources:
 .. toctree::
    :maxdepth: 1
 
-   migrating
-   
-.. toctree::
-   :maxdepth: 1
-
    parameters
 
 .. toctree::
