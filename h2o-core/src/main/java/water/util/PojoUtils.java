@@ -520,13 +520,12 @@ public class PojoUtils {
             valuesCast[i] = ((Number) valuesTyped[i]).floatValue();
           f.set(o, valuesCast);
         } else if(f.getType().getComponentType().isEnum()) {
-          Object[] valuesTyped = ((Object[]) value);
+          final Object[] valuesTyped = ((Object[]) value);
           Enum[] valuesCast = (Enum[]) Array.newInstance(f.getType().getComponentType(), valuesTyped.length);
           for (int i = 0; i < valuesTyped.length; i++) {
             String v = (String) valuesTyped[i];
-            final IllegalArgumentException fieldNotSettablException = new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + value);
             Enum enu = EnumUtils.valueOfIgnoreCase((Class<Enum>)f.getType().getComponentType(), v)
-                    .orElseThrow(() -> fieldNotSettablException);
+                    .orElseThrow(() -> new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + Arrays.toString(valuesTyped)));
 
             valuesCast[i] = enu;
           }
