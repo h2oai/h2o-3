@@ -20,7 +20,9 @@ public class SpearmanCorrelation {
     Objects.requireNonNull(frameY);
 
     final Frame correlationMatrix = createCorrelationMatrix(frameX);
-    final boolean framesAreEqual = frameX == frameY; // TODO: Client APIs create new frames with no keys to compare
+    // If the two frame contain the same vectors (key-wise), then the diagonal of the correlation matrix can be automatically filled with 1s.
+    // Unless there mode is "Everything", which enforces NaN correlation values if there is a NaN observation.
+    final boolean framesAreEqual = !AstCorrelation.Mode.Everything.equals(mode) && framesContainSameVecs(frameX, frameY);
 
     checkCorrelationDoable(frameX, frameY, mode);
 
@@ -54,6 +56,26 @@ public class SpearmanCorrelation {
     }
 
     return correlationMatrix;
+  }
+
+  /**
+   * Compares two frames for their vecs being the same key-wise.
+   *
+   * @param frameX An instance of {@link Frame} to compare
+   * @param frameY A second instance of {@link Frame} to compare
+   * @return True if and only if the frames both contain the same vectors in the same order and quantity. Otherwise false.
+   */
+  private static boolean framesContainSameVecs(final Frame frameX, final Frame frameY) {
+    final Vec[] vecsX = frameX.vecs();
+    final Vec[] vecsY = frameY.vecs();
+
+    if (vecsX.length != vecsY.length) return false;
+
+    for (int i = 0; i < vecsX.length; i++) {
+      if (!vecsX[i]._key.equals(vecsY[i]._key)) return false;
+    }
+
+    return true;
   }
 
   /**

@@ -44,7 +44,7 @@ def cor_test():
     # Rank using Pandas, then the calculation is done in the very same way as Pearson's, only on ranked cols
     ranked = pd.read_csv(pyunit_utils.locate("smalldata/iris/iris.csv"), header=-1, usecols=[0, 1, 2, 3]) \
         .rank(axis=0, method="min")
-    cor_np = h2o.H2OFrame(np.corrcoef(ranked.as_matrix(), rowvar=0))
+    cor_np = h2o.H2OFrame(np.corrcoef(ranked.values, rowvar=0))
     print("\n NumPy:")
     print(cor_np)
     cor_h2o = iris_h2o[0:4].cor(method="Spearman")
