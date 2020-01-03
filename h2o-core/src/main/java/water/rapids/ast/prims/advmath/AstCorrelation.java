@@ -10,6 +10,7 @@ import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValNum;
 import water.util.ArrayUtils;
+import water.util.EnumUtils;
 
 import java.util.Arrays;
 
@@ -75,15 +76,9 @@ public class AstCorrelation extends AstPrimitive {
   }
 
   private static Method getMethodFromUserInput(final String methodUserInput) {
-    switch (methodUserInput) {
-      case "Pearson":
-        return Method.Pearson;
-      case "Spearman":
-        return Method.Spearman;
-      default:
-        throw new IllegalArgumentException(String.format("Unknown correlation method '%s'. Available options are: %s",
-                methodUserInput, Arrays.toString(Method.values())));
-    }
+    return EnumUtils.valueOfIgnoreCase(Method.class, methodUserInput)
+            .orElseThrow(() -> new IllegalArgumentException(String.format("Unknown correlation method '%s'. Available options are: %s",
+                    methodUserInput, Arrays.toString(Method.values()))));
   }
 
   private Val spearman(final Frame frameX, final Frame frameY, final Mode mode) {

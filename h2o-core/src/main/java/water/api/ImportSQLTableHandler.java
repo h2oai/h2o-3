@@ -20,7 +20,8 @@ public class ImportSQLTableHandler extends Handler {
     if (importSqlTable.fetch_mode == null) {
       sqlFetchMode = SqlFetchMode.DISTRIBUTED;
     } else {
-      sqlFetchMode = EnumUtils.valueOfIgnoreCase(SqlFetchMode.class, importSqlTable.fetch_mode);
+      sqlFetchMode = EnumUtils.valueOfIgnoreCase(SqlFetchMode.class, importSqlTable.fetch_mode)
+              .orElseThrow(() -> new IllegalArgumentException("Unrecognized SQL Fetch mode"));
     }
     Boolean useTempTable = null;
     if (importSqlTable.use_temp_table != null) {
