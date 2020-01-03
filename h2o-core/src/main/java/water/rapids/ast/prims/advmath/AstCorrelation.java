@@ -23,7 +23,7 @@ import java.util.Arrays;
 public class AstCorrelation extends AstPrimitive {
   @Override
   public String[] args() {
-    return new String[]{"ary", "x", "y", "use"};
+    return new String[]{"ary", "x", "y", "use", "method"};
   }
 
   protected enum Mode {Everything, AllObs, CompleteObs}
@@ -32,7 +32,7 @@ public class AstCorrelation extends AstPrimitive {
 
   @Override
   public int nargs() {
-    return 1 + 4; /* (cor X Y use) */
+    return 1 + 4; /* (cor X Y use method) */
   }
 
   @Override
