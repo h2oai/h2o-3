@@ -1,35 +1,14 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
-source("../../scripts/h2o-r-test-setup.R")
+source("../../../h2o-r/scripts/h2o-r-test-setup.R")
 #----------------------------------------------------------------------
 # Purpose:  This tests convergence of k-means on a large dataset.
 #----------------------------------------------------------------------
 
-
-
-
-#----------------------------------------------------------------------
-# Parameters for the test.
-#----------------------------------------------------------------------
-
-# Check if we are running inside the H2O network by seeing if we can touch
-# the namenode.
-hadoop_namenode_is_accessible = hadoop.namenode.is.accessible()
-
-if (hadoop_namenode_is_accessible) {
-    hdfs_name_node = HADOOP.NAMENODE
-    hdfs_cross_file = "/datasets/runit/BigCross.data"
-} else {
-    stop("Not running on H2O internal network. No access to HDFS.")
-}
-
-#----------------------------------------------------------------------
+hdfs_name_node <- HADOOP.NAMENODE
+hdfs_cross_file <- "/datasets/runit/BigCross.data"
 
 heading("BEGIN TEST")
 check.kmeans_converge <- function() {
-
-  #----------------------------------------------------------------------
-  # Single file cases.
-  #----------------------------------------------------------------------
 
   heading("Import BigCross.data from HDFS")
   url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_cross_file)
@@ -51,8 +30,6 @@ check.kmeans_converge <- function() {
   heading("Check k-means converged or maximum iterations reached")
   avg_change <- sum((getCenters(cross1.km) - getCenters(cross2.km))^2)/ncent
   expect_true(avg_change < 1e-6 || getIterations(cross1.km) > miters)
-
-  
 }
 
 doTest("K-means convergence", check.kmeans_converge)

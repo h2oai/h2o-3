@@ -4,7 +4,14 @@ Performance and Prediction
 Model Performance
 -----------------
 
-This section describes how H2O-3 can be used to evaluate model performance through model metrics, stopping metrics, and performance graphs. 
+Given a trained H2O model, the ``h2o.performance()`` (R)/``model_performance()`` (Python) function computes a model's performance on a given dataset. 
+
+**Notes**: 
+
+- If the provided dataset does not contain the response/target column from the model object, no performance will be returned. Instead, a warning message will be printed.
+- For binary classification problems, H2O uses the model along with the given dataset to calculate the threshold that will give the maximum F1 for the given dataset.
+
+This section describes how H2O-3 can be used to evaluate model performance. Models can also be evaluated with specific model metrics, stopping metrics, and performance graphs. 
 
 Evaluation Model Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -17,7 +24,6 @@ Regression
 ''''''''''
 
 The following evaluation metrics are available for regression models. (Note that H2O-3 also calculates regression metrics for `Classification`_ problems.) 
-
 
 - `R2 (R Squared)`_
 - `MSE (Mean Squared Error)`_
@@ -311,7 +317,7 @@ H2O-3 calculates regression metrics for classification problems. The following a
 - `AUC (Area Under the ROC Curve)`_
 - `AUCPR (Area Under the Precision-Recall Curve)`_
 
-Each metric is described in greater detail in the sectinos that follow. The examples are based off of a GBM model built using the **allyears2k_headers.zip** dataset.
+Each metric is described in greater detail in the sections that follow. The examples are based off of a GBM model built using the **allyears2k_headers.zip** dataset.
 
 .. example-code::
    .. code-block:: r
@@ -475,7 +481,7 @@ Using the previous example, run the following to retrieve the MCC value.
     {u'train': [[0.5203060957871319, 0.42414048381779923]], u'valid': [[0.5426977730968023, 0.36574105494931725]]}
 
 F1
-##
+###
 
 The F1 score provides a measure for how well a binary classifier can classify positive cases (given a threshold value). The F1 score is calculated from the harmonic mean of the precision and recall. An F1 score of 1 means both precision and recall are perfect and the model correctly identified all the positive cases and didn't mark a negative case as a positive case. If either precision or recall are very low it will be reflected with a F1 score closer to 0.
 
@@ -577,7 +583,7 @@ Using the previous example, run the following to retrieve the F0.5 value.
 
 
 F2
-##
+###
 
 The F2 score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F2 score gives more weight to recall (penalizing the model more for false negatives then false positives). An F2 score ranges from 0 to 1, with 1 being a perfect model.
 
@@ -1849,10 +1855,10 @@ Prediction Threshold
 
 For classification problems, when running ``h2o.predict()`` or ``.predict()``, the prediction threshold is selected as follows:
 
-- If you train a model with only training data, the Max F1 threshold from the train data model metrics is used.
-- If you train a model with train and validation data, the Max F1 threshold from the validation data model metrics is used.
-- If you train a model with train data and set the ``nfold`` parameter, the Max F1 threshold from the training data model metrics is used.
-- If you train a model with the train data and validation data and also set the ``nfold parameter``, the Max F1 threshold from the validation data model metrics is used.
+- If you only have training data, the max F1 threshold comes from the train data model.
+- If you train a model with training and validation data, the max F1 threshold comes from the validation data model.
+- If you train a model with training data and set the ``nfolds`` parameter, the Max F1 threshold from the training data model metrics is used.
+- If you train a model with the train data and validation data and also set the ``nfolds`` parameter, the Max F1 threshold from the validation data model metrics is used.
 
 Predict Feature Frequency
 ~~~~~~~~~~~~~~~~~~~~~~~~~

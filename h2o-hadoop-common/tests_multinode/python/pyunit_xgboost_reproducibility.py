@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-import sys, os
+import sys
+import os
 sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
-import h2o
-from h2o.exceptions import H2OServerError
 from tests import pyunit_utils
-import copy
+import h2o
 from h2o.estimators import H2OXGBoostEstimator
-import pandas as pd
 
 
 def xgb_repro():
-    name_node = os.getenv("NAME_NODE")
+    name_node = pyunit_utils.hadoop_namenode()
     data = h2o.import_file(
         "hdfs://" + name_node + "/user/jenkins/bigdata/laptop/airlinesBillion_7Columns_5GB.csv",     
         na_strings=["NA"]

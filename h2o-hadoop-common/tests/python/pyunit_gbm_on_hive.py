@@ -2,9 +2,9 @@
 
 import sys
 import os
-import h2o
-sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
+sys.path.insert(1, os.path.join("../../../h2o-py"))
 from tests import pyunit_utils
+import h2o
 from numpy import isclose
 
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
