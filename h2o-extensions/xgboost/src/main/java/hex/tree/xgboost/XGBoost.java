@@ -65,12 +65,19 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // Number of trees requested, including prior trees from a checkpoint
   private int _ntrees;
+  
+  // Back-end used for the build
+  private XGBoostModel.XGBoostParameters.Backend _backend;
 
   // Calibration frame for Platt scaling
   private transient Frame _calib;
 
   @Override protected int nModelsInParallel(int folds) {
-    return nModelsInParallel(folds, 2);
+    if (_backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
+      return 1;
+    } else {
+      return nModelsInParallel(folds, 2);
+    }
   }
 
   /** Start the XGBoost training Job on an F/J thread. */
@@ -100,6 +107,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         error("XGBoost", "XGBoost is not available on all nodes!");
       }
     }
+    _backend = XGBoostModel.getActualBackend(_parms);
 
     if (_parms.hasCheckpoint()) {  // Asking to continue from checkpoint?
       Value cv = DKV.get(_parms._checkpoint);
@@ -213,7 +221,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   @Override
-  public ModelBuilder getModelBuilder() {
+  public XGBoost getModelBuilder() {
     return this;
   }
 
