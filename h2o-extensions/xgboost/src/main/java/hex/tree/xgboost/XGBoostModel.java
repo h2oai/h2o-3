@@ -239,7 +239,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
   
-  private static XGBoostParameters.Backend findSuitableBackend(XGBoostParameters p) {
+  public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p) {
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
       if (H2O.getCloudSize() > 1) {
         Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
@@ -326,7 +326,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
-    XGBoostParameters.Backend actualBackend = findSuitableBackend(p);
+    XGBoostParameters.Backend actualBackend = getActualBackend(p);
     if (actualBackend == XGBoostParameters.Backend.gpu) {
       params.put("gpu_id", p._gpu_id);
       if (p._booster == XGBoostParameters.Booster.gblinear) {
