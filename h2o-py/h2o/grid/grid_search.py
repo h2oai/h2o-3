@@ -52,7 +52,7 @@ class H2OGridSearch(h2o_meta()):
             >>> criteria = {"strategy": "RandomDiscrete", "stopping_rounds": 5,
             ...             "stopping_metric": "misclassification",
             ...             "stopping_tolerance": 0.00001}
-    :param parallelism Level of parallelism during grid model building. 1 = sequential building (default). 
+    :param parallelism: Level of parallelism during grid model building. 1 = sequential building (default). 
          Use the value of 0 for adaptive parallelism - decided by H2O. Any number > 1 sets the exact number of models
          built in parallel.
     :returns: a new H2OGridSearch instance

@@ -21,7 +21,7 @@ The algorithms that can be specified include:
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `exclude-algos <exclude_algos.html>`__
+- `exclude_algos <exclude_algos.html>`__
 
 Example
 ~~~~~~~
