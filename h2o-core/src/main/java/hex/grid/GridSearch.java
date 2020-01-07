@@ -211,13 +211,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     @Override
-    public void postBuildSuccess(Model finishedModel, ParallelModelBuilder parallelModelBuilder) {
+    public void afterBuildProcessing(ParallelModelBuilder parallelModelBuilder, Model finishedModel) {
       attemptBuildNextModel(parallelModelBuilder, finishedModel);
-    }
-
-    @Override
-    public void postBuildFailure(ParallelModelBuilder.ModelBuildFailure modelBuildFailure, ParallelModelBuilder parallelModelBuilder) {
-      attemptBuildNextModel(parallelModelBuilder, null);
     }
 
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {

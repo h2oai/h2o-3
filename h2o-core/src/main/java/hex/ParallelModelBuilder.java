@@ -21,11 +21,9 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
     public abstract void onBuildSuccess(final Model model, final ParallelModelBuilder parallelModelBuilder);
 
-    public void postBuildSuccess(final Model model, final ParallelModelBuilder parallelModelBuilder) {};
-
     public abstract void onBuildFailure(final ModelBuildFailure modelBuildFailure, final ParallelModelBuilder parallelModelBuilder);
 
-    public void postBuildFailure(final ModelBuildFailure modelBuildFailure, final ParallelModelBuilder parallelModelBuilder) {};
+    public abstract void afterBuildProcessing(final ParallelModelBuilder parallelModelBuilder, final Model model);
   }
 
   private final transient ParallelModelBuilderCallback _callback;
@@ -78,7 +76,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
         _modelCompletedCounter.incrementAndGet();
         _modelInProgressCounter.decrementAndGet();
 
-        _callback.postBuildSuccess(model, ParallelModelBuilder.this);
+        _callback.afterBuildProcessing(ParallelModelBuilder.this, model);
       }
       attemptComplete();
     }
@@ -91,7 +89,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
       } finally {
         _modelInProgressCounter.decrementAndGet();
       }
-      _callback.postBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
+      _callback.afterBuildProcessing(ParallelModelBuilder.this, null);
       attemptComplete();
     }
   }
