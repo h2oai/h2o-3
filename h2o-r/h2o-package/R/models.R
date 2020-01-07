@@ -1899,6 +1899,22 @@ h2o.varsplits <- function(object) {
 #' Retrieve Model Score History
 #'
 #' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "economy_20mpg"
+#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars.split[[1]]
+#' valid <- cars.split[[2]]
+#' cars_gbm <- h2o.gbm(x = predictors, y = response, 
+#'                     training_frame = train, 
+#'                     validation_frame = valid, 
+#'                     seed = 1234)
+#' h2o.scoreHistory(cars_gbm)
+#' }
 #' @export
 h2o.scoreHistory <- function(object) {
   o <- object
@@ -2445,6 +2461,17 @@ h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @param \dots further arguments to be passed on (currently unimplemented)
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#'                         training_frame = prostate, family = "binomial", 
+#'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
+#' h2o.num_iterations(prostate_glm)
+#' }
 #' @export
 h2o.num_iterations <- function(object) { object@model$model_summary$number_of_iterations }
 
@@ -2558,6 +2585,17 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param train Retrieve the training null deviance
 #' @param valid Retrieve the validation null deviance
 #' @param xval Retrieve the cross-validation null deviance
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#'                         training_frame = prostate, family = "binomial", nfolds = 0, 
+#'                         alpha = 0.5, lambda_search = FALSE)
+#' h2o.null_deviance(prostate_glm, train = TRUE)
+#' }
 #' @export
 h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_deviance )
@@ -2607,6 +2645,17 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param train Retrieve the training residual deviance
 #' @param valid Retrieve the validation residual deviance
 #' @param xval Retrieve the cross-validation residual deviance
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#'                         training_frame = prostate, family = "binomial", 
+#'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
+#' h2o.residual_deviance(prostate_glm, train = TRUE)
+#' }
 #' @export
 h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_deviance )
@@ -2656,6 +2705,17 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) 
 #' @param train Retrieve the training residual degrees of freedom
 #' @param valid Retrieve the validation residual degrees of freedom
 #' @param xval Retrieve the cross-validation residual degrees of freedom
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#'                         training_frame = prostate, family = "binomial", 
+#'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
+#' h2o.residual_dof(prostate_glm, train = TRUE)
+#' }
 #' @export
 h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$residual_degrees_of_freedom )
@@ -2705,6 +2765,17 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param train Retrieve the training null degrees of freedom
 #' @param valid Retrieve the validation null degrees of freedom
 #' @param xval Retrieve the cross-validation null degrees of freedom
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#'                         training_frame = prostate, family = "binomial", nfolds = 0, 
+#'                         alpha = 0.5, lambda_search = FALSE)
+#' h2o.null_dof(prostate_glm, train = TRUE)
+#' }
 #' @export
 h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$null_degrees_of_freedom )

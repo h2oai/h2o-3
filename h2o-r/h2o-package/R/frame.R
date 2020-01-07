@@ -559,6 +559,12 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
 #' @param length.out non negative integer. The desired length of the output
 #'        vector.
 #' @return Creates an H2OFrame of the same type as x
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' h2o.rep_len(iris, length.out = 3)
+#' }
 #' @export
 h2o.rep_len <- function(x, length.out) {
   if (length.out <= 0)  NULL
@@ -849,6 +855,11 @@ match.H2OFrame <- h2o.match
 #' @param object H2OFrame object
 #' @param ... Ignored
 #' @return Returns an H2OFrame object containing non-NA rows.
+#' @examples 
+#' \dontrun{
+#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' h2o.na_omit(frame)
+#' }
 #' @export
 h2o.na_omit <- function(object, ...){
   .newExpr("na.omit", object)
@@ -1203,6 +1214,14 @@ range.H2OFrame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.
 #' @param column the column to pivot
 #' @param value values of the pivoted table
 #' @return An H2OFrame with columns from the columns arg, aligned on the index arg, with values from values arg
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' df = h2o.createFrame(rows = 1000, cols=3, factors=10, integer_fraction=1.0/3, 
+#'                      categorical_fraction=1.0/3, missing_fraction=0.0, seed=123)
+#' df$C3 = h2o.abs(df$C3)
+#' h2o.pivot(df,index="C3",column="C2",value="C1")
+#' }
 #' @export
 h2o.pivot <- function(x, index, column, value){
   if(! index %in% colnames(x)) stop("index column not found in dataframe")
@@ -1327,6 +1346,11 @@ h2o.year <- function(x) .newExpr("year", chk.H2OFrame(x))
 #' @return An H2OFrame object containing the entries of \code{x} converted to months of
 #'         the year.
 #' @seealso \code{\link{h2o.year}}
+#' @examples 
+#' \dontrun{
+#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' h2o.month(hdf["ds9"])
+#' }
 #' @export
 h2o.month <- function(x) .newExpr("month", chk.H2OFrame(x))
 
@@ -1450,6 +1474,11 @@ hour.H2OFrame <- h2o.hour
 #' @param minute minute
 #' @param second second
 #' @param msec msec
+#' @examples 
+#' \dontrun{
+#' x = as.h2o(c(2018, 3, 2, 6, 32, 0, 0))
+#' h2o.mktime(x)
+#' }
 #' @export
 h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) {
   # All units are zero-based (including months and days).  Missing year defaults to 1970.
@@ -1935,6 +1964,8 @@ h2o.length <- length.H2OFrame
 #' @seealso \code{\link[base]{levels}} for the base R method.
 #' @examples
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
 #' iris_hf <- as.h2o(iris)
 #' h2o.levels(iris_hf, 5)  # returns "setosa"     "versicolor" "virginica"
 #' }
@@ -1958,6 +1989,13 @@ h2o.levels <- function(x, i) {
 #'
 #' @param x An H2OFrame object.
 #' @seealso \code{\link[base]{nlevels}} for the base R method.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' h2o.nlevels(cars)
+#' }
 #' @export
 h2o.nlevels <- function(x) {
   levels <- h2o.levels(x)
@@ -2720,6 +2758,12 @@ signif <- function(x, digits=6) {
 #         not supported. For rounding off a 5, the IEC 60559 standard is used, 'go to the even digit'. Therefore 
 #         rounding 2.5 gives 2 and rounding 3.5 gives 4.
 #' @seealso \code{\link[base]{round}} for the base R implementation.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' h2o.round(heart["age"], digits = 3)
+#' }
 #' @export
 h2o.round <- function(x, digits=0) .newExpr("round",chk.H2OFrame(x),digits)
 
@@ -2901,6 +2945,11 @@ h2o.dimnames <- function(x) {
 #' @name h2o.names
 #' @param x An H2OFrame object.
 #' @seealso \code{\link[base]{names}} for the base R implementation.
+#' @examples 
+#' \dontrun{
+#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' h2o.names(iris)
+#' }
 #' @export
 h2o.names <- function(x) {
   names(x)
@@ -3038,6 +3087,12 @@ h2o.ascharacter <- function(x) {
 #' @param n An (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
 #'          Anything bigger than 20 rows will require asking the server (first 20 rows are cached on the client).
 #' @param ... Further arguments to be passed from or to other methods.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' h2o.print(iris["species"], n = 15)
+#' }
 #' @export
 h2o.print <- function(x,n=6L) {
   print(x,n = n)
@@ -3286,6 +3341,12 @@ h2o.sum <- function(x, na.rm = FALSE, axis = 0, return_frame = FALSE) {
 #' @name h2o.prod
 #' @param x An H2OFrame object.
 #' @seealso \code{\link[base]{prod}} for the base R implementation.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' h2o.prod(iris["petal_len"])
+#' }
 #' @export
 h2o.prod <- function(x) {
   prod(x)
@@ -3439,6 +3500,12 @@ h2o.max <- function(x,na.rm = FALSE) {
 #' @name h2o.nrow
 #' @param x An H2OFrame object.
 #' @seealso \code{\link[base]{nrow}} for the base R implementation.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' h2o.nrow(cars)
+#' }
 #' @export
 h2o.nrow <- function(x) {
  nrow(x)
@@ -3450,6 +3517,11 @@ h2o.nrow <- function(x) {
 #' @name h2o.ncol
 #' @param x An H2OFrame object.
 #' @seealso \code{\link[base]{ncol}} for the base R implementation.
+#' @examples 
+#' \dontrun{
+#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' h2o.ncol(iris)
+#' }
 #' @export
 h2o.ncol <- function(x) {
  ncol(x)
@@ -3463,6 +3535,12 @@ h2o.ncol <- function(x) {
 #' @param na.rm \code{logical}. indicating whether missing values should be removed.
 #' @param finite \code{logical}. indicating if all non-finite elements should be omitted.
 #' @seealso \code{\link[base]{range}} for the base R implementation.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' h2o.range(iris["petal_len"], na.rm = TRUE, finite = TRUE)
+#' }
 #' @export
 h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
   range(x,na.rm = na.rm,finite)

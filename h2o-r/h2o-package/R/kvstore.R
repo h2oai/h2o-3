@@ -99,6 +99,13 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
 #' @param ids The object or hex key associated with the object to be removed or a vector/list of those things.
 #' @param cascade Boolean, if set to TRUE (default), the object dependencies (e.g. submodels) are also removed.
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' iris_hex <- as.h2o(iris)
+#' model <- h2o.glm(1:4,5,training = iris_hex, family = "multinomial")
+#' h2o.rm(iris_hex)
+#' }
 #' @export
 h2o.rm <- function(ids, cascade=TRUE) {
   gc()
