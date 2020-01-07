@@ -329,16 +329,17 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     XGBoostParameters.Backend actualBackend = getActualBackend(p);
     if (actualBackend == XGBoostParameters.Backend.gpu) {
       params.put("gpu_id", p._gpu_id);
+      // we are setting updater rather than tree_method here to keep CPU predictor, which is faster
       if (p._booster == XGBoostParameters.Booster.gblinear) {
         Log.info("Using gpu_coord_descent updater."); 
         params.put("updater", "gpu_coord_descent");
       } else if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
         Log.info("Using gpu_exact tree method.");
-        params.put("tree_method", "gpu_exact");
+        params.put("updater", "grow_gpu,prune");
       } else {
         Log.info("Using gpu_hist tree method.");
         params.put("max_bin", p._max_bins);
-        params.put("tree_method", "gpu_hist");
+        params.put("updater", "grow_gpu_hist");
       }
     } else if (p._booster == XGBoostParameters.Booster.gblinear) {
       Log.info("Using coord_descent updater.");
