@@ -2,11 +2,10 @@ package hex;
 
 import jsr166y.ForkJoinTask;
 import water.Iced;
+import water.util.IcedAtomicInt;
 
-import java.util.Collection;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Dispatcher for parallel model building. Starts building models every time the run method is invoked.
@@ -19,27 +18,13 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
   public static abstract class ParallelModelBuilderCallback<D extends ParallelModelBuilderCallback> extends Iced<D> {
 
-    public abstract void onBuildSuccess(final Model model, final ParallelModelBuilder parallelModelBuilder);
+    public abstract void onBuildSucces(final Model model, final ParallelModelBuilder parallelModelBuilder);
 
     public abstract void onBuildFailure(final ModelBuildFailure modelBuildFailure, final ParallelModelBuilder parallelModelBuilder);
-
-    public abstract void afterBuildProcessing(final ParallelModelBuilder parallelModelBuilder, final Model model);
   }
 
   private final transient ParallelModelBuilderCallback _callback;
-
-  public AtomicInteger getModelInProgressCounter() {
-    return _modelInProgressCounter;
-  }
-
-  private final  AtomicInteger _modelInProgressCounter = new AtomicInteger();
-
-  public AtomicInteger getModelCompletedCounter() {
-    return _modelCompletedCounter;
-  }
-
-  private final  AtomicInteger _modelCompletedCounter = new AtomicInteger();
-
+  private final transient IcedAtomicInt _modelInProgressCounter = new IcedAtomicInt();
   private final transient AtomicBoolean _completed = new AtomicBoolean(false);
   private final transient ParallelModelBuiltListener _parallelModelBuiltListener;
 
@@ -71,27 +56,24 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     @Override
     public void onModelSuccess(Model model) {
       try {
-        _callback.onBuildSuccess(model, ParallelModelBuilder.this);
+        _callback.onBuildSucces(model, ParallelModelBuilder.this);
       } finally {
-        _modelCompletedCounter.incrementAndGet();
         _modelInProgressCounter.decrementAndGet();
-
-        _callback.afterBuildProcessing(ParallelModelBuilder.this, model);
       }
       attemptComplete();
     }
 
     @Override
     public void onModelFailure(Throwable cause, Model.Parameters parameters) {
-      ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
       try {
+        final ModelBuildFailure modelBuildFailure = new ModelBuildFailure(cause, parameters);
         _callback.onBuildFailure(modelBuildFailure, ParallelModelBuilder.this);
       } finally {
         _modelInProgressCounter.decrementAndGet();
       }
-      _callback.afterBuildProcessing(ParallelModelBuilder.this, null);
       attemptComplete();
     }
+    
   }
 
   /**
@@ -126,6 +108,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     if(!_completed.get() || _modelInProgressCounter.get() != 0) return;
     complete(this);
   }
+
 
   @Override
   public ParallelModelBuilder getRawResult() {
