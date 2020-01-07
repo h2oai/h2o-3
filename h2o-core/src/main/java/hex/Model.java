@@ -48,7 +48,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public P _parms;   // TODO: move things around so that this can be protected
   public O _output;  // TODO: move things around so that this can be protected
   public String[] _warnings = new String[0];  // warning associated with model building
-  public String[] _warningsP;     // warnings associated with prediction only
+  public transient String[] _warningsP;     // warnings associated with prediction only (transient, not persisted)
   public Distribution _dist;
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
@@ -1426,9 +1426,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
 
-  public void addWarningP(String s) {
-    _warningsP = Arrays.copyOf(_warningsP, _warningsP.length + 1);
-    _warningsP[_warningsP.length - 1] = s;
+  /**
+   * Adds a scoring-related warning. 
+   * 
+   * Note: The implementation might lose a warning if scoring is triggered in parallel
+   * 
+   * @param s warning description
+   */
+  private void addWarningP(String s) {
+    String[] warningsP = _warningsP;
+    warningsP = warningsP != null ? Arrays.copyOf(warningsP, warningsP.length + 1) : new String[1];
+    warningsP[warningsP.length - 1] = s;
+    _warningsP = warningsP;
   }
 
   public boolean containsResponse(String s, String responseName) {
