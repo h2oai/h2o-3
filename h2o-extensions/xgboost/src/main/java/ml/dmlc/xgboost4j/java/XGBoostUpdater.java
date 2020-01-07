@@ -100,8 +100,8 @@ public class XGBoostUpdater extends Thread {
       if (result != null) {
         return result;
       } else if (i > 5) {
-        Log.warn(String.format("Exceeded waiting interval of %d seconds for a task of type '%s' to finish on node '%s'. ",
-                INACTIVE_CHECK_INTERVAL_SECS * i, callable, H2O.SELF));
+        Log.warn(String.format("XGBoost task of type '%s' is taking unexpectedly long, it didn't finish in %d seconds.",
+                callable, INACTIVE_CHECK_INTERVAL_SECS * i));
       }
     }
     throw new IllegalStateException("Cannot perform booster operation: updater is inactive on node " + H2O.SELF);
