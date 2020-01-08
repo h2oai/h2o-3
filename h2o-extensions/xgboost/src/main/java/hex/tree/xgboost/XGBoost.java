@@ -107,7 +107,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         error("XGBoost", "XGBoost is not available on all nodes!");
       }
     }
-    _backend = XGBoostModel.getActualBackend(_parms);
+    if (H2O.CLOUD.members().length == 0) {
+      // during rest-api registration we do not care about the actual back-end
+      _backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+    } else {
+      _backend = XGBoostModel.getActualBackend(_parms);
+    }
 
     if (_parms.hasCheckpoint()) {  // Asking to continue from checkpoint?
       Value cv = DKV.get(_parms._checkpoint);
