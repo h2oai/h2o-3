@@ -1,7 +1,8 @@
 Flow
 ----
 
-**I received the following error message when launching H2O - how do I resolve the error?**
+I received the following error message when launching H2O. How do I resolve the error?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -17,13 +18,15 @@ This error message means that there is a space (or other unsupported character) 
 
 --------------
 
-**How can I use Flow to export the prediction results with a dataset?**
+How can I use Flow to export the prediction results with a dataset?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 After obtaining your results, click the **Combine predictions with frame** button, then click the **View Frame** button.
 
 --------------
 
-**How can I call Rapids expressions from Flow?**
+How can I call Rapids expressions from Flow?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 You can use the following to write a top level function and call Rapids expression from Flow:
 
