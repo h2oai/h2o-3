@@ -1,7 +1,8 @@
 Java
 ----
 
-**How do I use H2O with Java?**
+How do I use H2O with Java?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are two ways to use H2O with Java: using the REST API or embedding H2O within your Java application.
 
@@ -25,7 +26,8 @@ There are two ways to use H2O with Java: using the REST API or embedding H2O wit
 
 --------------
 
-**How do I communicate with a remote cluster using the REST API?**
+How do I communicate with a remote cluster using the REST API?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To create a set of bare POJOs for the REST API payloads that can be used by JVM REST API clients:
 
@@ -38,7 +40,8 @@ This script connects to the server, gets all the metadata for the REST API schem
 
 --------------
 
-**I keep getting a message that I need to install Java. I have a supported version of Java installed, but I am still getting this message. What should I do?**
+I keep getting a message that I need to install Java. I have a supported version of Java installed, but I am still getting this message. What should I do?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This error message displays if the ``JAVA_HOME`` environment variable is not set correctly. The ``JAVA_HOME`` variable is likely points to Apple Java version 6 instead of Oracle Java version 8.
 
