@@ -173,7 +173,7 @@ public class SpearmanCorrelation {
 
     assert sortedX.numRows() == sortedY.numRows();
     final Vec orderX = needsOrdering(sortedX.vec(0)) ? Vec.makeZero(sortedX.numRows()) : frameX.vec(vecIdX);
-    final Vec orderY = needsOrdering(sortedY.vec(0)) ? Vec.makeZero(sortedY.numRows()) : frameX.vec(vecIdY);
+    final Vec orderY = needsOrdering(sortedY.vec(0)) ? Vec.makeZero(sortedY.numRows()) : frameY.vec(vecIdY);
 
     final Vec xLabel = sortedX.vec("label") == null ? sortedX.vec(0) : sortedX.vec("label");
     final Vec xValue = sortedX.vec(0);
