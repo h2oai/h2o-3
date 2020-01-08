@@ -3,19 +3,25 @@ Java
 
 **How do I use H2O with Java?**
 
-There are two ways to use H2O with Java. The simplest way is to call the REST API from your Java program to a remote cluster and should meet the needs of most users.
+There are two ways to use H2O with Java: using the REST API or embedding H2O within your Java application.
 
-You can access the REST API documentation within `Flow <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/flow.html#viewing-rest-api-documentation>`__, or on our `documentation site <../rest-api-reference.html>`__.
+-  **Using the REST API:**
 
-Flow, Python, and R all rely on the REST API to run H2O. For example, each action in Flow translates into one or more REST API calls. The script fragments in the cells in Flow are essentially the payloads for the REST API calls. Most R and Python API calls translate into a single REST API call.
+  The simplest way is to call the REST API from your Java program to a remote cluster and should meet the needs of most users.
 
-To see how the REST API is used with H2O:
+  You can access the REST API documentation within `Flow <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/flow.html#viewing-rest-api-documentation>`__, or on our `documentation site <../rest-api-reference.html>`__.
 
--  Using Chrome as your internet browser, open the developer tab while viewing the web UI. As you perform tasks, review the network calls made by Flow.
+  Flow, Python, and R all rely on the REST API to run H2O. For example, each action in Flow translates into one or more REST API calls. The script fragments in the cells in Flow are essentially the payloads for the REST API calls. Most R and Python API calls translate into a single REST API call.
 
--  Write an R program for H2O using the H2O R package that uses ``h2o.startLogging()`` at the beginning. All REST API calls used are logged.
+  To see how the REST API is used with H2O:
 
-The second way to use H2O with Java is to embed H2O within your Java application, similar to `Sparkling Water <https://github.com/h2oai/sparkling-water/blob/master/DEVEL.rst>`__.
+  - Using Chrome as your internet browser, open the developer tab while viewing the web UI. As you perform tasks, review the network calls made by Flow.
+
+  - Write an R program for H2O using the H2O R package that uses ``h2o.startLogging()`` at the beginning. All REST API calls used are logged.
+
+-  **Embedding H2O within Your Java Application:**
+ 
+ The second way to use H2O with Java is to embed H2O within your Java application. An example describing how to do this is available in the `h2o-droplets repository <https://github.com/h2oai/h2o-droplets/tree/master/h2o-java-droplet>`__.
 
 --------------
 
