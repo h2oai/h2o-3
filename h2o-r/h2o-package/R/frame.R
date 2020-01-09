@@ -2530,6 +2530,10 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #'   "everything"            - outputs NaNs whenever one of its contributing observations is missing
 #'   "all.obs"               - presence of missing observations will throw an error
 #'   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+#' @param method \code{str} Method of correlation computation. Allowed values are:
+#' "Pearson" - Pearson's correlation coefficient
+#' "Spearman" - Spearman's correlation coefficient (Spearman's Rho)
+#' Defaults to "Pearson"
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -2538,7 +2542,7 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' cor(prostate$AGE)
 #' }
 #' @export
-h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
+h2o.cor <- function(x, y=NULL,na.rm = FALSE, use, method="Pearson"){
   # Eager, mostly to match prior semantics but no real reason it need to be
   if( is.null(y) ){
     y <- x
@@ -2546,8 +2550,13 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
   if(missing(use)) {
     if (na.rm) use <- "complete.obs" else use <- "everything"
   }
+  
+  if (is.null(method) || is.na(method)) {
+    stop("Correlation method must be specified.")
+  }
+  
   # Eager, mostly to match prior semantics but no real reason it need to be
-  expr <- .newExpr("cor",x,y,.quote(use))
+  expr <- .newExpr("cor",x,y,.quote(use), .quote(method))
   if( (nrow(x)==1L || (ncol(x)==1L && ncol(y)==1L)) ) .eval.scalar(expr)
   else .fetch.data(expr,ncol(x))
 }

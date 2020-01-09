@@ -16,7 +16,6 @@ import water.rapids.ast.AstRoot;
 import water.rapids.ast.params.AstNumList;
 import water.rapids.ast.params.AstStr;
 import water.rapids.vals.ValFrame;
-import water.rapids.vals.ValNum;
 import water.rapids.vals.ValNums;
 import water.rapids.vals.ValStrs;
 import water.util.ArrayUtils;
@@ -42,57 +41,31 @@ public class RapidsTest extends TestUtil {
   }
 
   @Test
-  public void testSpearman() {
-    Scope.enter();
-    try {
-      // The last values in both vecs test ignorance of rows with at least one NaN.
-      final Frame frame = new TestFrameBuilder()
-              .withName("heightsweights")
-              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
-              .withColNames("HEIGHT", "WEIGHT")
-              .withDataForCol(0, ard(175, 166, 170, 169, 188, 175, 176, 171, 173, 175, 173, 174, 169, Double.NaN))
-              .withDataForCol(1, ard(69, 55, 67, 52, 90, 53, 57, 57, 68, 73, 62, 90, 63, Double.MAX_VALUE))
-              .build();
-      Scope.track(frame);
-
-      Val pearson = Rapids.exec("(spearman heightsweights 'HEIGHT' 'WEIGHT')");
-      assertTrue(pearson instanceof ValNum);
-      assertEquals(0.454357724505124, pearson.getNum(), 1e-8);
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  @Test
   public void testSpearmanIris() {
     Session session = new Session();
     Scope.enter();
     try {
       final Frame iris = TestUtil.parse_test_file(Key.make("iris_spearman"), "smalldata/junit/iris.csv");
       Scope.track_generic(iris);
-      final Val pearson_sepal = Rapids.exec("(spearman iris_spearman 'sepal_len' 'sepal_wid')", session);
-      assertTrue(pearson_sepal instanceof ValNum);
-      assertEquals(-0.1720027734934786, pearson_sepal.getNum(), 1e-8);
+      final Val spearmanMatrix = Rapids.exec("(cor iris_spearman iris_spearman \"complete.obs\" \"Spearman\")", session);
+      assertTrue(spearmanMatrix instanceof ValFrame);
+      // Only two columns verified by hand
+      assertEquals(-0.17200277349347703, spearmanMatrix.getFrame().vec(0).at(1), 1e-8);
+      assertEquals(0.882408773196076, spearmanMatrix.getFrame().vec(0).at(2), 1e-8);
 
+      // Categorical column test
+      assertTrue(iris.vec(4).isCategorical());
+      assertEquals(0.796932203878841, spearmanMatrix.getFrame().vec(0).at(4), 1e-8);
+
+      // Test non-squared correlation matrix
+      final Val spearmanNonSquared = Rapids.exec("(cor (cols iris_spearman [1]) (cols iris_spearman [2 3]) \"complete.obs\" \"Spearman\")", session);
+      assertTrue(spearmanNonSquared instanceof ValFrame);
+      final Frame spearman_non_squared_frame = spearmanNonSquared.getFrame();
+      assertEquals(1, spearman_non_squared_frame.numCols());
+      assertEquals(2, spearman_non_squared_frame.anyVec().length());
     } finally {
       Scope.exit();
       session.end(null);
-    }
-  }
-
-  @Test
-  public void testSpearmanCategoricals() {
-    Scope.enter();
-    try {
-      final Frame frame = TestUtil.parse_test_file(Key.make("iris_pearson"), "smalldata/junit/iris.csv");
-      Scope.track_generic(frame);
-
-      Val pearson = Rapids.exec("(spearman iris_pearson 'sepal_len' 'class')");
-      assertTrue(pearson instanceof ValNum);
-
-      assertEquals(0.796932203878841, pearson.getNum(), 1e-8);
-    } finally {
-      Scope.exit();
     }
   }
 
