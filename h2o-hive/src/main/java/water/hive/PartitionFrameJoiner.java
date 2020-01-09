@@ -1,12 +1,6 @@
 package water.hive;
 
-import org.apache.hadoop.hive.metastore.api.Partition;
-import org.apache.hadoop.hive.metastore.api.Table;
-import water.DKV;
-import water.H2O;
-import water.Job;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -18,16 +12,16 @@ import java.util.List;
 import static water.fvec.Vec.T_STR;
 import static water.fvec.Vec.makeZero;
 
-public class PartitionFrameJoiner extends H2O.H2OCountedCompleter {
+public class PartitionFrameJoiner extends H2O.H2OCountedCompleter<PartitionFrameJoiner> {
 
   private final Job<Frame> _job;
-  private final Table _table;
-  private final List<Partition> _partitions;
+  private final HiveMetaData.Table _table;
+  private final List<HiveMetaData.Partition> _partitions;
   private final String _targetFrame;
   private final List<Job<Frame>> _parseJobs;
 
   public PartitionFrameJoiner(
-      Job<Frame> job, Table table, List<Partition> partitions, String targetFrame, List<Job<Frame>> parseJobs
+      Job<Frame> job, HiveMetaData.Table table, List<HiveMetaData.Partition> partitions, String targetFrame, List<Job<Frame>> parseJobs
   ) {
     _job = job;
     _table = table;
@@ -38,14 +32,14 @@ public class PartitionFrameJoiner extends H2O.H2OCountedCompleter {
 
   @Override
   public void compute2() {
-    int keyCount = _table.getPartitionKeysSize();
+    int keyCount = _table.getPartitionKeys().size();
     StringBuilder partKeys = new StringBuilder();
     for (Job<Frame> job : _parseJobs) {
       Frame partitionFrame = job.get();
       String partKey = partitionFrame._key.toString();
       String[] keySplit = partKey.split("_");
-      int partIndex = Integer.valueOf(keySplit[keySplit.length - 1]);
-      Partition part = _partitions.get(partIndex);
+      int partIndex = Integer.parseInt(keySplit[keySplit.length - 1]);
+      HiveMetaData.Partition part = _partitions.get(partIndex);
       partKeys.append(" ").append(partKey);
       long rows = partitionFrame.numRows();
       for (int keyIndex = 0; keyIndex < keyCount; keyIndex++) {
