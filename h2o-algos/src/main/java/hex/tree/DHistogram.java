@@ -118,7 +118,8 @@ public final class DHistogram extends Iced {
   }
 
   public SharedTreeModel.SharedTreeParameters.HistogramType _histoType; //whether ot use random split points
-  public transient double _splitPts[]; // split points between _min and _maxEx (either random or based on quantiles)
+  transient double _splitPts[]; // split points between _min and _maxEx (either random or based on quantiles)
+  transient int _zeroSplitPntPos;
   public final long _seed;
   public transient boolean _hasQuantiles;
   public Key _globalQuantilesKey; //key under which original top-level quantiles are stored;
@@ -250,7 +251,7 @@ public final class DHistogram extends Iced {
   }
 
   // Interpolate d to find bin#
-  public int bin( double col_data ) {
+  public int bin(final double col_data) {
     if(Double.isNaN(col_data)) return _nbin; // NA bucket
     if (Double.isInfinite(col_data)) // Put infinity to most left/right bin
       if (col_data<0) return 0;
@@ -263,7 +264,7 @@ public final class DHistogram extends Iced {
 
     double pos = _hasQuantiles ? col_data : ((col_data - _min) * _step);
     if (_splitPts != null) {
-      idx1 = Arrays.binarySearch(_splitPts, pos);
+      idx1 = pos == 0.0 ? _zeroSplitPntPos : Arrays.binarySearch(_splitPts, pos);
       if (idx1 < 0) idx1 = -idx1 - 2;
     } else {
       idx1 = (int) pos;
@@ -320,6 +321,20 @@ public final class DHistogram extends Iced {
       }
     }
     else assert(_histoType== SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive);
+    if (_splitPts != null) {
+      // Inject canonical representation of zero - convert "negative zero" to 0.0d
+      // This is for PUBDEV-7161 - Arrays.binarySearch used in bin() method is not able to find a negative zero,
+      // we always use 0.0d instead
+      // We also cache the position of zero in the split points for a faster lookup
+      _zeroSplitPntPos = Arrays.binarySearch(_splitPts, 0.0d);
+      if (_zeroSplitPntPos < 0) {
+        int nzPos = Arrays.binarySearch(_splitPts, -0.0d);
+        if (nzPos >= 0) {
+          _splitPts[nzPos] = 0.0d;
+          _zeroSplitPntPos = nzPos;
+        }
+      }
+    }
     //otherwise AUTO/UniformAdaptive
     assert(_nbin>0);
     _vals = vals == null?MemoryManager.malloc8d(_vals_dim*_nbin+_vals_dim):vals;
