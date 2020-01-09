@@ -234,3 +234,13 @@ The following information displays for each message:
    retrieves the ID of a previously unseen type
 -  ``bytes``: Information extracted from the message, including the type
    of the task and the unique task number
+
+--------------
+
+Why do I receive GC (Allocation Failure)?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The G1 collector copies live data out of one region (evacuation) and into another. You will receive a "[GC (Allocation Failure)]" when there is no more space left to allocate live objects from the region being evacuated.
+
+More information is available here:
+`https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/g1_gc.html <https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/g1_gc.html>`__
