@@ -465,6 +465,23 @@ h2o.getFutureModel <- function(object, verbose=FALSE) {
 #' @seealso \code{\link{h2o.deeplearning}}, \code{\link{h2o.gbm}},
 #'          \code{\link{h2o.glm}}, \code{\link{h2o.randomForest}} for model
 #'          generation in h2o.
+#' @examples 
+#' \dontrun{
+#' insurance <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+#' predictors <- colnames(insurance)[1:4]
+#' response <- 'Claims'
+#' insurance['Group'] <- as.factor(insurance['Group'])
+#' insurance['Age'] <- as.factor(insurance['Age'])
+#' insurance.splits <- h2o.splitFrame(data =  insurance, ratios = .8, seed = 1234)
+#' train <- insurance.splits[[1]]
+#' valid <- insurance.splits[[2]]
+#' insurance_gbm <- h2o.gbm(x = predictors, y = response, 
+#'                          training_frame = train,
+#'                          validation_frame = valid, 
+#'                          distribution = 'huber', 
+#'                          huber_alpha = .9, seed = 1234)
+#' h2o.predict(insurance_gbm, newdata = insurance)
+#' }
 #' @export
 predict.H2OModel <- function(object, newdata, ...) {
   h2o.predict.H2OModel(object, newdata, ...)
@@ -488,6 +505,18 @@ h2o.predict <- function(object, newdata, ...){
 #' @param model A trained model representing the transformation strategy
 #' @param ... Transformation model-specific parameters
 #' @return Returns an H2OFrame object with data transformed.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' frame <- as.h2o(data.frame(C1 = c("a","b"), 
+#'                            C2 = c(0, 1), 
+#'                            C3 = c(1, 0), 
+#'                            C4 = c(0.2, 0.8), 
+#'                            stringsAsFactors = FALSE)
+#' w2v <- h2o.word2vec(pre_trained = frame, vec_size = 3)
+#' words <- as.character(as.h2o(c("b", "a", "c", NA, "a")))
+#' h2o.transform_word2vec(w2v, words = words)
+#' }
 #' @export
 setGeneric("h2o.transform", function(model, ...) {
   if(!is(model, "H2OModel")) {
@@ -1841,6 +1870,15 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' Retrieve the variable importance.
 #'
 #' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' pros <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+#' response <- "GLEASON"
+#' predictors <- c("ID","AGE","CAPSULE","DCAPS","PSA","VOL","DPROS")
+#' model <- h2o.glm(x = predictors, y = response, training_frame = pros)
+#' h2o.varimp(model)
+#' }
 #' @export
 h2o.varimp <- function(object) {
   o <- object
@@ -1955,6 +1993,17 @@ h2o.get_ntrees_actual <- function(object) {
 #'
 #' @param object An \linkS4class{H2OModel} or \linkS4class{H2OModelMetrics}
 #' @param matrix_id An integer, ranging from 1 to number of layers + 1, that specifies the weight matrix to return.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' census <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv")
+#' census[,1] <- as.factor(census[,1])
+#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
+#'                             epochs = 1, training_frame = census, 
+#'                             balance_classes = FALSE, reproducible = TRUE, 
+#'                             seed = 1234, export_weights_and_biases = TRUE)
+#' h2o.weights(dlmodel,matrix_id=1)
+#' }
 #' @export
 h2o.weights <- function(object, matrix_id=1){
   o <- object
@@ -2263,6 +2312,23 @@ h2o.specificity <- function(object, thresholds){
 #' @rdname h2o.find_threshold_by_max_metric
 #' @param object H2OBinomialMetrics
 #' @param metric "F1," for example
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' 
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "economy_20mpg"
+#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars.split[[1]]
+#' valid <- cars.split[[2]]
+#' cars_gbm <- h2o.gbm(x = predictors, y = response, 
+#'                     training_frame = train, validation_frame = valid, 
+#'                     build_tree_one_node = TRUE , seed = 1234)
+#' perf <- h2o.performance(cars_gbm, cars)
+#' h2o.find_threshold_by_max_metric(perf, "fnr")
+#' }
 #' @export
 h2o.find_threshold_by_max_metric <- function(object, metric) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", metric, " for ",class(object)))
@@ -2276,6 +2342,23 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 #' @rdname h2o.find_row_by_threshold
 #' @param object H2OBinomialMetrics
 #' @param threshold number between 0 and 1
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' 
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' response <- "economy_20mpg"
+#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars.split[[1]]
+#' valid <- cars.split[[2]]
+#' cars_gbm <- h2o.gbm(x = predictors, y = response, 
+#'                     training_frame = train, validation_frame = valid, 
+#'                     build_tree_one_node = TRUE , seed = 1234)
+#' perf <- h2o.performance(cars_gbm, cars)
+#' h2o.find_row_by_threshold(perf, 0.5)
+#' }
 #' @export
 h2o.find_row_by_threshold <- function(object, threshold) {
   if(!is(object, "H2OBinomialMetrics")) stop(paste0("No ", threshold, " for ",class(object)))
@@ -2341,6 +2424,14 @@ h2o.withinss <- function(object) { h2o.mse(object) }
 #' @param train Retrieve the training total within cluster sum of squares
 #' @param valid Retrieve the validation total within cluster sum of squares
 #' @param xval Retrieve the cross-validation total within cluster sum of squares
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+#' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
+#' h2o.tot_withinss(km, train = TRUE)
+#' }
 #' @export
 h2o.tot_withinss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
@@ -2428,6 +2519,14 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param train Retrieve the training total sum of squares
 #' @param valid Retrieve the validation total sum of squares
 #' @param xval Retrieve the cross-validation total sum of squares
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+#' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
+#' h2o.totss(km, train = TRUE)
+#' }
 #' @export
 h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   model.parts <- .model.parts(object)
@@ -3396,6 +3495,15 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 #' Retrieve the standard deviations of principal components
 #'
 #' @param object An \linkS4class{H2ODimReductionModel} object.
+#' @examples 
+#' \dontrun{
+#' h2o.init()
+#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' predictors <- c("displacement","power","weight","acceleration","year")
+#' cars_pca <- h2o.prcomp(cars, transform = "STANDARDIZE", 
+#'                        k = 3, x = predictors, seed = 12345)
+#' h2o.sdev(cars_pca)
+#' }
 #' @export
 h2o.sdev <- function(object) {
   if(!is(object, "H2ODimReductionModel") || object@algorithm != "pca")

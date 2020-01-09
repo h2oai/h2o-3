@@ -75,6 +75,14 @@ h2o.exportFile <- function(data, path, force = FALSE, sep = ",", compression = N
 #' @param path The path to write the model to. Must include the driectory and
 #'        filename.
 #' @param force logical, indicates how to deal with files that already exist.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init
+#' 
+#' train.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+#' h2o.exportHDFS(train.hex, path = " ", force = FALSE)
+#' }
 #' @export
 h2o.exportHDFS <- function(object, path, force=FALSE) { h2o.exportFile(object,path,force) }
 
