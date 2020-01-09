@@ -391,7 +391,7 @@ FAQ
 This section describes some common questions asked by users. The questions are broken down based on one of the types below.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
 
    gbm-faq/preprocessing_steps
    gbm-faq/histograms_and_binning
