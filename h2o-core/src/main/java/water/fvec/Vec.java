@@ -1522,15 +1522,15 @@ public class Vec extends Keyed<Vec> {
      *  @author tomasnykodym   */
     private final static class AddVecs2GroupTsk extends TAtomic<VectorGroup> {
       final Key _key;
-      int _n;          // INPUT: Keys to allocate; OUTPUT: start of run of keys
+      final int _n; // INPUT: Keys to allocate; 
+      int _offset;  // OUTPUT: start of run of keys
       private AddVecs2GroupTsk(Key key, int n){_key = key; _n = n;}
       @Override protected VectorGroup atomic(VectorGroup old) {
-        int n = _n;             // how many
         // If the old group is missing, assume it is the default group-of-self
         // (having 1 ID already allocated for self), not a new group with
         // zero prior vectors.
-        _n = old==null ? 1 : old._len; // start of allocated key run
-        return new VectorGroup(_key, n+_n);
+        _offset = old==null ? 1 : old._len; // start of allocated key run
+        return new VectorGroup(_key, _offset+_n);
       }
     }
 
@@ -1539,7 +1539,7 @@ public class Vec extends Keyed<Vec> {
     public int reserveKeys(final int n) {
       AddVecs2GroupTsk tsk = new AddVecs2GroupTsk(_key, n);
       tsk.invoke(_key);
-      return tsk._n;
+      return tsk._offset;
     }
 
     /** Gets the next n keys of this group.
