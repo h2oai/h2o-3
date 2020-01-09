@@ -240,7 +240,7 @@ The following information displays for each message:
 Why do I receive GC (Allocation Failure)?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The G1 collector copies live data out of one region (evacuation) and into another. You will receive a "[GC (Allocation Failure)]" when there is no more space left to allocate live objects from the region being evacuated.
+The G1 collector copies live data out of one region (evacuation) and into another. You will receive a "[GC (Allocation Failure)]" when there is no more space left to allocate live objects from the region being evacuated. Note that this is a normal part of GC operations, and the occurrence of these messages doesn't directly indicate an issue.
 
 More information is available here:
 `https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/g1_gc.html <https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/g1_gc.html>`__
