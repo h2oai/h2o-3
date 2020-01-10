@@ -183,8 +183,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     @Override
     public void onBuildSucces(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
+      parallelSearchGridLock.lock();
       try {
-        parallelSearchGridLock.lock();
         constructScoringInfo(finishedModel);
         grid.putModel(finishedModel._parms.checksum(IGNORED_FIELDS_PARAM_HASH), finishedModel._key);
 
@@ -215,8 +215,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
 
+      parallelSearchGridLock.lock();
       try {
-        parallelSearchGridLock.lock();
         if (hyperspaceIterator.hasNext(previousModel)
                 && isThereEnoughTime()
                 && !parallelModelBuilder.hasReachedMaxModels(hyperspaceIterator.max_models())
