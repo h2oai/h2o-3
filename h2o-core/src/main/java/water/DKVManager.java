@@ -3,6 +3,7 @@ package water;
 import hex.Model;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.Log;
 
 import java.util.*;
 
@@ -21,7 +22,7 @@ public class DKVManager {
     retainedSet.addAll(Arrays.asList(retainedKeys));
     extractNestedKeys(retainedSet);
 
-    new ClearDKVTask(retainedSet.toArray(new Key[]{}))
+    new ClearDKVTask(retainedSet.toArray(new Key[retainedSet.size()]))
             .doAllNodes();
   }
 
@@ -111,10 +112,17 @@ public class DKVManager {
         }
         if(value.isNull()) continue;
 
-        if (value.isFrame()) {
-          ((Frame) value.get()).retain(removalFutures, retainedKeys);
-        } else if (value.isModel()) {
-          ((Model)value.get()).remove(removalFutures);
+        try {
+          TypeMap.getTheFreezableOrThrow(value.type());
+          if (value.isFrame()) {
+            ((Frame) value.get()).retain(removalFutures, retainedKeys);
+          } else if (value.isModel()) {
+            ((Model) value.get()).remove(removalFutures);
+          }
+
+        } catch (ClassNotFoundException e) {
+          Log.err(e);
+          continue; // Value removed cluster-wide by other node, ignore
         }
       }
       removalFutures.blockForPending();
