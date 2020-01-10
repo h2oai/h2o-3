@@ -2211,6 +2211,12 @@ final public class H2O {
       new ClientDisconnectCheckThread().start();
     }
 
+    if (isGCLoggingEnabled()) {
+      Log.info(H2O.technote(16,
+              "GC logging is enabled, you might see messages containing \"GC (Allocation Failure)\". " +
+                      "Please note that this is a normal part of GC operations and occurrence of such messages doesn't directly indicate an issue."));
+    }
+    
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");
     Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
@@ -2224,6 +2230,18 @@ final public class H2O {
     Log.debug("    Start network services: " + (time10 - time9) + "ms");
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
+  }
+
+  private static boolean isGCLoggingEnabled() {
+    RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+    List<String> jvmArgs = runtimeMXBean.getInputArguments();
+    for (String arg : jvmArgs) {
+      if (arg.startsWith("-XX:+PrintGC") || 
+              arg.equals("-verbose:gc") || 
+              (arg.startsWith("-Xlog:") && arg.contains("gc")))
+        return true;
+    }
+    return false;
   }
   
   /** Find PID of the current process, use -1 if we can't find the value. */
