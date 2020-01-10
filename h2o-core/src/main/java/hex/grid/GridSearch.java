@@ -182,7 +182,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     @Override
-    public void onBuildSuccess(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
+    public void onBuildSucces(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
       try {
         parallelSearchGridLock.lock();
         constructScoringInfo(finishedModel);
