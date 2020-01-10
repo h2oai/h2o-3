@@ -2,6 +2,7 @@ package hex.glrm;
 
 import hex.genmodel.algos.glrm.GlrmInitialization;
 import hex.genmodel.algos.glrm.GlrmLoss;
+import hex.grid.HyperSpaceSearchCriteria;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -127,8 +128,13 @@ public class GLRMGridTest extends TestUtil {
       //
       Key<Grid> gridKey = Key.make("GLRM_grid_iris" + Key.rand());
 
+      GridSearch.SimpleParametersBuilderFactory<GLRMModel.GLRMParameters> simpleParametersBuilderFactory =
+              new GridSearch.SimpleParametersBuilderFactory<>();
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria =
+              new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+
       // 1st iteration
-      final Job<Grid> gs1 = GridSearch.startGridSearch(gridKey, params, hyperParms);
+      final Job<Grid> gs1 = GridSearch.startGridSearch(gridKey, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
       grid = (Grid<GLRMModel.GLRMParameters>) gs1.get();
       // Make sure number of produced models match size of specified hyper space
       Grid.SearchFailure failures = grid.getFailures();
@@ -146,7 +152,7 @@ public class GLRMGridTest extends TestUtil {
       Arrays.sort(hyperParamNames2);
       final int hyperSpaceSize2 = ArrayUtils.crossProductSize(hyperParms);
       Assert.assertArrayEquals("Names of hyperspaces should be same!", hyperParamNames1, hyperParamNames2);
-      final Job<Grid> gs2 = GridSearch.startGridSearch(gridKey, params, hyperParms);
+      final Job<Grid> gs2 = GridSearch.startGridSearch(gridKey, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
       grid = (Grid<GLRMModel.GLRMParameters>) gs2.get();
       // Make sure number of produced models match size of specified hyper space
       failures = grid.getFailures();

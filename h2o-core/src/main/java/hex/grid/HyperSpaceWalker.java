@@ -60,8 +60,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     /**
      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
      * @param failedModel
+     * @deprecated As `max_models` early stopping was moved from {@link HyperSpaceIterator},
+     * there is no need to manage number of successfully build models from within iterator
      */
-    void modelFailed(Model failedModel);
+    @Deprecated
+    default void modelFailed(Model failedModel) {};
 
     /**
      * Returns current "raw" state of iterator.
@@ -400,11 +403,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         public int max_models() { return _maxHyperSpaceSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)_maxHyperSpaceSize; }
 
         @Override
-        public void modelFailed(Model failedModel) {
-          // nada
-        }
-
-        @Override
         public Object[] getCurrentRawParameters() {
           Object[] hyperValues = new Object[_hyperParamNames.length];
           return hypers(_currentHyperparamIndices, hyperValues);
@@ -464,11 +462,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
     @Override
     public boolean stopEarly(Model model, ScoringInfo[] sk) {
-      return ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk),
-              search_criteria().stopping_rounds(),
-              ScoreKeeper.ProblemType.forSupervised(model._output.isClassifier()),
-              search_criteria().stopping_metric(),
-              search_criteria().stopping_tolerance(), "grid's best", true);
+      return model != null &&
+              ScoreKeeper.stopEarly(ScoringInfo.scoreKeepers(sk),
+               search_criteria().stopping_rounds(),
+               ScoreKeeper.ProblemType.forSupervised(model._output.isClassifier()),
+               search_criteria().stopping_metric(),
+               search_criteria().stopping_tolerance(), "grid's best", true);
     }
 
     @Override
@@ -476,9 +475,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return new HyperSpaceIterator<MP>() {
         /** Current hyper params permutation. */
         private int[] _currentHyperparamIndices = null;
-
-        /** One-based count of the permutations we've visited, primarily used as an index into _visitedHyperparamIndices. */
-        private int _currentPermutationNum = 0;
 
         /** Start time of this grid */
         private long _start_time = System.currentTimeMillis();
@@ -494,7 +490,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           if (_currentHyperparamIndices != null) {
             _visitedPermutations.add(_currentHyperparamIndices);
             _visitedPermutationHashes.add(integerHash(_currentHyperparamIndices));
-            _currentPermutationNum++; // NOTE: 1-based counting
 
             // Fill array of hyper-values
             Object[] hypers = hypers(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
@@ -534,15 +529,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           // we compare _visitedPermutationHashes.size() to _maxHyperSpaceSize because we want to stop when we have attempted each combo.
           //
           // _currentPermutationNum is 1-based
-          return (_visitedPermutationHashes.size() < _maxHyperSpaceSize &&
-                  (search_criteria().max_models() == 0 || _currentPermutationNum < search_criteria().max_models())
-          );
+          return _visitedPermutationHashes.size() < _maxHyperSpaceSize;
         }
 
         @Override
         public void reset() {
           _start_time = System.currentTimeMillis();
-          _currentPermutationNum = 0;
           _currentHyperparamIndices = null;
           _visitedPermutations.clear();
           _visitedPermutationHashes.clear();
@@ -559,14 +551,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         @Override
         public double time_remaining_secs() {
           return search_criteria().max_runtime_secs() - (System.currentTimeMillis() - _start_time) / 1000.0;
-        }
-
-        @Override
-        public void modelFailed(Model failedModel) {
-          // Leave _visitedPermutations, _visitedPermutationHashes and _currentHyperparamIndices alone
-          // so we don't revisit bad parameters. Note that if a model build fails for other reasons we
-          // won't retry.
-          _currentPermutationNum--;
         }
 
         @Override
