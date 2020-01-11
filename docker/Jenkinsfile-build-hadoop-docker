@@ -4,6 +4,11 @@ final String NODE_LABEL = 'docker && !mr-0xc8 && !micro'
 final String DOCKER_STASH = 'h2o-3-hadoop-docker-stash'
 final String REGISTRY_PREFIX = "${params.dockerRegistry}"
 final String IMAGE_NAME_PREFIX = "opsh2oai/h2o-3-hadoop"
+final List INTERNAL_CLUSTER_HADOOPS = [
+        [ distribution: "hdp-2.2", krb: false ], // 0xd6 cluster
+        [ distribution: "hdp-2.4", krb: true  ], // 0xg5 cluster
+        [ distribution: "cdh-6.3", krb: true  ]  // 0xg9 cluster
+]
 
 def pipelineContext = null
 def buildImageVersion = null
@@ -75,9 +80,12 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                         if (conflict && !params.force) {
                             error "Tag ${imageName}:${version} already exists in the repository"
                         }
+                        def repoVersion = "${distribution.version}.0"
+                        if (distribution.name == "cdh" && distribution.version == "6.3") {
+                            repoVersion = "6.3.2" // 6.3.0 is not available in cloudera repos
+                        }
 
-                        withCredentials([file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'),
-                                usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                        withCredentials([file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH')]) {
                             dir("${imageName}.${version}") {
                                 pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
                                 sh """
@@ -92,6 +100,7 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
                                         --build-arg H2O_BRANCH=${params.gitBranch} \
                                         --build-arg PARENT_VERSION=${buildImageVersion} \
                                         --build-arg VERSION=${distribution.version} \
+                                        --build-arg REPO_VERSION=${repoVersion} \
                                         .
 
                                     docker build \
@@ -135,27 +144,31 @@ parallel(pipelineContext.getBuildConfig().getSupportedHadoopDistributions().coll
     ]
 })
 
-node (pipelineContext.getBuildConfig().getDefaultNodeLabel()) {
-    final String buildStageName = "Build Edge node for 0xd cluster"
-    final String baseImageName = "${IMAGE_NAME_PREFIX}-hdp-2.2"
-    final String imageName = "${baseImageName}-0xd-edge"
-    stage(buildStageName) {
-        try {
-            pipelineContext.getBuildSummary().addStageSummary(this, buildStageName, '')
-            pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
-            cleanWs()
-
-            final boolean conflict = pipelineContext.getUtils()
-                    .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
-            if (conflict && !params.force) {
-                error "Tag ${imageName}:${version} already exists in the repository"
-            }
-
-            withCredentials([file(credentialsId: 'jenkins-ldif', variable: 'JENKINS_LDIF_PATH'),
-                             usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                dir("${imageName}.${version}") {
-                    pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
-                    sh """
+parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
+    [
+        "Build images for ${hdp.distribution} edge node", {
+            node (pipelineContext.getBuildConfig().getDefaultNodeLabel()) {
+                final String buildStageName = "Build images for Edge node ${hdp.distribution}"
+                String baseImageName = "${IMAGE_NAME_PREFIX}-${hdp.distribution}"
+                if (hdp.krb) {
+                    baseImageName = baseImageName + "-krb"
+                }
+                final String imageName = "${baseImageName}-0xd-edge"
+                stage(buildStageName) {
+                    try {
+                        pipelineContext.getBuildSummary().addStageSummary(this, buildStageName, '')
+                        pipelineContext.getBuildSummary().setStageDetails(this, buildStageName, env.NODE_NAME, env.WORKSPACE)
+                        cleanWs()
+    
+                        final boolean conflict = pipelineContext.getUtils()
+                                .dockerImageExistsInRegistry(this, params.dockerRegistry, imageName, version)
+                        if (conflict && !params.force) {
+                            error "Tag ${imageName}:${version} already exists in the repository"
+                        }
+    
+                        dir("${imageName}.${version}") {
+                            pipelineContext.getUtils().unstashFiles(this, DOCKER_STASH)
+                            sh """
                                     cd docker
 
                                     docker build \
@@ -165,32 +178,34 @@ node (pipelineContext.getBuildConfig().getDefaultNodeLabel()) {
                                         --build-arg FROM_IMAGE=${REGISTRY_PREFIX}/${baseImageName}:${version} \
                                         .
                                 """
+                        }
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, buildStageName)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, buildStageName)
+                        throw e
+                    }
                 }
-            }
-            pipelineContext.getBuildSummary().markStageSuccessful(this, buildStageName)
-        } catch (Exception e) {
-            pipelineContext.getBuildSummary().markStageFailed(this, buildStageName)
-            throw e
+    
+                final String publishStageName = "Publish images for Edge node ${hdp.distribution}"
+                stage (publishStageName) {
+                    try {
+                        pipelineContext.getBuildSummary().addStageSummary(this, publishStageName, '')
+                        pipelineContext.getBuildSummary().setStageDetails(this, publishStageName, env.NODE_NAME, env.WORKSPACE)
+    
+                        withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
+                            sh """
+                                    docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
+                                    docker push ${REGISTRY_PREFIX}/${imageName}:${version}
+                                """
+                            echo "###### Docker image ${imageName}:${version} built and pushed. ######"
+                        }
+                        pipelineContext.getBuildSummary().markStageSuccessful(this, publishStageName)
+                    } catch (Exception e) {
+                        pipelineContext.getBuildSummary().markStageFailed(this, publishStageName)
+                        throw e
+                    }
+                }
+            }        
         }
-    }
-
-    final String publishStageName = "Publish images for Edge node for 0xd cluster"
-    stage (publishStageName) {
-        try {
-            pipelineContext.getBuildSummary().addStageSummary(this, publishStageName, '')
-            pipelineContext.getBuildSummary().setStageDetails(this, publishStageName, env.NODE_NAME, env.WORKSPACE)
-
-            withCredentials([usernamePassword(credentialsId: "${params.dockerRegistry}", usernameVariable: 'REGISTRY_USERNAME', passwordVariable: 'REGISTRY_PASSWORD')]) {
-                sh """
-                                docker login -u $REGISTRY_USERNAME -p $REGISTRY_PASSWORD ${params.dockerRegistry}
-                                docker push ${REGISTRY_PREFIX}/${imageName}:${version}
-                            """
-                echo "###### Docker image ${imageName}:${version} built and pushed. ######"
-            }
-            pipelineContext.getBuildSummary().markStageSuccessful(this, publishStageName)
-        } catch (Exception e) {
-            pipelineContext.getBuildSummary().markStageFailed(this, publishStageName)
-            throw e
-        }
-    }
-}
+    ]
+})

@@ -25,6 +25,11 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
+   api-changes
+
+.. toctree::
+   :maxdepth: 2
+
    quick-start-videos
    
 .. toctree::

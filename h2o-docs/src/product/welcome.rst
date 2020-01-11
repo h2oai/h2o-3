@@ -215,6 +215,8 @@ If you've used previous versions of H2O, the following links will help guide you
 
 -  `Recent Changes <https://github.com/h2oai/h2o-3/blob/master/Changes.md>`_: This document describes the most recent changes in the latest build of H2O. It lists new features, enhancements (including changed parameter default values), and bug fixes for each release, organized by sub-categories such as Python, R, and Web UI.
 
+-  `API Related Changes <api-changes.html>`__: This section describes changes made in H2O-3 that can affect backwards compatibility. 
+
 -  `Contributing code <https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md>`_: If you're interested in contributing code to H2O, we appreciate your assistance! This document describes how to access our list of Jiras that are suggested tasks for contributors and how to contact us.
 
 Flow Users
