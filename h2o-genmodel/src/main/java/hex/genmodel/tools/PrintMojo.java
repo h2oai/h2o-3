@@ -6,6 +6,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.ConvertTreeOptions;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.TreeBackedMojoModel;
 
 import java.io.File;
@@ -220,8 +221,8 @@ public class PrintMojo {
     else {
       os = System.out;
     }
-    if (genModel instanceof TreeBackedMojoModel){
-      TreeBackedMojoModel treeBackedModel = (TreeBackedMojoModel) genModel;
+    if (genModel instanceof SharedTreeGraphConverter) {
+      SharedTreeGraphConverter treeBackedModel = (SharedTreeGraphConverter) genModel;
       ConvertTreeOptions options = new ConvertTreeOptions().withTreeConsistencyCheckEnabled();
       final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null, options);
       switch (format) {
@@ -232,12 +233,16 @@ public class PrintMojo {
           g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
           break;
         case json:
-          printJson(treeBackedModel, g, os);
+          if (!(treeBackedModel instanceof TreeBackedMojoModel)) {
+            System.out.println("ERROR: Printing XGBoost MOJO as JSON not supported");
+            System.exit(1);
+          }
+          printJson((TreeBackedMojoModel) treeBackedModel, g, os);
           break;
       }
     }
     else {
-      System.out.println("ERROR: Unknown MOJO type");
+      System.out.println("ERROR: Unsupported MOJO type");
       System.exit(1);
     }
   }
