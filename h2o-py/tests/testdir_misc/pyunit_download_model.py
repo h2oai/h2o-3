@@ -16,15 +16,26 @@ def download_model():
 
     prostate_glm = H2OGeneralizedLinearEstimator(family="binomial", alpha=[0.5])
     prostate_glm.train(x=["AGE","RACE","PSA","DCAPS"], y="CAPSULE", training_frame=prostate)
+
+    #this example results in overflow:
+    prostate_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", ntrees=10, max_depth=8,
+                                                min_rows=10, learn_rate=0.2)
+    prostate_gbm.train(x=["AGE", "RACE", "PSA", "VOL", "GLEASON"],
+                       y="CAPSULE", training_frame=prostate)
+    
     path = pyunit_utils.locate("results")
 
     assert os.path.isdir(path), "Expected save directory {0} to exist, but it does not.".format(path)
-    model_path = h2o.download_model(prostate_glm, path=path)
+    #model_path = h2o.download_model(prostate_glm, path=path)
 
-    assert os.path.isfile(model_path), "Expected load file {0} to exist, but it does not.".format(model_path)
-    the_model = h2o.load_model(model_path)
+    #save_model gives output different from download_model
+    #saved_model_path = h2o.save_model(prostate_gbm, path=path, force=True)
+    downloaded_model_path = h2o.download_model(prostate_gbm, path=path)
 
-    assert isinstance(the_model, H2OEstimator), "Expected and H2OBinomialModel, but got {0}".format(the_model)
+    #assert os.path.isfile(model_path), "Expected load file {0} to exist, but it does not.".format(model_path)
+    #the_model = h2o.load_model(model_path)
+
+    #assert isinstance(the_model, H2OEstimator), "Expected and H2OBinomialModel, but got {0}".format(the_model)
     
 
 

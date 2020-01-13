@@ -2696,9 +2696,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     @Override
     public void writeTo(OutputStream os) {
-      try {
-        AutoBuffer buffer = new AutoBuffer(true);
-        writeAll(buffer);
+      try (OutputStream bos = new ByteArrayOutputStream()) {
+        AutoBuffer buffer = writeAll(new AutoBuffer(bos, true));
         os.write(buffer.buf());
         os.flush();
       } catch (IOException e) {
