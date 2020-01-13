@@ -154,6 +154,15 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     String filename = JCodeGen.toJavaId(s.model_id.key().toString()) + ".zip";
     return new StreamingSchema(model.getMojo(), filename);
   }
+  
+  @SuppressWarnings("unused") // called from the RequestServer through reflection
+  public StreamingSchema fetchBinaryModel(int version, ModelsV3 s) {
+    Model model = getFromDKV("key", s.model_id.key());
+    OutputStream os = null;
+    String filename = JCodeGen.toJavaId(s.model_id.key().toString());
+    StreamingSchema ss = new StreamingSchema(model.new ModelBinaryWriter(), filename);
+    return ss;
+  }
 
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public JobV3 makePartialDependence(int version, PartialDependenceV3 s) {

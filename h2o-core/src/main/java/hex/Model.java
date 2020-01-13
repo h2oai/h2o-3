@@ -2688,6 +2688,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  /** Model stream writer - output binary representation of model. */
+  public class ModelBinaryWriter implements StreamWriter {
+
+    public ModelBinaryWriter() {
+    }
+
+    @Override
+    public void writeTo(OutputStream os) {
+      try {
+        AutoBuffer buffer = new AutoBuffer(true);
+        writeAll(buffer);
+        os.write(buffer.buf());
+        os.flush();
+      } catch (IOException e) {
+        e.printStackTrace();
+      }
+    }
+  }
+  
   /**
    * Exports a MOJO representation of a model to a given location.
    * @param location target path, it can be on local filesystem, HDFS, S3...
