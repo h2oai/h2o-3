@@ -158,7 +158,6 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   @SuppressWarnings("unused") // called from the RequestServer through reflection
   public StreamingSchema fetchBinaryModel(int version, ModelsV3 s) {
     Model model = getFromDKV("key", s.model_id.key());
-    OutputStream os = null;
     String filename = JCodeGen.toJavaId(s.model_id.key().toString());
     StreamingSchema ss = new StreamingSchema(model, filename);
     return ss;

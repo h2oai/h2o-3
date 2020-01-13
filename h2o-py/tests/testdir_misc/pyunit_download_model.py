@@ -18,13 +18,13 @@ def download_model():
     
     path = pyunit_utils.locate("results")
 
-    downloaded_model_path = h2o.download_model(prostate_gbm, path=path)
+    downloaded_model_path = prostate_gbm.download_model(path=path)
     assert os.path.isfile(downloaded_model_path), \
         "Expected load file {0} to exist, but it does not.".format(downloaded_model_path)
     
     loaded_model = h2o.load_model(downloaded_model_path)
     assert isinstance(loaded_model, H2OGradientBoostingEstimator), \
-        "Expected and H2OBinomialModel, but got {0}".format(downloaded_model_path)
+        "Expected an H2OGradientBoostingEstimator, but got {0}".format(downloaded_model_path)
     
 
 
