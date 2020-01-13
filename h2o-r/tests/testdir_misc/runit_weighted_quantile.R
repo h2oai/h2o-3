@@ -43,8 +43,8 @@ test.wtd.quantile <- function(conn){
   hq = as.numeric(h2o.quantile(prframe,probs = seq(0,.95,.05),weights_column = "weights"))
 
   # weighted R quantile
-  library(Hmisc)
-  wq = as.numeric(wtd.quantile(pred[,1],ww,probs = seq(0,.95,.05)))
+  # weights are 0-1, calculating a weigthed quantile is equivalent to just considering observations with weight=1
+  wq = as.numeric(quantile(pred[ww==1,1], probs = seq(0,.95,.05)))
   #wq-hq
   expect_true(max(abs((wq-hq)/wq))<1e-3)
 
