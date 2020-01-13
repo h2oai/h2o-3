@@ -210,18 +210,23 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
       // Attempt to train next model
-      final MP nextModelParams = getNextModelParams(hyperspaceIterator, previousModel, grid);
-      if (nextModelParams != null
-              && isThereEnoughTime()
-              && !_job.stop_requested()
-              && !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos())) {
+      try {
+        parallelSearchGridLock.lock();
+        final MP nextModelParams = getNextModelParams(hyperspaceIterator, previousModel, grid);
+        if (nextModelParams != null
+                && isThereEnoughTime()
+                && !_job.stop_requested()
+                && !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos())) {
 
-        // FIXME: ModelFeeder's <MP> type parameter is hiding GridSearch's one. Ideally would have moved ModelFeeder outside but it is too coupled with GridSearch class.
-        reconcileMaxRuntime(grid._key, hyperspaceIterator, nextModelParams);
+          // FIXME: ModelFeeder's <MP> type parameter is hiding GridSearch's one. Ideally would have moved ModelFeeder outside but it is too coupled with GridSearch class.
+          reconcileMaxRuntime(grid._key, hyperspaceIterator, nextModelParams);
 
-        parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
-      } else {
-        parallelModelBuilder.noMoreModels();
+          parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
+        } else {
+          parallelModelBuilder.noMoreModels();
+        }
+      } finally {
+        parallelSearchGridLock.unlock();
       }
     }
 
