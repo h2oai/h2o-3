@@ -211,8 +211,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
       // Attempt to train next model
       try {
-        // I hereby claim that the locking system below has been researched by Andrey Spiridonov
-        // and the credit should go to him. Thank you.
         parallelSearchGridLock.lock();
         final MP nextModelParams = getNextModelParams(hyperspaceIterator, previousModel, grid);
         if (nextModelParams != null
