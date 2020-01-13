@@ -469,26 +469,35 @@ def call(final pipelineContext) {
     KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage ]
   }
 
-  def HADOOP_MULTINODE_STAGES = [[
-          stageName: "HADOOP MULTINODE TESTS",
-          target: "test-hadoop-multinode", timeoutValue: 60,
-          component: pipelineContext.getBuildConfig().COMPONENT_ANY,
-          additionalTestPackages: [
-                  pipelineContext.getBuildConfig().COMPONENT_PY,
-                  pipelineContext.getBuildConfig().COMPONENT_R
+  def HADOOP_MULTINODE_STAGES = []
+  final MULTINODE_CLUSTERS_CONFIGS = [
+          [ distribution: "hdp", version: "2.2",
+            nameNode: "mr-0xd6", hdpName: "hdp2_2_d", krb: false,
+            nodes: 4, xmx: "16G", extramem: "100",
+            cloudingDir: "/user/jenkins/hadoop_multinode_tests"
           ],
-          customData: [
-                  distribution: "hdp",
-                  version: "2.2",
-                  nodes: 4,
-                  xmx: "16G",
-                  extramem: "100",
-                  name_node: "mr-0xd6.0xdata.loc",
-                  clouding_dir: "/user/jenkins/hadoop_multinode_tests"
-          ], pythonVersion: '2.7',
-          executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopMultinodeStage.groovy',
-          image: pipelineContext.getBuildConfig().getHadoopEdgeNodeImage()
-  ]]
+          [ distribution: "hdp", version: "2.4",
+            nameNode: "mr-0xg5", hdpName: "steam2", krb: true,
+            nodes: 2, xmx: "8G", extramem: "10",
+            cloudingDir: "/user/jenkins/hadoop_multinode_tests"
+          ]
+  ]
+  for (config in MULTINODE_CLUSTERS_CONFIGS) {
+    def image = pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(config.distribution, config.version, config.krb)
+    def stage = [
+            stageName: "TEST MULTINODE ${config.krb?"KRB ":""}(${config.distribution}${config.version}, ${config.nameNode})",
+            target: "test-hadoop-multinode", timeoutValue: 60,
+            component: pipelineContext.getBuildConfig().COMPONENT_ANY,
+            additionalTestPackages: [
+                    pipelineContext.getBuildConfig().COMPONENT_PY,
+                    pipelineContext.getBuildConfig().COMPONENT_R
+            ],
+            customData: config, pythonVersion: '2.7',
+            executionScript: 'h2o-3/scripts/jenkins/groovy/hadoopMultinodeStage.groovy',
+            image: image
+    ]
+    HADOOP_MULTINODE_STAGES += [ stage ]
+  }
 
   def XGB_STAGES = []
   for (String osName: pipelineContext.getBuildConfig().getSupportedXGBEnvironments().keySet()) {
