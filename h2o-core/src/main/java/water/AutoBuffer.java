@@ -222,19 +222,6 @@ public final class AutoBuffer {
     _persist = 0;               // No persistance
   }
 
-  /** Write to an ever-expanding byte[].  Instead of calling {@link #close()},
-   *  call {@link #buf()} to retrieve the final byte[].  */
-  public AutoBuffer(boolean persist) {
-    _bb = ByteBuffer.wrap(new byte[16]).order(ByteOrder.nativeOrder());
-    _chan = null;
-    _h2o = null;
-    _read = false;
-    _firstPage = true;
-    _persist = 0;
- 
-    putTypeMap(persist);
-  }
-
   /** Write to a known sized byte[].  Instead of calling close(), call
    * {@link #bufClose()} to retrieve the final byte[]. */
   public AutoBuffer( int len ) {
@@ -255,8 +242,13 @@ public final class AutoBuffer {
     _h2o = null;
     _firstPage = true;
     _persist = 0;
-    
-    putTypeMap(persist);
+
+    if( persist ) {
+      String[] typeMap = (H2O.CLOUD.leader() == H2O.SELF) ?
+              TypeMap.CLAZZES : FetchClazzes.fetchClazzes();
+      put1(0x1C).put1(0xED).putStr(H2O.ABV.projectVersion()).putAStr(typeMap);
+    }
+    else put1(0);
   }
 
   /** Read from a persistent Stream (including all TypeMap info) into same
@@ -291,15 +283,6 @@ public final class AutoBuffer {
       else
         throw new IllegalArgumentException(msg);
     }
-  }
-  
-  private void putTypeMap(boolean persist) {
-    if( persist ) {
-      String[] typeMap = (H2O.CLOUD.leader() == H2O.SELF) ?
-              TypeMap.CLAZZES : FetchClazzes.fetchClazzes();
-      put1(0x1C).put1(0xED).putStr(H2O.ABV.projectVersion()).putAStr(typeMap);
-    }
-    else put1(0);
   }
 
   @Override public String toString() {
