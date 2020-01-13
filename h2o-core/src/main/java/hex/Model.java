@@ -43,7 +43,8 @@ import static water.util.FrameUtils.cleanUp;
  * same names as used to build the mode and any categorical columns can
  * be adapted.
  */
-public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
+public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M>
+        implements StreamWriter {
 
   public P _parms;   // TODO: move things around so that this can be protected
   public O _output;  // TODO: move things around so that this can be protected
@@ -2680,7 +2681,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       URI targetUri = FileUtils.getURI(location);
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       os = p.create(targetUri.toString(), force);
-      this.writeAll(new AutoBuffer(os, true)).close();
+      writeTo(os);
       os.close();
       return targetUri;
     } finally {
@@ -2688,22 +2689,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
-  /** Model stream writer - output binary representation of model. */
-  public class ModelBinaryWriter implements StreamWriter {
-
-    public ModelBinaryWriter() {
-    }
-
-    @Override
-    public void writeTo(OutputStream os) {
-      try (OutputStream bos = new ByteArrayOutputStream()) {
-        AutoBuffer buffer = writeAll(new AutoBuffer(bos, true));
-        os.write(buffer.buf());
-        os.flush();
-      } catch (IOException e) {
-        e.printStackTrace();
-      }
-    }
+  @Override
+  public final void writeTo(OutputStream os) {
+    writeAll(new AutoBuffer(os, true)).close();
   }
   
   /**

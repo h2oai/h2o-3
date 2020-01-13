@@ -160,7 +160,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     Model model = getFromDKV("key", s.model_id.key());
     OutputStream os = null;
     String filename = JCodeGen.toJavaId(s.model_id.key().toString());
-    StreamingSchema ss = new StreamingSchema(model.new ModelBinaryWriter(), filename);
+    StreamingSchema ss = new StreamingSchema(model, filename);
     return ss;
   }
 
