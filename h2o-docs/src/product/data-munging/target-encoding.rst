@@ -39,112 +39,112 @@ Train Baseline Model
 
 The examples below show how to train a baseline model. 
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
+        library(h2o)
+        h2o.init()
 
-    # Start by training a model using the original data. 
-    # Below we import our data into the H2O cluster.
-    df <- h2o.importFile("https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv")
-    df$bad_loan <- as.factor(df$bad_loan)
+        # Start by training a model using the original data. 
+        # Below we import our data into the H2O cluster.
+        df <- h2o.importFile("https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv")
+        df$bad_loan <- as.factor(df$bad_loan)
 
-    # Randomly split the data into 75% training and 25% testing. 
-    # We will use the testing data to evaluate how well the model performs.
-    splits <- h2o.splitFrame(df, seed = 1234, 
-                             destination_frames=c("train.hex", "test.hex"), 
-                             ratios = 0.75)
-    train <- splits[[1]]
-    test <- splits[[2]]
+        # Randomly split the data into 75% training and 25% testing. 
+        # We will use the testing data to evaluate how well the model performs.
+        splits <- h2o.splitFrame(df, seed = 1234, 
+                                 destination_frames=c("train.hex", "test.hex"), 
+                                 ratios = 0.75)
+        train <- splits[[1]]
+        test <- splits[[2]]
 
-    # Now train the baseline model. 
-    # We will train a GBM model with early stopping.
-    response <- "bad_loan"
-    predictors <- c("loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", 
-                    "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
-                    "verification_status", "term", "purpose", "home_ownership", 
-                    "addr_state")
+        # Now train the baseline model. 
+        # We will train a GBM model with early stopping.
+        response <- "bad_loan"
+        predictors <- c("loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", 
+                        "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
+                        "verification_status", "term", "purpose", "home_ownership", 
+                        "addr_state")
 
-    gbm_baseline <- h2o.gbm(x = predictors, y = response, 
-                            training_frame = train, validation_frame = test,
-                            score_tree_interval = 10, ntrees = 500,
-                            sample_rate = 0.8, col_sample_rate = 0.8, seed = 1234,
-                            stopping_rounds = 5, stopping_metric = "AUC", 
-                            stopping_tolerance = 0.001,
-                            model_id = "gbm_baseline.hex")
+        gbm_baseline <- h2o.gbm(x = predictors, y = response, 
+                                training_frame = train, validation_frame = test,
+                                score_tree_interval = 10, ntrees = 500,
+                                sample_rate = 0.8, col_sample_rate = 0.8, seed = 1234,
+                                stopping_rounds = 5, stopping_metric = "AUC", 
+                                stopping_tolerance = 0.001,
+                                model_id = "gbm_baseline.hex")
 
-    # Get the AUC on the training and testing data:
-    train_auc <- h2o.auc(gbm_baseline, train = TRUE)
-    valid_auc <- h2o.auc(gbm_baseline, valid = TRUE)
+        # Get the AUC on the training and testing data:
+        train_auc <- h2o.auc(gbm_baseline, train = TRUE)
+        valid_auc <- h2o.auc(gbm_baseline, valid = TRUE)
 
-    auc_comparison <- data.frame('Data' = c("Training", "Validation"),
-                                 'AUC' = c(train_auc, valid_auc))
+        auc_comparison <- data.frame('Data' = c("Training", "Validation"),
+                                     'AUC' = c(train_auc, valid_auc))
 
-    auc_comparison
-            Data       AUC
-    1   Training 0.7492599
-    2 Validation 0.7070187
+        auc_comparison
+                Data       AUC
+        1   Training 0.7492599
+        2 Validation 0.7070187
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    import h2o
-    h2o.init()
+        import h2o
+        h2o.init()
 
-    # Start by training a model using the original data. 
-    # Below we import our data into the H2O cluster.
-    df = h2o.import_file("https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv")
-    df['bad_loan'] = df['bad_loan'].asfactor()
+        # Start by training a model using the original data. 
+        # Below we import our data into the H2O cluster.
+        df = h2o.import_file("https://raw.githubusercontent.com/h2oai/app-consumer-loan/master/data/loan.csv")
+        df['bad_loan'] = df['bad_loan'].asfactor()
 
-    # Randomly split the data into 75% training and 25% testing. 
-    # We will use the testing data to evaluate how well the model performs.
-    train, test = df.split_frame(ratios=[0.75], seed=1234)
+        # Randomly split the data into 75% training and 25% testing. 
+        # We will use the testing data to evaluate how well the model performs.
+        train, test = df.split_frame(ratios=[0.75], seed=1234)
 
-    # Now train the baseline model. 
-    # We will train a GBM model with early stopping.
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
-    predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", 
-                  "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
-                  "verification_status", "term", "purpose", "home_ownership", 
-                  "addr_state"]
-    response = "bad_loan"
+        # Now train the baseline model. 
+        # We will train a GBM model with early stopping.
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", "dti", 
+                      "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
+                      "verification_status", "term", "purpose", "home_ownership", 
+                      "addr_state"]
+        response = "bad_loan"
 
-    gbm_baseline=H2OGradientBoostingEstimator(score_tree_interval=10,
-                                              ntrees=500,
-                                              sample_rate=0.8,
-                                              col_sample_rate=0.8,
-                                              seed=1234,
-                                              stopping_rounds=5,
-                                              stopping_metric="AUC",
-                                              stopping_tolerance=0.001,
-                                              model_id="gbm_baseline.hex")
+        gbm_baseline=H2OGradientBoostingEstimator(score_tree_interval=10,
+                                                  ntrees=500,
+                                                  sample_rate=0.8,
+                                                  col_sample_rate=0.8,
+                                                  seed=1234,
+                                                  stopping_rounds=5,
+                                                  stopping_metric="AUC",
+                                                  stopping_tolerance=0.001,
+                                                  model_id="gbm_baseline.hex")
 
-    gbm_baseline.train(x=predictors, y=response, training_frame=train,
-                       validation_frame=test)
+        gbm_baseline.train(x=predictors, y=response, training_frame=train,
+                           validation_frame=test)
 
-    # Get the AUC on the training and testing data:
-    train_auc = gbm_baseline.auc(train=True)
-    train_auc
-    0.7492599314713426
+        # Get the AUC on the training and testing data:
+        train_auc = gbm_baseline.auc(train=True)
+        train_auc
+        0.7492599314713426
 
-    valid_auc = gbm_baseline.auc(valid=True)
-    valid_auc
-    0.707018686126265
+        valid_auc = gbm_baseline.auc(valid=True)
+        valid_auc
+        0.707018686126265
 
 
 Our training data has much higher AUC than our validation data. Review the Variable Importance values to see the variables with the greatest importance.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # Variable Importance
-    h2o.varimp_plot(gbm_baseline)
+        # Variable Importance
+        h2o.varimp_plot(gbm_baseline)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Variable Importance
-    gbm_baseline.varimp_plot()
+        # Variable Importance
+        gbm_baseline.varimp_plot()
 
 .. figure:: ../images/gbm_variable_importance1.png
    :alt: GBM Variable importance - first run
@@ -155,57 +155,57 @@ The variables with the greatest importance are ``int_rate``, ``addr_state``, ``a
 
 See if the AUC improves on the test data if we remove the ``addr_state`` predictor. This can indicate that the model is memorizing the training data.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
 
-    predictors <- setdiff(predictors, "addr_state")
+        predictors <- setdiff(predictors, "addr_state")
 
-    gbm_no_state <- h2o.gbm(x = predictors, y = response, 
-                            training_frame = train, validation_frame = test, 
-                            score_tree_interval = 10, ntrees = 500,
-                            sample_rate = 0.8, col_sample_rate = 0.8, seed = 1234,
-                            stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
-                            model_id = "gbm_no_state.hex")
+        gbm_no_state <- h2o.gbm(x = predictors, y = response, 
+                                training_frame = train, validation_frame = test, 
+                                score_tree_interval = 10, ntrees = 500,
+                                sample_rate = 0.8, col_sample_rate = 0.8, seed = 1234,
+                                stopping_rounds = 5, stopping_metric = "AUC", stopping_tolerance = 0.001,
+                                model_id = "gbm_no_state.hex")
 
-    # Get the AUC for the baseline model and the model without ``addr_state``
-    auc_baseline <- h2o.auc(gbm_baseline, valid = TRUE)
-    auc_nostate <- h2o.auc(gbm_no_state, valid = TRUE)
+        # Get the AUC for the baseline model and the model without ``addr_state``
+        auc_baseline <- h2o.auc(gbm_baseline, valid = TRUE)
+        auc_nostate <- h2o.auc(gbm_no_state, valid = TRUE)
 
-    auc_comparison <- data.frame('Model' = c("Baseline", "No addr_state"),
-                                 'AUC' = c(auc_baseline, auc_nostate))
+        auc_comparison <- data.frame('Model' = c("Baseline", "No addr_state"),
+                                     'AUC' = c(auc_baseline, auc_nostate))
 
-    auc_comparison
-              Model       AUC
-    1      Baseline 0.7070187
-    2 No addr_state 0.7076197
+        auc_comparison
+                  Model       AUC
+        1      Baseline 0.7070187
+        2 No addr_state 0.7076197
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", "dti",
-                  "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
-                  "verification_status", "term", "purpose", "home_ownership"]
+        predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", "dti",
+                      "delinq_2yrs", "revol_util", "total_acc", "longest_credit_length",
+                      "verification_status", "term", "purpose", "home_ownership"]
 
-    gbm_no_state=H2OGradientBoostingEstimator(score_tree_interval=10,
-                                              ntrees=500,
-                                              sample_rate=0.8,
-                                              col_sample_rate=0.8,
-                                              seed=1234,
-                                              stopping_rounds=5,
-                                              stopping_metric="AUC",
-                                              stopping_tolerance=0.001,
-                                              model_id="gbm_no_state.hex")
+        gbm_no_state=H2OGradientBoostingEstimator(score_tree_interval=10,
+                                                  ntrees=500,
+                                                  sample_rate=0.8,
+                                                  col_sample_rate=0.8,
+                                                  seed=1234,
+                                                  stopping_rounds=5,
+                                                  stopping_metric="AUC",
+                                                  stopping_tolerance=0.001,
+                                                  model_id="gbm_no_state.hex")
 
-    gbm_no_state.train(x=predictors, y=response, training_frame=train,
-                       validation_frame=test)
+        gbm_no_state.train(x=predictors, y=response, training_frame=train,
+                           validation_frame=test)
 
-    auc_baseline = gbm_baseline.auc(valid=True)
-    auc_baseline
-    0.707018686126265
+        auc_baseline = gbm_baseline.auc(valid=True)
+        auc_baseline
+        0.707018686126265
 
-    auc_nostate = gbm_no_state.auc(valid=True)
-    auc_nostate
-    0.7076197256885596
+        auc_nostate = gbm_no_state.auc(valid=True)
+        auc_nostate
+        0.7076197256885596
 
 We see a slight improvement in our test AUC if we do not include the ``addr_state`` predictor. This is a good indication that the GBM model may be overfitting with this column.
 
@@ -285,35 +285,35 @@ Start by fitting the target encoding map. This has the number of bad loans per s
 Fit the Target Encoding Map
 '''''''''''''''''''''''''''
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # Create a fold column in the train dataset
-    train$fold <- h2o.kfold_column(train, nfolds=5, seed = 1234)
+        # Create a fold column in the train dataset
+        train$fold <- h2o.kfold_column(train, nfolds=5, seed = 1234)
 
-    # Fit the target encoding map
-    te_map <- h2o.target_encode_fit(train, x = list("addr_state"), 
-                                    y = response, fold_column = "fold")
+        # Fit the target encoding map
+        te_map <- h2o.target_encode_fit(train, x = list("addr_state"), 
+                                        y = response, fold_column = "fold")
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Create a fold column in the train dataset
-    fold = train.kfold_column(n_folds=5, seed=1234)
-    fold.set_names(["fold"])
-    train = train.cbind(fold)
+        # Create a fold column in the train dataset
+        fold = train.kfold_column(n_folds=5, seed=1234)
+        fold.set_names(["fold"])
+        train = train.cbind(fold)
 
-    # Set the predictor to be "addr_state"
-    predictor = ["addr_state"]
+        # Set the predictor to be "addr_state"
+        predictor = ["addr_state"]
 
-    # Fit the target encoding map
-    from h2o.targetencoder import TargetEncoder
-    target_encoder = TargetEncoder(x=predictor, y=response, 
-                                   fold_column="fold", 
-                                   blended_avg= True, 
-                                   inflection_point = 3, 
-                                   smoothing = 1, 
-                                   seed=1234)
-    target_encoder.fit(train)
+        # Fit the target encoding map
+        from h2o.targetencoder import TargetEncoder
+        target_encoder = TargetEncoder(x=predictor, y=response, 
+                                       fold_column="fold", 
+                                       blended_avg= True, 
+                                       inflection_point = 3, 
+                                       smoothing = 1, 
+                                       seed=1234)
+        target_encoder.fit(train)
 
 Transform Target Encoding
 '''''''''''''''''''''''''
@@ -322,20 +322,20 @@ Apply the target encoding to our training and testing data.
 
 **Apply Target Encoding to Training Dataset** 
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # Transform the target encoding on the training dataset
-    encoded_train <- h2o.target_encode_transform(train, x = list("addr_state"), y = response, 
-                                                 target_encode_map = te_map, holdout_type = "kfold",
-                                                 fold_column="fold", blended_avg = TRUE, 
-                                                 inflection_point=3, smoothing=1, seed = 1234,
-                                                 noise=0.2)
+        # Transform the target encoding on the training dataset
+        encoded_train <- h2o.target_encode_transform(train, x = list("addr_state"), y = response, 
+                                                     target_encode_map = te_map, holdout_type = "kfold",
+                                                     fold_column="fold", blended_avg = TRUE, 
+                                                     inflection_point=3, smoothing=1, seed = 1234,
+                                                     noise=0.2)
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # noise = 0.2 will be applied
-    encoded_train = target_encoder.transform(frame=train, holdout_type="kfold", noise=0.2, seed=1234)
+        # noise = 0.2 will be applied
+        encoded_train = target_encoder.transform(frame=train, holdout_type="kfold", noise=0.2, seed=1234)
 
 **Apply Target Encoding to Testing Dataset**
 
@@ -345,21 +345,21 @@ We do not need to apply any of the overfitting prevention techniques because our
 -  ``blended_avg=FALSE``
 -  ``noise=0`` 
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    encoded_test <- h2o.target_encode_transform(test, x = list("addr_state"), y = response,
-                                                target_encode_map = te_map, holdout_type = "none",
-                                                fold_column = "fold", noise = 0,
-                                                blended_avg = FALSE, seed=1234)
+        encoded_test <- h2o.target_encode_transform(test, x = list("addr_state"), y = response,
+                                                    target_encode_map = te_map, holdout_type = "none",
+                                                    fold_column = "fold", noise = 0,
+                                                    blended_avg = FALSE, seed=1234)
 
-   .. code-block:: python
+   .. code-tab:: python
    
-    target_encoder_test = TargetEncoder(x=predictor, y=response, blended_avg=False)
-    target_encoder_test.fit(train)
-    
-    # Applying encoding map that was generated on `train` data to the `test`. 
-    encoded_test = target_encoder_test.transform(frame=test, holdout_type="none", noise=0.0, seed=1234)
+        target_encoder_test = TargetEncoder(x=predictor, y=response, blended_avg=False)
+        target_encoder_test.fit(train)
+        
+        # Applying encoding map that was generated on `train` data to the `test`. 
+        encoded_test = target_encoder_test.transform(frame=test, holdout_type="none", noise=0.0, seed=1234)
 
 
 Train Model with KFold Target Encoding
@@ -367,91 +367,91 @@ Train Model with KFold Target Encoding
 
 Train a new model, this time replacing the ``addr_state`` with the ``addr_state_te``.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    predictors <- c("loan_amnt", "int_rate", "emp_length", "annual_inc", 
-                    "dti", "delinq_2yrs", "revol_util", "total_acc", 
-                    "longest_credit_length", "verification_status", "term", 
-                    "purpose", "home_ownership", "addr_state_te")
+        predictors <- c("loan_amnt", "int_rate", "emp_length", "annual_inc", 
+                        "dti", "delinq_2yrs", "revol_util", "total_acc", 
+                        "longest_credit_length", "verification_status", "term", 
+                        "purpose", "home_ownership", "addr_state_te")
 
-    gbm_state_te <- h2o.gbm(x = predictors, 
-                            y = response, 
-                            training_frame = encoded_train, 
-                            validation_frame = encoded_test, 
-                            score_tree_interval = 10, 
-                            ntrees = 500,
-                            stopping_rounds = 5, 
-                            stopping_metric = "AUC", 
-                            stopping_tolerance = 0.001,
-                            model_id = "gbm_state_te.hex",
-                            seed=1234)
+        gbm_state_te <- h2o.gbm(x = predictors, 
+                                y = response, 
+                                training_frame = encoded_train, 
+                                validation_frame = encoded_test, 
+                                score_tree_interval = 10, 
+                                ntrees = 500,
+                                stopping_rounds = 5, 
+                                stopping_metric = "AUC", 
+                                stopping_tolerance = 0.001,
+                                model_id = "gbm_state_te.hex",
+                                seed=1234)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", 
-                  "dti", "delinq_2yrs", "revol_util", "total_acc", 
-                  "longest_credit_length", "verification_status", "term", 
-                  "purpose", "home_ownership", "addr_state_te"]
+        predictors = ["loan_amnt", "int_rate", "emp_length", "annual_inc", 
+                      "dti", "delinq_2yrs", "revol_util", "total_acc", 
+                      "longest_credit_length", "verification_status", "term", 
+                      "purpose", "home_ownership", "addr_state_te"]
 
-    gbm_state_te = H2OGradientBoostingEstimator(score_tree_interval = 10, 
-                            ntrees = 500,
-                            stopping_rounds = 5, 
-                            stopping_metric = "AUC", 
-                            stopping_tolerance = 0.001,
-                            model_id = "gbm_state_te.hex",
-                            seed=1234)
-    gbm_state_te.train(x=predictors, y=response, 
-                       training_frame=encoded_train, 
-                       validation_frame=encoded_test)
+        gbm_state_te = H2OGradientBoostingEstimator(score_tree_interval = 10, 
+                                ntrees = 500,
+                                stopping_rounds = 5, 
+                                stopping_metric = "AUC", 
+                                stopping_tolerance = 0.001,
+                                model_id = "gbm_state_te.hex",
+                                seed=1234)
+        gbm_state_te.train(x=predictors, y=response, 
+                           training_frame=encoded_train, 
+                           validation_frame=encoded_test)
 
 The AUC three models are shown below:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # Get AUC
-    auc_state_te <- h2o.auc(gbm_state_te, valid = TRUE)
+        # Get AUC
+        auc_state_te <- h2o.auc(gbm_state_te, valid = TRUE)
 
-    auc_comparison <- data.frame('Model' = c("No Target Encoding", 
-                                             "No addr_state", 
-                                             "addr_state Target Encoding"),
-                                 'AUC' = c(auc_baseline, auc_nostate, auc_state_te))
+        auc_comparison <- data.frame('Model' = c("No Target Encoding", 
+                                                 "No addr_state", 
+                                                 "addr_state Target Encoding"),
+                                     'AUC' = c(auc_baseline, auc_nostate, auc_state_te))
 
-    auc_comparison
-                           Model       AUC
-    1         No Target Encoding 0.7070187
-    2              No addr_state 0.7076197
-    3 addr_state Target Encoding 0.7072750
+        auc_comparison
+                               Model       AUC
+        1         No Target Encoding 0.7070187
+        2              No addr_state 0.7076197
+        3 addr_state Target Encoding 0.7072750
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Compare AUC values:
+        # Compare AUC values:
 
-    valid_auc = gbm_baseline.auc(valid=True)
-    valid_auc
-    0.707018686126265
+        valid_auc = gbm_baseline.auc(valid=True)
+        valid_auc
+        0.707018686126265
 
-    auc_nostate = gbm_no_state.auc(valid=True)
-    auc_nostate
-    0.7076197256885596
+        auc_nostate = gbm_no_state.auc(valid=True)
+        auc_nostate
+        0.7076197256885596
 
-    auc_state_te = gbm_state_te.auc(valid=True)
-    auc_state_te
-    0.7072749724799465
+        auc_state_te = gbm_state_te.auc(valid=True)
+        auc_state_te
+        0.7072749724799465
 
 Now the ``addr_state_te`` has much smaller variable importance. It is no longer the second most important feature but the 10th.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # Variable Importance
-    h2o.varimp_plot(gbm_state_te)
+        # Variable Importance
+        h2o.varimp_plot(gbm_state_te)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Variable Importance
-    gbm_state_te.varimp_plot()
+        # Variable Importance
+        gbm_state_te.varimp_plot()
 
 .. figure:: ../images/gbm_variable_importance2.png
    :alt: GBM Variable importance - second run
