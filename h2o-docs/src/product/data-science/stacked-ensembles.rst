@@ -427,7 +427,7 @@ FAQ
 
 -  **How do I improve the performance of an ensemble?**
   
-  If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First make sure to try the default metalearner ("AUTO") and then try the other options for ``metalearner_algorithm``.  Additionally, the custom parameters could be passed to ``metalearner_params (e.g., a GBM with ntrees=1000, max_depth=10, etc.)``   
+  If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First make sure to try the default metalearner ("AUTO") and then try the other options for ``metalearner_algorithm``.  Additionally, the custom parameters could be passed to ``metalearner_params`` (e.g., a GBM with ntrees=1000, max_depth=10, etc.)   
 
   Second, look to see if there are base learners that are performing much worse than the other base learners (for example, a GLM).  If so, remove them from the ensemble and try again.  
 
