@@ -1410,7 +1410,7 @@ def download_model(model, path=""):
     Download an H2O Model object to disk.
 
     :param model: The model object to download.
-    :param path: a path to download the model at (hdfs, s3, local)
+    :param path: a path to the directory where the model should be saved.
 
     :returns: the path of the downloaded model
 
