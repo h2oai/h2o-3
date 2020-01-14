@@ -8,22 +8,9 @@ public class FilteredHyperSpaceIterator<MP extends Model.Parameters> implements 
 
   private final PermutationFilter<MP> _permutationFilter;
 
-  /**
-   * Total number of visited permutations, including those filtered out by {@code _permutationFilter}.
-   */
-  private long _numberOfVisitedPermutations = 0;
-
-  /**
-   * Keeps number of returned to the user permutations as not all visited permutations are considered to be worthy
-   * for evaluation due to a {@code _permutationFilter}.
-   */
-  private long _numberOfUsedPermutations = 0;
-  private final long _maxHyperSpaceSize;
-
-  public FilteredHyperSpaceIterator(HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceIterator, PermutationFilter<MP> permutationFilter, long maxHyperSpaceSize) {
+  public FilteredHyperSpaceIterator(HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceIterator, PermutationFilter<MP> permutationFilter) {
     _hyperSpaceIterator = hyperSpaceIterator;
     _permutationFilter = permutationFilter;
-    _maxHyperSpaceSize = maxHyperSpaceSize;
   }
 
   @Override
@@ -31,24 +18,19 @@ public class FilteredHyperSpaceIterator<MP extends Model.Parameters> implements 
     MP permutation = _hyperSpaceIterator.nextModelParameters(previousModel);
 
     while (permutation != null && _permutationFilter.skip(permutation)) {
-      _numberOfVisitedPermutations++;
       permutation = hasNext(previousModel) ? _hyperSpaceIterator.nextModelParameters(previousModel) : null;
     }
-    _numberOfVisitedPermutations++;
-    _numberOfUsedPermutations++;
     return permutation;
   }
 
   @Override
   public boolean hasNext(Model previousModel) {
-    return _numberOfVisitedPermutations < _maxHyperSpaceSize && ( max_models() == 0 || _numberOfUsedPermutations < max_models());
+    return _hyperSpaceIterator.hasNext(previousModel);
   }
 
   @Override
   public void reset() {
     _hyperSpaceIterator.reset();
-    _numberOfVisitedPermutations = 0;
-    _numberOfUsedPermutations = 0;
     _permutationFilter.reset();
   }
 
@@ -69,9 +51,6 @@ public class FilteredHyperSpaceIterator<MP extends Model.Parameters> implements 
 
   @Override
   public void modelFailed(Model failedModel) {
-    _hyperSpaceIterator.modelFailed(failedModel);
-    _numberOfVisitedPermutations--;
-    _numberOfUsedPermutations--;
   }
 
   @Override

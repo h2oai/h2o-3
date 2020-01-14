@@ -54,6 +54,6 @@ public class FilteredWalker<MP extends Model.Parameters>
 
   @Override
   public HyperSpaceIterator<MP> iterator() {
-    return new FilteredHyperSpaceIterator<>(_walker.iterator(), _permutationFilter, getMaxHyperSpaceSize());
+    return new FilteredHyperSpaceIterator<>(_walker.iterator(), _permutationFilter);
   }
 }

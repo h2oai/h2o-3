@@ -124,6 +124,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       while (it.hasNext(model) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
         try {
           Model.Parameters parms = it.nextModelParameters(model);
+          // When filtering is in the game, `hasNext()` can return true but `it.nextModelParameters()` can skip this next permutation by returning null
+          if(parms == null) continue;
           gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
         } catch(Throwable ex) {
           //swallow invalid combinations
@@ -355,6 +357,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         try {
           // Get parameters for next model
           params = it.nextModelParameters(model);
+
+          // When filtering is in the game, `hasNext()` can return true but `it.nextModelParameters()` can skip this next permutation by returning null
+          if(params == null) continue;
 
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong

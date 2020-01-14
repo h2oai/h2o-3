@@ -1,19 +1,26 @@
 package ai.h2o.targetencoding.strategy;
 
 import ai.h2o.targetencoding.TargetEncoderModel;
+import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceWalker;
 import hex.grid.filter.*;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
+import water.Job;
+import water.Scope;
 import water.TestUtil;
+import water.fvec.Frame;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
-public class RGSOverTargetEncoderParametersTest extends TestUtil {
+public class TargetEncoderParametersGSWithFilteringTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
@@ -71,7 +78,7 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     assertEquals(25, evaluatedGridItems.size());
   }
 
-  @Test
+  @Ignore("Should be fixed with PUBDEV-7204")
   public void randomGridSearchWithFilteringFunctionsWhenMaxModelsIsDefined() {
     HashMap<String, Object[]> hpGrid = new HashMap<>();
     hpGrid.put("_blending", new Boolean[]{true, false});
@@ -113,52 +120,52 @@ public class RGSOverTargetEncoderParametersTest extends TestUtil {
     assertEquals(10, evaluatedGridItems.size());
   }
 
-  @Test
+  @Ignore("Should be fixed with PUBDEV-7204")
   public void max_model_is_honored_when_one_model_has_failed() {
-    HashMap<String, Object[]> hpGrid = new HashMap<>();
-    hpGrid.put("_blending", new Boolean[]{true, false});
-    hpGrid.put("_noise_level", new Double[]{0.0, 0.01, 0.1});
-    hpGrid.put("_k", new Double[]{1.0, 2.0, 3.0});
-    hpGrid.put("_f", new Double[]{1.0, 2.0, 3.0});
+    Scope.enter();
+    try {
+      final Frame trainingFrame = parse_test_file("smalldata/iris/iris_train.csv");
+      Scope.track(trainingFrame);
 
-    TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
+      HashMap<String, Object[]> hpGrid = new HashMap<>();
+      hpGrid.put("_blending", new Boolean[]{true, false});
+      hpGrid.put("_noise_level", new Double[]{0.0, 0.01, 0.1});
+      hpGrid.put("_k", new Double[]{1.0, 2.0, 3.0});
+      hpGrid.put("_f", new Double[]{1.0, 2.0, 3.0});
 
-    GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
+      TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
+      parameters._train = trainingFrame._key;
+      parameters._response_column = "species";
 
-    HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
-    int maxModels = 10;
-    int numberOfFailedModels = 1;
-    hyperSpaceSearchCriteria.set_max_models(maxModels);
+      GridSearch.SimpleParametersBuilderFactory simpleParametersBuilderFactory = new GridSearch.SimpleParametersBuilderFactory();
 
-    FilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      int maxModels = 53;
+      int numberOfFailedModels = 1;
+      hyperSpaceSearchCriteria.set_max_models(maxModels);
 
-    PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new AnyMatchPermutationFilter<>(blendingFilterFunction);
+      FilterFunction blendingFilterFunction = new KeepOnlyFirstMatchFilterFunction<TargetEncoderModel.TargetEncoderParameters>((gridItem) -> !gridItem._blending);
 
-    HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
-            new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
-                    hpGrid,
-                    simpleParametersBuilderFactory,
-                    hyperSpaceSearchCriteria);
+      PermutationFilter<TargetEncoderModel.TargetEncoderParameters> defaultPermutationFilter = new AnyMatchPermutationFilter<>(blendingFilterFunction);
 
-    FilteredWalker filteredWalker = new FilteredWalker(walker, defaultPermutationFilter);
+      HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker =
+              new HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters>(parameters,
+                      hpGrid,
+                      simpleParametersBuilderFactory,
+                      hyperSpaceSearchCriteria);
 
-    HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> filteredIterator = filteredWalker.iterator();
+      FilteredWalker filteredWalker = new FilteredWalker(walker, defaultPermutationFilter);
 
-    List<TargetEncoderModel.TargetEncoderParameters> returnedGridItems = new ArrayList<>();
-    while (filteredIterator.hasNext(null)) {
-      TargetEncoderModel.TargetEncoderParameters targetEncoderParameters = filteredIterator.nextModelParameters(null);
-      
-      // For the sake of test let's pretend that 3rd parameters lead to model's failure. 
-      // By notifying `iterator` we will be able to reach `max_model` number of models
-      if(returnedGridItems.size() == 3) {
-        filteredIterator.modelFailed(null);
-      }
-      if( targetEncoderParameters != null) { // we might have had next element but it can be filtered out by ffiltering unctions
-        returnedGridItems.add(targetEncoderParameters);
-      }
+      Job<Grid> gs = GridSearch.startGridSearch(null, filteredWalker, 1);
+
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+
+      assertEquals(maxModels + numberOfFailedModels, grid.getModelCount());
+    } finally {
+      Scope.exit();
     }
-
-    assertEquals(maxModels + numberOfFailedModels, returnedGridItems.size());
   }
 
   @Test

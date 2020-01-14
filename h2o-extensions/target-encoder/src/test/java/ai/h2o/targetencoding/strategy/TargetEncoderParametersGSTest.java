@@ -26,7 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Enclosed.class)
-public class TargetEncoderRGSTest{
+public class TargetEncoderParametersGSTest{
 
   public static class TargetEncoderRGSNonParametrizedTest extends TestUtil {
 

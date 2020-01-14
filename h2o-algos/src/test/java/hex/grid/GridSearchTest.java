@@ -20,7 +20,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
-public class GridTest extends TestUtil {
+public class GridSearchTest extends TestUtil {
 
   @Rule
   public TemporaryFolder temporaryFolder = new TemporaryFolder();
