@@ -182,7 +182,7 @@ public class KmeansConstrainedTest extends TestUtil {
             System.out.println("\nPredictions:");
             System.out.println("  | CKT | FKT | CKF | FKF |");
             for (int i=0; i<fr.numRows(); i++){
-                System.out.println(i+ " |  "+predict1.vec(0).at8(i)+"  |  "+predict3.vec(0).at8(i)+"  |  "+predict2.vec(0).at8(i)+"  |  "+predict4.vec(0).at8(i)+"  |");
+                System.out.println(i + " |  " + predict1.vec(0).at8(i) + "  |  " + predict3.vec(0).at8(i) + "  |  " + predict2.vec(0).at8(i) + "  |  " + predict4.vec(0).at8(i) + "  |");
                 assert predict1.vec(0).at8(i) == predict3.vec(0).at8(i): "Predictions should be the same for Loyd Kmenas and Constrained Kmeans.";
                 assert predict2.vec(0).at8(i) == predict4.vec(0).at8(i): "Predictions should be the same for Loyd Kmenas and Constrained Kmeans.";
             }
@@ -259,4 +259,34 @@ public class KmeansConstrainedTest extends TestUtil {
         }
     }
 
+    @Test @Ignore
+    public void testMnistConstrained() {
+        KMeansModel kmm = null, kmm2 = null;
+        Frame fr = null, points = null;
+        try {
+            Scope.enter();
+            fr = Scope.track(parse_test_file("bigdata/laptop/mnist/train.csv.gz"));
+
+            KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+            parms._train = fr._key;
+            parms._seed = 0xcaf;
+            parms._k = 3;
+            parms._cluster_size_constraints = new int[]{10000, 30000, 10000};
+            parms._init = KMeans.Initialization.Furthest;
+            parms._standardize = true;
+            parms._max_iterations = 3;
+            parms._ignored_columns = new String[]{"1023"};
+
+
+            KMeans job = new KMeans(parms);
+            kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());
+
+        } finally {
+            if( fr  != null ) fr.delete();
+            if( points != null ) points.delete();
+            if( kmm != null ) kmm.delete();
+            if( kmm2 != null ) kmm2.delete();
+            Scope.exit();
+        }
+    }
 }

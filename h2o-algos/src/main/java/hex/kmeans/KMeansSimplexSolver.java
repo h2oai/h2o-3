@@ -13,6 +13,7 @@ import java.util.Collections;
  * Experimental code. Polynomial implementation - slow performance. Need to be parallelize!
  * Calculate Minimal Cost Flow problem using simplex method with go through spanning tree.
  * Used to solve minimal cluster size constraints in K-means.
+ * 
  */
 class KMeansSimplexSolver {
     public int _constraintsLength;
@@ -54,7 +55,7 @@ class KMeansSimplexSolver {
         this._numberOfNonZeroWeightPoints = numberOfNonZeroWeightPoints;
         
         this._weights = weights;
-        this._additiveWeights = Vec.makeCon(0, _nodeSize + _constraintsLength, Vec.T_NUM);
+        this._additiveWeights = Vec.makeCon(0, _constraintsLength, Vec.T_NUM);
         this._sumWeights = sumDistances;
 
         long constraintsSum = 0;
@@ -71,7 +72,7 @@ class KMeansSimplexSolver {
                     tmpDemand = _numberOfNonZeroWeightPoints - constraintsSum;
                 }
                 _demands.set(i, tmpDemand);
-                if (tmpDemand > Math.abs(_maxAbsDemand)) {
+                if (Math.abs(tmpDemand) > _maxAbsDemand) {
                     _maxAbsDemand = Math.abs(tmpDemand);
                 }
             }
@@ -81,17 +82,11 @@ class KMeansSimplexSolver {
         long edgeIndex = 0; 
         for (long i = 0; i < _weights.numRows(); i++) {
             for(int j=0; j < _constraintsLength; j++){
-                _weights.vec(edgeIndexStart+j).set(i, edgeIndex++);
+                _weights.vec(edgeIndexStart + j).set(i, edgeIndex++);
             }
         }
-
-        this.tree = new SpanningTree(_nodeSize, _edgeSize, _constraintsLength);
-    }
-
-    /**
-     * Initialize graph and spanning tree.
-     */
-    public void init() {
+        
+        // Initialize graph and spanning tree.
         // always start with infinity _capacities
         for (long i = 0; i < _edgeSize; i++) {
             _capacities.set(i, Long.MAX_VALUE);
@@ -102,10 +97,10 @@ class KMeansSimplexSolver {
 
         // fill max capacity from the leader node to all others _nodes
         for (long i = 0; i < _nodeSize; i++) {
-            _additiveWeights.set(i + _constraintsLength, maxCapacity);
             _capacities.set(i + _edgeSize, maxCapacity);
         }
 
+        this.tree = new SpanningTree(_nodeSize, _edgeSize, _constraintsLength);
         tree.init(_numberOfPoints, maxCapacity, _demands);
     }
 
@@ -159,6 +154,7 @@ class KMeansSimplexSolver {
         double minimalWeight = t.minimalWeight;
         long minimalIndex = t.minimalIndex;
         long additiveEdgesIndexStart = _weights.vec(0).length() * _constraintsLength;
+        // Iterate over number of constraints, it is size K, MR task is not optimal here
         for(long i = additiveEdgesIndexStart; i < _edgeSize; i++){
             double tmpWeight = tree.reduceWeight(i, getWeight(i));
             boolean countValue = !_hasWeightsColumn || isNonZeroWeight(i);
@@ -284,7 +280,6 @@ class KMeansSimplexSolver {
      * Initialize graph and working spanning tree, calculate minimal cost flow and check if result flow is correct. 
      */
     private void calculateMinimalCostFlow() {
-        init();
         pivotLoop();
         checkInfeasibility();
     }
