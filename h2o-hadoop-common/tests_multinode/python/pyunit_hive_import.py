@@ -11,13 +11,15 @@ def adapt_frame(dataset, table_name="table_for_h2o_import"):
     return dataset
 
 def hive_import():
+    hdfs_name_node = pyunit_utils.hadoop_namenode()
     connection_url = "jdbc:hive2://localhost:10000/default"
     krb_enabled = os.getenv('KRB_ENABLED', 'false').lower() == 'true'
     if krb_enabled:
         connection_url += ";auth=delegationToken"
         
     # read original
-    dataset_original = h2o.import_file("hdfs://user/jenkins/smalldata/chicagoCensus.csv")
+    file_url = "hdfs://{0}{1}".format(hdfs_name_node, "/user/jenkins/smalldata/chicagoCensus.csv")
+    dataset_original = h2o.import_file(file_url)
 
     # read SELECT from Hive JDBC Select
     select_jdbc = h2o.import_sql_select(connection_url, "select * from chicago", "", "", fetch_mode="SINGLE")
