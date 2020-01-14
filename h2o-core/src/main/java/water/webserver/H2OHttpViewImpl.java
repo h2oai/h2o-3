@@ -2,11 +2,7 @@ package water.webserver;
 
 import org.apache.commons.io.IOUtils;
 import water.ExtensionManager;
-import water.api.DatasetServlet;
-import water.api.NpsBinServlet;
-import water.api.PostFileServlet;
-import water.api.PutKeyServlet;
-import water.api.RequestServer;
+import water.api.*;
 import water.server.ServletUtils;
 import water.util.Log;
 import water.webserver.iface.H2OHttpConfig;
@@ -39,6 +35,8 @@ public class H2OHttpViewImpl implements H2OHttpView {
     SERVLETS.put("/3/DownloadDataset.bin", DatasetServlet.class);
     SERVLETS.put("/3/PutKey.bin", PutKeyServlet.class);
     SERVLETS.put("/3/PutKey", PutKeyServlet.class);
+    SERVLETS.put("/3/Chunk.bin", ChunkServlet.class);
+    SERVLETS.put("/3/Chunk", ChunkServlet.class);
     SERVLETS.put("/", RequestServer.class);
   }
 

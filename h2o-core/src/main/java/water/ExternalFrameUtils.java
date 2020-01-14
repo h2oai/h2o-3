@@ -128,72 +128,72 @@ public class ExternalFrameUtils {
         return vecTypes;
     }
 
-    static void sendIntArray(AutoBuffer ab, int[] data) {
+    public static void sendIntArray(AutoBuffer ab, int[] data) {
         ab.putA4(data);
     }
 
-    static void sendDoubleArray(AutoBuffer ab, double[] data) {
+    public static void sendDoubleArray(AutoBuffer ab, double[] data) {
         ab.putA8d(data);
     }
 
-    static void sendBoolean(AutoBuffer ab, boolean data) {
+    public static void sendBoolean(AutoBuffer ab, boolean data) {
         sendBoolean(ab, data ? (byte)1 : (byte)0);
     }
 
-    static void sendBoolean(AutoBuffer ab, byte boolData) {
+    public static void sendBoolean(AutoBuffer ab, byte boolData) {
         ab.put1(boolData);
         putMarker(ab, boolData);
     }
 
-    static void sendByte(AutoBuffer ab, byte data) {
+    public static void sendByte(AutoBuffer ab, byte data) {
         ab.put1(data);
         putMarker(ab, data);
     }
 
-    static void sendChar(AutoBuffer ab, char data) {
+    public static void sendChar(AutoBuffer ab, char data) {
         ab.put2(data);
         putMarker(ab, data);
     }
 
-    static void sendShort(AutoBuffer ab, short data) {
+    public static void sendShort(AutoBuffer ab, short data) {
         ab.put2s(data);
         putMarker(ab, data);
     }
 
-    static void sendInt(AutoBuffer ab, int data) {
+    public static void sendInt(AutoBuffer ab, int data) {
         ab.putInt(data);
         putMarker(ab, data);
     }
 
-    static void sendLong(AutoBuffer ab, long data) {
+    public static void sendLong(AutoBuffer ab, long data) {
         ab.put8(data);
         putMarker(ab, data);
     }
 
-    static void sendFloat(AutoBuffer ab, float data) {
+    public static void sendFloat(AutoBuffer ab, float data) {
         ab.put4f(data);
     }
 
-    static void sendDouble(AutoBuffer ab, double data) {
+    public static void sendDouble(AutoBuffer ab, double data) {
         ab.put8d(data);
     }
 
-    static void sendString(AutoBuffer ab, String data) {
+    public static void sendString(AutoBuffer ab, String data) {
         ab.putStr(data);
         if(data != null && data.equals(STR_MARKER_NEXT_BYTE_FOLLOWS)){
             ab.put1(MARKER_ORIGINAL_VALUE);
         }
     }
 
-    static void sendTimestamp(AutoBuffer ab, long time) {
+    public static void sendTimestamp(AutoBuffer ab, long time) {
         sendLong(ab, time);
     }
 
-    static void sendTimestamp(AutoBuffer ab, Timestamp data) {
+    public static void sendTimestamp(AutoBuffer ab, Timestamp data) {
         sendLong(ab, data.getTime());
     }
 
-    static void sendNA(AutoBuffer ab, byte expectedType) {
+    public static void sendNA(AutoBuffer ab, byte expectedType) {
         switch (expectedType){
             case EXPECTED_BOOL: // // fall through to byte since BOOL is internally stored in frame as number (byte)
             case EXPECTED_BYTE:
@@ -252,7 +252,7 @@ public class ExternalFrameUtils {
         return data != null && data.equals(STR_MARKER_NEXT_BYTE_FOLLOWS) && ab.get1() == MARKER_NA;
     }
 
-    static int[] getStartPositions(int[] elemSizes){
+    public static int[] getStartPositions(int[] elemSizes){
         int[] startPos = new int[elemSizes.length];
         for(int i = 1; i<elemSizes.length; i++){
             startPos[i] = startPos[ i - 1] + elemSizes[i - 1];
@@ -260,7 +260,7 @@ public class ExternalFrameUtils {
         return startPos;
     }
 
-    static int[] getElemSizes(byte[] expectedTypes, int[] vecElemSizes){
+    public static int[] getElemSizes(byte[] expectedTypes, int[] vecElemSizes){
         assert vecElemSizes != null : "vecElemSizes should be not null!";
         int vecCount = 0;
         int[] elemSizes = new int[expectedTypes.length];
