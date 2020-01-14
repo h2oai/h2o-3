@@ -70,6 +70,12 @@ private GString downloadConfigsScript(Map config) {
             echo "\$KRB_PASSWORD" | kinit \$KRB_USERNAME
         """
     }
+    def extraInit = ""
+    if (config.nameNode == "") {
+        extraInit = """
+            export HDP_VERSION=2.4.2.0-258
+        """
+    }
     return """
         echo "Downloading hadoop configuration from ${apiBase}"
         cd \$HADOOP_CONF_DIR
@@ -81,6 +87,7 @@ private GString downloadConfigsScript(Map config) {
         tar xvvf yarn_config.tar
         ${krbScript}
         rm *.tar
+        ${extraInit}
         cd -
     """
 }

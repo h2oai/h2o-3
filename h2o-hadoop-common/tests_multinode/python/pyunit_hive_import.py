@@ -36,6 +36,6 @@ def hive_import():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(hive_jdbc_import)
+    pyunit_utils.standalone_test(hive_import)
 else:
-    hive_jdbc_import()
+    hive_import()
