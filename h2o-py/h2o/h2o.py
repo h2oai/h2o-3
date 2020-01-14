@@ -1405,6 +1405,31 @@ def save_model(model, path="", force=False):
     return api("GET /99/Models.bin/%s" % model.model_id, data={"dir": path, "force": force})["dir"]
 
 
+def download_model(model, path=""):
+    """
+    Download an H2O Model object to disk.
+
+    :param model: The model object to download.
+    :param path: a path to the directory where the model should be saved.
+
+    :returns: the path of the downloaded model
+
+    :examples:
+    
+    >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+    >>> h2o_df = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+    >>> my_model = H2OGeneralizedLinearEstimator(family = "binomial")
+    >>> my_model.train(y = "CAPSULE",
+    ...                x = ["AGE", "RACE", "PSA", "GLEASON"],
+    ...                training_frame = h2o_df)
+    >>> h2o.download_model(my_model, path='', force=True)
+    """
+    assert_is_type(model, ModelBase)
+    assert_is_type(path, str)
+    path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
+    return api("GET /3/Models.fetch.bin/%s" % model.model_id, save_to=path)
+
+
 def load_model(path):
     """
     Load a saved H2O model from disk. (Note that ensemble binary models can now be loaded using this method.)
