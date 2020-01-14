@@ -485,7 +485,7 @@ def call(final pipelineContext) {
   for (config in MULTINODE_CLUSTERS_CONFIGS) {
     def image = pipelineContext.getBuildConfig().getHadoopEdgeNodeImage(config.distribution, config.version, config.krb)
     def stage = [
-            stageName: "TEST MULTINODE ${config.krb?"KRB ":""}(${config.distribution}${config.version}, ${config.nameNode})",
+            stageName: "TEST MULTINODE ${config.krb?"KRB ":""} ${config.distribution}${config.version}-${config.nameNode}",
             target: "test-hadoop-multinode", timeoutValue: 60,
             component: pipelineContext.getBuildConfig().COMPONENT_ANY,
             additionalTestPackages: [
