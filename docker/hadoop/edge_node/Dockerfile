@@ -11,7 +11,7 @@ RUN rm -r /etc/hadoop/conf/* && \
 RUN if [ "${KRB}" = "true" ]; then ln -vsf /etc/hadoop/conf/krb5.conf /etc/krb5.conf; fi
 
 # 0xg-6 cluster configs have this java location hard-coded
-RUN mkdir -p /usr/jdk64 \
-    ln -sf /usr/lib/jvm/java-8-oracle /usr/jdk64/jdk1.8.0_60
+RUN mkdir -p /usr/jdk64 && \
+    ln -vsf /usr/lib/jvm/java-8-oracle /usr/jdk64/jdk1.8.0_60
 
 ENV HADOOP_CONF_DIR=/etc/hadoop/conf
