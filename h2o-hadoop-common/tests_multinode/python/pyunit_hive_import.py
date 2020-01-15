@@ -23,7 +23,7 @@ def hive_import():
     dataset_original = h2o.import_file(file_url)
 
     # read TABLE from Hive JDBC
-    table_jdbc = h2o.import_sql_select(connection_url, "chicago", "", "", fetch_mode="SINGLE")
+    table_jdbc = h2o.import_sql_table(connection_url, "chicago", "", "", fetch_mode="SINGLE")
     table_jdbc = adapt_frame(table_jdbc)
     pyunit_utils.compare_frames_local(dataset_original, table_jdbc, prob=1)
 
