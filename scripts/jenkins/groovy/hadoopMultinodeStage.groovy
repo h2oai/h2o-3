@@ -99,7 +99,7 @@ private GString startH2OScript(final config, final branch) {
     def cloudingDir = config.cloudingDir + "-" + branch
     def krbArgs = ""
     if (config.krb) {
-        krbArgs = "-hiveHost ${config.hiveHost} -hivePrincipal ${config.hivePrincipal} -refreshTokens"
+        krbArgs = "-hiveHost ${config.hiveHost}:10000 -hivePrincipal ${config.hivePrincipal} -refreshTokens"
     }
     return """
             rm -fv h2o_one_node h2odriver.log
