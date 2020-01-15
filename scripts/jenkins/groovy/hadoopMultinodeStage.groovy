@@ -115,7 +115,7 @@ private GString startH2OScript(final config, final branch) {
                 -n ${nodes} -mapperXmx ${xmx} -extramempercent ${extraMem} -baseport 54445 -timeout 360 \\
                 -notify h2o_one_node \\
                 > h2odriver.log 2>&1 &
-            for i in \$(seq 12); do
+            for i in \$(seq 24); do
               if [ -f 'h2o_one_node' ]; then
                 echo "H2O started on \$(cat h2o_one_node)"
                 break
