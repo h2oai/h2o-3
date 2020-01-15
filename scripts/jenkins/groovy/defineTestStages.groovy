@@ -479,7 +479,7 @@ def call(final pipelineContext) {
           ],
           [ distribution: "hdp", version: "2.4",
             nameNode: "mr-0xg5", hdpName: "steam2", krb: true,
-            hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@OXDATA.LOC",
+            hiveHost: "mr-0xg6.0xdata.loc", hivePrincipal: "hive/mr-0xg6.0xdata.loc@0XDATA.LOC",
             nodes: 4, xmx: "10G", extramem: "100",
             cloudingDir: "/user/jenkins/hadoop_multinode_tests"
           ]

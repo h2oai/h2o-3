@@ -22,12 +22,7 @@ def hive_import():
     file_url = "hdfs://{0}{1}".format(hdfs_name_node, "/user/jenkins/smalldata/chicago/chicagoCensus.csv")
     dataset_original = h2o.import_file(file_url)
 
-    # read SELECT from Hive JDBC Select
-    select_jdbc = h2o.import_sql_select(connection_url, "select * from chicago", "", "", fetch_mode="SINGLE")
-    select_jdbc = adapt_frame(select_jdbc)
-    pyunit_utils.compare_frames_local(dataset_original, select_jdbc, prob=1)
-
-    # read TABLE from Hive JDBC Table
+    # read TABLE from Hive JDBC
     table_jdbc = h2o.import_sql_select(connection_url, "chicago", "", "", fetch_mode="SINGLE")
     table_jdbc = adapt_frame(table_jdbc)
     pyunit_utils.compare_frames_local(dataset_original, table_jdbc, prob=1)
