@@ -12,7 +12,8 @@ def adapt_frame(dataset, table_name="table_for_h2o_import"):
 
 def hive_import():
     hdfs_name_node = pyunit_utils.hadoop_namenode()
-    connection_url = "jdbc:hive2://localhost:10000/default"
+    hive_host = os.getenv("HIVE_HOST")
+    connection_url = "jdbc:hive2://{0}:10000/default".format(hive_host)
     krb_enabled = os.getenv('KRB_ENABLED', 'false').lower() == 'true'
     if krb_enabled:
         connection_url += ";auth=delegationToken"

@@ -97,15 +97,20 @@ private GString startH2OScript(final config, final branch) {
     def xmx = config.xmx
     def extraMem = config.extramem
     def cloudingDir = config.cloudingDir + "-" + branch
+    def krbArgs = ""
+    if (config.krb) {
+        krbArgs = "-hiveHost ${config.hiveHost} -hivePrincipal ${config.hivePrincipal} -refreshTokens"
+    }
     return """
             rm -fv h2o_one_node h2odriver.log
             hdfs dfs -rm -r -f ${cloudingDir}
             export NAME_NODE=${config.nameNode}.0xdata.loc
+            export HIVE_HOST=${config.hiveHost}
             HIVE_JDBC_JAR=\$(find /usr/hdp/current/hive-client/lib/ | grep -E 'jdbc.*standalone.*jar')
             export HADOOP_CLASSPATH=\$HIVE_JDBC_JAR
             hadoop jar h2o-hadoop-*/h2o-${config.distribution}${config.version}-assembly/build/libs/h2odriver.jar \\
                 -libjars \$HIVE_JDBC_JAR \\
-                -disable_flow -ea \\
+                -disable_flow -ea ${krbArgs} \\
                 -clouding_method filesystem -clouding_dir ${cloudingDir} \\
                 -n ${nodes} -mapperXmx ${xmx} -extramempercent ${extraMem} -baseport 54445 -timeout 360 \\
                 -notify h2o_one_node \\
