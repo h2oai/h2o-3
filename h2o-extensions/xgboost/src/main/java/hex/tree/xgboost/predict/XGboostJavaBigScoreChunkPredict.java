@@ -32,7 +32,7 @@ public class XGboostJavaBigScoreChunkPredict implements Model.BigScoreChunkPredi
     _row.setInput(tmp);
 
     float[] out;
-    if (offset != 0) {
+    if (_output.hasOffset()) {
       out = _predictor.predict(_row, (float) offset);
     } else {
       out = _predictor.predict(_row);

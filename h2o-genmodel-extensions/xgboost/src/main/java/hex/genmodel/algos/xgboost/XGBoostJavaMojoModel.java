@@ -74,12 +74,8 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   public final double[] score0(double[] doubles, double offset, double[] preds) {
     FVec row = _1hotFactory.fromArray(doubles);
     float[] out;
-    if (offset != 0) {
-      if (_mojo_version == 1.00) {
-        throw new UnsupportedOperationException("Unsupported: offset != 0");
-      } else {
-        out = _predictor.predict(row, (float) offset);
-      }
+    if (_hasOffset) {
+      out = _predictor.predict(row, (float) offset);
     } else {
       out = _predictor.predict(row);
     }

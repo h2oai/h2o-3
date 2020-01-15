@@ -41,6 +41,6 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
       writekv("calib_method", "platt");
       writekv("calib_glm_beta", beta);
     }
-
+    writekv("has_offset", model._output.hasOffset());
   }
 }

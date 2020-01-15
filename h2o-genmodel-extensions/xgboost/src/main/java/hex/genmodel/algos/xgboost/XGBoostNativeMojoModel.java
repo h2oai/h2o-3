@@ -46,7 +46,8 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
         doubles, offset, preds,
         _boosterType, _ntrees,
         _booster, _nums, _cats, _catOffsets, _useAllFactorLevels,
-        _nclasses, _priorClassDistrib, _defaultThreshold, _sparse
+        _nclasses, _priorClassDistrib, _defaultThreshold, _sparse,
+        _hasOffset
     );
   }
 
@@ -56,7 +57,8 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       Booster _booster, int _nums, int _cats,
       int[] _catOffsets, boolean _useAllFactorLevels,
       int nclasses, double[] _priorClassDistrib,
-      double _defaultThreshold, final boolean _sparse
+      double _defaultThreshold, final boolean _sparse, 
+      boolean _hasOffset
   ) {
     int cats = _catOffsets == null ? 0 : _catOffsets[_cats];
     // convert dense doubles to expanded floats
@@ -66,7 +68,7 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
     DMatrix dmat = null;
     try {
       dmat = new DMatrix(floats,1, floats.length, _sparse ? 0 : Float.NaN);
-      if (offset != 0) {
+      if (_hasOffset) {
         dmat.setBaseMargin(new float[] {  (float) offset });
       }
       final DMatrix row = dmat;
