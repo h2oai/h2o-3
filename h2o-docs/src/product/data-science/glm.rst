@@ -681,12 +681,12 @@ H2O provides the following model metrics at the end of each HGLM experiment:
 - summvc2: estimates and standard errors of the linear predictor for the dispersion parameter of the random effects
 - likelihood: if ``calc_like`` is true, the following four values are returned:
 
- - hlik: log-h-likelihood
- - pvh: adjusted profile log-likelihood profied over the random effects
- - pbvh: adjusted profile log-likelihood profiled over fixed and random effects
- - caic: conditional AIC
+   - hlik: log-h-likelihood;
+   - pvh: adjusted profile log-likelihood profiled over the random effects;
+   - pbvh: adjusted profile log-likelihood profiled over fixed and random effects;
+   - caic: conditional AIC.
 
-- bad: row index of the most influential observation
+- bad: row index of the most influential observation.
 
 Mapping of Fitting Algorithm to the H2O-3 Implementation
 ''''''''''''''''''''''''''''''''''''''''''''''''''''''''
