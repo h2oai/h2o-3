@@ -6,8 +6,8 @@ sys.path.insert(1, os.path.join("../../../h2o-py"))
 from tests import pyunit_utils
 import h2o
 
-def adapt_frame(dataset, table_name="table_for_h2o_import"):
-    dataset[table_name + ".community_area_name"] = dataset[table_name + ".community_area_name"].asfactor()
+def adapt_frame(dataset, column_prefix=""):
+    dataset[column_prefix + "community_area_name"] = dataset[column_prefix + "community_area_name"].asfactor()
     return dataset
 
 def hive_import():
@@ -24,7 +24,7 @@ def hive_import():
 
     # read TABLE from Hive JDBC
     table_jdbc = h2o.import_sql_table(connection_url, "chicago", "", "", fetch_mode="SINGLE")
-    table_jdbc = adapt_frame(table_jdbc)
+    table_jdbc = adapt_frame(table_jdbc, column_prefix="chicago.")
     pyunit_utils.compare_frames_local(dataset_original, table_jdbc, prob=1)
 
     # read TABLE from Hive FS
