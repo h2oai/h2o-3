@@ -76,6 +76,8 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     float[] out;
     if (_hasOffset) {
       out = _predictor.predict(row, (float) offset);
+    } else if (offset != 0) {
+      throw new UnsupportedOperationException("Unsupported: offset != 0");
     } else {
       out = _predictor.predict(row);
     }

@@ -70,6 +70,8 @@ public final class XGBoostNativeMojoModel extends XGBoostMojoModel {
       dmat = new DMatrix(floats,1, floats.length, _sparse ? 0 : Float.NaN);
       if (_hasOffset) {
         dmat.setBaseMargin(new float[] {  (float) offset });
+      } else if (offset != 0) {
+        throw new UnsupportedOperationException("Unsupported: offset != 0");
       }
       final DMatrix row = dmat;
       final int treeLimit;

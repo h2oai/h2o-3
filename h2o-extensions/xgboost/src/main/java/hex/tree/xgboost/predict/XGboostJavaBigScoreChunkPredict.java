@@ -34,6 +34,8 @@ public class XGboostJavaBigScoreChunkPredict implements Model.BigScoreChunkPredi
     float[] out;
     if (_output.hasOffset()) {
       out = _predictor.predict(_row, (float) offset);
+    } else if (offset != 0) {
+      throw new IllegalArgumentException("Model was not trained with offset_column, but offset != 0");
     } else {
       out = _predictor.predict(_row);
 
