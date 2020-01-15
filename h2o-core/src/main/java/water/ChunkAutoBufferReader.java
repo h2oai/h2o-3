@@ -1,7 +1,6 @@
 package water;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.InputStream;
 import java.sql.Timestamp;
 
@@ -88,7 +87,7 @@ public final class ChunkAutoBufferReader implements Closeable  {
     }
     
     @Override
-    public void close() throws IOException {
+    public void close() {
         buffer.close();
     }
 }

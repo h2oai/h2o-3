@@ -9,6 +9,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.IntBuffer;
 import java.util.Base64;
 
 /**
@@ -56,9 +57,9 @@ public class ChunkServlet extends HttpServlet {
 
     String selectedColumnsString = getParameterAsString(request, "selected_columns");
     byte[] selectedColumnsBytes = Base64.getDecoder().decode(selectedColumnsString);
-    ByteBuffer buffer = ByteBuffer.wrap(selectedColumnsBytes).order(ByteOrder.BIG_ENDIAN);
-    int[] selectedColumnIndices = new int[selectedColumnsBytes.length / 4];
-    buffer.asIntBuffer().put(selectedColumnIndices);
+    IntBuffer buffer = ByteBuffer.wrap(selectedColumnsBytes).order(ByteOrder.BIG_ENDIAN).asIntBuffer();
+    int[] selectedColumnIndices = new int[buffer.remaining()];
+    buffer.get(selectedColumnIndices);
             
     return new RequestParameters(frameName, chunkId, expectedTypes, selectedColumnIndices); 
   }

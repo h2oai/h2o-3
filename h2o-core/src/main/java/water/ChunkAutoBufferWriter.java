@@ -83,7 +83,7 @@ public final class ChunkAutoBufferWriter implements Closeable  {
     }
 
     @Override
-    public void close() throws IOException {
+    public void close() {
         buffer.close();
     }
 }
