@@ -545,8 +545,8 @@ class BaseSklearnEstimator(BaseEstimator, BaseEstimatorMixin, H2OConnectionMonit
     @property
     def estimator(self):
         """
-        The wrapped estimator is created only when the current object is `fit`, so this property
-        :return: the wrapped estimator or None if `fit` hasn't been called yet
+        The wrapped estimator is created only when the current object is `fit`, so this property returns None until then.
+        :return: the wrapped estimator or None if `fit` hasn't been called on the current object yet.
         """
         return self._estimator
 
