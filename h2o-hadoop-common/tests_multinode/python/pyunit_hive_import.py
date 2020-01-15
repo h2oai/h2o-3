@@ -18,7 +18,7 @@ def hive_import():
         connection_url += ";auth=delegationToken"
         
     # read original
-    file_url = "hdfs://{0}{1}".format(hdfs_name_node, "/user/jenkins/smalldata/chicagoCensus.csv")
+    file_url = "hdfs://{0}{1}".format(hdfs_name_node, "/user/jenkins/smalldata/chicago/chicagoCensus.csv")
     dataset_original = h2o.import_file(file_url)
 
     # read SELECT from Hive JDBC Select
