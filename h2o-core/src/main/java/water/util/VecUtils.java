@@ -827,4 +827,23 @@ public class VecUtils {
     }
   }
 
+  /**
+   * Checks whether all the gives vectors are mutually compatible.
+   *
+   * @param vectors An array of {@link Vec} to test
+   * @return False if at least one of the vectors is not compatible with any of the other vectors. Otherwise true.
+   */
+  public static boolean areVectorsMutuallyCompatible(Vec... vectors) {
+
+    for (int i = 0; i < vectors.length; i++) {
+      // Start at i + 1, as previous combinations were already compared and vec always is compatible with itself.
+      for (int j = i + 1; j < vectors.length; j++) {
+        boolean areVectorsCompatible = vectors[i].isCompatibleWith(vectors[j]);
+        if (!areVectorsCompatible) return false;
+      }
+    }
+
+    return true;
+  }
+
 }

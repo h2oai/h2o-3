@@ -8,6 +8,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Merge;
 import water.util.FrameUtils;
+import water.util.VecUtils;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
@@ -326,8 +327,8 @@ public class SpearmanCorrelation {
       throw new IllegalArgumentException("There are no vectors to calculate means from.");
     }
 
+    // Validate vectors types and length
     final long referenceVectorLength = vecs[0].length();
-
     for (int i = 0; i < vecs.length; i++) {
       if (!vecs[i].isCategorical() && !vecs[i].isNumeric()) {
         throw new IllegalArgumentException(String.format("Given vector '%s' is not numerical or categorical.",
@@ -339,8 +340,22 @@ public class SpearmanCorrelation {
       }
     }
 
-    return new MeanTask()
-            .doAll(vecs)._means;
+    if (VecUtils.areVectorsMutuallyCompatible(vecs)) {
+      return new MeanTask()
+              .doAll(vecs)._means;
+    } else {
+      // Vectors are not mutually compatible, calculate means one vector at a time
+      // Observations with NaNs were removed before calculation of means - there is no shortcoming but small performance penalty
+      // in calculating the means separately
+      final double[] means = new double[vecs.length];
+      for (int vecIndex = 0; vecIndex < vecs.length; vecIndex++) {
+        final double mean = new MeanTask()
+                .doAll(vecs[vecIndex])._means[0];
+        means[vecIndex] = mean;
+      }
+
+      return means;
+    }
   }
 
   /**
