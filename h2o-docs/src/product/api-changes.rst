@@ -20,3 +20,21 @@ The following classes were moved and/or renamed:
 =================================================   ======================================
 
 Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` are no longer public, but this should not impact users.
+
+
+From 3.26 or Below to 3.28
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Java API
+''''''''
+
+The following classes were moved:
+
+=================================================   =========================================
+  Until 3.26                                         From 3.28
+=================================================   =========================================
+``ai.h2o.automl.EventLog``                          ``ai.h2o.automl.events.EventLog``
+``ai.h2o.automl.EventLogEntry``                     ``ai.h2o.automl.events.EventLogEntry``
+``ai.h2o.automl.Leaderboard``                       ``ai.h2o.automl.leaderboard.Leaderboard``
+=================================================   =========================================
+
