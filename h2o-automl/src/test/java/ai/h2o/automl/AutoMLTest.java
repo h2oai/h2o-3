@@ -147,6 +147,43 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
+  @Test public void test_no_stacked_ensemble_trained_if_only_one_algo() {
+    List<Lockable> deletables = new ArrayList<>();
+    try {
+      final int seed = 62832;
+      final Frame train = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(train);
+      String target = "CAPSULE";
+      int tidx = train.find(target);
+      train.replace(tidx, train.vec(tidx).toCategoricalVec()).remove(); DKV.put(train); deletables.add(train);
+
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      autoMLBuildSpec.input_spec.training_frame = train._key;
+      autoMLBuildSpec.input_spec.response_column = target;
+
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+      autoMLBuildSpec.build_models.include_algos = aro(Algo.GBM);
+
+      AutoML aml = AutoML.startAutoML(autoMLBuildSpec); deletables.add(aml);
+      aml.get();
+
+      Key[] modelKeys = aml.leaderboard().getModelKeys();
+      int count_se = 0, count_non_se = 0;
+      for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
+
+      assertEquals("wrong amount of standard models", 3, count_non_se);
+      assertEquals("wrong amount of SE models", 0, count_se);
+      assertEquals(3, aml.leaderboard().getModelCount());
+    } finally {
+      // Cleanup
+      for (Lockable l: deletables) {
+        l.delete();
+      }
+    }
+  }
+
+
+
   // timeout can cause interruption of steps at various levels, for example from top to bottom:
   //  - interruption after an AutoML model has been trained, preventing addition of more models
   //  - interruption when building the main model (if CV enabled)
