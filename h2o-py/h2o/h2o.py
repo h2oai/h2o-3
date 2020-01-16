@@ -558,8 +558,10 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
     Import Hive table to H2OFrame in memory.
 
     Make sure to start H2O with Hive on classpath. Uses hive-site.xml on classpath to connect to Hive.
+    When database is specified as jdbc URL uses Hive JDBC driver to obtain table metadata. then
+    uses direct HDFS access to import data.
 
-    :param database: Name of Hive database (default database will be used by default)
+    :param database: Name of Hive database (default database will be used by default), can be also a JDBC URL.
     :param table: name of Hive table to import
     :param partitions: a list of lists of strings - partition key column values of partitions you want to import.
     :param allow_multi_format: enable import of partitioned tables with different storage formats used. WARNING:
@@ -571,10 +573,12 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
     
     >>> basic_import = h2o.import_hive_table("default",
     ...                                      "table_name")
+    >>> jdbc_import = h2o.import_hive_table("jdbc:hive2://hive-server:10000/default",
+    ...                                      "table_name")
     >>> multi_format_enabled = h2o.import_hive_table("default",
     ...                                              "table_name",
     ...                                              allow_multi_format=True)
-    >>> with_partition_filter = h2o.import_hive_table("default",
+    >>> with_partition_filter = h2o.import_hive_table("jdbc:hive2://hive-server:10000/default",
     ...                                               "table_name",
     ...                                               [["2017", "02"]])
     """
