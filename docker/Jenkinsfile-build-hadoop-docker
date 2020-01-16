@@ -175,6 +175,7 @@ parallel(INTERNAL_CLUSTER_HADOOPS.collectEntries { hdp ->
                                         -t ${REGISTRY_PREFIX}/${imageName}:${version} \
                                         -f hadoop/edge_node/Dockerfile \
                                         --build-arg PATH_PREFIX=hadoop/edge_node \
+                                        --build-arg KRB=${hdp.krb} \
                                         --build-arg FROM_IMAGE=${REGISTRY_PREFIX}/${baseImageName}:${version} \
                                         .
                                 """
