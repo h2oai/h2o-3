@@ -6,6 +6,7 @@ import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -36,6 +37,8 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
   public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
   public static final String H2O_HIVE_HOST = "h2o.hive.host";
   public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
+  
+  public static final String H2O_IP_ENVVAR = "h2o.ip.envvar";
   
   public static final String H2O_MAPPER_ARGS_BASE = "h2o.mapper.args.";
   public static final String H2O_MAPPER_ARGS_LENGTH = "h2o.mapper.args.length";
@@ -243,6 +246,16 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       if("default-security.config".equals(basename)) {
         modifyKeyPath(fileName, ice_root);
       }
+    }
+
+    String ipEnvVar = conf.get(H2O_IP_ENVVAR);
+    if (!StringUtils.isNullOrEmpty(ipEnvVar)) {
+      String ip = System.getenv(ipEnvVar);
+      if (StringUtils.isNullOrEmpty(ip)) {
+        throw new RuntimeException("Environment variable '" + ipEnvVar + "' is empty and thus cannot be used to determine a hostname/ip.");
+      }
+      argsList.add("-ip");
+      argsList.add(ip);
     }
 
     return argsList.toArray(new String[0]);
