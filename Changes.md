@@ -2,6 +2,95 @@
 
 ## H2O
 
+### Yu (3.28.0.2) - 2/20/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/2/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7069'>PUBDEV-7069</a>] - Fixed an issue that resulted in a "DistributedException java.lang.ClassNotFoundException: BAD" message.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7140'>PUBDEV-7140</a>] - Users can now specify either a model or a model key when checkpointing. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7149'>PUBDEV-7149</a>] - Fixed an issue that resulted in an endless loop when CsvParser parser $ sign was enclosed in quotes.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7161'>PUBDEV-7161</a>] - In GBM and DRF, fixed an AIOOBE error that occurred when the dataset included negative zeros (-0.0).
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7173'>PUBDEV-7173</a>] - Fixed a race condition in the addWarningP method on Model class.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7177'>PUBDEV-7177</a>] - h2odriver now gets correct version of Hadoop dependencies.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7193'>PUBDEV-7193</a>] - Fixed a race condition in addVec.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7197'>PUBDEV-7197</a>] - Parallel Grid Search threads now call the Hyperspace iterator one at a time.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7201'>PUBDEV-7201</a>] - sklearn wrappers should expose wrapped estimator as a public property. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7205'>PUBDEV-7205</a>] - Fixed an issue in reading user_splits in Java.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7212'>PUBDEV-7212</a>] - Fixed an issue that caused rank vectors of Spearman correlation to have different chunk layouts. (STILL OPEN)
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7057'>PUBDEV-7057</a>] - Added a JSON option of PrintMojo.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7120'>PUBDEV-7120</a>] - Improved the error message that displays when a user attempts to import data from an HDFS directory that is empty.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7176'>PUBDEV-7176</a>] - H2O can now read Hive table metadata two ways: either via direct Metastore access or via JDBC.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6460'>PUBDEV-6460</a>] - Improved heuristics used for finding IP addresses on Hadoop in order to select the right subnet automatically. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6464'>PUBDEV-6464</a>] - Users are now warned when they attempt to set a parameter that will not create a reproducible model. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7029'>PUBDEV-7029</a>] - Add support for `offset_column in XGBoost. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7089'>PUBDEV-7089</a>] - Users can now create tree visualizations without installing additional packages. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7135'>PUBDEV-7135</a>] - Added a new `download_model` function for downloading binary models in the R and Python clients. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7164'>PUBDEV-7164</a>] - Improved XGBoost performance.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7165'>PUBDEV-7165</a>] - When computing the correlation matrix of one or two H2OFrames (using `cor()`), users can now specify a method of either Pearson (default) or Spearman.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7194'>PUBDEV-7194</a>] - Users are now warned when they attempt to run AutoML with a validation frame and with nfolds > 0. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7196'>PUBDEV-7196</a>] - AutoML no longer trains a "Best of Family Stacked Ensemble" when only one family is specified. (STILL OPEN)
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6142'>PUBDEV-6142</a>] - Removed `ignored_columns` from the list of available paramters in AutoML.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6993'>PUBDEV-6993</a>] - Fixed a broken link in the JAVA FAQ.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7088'>PUBDEV-7088</a>] - Improved the documentation for Tree Class in the Python Client docs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7155'>PUBDEV-7155</a>] - Clarified the difference between h2o.performance() and h2o.predict() in the Performance and Prediction chapter of the User Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7159'>PUBDEV-7159</a>] - Incorporated HGLM documentation updates into the GLM booklet.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7191'>PUBDEV-7191</a>] - Added an FAQ for GC allocation failure in the FAQ > Clusters section.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7198'>PUBDEV-7198</a>] - In the Stacked Ensembles chapter, improved the metalearner support FAQ.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7214'>PUBDEV-7214</a>] - Added `offset_column` to the list of supported parameters in XGBoost.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7215'>PUBDEV-7215</a>] - Added information about recent API changes in AutoML to the <a href="http://docs.h2o.ai/h2o/latest-stable/h2o-docs/api-changes.html">API-Related Changes</a> section in the User Guide.
+</li>
+</ul>
+
+
 ### Yu (3.28.0.1) - 12/16/2019
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/1/index.html</a>
