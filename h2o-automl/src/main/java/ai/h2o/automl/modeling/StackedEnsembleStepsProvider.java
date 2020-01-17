@@ -33,20 +33,20 @@ public class StackedEnsembleStepsProvider implements ModelingStepsProvider<Stack
                 Key<Model>[] keys = getBaseModels();
                 Work seWork = getAllocatedWork();
                 if (seWork == null) {
-                    aml().job().update(0, "StackedEnsemble builds skipped");
-                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "StackedEnsemble builds skipped due to the exclude_algos option.");
+                    aml().job().update(0, "Skipping this StackedEnsemble");
+                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("Skipping StackedEnsemble '%s' due to the exclude_algos option.", _id));
                     return false;
                 } else if (keys.length == 0) {
-                    aml().job().update(seWork.consume(), "No models built; StackedEnsemble builds skipped");
-                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "No models were built, due to timeouts or the exclude_algos option. StackedEnsemble builds skipped.");
+                    aml().job().update(seWork.consume(), "No base models; skipping this StackedEnsemble");
+                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("No base models, due to timeouts or the exclude_algos option. Skipping StackedEnsemble '%s'.", _id));
                     return false;
                 } else if (keys.length == 1) {
-                    aml().job().update(seWork.consume(), "One model built; StackedEnsemble builds skipped");
-                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "StackedEnsemble builds skipped since there is only one model to stack");
+                    aml().job().update(seWork.consume(), "Only one base model; skipping this StackedEnsemble");
+                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("Skipping StackedEnsemble '%s' since there is only one model to stack", _id));
                     return false;
                 } else if (!isCVEnabled() && aml().getBlendingFrame() == null) {
-                    aml().job().update(seWork.consume(), "Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
-                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "Cross-validation disabled by the user and no blending frame provided; StackedEnsemble build skipped");
+                    aml().job().update(seWork.consume(), "Cross-validation disabled by the user and no blending frame provided; Skipping this StackedEnsemble");
+                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("Cross-validation is disabled by the user and no blending frame was provided; skipping StackedEnsemble '%s'.", _id));
                     return false;
                 }
                 return true;
