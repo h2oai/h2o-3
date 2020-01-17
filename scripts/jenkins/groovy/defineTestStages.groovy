@@ -32,7 +32,7 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'R3.4 Smoke', target: 'test-r-smoke', rVersion: '3.4.1',timeoutValue: 8,
+      stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
@@ -73,44 +73,44 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'R3.4 Init Java 8', target: 'test-r-init', rVersion: '3.4.1', javaVersion: 8,
+      stageName: 'R3.5 Init Java 8', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 8,
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
-      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-r-3.4.1-jdk-8:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
+      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-r-3.5.3-jdk-8:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
     ],
     [
-      stageName: 'R3.4 Small', target: 'test-r-small', rVersion: '3.4.1',
+      stageName: 'R3.5 Small', target: 'test-r-small', rVersion: '3.5.3',
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.4 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.4.1',
+      stageName: 'R3.5 Small Client Mode', target: 'test-r-small-client-mode', rVersion: '3.5.3',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.4 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.4.1',
+      stageName: 'R3.5 Small Client Mode Disconnect Attack', target: 'test-r-small-client-mode-attack', rVersion: '3.5.3',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.4 Small AutoML', target: 'test-r-small-automl', rVersion: '3.4.1',
+      stageName: 'R3.5 Small AutoML', target: 'test-r-small-automl', rVersion: '3.5.3',
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.4 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.4.1',
+      stageName: 'R3.5 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.5.3',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.4 CMD Check', target: 'test-r-cmd-check', rVersion: '3.4.1',
+      stageName: 'R3.5 CMD Check', target: 'test-r-cmd-check', rVersion: '3.5.3',
       timeoutValue: 15, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.4 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.4.1',
+      stageName: 'R3.5 CMD Check as CRAN', target: 'test-r-cmd-check-as-cran', rVersion: '3.5.3',
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.4 Booklets', target: 'test-r-booklets', rVersion: '3.4.1',
+      stageName: 'R3.5 Booklets', target: 'test-r-booklets', rVersion: '3.5.3',
       timeoutValue: 50, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.4 Demos Small', target: 'test-r-demos-small', rVersion: '3.4.1',
+      stageName: 'R3.5 Demos Small', target: 'test-r-demos-small', rVersion: '3.5.3',
       timeoutValue: 15, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
@@ -122,11 +122,11 @@ def call(final pipelineContext) {
       timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'R3.4 Medium-large', target: 'test-r-medium-large', rVersion: '3.4.1',
+      stageName: 'R3.5 Medium-large', target: 'test-r-medium-large', rVersion: '3.5.3',
       timeoutValue: 80, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.4 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.4.1',
+      stageName: 'R3.5 Demos Medium-large', target: 'test-r-demos-medium-large', rVersion: '3.5.3',
       timeoutValue: 140, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
@@ -150,7 +150,7 @@ def call(final pipelineContext) {
       timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_JAVA, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
     ],
     [
-      stageName: 'R3.4 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
+      stageName: 'R3.5 Generate Docs', target: 'r-generate-docs-jenkins', archiveFiles: false,
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_R, hasJUnit: false,
       archiveAdditionalFiles: ['r-generated-docs.zip'], installRPackage: false
     ],
@@ -227,7 +227,7 @@ def call(final pipelineContext) {
   // Stages executed in addition to PR_STAGES after merge to master.
   def MASTER_STAGES = [
     [
-      stageName: 'R3.4 Datatable', target: 'test-r-datatable', rVersion: '3.4.1',
+      stageName: 'R3.5 Datatable', target: 'test-r-datatable', rVersion: '3.5.3',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
@@ -269,14 +269,14 @@ def call(final pipelineContext) {
       image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-jdk-11:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
     ],
     [
-      stageName: 'R3.4 Init Java 10', target: 'test-r-init', rVersion: '3.4.1', javaVersion: 10,
+      stageName: 'R3.5 Init Java 10', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 10,
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
-      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-r-3.4.1-jdk-10:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
+      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-r-3.5.3-jdk-10:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
     ],
     [
-      stageName: 'R3.4 Init Java 11', target: 'test-r-init', rVersion: '3.4.1', javaVersion: 11,
+      stageName: 'R3.5 Init Java 11', target: 'test-r-init', rVersion: '3.5.3', javaVersion: 11,
       timeoutValue: 10, hasJUnit: false, component: pipelineContext.getBuildConfig().COMPONENT_R,
-      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-r-3.4.1-jdk-11:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
+      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-r-3.5.3-jdk-11:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
     ],
     [
       stageName: 'Java 10 JUnit', target: 'test-junit-10-jenkins', pythonVersion: '2.7', javaVersion: 10,
@@ -637,7 +637,7 @@ private void invokeStage(final pipelineContext, final body) {
 
   final String DEFAULT_JAVA = '8'
   final String DEFAULT_PYTHON = '3.5'
-  final String DEFAULT_R = '3.4.1'
+  final String DEFAULT_R = '3.5.3'
   final int DEFAULT_TIMEOUT = 60
   final String DEFAULT_EXECUTION_SCRIPT = 'h2o-3/scripts/jenkins/groovy/defaultStage.groovy'
   final int HEALTH_CHECK_RETRIES = 5
