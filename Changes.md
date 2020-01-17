@@ -11,7 +11,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/2/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7069'>PUBDEV-7069</a>] - Fixed an issue that resulted in a "DistributedException java.lang.ClassNotFoundException: BAD" message.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7140'>PUBDEV-7140</a>] - Users can now specify either a model or a model key when checkpointing. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7140'>PUBDEV-7140</a>] - Users can now specify either a model or a model key when checkpointing.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7149'>PUBDEV-7149</a>] - Fixed an issue that resulted in an endless loop when CsvParser parser $ sign was enclosed in quotes.
 </li>
@@ -25,11 +25,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/2/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7197'>PUBDEV-7197</a>] - Parallel Grid Search threads now call the Hyperspace iterator one at a time.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7201'>PUBDEV-7201</a>] - sklearn wrappers should expose wrapped estimator as a public property. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7201'>PUBDEV-7201</a>] - sklearn wrappers now expose wrapped estimator as a public property.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7205'>PUBDEV-7205</a>] - Fixed an issue in reading user_splits in Java.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7212'>PUBDEV-7212</a>] - Fixed an issue that caused rank vectors of Spearman correlation to have different chunk layouts. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7212'>PUBDEV-7212</a>] - Fixed an issue that caused rank vectors of Spearman correlation to have different chunk layouts.
 </li>
 </ul>
 
@@ -47,11 +47,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/2/index.htm
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6460'>PUBDEV-6460</a>] - Improved heuristics used for finding IP addresses on Hadoop in order to select the right subnet automatically. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6460'>PUBDEV-6460</a>] - Improved heuristics used for finding IP addresses on Hadoop in order to select the right subnet automatically. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6464'>PUBDEV-6464</a>] - Users are now warned when they attempt to set a parameter that will not create a reproducible model. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7029'>PUBDEV-7029</a>] - Add support for `offset_column in XGBoost. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7029'>PUBDEV-7029</a>] - Added support for `offset_column in XGBoost.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7089'>PUBDEV-7089</a>] - Users can now create tree visualizations without installing additional packages. (STILL OPEN)
 </li>
@@ -61,7 +61,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/2/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7165'>PUBDEV-7165</a>] - When computing the correlation matrix of one or two H2OFrames (using `cor()`), users can now specify a method of either Pearson (default) or Spearman.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7194'>PUBDEV-7194</a>] - Users are now warned when they attempt to run AutoML with a validation frame and with nfolds > 0. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7194'>PUBDEV-7194</a>] - Users are now warned when they attempt to run AutoML with a validation frame and with nfolds > 0.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7196'>PUBDEV-7196</a>] - AutoML no longer trains a "Best of Family Stacked Ensemble" when only one family is specified. (STILL OPEN)
 </li>
