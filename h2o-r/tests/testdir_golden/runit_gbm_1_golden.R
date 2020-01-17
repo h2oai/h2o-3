@@ -21,7 +21,7 @@ REPRMSE <- err[4,]
 pred <- as.data.frame(predict(fith2o, newdata=smtreesH2O))
 diff <- pred-smtreesR[,4]
 diffsq <- diff^2
-EXPRMSE <- sqrt(mean(diffsq))
+EXPRMSE <- sqrt(mean(diffsq$predict))
 
 Log.info("Print model RMSE... \n")
 Log.info(paste("Length of H2O RMSE Vec: ", length(fith2o@model$scoring_history$training_rmse),      "\t\t", "Expected Length   : ", 4))
