@@ -506,7 +506,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       booster = model_info.deserializeBooster();
       return XGBoostNativeMojoModel.score0(data, offset, preds, _parms._booster.toString(), _parms._ntrees,
               model_info.deserializeBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
-              _output.nclasses(), _output._priorClassDist, threshold, _output._sparse);
+              _output.nclasses(), _output._priorClassDist, threshold, _output._sparse, _output.hasOffset());
     } finally {
       if (booster != null)
         BoosterHelper.dispose(booster);
