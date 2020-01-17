@@ -217,7 +217,12 @@ public class SpearmanCorrelation {
     orderXWriter.close();
     orderYWriter.close();
 
-    return new SpearmanRankedVectors(orderX, orderY);
+    // Ensure chunk layout is the same by adding the vectors into a new Frame.
+    final Frame sameChunkLayoutFrame = new Frame(new String[]{"X"}, new Vec[]{orderX});
+    sameChunkLayoutFrame.add("Y", orderY);
+
+    // Return the vectors with ranks - the ones with same chunk layout from inside the frame
+    return new SpearmanRankedVectors(sameChunkLayoutFrame.vec("X"), sameChunkLayoutFrame.vec("Y"));
   }
 
   /**
