@@ -47,7 +47,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = target;
       autoMLBuildSpec.input_spec.sort_metric = "AUCPR";
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
@@ -124,7 +124,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.leaderboard_frame = test._key;
       autoMLBuildSpec.input_spec.response_column = target;
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
 
