@@ -2,8 +2,9 @@
 # using the `checkpoint` argument
 model_chkp = H2ODeepLearningEstimator(
         checkpoint=model,
+        activation="RectifierWithDropout",
         distribution="multinomial",
-        hidden=model.actual_params["hidden"],
+        hidden=[32,32,32],
         input_dropout_ratio=0.2,
         sparse=True,
         l1=1e-5,
