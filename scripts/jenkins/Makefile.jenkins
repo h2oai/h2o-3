@@ -235,6 +235,8 @@ test-package-java:
 		h2o-extensions/xgboost/build/libs/h2o-ext-xgboost*.jar \
 		h2o-genmodel-extensions/xgboost/src/ \
 		h2o-genmodel-extensions/xgboost/build/libs/h2o-genmodel-ext-xgboost*.jar \
+		h2o-genmodel-extensions/jgrapht/src/ \
+		h2o-genmodel-extensions/jgrapht/build/libs/jgrapht*.jar \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
 		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \

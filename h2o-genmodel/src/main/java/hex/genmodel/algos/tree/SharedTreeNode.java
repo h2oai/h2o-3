@@ -391,7 +391,7 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
 
     os.print("fontsize="+treeOptions._fontSize+", label=\"");
     for (String s : arr) {
-      os.print(escapeQuotes(s) + "\\n");
+      os.print(escapeQuotes(s) + "\n");
     }
     os.print("\"");
     os.println("]");
