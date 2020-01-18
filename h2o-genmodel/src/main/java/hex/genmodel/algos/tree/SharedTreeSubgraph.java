@@ -163,6 +163,38 @@ public class SharedTreeSubgraph {
     os.println("}");
   }
   
+  public void printDot(PrintStream os, int maxLevelsToPrintPerEdge, boolean detail, String optionalTitle, PrintMojo.PrintTreeOptions treeOptions, boolean isDirected) {
+    os.println("");
+    os.println((isDirected ? "digraph ": "subgraph " + "cluster_") + subgraphNumber + " {");
+    os.println("/* Nodes */");
+
+    int maxLevel = -1;
+    for (SharedTreeNode n : nodesArray) {
+      if (n.getDepth() > maxLevel) {
+        maxLevel = n.getDepth();
+      }
+    }
+
+    for (int level = 0; level <= maxLevel; level++) {
+      os.println("");
+      os.println("/* Level " + level + " */");
+      os.println("{");
+      rootNode.printDotNodesAtLevel(os, level, detail, treeOptions);
+      os.println("}");
+    }
+
+    os.println("");
+    os.println("/* Edges */");
+    for (SharedTreeNode n : nodesArray) {
+      n.printDotEdges(os, maxLevelsToPrintPerEdge, rootNode.getWeight(), detail, treeOptions);
+    }
+    os.println("");
+    os.println("fontsize="+40); // fix title label to be 40pts
+    String title = SharedTreeNode.escapeQuotes((optionalTitle != null) ? optionalTitle : name);
+    os.println("label=\"" + title + "\"");
+    os.println("}");
+  }
+  
   Map<String, Object> toJson() {
     Map<String, Object> json = new HashMap<>();
     json.put("index", subgraphNumber);
