@@ -90,6 +90,10 @@ def test_no_x_train_and_validation_sets():
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
+    log_df = aml.event_log.as_data_frame()
+    warn_messages = log_df[log_df['level'] == 'Warn']['message']
+    assert warn_messages.str.startswith("User specified a validation frame with cross-validation still enabled").any(), \
+        "a warning should have been raised for using a validation frame with CV enabled"
     print("Check leaderboard")
     print(aml.leaderboard)
 
@@ -112,7 +116,7 @@ def test_no_x_train_and_test_sets():
 def test_no_x_train_and_validation_and_test_sets():
     print("AutoML run with x not provided with train, valid, and test")
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml4", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234)
+    aml = H2OAutoML(project_name="py_aml4", stopping_rounds=3, stopping_tolerance=0.001, stopping_metric="AUC", max_models=max_models, seed=1234, nfolds=0)
     aml.train(y=ds['target'], training_frame=ds['train'], validation_frame=ds['valid'], leaderboard_frame=ds['test'])
     assert aml.project_name == "py_aml4", "Project name is not set"
     assert aml.stopping_rounds == 3, "stopping_rounds is not set to 3"
@@ -120,6 +124,10 @@ def test_no_x_train_and_validation_and_test_sets():
     assert aml.stopping_metric == "AUC", "stopping_metrics is not set to `AUC`"
     assert aml.max_models == 2, "max_models is not set to 2"
     assert aml.seed == 1234, "seed is not set to `1234`"
+    log_df = aml.event_log.as_data_frame()
+    warn_messages = log_df[log_df['level'] == 'Warn']['message']
+    assert not warn_messages.str.startswith("User specified a validation frame with cross-validation still enabled").any(), \
+        "no warning should have been raised as CV was disabled"
     print("Check leaderboard")
     print(aml.leaderboard)
 
