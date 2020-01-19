@@ -8,7 +8,7 @@ automl.args.test <- function() {
     # 1) That h2o.automl executes w/o errors
     # 2) That the arguments are working properly
 
-    max_models <- 2
+    max_models <- 5
 
     import_dataset <- function() {
         y <- "CAPSULE"

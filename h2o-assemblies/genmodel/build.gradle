@@ -11,6 +11,7 @@ targetCompatibility = 1.7
 // Dependencies
 dependencies {
     compile project(":h2o-genmodel")
+    compile project(":h2o-genmodel-extensions:jgrapht")
 }
 
 // Include optional components
@@ -38,6 +39,9 @@ shadowJar {
   mergeServiceFiles()
   classifier = ''
   relocate 'com.google.gson', 'ai.h2o.com.google.gson' // Should be eventually removed: PUBDEV-5508
+  relocate 'org.apache.commons.text', 'ai.h2o.org.apache.commons.text'
+  relocate 'org.apache.commons.lang3', 'ai.h2o.org.apache.commons.lang3'
+  relocate 'org.antlr', 'ai.h2o.org.antlr'  
   exclude 'META-INF/*.DSA'
   exclude 'META-INF/*.SF'
   exclude 'synchronize.properties'
