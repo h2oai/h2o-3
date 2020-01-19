@@ -362,6 +362,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         xgBoostError.printStackTrace();
         throw new RuntimeException("XGBoost failure", xgBoostError);
       } finally {
+        if (featureMapFileAbsolutePath != null) {
+          if (! new File(featureMapFileAbsolutePath).delete()) {
+            Log.warn("Unable to delete file " + featureMapFileAbsolutePath + ". Please do a manual clean-up.");
+          }
+        }
         if (setupTask != null) {
           try {
             XGBoostCleanupTask.cleanUp(setupTask);
@@ -412,7 +417,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       OutputStream os = null;
       try {
         File tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
+        tmpModelDir.deleteOnExit();
         File fmFile = new File(tmpModelDir, featureMapFileName);
+        fmFile.deleteOnExit();
         os = new FileOutputStream(fmFile);
         os.write(featureMap.getBytes());
         os.close();
