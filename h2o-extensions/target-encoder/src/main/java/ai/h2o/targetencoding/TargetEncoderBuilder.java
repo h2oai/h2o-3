@@ -2,6 +2,7 @@ package ai.h2o.targetencoding;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import water.DKV;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -36,7 +37,11 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
   private class TargetEncoderDriver extends Driver {
     @Override
     public void computeImpl() {
+      // In case ModelBuilder is registered with default model parameters ( i.e. without training frame etc.) we want to init it at this stage as well
+      if(_startUpOnceModelBuilder) init(false);
+
       final int numColsRemoved = hasFoldCol() ? 2 : 1; // Response is always at the last index, fold column is on the index before.
+
       final String[] encodedColumns = Arrays.copyOf(train().names(), train().names().length - numColsRemoved);
       TargetEncoder tec = new TargetEncoder(encodedColumns);
 
@@ -54,10 +59,8 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
 
       disableIgnoreConstColsFeature();
       TargetEncoderModel.TargetEncoderOutput output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, _targetEncodingMap, priorMean);
-      _targetEncoderModel = new TargetEncoderModel(_job._result, _parms, output, tec);
-
-      _targetEncoderModel.write_lock(_job);
-      _targetEncoderModel.unlock(_job);
+      _targetEncoderModel = new TargetEncoderModel(_result, _parms, output, tec);
+      DKV.put(_targetEncoderModel);
     }
 
     private void disableIgnoreConstColsFeature() {
