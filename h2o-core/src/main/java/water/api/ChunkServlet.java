@@ -71,16 +71,13 @@ public final class ChunkServlet extends HttpServlet {
       final RequestParameters parameters = extractRequestParameters(request);
       response.setContentType("application/octet-stream");
       ServletUtils.setResponseStatus(response, HttpServletResponse.SC_OK);
-      OutputStream outputStream = response.getOutputStream();
-      ChunkAutoBufferWriter writer = new ChunkAutoBufferWriter(outputStream);
-      try {
+      try (OutputStream outputStream = response.getOutputStream();
+           ChunkAutoBufferWriter writer = new ChunkAutoBufferWriter(outputStream)) {
         writer.writeChunk(
-            parameters.frameName, 
-            parameters.chunkId, 
-            parameters.expectedTypes,
-            parameters.selectedColumnIndices);
-      } finally {
-        writer.close();
+          parameters.frameName,
+          parameters.chunkId,
+          parameters.expectedTypes,
+          parameters.selectedColumnIndices);
       }
     } catch (Exception e) {
       ServletUtils.sendErrorResponse(response, e, uri);
