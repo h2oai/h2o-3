@@ -1248,7 +1248,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // still have work to do below, make sure we set the names/domains to the original user-given values
       // such that we can do the int->enum mapping and cat. encoding below (from scratch)
-      if (match) {
+      if (match && !catEncoded) {
         names = origNames;
         domains = origDomains;
       }

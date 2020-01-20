@@ -1,10 +1,14 @@
 package hex;
 
+import hex.genmodel.easy.CategoricalEncoder;
 import org.junit.*;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.FrameUtils;
+
+import static org.junit.Assert.*;
 
 public class ModelAdaptTest extends TestUtil {
 
@@ -28,7 +32,7 @@ public class ModelAdaptTest extends TestUtil {
     Frame trn = parse_test_file("smalldata/junit/mixcat_train.csv");
     AModel.AParms p = new AModel.AParms();
     AModel.AOutput o = new AModel.AOutput();
-    o.setNames(trn.names());
+    o.setNames(trn.names(), trn.typesStr());
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
@@ -36,20 +40,20 @@ public class ModelAdaptTest extends TestUtil {
     Frame tst = parse_test_file("smalldata/junit/mixcat_test.csv");
     Frame adapt = new Frame(tst);
     String[] warns = am.adaptTestForTrain(adapt,true, true);
-    Assert.assertTrue(ArrayUtils.find(warns,"Test/Validation dataset column 'Feature_1' has levels not trained on: [D]")!= -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Const': substituting in a column of NaN") != -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Useless': substituting in a column of NaN") != -1);
-    Assert.assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Response' has levels not trained on: [W]") != -1);
+    assertTrue(ArrayUtils.find(warns,"Test/Validation dataset column 'Feature_1' has levels not trained on: [D]")!= -1);
+    assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Const': substituting in a column of NaN") != -1);
+    assertTrue(ArrayUtils.find(warns, "Test/Validation dataset is missing column 'Useless': substituting in a column of NaN") != -1);
+    assertTrue(ArrayUtils.find(warns, "Test/Validation dataset column 'Response' has levels not trained on: [W]") != -1);
     // Feature_1: merged test & train domains
-    Assert.assertArrayEquals(adapt.vec("Feature_1").domain(),new String[]{"A","B","C","D"});
+    assertArrayEquals(adapt.vec("Feature_1").domain(),new String[]{"A","B","C","D"});
     // Const: all NAs
-    Assert.assertTrue(adapt.vec("Const").isBad());
+    assertTrue(adapt.vec("Const").isBad());
     // Useless: all NAs
-    Assert.assertTrue(adapt.vec("Useless").isBad());
+    assertTrue(adapt.vec("Useless").isBad());
     // Response: merged test & train domains
-    Assert.assertArrayEquals(adapt.vec("Response").domain(),new String[]{"X","Y","Z","W"});
+    assertArrayEquals(adapt.vec("Response").domain(),new String[]{"X","Y","Z","W"});
 
-    Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst );
+    Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst);
     tst.remove();
   }
 
@@ -63,7 +67,7 @@ public class ModelAdaptTest extends TestUtil {
     Vec cat = vec(new String[]{"A","B"},0,1,0,1);
     Frame trn = new Frame();
     trn.add("cat",cat);
-    o.setNames(trn.names());
+    o.setNames(trn.names(), trn.typesStr());
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
@@ -72,9 +76,9 @@ public class ModelAdaptTest extends TestUtil {
     tst.add("cat", cat.makeCon(Double.NaN)); // All NAN/missing column
     Frame adapt = new Frame(tst);
     String[] warns = am.adaptTestForTrain(adapt,true, true);
-    Assert.assertTrue(warns.length == 0); // No errors during adaption
+    assertEquals(0, warns.length); // No errors during adaption
 
-    Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst );
+    Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst);
     tst.remove();
   }
 
@@ -86,7 +90,7 @@ public class ModelAdaptTest extends TestUtil {
 
     Frame trn = new Frame();
     trn.add("dog",vec(new String[]{"A","B"},0,1,0,1));
-    o.setNames(trn.names());
+    o.setNames(trn.names(), trn.typesStr());
     o._domains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(),p,o);
@@ -97,10 +101,47 @@ public class ModelAdaptTest extends TestUtil {
     boolean saw_iae = false;
     try { am.adaptTestForTrain(adapt, true, true); }
     catch( IllegalArgumentException iae ) { saw_iae = true; }
-    Assert.assertTrue(saw_iae);
+    assertTrue(saw_iae);
 
-    Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst );
+    Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst);
     tst.remove();
+  }
+
+  @Test public void testModelAdaptOneHotExplicit() {
+    AModel.AParms p = new AModel.AParms();
+    p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+    p._response_column = "resp";
+    AModel.AOutput o = new AModel.AOutput();
+
+    Frame trn = new Frame(Key.make("trn01"));
+    trn.add("id", vec(42,43, 1, 2));
+    trn.add("dog", vec(new String[]{"A", "B"}, 0, 1, 0, 1));
+    trn.add("resp", dvec(.1, .2, .3, .99));
+
+    String[] skipCols = new String[] { "resp" };
+    Frame trnEcoded = new FrameUtils.CategoricalOneHotEncoder(trn, skipCols).exec().get();
+
+    o.setNames(trnEcoded.names(), trnEcoded.typesStr());
+    o._domains = trnEcoded.domains();
+    o._origNames = trn.names();
+    o._origDomains = trn.domains();
+    trn.remove();
+    AModel am = new AModel(Key.make(), p, o);
+
+    Frame tst = new Frame(Key.make("tst01"));
+    tst.add("id", vec(42, 2, 5, 6));
+    tst.add("dog", vec(new String[]{"A", "B"}, 0, 0, 1, 1));
+    Frame adapt = new Frame(tst);
+
+    String[] messages = am.adaptTestForTrain(adapt, true, false);
+    assertEquals("Error messages not empty.", 0, messages.length);
+
+    assertArrayEquals(trnEcoded.names(), adapt.names());
+    trnEcoded.remove();
+
+    Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst);
+    tst.remove();
+    FrameUtils.cleanUp(am._toDelete);
   }
 
 }
