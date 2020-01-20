@@ -20,61 +20,61 @@ public final class ChunkAutoBufferReader implements Closeable  {
     }
 
     public boolean readBoolean() {
-        boolean data = buffer.getZ();
+        final boolean data = buffer.getZ();
         isLastNA = ExternalFrameUtils.isNA(buffer, data);
         return data;
     }
 
     public byte readByte() {
-        byte data = buffer.get1();
+        final byte data = buffer.get1();
         isLastNA = ExternalFrameUtils.isNA(buffer, data);
         return data;
     }
 
     public char readChar() {
-        char data = buffer.get2();
+        final char data = buffer.get2();
         isLastNA = ExternalFrameUtils.isNA(buffer, data);
         return data;
     }
 
     public short readShort() {
-        short data = buffer.get2s();
+        final short data = buffer.get2s();
         isLastNA = ExternalFrameUtils.isNA(buffer, data);
         return data;
     }
 
     public int readInt() {
-        int data = buffer.getInt();
+        final int data = buffer.getInt();
         isLastNA = ExternalFrameUtils.isNA(buffer, data);
         return data;
     }
 
     public long readLong() {
-        long data = buffer.get8();
+        final long data = buffer.get8();
         isLastNA = ExternalFrameUtils.isNA(buffer, data);
         return data;
     }
 
     public float readFloat() {
-        float data = buffer.get4f();
+        final float data = buffer.get4f();
         isLastNA = ExternalFrameUtils.isNA(data);
         return data;
     }
 
     public double readDouble() {
-        double data = buffer.get8d();
+        final double data = buffer.get8d();
         isLastNA = ExternalFrameUtils.isNA(data);
         return data;
     }
 
     public String readString() {
-        String data = buffer.getStr();
+        final String data = buffer.getStr();
         isLastNA = ExternalFrameUtils.isNA(buffer, data);
         return data;
     }
 
     public Timestamp readTimestamp() {
-        Timestamp data = new Timestamp(buffer.get8());
+        final Timestamp data = new Timestamp(buffer.get8());
         isLastNA = ExternalFrameUtils.isNA(buffer, data);
         return data;
     }

@@ -22,7 +22,7 @@ import java.util.Base64;
  * The result is represented as a stream of binary data. Data are encoded to AutoBuffer row by row. 
  * The data stream starts with the integer representing the number of rows.
  */
-public class ChunkServlet extends HttpServlet {
+public final class ChunkServlet extends HttpServlet {
 
   private static class RequestParameters {
     final String frameName;
@@ -38,26 +38,26 @@ public class ChunkServlet extends HttpServlet {
     }
   }
   
-  private String getParameterAsString(HttpServletRequest request, String parameterName) {
-    String result = request.getParameter(parameterName);
+  private String getParameterAsString(final HttpServletRequest request, final String parameterName) {
+    final String result = request.getParameter(parameterName);
     if (result == null) {
       throw new RuntimeException(String.format("Cannot find value for parameter \'%s\'", parameterName));
     }
     return result;
   }
   
-  private RequestParameters extractRequestParameters(HttpServletRequest request) {
-    String frameName = getParameterAsString(request, "frame_name");
+  private RequestParameters extractRequestParameters(final HttpServletRequest request) {
+    final String frameName = getParameterAsString(request, "frame_name");
     
-    String chunkIdString = getParameterAsString(request, "chunk_id");
+    final String chunkIdString = getParameterAsString(request, "chunk_id");
     int chunkId = Integer.parseInt(chunkIdString);
     
-    String expectedTypesString = getParameterAsString(request, "expected_types");
+    final String expectedTypesString = getParameterAsString(request, "expected_types");
     byte[] expectedTypes = Base64.getDecoder().decode(expectedTypesString);
 
-    String selectedColumnsString = getParameterAsString(request, "selected_columns");
+    final String selectedColumnsString = getParameterAsString(request, "selected_columns");
     byte[] selectedColumnsBytes = Base64.getDecoder().decode(selectedColumnsString);
-    IntBuffer buffer = ByteBuffer.wrap(selectedColumnsBytes).order(ByteOrder.BIG_ENDIAN).asIntBuffer();
+    final IntBuffer buffer = ByteBuffer.wrap(selectedColumnsBytes).order(ByteOrder.BIG_ENDIAN).asIntBuffer();
     int[] selectedColumnIndices = new int[buffer.remaining()];
     buffer.get(selectedColumnIndices);
             
@@ -66,9 +66,9 @@ public class ChunkServlet extends HttpServlet {
   
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-    String uri = ServletUtils.getDecodedUri(request);
+    final String uri = ServletUtils.getDecodedUri(request);
     try {
-      RequestParameters parameters = extractRequestParameters(request);
+      final RequestParameters parameters = extractRequestParameters(request);
       response.setContentType("application/octet-stream");
       ServletUtils.setResponseStatus(response, HttpServletResponse.SC_OK);
       OutputStream outputStream = response.getOutputStream();
@@ -85,7 +85,7 @@ public class ChunkServlet extends HttpServlet {
     } catch (Exception e) {
       ServletUtils.sendErrorResponse(response, e, uri);
     } finally {
-      ServletUtils.logRequest("GET", request, response);
+      ServletUtils.logRequest(request.getMethod(), request, response);
     }
   }
 }

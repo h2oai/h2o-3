@@ -6,7 +6,6 @@ import water.fvec.Frame;
 import water.parser.BufferedString;
 
 import java.io.Closeable;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.util.UUID;
 
@@ -22,13 +21,13 @@ public final class ChunkAutoBufferWriter implements Closeable  {
     }
 
     public void writeChunk(String frameName, int chunkId, byte[] expectedTypes, int[] selectedColumnIndices) {
-        Frame frame = DKV.getGet(frameName);
-        Chunk[] chunks = ChunkUtils.getChunks(frame, chunkId);
-        int numberOfRows = chunks[0]._len;
+        final Frame frame = DKV.getGet(frameName);
+        final Chunk[] chunks = ChunkUtils.getChunks(frame, chunkId);
+        final int numberOfRows = chunks[0]._len;
         ExternalFrameUtils.sendInt(buffer, numberOfRows);
 
         // buffered string to be reused for strings to avoid multiple allocation in the loop
-        BufferedString valStr = new BufferedString();
+        final BufferedString valStr = new BufferedString();
         for (int rowIdx = 0; rowIdx < numberOfRows; rowIdx++) {
             for(int i = 0; i < selectedColumnIndices.length; i++){
                 if (chunks[selectedColumnIndices[i]].isNA(rowIdx)) {
