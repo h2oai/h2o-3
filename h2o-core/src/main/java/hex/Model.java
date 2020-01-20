@@ -1222,7 +1222,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
     // keep in sync with FrameUtils.categoricalEncoder: as soon as a categorical column has been encoded, we should check here.
-    final boolean checkCategoricals = Arrays.asList(
+    final boolean checkCategoricals = !catEncoded && Arrays.asList(
             Parameters.CategoricalEncodingScheme.Binary,
             Parameters.CategoricalEncodingScheme.LabelEncoder,
             Parameters.CategoricalEncodingScheme.Eigen,
@@ -1231,7 +1231,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ).indexOf(parms._categorical_encoding) >= 0;
 
     // test frame matches the user-given frame (before categorical encoding, if applicable)
-    if( checkCategoricals && origNames != null ) {
+    if (checkCategoricals && origNames != null) {
       boolean match = Arrays.equals(origNames, test.names());
       if (!match) {
         // As soon as the test frame contains at least one original pre-encoding predictor,
@@ -1248,7 +1248,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // still have work to do below, make sure we set the names/domains to the original user-given values
       // such that we can do the int->enum mapping and cat. encoding below (from scratch)
-      if (match && !catEncoded) {
+      if (match) {
         names = origNames;
         domains = origDomains;
       }
@@ -1335,7 +1335,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names, vvecs, good);
 
-    if (expensive && checkCategoricals && !catEncoded) {
+    if (expensive && checkCategoricals) {
       final boolean hasCategoricalPredictors = hasCategoricalPredictors(test, response, weights, offset, fold, names, domains);
 
       // check if we first need to expand categoricals before calling this method again

@@ -1,12 +1,13 @@
 package hex;
 
-import hex.genmodel.easy.CategoricalEncoder;
 import org.junit.*;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -114,30 +115,35 @@ public class ModelAdaptTest extends TestUtil {
     AModel.AOutput o = new AModel.AOutput();
 
     Frame trn = new Frame(Key.make("trn01"));
+    trn.add("ignored", dvec(0, 0, 0, 0));
     trn.add("id", vec(42,43, 1, 2));
     trn.add("dog", vec(new String[]{"A", "B"}, 0, 1, 0, 1));
     trn.add("resp", dvec(.1, .2, .3, .99));
 
     String[] skipCols = new String[] { "resp" };
-    Frame trnEcoded = new FrameUtils.CategoricalOneHotEncoder(trn, skipCols).exec().get();
+    Frame trnToEncode = new Frame(new String[] {"id", "dog", "resp"}, trn.vecs(new int[]{1, 2, 3}));
+    Frame trnEncoded = new FrameUtils.CategoricalOneHotEncoder(trnToEncode, skipCols).exec().get();
+    trnToEncode.remove();
 
-    o.setNames(trnEcoded.names(), trnEcoded.typesStr());
-    o._domains = trnEcoded.domains();
+    o.setNames(trnEncoded.names(), trnEncoded.typesStr());
+    o._domains = trnEncoded.domains();
     o._origNames = trn.names();
     o._origDomains = trn.domains();
     trn.remove();
     AModel am = new AModel(Key.make(), p, o);
 
     Frame tst = new Frame(Key.make("tst01"));
+    tst.add("ignored", dvec(0, 0, 0, 0));
     tst.add("id", vec(42, 2, 5, 6));
     tst.add("dog", vec(new String[]{"A", "B"}, 0, 0, 1, 1));
+    tst.add("resp", dvec(.1, .2, .3, .99));
     Frame adapt = new Frame(tst);
 
     String[] messages = am.adaptTestForTrain(adapt, true, false);
-    assertEquals("Error messages not empty.", 0, messages.length);
+    assertEquals("Error messages not empty: " + Arrays.toString(messages), 0, messages.length);
 
-    assertArrayEquals(trnEcoded.names(), adapt.names());
-    trnEcoded.remove();
+    assertArrayEquals(trnEncoded.names(), adapt.names());
+    trnEncoded.remove();
 
     Frame.deleteTempFrameAndItsNonSharedVecs(adapt, tst);
     tst.remove();
