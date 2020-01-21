@@ -2,10 +2,8 @@ package hex.tree.xgboost;
 
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLM;
 import hex.glm.GLMTask;
 import hex.tree.PlattScalingHelper;
-import hex.tree.SharedTree;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.util.FeatureScore;
@@ -23,6 +21,7 @@ import water.util.*;
 import water.util.Timer;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
@@ -272,11 +271,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   // ----------------------
   class XGBoostDriver extends Driver {
 
-    // Per driver instance
-    final private String featureMapFileName = "featureMap" + UUID.randomUUID().toString() + ".txt";
-    // Shared file to write list of features
-    private String featureMapFileAbsolutePath = null;
-
     @Override
     public void computeImpl() {
       init(true); //this can change the seed if it was set to -1
@@ -317,6 +311,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
 
       XGBoostSetupTask setupTask = null;
+      File featureMapFile = null;
       try {
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(_train);
 
@@ -332,7 +327,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         assert dataInfo != null;
         String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
         model.model_info().setFeatureMap(featureMap);
-        featureMapFileAbsolutePath = createFeatureMapFile(featureMap);
+        featureMapFile = createFeatureMapFile(featureMap);
 
         BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = boosterParms.toTwoDimTable();
@@ -345,7 +340,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         try {
           // initial iteration
           XGBoostUpdateTask nullModelTask = new XGBoostUpdateTask(setupTask, 0).run();
-          BoosterProvider boosterProvider = new BoosterProvider(model.model_info(), nullModelTask);
+          BoosterProvider boosterProvider = new BoosterProvider(model.model_info(), featureMapFile, nullModelTask);
 
           // train the model
           scoreAndBuildTrees(setupTask, boosterProvider, model);
@@ -362,6 +357,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         xgBoostError.printStackTrace();
         throw new RuntimeException("XGBoost failure", xgBoostError);
       } finally {
+        if (featureMapFile != null) {
+          if (! featureMapFile.delete()) {
+            Log.warn("Unable to delete file " + featureMapFile + ". Please do a manual clean-up.");
+          }
+        }
         if (setupTask != null) {
           try {
             XGBoostCleanupTask.cleanUp(setupTask);
@@ -408,19 +408,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     // For feature importances - write out column info
-    private String createFeatureMapFile(String featureMap) {
-      OutputStream os = null;
+    private File createFeatureMapFile(String featureMap) {
       try {
-        File tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
-        File fmFile = new File(tmpModelDir, featureMapFileName);
-        os = new FileOutputStream(fmFile);
-        os.write(featureMap.getBytes());
-        os.close();
-        return fmFile.getAbsolutePath();
+        File fmFile = Files.createTempFile("h2o_xgb_" + _result.toString(), ".txt").toFile();
+        fmFile.deleteOnExit();
+        try (OutputStream os = new FileOutputStream(fmFile)) {
+          os.write(featureMap.getBytes());
+        }
+        return fmFile;
       } catch (IOException e) {
-        throw new RuntimeException("Cannot generate feature map file " + featureMapFileName, e);
-      } finally {
-        FileUtils.close(os);
+        throw new RuntimeException("Cannot generate feature map file" , e);
       }
     }
 
@@ -527,7 +524,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, FeatureScore>>() {
             @Override
             public Map<String, FeatureScore> apply(Booster booster) throws XGBoostError {
-              final String[] modelDump = booster.getModelDump(featureMapFileAbsolutePath, true);
+              String fmPath = boosterProvider._featureMapFile.getAbsolutePath();
+              final String[] modelDump = booster.getModelDump(fmPath, true);
               return XGBoostUtils.parseFeatureScores(modelDump);
             }
           }, booster);
@@ -582,11 +580,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   private static final class BoosterProvider {
-    XGBoostModelInfo _modelInfo;
+    final XGBoostModelInfo _modelInfo;
+    final File _featureMapFile;
     XGBoostUpdateTask _updateTask;
 
-    BoosterProvider(XGBoostModelInfo modelInfo, XGBoostUpdateTask updateTask) {
+    BoosterProvider(XGBoostModelInfo modelInfo, File featureMapFile, XGBoostUpdateTask updateTask) {
       _modelInfo = modelInfo;
+      _featureMapFile = featureMapFile;
       _updateTask = updateTask;
       _modelInfo.setBoosterBytes(_updateTask.getBoosterBytes());
     }
