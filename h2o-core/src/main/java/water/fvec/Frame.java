@@ -1597,7 +1597,7 @@ public class Frame extends Lockable<Frame> {
     Chunk[] _curChks;
     int _lastChkIdx;
     public volatile int _curChkIdx; // used only for progress reporting
-    private final Map<Integer, String[]> escapedCategoricalLevels = new HashMap<>();
+    private transient final Map<Integer, String[]> escapedCategoricalVecDomains;
 
     public CSVStream(Frame fr, CSVStreamParams parms) {
       this(firstChunks(fr), parms._headers ? fr.names() : null, fr.anyVec().nChunks(), parms);
@@ -1629,7 +1629,7 @@ public class Frame extends Lockable<Frame> {
       _line = StringUtils.bytesOf(sb);
       _chkRow = -1; // first process the header line
       _curChks = chks;
-      escapeCategoricalVecDomains(_curChks);
+      escapedCategoricalVecDomains = escapeCategoricalVecDomains(_curChks);
     }
 
     /**
@@ -1637,9 +1637,11 @@ public class Frame extends Lockable<Frame> {
      * Only the domains with at least one level with an escaped quote are saved. If a domain does not need
      * any escaping, it is considered better practice to reach to the `vec.domain()` method itself and not duplicate entries
      * in memory here.
+     *
      * @param chunks
      */
-    private void escapeCategoricalVecDomains(final Chunk[] chunks) {
+    private Map<Integer, String[]> escapeCategoricalVecDomains(final Chunk[] chunks) {
+      final Map<Integer, String[]> localEscapedCategoricalVecDomains = new HashMap<>();
 
       for (int i = 0; i < chunks.length; i++) {
         final Vec vec = chunks[i].vec();
@@ -1648,16 +1650,18 @@ public class Frame extends Lockable<Frame> {
         final String[] originalDomain = vec.domain();
         final String[] escapedDomain = new String[originalDomain.length];
 
-        boolean noEscapingRequired = true;
+        boolean escapingRequired = false;
         for (int level = 0; level < originalDomain.length; level++) {
           escapedDomain[level] = escapeQuotesForCsv(originalDomain[level]);
-          noEscapingRequired = noEscapingRequired && escapedDomain[level].equals(originalDomain[level]);
+          escapingRequired = escapingRequired || !escapedDomain[level].equals(originalDomain[level]);
         }
 
-        if (!noEscapingRequired) {
-          escapedCategoricalLevels.put(i, escapedDomain);
+        if (escapingRequired) {
+          localEscapedCategoricalVecDomains.put(i, escapedDomain);
         }
       }
+
+      return Collections.unmodifiableMap(localEscapedCategoricalVecDomains);
     }
 
     public int getCurrentRowSize() throws IOException {
@@ -1711,17 +1715,17 @@ public class Frame extends Lockable<Frame> {
      * @return A {@link String} representation of the categorical level, with double-quotes escaped for CSV.
      */
     private String getEscapedCategoricalLevel(final int vectorId, final int categoricalLevelIndex, final Vec vec) {
-      String[] domain = escapedCategoricalLevels.get(vectorId);
+      String[] escapedDomain = escapedCategoricalVecDomains.get(vectorId);
 
-      if (domain == null) {
+      if (escapedDomain == null) {
         return vec.factor(categoricalLevelIndex);
       } else {
-        return domain[categoricalLevelIndex];
+        return escapedDomain[categoricalLevelIndex];
       }
 
     }
 
-    static final Pattern doubleQuotePattern = Pattern.compile("\"");
+    private static final Pattern DOUBLE_QUOTE_PATTERN = Pattern.compile("\"");
 
     /**
      * Escapes  double-quotes (ASCII 34) in a String.
@@ -1730,7 +1734,7 @@ public class Frame extends Lockable<Frame> {
      * @return String with escaped double-quotes, if found.
      */
     private static String escapeQuotesForCsv(final String unescapedString) {
-      final Matcher matcher = doubleQuotePattern.matcher(unescapedString);
+      final Matcher matcher = DOUBLE_QUOTE_PATTERN.matcher(unescapedString);
       return matcher.replaceAll("\"\"");
     }
 
