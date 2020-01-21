@@ -193,11 +193,12 @@ core-site.xml must be configured for at least the following properties (class, p
 Direct Hive import
 ~~~~~~~~~~~~~~~~~~
 
-H2O supports direct ingestion of data managed by Hive in Hadoop. This feature is available only when H2O is running as a Hadoop job. Internally H2O uses metadata in Hive Metastore database to determine the location and format of given Hive table. H2O then imports data directly from HDFS so limitations of supported formats mentioned above apply. Data from hive can pulled into H2O using ``import_hive_table`` function.
+H2O supports direct ingestion of data managed by Hive in Hadoop. This feature is available only when H2O is running as a Hadoop job. Internally H2O uses metadata in Hive Metastore database to determine the location and format of given Hive table. H2O then imports data directly from HDFS so limitations of supported formats mentioned above apply. Data from hive can pulled into H2O using ``import_hive_table`` function. H2O can read Hive table metadata two ways - either via direct Metastore access or via JDBC.
 
 Requirements:
 
-- Hive jars and configuration must be present on H2O job classpath - either via adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars
+- Direct Metastore access - Hive jars and configuration must be present on H2O job classpath - either via adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars
+- JDBC metadata access - Hive JDBC Driver must be on H2O job classpath
 - user running H2O must have read access to Hive and the files it manages
 
 Limitations
@@ -209,15 +210,31 @@ Limitations
 .. tabs::
    .. code-tab:: r R
 
+
         basic_import <- h2o.import_hive_table("default", "table_name")
         multi_format_enabled <- h2o.import_hive_table("default", "table_name", allow_multi_format=True)
         with_partition_filter <- h2o.import_hive_table("default", "table_name", [["2017", "02"]])
 
+        # access metadata via JDBC
+        basic_import <- h2o.import_hive_table("jdbc:hive2://hive-server:10000/default", "table_name")
+        # access metadata via Metastore
+        multi_format_enabled <- h2o.import_hive_table("default", "table_name", allow_multi_format=True)
+        with_partition_filter <- h2o.import_hive_table("default", "table_name", [["2017", "02"]])
+
+
    .. code-tab:: python
+
 
         basic_import = h2o.import_hive_table("default", "table_name")
         multi_format_enabled = h2o.import_hive_table("default", "table_name", allow_multi_format=True)
         with_partition_filter = h2o.import_hive_table("default", "table_name", [["2017", "02"]])
+
+        # access metadata via JDBC
+        basic_import = h2o.import_hive_table("jdbc:hive2://hive-server:10000/default", "table_name")
+        # access metadata via Metastore
+        multi_format_enabled = h2o.import_hive_table("default", "table_name", allow_multi_format=True)
+        with_partition_filter = h2o.import_hive_table("default", "table_name", [["2017", "02"]])
+
 
 
 JDBC Databases

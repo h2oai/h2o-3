@@ -65,12 +65,19 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // Number of trees requested, including prior trees from a checkpoint
   private int _ntrees;
+  
+  // Back-end used for the build
+  private XGBoostModel.XGBoostParameters.Backend _backend;
 
   // Calibration frame for Platt scaling
   private transient Frame _calib;
 
   @Override protected int nModelsInParallel(int folds) {
-    return nModelsInParallel(folds, 2);
+    if (_backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
+      return 1;
+    } else {
+      return nModelsInParallel(folds, 2);
+    }
   }
 
   /** Start the XGBoost training Job on an F/J thread. */
@@ -99,6 +106,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if(!new XGBoostExtensionCheck().doAllNodes().enabled) {
         error("XGBoost", "XGBoost is not available on all nodes!");
       }
+    }
+    if (H2O.CLOUD.members().length == 0) {
+      // during rest-api registration we do not care about the actual back-end
+      _backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+    } else {
+      _backend = XGBoostModel.getActualBackend(_parms);
     }
 
     if (_parms.hasCheckpoint()) {  // Asking to continue from checkpoint?
@@ -138,9 +151,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (expensive) {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
-      if (hasOffsetCol()) {
-        error("_offset_column", "Offset is not supported for XGBoost.");
-      }
     }
 
     if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
@@ -213,7 +223,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   @Override
-  public ModelBuilder getModelBuilder() {
+  public XGBoost getModelBuilder() {
     return this;
   }
 
@@ -249,7 +259,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (parms._weights_column != null && parms._offset_column != null) {
       Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
     }
-    if (parms._weights_column != null && parms._offset_column == null /*FIXME: offset not yet implemented*/) {
+    if (parms._weights_column != null && parms._offset_column == null) {
       dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
       if (nClasses == 1)
         dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());

@@ -5,12 +5,12 @@ import hex.genmodel.descriptor.ModelDescriptor;
 
 import java.io.*;
 
-
 /**
  * Prediction model based on the persisted binary data.
  */
 public abstract class MojoModel extends GenModel {
 
+  public String _algoName;
   public String _h2oVersion;
   public hex.ModelCategory _category;
   public String _uuid;

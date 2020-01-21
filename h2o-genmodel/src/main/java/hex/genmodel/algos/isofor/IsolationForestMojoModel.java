@@ -1,6 +1,5 @@
 package hex.genmodel.algos.isofor;
 
-import hex.genmodel.GenModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 
 public final class IsolationForestMojoModel extends SharedTreeMojoModel {
@@ -33,5 +32,8 @@ public final class IsolationForestMojoModel extends SharedTreeMojoModel {
     return preds;
   }
 
-
+  @Override
+  public double getInitF() {
+    return 0;
+  }
 }

@@ -93,6 +93,7 @@ Only a subset of H2O MOJO models is supported in this version.
 -  DRF (Distributed Random Forest)
 -  IRF (Isolation Random Forest)
 -  GLM (Generalized Linear Model)
+-  XGBoost
 
 Importing a MOJO
 ~~~~~~~~~~~~~~~~~~~~~~~~~

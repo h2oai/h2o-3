@@ -20,8 +20,8 @@ public class BoosterParmsTest {
     }});
     Map<String, Object> expected = Collections.unmodifiableMap(new HashMap<String, Object>() {{
       put("integer", 42);
-      put("float", new Float(0.5F).toString());
-      put("double", new Double(Math.E).toString());
+      put("float", Float.toString(0.5F));
+      put("double", Double.toString(Math.E));
       put("boolean", true);
     }});
 

@@ -22,8 +22,8 @@ public class OneHotEncoderColumnMapperTest {
   @Test
   public void create() {
     Map<String, Integer> expected = new HashMap<>();
-    expected.put("col1", 0);
-    expected.put("col2", 4);
+    expected.put("col1", 1);
+    expected.put("col2", 0);
     expected.put("col3", 5);
 
     when(mockModel.getOrigNames()).thenReturn(new String[]{"col1", "col2", "col3", "response"});

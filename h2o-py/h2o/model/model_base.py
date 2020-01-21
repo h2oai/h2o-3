@@ -345,6 +345,12 @@ class ModelBase(h2o_meta(Keyed)):
         return self._model_json["output"]["catoffsets"]
 
 
+    def training_model_metrics(self):
+        """
+        Return training model metrics for any model.
+        """
+        return self._model_json["output"]["training_metrics"]._metric_json
+    
     def model_performance(self, test_data=None, train=False, valid=False, xval=False):
         """
         Generate model metrics for this model on test_data.
@@ -852,6 +858,19 @@ class ModelBase(h2o_meta(Keyed)):
     @deprecated(replaced_by=aucpr)
     def pr_auc(self, train=False, valid=False, xval=False):
         pass
+
+    def download_model(self, path=""):
+        """
+        Download an H2O Model object to disk.
+    
+        :param model: The model object to download.
+        :param path: a path to the directory where the model should be saved.
+    
+        :returns: the path of the downloaded model
+        """
+        assert_is_type(path, str)
+        return h2o.download_model(self, path)
+
 
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """

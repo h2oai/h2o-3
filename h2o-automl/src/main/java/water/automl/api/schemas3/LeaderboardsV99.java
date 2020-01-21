@@ -10,6 +10,9 @@ public class LeaderboardsV99 extends RequestSchemaV3<LeaderboardsHandler.Leaderb
   @API(help="Name of project of interest", json=false)
   public String project_name;
 
+  @API(help="List of extension columns to add to leaderboard", direction= API.Direction.INPUT)
+  public String[] extensions;
+
   // Output fields
   @API(help="Leaderboards", direction=API.Direction.OUTPUT)
   public LeaderboardV99[] leaderboards;

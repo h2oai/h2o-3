@@ -15,12 +15,13 @@ import water.util.EnumUtils;
 public class ImportSQLTableHandler extends Handler {
 
   @SuppressWarnings("unused") // called through reflection by RequestServer
-  public JobV3 importSQLTable(int version, ImportSQLTableV99 importSqlTable) {
+  public JobV3 importSQLTable(int version, final ImportSQLTableV99 importSqlTable) {
     final SqlFetchMode sqlFetchMode;
     if (importSqlTable.fetch_mode == null) {
       sqlFetchMode = SqlFetchMode.DISTRIBUTED;
     } else {
-      sqlFetchMode = EnumUtils.valueOfIgnoreCase(SqlFetchMode.class, importSqlTable.fetch_mode);
+      sqlFetchMode = EnumUtils.valueOfIgnoreCase(SqlFetchMode.class, importSqlTable.fetch_mode)
+              .orElseThrow(() -> new IllegalArgumentException("Unrecognized SQL Fetch mode: " + importSqlTable.fetch_mode));
     }
     Boolean useTempTable = null;
     if (importSqlTable.use_temp_table != null) {

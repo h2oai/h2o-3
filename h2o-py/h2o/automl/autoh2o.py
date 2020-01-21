@@ -89,7 +89,7 @@ class H2OAutoML(Keyed):
         :param str stopping_metric: Specifies the metric to use for early stopping. Defaults to ``"AUTO"``.
           The available options are:
           ``"AUTO"`` (This defaults to ``"logloss"`` for classification, ``"deviance"`` for regression),
-          ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``"lift_top_group"``,
+          ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``, ``aucpr``, ``"lift_top_group"``,
           ``"misclassification"``, ``"mean_per_class_error"``, ``"r2"``.
         :param float stopping_tolerance: This option specifies the relative tolerance for the metric-based stopping
           to stop the AutoML run if the improvement is less than this value. This value defaults to ``0.001``
@@ -128,7 +128,7 @@ class H2OAutoML(Keyed):
           in the H2O cluster. This option defaults to ``False``.
         :param sort_metric: Metric to sort the leaderboard by. Defaults to ``"AUTO"`` (This defaults to ``auc`` for binomial classification, 
           ``mean_per_class_error`` for multinomial classification, ``deviance`` for regression). For binomial classification choose between 
-          ``auc``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
+          ``auc``, ``aucpr``, ``"logloss"``, ``"mean_per_class_error"``, ``"rmse"``, ``"mse"``.  For regression choose between ``"deviance"``, ``"rmse"``, 
           ``"mse"``, ``"mae"``, ``"rmlse"``. For multinomial classification choose between ``"mean_per_class_error"``, ``"logloss"``, ``"rmse"``, ``"mse"``.
         :param export_checkpoints_dir: Path to a directory where every model will be stored in binary form.
         :param verbosity: Verbosity of the backend messages printed during training.
@@ -530,7 +530,7 @@ class H2OAutoML(Keyed):
 
         :param path:  An absolute path to the directory where POJO should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name Custom name of genmodel jar
+        :param genmodel_name: Custom name of genmodel jar
         :returns: name of the POJO file written.
         """
 
@@ -542,7 +542,7 @@ class H2OAutoML(Keyed):
 
         :param path: the path where MOJO file should be saved.
         :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name Custom name of genmodel jar
+        :param genmodel_name: Custom name of genmodel jar
         :returns: name of the MOJO file written.
         """
 
@@ -559,6 +559,7 @@ class H2OAutoML(Keyed):
     #-------------------------------------------------------------------------------------------------------------------
     # Private
     #-------------------------------------------------------------------------------------------------------------------
+
     def _fetch(self):
         state = H2OAutoML._fetch_state(self.key)
         self._leader_id = state['leader_id']
@@ -596,6 +597,17 @@ class H2OAutoML(Keyed):
             state['last_job_progress'] = job.progress
         except Exception as e:
             print("Failed polling AutoML progress log: {}".format(e))
+
+    @staticmethod
+    def _fetch_leaderboard(aml_id, extensions=None):
+        assert_is_type(extensions, None, str, [str])
+        extensions = ([] if extensions is None
+                      else [extensions] if is_type(extensions, str)
+                      else extensions)
+        resp = h2o.api("GET /99/Leaderboards/%s" % aml_id, data=dict(extensions=extensions))
+        dest_key = resp['project_name'].split('@', 1)[0]+"_custom_leaderboard"
+        lb = H2OAutoML._fetch_table(resp['table'], key=dest_key, progress_bar=False)
+        return h2o.assign(lb[1:], dest_key)
 
 
     @staticmethod
@@ -654,3 +666,25 @@ def get_automl(project_name):
     :returns: A dictionary containing the project_name, leader model, leaderboard, event_log.
     """
     return H2OAutoML._fetch_state(project_name)
+
+
+def get_leaderboard(aml, extra_columns=None):
+    """
+    Retrieve the leaderboard from the AutoML instance.
+    Contrary to the default leaderboard attached to the automl instance, this one can return columns other than the metrics.
+    :param H2OAutoML aml: the instance for which to return the leaderboard.
+    :param extra_columns: a string or a list of string specifying which optional columns should be added to the leaderboard. Defaults to None.
+        Currently supported extensions are:
+        - 'ALL': adds all columns below.
+        - 'training_time_ms': column providing the training time of each model in milliseconds (doesn't include the training of cross validation models).
+        - 'predict_time_per_row_ms`: column providing the average prediction time by the model for a single row.
+    :return: An H2OFrame representing the leaderboard.
+    :examples:
+    >>> aml = H2OAutoML(max_runtime_secs=30)
+    >>> aml.train(y=y, training_frame=train)
+    >>> lb_all = h2o.automl.get_leaderboard(aml, 'ALL')
+    >>> lb_custom = h2o.automl.get_leaderboard(aml, ['predict_time_per_row_ms', 'training_time_ms'])
+    >>> lb_custom_sorted = lb_custom.sort(by='predict_time_per_row_ms')
+    """
+    assert_is_type(aml, H2OAutoML)
+    return H2OAutoML._fetch_leaderboard(aml.key, extra_columns)

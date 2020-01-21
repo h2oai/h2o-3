@@ -27,10 +27,10 @@ Available options for ``stopping_metric`` include the following:
 - ``RMSE``
 - ``MAE``
 - ``RMSLE``
-- ``AUC``
+- ``AUC`` (area under the ROC curve)
+- ``AUCPR`` (area under the Precision-Recall curve)
 - ``lift_top_group``
 - ``misclassification``
-- ``aucpr`` (Not available for AutoML)
 - ``mean_per_class_error``
 - ``custom`` (for custom metric functions where "less is better". It is expected that the lower bound is 0.) Note that this is currently only supported in the Python client for GBM and DRF. More information available in Python example below and `here <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/dev/custom_functions.md>`__.
 - ``custom_increasing`` (for custom metric functions where "more is better".) Note that this is currently only supported in the Python client for GBM and DRF. More information available in Python example below and `here <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/dev/custom_functions.md>`__.

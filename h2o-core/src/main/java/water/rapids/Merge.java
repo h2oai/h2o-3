@@ -8,7 +8,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
+import static java.math.BigInteger.ZERO;
+import static java.math.BigInteger.ONE;
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 public class Merge {
@@ -52,7 +53,6 @@ public class Merge {
   public static Frame merge(final Frame leftFrame, final Frame riteFrame, final int leftCols[], final int riteCols[],
                             boolean allLeft, int[][] id_maps) {
     int[] ascendingL, ascendingR;
-
     if (leftCols != null && leftCols.length>0) {
       ascendingL = new int[leftCols.length];
       Arrays.fill(ascendingL, 1);
@@ -87,32 +87,9 @@ public class Merge {
         }
     }
 
-    Frame rightFrame = naPresent?new MRTask() {
-      private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
-        for (int i = 0; i < cs.length; ++i) {
-          if (cs[i] instanceof CStrChunk) ncs[i].addStr(cs[i], row);
-          else if (cs[i] instanceof C16Chunk) ncs[i].addUUID(cs[i], row);
-          else if (cs[i].hasFloat()) ncs[i].addNum(cs[i].atd(row));
-          else ncs[i].addNum(cs[i].at8(row), 0);
-        }
-      }
-
-      @Override
-      public void map(Chunk[] cs, NewChunk[] ncs) {
-        boolean noNA = true;
-        for (int row = 0; row < cs[0]._len; ++row) {
-          noNA = true;
-          for (int col : riteCols) {
-            if (cs[col].isNA(row)) {
-              noNA = false;
-              break;
-            }
-          }
-          if (noNA)
-            copyRow(row, cs, ncs);
-        }
-      }
-    }.doAll(riteFrame.types(), riteFrame).outputFrame(riteFrame.names(), riteFrame.domains()) : riteFrame;
+    Frame rightFrame = naPresent ? new RemoveNAsTask(riteCols)
+            .doAll(riteFrame.types(), riteFrame).outputFrame(riteFrame.names(), riteFrame.domains())
+            : riteFrame;
 
 
     // map missing levels to -1 (rather than increasing slots after the end)
@@ -132,6 +109,7 @@ public class Merge {
 
     // Running 3 consecutive times on an idle cluster showed that running left
     // and right in parallel was a little slower (97s) than one by one (89s).
+    // empty frame will come back with base = Long.MIN_VALUE (-9223372036854775808).  
     // TODO: retest in future
     RadixOrder leftIndex = createIndex(true ,leftFrame,leftCols,id_maps, ascendingL);
     RadixOrder riteIndex = createIndex(false,rightFrame,riteCols,id_maps, ascendingR);
@@ -148,7 +126,16 @@ public class Merge {
     final BigInteger riteBase = hasRite ? riteIndex._base [0] : leftBase;
 
     // initialize for double columns, may not be used....
-    long leftMSBfrom = riteBase.subtract(leftBase).shiftRight(leftShift).longValue();
+    boolean leftFrameEmpty = (leftFrame.numRows()==0);
+    boolean riteFrameEmpty = (riteFrame.numRows()==0);
+    long leftMSBfrom = riteBase.subtract(leftBase).shiftRight(leftShift).longValue();  // value when all frames nonempty
+    if (riteFrameEmpty) { // if riteFrame is empty, need to modify it because riteBase is Long.MIN_VALUE
+      if (leftFrameEmpty) { // if both left and rite frames are empty.
+        leftMSBfrom = 0;
+      } else {  // only riteFrame is empty
+        leftMSBfrom = ZERO.subtract(leftBase).shiftRight(leftShift).longValue();
+      }
+    }
     boolean riteBaseExceedsleftBase=riteBase.compareTo(leftBase)>0;
     // deal with the left range below the right minimum, if any
     if (riteBaseExceedsleftBase) {  // right branch has higher minimum column value
@@ -176,9 +163,14 @@ public class Merge {
     }
 
     BigInteger rightS = BigInteger.valueOf(256L<<riteShift);
-    long leftMSBto = riteBase.add(rightS).subtract(BigInteger.ONE).subtract(leftBase).shiftRight(leftShift).longValue();
-    // -1 because the 256L<<riteShift is one after the max extent.  
-    // No need -for +1 for NA here because, as for leftMSBfrom above, the NA spot is on -both sides
+    long leftMSBto = riteBase.add(rightS).subtract(ONE).subtract(leftBase).shiftRight(leftShift).longValue();
+    if (riteFrameEmpty) { // rite frame is empty
+      if (leftFrameEmpty) { // both left and rite frames are empty
+        leftMSBto = ZERO.add(rightS).subtract(ONE).shiftRight(leftShift).longValue();
+      } else {  // only riteFrame is empty
+        leftMSBto = ZERO.add(rightS).subtract(ONE).subtract(leftBase).shiftRight(leftShift).longValue();
+      }
+    }
 
     // deal with the left range above the right maximum, if any.  For doubles, -1 from shift to avoid negative outcome
     boolean leftRangeAboveRightMax = leftIndex._isCategorical[0]?
@@ -204,23 +196,25 @@ public class Merge {
       }
     } else {
       // completely ignore right MSBs after the right peak
-      assert leftMSBto >= 255;
-      leftMSBto = 255;
+      if (!leftFrameEmpty) {
+        assert leftMSBto >= 255;
+        leftMSBto = 255;
+      }
     }
 
     // the overlapped region; i.e. between [ max(leftMin,rightMin), min(leftMax, rightMax) ]
-    for (int leftMSB=(int)leftMSBfrom; leftMSB<=leftMSBto; leftMSB++) {
-
-      assert leftMSB >= 0;
-      assert leftMSB <= 255;
-
+    // when right frame is empty, the leftMSBto will be 9223372036854775808 and hence the code will
+    // stall here.  I have changed the way leftMSBto in order to avoid this problem.
+    assert leftMSBfrom >= 0;
+    assert leftMSBto <= 255;
+    for (int leftMSB = (int) leftMSBfrom; leftMSB <= leftMSBto; leftMSB++) {
       // calculate the key values at the bin extents:  [leftFrom,leftTo] in terms of keys
-      long leftFrom= (((long)leftMSB  ) << leftShift) -1 + leftBase.longValue();  // -1 for leading NA spot
-      long leftTo  = (((long)leftMSB+1) << leftShift) -1 + leftBase.longValue()-1;  // -1 for leading NA spot and another -1 to get last of previous bin
+      long leftFrom = leftFrameEmpty ? 0 : ((((long) leftMSB) << leftShift) - 1 + leftBase.longValue());  // -1 for leading NA spot
+      long leftTo = leftFrameEmpty ? 0 : (((((long) leftMSB + 1) << leftShift) - 1 + leftBase.longValue()) - 1);  // -1 for leading NA spot and another -1 to get last of previous bin
 
       // which right bins do these left extents occur in (could span multiple, and fall in the middle)
-      int rightMSBfrom = (int)((leftFrom - riteBase.longValue() + 1) >> riteShift);   // +1 again for the leading NA spot
-      int rightMSBto   = (int)((leftTo   - riteBase.longValue() + 1) >> riteShift);
+      int rightMSBfrom = (int) ((leftFrom - (riteFrameEmpty ? 0 : riteBase.longValue()) + 1) >> riteShift);   // +1 again for the leading NA spot
+      int rightMSBto = (int) ((leftTo - (riteFrameEmpty ? 0 : riteBase.longValue()) + 1) >> riteShift);
 
       // the non-matching part of this region will have been dealt with above when allLeft==true
       if (rightMSBfrom < 0) rightMSBfrom = 0;
@@ -228,10 +222,10 @@ public class Merge {
       if (rightMSBto > 255) rightMSBto = 255;
       assert rightMSBto >= rightMSBfrom;
 
-      for (int rightMSB=rightMSBfrom; rightMSB<=rightMSBto; rightMSB++) {
-        BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB,leftShift,leftIndex._bytesUsed,leftIndex._base),
-                                         new BinaryMerge.FFSB(rightFrame,rightMSB,riteShift,riteIndex._bytesUsed,riteIndex._base),
-                                         allLeft);
+      for (int rightMSB = rightMSBfrom; rightMSB <= rightMSBto; rightMSB++) {
+        BinaryMerge bm = new BinaryMerge(new BinaryMerge.FFSB(leftFrame, leftMSB, leftShift, leftIndex._bytesUsed, leftIndex._base),
+                new BinaryMerge.FFSB(rightFrame, rightMSB, riteShift, riteIndex._bytesUsed, riteIndex._base),
+                allLeft);
         bmList.add(bm);
         // TODO: choose the bigger side to execute on (where that side of index
         // already is) to minimize transfer.  within BinaryMerge it will
@@ -381,7 +375,41 @@ public class Merge {
     Log.debug("took: " + (System.nanoTime() - t0)/1e9+" seconds.");
     return bmList;
   }
-  
+
+  public static class RemoveNAsTask extends MRTask<RemoveNAsTask> {
+
+    private final int[] _columns;
+
+    public RemoveNAsTask(int ... _columns) {
+      this._columns = _columns;
+    }
+
+    private void copyRow(int row, Chunk[] cs, NewChunk[] ncs) {
+      for (int i = 0; i < cs.length; ++i) {
+        if (cs[i] instanceof CStrChunk) ncs[i].addStr(cs[i], row);
+        else if (cs[i] instanceof C16Chunk) ncs[i].addUUID(cs[i], row);
+        else if (cs[i].hasFloat()) ncs[i].addNum(cs[i].atd(row));
+        else ncs[i].addNum(cs[i].at8(row), 0);
+      }
+    }
+
+    @Override
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+      boolean noNA = true;
+      for (int row = 0; row < cs[0]._len; ++row) {
+        noNA = true;
+        for (int col : _columns) {
+          if (cs[col].isNA(row)) {
+            noNA = false;
+            break;
+          }
+        }
+        if (noNA)
+          copyRow(row, cs, ncs);
+      }
+    }
+  }
+
   public static long allocateChunk(List<SortCombine> bmList, long chunkSizes[], int chunkLeftMSB[], 
                                    int chunkRightMSB[], int chunkBatch[]) {
     Log.info("Allocating and populating chunk info (e.g. size and batch number) ...");

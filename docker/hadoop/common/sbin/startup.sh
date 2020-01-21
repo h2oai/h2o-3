@@ -20,9 +20,9 @@ if [[ -d /startup && $(ls /startup) ]]; then
 fi
 
 cd /etc/startup/
+chmod +x *
+sync
 for x in $(ls . | sort -n); do
   echo -e "###### Running startup script ${RED}${x}${NC} ######"
-  chmod 700 ${x}
-  sync
   ./${x}
 done

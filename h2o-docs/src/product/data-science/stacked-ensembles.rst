@@ -6,7 +6,7 @@ Introduction
 
 Ensemble machine learning methods use multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms. Many of the popular modern machine learning algorithms are actually ensembles. For example, `Random Forest <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/drf.html>`__ and `Gradient Boosting Machine (GBM) <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html>`__ are both ensemble learners.  Both bagging (e.g. Random Forest) and boosting (e.g. GBM) are methods for ensembling that take a collection of weak learners (e.g. decision tree) and form a single, strong learner.
 
-H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.  Like all supervised models in H2O, Stacked Enemseble supports regression, binary classification and multiclass classification.
+H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.  Like all supervised models in H2O, Stacked Ensemeble supports regression, binary classification and multiclass classification.
 
 Native support for ensembles of H2O algorithms was added into core H2O in version 3.10.3.1.  A separate implementation, the **h2oEnsemble** R package, is also still `available <https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble>`__, however for new projects we recommend using the native H2O version, documented below.
 
@@ -49,7 +49,7 @@ The steps below describe the individual tasks involved in training and testing a
 Training Base Models for the Ensemble
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Before training a stacked ensemble, you will need to train and cross-validate a set of "base models" which will make up the ensemble.  In order to stack these models toegther, a few things are required:
+Before training a stacked ensemble, you will need to train and cross-validate a set of "base models" which will make up the ensemble.  In order to stack these models together, a few things are required:
 
 - The models must be cross-validated using the same number of folds (e.g. ``nfolds = 5`` or use the same ``fold_column`` across base learners).
 
@@ -427,7 +427,7 @@ FAQ
 
 -  **How do I improve the performance of an ensemble?**
   
-  If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First make sure to try the default metalearner ("AUTO") and then try the other options for ``metalearner_algorithm``.  Once fully customized `metalearner support <https://0xdata.atlassian.net/browse/PUBDEV-5086>`__ is added, you can try out different hyperparamters for the metalearner algorithm as well.  
+  If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First make sure to try the default metalearner ("AUTO") and then try the other options for ``metalearner_algorithm``.  Additionally, the custom parameters could be passed to ``metalearner_params`` (e.g., a GBM with ``ntrees=1000``, ``max_depth=10``, etc.)   
 
   Second, look to see if there are base learners that are performing much worse than the other base learners (for example, a GLM).  If so, remove them from the ensemble and try again.  
 

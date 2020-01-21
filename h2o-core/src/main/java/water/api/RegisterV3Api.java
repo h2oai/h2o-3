@@ -83,6 +83,10 @@ public class RegisterV3Api extends AbstractRegister {
             "HEAD /3/Cloud", CloudHandler.class, "head",
             "Determine the status of the nodes in the H2O cloud.");
 
+    context.registerEndpoint("cloudLock",
+        "POST /3/CloudLock", CloudLockHandler.class, "lock",
+        "Lock the cloud.");
+
     context.registerEndpoint("jobs",
             "GET /3/Jobs", JobsHandler.class, "list",
             "Get a list of all the H2O Jobs (long-running actions).");
@@ -237,6 +241,10 @@ public class RegisterV3Api extends AbstractRegister {
             "Return the model in the MOJO format. This format can then be interpreted by " +
                     "gen_model.jar in order to perform prediction / scoring. Currently works for GBM and DRF algos only.");
 
+    context.registerEndpoint("modelBinary",
+            "GET /3/Models.fetch.bin/{model_id}", ModelsHandler.class, "fetchBinaryModel",
+            "Return the model in the binary format.");
+    
     context.registerEndpoint("makePDP",
             "POST /3/PartialDependence/", ModelsHandler.class, "makePartialDependence",
             "Create data for partial dependence plot(s) for the specified model and frame.");

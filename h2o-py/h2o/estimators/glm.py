@@ -31,15 +31,16 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     algo = "glm"
     param_names = {"model_id", "training_frame", "validation_frame", "nfolds", "seed", "keep_cross_validation_models",
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
-                   "fold_column", "response_column", "ignored_columns", "ignore_const_cols", "score_each_iteration",
-                   "offset_column", "weights_column", "family", "tweedie_variance_power", "tweedie_link_power", "theta",
-                   "solver", "alpha", "lambda_", "lambda_search", "early_stopping", "nlambdas", "standardize",
-                   "missing_values_handling", "plug_values", "compute_p_values", "remove_collinear_columns",
-                   "intercept", "non_negative", "max_iterations", "objective_epsilon", "beta_epsilon",
-                   "gradient_epsilon", "link", "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors",
-                   "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir", "balance_classes",
-                   "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
-                   "max_runtime_secs", "custom_metric_func"}
+                   "fold_column", "response_column", "ignored_columns", "random_columns", "ignore_const_cols",
+                   "score_each_iteration", "offset_column", "weights_column", "family", "rand_family",
+                   "tweedie_variance_power", "tweedie_link_power", "theta", "solver", "alpha", "lambda_",
+                   "lambda_search", "early_stopping", "nlambdas", "standardize", "missing_values_handling",
+                   "plug_values", "compute_p_values", "remove_collinear_columns", "intercept", "non_negative",
+                   "max_iterations", "objective_epsilon", "beta_epsilon", "gradient_epsilon", "link", "rand_link",
+                   "startval", "calc_like", "HGLM", "prior", "lambda_min_ratio", "beta_constraints",
+                   "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir",
+                   "balance_classes", "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size",
+                   "max_hit_ratio_k", "max_runtime_secs", "custom_metric_func"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLinearEstimator, self).__init__()
@@ -369,6 +370,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
 
     @property
+    def random_columns(self):
+        """
+        random columns indices for HGLM.
+
+        Type: ``List[int]``.
+        """
+        return self._parms.get("random_columns")
+
+    @random_columns.setter
+    def random_columns(self, random_columns):
+        assert_is_type(random_columns, None, [int])
+        self._parms["random_columns"] = random_columns
+
+
+    @property
     def ignore_const_cols(self):
         """
         Ignore constant columns.
@@ -526,6 +542,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def family(self, family):
         assert_is_type(family, None, Enum("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"))
         self._parms["family"] = family
+
+
+    @property
+    def rand_family(self):
+        """
+        Random Component Family array.  One for each random component. Only support gaussian for now.
+
+        Type: ``List[Enum["[gaussian]"]]``.
+        """
+        return self._parms.get("rand_family")
+
+    @rand_family.setter
+    def rand_family(self, rand_family):
+        assert_is_type(rand_family, None, [Enum("[gaussian]")])
+        self._parms["rand_family"] = rand_family
 
 
     @property
@@ -1187,6 +1218,66 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def link(self, link):
         assert_is_type(link, None, Enum("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"))
         self._parms["link"] = link
+
+
+    @property
+    def rand_link(self):
+        """
+        Link function array for random component in HGLM.
+
+        Type: ``List[Enum["[identity]", "[family_default]"]]``.
+        """
+        return self._parms.get("rand_link")
+
+    @rand_link.setter
+    def rand_link(self, rand_link):
+        assert_is_type(rand_link, None, [Enum("[identity]", "[family_default]")])
+        self._parms["rand_link"] = rand_link
+
+
+    @property
+    def startval(self):
+        """
+        double array to initialize fixed and random coefficients for HGLM.
+
+        Type: ``List[float]``.
+        """
+        return self._parms.get("startval")
+
+    @startval.setter
+    def startval(self, startval):
+        assert_is_type(startval, None, [numeric])
+        self._parms["startval"] = startval
+
+
+    @property
+    def calc_like(self):
+        """
+        if true, will return likelihood function value for HGLM.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("calc_like")
+
+    @calc_like.setter
+    def calc_like(self, calc_like):
+        assert_is_type(calc_like, None, bool)
+        self._parms["calc_like"] = calc_like
+
+
+    @property
+    def HGLM(self):
+        """
+        If set to true, will return HGLM model.  Otherwise, normal GLM model will be returned
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("HGLM")
+
+    @HGLM.setter
+    def HGLM(self, HGLM):
+        assert_is_type(HGLM, None, bool)
+        self._parms["HGLM"] = HGLM
 
 
     @property

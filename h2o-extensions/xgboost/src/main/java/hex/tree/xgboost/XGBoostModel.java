@@ -6,20 +6,14 @@ import biz.k11i.xgboost.gbm.GradBooster;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
-import hex.genmodel.algos.tree.SharedTreeGraph;
-import hex.genmodel.algos.tree.SharedTreeGraphConverter;
-import hex.genmodel.algos.tree.SharedTreeNode;
-import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLMModel;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
-import water.api.API;
-import water.api.schemas3.KeyV3;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -245,7 +239,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
   
-  private static XGBoostParameters.Backend findSuitableBackend(XGBoostParameters p) {
+  public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p) {
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
       if (H2O.getCloudSize() > 1) {
         Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
@@ -332,19 +326,20 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("one_drop", p._one_drop ? "1" : "0");
       params.put("skip_drop", p._skip_drop);
     }
-    XGBoostParameters.Backend actualBackend = findSuitableBackend(p);
+    XGBoostParameters.Backend actualBackend = getActualBackend(p);
     if (actualBackend == XGBoostParameters.Backend.gpu) {
       params.put("gpu_id", p._gpu_id);
+      // we are setting updater rather than tree_method here to keep CPU predictor, which is faster
       if (p._booster == XGBoostParameters.Booster.gblinear) {
         Log.info("Using gpu_coord_descent updater."); 
         params.put("updater", "gpu_coord_descent");
       } else if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
         Log.info("Using gpu_exact tree method.");
-        params.put("tree_method", "gpu_exact");
+        params.put("updater", "grow_gpu,prune");
       } else {
         Log.info("Using gpu_hist tree method.");
         params.put("max_bin", p._max_bins);
-        params.put("tree_method", "gpu_hist");
+        params.put("updater", "grow_gpu_hist");
       }
     } else if (p._booster == XGBoostParameters.Booster.gblinear) {
       Log.info("Using coord_descent updater.");
@@ -511,7 +506,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       booster = model_info.deserializeBooster();
       return XGBoostNativeMojoModel.score0(data, offset, preds, _parms._booster.toString(), _parms._ntrees,
               model_info.deserializeBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
-              _output.nclasses(), _output._priorClassDist, threshold, _output._sparse);
+              _output.nclasses(), _output._priorClassDist, threshold, _output._sparse, _output.hasOffset());
     } finally {
       if (booster != null)
         BoosterHelper.dispose(booster);
@@ -651,6 +646,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
   }
 
+  @Override
+  public SharedTreeGraph convert(int treeNumber, String treeClass, ConvertTreeOptions options) {
+    return convert(treeNumber, treeClass); // options are currently not applicable to in-H2O conversion
+  }
 
   private int getXGBoostClassIndex(final String treeClass) {
     final ModelCategory modelCategory = _output.getModelCategory();
@@ -658,8 +657,18 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       throw new IllegalArgumentException("There should be no tree class specified for regression.");
     }
     if ((treeClass == null || treeClass.isEmpty())) {
-      if (ModelCategory.Regression.equals(modelCategory)) return 0;
-      else throw new IllegalArgumentException("Non-regressional models require tree class specified.");
+      // Binomial & regression problems do not require tree class to be specified, as there is only one available.
+      // Such class is selected automatically for the user.
+      switch (modelCategory) {
+        case Binomial:
+        case Regression:
+          return 0;
+        default:
+          // If the user does not specify tree class explicitely and there are multiple options to choose from,
+          // throw an error.
+          throw new IllegalArgumentException(String.format("Model category '%s' requires tree class to be specified.",
+                  modelCategory));
+      }
     }
 
     final String[] domain = _output._domains[_output._domains.length - 1];

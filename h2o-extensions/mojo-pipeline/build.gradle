@@ -17,6 +17,7 @@ def daiLicense = System.getenv('DRIVERLESS_AI_LICENSE_FILE')
 def mojoTestDir = System.getenv('MOJO_PIPELINE_TEST_DIR')
 
 task daiEnvironmentCheck {
+    onlyIf { ext.has("isCI") && ext.get("isCI") }
     doLast {
         if (!daiLicense || !file(daiLicense).isFile()) {
             throw new ResourceException('Please make sure environment variable DRIVERLESS_AI_LICENSE_FILE is defined and points to a valid DAI license file.')
@@ -38,6 +39,7 @@ if (mojoTestDir && file(mojoTestDir).isDirectory() && file(mojoTestDir).listFile
     }
 } else {
     task extractMojoRuntime {
+        onlyIf { ext.has("isCI") && ext.get("isCI") }
         doLast {
             throw new ResourceException("MOJO_PIPELINE_TEST_DIR doesn't point to a valid non-empty MOJO test location.")
         }

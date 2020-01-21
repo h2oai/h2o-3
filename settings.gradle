@@ -37,6 +37,7 @@ include 'h2o-ext-mojo-pipeline'
 include 'h2o-ext-target-encoder'
 include 'h2o-security'
 include 'h2o-logger'
+include 'h2o-genmodel-extensions:jgrapht'
 
 // GRPC support
 if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {

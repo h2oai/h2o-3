@@ -138,15 +138,6 @@ publishing {
 
       if (project.ext.isRelease) {
           maven {
-              name "PublicNexusRepo"
-              url "${publicNexusLocation}/maven-releases/"
-
-              credentials {
-                  username project["public-release-maven.username"]
-                  password project["public-release-maven.password"]
-              }
-          }
-          maven {
               name "SonatypeRelease"
               url "https://oss.sonatype.org/service/local/staging/deploy/maven2/"
 

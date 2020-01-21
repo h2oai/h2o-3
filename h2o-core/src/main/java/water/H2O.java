@@ -1645,6 +1645,7 @@ final public class H2O {
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
     List<String> launchStrings = ManagementFactory.getRuntimeMXBean().getInputArguments();
     Log.info("JVM launch parameters: "+launchStrings);
+    Log.info("JVM process id: " + ManagementFactory.getRuntimeMXBean().getName());
     Log.info("OS version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
@@ -1850,13 +1851,19 @@ final public class H2O {
 
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
+    if(!cloudIsReady(x)) 
+      Log.info("Waiting for clouding to finish. Current number of nodes " + CLOUD.size() + ". Target number of nodes: " + x);
     while (System.currentTimeMillis() - start < ms) {
-      if (CLOUD.size() >= x && Paxos._commonKnowledge)
+      if (cloudIsReady(x))
         break;
       try { Thread.sleep(100); } catch (InterruptedException ignore) {}
     }
     if (CLOUD.size() < x)
-      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x);
+      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x + ". Consider to increase `DEFAULT_TIME_FOR_CLOUDING`.");
+  }
+
+  private static boolean cloudIsReady(int x) {
+    return CLOUD.size() >= x && Paxos._commonKnowledge;
   }
 
   public static int getCloudSize() {
@@ -2204,6 +2211,12 @@ final public class H2O {
       new ClientDisconnectCheckThread().start();
     }
 
+    if (isGCLoggingEnabled()) {
+      Log.info(H2O.technote(16,
+              "GC logging is enabled, you might see messages containing \"GC (Allocation Failure)\". " +
+                      "Please note that this is a normal part of GC operations and occurrence of such messages doesn't directly indicate an issue."));
+    }
+    
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");
     Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
@@ -2217,6 +2230,18 @@ final public class H2O {
     Log.debug("    Start network services: " + (time10 - time9) + "ms");
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
+  }
+
+  private static boolean isGCLoggingEnabled() {
+    RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+    List<String> jvmArgs = runtimeMXBean.getInputArguments();
+    for (String arg : jvmArgs) {
+      if (arg.startsWith("-XX:+PrintGC") || 
+              arg.equals("-verbose:gc") || 
+              (arg.startsWith("-Xlog:") && arg.contains("gc")))
+        return true;
+    }
+    return false;
   }
   
   /** Find PID of the current process, use -1 if we can't find the value. */

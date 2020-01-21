@@ -1,7 +1,7 @@
 ``monotone_constraints``
 ------------------------
 
-- Available in: GBM, XGBoost
+- Available in: AutoML, GBM, XGBoost
 - Hyperparameter: no
 
 Description
@@ -9,7 +9,7 @@ Description
 
 A mapping that represents monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint. Note that constraints can only be defined for numerical columns. 
 
-**Note**: This option can only be used when the distribution is either ``gaussian`` or ``bernoulli``.
+**Note**: In GBM and XGBoost, this option can only be used when the distribution is either ``gaussian`` or ``bernoulli``.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

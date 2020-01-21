@@ -1,8 +1,8 @@
 package water.automl.api.schemas3;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.EventLog;
-import ai.h2o.automl.Leaderboard;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.StepDefinition;
 import water.Iced;
 import water.Key;
@@ -67,26 +67,26 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
 
     if (null == autoML) return this;
 
-    this.project_name = autoML.projectName();
+    project_name = autoML.projectName();
 
     if (null != autoML._key) {
-      this.automl_id = new AutoMLKeyV3(autoML._key);
+      automl_id = new AutoMLKeyV3(autoML._key);
     }
 
     if (null != autoML.getTrainingFrame()) {
-      this.training_frame = new KeyV3.FrameKeyV3(autoML.getTrainingFrame()._key);
+      training_frame = new KeyV3.FrameKeyV3(autoML.getTrainingFrame()._key);
     }
 
     if (null != autoML.getValidationFrame()) {
-      this.validation_frame = new KeyV3.FrameKeyV3(autoML.getValidationFrame()._key);
+      validation_frame = new KeyV3.FrameKeyV3(autoML.getValidationFrame()._key);
     }
 
     if (null != autoML.getBlendingFrame()) {
-      this.blending_frame = new KeyV3.FrameKeyV3(autoML.getBlendingFrame()._key);
+      blending_frame = new KeyV3.FrameKeyV3(autoML.getBlendingFrame()._key);
     }
 
     if (null != autoML.getLeaderboardFrame()) {
-      this.leaderboard_frame = new KeyV3.FrameKeyV3(autoML.getLeaderboardFrame()._key);
+      leaderboard_frame = new KeyV3.FrameKeyV3(autoML.getLeaderboardFrame()._key);
     }
 
     // NOTE: don't return nulls; return an empty leaderboard/eventLog, to ease life for the client
@@ -94,15 +94,15 @@ public class AutoMLV99 extends SchemaV3<AutoML,AutoMLV99> {
     if (null == eventLog) {
       eventLog = new EventLog(autoML._key);
     }
-    this.event_log = new EventLogV99().fillFromImpl(eventLog);
-    this.event_log_table = new TwoDimTableV3().fillFromImpl(eventLog.toTwoDimTable());
+    event_log = new EventLogV99().fillFromImpl(eventLog);
+    event_log_table = event_log.table;  // for backwards compatibility
 
-    Leaderboard leaderboard = autoML.leaderboard();
-    if (null == leaderboard) {
-      leaderboard = new Leaderboard(project_name, eventLog, autoML.getLeaderboardFrame(), sort_metric);
+    Leaderboard lb = autoML.leaderboard();
+    if (null == lb) {
+      lb = new Leaderboard(project_name, eventLog, autoML.getLeaderboardFrame(), sort_metric);
     }
-    this.leaderboard = new LeaderboardV99().fillFromImpl(leaderboard);
-    this.leaderboard_table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
+    leaderboard = new LeaderboardV99().fillFromImpl(lb);
+    leaderboard_table = leaderboard.table; //for backwards compatibility
 
     if (autoML.getActualModelingSteps() != null) {
       modeling_steps = new StepDefinitionV99[autoML.getActualModelingSteps().length];

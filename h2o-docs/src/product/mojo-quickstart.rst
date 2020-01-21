@@ -12,7 +12,7 @@ A MOJO (Model Object, Optimized) is an alternative to H2O's POJO. As with POJOs,
 
 **Notes**: 
 
-- MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
+- MOJOs are supported for AutoML, Deep Learning, DRF, GBM, GLM, GLRM, K-Means, PCA, Stacked Ensembles, SVM, Word2vec, and XGBoost models.
 - MOJOs are only supported for encodings that are either default or ``enum``. 
 - MOJO predict cannot parse columns enclosed in double quotes (for example, ""2"").  
 

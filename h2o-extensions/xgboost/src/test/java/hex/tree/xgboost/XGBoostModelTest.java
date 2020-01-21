@@ -10,7 +10,7 @@ import static org.junit.Assert.*;
 public class XGBoostModelTest {
 
   @Test
-  public void testCreateParamsNThreads() throws Exception {
+  public void testCreateParamsNThreads() {
     // default
     XGBoostModel.XGBoostParameters pDefault = new XGBoostModel.XGBoostParameters();
     pDefault._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check

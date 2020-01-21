@@ -56,7 +56,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'H2O'
-copyright = u'2016-2019 H2O.ai'
+copyright = u'2016-2020 H2O.ai'
 author = u'h2o'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -210,7 +210,20 @@ html_last_updated_fmt = '%b %d, %Y'
 #html_split_index = False
 
 # If true, links to the reST sources are added to the pages.
-#html_show_sourcelink = True
+html_show_sourcelink = False
+
+# Add 'Edit on Github' link instead of 'View page source'
+# reference:https://docs.readthedocs.io/en/latest/vcs.html
+html_context = {
+    # Enable the "Edit in GitHub link within the header of each page.
+    'display_github': True,
+    # Set the following variables to generate the resulting github URL for each page. 
+    # Format Template: https://{{ github_host|default("github.com") }}
+    #/{{ github_repo }}/blob/{{ github_version }}{{ conf_py_path }}{{ pagename }}{{ suffix }}
+    #https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/index.rst
+    'github_repo': 'h2oai/h2o-3',
+    'github_version': 'master/h2o-docs/src/product/',
+}
 
 # If true, "Created using Sphinx" is shown in the HTML footer. Default is True.
 #html_show_sphinx = True

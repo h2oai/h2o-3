@@ -84,8 +84,8 @@ automl.leaderboard.suite <- function() {
         aml@leaderboard
         expect_equal(nrow(aml@leaderboard), 0)
 
-        warnings = aml@event_log[aml@event_log['level'] == 'Warn','message']
-        last_warning = warnings[nrow(warnings), 1]
+        warnings <- aml@event_log[aml@event_log['level'] == 'Warn','message']
+        last_warning <- warnings[nrow(warnings), 1]
         expect_true(grepl("Empty leaderboard", last_warning))
     }
 
@@ -93,7 +93,7 @@ automl.leaderboard.suite <- function() {
         # Include all algorithms (all should be there, given large enough max_models)
         fr <- as.h2o(iris)
         aml <- h2o.automl(y = 5, training_frame = fr, max_models = 12,
-                           project_name = "r_aml_lb__all_algoes_test")
+                           project_name = "r_aml_lb_all_algos_test")
         model_ids <- as.vector(aml@leaderboard$model_id)
         include_algos <- c(all_algos, "XRT")
         for (a in include_algos) {
@@ -101,12 +101,33 @@ automl.leaderboard.suite <- function() {
         }
     }
 
+    test.custom_leaderboard <- function() {
+        fr <- as.h2o(iris)
+        aml <- h2o.automl(y = 5, training_frame = fr, max_models = 5,
+                          project_name = "r_aml_customlb")
+        std_columns <- c("model_id", "mean_per_class_error", "logloss", "rmse", "mse")
+        expect_equal(names(aml@leaderboard), std_columns)
+        expect_equal(names(h2o.get_leaderboard(aml)), std_columns)
+        expect_equal(names(h2o.get_leaderboard(aml, extra_columns='unknown')), std_columns)
+        expect_equal(names(h2o.get_leaderboard(aml, extra_columns='ALL')), c(std_columns, "training_time_ms", "predict_time_per_row_ms"))
+        expect_equal(names(h2o.get_leaderboard(aml, extra_columns="training_time_ms")), c(std_columns, "training_time_ms"))
+        expect_equal(names(h2o.get_leaderboard(aml, extra_columns=c("predict_time_per_row_ms","training_time_ms"))), c(std_columns, "predict_time_per_row_ms", "training_time_ms"))
+        expect_equal(names(h2o.get_leaderboard(aml, extra_columns=list("unkown","training_time_ms"))), c(std_columns, "training_time_ms"))
+
+        lb_ext <- h2o.get_leaderboard(aml, 'ALL')
+        print(lb_ext)
+        expect_true(all(sapply(lb_ext[2:length(lb_ext)], is.numeric)))
+        expect_true(all(sapply(lb_ext["training_time_ms"], function(v) v >= 0)))
+        expect_true(all(sapply(lb_ext["predict_time_per_row_ms"], function(v) v > 0)))
+    }
+
     makeSuite(
       test.binomial,
       test.regression,
       test.multinomial,
       test.empty_leaderboard,
-      test.all_algos
+      test.all_algos,
+      test.custom_leaderboard,
     )
 }
 

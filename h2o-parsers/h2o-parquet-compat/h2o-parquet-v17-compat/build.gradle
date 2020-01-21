@@ -4,7 +4,7 @@
 description = "H2O Parquet Compatibility Test - Parquet 1.7.x)"
 
 def parquetHadoopVersion = binding.variables.get("hadoopVersion") ?
-  binding.variables.get("hadoopVersion") : defaultHadoopClientVersion
+  binding.variables.get("hadoopVersion") : defaultHadoopVersion
 
 dependencies {
   compile project(":h2o-core")

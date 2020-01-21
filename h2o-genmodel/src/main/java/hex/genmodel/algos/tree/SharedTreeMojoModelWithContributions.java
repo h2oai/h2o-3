@@ -15,7 +15,7 @@ public abstract class SharedTreeMojoModelWithContributions extends SharedTreeMoj
         if (_nclasses > 2) {
             throw new UnsupportedOperationException("Predicting contributions for multinomial classification problems is not yet supported.");
         }
-        SharedTreeGraph graph = _computeGraph(-1);
+        SharedTreeGraph graph = computeGraph(-1);
         final SharedTreeNode[] empty = new SharedTreeNode[0];
         List<TreeSHAPPredictor<double[]>> treeSHAPs = new ArrayList<>(graph.subgraphArray.size());
         for (SharedTreeSubgraph tree : graph.subgraphArray) {

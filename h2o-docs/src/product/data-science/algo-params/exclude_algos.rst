@@ -21,7 +21,7 @@ The algorithms that can be specified include:
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `include-algos <include_algos.html>`__
+- `include_algos <include_algos.html>`__
 
 Example
 ~~~~~~~

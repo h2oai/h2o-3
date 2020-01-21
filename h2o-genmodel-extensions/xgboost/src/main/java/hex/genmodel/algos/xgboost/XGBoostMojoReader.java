@@ -35,7 +35,7 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
         throw new IllegalStateException("Unknown calibration method: " + calibMethod);
       _model._calib_glm_beta = readkv("calib_glm_beta", new double[0]);
     }
-
+    _model._hasOffset = readkv("has_offset", false);
     _model.postReadInit();
   }
 
@@ -65,12 +65,12 @@ public class XGBoostMojoReader extends ModelMojoReader<XGBoostMojoModel> {
         return "gbtree".equals(booster);
       }
     } else {
-      return Boolean.valueOf(javaScoringEnabled);
+      return Boolean.parseBoolean(javaScoringEnabled);
     }
   }
 
   @Override public String mojoVersion() {
-    return "1.00";
+    return "1.10";
   }
 
   @Override
