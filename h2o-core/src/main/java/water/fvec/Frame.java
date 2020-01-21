@@ -1597,7 +1597,7 @@ public class Frame extends Lockable<Frame> {
     Chunk[] _curChks;
     int _lastChkIdx;
     public volatile int _curChkIdx; // used only for progress reporting
-    private transient final Map<Integer, String[]> escapedCategoricalVecDomains;
+    private transient final String[][] escapedCategoricalVecDomains;
 
     public CSVStream(Frame fr, CSVStreamParams parms) {
       this(firstChunks(fr), parms._headers ? fr.names() : null, fr.anyVec().nChunks(), parms);
@@ -1639,9 +1639,10 @@ public class Frame extends Lockable<Frame> {
      * in memory here.
      *
      * @param chunks
+     * @return A 2D array of String[][]. Elements can be null of give domain does not need escaping.
      */
-    private Map<Integer, String[]> escapeCategoricalVecDomains(final Chunk[] chunks) {
-      final Map<Integer, String[]> localEscapedCategoricalVecDomains = new HashMap<>();
+    private String[][] escapeCategoricalVecDomains(final Chunk[] chunks) {
+      final String[][] localEscapedCategoricalVecDomains = new String[chunks.length][];
 
       for (int i = 0; i < chunks.length; i++) {
         final Vec vec = chunks[i].vec();
@@ -1657,11 +1658,13 @@ public class Frame extends Lockable<Frame> {
         }
 
         if (escapingRequired) {
-          localEscapedCategoricalVecDomains.put(i, escapedDomain);
+          localEscapedCategoricalVecDomains[i] = escapedDomain;
+        } else {
+          localEscapedCategoricalVecDomains[i] = null;
         }
       }
 
-      return Collections.unmodifiableMap(localEscapedCategoricalVecDomains);
+      return localEscapedCategoricalVecDomains;
     }
 
     public int getCurrentRowSize() throws IOException {
@@ -1715,7 +1718,7 @@ public class Frame extends Lockable<Frame> {
      * @return A {@link String} representation of the categorical level, with double-quotes escaped for CSV.
      */
     private String getEscapedCategoricalLevel(final int vectorId, final int categoricalLevelIndex, final Vec vec) {
-      String[] escapedDomain = escapedCategoricalVecDomains.get(vectorId);
+      final String[] escapedDomain = escapedCategoricalVecDomains[vectorId];
 
       if (escapedDomain == null) {
         return vec.factor(categoricalLevelIndex);
