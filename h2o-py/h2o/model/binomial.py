@@ -779,9 +779,7 @@ class H2OBinomialModel(ModelBase):
         >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> response = 3
         >>> predictors = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10]
-        >>> model = H2OGeneralizedLinearEstimator(family="binomial",
-        ...                                       alpha=0,
-        ...                                       Lambda=1e-5)
+        >>> model = H2OGeneralizedLinearEstimator(family="binomial")
         >>> model.train(x=predictors, y=response, training_frame=benign)
         >>> model.plot(timestep="AUTO", metric="objective", server=False)
         """
