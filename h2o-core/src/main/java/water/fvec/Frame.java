@@ -13,6 +13,8 @@ import water.util.*;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /** A collection of named {@link Vec}s, essentially an R-like Distributed Data Frame.
  *
@@ -1633,19 +1635,28 @@ public class Frame extends Lockable<Frame> {
       assert av > 0;
       return _line.length;
     }
+    
 
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
       BufferedString tmpStr = new BufferedString();
-      for (int i = 0; i < _curChks.length; i++ ) {
+      for (int i = 0; i < _curChks.length; i++) {
         Vec v = _curChks[i]._vec;
-        if(i > 0) sb.append(_parms._separator);
-        if(!_curChks[i].isNA(_chkRow)) {
-          if( v.isCategorical() ) sb.append('"').append(v.factor(_curChks[i].at8(_chkRow))).append('"');
-          else if( v.isUUID() ) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
-          else if( v.isInt() ) sb.append(_curChks[i].at8(_chkRow));
-          else if (v.isString()) sb.append('"').append(_curChks[i].atStr(tmpStr, _chkRow)).append('"');
-          else {
+        if (i > 0) sb.append(_parms._separator);
+        if (!_curChks[i].isNA(_chkRow)) {
+          if (v.isCategorical()) {
+            final String escapedString = escapeQuotesForCsv(v.factor(_curChks[i].at8(_chkRow)));
+            sb.append('"')
+                    .append(escapedString)
+                    .append('"');
+          } else if (v.isUUID()) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
+          else if (v.isInt()) sb.append(_curChks[i].at8(_chkRow));
+          else if (v.isString()) {
+            final String escapedString = escapeQuotesForCsv(_curChks[i].atStr(tmpStr, _chkRow).toString());
+            sb.append('"')
+                    .append(escapedString)
+                    .append('"');
+          } else {
             double d = _curChks[i].atd(_chkRow);
             // R 3.1 unfortunately changed the behavior of read.csv().
             // (Really type.convert()).
@@ -1665,7 +1676,20 @@ public class Frame extends Lockable<Frame> {
       return StringUtils.bytesOf(sb);
     }
 
-    @Override public int available() throws IOException {
+    static final Pattern doubleQuotePattern = Pattern.compile("\"{1}");
+    /**
+     * Escapes  double-quotes (ASCII 34) in a String.
+     *
+     * @param unescapedString An unescaped {@link String} to escape
+     * @return String with escaped double-quotes, if found.
+     */
+    private static String escapeQuotesForCsv(final String unescapedString) {
+      final Matcher matcher = doubleQuotePattern.matcher(unescapedString);
+      return matcher.replaceAll("\"\"");
+    }
+
+    @Override
+    public int available() throws IOException {
       // Case 1:  There is more data left to read from the current line.
       if (_position != _line.length) {
         return _line.length - _position;
