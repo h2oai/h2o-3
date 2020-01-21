@@ -77,6 +77,8 @@ Defining a K-Means Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+- `cluster_size_constraints <algo-params/cluster_size_constraints.html>`__: Specify the minimum number of points each cluster must have in it.
+
 Interpreting a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

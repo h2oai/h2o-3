@@ -1,0 +1,34 @@
+``cluster_size_constraints``
+----------------------------
+
+- Available in: K-Means
+- Hyperparameter: ?
+
+Description
+~~~~~~~~~~~
+
+This option is used to specify the minimum number of points each cluster must have in it in order to avoid local solutions with empty clusters or clusters having very few points. If enabled, it explicitly adds :math:`k` constraints to the underlying clustering optomization problem requiring that cluster :math:`h` have at least :math:`x` points.
+
+For more information, refer to the following `link <https://pdfs.semanticscholar.org/ecad/eb93378d7911c2f7b9bd83a8af55d7fa9e06.pdf>`__.
+
+Related Parameters
+~~~~~~~~~~~~~~~~~~
+
+- ?
+
+Example
+~~~~~~~
+
+.. tabs::
+   .. code-tab:: r R
+
+		library(h2o)
+		h2o.init
+
+
+
+   .. code-tab:: python
+
+		import h2o
+		from h2o.estimators import H2OKMeansEstimator
+		h2o.init()
