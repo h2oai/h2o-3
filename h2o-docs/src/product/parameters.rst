@@ -28,6 +28,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/check_constant_response
    data-science/algo-params/checkpoint
    data-science/algo-params/class_sampling_factors
+   data-science/algo-params/cluster_size_constraints
    data-science/algo-params/col_sample_rate
    data-science/algo-params/col_sample_rate_change_per_level
    data-science/algo-params/col_sample_rate_per_tree
