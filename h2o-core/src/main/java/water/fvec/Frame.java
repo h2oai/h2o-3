@@ -1597,6 +1597,7 @@ public class Frame extends Lockable<Frame> {
     Chunk[] _curChks;
     int _lastChkIdx;
     public volatile int _curChkIdx; // used only for progress reporting
+    private final Map<Integer, String[]> escapedCategoricalLevels = new HashMap<>();
 
     public CSVStream(Frame fr, CSVStreamParams parms) {
       this(firstChunks(fr), parms._headers ? fr.names() : null, fr.anyVec().nChunks(), parms);
@@ -1621,13 +1622,42 @@ public class Frame extends Lockable<Frame> {
       StringBuilder sb = new StringBuilder();
       if (names != null) {
         sb.append('"').append(names[0]).append('"');
-        for(int i = 1; i < names.length; i++)
+        for (int i = 1; i < names.length; i++)
           sb.append(_parms._separator).append('"').append(names[i]).append('"');
         sb.append('\n');
       }
       _line = StringUtils.bytesOf(sb);
       _chkRow = -1; // first process the header line
       _curChks = chks;
+      escapeCategoricalVecDomains(_curChks);
+    }
+
+    /**
+     * Escapes categorical levels of vectors and puts them in a map of escaped categorical levels.
+     * Only the domains with at least one level with an escaped quote are saved. If a domain does not need
+     * any escaping, it is considered better practice to reach to the `vec.domain()` method itself and not duplicate entries
+     * in memory here.
+     * @param chunks
+     */
+    private void escapeCategoricalVecDomains(final Chunk[] chunks) {
+
+      for (int i = 0; i < chunks.length; i++) {
+        final Vec vec = chunks[i].vec();
+        if (!vec.isCategorical()) continue;
+
+        final String[] originalDomain = vec.domain();
+        final String[] escapedDomain = new String[originalDomain.length];
+
+        boolean noEscapingRequired = true;
+        for (int level = 0; level < originalDomain.length; level++) {
+          escapedDomain[level] = escapeQuotesForCsv(originalDomain[level]);
+          noEscapingRequired = noEscapingRequired && escapedDomain[level].equals(originalDomain[level]);
+        }
+
+        if (!noEscapingRequired) {
+          escapedCategoricalLevels.put(i, escapedDomain);
+        }
+      }
     }
 
     public int getCurrentRowSize() throws IOException {
@@ -1635,7 +1665,7 @@ public class Frame extends Lockable<Frame> {
       assert av > 0;
       return _line.length;
     }
-    
+
 
     byte[] getBytesForRow() {
       StringBuilder sb = new StringBuilder();
@@ -1645,7 +1675,7 @@ public class Frame extends Lockable<Frame> {
         if (i > 0) sb.append(_parms._separator);
         if (!_curChks[i].isNA(_chkRow)) {
           if (v.isCategorical()) {
-            final String escapedString = escapeQuotesForCsv(v.factor(_curChks[i].at8(_chkRow)));
+            final String escapedString = getEscapedCategoricalLevel(i, (int) _curChks[i].at8(_chkRow), v);
             sb.append('"').append(escapedString).append('"');
           } else if (v.isUUID()) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
           else if (v.isInt()) sb.append(_curChks[i].at8(_chkRow));
@@ -1672,7 +1702,27 @@ public class Frame extends Lockable<Frame> {
       return StringUtils.bytesOf(sb);
     }
 
+    /**
+     * Returns a factor escaped for CSV format, if required.
+     *
+     * @param vectorId              Id of the categorical vector
+     * @param categoricalLevelIndex Index of the categorical level in the original domain
+     * @param vec                   Vector with it's domain
+     * @return A {@link String} representation of the categorical level, with double-quotes escaped for CSV.
+     */
+    private String getEscapedCategoricalLevel(final int vectorId, final int categoricalLevelIndex, final Vec vec) {
+      String[] domain = escapedCategoricalLevels.get(vectorId);
+
+      if (domain == null) {
+        return vec.factor(categoricalLevelIndex);
+      } else {
+        return domain[categoricalLevelIndex];
+      }
+
+    }
+
     static final Pattern doubleQuotePattern = Pattern.compile("\"");
+
     /**
      * Escapes  double-quotes (ASCII 34) in a String.
      *
