@@ -34,8 +34,10 @@ test.CoxPH.heart <- function() {
     # test print summary
     summary.out <- capture.output(print(summary.info))
     print(summary.out)
-    summary.out.sanitized <- gsub("[0-9]+", "?", x = summary.out)
+    summary.out.sanitized <- summary.out[!startsWith(summary.out, "Rsquare")] # older versions have R^2, ignored in output
+    summary.out.sanitized <- gsub("[0-9]+", "?", x = summary.out.sanitized)
     summary.out.sanitized <- gsub("[^a-zA-Z~=?|() *>.,-:\"]", "_", x = summary.out.sanitized) #keep only "safe" characters (see #9)
+    print(summary.out.sanitized)
     summary.out.expected <- c(
       "Call:",
       "Surv(start, stop, event) ~ age",
