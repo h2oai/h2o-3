@@ -1597,7 +1597,7 @@ public class Frame extends Lockable<Frame> {
     Chunk[] _curChks;
     int _lastChkIdx;
     public volatile int _curChkIdx; // used only for progress reporting
-    private transient final String[][] escapedCategoricalVecDomains;
+    private transient final String[][] _escapedCategoricalVecDomains;
 
     public CSVStream(Frame fr, CSVStreamParams parms) {
       this(firstChunks(fr), parms._headers ? fr.names() : null, fr.anyVec().nChunks(), parms);
@@ -1629,7 +1629,7 @@ public class Frame extends Lockable<Frame> {
       _line = StringUtils.bytesOf(sb);
       _chkRow = -1; // first process the header line
       _curChks = chks;
-      escapedCategoricalVecDomains = escapeCategoricalVecDomains(_curChks);
+      _escapedCategoricalVecDomains = escapeCategoricalVecDomains(_curChks);
     }
 
     /**
@@ -1718,7 +1718,7 @@ public class Frame extends Lockable<Frame> {
      * @return A {@link String} representation of the categorical level, with double-quotes escaped for CSV.
      */
     private String getEscapedCategoricalLevel(final int vectorId, final int categoricalLevelIndex, final Vec vec) {
-      final String[] escapedDomain = escapedCategoricalVecDomains[vectorId];
+      final String[] escapedDomain = _escapedCategoricalVecDomains[vectorId];
 
       if (escapedDomain == null) {
         return vec.factor(categoricalLevelIndex);
