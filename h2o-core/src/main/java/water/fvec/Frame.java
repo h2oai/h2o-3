@@ -1659,8 +1659,6 @@ public class Frame extends Lockable<Frame> {
 
         if (escapingRequired) {
           localEscapedCategoricalVecDomains[i] = escapedDomain;
-        } else {
-          localEscapedCategoricalVecDomains[i] = null;
         }
       }
 
