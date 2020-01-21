@@ -1646,16 +1646,12 @@ public class Frame extends Lockable<Frame> {
         if (!_curChks[i].isNA(_chkRow)) {
           if (v.isCategorical()) {
             final String escapedString = escapeQuotesForCsv(v.factor(_curChks[i].at8(_chkRow)));
-            sb.append('"')
-                    .append(escapedString)
-                    .append('"');
+            sb.append('"').append(escapedString).append('"');
           } else if (v.isUUID()) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
           else if (v.isInt()) sb.append(_curChks[i].at8(_chkRow));
           else if (v.isString()) {
             final String escapedString = escapeQuotesForCsv(_curChks[i].atStr(tmpStr, _chkRow).toString());
-            sb.append('"')
-                    .append(escapedString)
-                    .append('"');
+            sb.append('"').append(escapedString).append('"');
           } else {
             double d = _curChks[i].atd(_chkRow);
             // R 3.1 unfortunately changed the behavior of read.csv().
@@ -1676,7 +1672,7 @@ public class Frame extends Lockable<Frame> {
       return StringUtils.bytesOf(sb);
     }
 
-    static final Pattern doubleQuotePattern = Pattern.compile("\"{1}");
+    static final Pattern doubleQuotePattern = Pattern.compile("\"");
     /**
      * Escapes  double-quotes (ASCII 34) in a String.
      *
