@@ -125,7 +125,7 @@ Example
         S                  0.661206197437     -0.694121601584     0.0166591597288
         year               -0.727793158751    -0.684904471511     0.00409291352783
 
-        See the whole table with table.as_data_frame()
+        # See the whole table with table.as_data_frame()
 
         # Train again without using all factor levels
         birds2 = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
@@ -156,4 +156,4 @@ Example
         S                  -0.643180719366    -0.730003524026    -0.0176460246561
         year               0.753676017614     -0.65628159817     -0.00410087043089
 
-        See the whole table with table.as_data_frame()
+        # See the whole table with table.as_data_frame()
