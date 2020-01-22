@@ -92,6 +92,6 @@ Example
                                          )
          model.train (x=predictors,y=resp, training_frame=train, validation_frame=test)
 
-         # See the model perrformance
+         # See the model performance
          model.model_performance(valid=True)
 

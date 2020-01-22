@@ -172,4 +172,4 @@ Example
         S                  0.00878461186804    0.649068763107    -0.130282514102
         year               -0.000583301909773  -0.0765116904321  -0.69416666169
 
-        See the whole table with table.as_data_frame()
+        # See the whole table with table.as_data_frame()

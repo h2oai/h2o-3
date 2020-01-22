@@ -22,6 +22,9 @@ Example
 .. tabs::
    .. code-tab:: r R
 
+        library(h2o)
+        h2o.init
+
         # import the cars dataset
         cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 

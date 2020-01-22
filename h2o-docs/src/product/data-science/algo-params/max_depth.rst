@@ -295,4 +295,4 @@ Example
         13           5   depth_grid_model_2  0.9484361792054099
         14           1   depth_grid_model_0  0.9478162862778248
 
-    It appears that ``max_depth`` values of 9 to 27 are best suited for this dataset, which is unusally deep.
+It appears that ``max_depth`` values of 9 to 27 are best suited for this dataset, which is unusually deep.

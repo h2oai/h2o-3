@@ -91,7 +91,7 @@ Example
         # 0.7511055                                 
 
         # Train a stacked ensemble using RF as the metalearner algorithm
-        # The metelearner will use RF default values
+        # The metalearner will use RF default values
         stack_rf <- h2o.stackedEnsemble(x = x,
                                         y = y,
                                         training_frame = train,
@@ -101,7 +101,7 @@ Example
         # 0.7232461
 
         # Train a stacked ensemble using Deep Learning as the metalearner algorithm
-        # The metelearner will use RF default values
+        # The metalearner will use RF default values
         stack_dl <- h2o.stackedEnsemble(x = x,
                                         y = y,
                                         training_frame = train,
@@ -163,7 +163,7 @@ Example
         # 0.7522591310013634
 
         # Train a stacked ensemble with a GBM metalearner algorithm
-        # The metelearner will use GBM default values
+        # The metalearner will use GBM default values
         stack_gbm = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], 
                                                 metalearner_algorithm="gbm")
         stack_gbm.train(x=x, y=y, training_frame=train)
@@ -171,7 +171,7 @@ Example
         # 0.7522591310013634
 
         # Train a stacked ensemble with a RF metalearner algorithm
-        # The metelearner will use RF default values
+        # The metalearner will use RF default values
         stack_rf = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], 
                                                metalearner_algorithm="drf")
         stack_rf.train(x=x, y=y, training_frame=train)
@@ -179,7 +179,7 @@ Example
         # 0.7016302070136065
 
         # Train a stacked ensemble with a Deep Learning metalearner algorithm
-        # The metelearner will use Deep Learning default values
+        # The metalearner will use Deep Learning default values
         stack_dl = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], 
                                                metalearner_algorithm="deeplearning")
         stack_dl.train(x=x, y=y, training_frame=train)

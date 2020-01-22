@@ -136,7 +136,7 @@ Example
         S                  0.564501605704      -0.767095710638    -0.0466832766991
         year               -0.814596906726     -0.577331674836    -0.0101626722479
 
-        See the whole table with table.as_data_frame()
+        # See the whole table with table.as_data_frame()
 
         # Train again using Normalize transform
         birds2 = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
@@ -167,5 +167,5 @@ Example
         S                  0.0515403663478    0.113344870593      0.123141154399
         year               -0.00488342003667  -0.0143717060558    -0.0187277019153
 
-        See the whole table with table.as_data_frame()
+        # See the whole table with table.as_data_frame()
 

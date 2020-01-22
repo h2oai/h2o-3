@@ -34,7 +34,7 @@ Example
    .. code-tab:: r R
    
 
-		library(h2o)\
+		library(h2o)
 		h2o.init()
 
 		# Import a sample binary outcome training set into H2O

@@ -1,7 +1,7 @@
 Fill NAs
 --------
 
-Use this function to fill in NA values in a sequential manner up to a specified limit. When using this function, you will specify whether the method to fill the NAs should go forward (default) or backward , whether the NAs should be filled along rows (default) or columns, and the maximum number of consecutive NAs to fill (defaults to 1). 
+Use this function to fill in NA values in a sequential manner up to a specified limit. When using this function, you will specify whether the method to fill the NAs should go forward (default) or backward, whether the NAs should be filled along rows (default) or columns, and the maximum number of consecutive NAs to fill (defaults to 1). 
 
 .. tabs::
    .. code-tab:: r R
