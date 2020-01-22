@@ -163,8 +163,6 @@ Defining a GLM Model
 
 -  **obj_reg**: Specifies the likelihood divider in objective value computation. This defaults to 1/nobs.
 
--  `upload_custom_metric <algo-params/upload_custom_metric.html>`__: Upload a custom metric into a running H2O cluster.
-
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
 Interpreting a GLM Model
