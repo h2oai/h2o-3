@@ -1659,6 +1659,9 @@ public class Frame extends Lockable<Frame> {
 
         if (escapingRequired) {
           localEscapedCategoricalVecDomains[i] = escapedDomain;
+        } else {
+          // If the domain does not need escaping, simply link to the original domain and drop the escaped array
+          localEscapedCategoricalVecDomains[i] = originalDomain;
         }
       }
 
@@ -1680,7 +1683,7 @@ public class Frame extends Lockable<Frame> {
         if (i > 0) sb.append(_parms._separator);
         if (!_curChks[i].isNA(_chkRow)) {
           if (v.isCategorical()) {
-            final String escapedString = getEscapedCategoricalLevel(i, (int) _curChks[i].at8(_chkRow), v);
+            final String escapedString = _escapedCategoricalVecDomains[i][(int) _curChks[i].at8(_chkRow)];
             sb.append('"').append(escapedString).append('"');
           } else if (v.isUUID()) sb.append(PrettyPrint.UUID(_curChks[i].at16l(_chkRow), _curChks[i].at16h(_chkRow)));
           else if (v.isInt()) sb.append(_curChks[i].at8(_chkRow));
@@ -1705,25 +1708,6 @@ public class Frame extends Lockable<Frame> {
       }
       sb.append('\n');
       return StringUtils.bytesOf(sb);
-    }
-
-    /**
-     * Returns a factor escaped for CSV format, if required.
-     *
-     * @param vectorId              Id of the categorical vector
-     * @param categoricalLevelIndex Index of the categorical level in the original domain
-     * @param vec                   Vector with it's domain
-     * @return A {@link String} representation of the categorical level, with double-quotes escaped for CSV.
-     */
-    private String getEscapedCategoricalLevel(final int vectorId, final int categoricalLevelIndex, final Vec vec) {
-      final String[] escapedDomain = _escapedCategoricalVecDomains[vectorId];
-
-      if (escapedDomain == null) {
-        return vec.factor(categoricalLevelIndex);
-      } else {
-        return escapedDomain[categoricalLevelIndex];
-      }
-
     }
 
     private static final Pattern DOUBLE_QUOTE_PATTERN = Pattern.compile("\"");
