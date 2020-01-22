@@ -1642,6 +1642,7 @@ public class Frame extends Lockable<Frame> {
      * @return A 2D array of String[][]. Elements can be null of give domain does not need escaping.
      */
     private String[][] escapeCategoricalVecDomains(final Chunk[] chunks) {
+      if(chunks == null) return null;
       final String[][] localEscapedCategoricalVecDomains = new String[chunks.length][];
 
       for (int i = 0; i < chunks.length; i++) {
