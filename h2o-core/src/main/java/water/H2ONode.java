@@ -164,6 +164,10 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     static int SIZE = SIZE_OF_IP /* ip */ + 2 /* port */;
   }
 
+  public String getIp() {
+    return _key.getHostString();
+  }
+
   public String getIpPortString() {
     return _key.getIpPortString();
   }

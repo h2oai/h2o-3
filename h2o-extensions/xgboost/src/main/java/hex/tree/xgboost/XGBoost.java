@@ -310,7 +310,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._sparse = isTrainDatasetSparse();
       }
 
-      XGBoostSetupTask setupTask = null;
       File featureMapFile = null;
       try {
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(_train);
@@ -336,37 +335,21 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         if (_parms.hasCheckpoint()) {
           checkpointBytes = model.model_info()._boosterBytes;
         }
-        setupTask = new XGBoostSetupTask(model, _parms, boosterParms, checkpointBytes, getWorkerEnvs(rt), trainFrameNodes).run();
+        XGBoostSetupTask setupTask = new XGBoostSetupTask(model, _parms, boosterParms, checkpointBytes, getWorkerEnvs(rt), trainFrameNodes).run();
         try {
-          // initial iteration
           XGBoostUpdateTask nullModelTask = new XGBoostUpdateTask(setupTask, 0).run();
           BoosterProvider boosterProvider = new BoosterProvider(model.model_info(), featureMapFile, nullModelTask);
-
-          // train the model
           scoreAndBuildTrees(setupTask, boosterProvider, model);
-
-          // shutdown rabit & XGB native resources
-          XGBoostCleanupTask.cleanUp(setupTask);
-          setupTask = null;
-
-          waitOnRabitWorkers(rt);
         } finally {
+          XGBoostCleanupTask.cleanUp(setupTask);
           stopRabitTracker(rt);
         }
       } catch (XGBoostError xgBoostError) {
-        xgBoostError.printStackTrace();
         throw new RuntimeException("XGBoost failure", xgBoostError);
       } finally {
         if (featureMapFile != null) {
           if (! featureMapFile.delete()) {
             Log.warn("Unable to delete file " + featureMapFile + ". Please do a manual clean-up.");
-          }
-        }
-        if (setupTask != null) {
-          try {
-            XGBoostCleanupTask.cleanUp(setupTask);
-          } catch (Exception e) {
-            Log.err("XGBoost clean-up failed - this could leak memory!", e);
           }
         }
         // Unlock & save results
@@ -461,19 +444,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
 
-    // RT should not be started for 1 node clouds
-    private void waitOnRabitWorkers(RabitTrackerH2O rt) {
-      if(H2O.CLOUD.size() > 1) {
-        rt.waitFor(0);
-      }
-    }
-
-    /**
-     *
-     * @param rt Rabit tracker to stop
-     */
     private void stopRabitTracker(RabitTrackerH2O rt) {
       if(H2O.CLOUD.size() > 1) {
+        rt.waitFor(0);
         rt.stop();
       }
     }
