@@ -13,7 +13,6 @@ dependencies {
   if (project.hasProperty("doIncludeMojoPipeline") && project.doIncludeMojoPipeline == "true") {
     compile project(":h2o-ext-mojo-pipeline")
   }
-  compile project(":h2o-persist-gcs")
   // Note: orc parser is included at the assembly level for each
   // Hadoop distribution
 }
