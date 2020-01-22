@@ -29,38 +29,43 @@ public class TargetEncoderBuilder extends ModelBuilder<TargetEncoderModel, Targe
     super(new TargetEncoderModel.TargetEncoderParameters(), startupOnce);
   }
 
-  @Override
-  public void init(boolean expensive) {
-    super.init(expensive);
-  }
-
   private class TargetEncoderDriver extends Driver {
     @Override
     public void computeImpl() {
-      // In case ModelBuilder is registered with default model parameters ( i.e. without training frame etc.) we want to init it at this stage as well
-      if(_startUpOnceModelBuilder) init(false);
+      _targetEncoderModel = null;
+      try {
+        init(true);
 
-      final int numColsRemoved = hasFoldCol() ? 2 : 1; // Response is always at the last index, fold column is on the index before.
+        final int numColsRemoved = hasFoldCol() ? 2 : 1; // Response is always at the last index, fold column is on the index before.
+        final String[] encodedColumns = Arrays.copyOf(train().names(), train().names().length - numColsRemoved);
+        TargetEncoder tec = new TargetEncoder(encodedColumns);
 
-      final String[] encodedColumns = Arrays.copyOf(train().names(), train().names().length - numColsRemoved);
-      TargetEncoder tec = new TargetEncoder(encodedColumns);
+        TargetEncoderModel.TargetEncoderOutput emptyOutput =
+                new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, new IcedHashMapGeneric<>(), Double.NaN);
+        TargetEncoderModel model = new TargetEncoderModel(dest(), _parms, emptyOutput, tec);
+        _targetEncoderModel = model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
 
-      Scope.untrack(train().keys());
+        Scope.untrack(train().keys());
 
-      IcedHashMapGeneric<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._fold_column);
+        IcedHashMapGeneric<String, Frame> _targetEncodingMap = tec.prepareEncodingMap(train(), _parms._response_column, _parms._fold_column);
 
-      // Mean could be computed from any encoding map as response column is shared
-      double priorMean = tec.calculatePriorMean(_targetEncodingMap.entrySet().iterator().next().getValue());
+        // Mean could be computed from any encoding map as response column is shared
+        double priorMean = tec.calculatePriorMean(_targetEncodingMap.entrySet().iterator().next().getValue());
 
-      for(Map.Entry<String, Frame> entry: _targetEncodingMap.entrySet()) {
-        Frame frameWithEncodingMap = entry.getValue();
-        Scope.untrack(frameWithEncodingMap.keys());
+        for(Map.Entry<String, Frame> entry: _targetEncodingMap.entrySet()) {
+          Frame frameWithEncodingMap = entry.getValue();
+          Scope.untrack(frameWithEncodingMap.keys());
+        }
+
+        disableIgnoreConstColsFeature();
+        _targetEncoderModel._output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, _targetEncodingMap, priorMean);
+        _job.update(1);
+        _targetEncoderModel.update(_job);
+      } finally {
+        if (_targetEncoderModel != null) {
+          _targetEncoderModel.unlock(_job);
+        }
       }
-
-      disableIgnoreConstColsFeature();
-      TargetEncoderModel.TargetEncoderOutput output = new TargetEncoderModel.TargetEncoderOutput(TargetEncoderBuilder.this, _targetEncodingMap, priorMean);
-      _targetEncoderModel = new TargetEncoderModel(_result, _parms, output, tec);
-      DKV.put(_targetEncoderModel);
     }
 
     private void disableIgnoreConstColsFeature() {
