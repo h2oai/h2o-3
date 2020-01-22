@@ -160,11 +160,7 @@ public final class PersistGcs extends Persist {
       try {
         Iterable<Blob> values = storageProvider.getStorage().list(bk[0], Storage.BlobListOption.prefix(bk[1])).getValues();
         values.forEach(blob -> {
-          final String blobPath = new StringBuilder("gs://")
-                  .append(blob.getBucket())
-                  .append("/")
-                  .append(blob.getName())
-                  .toString();
+                  final String blobPath = "gs://" + blob.getBucket() + "/" + blob.getName();
                   final Key k = GcsFileVec.make(blobPath, blob.getSize());
                   keys.add(k.toString());
                   files.add(blobPath);
