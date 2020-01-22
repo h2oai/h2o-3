@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-This option is used to specify the minimum number of points each cluster must have in it. This helps avoid local solutions with empty clusters and makes K-Means less prone to local minima. If enabled, it explicitly adds :math:`k` constraints to the underlying clustering optomization problem requiring that cluster :math:`h` have at least :math:`x` points.
+This option specifies how many points should be in each cluster. This makes K-Means less prone to local minima and helps avoid local solutions with empty clusters. If enabled, it explicitly adds :math:`k` constraints to the underlying clustering optomization problem requiring that cluster :math:`h` have at least :math:`x` points.
 
 **Note:** The length of the constraints array has to be same as the number of clusters.
 
