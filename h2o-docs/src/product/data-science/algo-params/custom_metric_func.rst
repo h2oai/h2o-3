@@ -3,7 +3,7 @@
 ``custom_metric_func``
 ----------------------
 
-- Available in: GBM, DRF, GLM 
+- Available in: GBM, DRF 
 - Hyperparameter: no
 
 Description
