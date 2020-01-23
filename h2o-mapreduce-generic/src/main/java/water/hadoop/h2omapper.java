@@ -35,7 +35,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
 
   public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
   public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
-  public static final String H2O_HIVE_HOST = "h2o.hive.host";
+  public static final String H2O_HIVE_JDBC_URL = "h2o.hive.jdbc.url";
   public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
   
   public static final String H2O_IP_ENVVAR = "h2o.ip.envvar";
