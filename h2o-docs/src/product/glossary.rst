@@ -53,10 +53,8 @@ Glossary
 .. _cluster:
 
 **Cluster**
-
-1. A group of H2O nodes that work together; when a job is submitted to a cluster, all the nodes in the cluster work on a portion of the job. Synonym for `cloud`_.
-
-2. In statistics, a cluster is a group of observations from a data set identified as similar according to a particular clustering algorithm.
+	1. A group of H2O nodes that work together; when a job is submitted to a cluster, all the nodes in the cluster work on a portion of the job. Synonym for `cloud`_.
+	2. In statistics, a cluster is a group of observations from a data set identified as similar according to a particular clustering algorithm.
 
 **Confusion matrix**
 	Table that depicts the performance of the algorithm (using the false positive rate, false negative, true positive, and true negative rates). 
