@@ -83,123 +83,123 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
+        library(h2o)
+        h2o.init()
 
-    # import the cars dataset: 
-    # this dataset is used to classify whether or not a car is economical based on 
-    # the car's displacement, power, weight, and acceleration, and the year it was made 
-    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import the cars dataset: 
+        # this dataset is used to classify whether or not a car is economical based on 
+        # the car's displacement, power, weight, and acceleration, and the year it was made 
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # convert response column to a factor
-    cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+        # convert response column to a factor
+        cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
-    # set the predictor names and the response column name
-    predictors <- c("displacement","power","weight","acceleration","year")
-    response <- "economy_20mpg"
+        # set the predictor names and the response column name
+        predictors <- c("displacement","power","weight","acceleration","year")
+        response <- "economy_20mpg"
 
-    # split into train and validation sets
-    cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-    train <- cars.split[[1]]
-    valid <- cars.split[[2]]
+        # split into train and validation sets
+        cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+        train <- cars.split[[1]]
+        valid <- cars.split[[2]]
 
-    # build a GBM with 1 tree (ntrees = 1) for the first model:
-    cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-                        validation_frame = valid, ntrees = 1, seed = 1234)
+        # build a GBM with 1 tree (ntrees = 1) for the first model:
+        cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
+                            validation_frame = valid, ntrees = 1, seed = 1234)
 
-    # print the auc for the validation data
-    print(h2o.auc(cars_gbm, valid = TRUE))
-    [1] 0.9690799
+        # print the auc for the validation data
+        print(h2o.auc(cars_gbm, valid = TRUE))
+        [1] 0.9690799
 
-    # re-start the training process on a saved GBM model using the ‘checkpoint‘ argument:
-    # the checkpoint argument requires the model id of the model on which you want to 
-    # continue building
-    # get the model's id from "cars_gbm" model using `cars_gbm@model_id`
-    # the first model has 1 tree, let's continue building the GBM with an additional 49 
-    # more trees, so set ntrees = 50
+        # re-start the training process on a saved GBM model using the ‘checkpoint‘ argument:
+        # the checkpoint argument requires the model id of the model on which you want to 
+        # continue building
+        # get the model's id from "cars_gbm" model using `cars_gbm@model_id`
+        # the first model has 1 tree, let's continue building the GBM with an additional 49 
+        # more trees, so set ntrees = 50
 
-    # to see how many trees the original model built you can look at the `ntrees` attribute
-    print(paste("Number of trees built for cars_gbm model:", cars_gbm@allparameters$ntrees))
-    [1] "Number of trees built for cars_gbm model: 1"
+        # to see how many trees the original model built you can look at the `ntrees` attribute
+        print(paste("Number of trees built for cars_gbm model:", cars_gbm@allparameters$ntrees))
+        [1] "Number of trees built for cars_gbm model: 1"
 
-    # build and train model with 49 additional trees for a total of 50 trees:
-    cars_gbm_continued <- h2o.gbm(x = predictors, y = response, training_frame = train,
-                                  validation_frame = valid, 
-                                  checkpoint = cars_gbm@model_id, 
-                                  ntrees = 50, 
-                                  seed = 1234)
+        # build and train model with 49 additional trees for a total of 50 trees:
+        cars_gbm_continued <- h2o.gbm(x = predictors, y = response, training_frame = train,
+                                      validation_frame = valid, 
+                                      checkpoint = cars_gbm@model_id, 
+                                      ntrees = 50, 
+                                      seed = 1234)
 
-    # print the auc for the validation data
-    print(h2o.auc(cars_gbm_continued, valid = TRUE))
-    [1] 0.9803922
+        # print the auc for the validation data
+        print(h2o.auc(cars_gbm_continued, valid = TRUE))
+        [1] 0.9803922
 
-    # to see how many trees the continuation model built you can look at the `ntrees` attribute
-    print(paste("Number of trees built for cars_gbm model:", cars_gbm_continued@allparameters$ntrees))
-    [1] "Number of trees built for cars_gbm model: 50"
+        # to see how many trees the continuation model built you can look at the `ntrees` attribute
+        print(paste("Number of trees built for cars_gbm model:", cars_gbm_continued@allparameters$ntrees))
+        [1] "Number of trees built for cars_gbm model: 50"
 
-    # you can also use checkpointing to pass in a new dataset 
-    # (see options above for parameters you cannot change)
-    # simply change out the training and validation frames with your new dataset
-
-
+        # you can also use checkpointing to pass in a new dataset 
+        # (see options above for parameters you cannot change)
+        # simply change out the training and validation frames with your new dataset
 
 
-   .. code-block:: python
 
-    import h2o
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
-    h2o.init()
 
-    # import the cars dataset:
-    # this dataset is used to classify whether or not a car is economical based on
-    # the car's displacement, power, weight, and acceleration, and the year it was made
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+   .. code-tab:: python
 
-    # convert response column to a factor
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        import h2o
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        h2o.init()
 
-    # set the predictor names and the response column name
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response = "economy_20mpg"
+        # import the cars dataset:
+        # this dataset is used to classify whether or not a car is economical based on
+        # the car's displacement, power, weight, and acceleration, and the year it was made
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # split into train and validation sets
-    train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        # convert response column to a factor
+        cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 
-    # build a GBM with 1 tree (ntrees = 1) for the first model:
-    cars_gbm = H2OGradientBoostingEstimator(ntrees = 1, seed = 1234)
-    cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+        # set the predictor names and the response column name
+        predictors = ["displacement","power","weight","acceleration","year"]
+        response = "economy_20mpg"
 
-    # print the auc for the validation data
-    print(cars_gbm.auc(valid=True))
-    0.981146304676
+        # split into train and validation sets
+        train, valid = cars.split_frame(ratios = [.8], seed = 1234)
 
-    # re-start the training process on a saved GBM model using the ‘checkpoint‘ argument:
-    # the checkpoint argument requires the model id of the model on which you wish to continue building
-    # get the model's id from "cars_gbm" model using `cars_gbm.model_id`
-    # the first model has 1 tree, let's continue building the GBM with an additional 49 more trees, 
-    # so set ntrees = 50
+        # build a GBM with 1 tree (ntrees = 1) for the first model:
+        cars_gbm = H2OGradientBoostingEstimator(ntrees = 1, seed = 1234)
+        cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-    # to see how many trees the original model built you can look at the `ntrees` attribute
-    print("Number of trees built for cars_gbm model:", cars_gbm.ntrees)
-    ('Number of trees built for cars_gbm model:', 20)
+        # print the auc for the validation data
+        print(cars_gbm.auc(valid=True))
+        0.981146304676
 
-    # build and train model with 49 additional trees for a total of 50 trees:
-    cars_gbm_continued = H2OGradientBoostingEstimator(checkpoint= cars_gbm.model_id, ntrees = 50, seed = 1234)
-    cars_gbm_continued.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+        # re-start the training process on a saved GBM model using the ‘checkpoint‘ argument:
+        # the checkpoint argument requires the model id of the model on which you wish to continue building
+        # get the model's id from "cars_gbm" model using `cars_gbm.model_id`
+        # the first model has 1 tree, let's continue building the GBM with an additional 49 more trees, 
+        # so set ntrees = 50
 
-    # print the auc for the validation data
-    cars_gbm_continued.auc(valid=True)
-    0.9803921568627451
+        # to see how many trees the original model built you can look at the `ntrees` attribute
+        print("Number of trees built for cars_gbm model:", cars_gbm.ntrees)
+        ('Number of trees built for cars_gbm model:', 20)
 
-    # to see how many trees the continuation model built you can look at the `ntrees` attribute
-    print("Number of trees built for cars_gbm model:", cars_gbm_continued.ntrees)
-    ('Number of trees built for cars_gbm model:', 50)
+        # build and train model with 49 additional trees for a total of 50 trees:
+        cars_gbm_continued = H2OGradientBoostingEstimator(checkpoint= cars_gbm.model_id, ntrees = 50, seed = 1234)
+        cars_gbm_continued.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-    # you can also use checkpointing to pass in a new dataset in addition to increasing 
-    # the number of trees/epochs. (See options above for parameters you cannot change.)
-    # simply change out the training and validation frames with your new dataset.
+        # print the auc for the validation data
+        cars_gbm_continued.auc(valid=True)
+        0.9803921568627451
+
+        # to see how many trees the continuation model built you can look at the `ntrees` attribute
+        print("Number of trees built for cars_gbm model:", cars_gbm_continued.ntrees)
+        ('Number of trees built for cars_gbm model:', 50)
+
+        # you can also use checkpointing to pass in a new dataset in addition to increasing 
+        # the number of trees/epochs. (See options above for parameters you cannot change.)
+        # simply change out the training and validation frames with your new dataset.
 
 

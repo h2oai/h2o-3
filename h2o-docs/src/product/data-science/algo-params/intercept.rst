@@ -22,61 +22,61 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the iris dataset:
-	# this dataset is used to classify the type of iris plant
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Iris
-	iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+		# import the iris dataset:
+		# this dataset is used to classify the type of iris plant
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Iris
+		iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 
-	# convert response column to a factor
-	iris['class'] <- as.factor(iris['class'])
+		# convert response column to a factor
+		iris['class'] <- as.factor(iris['class'])
 
-	# set the predictor names and the response column name
-	predictors <- colnames(iris)[-length(iris)]
-	response <- 'class'
+		# set the predictor names and the response column name
+		predictors <- colnames(iris)[-length(iris)]
+		response <- 'class'
 
-	# split into train and validation
-	iris.splits <- h2o.splitFrame(data = iris, ratios = .8)
-	train <- iris.splits[[1]]
-	valid <- iris.splits[[2]]
+		# split into train and validation
+		iris.splits <- h2o.splitFrame(data = iris, ratios = .8)
+		train <- iris.splits[[1]]
+		valid <- iris.splits[[2]]
 
-	# try using the `intercept` parameter:
-	iris_glm <- h2o.glm(x = predictors, y = response, family = 'multinomial', 
-	                    intercept = TRUE, training_frame = train, validation_frame = valid)
+		# try using the `intercept` parameter:
+		iris_glm <- h2o.glm(x = predictors, y = response, family = 'multinomial', 
+		                    intercept = TRUE, training_frame = train, validation_frame = valid)
 
-	# print the logloss for the validation data
-	print(h2o.logloss(iris_glm, valid = TRUE))
+		# print the logloss for the validation data
+		print(h2o.logloss(iris_glm, valid = TRUE))
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+		h2o.init()
 
-	# import the iris dataset:
-	# this dataset is used to classify the type of iris plant
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Iris
-	iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+		# import the iris dataset:
+		# this dataset is used to classify the type of iris plant
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Iris
+		iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 
-	# convert response column to a factor
-	iris['class'] = iris['class'].asfactor()
+		# convert response column to a factor
+		iris['class'] = iris['class'].asfactor()
 
-	# set the predictor names and the response column name
-	predictors = iris.columns[:-1]
-	response = 'class'
+		# set the predictor names and the response column name
+		predictors = iris.columns[:-1]
+		response = 'class'
 
-	# split into train and validation sets
-	train, valid = iris.split_frame(ratios = [.8])
+		# split into train and validation sets
+		train, valid = iris.split_frame(ratios = [.8])
 
-	# try using the `intercept` parameter:
-	# Initialize and train a GLM
-	iris_glm = H2OGeneralizedLinearEstimator(family = 'multinomial', intercept = True)
-	iris_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+		# try using the `intercept` parameter:
+		# Initialize and train a GLM
+		iris_glm = H2OGeneralizedLinearEstimator(family = 'multinomial', intercept = True)
+		iris_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# print the logloss for the validation data
-	iris_glm.logloss(valid = True)
+		# print the logloss for the validation data
+		iris_glm.logloss(valid = True)

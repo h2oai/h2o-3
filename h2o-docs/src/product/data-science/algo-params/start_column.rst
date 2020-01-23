@@ -18,61 +18,61 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
-    # import the heart dataset
-    heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        library(h2o)
+        h2o.init()
+        # import the heart dataset
+        heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
-    # set the predictor name and response column
-    x <- "age"
-    y <- "event" 
+        # set the predictor name and response column
+        x <- "age"
+        y <- "event" 
 
-    # set the start and stop columns
-    start <- "start"
-    stop <- "stop"
+        # set the start and stop columns
+        start <- "start"
+        stop <- "stop"
 
-    # train your model
-    coxph.h2o <- h2o.coxph(x=x, event_column=y, 
-                           start_column=start, stop_column=stop, 
-                           training_frame=heart.hex)
+        # train your model
+        coxph.h2o <- h2o.coxph(x=x, event_column=y, 
+                               start_column=start, stop_column=stop, 
+                               training_frame=heart.hex)
 
-    # view the model details
-    coxph.h2o
-    Model Details:
-    ==============
+        # view the model details
+        coxph.h2o
+        Model Details:
+        ==============
 
-    H2OCoxPHModel: coxph
-    Model ID:  CoxPH_model_R_1527700369755_2 
-    Call:
-    "Surv(start, stop, event) ~ age"
+        H2OCoxPHModel: coxph
+        Model ID:  CoxPH_model_R_1527700369755_2 
+        Call:
+        "Surv(start, stop, event) ~ age"
 
-          coef exp(coef) se(coef)    z     p
-    age 0.0307    1.0312   0.0143 2.15 0.031
+              coef exp(coef) se(coef)    z     p
+        age 0.0307    1.0312   0.0143 2.15 0.031
 
-    Likelihood ratio test=5.17  on 1 df, p=0.023
-    n= 172, number of events= 75
+        Likelihood ratio test=5.17  on 1 df, p=0.023
+        n= 172, number of events= 75
 
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    import h2o
-    from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
-    h2o.init()
+        import h2o
+        from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
+        h2o.init()
 
-    # import the heart dataset
-    heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+        # import the heart dataset
+        heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
-    # set the parameters
-    coxph = H2OCoxProportionalHazardsEstimator(start_column="start", 
-                                               stop_column="stop", 
-                                               ties="breslow")
+        # set the parameters
+        coxph = H2OCoxProportionalHazardsEstimator(start_column="start", 
+                                                   stop_column="stop", 
+                                                   ties="breslow")
 
-    # train your model
-    coxph.train(x="age", y="event", training_frame=heart)
+        # train your model
+        coxph.train(x="age", y="event", training_frame=heart)
 
-    # view the model details
-    coxph
+        # view the model details
+        coxph

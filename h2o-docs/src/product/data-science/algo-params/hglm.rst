@@ -23,58 +23,58 @@ none
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
+        library(h2o)
+        h2o.init()
 
-    # Import the semiconductor dataset
-    h2odata <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/semiconductor.csv")
+        # Import the semiconductor dataset
+        h2odata <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/semiconductor.csv")
 
-    # Set the response, predictor, and random columns
-    yresp <- "y"
-    xlist <- c("x1", "x3", "x5", "x6")
-    z <- c(1)
+        # Set the response, predictor, and random columns
+        yresp <- "y"
+        xlist <- c("x1", "x3", "x5", "x6")
+        z <- c(1)
 
-    # Convert the "Device" column to a factor
-    h2odata$Device <- h2o.asfactor(h2odata$Device)
+        # Convert the "Device" column to a factor
+        h2odata$Device <- h2o.asfactor(h2odata$Device)
 
-    # Train and view the model
-    m11H2O <- h2o.glm(x=xlist, 
-                      y=yresp, 
-                      family="gaussian", 
-                      rand_family = c("gaussian"), 
-                      rand_link=c("identity"), 
-                      training_frame=h2odata, 
-                      HGLM=TRUE, 
-                      random_columns=z, 
-                      calc_like=TRUE)
-    print(m11H2O)
+        # Train and view the model
+        m11H2O <- h2o.glm(x=xlist, 
+                          y=yresp, 
+                          family="gaussian", 
+                          rand_family = c("gaussian"), 
+                          rand_link=c("identity"), 
+                          training_frame=h2odata, 
+                          HGLM=TRUE, 
+                          random_columns=z, 
+                          calc_like=TRUE)
+        print(m11H2O)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    import h2o
-    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-    h2o.init()
+        import h2o
+        from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        h2o.init()
 
-    # Import the semiconductor dataset
-    h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/semiconductor.csv")
+        # Import the semiconductor dataset
+        h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/semiconductor.csv")
 
-    # Set the response, predictor, and random columns
-    y = "y"
-    x = ["x1","x3","x5","x6"]
-    z = "Device"
+        # Set the response, predictor, and random columns
+        y = "y"
+        x = ["x1","x3","x5","x6"]
+        z = "Device"
 
-    # Convert the "Device" column to a factor
-    h2o_data["Device"] = h2o_data["Device"].asfactor()
+        # Convert the "Device" column to a factor
+        h2o_data["Device"] = h2o_data["Device"].asfactor()
 
-    # Train and view the model
-    h2o_glm = H2OGeneralizedLinearEstimator(HGLM=True, 
-                                            family="gaussian", 
-                                            rand_family=["gaussian"], 
-                                            random_columns=[z],
-                                            rand_link=["identity"],
-                                            calc_like=True)
-    h2o_glm.train(x=x, y=y, training_frame=h2o_data)
-    print(h2o_glm)
+        # Train and view the model
+        h2o_glm = H2OGeneralizedLinearEstimator(HGLM=True, 
+                                                family="gaussian", 
+                                                rand_family=["gaussian"], 
+                                                random_columns=[z],
+                                                rand_link=["identity"],
+                                                calc_like=True)
+        h2o_glm.train(x=x, y=y, training_frame=h2o_data)
+        print(h2o_glm)

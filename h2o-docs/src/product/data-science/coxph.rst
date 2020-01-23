@@ -82,33 +82,35 @@ Coefficients
 Model Statistics
 ''''''''''''''''
 
-- Cox and Snell Generalized :math:`R^2`
+-  Cox and Snell Generalized :math:`R^2`
 
   :math:`\tt{R^2} := 1 - \exp\bigg(\frac{2\big(pl(\beta^{(0)}) - pl(\hat{\beta})\big)}{n}\bigg)`
 
-- Maximum Possible Value for Cox and Snell Generalized :math:`R^2`
+-  Maximum Possible Value for Cox and Snell Generalized :math:`R^2`
 
   :math:`\tt{Max. R^2} := 1 - \exp\big(\frac{2 pl(\beta^{(0)})}{n}\big)`
 
-- Likelihood Ratio Test
+-  Likelihood Ratio Test
 
   :math:`2\big(pl(\hat{\beta}) - pl(\beta^{(0)})\big)`, which under the null
   hypothesis of :math:`\hat{beta} = \beta^{(0)}` follows a chi-square
   distribution with :math:`p` degrees of freedom.
 
-Wald Test
+-  Wald Test 
+
   :math:`\big(\hat{\beta} - \beta^{(0)}\big)^T I\big(\hat{\beta}\big) \big(\hat{\beta} - \beta^{(0)}\big)`,
   which under the null hypothesis of :math:`\hat{beta} = \beta^{(0)}` follows a
   chi-square distribution with :math:`p` degrees of freedom. When there is a
   single coefficient in the model, the Wald test statistic value is that
   coefficient's z statistic.
 
-Score (Log-Rank) Test
+-  Score (Log-Rank) Test
+
   :math:`U\big(\beta^{(0)}\big)^T \hat{I}\big(\beta^{0}\big)^{-1} U\big(\beta^{(0)}\big)`,
   which under the null hypothesis of :math:`\hat{beta} = \beta^{(0)}` follows a
   chi-square distribution with :math:`p` degrees of freedom.
 
-where
+ where
 
   :math:`n` is the number of complete cases
 

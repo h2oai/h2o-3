@@ -61,6 +61,31 @@ When building a model the user should perform the following steps to make sure t
 
 4. Save the H2O logs.  Refer to [Downloading Logs](https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/logs.rst)
 
+
+ You do not need to explicitly set a seed to make a GBM model reproducible.  If no seed is set, then H2O-3 will randomly choose a seed.  This seed is saved in the binary model.  To reproduce your model, you can extract the seed from the binary model and re-train the GBM with the seed set.
+   
+ .. tabs::
+    .. code-tab:: r R
+
+         # Train GBM without Seed
+         gbm_v1 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7)
+
+         # Reproduce GBM
+         seed <- h2o.get_seed(gbm_v1)
+         gbm_v2 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7, seed = seed)
+
+    .. code-tab:: python
+
+         # Train GBM without Seed
+         from h2o.estimators import H2OGradientBoostingEstimator
+         gbm_v1 = H2OGradientBoostingEstimator(sample_rate = 0.7)
+         gbm_v1.train(y = "Species", training_frame = df)
+
+         # Reproduce GBM
+         seed = gbm_v1.params.get('seed').get('actual')
+         gbm_v2 = H2OGradientBoostingEstimator(sample_rate = 0.7, seed = seed)
+         gbm_v2.train(y = "Species", training_frame = df)
+
 5. Train the GBM model using the same:
 
  - training data (information about the training data saved in Step 1)
@@ -69,27 +94,27 @@ When building a model the user should perform the following steps to make sure t
 
 You do not need to explicitly set a seed to make a GBM model reproducible.  If no seed is set, then H2O-3 will randomly choose a seed.  This seed is saved in the binary model.  To reproduce your model, you can extract the seed from the binary model and re-train the GBM with the seed set.
  
-.. example-code::
-  .. code-block:: r
+.. tabs::
+  .. code-tab:: r R
 
-     # Train GBM without Seed
-     gbm_v1 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7)
+       # Train GBM without Seed
+       gbm_v1 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7)
 
-     # Reproduce GBM
-     seed <- h2o.get_seed(gbm_v1)
-     gbm_v2 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7, seed = seed)
+       # Reproduce GBM
+       seed <- h2o.get_seed(gbm_v1)
+       gbm_v2 <- h2o.gbm(y = "Species", training_frame = df, sample_rate = 0.7, seed = seed)
 
-  .. code-block:: python
+  .. code-tab:: python
 
-     # Train GBM without Seed
-     from h2o.estimators import H2OGradientBoostingEstimator
-     gbm_v1 = H2OGradientBoostingEstimator(sample_rate = 0.7)
-     gbm_v1.train(y = "Species", training_frame = df)
+       # Train GBM without Seed
+       from h2o.estimators import H2OGradientBoostingEstimator
+       gbm_v1 = H2OGradientBoostingEstimator(sample_rate = 0.7)
+       gbm_v1.train(y = "Species", training_frame = df)
 
-     # Reproduce GBM
-     seed = gbm_v1.params.get('seed').get('actual')
-     gbm_v2 = H2OGradientBoostingEstimator(sample_rate = 0.7, seed = seed)
-     gbm_v2.train(y = "Species", training_frame = df)
+       # Reproduce GBM
+       seed = gbm_v1.params.get('seed').get('actual')
+       gbm_v2 = H2OGradientBoostingEstimator(sample_rate = 0.7, seed = seed)
+       gbm_v2.train(y = "Species", training_frame = df)
 
 How can I reproduce a model if machines have a different number of CPU cores?
 #############################################################################
@@ -102,6 +127,24 @@ In order to reproduce the model on a machine with a different number of CPU core
 
 **If the logs show that rebalancing has occurred, reproducibility is not possible.** If the logs do not mention rebalancing, continue to Step 2.
 
+
+   .. tabs::
+      .. code-tab:: r R
+
+           # Load data with defined chunk size
+           raw_train <- h2o.importFile(PATH_TO_TRAIN_FILE, parse = FALSE)
+           training_frame <- h2o.parseRaw(data=raw_train, 
+                                          chunk_size = CHUNK_SIZE_TRAIN, 
+                                          destination_frame = "train.hex")
+
+      .. code-tab:: python
+
+           # Load data with defined chunk size       
+           raw_train = h2o.import_file(PATH_TO_TRAIN_FILE, parse = False)
+           setup = h2o.parse_setup(raw_train)
+           setup['chunk_size'] = CHUNK_SIZE_TRAIN
+           training_frame = h2o.parse_raw(setup)
+
 2. In the logs of the initial model, search for the line that says: **ParseSetup heuristic**. On that line in the logs, the chunk size will be defined. In this example, the chunk size is 1016493.
 
 
@@ -110,22 +153,22 @@ In order to reproduce the model on a machine with a different number of CPU core
   
 3. Load data with the defined chunk size.
 
- .. example-code::
-    .. code-block:: r
+ .. tabs::
+    .. code-tab:: r R
 
-     # Load data with defined chunk size
-     raw_train <- h2o.importFile(PATH_TO_TRAIN_FILE, parse = FALSE)
-     training_frame <- h2o.parseRaw(data=raw_train, 
-                                    chunk_size = CHUNK_SIZE_TRAIN, 
-                                    destination_frame = "train.hex")
+       # Load data with defined chunk size
+       raw_train <- h2o.importFile(PATH_TO_TRAIN_FILE, parse = FALSE)
+       training_frame <- h2o.parseRaw(data=raw_train, 
+                                      chunk_size = CHUNK_SIZE_TRAIN, 
+                                      destination_frame = "train.hex")
 
-    .. code-block:: python
+    .. code-tab:: python
 
-     # Load data with defined chunk size       
-     raw_train = h2o.import_file(PATH_TO_TRAIN_FILE, parse = False)
-     setup = h2o.parse_setup(raw_train)
-     setup['chunk_size'] = CHUNK_SIZE_TRAIN
-     training_frame = h2o.parse_raw(setup)
+       # Load data with defined chunk size       
+       raw_train = h2o.import_file(PATH_TO_TRAIN_FILE, parse = False)
+       setup = h2o.parse_setup(raw_train)
+       setup['chunk_size'] = CHUNK_SIZE_TRAIN
+       training_frame = h2o.parse_raw(setup)
 
 4. Repeat Steps 2-3 if you used validation data.  
 5. Train your model. If you are using Flow, you will be able to see the datasets from the Frames menu when you select **Data > List All Frames**. 
