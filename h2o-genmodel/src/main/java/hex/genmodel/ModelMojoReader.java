@@ -171,6 +171,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     boolean isSupervised = readkv("supervised");
     _model = makeModel(columns, domains, isSupervised ? columns[columns.length - 1] : null);
     _model._uuid = readkv("uuid");
+    _model._algoName = readkv("algo");
     _model._h2oVersion = readkv("h2o_version", "unknown");
     _model._category = hex.ModelCategory.valueOf((String) readkv("category"));
     _model._supervised = isSupervised;
@@ -185,9 +186,8 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     checkMaxSupportedMojoVersion();
     readModelData();
     if (readModelMetadata) {
-      final String algoName = readkv("algo");
       final String algoFullName = readkv("algorithm"); // The key'algo' contains the shortcut, 'algorithm' is the long version
-      _model._modelDescriptor = new ModelDescriptorBuilder(_model, algoName, algoFullName)
+      _model._modelDescriptor = new ModelDescriptorBuilder(_model, algoFullName)
               .build();
       _model._modelAttributes = readModelSpecificAttributes();
     }

@@ -314,10 +314,12 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   /**
    * Returns keys of all models included in this object.
    *
-   * @return list of model keys
+   * @return list of model keys sorted lexically
    */
   public Key<Model>[] getModelKeys() {
-    return _models.values().toArray(new Key[_models.size()]);
+    Key<Model>[] keys = _models.values().toArray(new Key[_models.size()]);
+    Arrays.sort(keys);
+    return keys;
   }
 
   /**

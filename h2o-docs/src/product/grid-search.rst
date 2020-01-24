@@ -645,6 +645,9 @@ GBM Hyperparameters
 -  ``max_abs_leafnode_pred``
 -  ``pred_noise_bandwidth``
 -  ``quantile_alpha``
+-  ``rand_family``
+-  ``rand_link``
+-  ``startval``
 -  ``tweedie_power``
 
 GLM Hyperparameters

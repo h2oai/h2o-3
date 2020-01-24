@@ -3,6 +3,7 @@ package water.persist;
 import com.google.cloud.ReadChannel;
 import com.google.cloud.WriteChannel;
 import com.google.cloud.storage.*;
+import com.google.cloud.storage.Storage.BucketField;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -157,11 +158,14 @@ public final class PersistGcs extends Persist {
       parseBucket(bk[0], files, keys, fails);
     } else {
       try {
-        Blob blob = storageProvider.getStorage().get(bk[0], bk[1]);
-        final GcsBlob gcsBlob = GcsBlob.of(blob.getBlobId());
-        final Key k = GcsFileVec.make(path, blob.getSize());
-        keys.add(k.toString());
-        files.add(path);
+        Iterable<Blob> values = storageProvider.getStorage().list(bk[0], Storage.BlobListOption.prefix(bk[1])).getValues();
+        values.forEach(blob -> {
+                  final String blobPath = "gs://" + blob.getBucket() + "/" + blob.getName();
+                  final Key k = GcsFileVec.make(blobPath, blob.getSize());
+                  keys.add(k.toString());
+                  files.add(blobPath);
+                }
+        );
       } catch (Throwable t) {
         Log.err(t);
         fails.add(path);

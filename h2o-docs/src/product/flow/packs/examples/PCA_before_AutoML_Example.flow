@@ -1,0 +1,133 @@
+{
+  "version": "1.0.0",
+  "cells": [
+    {
+      "type": "h3",
+      "input": "Import training and test data"
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/higgs/higgs_train_10k.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/higgs/higgs_train_10k.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/higgs/higgs_train_10k.csv\"]\n  destination_frame: \"higgs_train_10k.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 29\n  single_quotes: false\n  column_names: [\"response\",\"x1\",\"x2\",\"x3\",\"x4\",\"x5\",\"x6\",\"x7\",\"x8\",\"x9\",\"x10\",\"x11\",\"x12\",\"x13\",\"x14\",\"x15\",\"x16\",\"x17\",\"x18\",\"x19\",\"x20\",\"x21\",\"x22\",\"x23\",\"x24\",\"x25\",\"x26\",\"x27\",\"x28\"]\n  column_types: [\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 228293"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"higgs_train_10k.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "changeColumnType frame: \"higgs_train_10k.hex\", column: \"response\", type: 'enum'"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameData \"higgs_train_10k.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "importFiles [ \"../smalldata/higgs/higgs_test_5k.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "setupParse paths: [ \"../smalldata/higgs/higgs_test_5k.csv\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "parseFiles\n  paths: [\"../smalldata/higgs/higgs_test_5k.csv\"]\n  destination_frame: \"higgs_test_5k.hex\"\n  parse_type: \"CSV\"\n  separator: 44\n  number_columns: 29\n  single_quotes: false\n  column_names: [\"response\",\"x1\",\"x2\",\"x3\",\"x4\",\"x5\",\"x6\",\"x7\",\"x8\",\"x9\",\"x10\",\"x11\",\"x12\",\"x13\",\"x14\",\"x15\",\"x16\",\"x17\",\"x18\",\"x19\",\"x20\",\"x21\",\"x22\",\"x23\",\"x24\",\"x25\",\"x26\",\"x27\",\"x28\"]\n  column_types: [\"Enum\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\",\"Numeric\"]\n  delete_on_done: true\n  check_header: 1\n  chunk_size: 53958"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"higgs_test_5k.hex\""
+    },
+    {
+      "type": "h3",
+      "input": "Create a PCA model from the predictors columns (no target) of the training data"
+    },
+    {
+      "type": "cs",
+      "input": "assist buildModel, null, training_frame: \"higgs_train_10k.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "buildModel 'pca', {\"model_id\":\"pca-higgs\",\"training_frame\":\"higgs_train_10k.hex\",\"ignored_columns\":[\"response\"],\"ignore_const_cols\":true,\"transform\":\"NONE\",\"pca_method\":\"GramSVD\",\"pca_impl\":\"JAMA\",\"k\":10,\"max_iterations\":1000,\"use_all_factor_levels\":false,\"compute_metrics\":true,\"impute_missing\":false,\"seed\":-1,\"score_each_iteration\":false,\"max_runtime_secs\":0}"
+    },
+    {
+      "type": "cs",
+      "input": "getModel \"pca-higgs\""
+    },
+    {
+      "type": "h3",
+      "input": "Apply the PCA model to the training and test datasets and combine results with the original respective datasets"
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"pca-higgs\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"pca-higgs\", frame: \"higgs_train_10k.hex\", predictions_frame: \"prediction-higgs-train\""
+    },
+    {
+      "type": "cs",
+      "input": "bindFrames \"combined-prediction-higgs-train\", [ \"prediction-higgs-train\", \"higgs_train_10k.hex\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"pca-higgs\""
+    },
+    {
+      "type": "cs",
+      "input": "predict model: \"pca-higgs\", frame: \"higgs_test_5k.hex\", predictions_frame: \"prediction-higgs-test\""
+    },
+    {
+      "type": "cs",
+      "input": "bindFrames \"combined-prediction-higgs-test\", [ \"prediction-higgs-test\", \"higgs_test_5k.hex\" ]"
+    },
+    {
+      "type": "cs",
+      "input": "getFrameSummary \"combined-prediction-higgs-train\""
+    },
+    {
+      "type": "h3",
+      "input": "Apply AutoML on the combined training dataframe, excluding the non-PCA columns, and use the combined test dataframe for leaderboard"
+    },
+    {
+      "type": "cs",
+      "input": "assist runAutoML, training_frame: \"combined-prediction-higgs-train\", response_column: \"response\", leaderboard_frame: \"combined-prediction-higgs-test\""
+    },
+    {
+      "type": "cs",
+      "input": "runAutoML {\"input_spec\":{\"training_frame\":\"combined-prediction-higgs-train\",\"response_column\":\"response\",\"leaderboard_frame\":\"combined-prediction-higgs-test\",\"ignored_columns\":[\"x1\",\"x2\",\"x3\",\"x4\",\"x5\",\"x6\",\"x7\",\"x8\",\"x9\",\"x10\",\"x11\",\"x12\",\"x13\",\"x14\",\"x15\",\"x16\",\"x17\",\"x18\",\"x19\",\"x20\",\"x21\",\"x22\",\"x23\",\"x24\",\"x25\",\"x26\",\"x27\",\"x28\"],\"sort_metric\":\"AUTO\"},\"build_control\":{\"project_name\":\"automl-pca-higgs\",\"nfolds\":5,\"balance_classes\":false,\"stopping_criteria\":{\"seed\":-1,\"max_models\":7,\"max_runtime_secs\":360,\"max_runtime_secs_per_model\":0,\"stopping_rounds\":3,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001},\"keep_cross_validation_predictions\":false,\"keep_cross_validation_models\":false,\"keep_cross_validation_fold_assignment\":false},\"build_models\":{\"exclude_algos\":[],\"monotone_constraints\":[]}}, 'exec'"
+    },
+    {
+      "type": "cs",
+      "input": "getLeaderboard \"automl-pca-higgs@@response\""
+    },
+    {
+      "type": "h3",
+      "input": "For comparison, running AutoML on the same data, without applying PCA."
+    },
+    {
+      "type": "cs",
+      "input": "assist runAutoML, training_frame: \"higgs_train_10k.hex\", response_column: \"response\", leaderboard_frame: \"higgs_test_5k.hex\""
+    },
+    {
+      "type": "cs",
+      "input": "runAutoML {\"input_spec\":{\"training_frame\":\"higgs_train_10k.hex\",\"response_column\":\"response\",\"leaderboard_frame\":\"higgs_test_5k.hex\",\"ignored_columns\":[],\"sort_metric\":\"AUTO\"},\"build_control\":{\"nfolds\":5,\"balance_classes\":false,\"stopping_criteria\":{\"seed\":-1,\"max_models\":7,\"max_runtime_secs\":360,\"max_runtime_secs_per_model\":0,\"stopping_rounds\":3,\"stopping_metric\":\"AUTO\",\"stopping_tolerance\":0.001},\"keep_cross_validation_predictions\":false,\"keep_cross_validation_models\":false,\"keep_cross_validation_fold_assignment\":false},\"build_models\":{\"exclude_algos\":[],\"monotone_constraints\":[]}}, 'exec'"
+    },
+    {
+      "type": "cs",
+      "input": "getLeaderboard \"AutoML_20191115_190919870@@response\""
+    },
+    {
+      "type": "md",
+      "input": "In this \"toy\" example, PCA negatively impacts predictive performance of the obtained models."
+    }
+  ]
+}

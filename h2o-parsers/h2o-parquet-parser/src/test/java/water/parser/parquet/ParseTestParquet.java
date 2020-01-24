@@ -90,7 +90,7 @@ public class ParseTestParquet extends TestUtil {
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
       assertEquals(expected.numRows(), actual.numRows());
-      assertTrue(isBitIdentical(expected, actual));
+      assertBitIdentical(expected, actual);
     } finally {
       if (expected != null) expected.delete();
       if (actual != null) actual.delete();
@@ -122,7 +122,7 @@ public class ParseTestParquet extends TestUtil {
       assertEquals("String", actual.typesStr()[1]);
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
-      assertTrue(isBitIdentical(expected, actual));
+      assertBitIdentical(expected, actual);
 
       // no warnings were generated
       assertNull(pd._job.warns());
@@ -155,7 +155,7 @@ public class ParseTestParquet extends TestUtil {
       expected = parse_test_file("smalldata/airlines/AirlinesTrain.csv.zip");
       assertEquals(Arrays.asList(expected._names), Arrays.asList(actual._names));
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
-      assertTrue(isBitIdentical(expected, actual));
+      assertBitIdentical(expected, actual);
 
       // proper warnings were generated
       assertEquals(1, pd._job.warns().length);
@@ -182,7 +182,8 @@ public class ParseTestParquet extends TestUtil {
       }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("myboolean", "myint", "mylong", "myfloat", "mydouble", "mydate", "myuuid", "mystring", "myenum"), f.names());
-        assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
+        assertArrayEquals("Boolean domain needs to be [False,True]", ar("False", "True"), f.vec(0).domain());
       }
     };
     assertFrameAssertion(assertion);
@@ -197,7 +198,8 @@ public class ParseTestParquet extends TestUtil {
       @Override protected File prepareFile() throws IOException { return ParquetFileGenerator.generateAvroPrimitiveTypes(Files.createTempDir(), file, nrows(), new Date()); }
       @Override public void check(Frame f) {
         assertArrayEquals("Column names need to match!", ar("myboolean", "myint", "mylong", "myfloat", "mydouble", "mydate", "myuuid", "mystring", "myenum"), f.names());
-        assertArrayEquals("Column types need to match!", ar(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
+        assertArrayEquals("Column types need to match!", ar(Vec.T_CAT, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_TIME, Vec.T_UUID, Vec.T_STR, Vec.T_CAT), f.types());
+        assertArrayEquals("Boolean domain needs to be [False,True]", ar("False", "True"), f.vec(0).domain());
         BufferedString bs = new BufferedString();
         for (int row = 0; row < nrows(); row++) {
           assertEquals("Value in column myboolean", 1 - (row % 2), f.vec(0).at8(row));

@@ -54,11 +54,13 @@ public class XGBoostUtils {
                                                 Frame frame,
                                                 String response,
                                                 String weight,
+                                                String offset,
                                                 boolean sparse) throws XGBoostError {
         assert di != null;
         int[] chunks = VecUtils.getLocalChunkIds(frame.anyVec());
         final Vec responseVec = frame.vec(response);
         final Vec weightVec = frame.vec(weight);
+        final Vec offsetsVec = frame.vec(offset);
         final int[] nRowsByChunk = new int[chunks.length];
         final long nRowsL = sumChunksLength(chunks, responseVec, weightVec, nRowsByChunk);
         if (nRowsL > Integer.MAX_VALUE) {
@@ -74,15 +76,19 @@ public class XGBoostUtils {
         // but only if we want to handle datasets over 2^31-1 on a single machine. For now I'd leave it as it is.
         float[] resp = malloc4f(nRows);
         float[] weights = null;
+        float[] offsets = null;
         if (weightVec != null) {
             weights = malloc4f(nRows);
         }
+        if (offsetsVec != null) {
+            offsets = malloc4f(nRows);
+        }
         if (sparse) {
             Log.debug("Treating matrix as sparse.");
-            trainMat = SparseMatrixFactory.csr(frame, chunks, weightVec, responseVec, di, resp, weights);
+            trainMat = SparseMatrixFactory.csr(frame, chunks, weightVec, offsetsVec, responseVec, di, resp, weights, offsets);
         } else {
             Log.debug("Treating matrix as dense.");
-            trainMat = DenseMatrixFactory.dense(frame, chunks, nRows, nRowsByChunk, weightVec, responseVec, di, resp, weights);
+            trainMat = DenseMatrixFactory.dense(frame, chunks, nRows, nRowsByChunk, weightVec, offsetsVec, responseVec, di, resp, weights, offsets);
         }
 
         assert trainMat.rowNum() == nRows;
@@ -90,7 +96,9 @@ public class XGBoostUtils {
         if (weights != null) {
             trainMat.setWeight(weights);
         }
-
+        if (offsets != null) {
+            trainMat.setBaseMargin(offsets);
+        }
         return trainMat;
     }
 
@@ -128,30 +136,35 @@ public class XGBoostUtils {
 
     /**
      * convert a set of H2O chunks (representing a part of a vector) to a sparse DMatrix
-     * @param response name of the response column
      * @return DMatrix
      * @throws XGBoostError
      */
-    public static DMatrix convertChunksToDMatrix(DataInfo di,
-                                                 Chunk[] chunks,
-                                                 int response,
-                                                 boolean sparse) throws XGBoostError {
+    public static DMatrix convertChunksToDMatrix(
+        DataInfo di, Chunk[] chunks, int response, boolean sparse, int offset
+    ) throws XGBoostError {
         int nRows = chunks[0]._len;
         DMatrix trainMat;
         float[] resp = malloc4f(nRows);
+        float[] off = null; 
+        if (offset >= 0) {
+            off = malloc4f(nRows);
+        } 
         try {
             if (sparse) {
                 Log.debug("Treating matrix as sparse.");
-                trainMat = SparseMatrixFactory.csr(chunks, -1, response, di, resp, null);
+                trainMat = SparseMatrixFactory.csr(chunks, -1, response, offset, di, resp, null, off);
             } else {
-                trainMat = DenseMatrixFactory.dense(chunks, di, response, resp, null);
+                trainMat = DenseMatrixFactory.dense(chunks, di, response, resp, null, offset, off);
             }
         } catch (NegativeArraySizeException e) {
             throw new IllegalArgumentException(technote(11,
                 "Data is too large to fit into the 32-bit Java float[] array that needs to be passed to the XGBoost C++ backend. Use H2O GBM instead."));
         }
-
         int len = (int) trainMat.rowNum();
+        if (off != null) {
+            off = Arrays.copyOf(off, len);
+            trainMat.setBaseMargin(off);
+        }
         resp = Arrays.copyOf(resp, len);
         trainMat.setLabel(resp);
         return trainMat;

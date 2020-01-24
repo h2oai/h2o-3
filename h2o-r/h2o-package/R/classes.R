@@ -252,7 +252,7 @@ setMethod("summary", "H2OModel", function(object, ...) {
   if( !is.null(tm$logloss)                                         )  cat("\nLogloss: (Extract with `h2o.logloss`)", tm$logloss)
   if( !is.null(tm$mean_per_class_error)                            )  cat("\nMean Per-Class Error:", tm$mean_per_class_error)
   if( !is.null(tm$AUC)                                             )  cat("\nAUC: (Extract with `h2o.auc`)", tm$AUC)
-    if( !is.null(tm$pr_auc)                                             )  cat("\npr_auc: (Extract with `h2o.pr_auc`)", tm$pr_auc)
+    if( !is.null(tm$pr_auc)                                             )  cat("\nAUCPR: (Extract with `h2o.aucpr`)", tm$pr_auc)
   if( !is.null(tm$Gini)                                            )  cat("\nGini: (Extract with `h2o.gini`)", tm$Gini)
   if( !is.null(tm$null_deviance)                                   )  cat("\nNull Deviance: (Extract with `h2o.nulldeviance`)", tm$null_deviance)
   if( !is.null(tm$residual_deviance)                               )  cat("\nResidual Deviance: (Extract with `h2o.residual_deviance`)", tm$residual_deviance)
@@ -594,7 +594,7 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
     cat("LogLoss:  ", object@metrics$logloss, "\n", sep="")
     cat("Mean Per-Class Error:  ", object@metrics$mean_per_class_error, "\n", sep="")
     cat("AUC:  ", object@metrics$AUC, "\n", sep="")
-    cat("pr_auc:  ", object@metrics$pr_auc, "\n", sep="")
+    cat("AUCPR:  ", object@metrics$pr_auc, "\n", sep="")
     cat("Gini:  ", object@metrics$Gini, "\n", sep="")
     if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","xgboost","generic")) {
 
@@ -666,8 +666,29 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   cat("RMSE:  ", object@metrics$RMSE, "\n", sep="")
   cat("MAE:  ", object@metrics$mae, "\n", sep="")
   cat("RMSLE:  ", object@metrics$rmsle, "\n", sep="")
-  cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
-  if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","xgboost","generic")) {
+  if(!is.null(object@algorithm) && object@algorithm %in% c("glm") && exists("sefe", where=object@metrics)) {
+      cat("sefe:  ", object@metrics$sefe, "\n", sep="")
+      cat("sere:  ", object@metrics$sere, "\n", sep="")
+      cat("fixedf:  ", object@metrics$fixedf, "\n", sep="")
+      cat("ranef:  ", object@metrics$ranef, "\n", sep="")
+      cat("randc:  ", object@metrics$randc, "\n", sep="")
+      cat("varfix:  ", object@metrics$varfix, "\n", sep="")
+      cat("varranef:  ", object@metrics$varranef, "\n", sep="")
+      cat("converge:  ", object@metrics$converge, "\n", sep="")
+      cat("dfrefe:  ", object@metrics$dfrefe, "\n", sep="")
+      cat("summvc1:  ", object@metrics$summvc1, "\n", sep="")
+      cat("summvc2:  ", object@metrics$summvc2, "\n", sep="")
+      cat("bad:  ", object@metrics$bad, "\n", sep="")
+      if (exists("hlik", where=object@metrics) && !is.null(object@metrics$hlik)) {
+      cat("hlik:  ", object@metrics$hlik, "\n", sep="")
+      cat("pvh:  ", object@metrics$pvh, "\n", sep="")
+      cat("pbvh:  ", object@metrics$pbvh, "\n", sep="")
+      cat("caic:  ", object@metrics$caic, "\n", sep="")
+      }
+  } else {
+      cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
+  }
+  if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","xgboost","generic") && exists("r2", where=object@metrics)) {
     if (!is.na(h2o.r2(object))) cat("R^2 :  ", h2o.r2(object), "\n", sep="")
     null_dev <- h2o.null_deviance(object)
     res_dev  <- h2o.residual_deviance(object)
@@ -682,6 +703,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   }
   cat("\n")
 })
+
 #' @rdname H2OModelMetrics-class
 #' @export
 setClass("H2OClusteringMetrics",  contains="H2OModelMetrics")

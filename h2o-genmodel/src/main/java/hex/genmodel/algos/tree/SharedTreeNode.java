@@ -2,14 +2,13 @@ package hex.genmodel.algos.tree;
 
 import ai.h2o.algos.tree.INode;
 import ai.h2o.algos.tree.INodeStat;
+import water.logging.Logger;
+import water.logging.LoggerFactory;
 import hex.genmodel.tools.PrintMojo;
 import hex.genmodel.utils.GenmodelBitSet;
 
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.BitSet;
-import java.util.Objects;
+import java.util.*;
 
 /**
  * Node in a tree.
@@ -252,19 +251,23 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
   }
 
   public void print(PrintStream out, String description) {
-    out.println("        Node " + nodeNumber + (description != null ? " (" + description + ")" : ""));
-    out.println("            weight:      " + weight);
-    out.println("            depth:       " + depth);
-    out.println("            colId:       " + colId);
-    out.println("            colName:     " + ((colName != null) ? colName : ""));
-    out.println("            leftward:    " + leftward);
-    out.println("            naVsRest:    " + naVsRest);
-    out.println("            splitVal:    " + splitValue);
-    out.println("            isBitset:    " + isBitset());
-    out.println("            predValue:   " + predValue);
-    out.println("            squaredErr:  " + squaredError);
-    out.println("            leftChild:   " + ((leftChild != null) ? leftChild.getName() : ""));
-    out.println("            rightChild:  " + ((rightChild != null) ? rightChild.getName() : ""));
+    out.print(this.getPrintString(description));
+  }
+
+  public String getPrintString(String description) {
+    return "        Node " + nodeNumber + (description != null ? " (" + description + ")" : "") +
+            "\n            weight:      " + weight +
+            "\n            depth:       " + depth +
+            "\n            colId:       " + colId +
+            "\n            colName:     " + ((colName != null) ? colName : "") +
+            "\n            leftward:    " + leftward +
+            "\n            naVsRest:    " + naVsRest +
+            "\n            splitVal:    " + splitValue +
+            "\n            isBitset:    " + isBitset() +
+            "\n            predValue:   " + predValue +
+            "\n            squaredErr:  " + squaredError +
+            "\n            leftChild:   " + ((leftChild != null) ? leftChild.getName() : "") +
+            "\n            rightChild:  " + ((rightChild != null) ? rightChild.getName() : "");
   }
 
   void printEdges() {
@@ -388,7 +391,7 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
 
     os.print("fontsize="+treeOptions._fontSize+", label=\"");
     for (String s : arr) {
-      os.print(escapeQuotes(s) + "\\n");
+      os.print(escapeQuotes(s) + "\n");
     }
     os.print("\"");
     os.println("]");
@@ -443,6 +446,37 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
     }
   }
 
+  public Map<String, Object> toJson() {
+    Map<String, Object> json = new LinkedHashMap<>();
+    json.put("nodeNumber", nodeNumber);
+    if (!Float.isNaN(weight)) json.put("weight", weight);
+    if (isLeaf()) {
+      if (!Float.isNaN(predValue)) json.put("predValue", predValue);
+    } else {
+      json.put("colId", colId);
+      json.put("colName", colName);
+      json.put("leftward", leftward);
+      json.put("isCategorical", isBitset());
+      json.put("inclusiveNa", inclusiveNa);
+      if (!Float.isNaN(splitValue)) {
+        json.put("splitValue", splitValue);
+      }
+    }
+    if (inclusiveLevels != null) {
+      List<Integer> matchedDomainValues = new ArrayList<>();
+      for (int i = inclusiveLevels.nextSetBit(0); i >= 0; i = inclusiveLevels.nextSetBit(i+1)) {
+        matchedDomainValues.add(i);
+      }
+      json.put("matchValues", matchedDomainValues);
+      json.put("inclusiveNa", inclusiveNa);
+    }
+    if (!isLeaf()) {
+      json.put("rightChild", rightChild.toJson());
+      json.put("leftChild", leftChild.toJson());
+    }
+    return json;
+  }
+  
   public SharedTreeNode getParent() {
     return parent;
   }
@@ -548,10 +582,15 @@ public class SharedTreeNode implements INode<double[]>, INodeStat {
   @Override
   public final int next(double[] value) {
     final double d = value[colId];
-
-    if (Double.isNaN(d) || 
-            (bs != null && !bs.isInRange((int)d)) || (domainValues != null && domainValues.length <= (int)d)
-            ? !leftward : !naVsRest && (bs == null ? d >= splitValue : bs.contains((int)d))) {
+    if (
+            Double.isNaN(d) || 
+            (bs != null && !bs.isInRange((int)d)) || 
+            (domainValues != null && domainValues.length <= (int) d)
+        ? 
+            !leftward 
+        : 
+            !naVsRest && (bs == null ? d >= splitValue : bs.contains((int)d))
+    ) {
       // go RIGHT
       return getRightChildIndex();
     } else {

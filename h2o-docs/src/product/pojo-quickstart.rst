@@ -134,33 +134,33 @@ From R or Python
 
 The following code snippets show an example of H2O building a model and downloading its corresponding POJO from an R script and a Python script.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	    library(h2o)
-	    h2o.init()
-	    path <- system.file("extdata", "prostate.csv", package = "h2o")
-	    h2o_df <- h2o.importFile(path)
-	    h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
-	    model <- h2o.glm(y = "CAPSULE",
-	                    x = c("AGE", "RACE", "PSA", "GLEASON"),
-	                    training_frame = h2o_df,
-	                    family = "binomial")
-	    h2o.download_pojo(model)
+  	    library(h2o)
+  	    h2o.init()
+  	    path <- system.file("extdata", "prostate.csv", package = "h2o")
+  	    h2o_df <- h2o.importFile(path)
+  	    h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
+  	    model <- h2o.glm(y = "CAPSULE",
+  	                    x = c("AGE", "RACE", "PSA", "GLEASON"),
+  	                    training_frame = h2o_df,
+  	                    family = "binomial")
+  	    h2o.download_pojo(model)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	    import h2o
-	    h2o.init()
-	    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-	    path = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip"
-	    h2o_df = h2o.import_file(path)
-	    h2o_df['CAPSULE'] = h2o_df['CAPSULE'].asfactor()
-	    model = H2OGeneralizedLinearEstimator(family = "binomial")
-	    model.train(y = "CAPSULE",
-	                x = ["AGE", "RACE", "PSA", "GLEASON"],
-	                training_frame = h2o_df)
-	    h2o.download_pojo(model)
+  	    import h2o
+  	    h2o.init()
+  	    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+  	    path = "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip"
+  	    h2o_df = h2o.import_file(path)
+  	    h2o_df['CAPSULE'] = h2o_df['CAPSULE'].asfactor()
+  	    model = H2OGeneralizedLinearEstimator(family = "binomial")
+  	    model.train(y = "CAPSULE",
+  	                x = ["AGE", "RACE", "PSA", "GLEASON"],
+  	                training_frame = h2o_df)
+  	    h2o.download_pojo(model)
 
 .. raw:: html
 

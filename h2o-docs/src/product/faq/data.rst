@@ -1,13 +1,15 @@
 Data
 ----
 
-**How should I format my SVMLight data before importing?**
+How should I format my SVMLight data before importing?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The data must be formatted as a sorted list of unique integers, the column indices must be >= 1, and the columns must be in ascending order.
 
 --------------
 
-**Does H2O provide native sparse support?**
+Does H2O provide native sparse support?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Sparse data is supported natively by loading a sparse matrix from an SVMLight file. In addition, H2O includes a direct conversion of a sparse matrix to an H2O Frame in Python via the ``h2o.H2OFrame()`` method and in R via the ``as.h2o()`` function. For sparse data, H2O writes a sparse matrix to SVMLight format and then loads it back in using ``h2o.import_file`` in Python or ``h2o.importFile`` with ``parse_type=SVMLight`` in R.
 
@@ -37,7 +39,8 @@ In Python, a sparse matrix is specified using ``scipy.parse``. For example:
 
 --------------
 
-**What date and time formats does H2O support?**
+What date and time formats does H2O support?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 H2O is set to auto-detect two major date/time formats. Because many date
 time formats are ambiguous (e.g. 01/02/03), general date time detection
@@ -73,7 +76,8 @@ For this format, the hours must range from 1 to 12. Within the time, the
 
 --------------
 
-**How does H2O handle name collisions/conflicts in the dataset?**
+How does H2O handle name collisions/conflicts in the dataset?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If there is a name conflict (for example, column 48 isn't named, but C48
 already exists), then the column name in concatenated to itself until a
@@ -83,7 +87,8 @@ unused name is generated.
 
 --------------
 
-**What types of data columns does H2O support?**
+What types of data columns does H2O support?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Currently, H2O supports:
 
@@ -98,9 +103,10 @@ Currently, H2O supports:
 
 --------------
 
-**I am trying to parse a Gzip data file containing multiple files, but
-it does not parse as quickly as the uncompressed files. Why is this?**
+I am trying to parse a Gzip data file containing multiple files, but it does not parse as quickly as the uncompressed files. Why is this?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Parsing Gzip files is not done in parallel, so it is sequential and uses
 only one core. Other parallel parse compression schemes are on the
 roadmap.
+

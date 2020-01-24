@@ -50,18 +50,18 @@ def algo_pr_auc_test():
                         rf_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"],
                         dl_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"]))
 
-    assert abs(gbm_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"]-
+    assert abs(gbm_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"] -
                glm_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"]) < 0.9, \
         "problem with pr_auc values"
 
-    assert abs(rf_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"]-
+    assert abs(rf_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"] -
                dl_h2o._model_json["output"]["training_metrics"]._metric_json["pr_auc"]) < 0.9, \
         "problem with pr_auc values"
 
 def assert_found_pr_auc(model, pr_auc):
-    assert pr_auc in model._model_json['output']['scoring_history']._col_header, "{0} model does not contain" \
-                                                                                           " {1} in its " \
-                                                                                           "scoring_history.".format(model.algo, pr_auc)
+    assert pr_auc in model._model_json['output']['scoring_history']._col_header, \
+        "{0} model does not contain {1} in its scoring_history.".format(model.algo, pr_auc)
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(algo_pr_auc_test)
 else:

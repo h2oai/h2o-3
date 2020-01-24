@@ -70,6 +70,10 @@ public class RegisterV3Api extends AbstractRegister {
             "POST /3/ParseSVMLight", ParseHandler.class, "parseSVMLight",
             "Parse a raw byte-oriented Frame into a useful columnar data Frame."); // NOTE: prefer POST due to higher content limits
 
+    context.registerEndpoint("ping",
+        "GET /3/Ping", PingHandler.class, "ping",
+        "The endpoint used to let H2O know from external services that it should keep running.");
+
     // Admin
     context.registerEndpoint("cloudStatus",
             "GET /3/Cloud", CloudHandler.class, "status",
@@ -78,6 +82,10 @@ public class RegisterV3Api extends AbstractRegister {
     context.registerEndpoint("cloudStatusMinimal",
             "HEAD /3/Cloud", CloudHandler.class, "head",
             "Determine the status of the nodes in the H2O cloud.");
+
+    context.registerEndpoint("cloudLock",
+        "POST /3/CloudLock", CloudLockHandler.class, "lock",
+        "Lock the cloud.");
 
     context.registerEndpoint("jobs",
             "GET /3/Jobs", JobsHandler.class, "list",
@@ -196,6 +204,10 @@ public class RegisterV3Api extends AbstractRegister {
             "DELETE /3/Frames", FramesHandler.class, "deleteAll",
             "Delete all Frames from the H2O distributed K/V store.");
 
+    context.registerEndpoint("frameChunks",
+            "GET /3/FrameChunks/{frame_id}", FrameChunksHandler.class, "fetch",
+            "Return information about chunks for a given frame.");
+
 
     // Handle models
     context.registerEndpoint("model",
@@ -229,6 +241,10 @@ public class RegisterV3Api extends AbstractRegister {
             "Return the model in the MOJO format. This format can then be interpreted by " +
                     "gen_model.jar in order to perform prediction / scoring. Currently works for GBM and DRF algos only.");
 
+    context.registerEndpoint("modelBinary",
+            "GET /3/Models.fetch.bin/{model_id}", ModelsHandler.class, "fetchBinaryModel",
+            "Return the model in the binary format.");
+    
     context.registerEndpoint("makePDP",
             "POST /3/PartialDependence/", ModelsHandler.class, "makePartialDependence",
             "Create data for partial dependence plot(s) for the specified model and frame.");

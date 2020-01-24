@@ -6,6 +6,7 @@ import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.io.*;
 import java.net.InetSocketAddress;
@@ -34,8 +35,10 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
 
   public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
   public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
-  public static final String H2O_HIVE_HOST = "h2o.hive.host";
+  public static final String H2O_HIVE_JDBC_URL = "h2o.hive.jdbc.url";
   public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
+  
+  public static final String H2O_IP_ENVVAR = "h2o.ip.envvar";
   
   public static final String H2O_MAPPER_ARGS_BASE = "h2o.mapper.args.";
   public static final String H2O_MAPPER_ARGS_LENGTH = "h2o.mapper.args.length";
@@ -153,55 +156,18 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     // Hadoop will set the tmpdir to a directory inside of the container
     // It is important to write to a directory that is in the container otherwise eg. logs can be overwriting each other
     String ice_root = System.getProperty("java.io.tmpdir");
+    if (!makeSureIceRootExists(ice_root)) {
+      return -1;
+    }
 
     ServerSocket ss = new ServerSocket();
     InetSocketAddress sa = new InetSocketAddress("127.0.0.1", 0);
     ss.bind(sa);
     final int localPort = ss.getLocalPort();
 
-    List<String> argsList = new ArrayList<String>();
-
-    // Arguments set inside the mapper.
-    argsList.add("-ice_root");
-    argsList.add(ice_root);
-    argsList.add("-hdfs_skip");
-
-    // Arguments passed by the driver.
-    int argsLength = Integer.parseInt(conf.get(H2O_MAPPER_ARGS_LENGTH));
-    for (int i = 0; i < argsLength; i++) {
-      String arg = conf.get(H2O_MAPPER_ARGS_BASE + i);
-      argsList.add(arg);
-    }
-
-    // Config files passed by the driver.
-    int confLength = Integer.parseInt(conf.get(H2O_MAPPER_CONF_LENGTH));
-    for (int i = 0; i < confLength; i++) {
-      String arg = conf.get(H2O_MAPPER_CONF_ARG_BASE + i);
-      // For files which are not passed as args (i.e. SSL certs)
-      if(null != arg && !arg.isEmpty()) {
-        argsList.add(arg);
-      }
-
-      String basename = conf.get(H2O_MAPPER_CONF_BASENAME_BASE + i);
-      if (!makeSureIceRootExists(ice_root)) {
-        return -1;
-      }
-      String fileName = ice_root + File.separator + basename;
-      String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + i);
-      byte[] byteArr = h2odriver.convertStringToByteArr(payload);
-      h2odriver.writeBinaryFile(fileName, byteArr);
-      if(null != arg && !arg.isEmpty()) {
-        argsList.add(fileName);
-      }
-
-      // Need to modify this config here as we don't know the destination dir for keys when generating it
-      if("default-security.config".equals(basename)) {
-        modifyKeyPath(fileName, ice_root);
-      }
-    }
-    
     DelegationTokenRefresher.setup(conf, ice_root);
-    String[] args = argsList.toArray(new String[0]);
+
+    final String[] args = makeArgs(conf, ice_root);
     try {
       String cloudingImpl = conf.get(H2O_CLOUDING_IMPL);
       AbstractClouding config = (AbstractClouding) Class.forName(cloudingImpl).newInstance();
@@ -243,6 +209,58 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     return exitStatus;
   }
 
+  private String[] makeArgs(Configuration conf, String ice_root) throws IOException {
+    List<String> argsList = new ArrayList<String>();
+
+    // Arguments set inside the mapper.
+    argsList.add("-ice_root");
+    argsList.add(ice_root);
+    argsList.add("-hdfs_skip");
+
+    // Arguments passed by the driver.
+    int argsLength = Integer.parseInt(conf.get(H2O_MAPPER_ARGS_LENGTH));
+    for (int i = 0; i < argsLength; i++) {
+      String arg = conf.get(H2O_MAPPER_ARGS_BASE + i);
+      argsList.add(arg);
+    }
+
+    // Config files passed by the driver.
+    int confLength = Integer.parseInt(conf.get(H2O_MAPPER_CONF_LENGTH));
+    for (int i = 0; i < confLength; i++) {
+      String arg = conf.get(H2O_MAPPER_CONF_ARG_BASE + i);
+      // For files which are not passed as args (i.e. SSL certs)
+      if(null != arg && !arg.isEmpty()) {
+        argsList.add(arg);
+      }
+
+      String basename = conf.get(H2O_MAPPER_CONF_BASENAME_BASE + i);
+      String fileName = ice_root + File.separator + basename;
+      String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + i);
+      byte[] byteArr = h2odriver.convertStringToByteArr(payload);
+      h2odriver.writeBinaryFile(fileName, byteArr);
+      if(null != arg && !arg.isEmpty()) {
+        argsList.add(fileName);
+      }
+
+      // Need to modify this config here as we don't know the destination dir for keys when generating it
+      if("default-security.config".equals(basename)) {
+        modifyKeyPath(fileName, ice_root);
+      }
+    }
+
+    String ipEnvVar = conf.get(H2O_IP_ENVVAR);
+    if (!StringUtils.isNullOrEmpty(ipEnvVar)) {
+      String ip = System.getenv(ipEnvVar);
+      if (StringUtils.isNullOrEmpty(ip)) {
+        throw new RuntimeException("Environment variable '" + ipEnvVar + "' is empty and thus cannot be used to determine a hostname/ip.");
+      }
+      argsList.add("-ip");
+      argsList.add(ip);
+    }
+
+    return argsList.toArray(new String[0]);
+  }
+  
   //==============================================================================
   //                        SSL RELATED METHODS
   //==============================================================================

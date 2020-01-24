@@ -1,9 +1,10 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
-import ai.h2o.automl.EventLogEntry.Stage;
+import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
@@ -16,6 +17,7 @@ import water.Iced;
 import water.Job;
 import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.EnumUtils;
 import water.util.Log;
 
 import java.util.Map;
@@ -65,6 +67,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     protected Model[] getTrainedModels() {
         return aml().leaderboard().getModels();
+    }
+
+    protected Key<Model>[] getTrainedModelsKeys() {
+        return aml().leaderboard().getModelKeys();
     }
 
     protected boolean isCVEnabled() {
@@ -180,12 +186,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         switch (name) {
             case "mean_residual_deviance": return StoppingMetric.deviance;
             default:
-                String[] attempts = { name, name.toUpperCase(), name.toLowerCase() };
-                for (String attempt : attempts) {
-                    try {
-                        return StoppingMetric.valueOf(attempt);
-                    } catch (IllegalArgumentException ignored) { }
-                }
+                try {
+                    return EnumUtils.valueOf(StoppingMetric.class, name);
+                } catch (IllegalArgumentException ignored) { }
                 return StoppingMetric.AUTO;
         }
     }

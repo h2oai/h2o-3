@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.StepDefinition.Step;
+import ai.h2o.automl.events.EventLogEntry;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;

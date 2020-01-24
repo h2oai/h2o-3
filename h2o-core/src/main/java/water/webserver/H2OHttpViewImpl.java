@@ -2,11 +2,8 @@ package water.webserver;
 
 import org.apache.commons.io.IOUtils;
 import water.ExtensionManager;
-import water.api.DatasetServlet;
-import water.api.NpsBinServlet;
-import water.api.PostFileServlet;
-import water.api.PutKeyServlet;
 import water.api.RequestServer;
+import water.server.ServletService;
 import water.server.ServletUtils;
 import water.util.Log;
 import water.webserver.iface.H2OHttpConfig;
@@ -30,17 +27,6 @@ import java.util.LinkedHashMap;
 public class H2OHttpViewImpl implements H2OHttpView {
   private static volatile boolean _acceptRequests = false;
   private final H2OHttpConfig config;
-  private static final LinkedHashMap<String, Class<? extends HttpServlet>> SERVLETS = new LinkedHashMap<>();
-  static {
-    SERVLETS.put("/3/NodePersistentStorage.bin/*", NpsBinServlet.class);
-    SERVLETS.put("/3/PostFile.bin", PostFileServlet.class);
-    SERVLETS.put("/3/PostFile", PostFileServlet.class);
-    SERVLETS.put("/3/DownloadDataset", DatasetServlet.class);
-    SERVLETS.put("/3/DownloadDataset.bin", DatasetServlet.class);
-    SERVLETS.put("/3/PutKey.bin", PutKeyServlet.class);
-    SERVLETS.put("/3/PutKey", PutKeyServlet.class);
-    SERVLETS.put("/", RequestServer.class);
-  }
 
   public H2OHttpViewImpl(H2OHttpConfig config) {
     this.config = config;
@@ -59,7 +45,7 @@ public class H2OHttpViewImpl implements H2OHttpView {
 
   @Override
   public LinkedHashMap<String, Class<? extends HttpServlet>> getServlets() {
-    return SERVLETS;
+    return ServletService.INSTANCE.getAllServlets();
   }
 
   @Override

@@ -36,7 +36,7 @@
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
 #'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
 #'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "custom", "custom_increasing".
+#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
 #'        Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.001.
@@ -74,6 +74,9 @@
 #' @param nthread Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
 #'        parameter). Defaults to maximum available Defaults to -1.
 #' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
+#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
+#'        accurate estimates of class probabilities. Defaults to FALSE.
+#' @param calibration_frame Calibration frame for Platt Scaling
 #' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
 #' @param max_leaves For tree_method=hist only: maximum number of leaves Defaults to 0.
 #' @param min_sum_hessian_in_leaf For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting Defaults to 100.0.
@@ -112,7 +115,7 @@ h2o.xgboost <- function(x,
                         offset_column = NULL,
                         weights_column = NULL,
                         stopping_rounds = 0,
-                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "lift_top_group", "misclassification", "AUCPR", "mean_per_class_error", "custom", "custom_increasing"),
+                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
                         stopping_tolerance = 0.001,
                         max_runtime_secs = 0,
                         seed = -1,
@@ -142,6 +145,8 @@ h2o.xgboost <- function(x,
                         gamma = 0.0,
                         nthread = -1,
                         save_matrix_directory = NULL,
+                        calibrate_model = FALSE,
+                        calibration_frame = NULL,
                         max_bins = 256,
                         max_leaves = 0,
                         min_sum_hessian_in_leaf = 100.0,
@@ -271,6 +276,10 @@ h2o.xgboost <- function(x,
     parms$nthread <- nthread
   if (!missing(save_matrix_directory))
     parms$save_matrix_directory <- save_matrix_directory
+  if (!missing(calibrate_model))
+    parms$calibrate_model <- calibrate_model
+  if (!missing(calibration_frame))
+    parms$calibration_frame <- calibration_frame
   if (!missing(max_bins))
     parms$max_bins <- max_bins
   if (!missing(max_leaves))

@@ -388,7 +388,7 @@ def mojo_predict_pandas(dataframe, mojo_zip_path, genmodel_jar_path=None, classp
     tmp_dir = tempfile.mkdtemp()
     try:
         if not can_use_pandas():
-            raise RuntimeException('Cannot import pandas')
+            raise RuntimeError('Cannot import pandas')
         import pandas
         assert_is_type(dataframe, pandas.DataFrame)
         input_csv_path = os.path.join(tmp_dir, 'input.csv')
@@ -490,29 +490,6 @@ def mojo_predict_csv(input_csv_path, mojo_zip_path, output_csv_path=None, genmod
     with open(output_csv_path) as csv_file:
         result = list(csv.DictReader(csv_file))
     return result
-
-
-def deprecated(message):
-    """The decorator to mark deprecated functions."""
-    from traceback import extract_stack
-    assert message, "`message` argument in @deprecated is required."
-
-    def deprecated_decorator(fun):
-        def decorator_invisible(*args, **kwargs):
-            stack = extract_stack()
-            assert len(stack) >= 2 and stack[-1][2] == "decorator_invisible", "Got confusing stack... %r" % stack
-            print("[WARNING] in %s line %d:" % (stack[-2][0], stack[-2][1]))
-            print("    >>> %s" % (stack[-2][3] or "????"))
-            print("        ^^^^ %s" % message)
-            return fun(*args, **kwargs)
-
-        decorator_invisible.__doc__ = message
-        decorator_invisible.__name__ = fun.__name__
-        decorator_invisible.__module__ = fun.__module__
-        decorator_invisible.__deprecated__ = True
-        return decorator_invisible
-
-    return deprecated_decorator
 
 
 class InMemoryZipArch(object):

@@ -102,19 +102,19 @@ public class HyperSpaceSearchCriteria extends Iced {
     }
 
     public void set_max_models(int max_models) {
-      this._max_models = max_models;
+      _max_models = max_models;
     }
 
     public void set_max_runtime_secs(double max_runtime_secs) {
-      this._max_runtime_secs = max_runtime_secs;
+      _max_runtime_secs = max_runtime_secs;
     }
 
     public void set_stopping_rounds(int stopping_rounds) {
-      this._stopping_rounds = stopping_rounds;
+      _stopping_rounds = stopping_rounds;
     }
 
     public void set_stopping_metric(ScoreKeeper.StoppingMetric stopping_metric) {
-      this._stopping_metric = stopping_metric;
+      _stopping_metric = stopping_metric;
     }
 
     public void set_stopping_tolerance(double stopping_tolerance) {

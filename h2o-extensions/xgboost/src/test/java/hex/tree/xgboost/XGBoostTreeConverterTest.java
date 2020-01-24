@@ -6,15 +6,15 @@ import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.schemas.TreeV3;
+import hex.tree.TreeHandler;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import water.DKV;
-import water.ExtensionManager;
-import water.Scope;
-import water.TestUtil;
+import water.*;
+import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
 
 import java.io.ByteArrayInputStream;
@@ -153,8 +153,109 @@ public class XGBoostTreeConverterTest extends TestUtil {
 
         } finally {
             Scope.exit();
-            if (tfr!=null) tfr.remove();
-            if (model!=null) model.delete();
+            if (tfr != null) tfr.remove();
+            if (model != null) model.delete();
+        }
+    }
+
+    @Test
+    public void testXGBoostBinomialClass_noTreeClassSpecified() {
+        Scope.enter();
+        try {
+            final Frame frame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            Scope.track(frame);
+            String response = "IsDepDelayed";
+
+            XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+            parms._ntrees = 1;
+            parms._max_depth = 5;
+            parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier"};
+            parms._train = frame._key;
+            parms._response_column = response;
+            parms._reg_lambda = 0;
+
+            final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms)
+                    .trainModel()
+                    .get();
+            Scope.track_generic(model);
+
+            // Do not specify tree class for binomial problem - the only tree class should be selected and no error
+            // is expected to be thrown
+            final TreeHandler treeHandler = new TreeHandler();
+            final TreeV3 args = new TreeV3();
+            args.model = new KeyV3.ModelKeyV3(model._key);
+            final TreeV3 tree = treeHandler.getTree(3, args);
+            assertNotNull(tree);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testXGBoostRegression_noTreeClassSpecified() {
+        Scope.enter();
+        try {
+            final Frame frame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            Scope.track(frame);
+            String response = "Distance";
+
+            XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+            parms._ntrees = 1;
+            parms._max_depth = 5;
+            parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier"};
+            parms._train = frame._key;
+            parms._response_column = response;
+            parms._reg_lambda = 0;
+
+            final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms)
+                    .trainModel()
+                    .get();
+            Scope.track_generic(model);
+
+            // Do not specify tree class for regression - the only tree class should be selected and no error
+            // is expected to be thrown
+            final TreeHandler treeHandler = new TreeHandler();
+            final TreeV3 args = new TreeV3();
+            args.model = new KeyV3.ModelKeyV3(model._key);
+            final TreeV3 tree = treeHandler.getTree(3, args);
+            assertNotNull(tree);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testXGBoostMultinomial_noTreeClassSpecified() {
+        Scope.enter();
+        try {
+            final Frame frame = parse_test_file("./smalldata/testng/airlines_train.csv");
+            Scope.track(frame);
+            String response = "Origin";
+
+            XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+            parms._ntrees = 1;
+            parms._max_depth = 5;
+            parms._ignored_columns = new String[]{"fYear", "fMonth", "fDayofMonth", "fDayOfWeek", "UniqueCarrier"};
+            parms._train = frame._key;
+            parms._response_column = response;
+            parms._reg_lambda = 0;
+
+            final XGBoostModel model = new hex.tree.xgboost.XGBoost(parms)
+                    .trainModel()
+                    .get();
+            Scope.track_generic(model);
+
+            final TreeHandler treeHandler = new TreeHandler();
+            final TreeV3 args = new TreeV3();
+            args.model = new KeyV3.ModelKeyV3(model._key);
+            
+            // Tree class must be specified for multinomial.
+            expectedException.expect(IllegalArgumentException.class);
+            expectedException.expectMessage("Model category 'Multinomial' requires tree class to be specified.");
+            final TreeV3 tree = treeHandler.getTree(3, args);
+            assertNotNull(tree);
+        } finally {
+            Scope.exit();
         }
     }
 

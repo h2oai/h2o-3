@@ -48,7 +48,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     double max_runtime_secs();
 
     /**
-     * @return the total time allowed for building this grid, in seconds.
+     * @return the maximum number of models to build
      */
     int max_models();
 

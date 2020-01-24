@@ -10,12 +10,17 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 import imp
 
 from h2o.model.confusion_matrix import ConfusionMatrix
-from h2o.utils.backward_compatibility import backwards_compatible
+from h2o.utils.metaclass import BackwardsCompatible, Deprecated as deprecated, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, assert_satisfies, is_type, numeric
 
 
-class MetricsBase(backwards_compatible()):
+@BackwardsCompatible(
+    instance_attrs=dict(
+        giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
+    )
+)
+class MetricsBase(h2o_meta()):
     """
     A parent class to house common metrics available for the various Metrics types.
 
@@ -23,7 +28,6 @@ class MetricsBase(backwards_compatible()):
     """
 
     def __init__(self, metric_json, on=None, algo=""):
-        super(MetricsBase, self).__init__()
         # Yep, it's messed up...
         if isinstance(metric_json, MetricsBase): metric_json = metric_json._metric_json
         self._metric_json = metric_json
@@ -69,7 +73,8 @@ class MetricsBase(backwards_compatible()):
             return
         metric_type = self._metric_json['__meta']['schema_type']
         types_w_glm = ['ModelMetricsRegressionGLM', 'ModelMetricsRegressionGLMGeneric', 'ModelMetricsBinomialGLM',
-                       'ModelMetricsBinomialGLMGeneric']
+                       'ModelMetricsBinomialGLMGeneric', 'ModelMetricsHGLMGaussianGaussian', 
+                       'ModelMetricsHGLMGaussianGaussianGeneric']
         types_w_clustering = ['ModelMetricsClustering']
         types_w_mult = ['ModelMetricsMultinomial', 'ModelMetricsMultinomialGeneric']
         types_w_ord = ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']
@@ -113,14 +118,32 @@ class MetricsBase(backwards_compatible()):
         if metric_type in types_w_mult or metric_type in ['ModelMetricsOrdinal', 'ModelMetricsOrdinalGeneric']:
             print("Mean Per-Class Error: " + str(self.mean_per_class_error()))
         if metric_type in types_w_glm:
-            print("Null degrees of freedom: " + str(self.null_degrees_of_freedom()))
-            print("Residual degrees of freedom: " + str(self.residual_degrees_of_freedom()))
-            print("Null deviance: " + str(self.null_deviance()))
-            print("Residual deviance: " + str(self.residual_deviance()))
-            print("AIC: " + str(self.aic()))
+            if metric_type == 'ModelMetricsHGLMGaussianGaussian': # print something for HGLM
+                print("Standard error of fixed columns: "+str(self.hglm_metric("sefe")))
+                print("Standard error of random columns: "+str(self.hglm_metric("sere")))
+                print("Coefficients for fixed columns: "+str(self.hglm_metric("fixedf")))
+                print("Coefficients for random columns: "+str(self.hglm_metric("ranef")))
+                print("Random column indices: "+str(self.hglm_metric("randc")))
+                print("Dispersion parameter of the mean model (residual variance for LMM): "+str(self.hglm_metric("varfix")))
+                print("Dispersion parameter of the random columns (variance of random columns): "+str(self.hglm_metric("varranef")))
+                print("Convergence reached for algorithm: "+str(self.hglm_metric("converge")))
+                print("Deviance degrees of freedom for mean part of the model: "+str(self.hglm_metric("dfrefe")))
+                print("Estimates and standard errors of the linear prediction in the dispersion model: "+str(self.hglm_metric("summvc1")))
+                print("Estimates and standard errors of the linear predictor for the dispersion parameter of the random columns: "+str(self.hglm_metric("summvc2")))
+                print("Index of most influential observation (-1 if none): "+str(self.hglm_metric("bad")))
+                print("H-likelihood: "+str(self.hglm_metric("hlik")))
+                print("Profile log-likelihood profiled over random columns: "+str(self.hglm_metric("pvh")))
+                print("Adjusted profile log-likelihood profiled over fixed and random effects: "+str(self.hglm_metric("pbvh")))
+                print("Conditional AIC: "+str(self.hglm_metric("caic")))
+            else:
+                print("Null degrees of freedom: " + str(self.null_degrees_of_freedom()))
+                print("Residual degrees of freedom: " + str(self.residual_degrees_of_freedom()))
+                print("Null deviance: " + str(self.null_deviance()))
+                print("Residual deviance: " + str(self.residual_deviance()))
+                print("AIC: " + str(self.aic()))
         if metric_type in types_w_bin:
             print("AUC: " + str(self.auc()))
-            print("pr_auc: " + str(self.pr_auc()))
+            print("AUCPR: " + str(self.aucpr()))
             print("Gini: " + str(self.gini()))
             self.confusion_matrix().show()
             self._metric_json["max_criteria_and_metric_scores"].show()
@@ -169,9 +192,15 @@ class MetricsBase(backwards_compatible()):
         """The AUC for this set of metrics."""
         return self._metric_json['AUC']
 
-    def pr_auc(self):
+
+    def aucpr(self):
         """The area under the precision recall curve."""
         return self._metric_json['pr_auc']
+
+
+    @deprecated(replaced_by=aucpr)
+    def pr_auc(self):
+        pass
 
 
     def aic(self):
@@ -209,8 +238,12 @@ class MetricsBase(backwards_compatible()):
         if MetricsBase._has(self._metric_json, "residual_deviance"):
             return self._metric_json["residual_deviance"]
         return None
-
-
+    
+    def hglm_metric(self, metric_string):
+        if MetricsBase._has(self._metric_json, metric_string):
+            return self._metric_json[metric_string]
+        return None
+    
     def residual_degrees_of_freedom(self):
         """The residual DoF if the model has residual deviance, otherwise None."""
         if MetricsBase._has(self._metric_json, "residual_degrees_of_freedom"):
@@ -249,11 +282,6 @@ class MetricsBase(backwards_compatible()):
             return self._metric_json['custom_metric_value']
         else:
             return None
-
-    # Deprecated functions; left here for backward compatibility
-    _bcim = {
-        "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs)
-    }
 
 
 class H2ORegressionModelMetrics(MetricsBase):
@@ -326,6 +354,11 @@ class H2OOrdinalModelMetrics(MetricsBase):
     def hit_ratio_table(self):
         """Retrieve the Hit Ratios."""
         return self._metric_json['hit_ratio_table']
+
+
+class H2OHGLMModelMetrics(MetricsBase):
+    def __init__(self, metric_json, on=None, algo="HGLM Gaussian Gaussian"):
+        super(H2OHGLMModelMetrics, self).__init__(metric_json, on, algo)
 
 
 class H2OBinomialModelMetrics(MetricsBase):

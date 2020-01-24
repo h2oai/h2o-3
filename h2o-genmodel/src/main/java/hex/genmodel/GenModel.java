@@ -102,7 +102,16 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   @Override public String[] getNames() {
     return _names;
   }
-
+  
+  public int getOrigNumCols() {
+    String[] origNames = getOrigNames();
+    if (origNames == null || origNames.length == 0)
+      return 0;
+    String responseName = getResponseName();
+    boolean hasResponse = origNames[origNames.length - 1].equals(responseName);
+    return hasResponse ? origNames.length - 1 : origNames.length;
+  }
+  
   /** The original names of all columns used, including response and offset columns. */
   @Override public String[] getOrigNames() {
     return null;
@@ -120,6 +129,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     if (!isSupervised())
       throw new UnsupportedOperationException("Cannot provide response index for unsupervised models.");
     return _domains.length - 1;
+  }
+
+  @Override public String getOffsetName() {
+    return _offsetColumn;
   }
 
   /** Get number of classes in the given column.

@@ -21,6 +21,12 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
 
     @API(help = "Data leakage handling strategy.", values = {"None", "KFold", "LeaveOneOut"})
     public TargetEncoder.DataLeakageHandlingStrategy data_leakage_handling;
+
+    @API(help = "Noise level", required = false, direction = API.Direction.INPUT, gridable = true)
+    public double noise_level;
+    
+    @API(help = "Seed for the specified noise level", required = false, direction = API.Direction.INPUT)
+    public long seed;
   
     @Override
     public String[] fields() {
@@ -42,10 +48,8 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
     @Override
     protected TargetEncoderParametersV3 fillFromImpl(TargetEncoderModel.TargetEncoderParameters impl, String[] fieldsToSkip) {
       final TargetEncoderParametersV3 teParamsV3 = super.fillFromImpl(impl, fieldsToSkip);
-      if (impl._blending_parameters != null) {
-        teParamsV3.f = impl._blending_parameters.getF();
-        teParamsV3.k = impl._blending_parameters.getK();
-      }
+      teParamsV3.k = impl._k;
+      teParamsV3.f = impl._f;
       return teParamsV3;
     }
   }

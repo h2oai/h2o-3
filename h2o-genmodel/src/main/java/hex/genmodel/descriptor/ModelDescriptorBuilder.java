@@ -23,11 +23,11 @@ public class ModelDescriptorBuilder {
     private final String _algoName;
     private final String _fullAlgoName;
 
-  /**
+    /**
      * 
      * @param mojoModel A MojoModel to extract the model description from
      */
-    public ModelDescriptorBuilder(final MojoModel mojoModel, final String algorithmName, final String fullAlgorithmName) {
+    public ModelDescriptorBuilder(final MojoModel mojoModel, final String fullAlgorithmName) {
         _category = mojoModel._category;
         _uuid = mojoModel._uuid;
         _supervised = mojoModel.isSupervised();
@@ -41,7 +41,7 @@ public class ModelDescriptorBuilder {
         _offsetColumn = mojoModel._offsetColumn;
         _domains = mojoModel._domains;
         _names = mojoModel._names;
-        _algoName = algorithmName;
+        _algoName = mojoModel._algoName;
         _fullAlgoName = fullAlgorithmName;
     }
 

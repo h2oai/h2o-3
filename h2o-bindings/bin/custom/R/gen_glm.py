@@ -37,9 +37,27 @@ if(!missing(beta_constraints))
   if(!missing(missing_values_handling))
     parms$missing_values_handling <- missing_values_handling
 """,
+    set_required_params="""
+parms$training_frame <- training_frame
+args <- .verify_dataxy(training_frame, x, y)
+if (HGLM && is.null(random_columns)) stop("HGLM: must specify random effect column!")
+if (HGLM && (!is.null(random_columns))) {
+  temp <- .verify_dataxy(training_frame, random_columns, y)
+  random_columns <- temp$x_i-1  # change column index to numeric column indices starting from 0
+}
+if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
+parms$ignored_columns <- args$x_ignore
+parms$response_column <- args$y    
+    """,
     with_model="""
 model@model$coefficients <- model@model$coefficients_table[,2]
 names(model@model$coefficients) <- model@model$coefficients_table[,1]
+if (!(is.null(model@model$random_coefficients_table))) {
+    model@model$random_coefficients <- model@model$random_coefficients_table[,2]
+    names(model@model$random_coefficients) <- model@model$random_coefficients_table[,1]
+}
 """,
     module="""
 #' Set betas of an existing H2O GLM Model

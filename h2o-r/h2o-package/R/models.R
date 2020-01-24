@@ -233,8 +233,8 @@ h2o.getFutureModel <- function(object, verbose=FALSE) {
     name <- i$name
     # R treats integer as not numeric
     if(is.integer(params[[name]])){
-	  params[[name]] <- as.numeric(params[[name]])
-	}
+      params[[name]] <- as.numeric(params[[name]])
+    }
     if (i$required && !((name %in% names(params)) || (name %in% names(hyper_params)))) {
       e <- paste0("argument \"", name, "\" is missing, with no default\n")
     } else if (name %in% names(params)) {
@@ -302,7 +302,7 @@ h2o.getFutureModel <- function(object, verbose=FALSE) {
       } else {
         if (!inherits(paramValue, type)) {
           e <- paste0(e, "\"", name , "\" must be of type ", type, ", but got ", class(paramValue), ".\n")
-        } else if ((length(paramDef$values) > 1L) && !(paramValue %in% paramDef$values)) {
+        } else if ((length(paramDef$values) > 1L) && (is.null(paramValue) || !(tolower(paramValue) %in% tolower(paramDef$values)))) {
           e <- paste0(e, "\"", name,"\" must be in")
           for (fact in paramDef$values)
             e <- paste0(e, " \"", fact, "\",")
@@ -1029,17 +1029,17 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
-#' Retrieve the pr_auc
+#' Retrieve the AUCPR (Area Under Precision Recall Curve)
 #'
-#' Retrieves the pr_auc value from an \linkS4class{H2OBinomialMetrics}.
-#' If "train", "valid", and "xval" parameters are FALSE (default), then the training pr_auc value is returned. If more
-#' than one parameter is set to TRUE, then a named vector of pr_aucs are returned, where the names are "train", "valid"
+#' Retrieves the AUCPR value from an \linkS4class{H2OBinomialMetrics}.
+#' If "train", "valid", and "xval" parameters are FALSE (default), then the training AUCPR value is returned. If more
+#' than one parameter is set to TRUE, then a named vector of AUCPRs are returned, where the names are "train", "valid"
 #' or "xval".
 #'
 #' @param object An \linkS4class{H2OBinomialMetrics} object.
-#' @param train Retrieve the training pr_auc
-#' @param valid Retrieve the validation pr_auc
-#' @param xval Retrieve the cross-validation pr_auc
+#' @param train Retrieve the training aucpr
+#' @param valid Retrieve the validation aucpr
+#' @param xval Retrieve the cross-validation aucpr
 #' @seealso \code{\link{h2o.giniCoef}} for the Gini coefficient,
 #'          \code{\link{h2o.mse}} for MSE, and \code{\link{h2o.metric}} for the
 #'          various threshold metrics. See \code{\link{h2o.performance}} for
@@ -1055,10 +1055,10 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' prostate[,2] <- as.factor(prostate[,2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
-#' h2o.pr_auc(perf)
+#' h2o.aucpr(perf)
 #' }
 #' @export
-h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+h2o.aucpr <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   if( is(object, "H2OModelMetrics") ) return( object@metrics$pr_auc )
   if( is(object, "H2OModel") ) {
     model.parts <- .model.parts(object)
@@ -1091,8 +1091,15 @@ h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
       if ( length(v)==1 ) { return( v[[1]] ) } else { return( v ) }
     }
   }
-  warning(paste0("No pr_auc for ", class(object)))
+  warning(paste0("No aucpr for ", class(object)))
   invisible(NULL)
+}
+
+#' @rdname h2o.aucpr
+#' @export
+h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
+  .Deprecated("h2o.aucpr")
+  h2o.aucpr(object, train, valid, xval)
 }
 
 #' Retrieve the mean per class error
@@ -1343,6 +1350,19 @@ h2o.mean_residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FA
   }
   warning(paste0("No mean residual deviance for ", class(object)))
   invisible(NULL)
+}
+
+#' Retrieve HGLM ModelMetrics
+#'
+#' @param object an H2OModel object or H2OModelMetrics.
+#' @export
+h2o.HGLMMetrics <- function(object) {
+    if( is(object, "H2OModel") ) {
+        model.parts <- .model.parts(object)
+        return(model.parts$tm@metrics)
+    }
+    warning(paste0("No HGLM Metric for ",class(object)))
+    invisible(NULL)
 }
 
 #' Retrieve the GINI Coefficcient
@@ -1840,6 +1860,28 @@ h2o.scoreHistory <- function(object) {
     warning( paste0("No score history for ", class(o)) )
     return(NULL)
   }
+}
+
+#'
+#' Retrieve actual number of trees for tree algorithms
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @export
+h2o.get_ntrees_actual <- function(object) {
+    o <- object
+    if( is(o, "H2OModel") ) {
+        if(o@algorithm == "gbm" | o@algorithm == "drf"| o@algorithm == "isolationforest"| o@algorithm == "xgboost"){
+            sh <- o@model$model_summary['number_of_trees'][,1]
+            if( is.null(sh) ) return(NULL)
+            sh
+        } else {
+            warning( paste0("No actual number of trees for this model") )
+            return(NULL)
+        }
+    } else {
+        warning( paste0("No actual number of trees for ", class(o)) )
+        return(NULL)
+    }
 }
 
 #'

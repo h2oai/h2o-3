@@ -7,7 +7,9 @@ import water.H2O;
 import water.Iced;
 import water.IcedWrapper;
 import water.api.API;
+import water.api.SchemaMetadata;
 import water.api.SchemaMetadata.FieldMetadata;
+import water.api.ValuesProvider;
 import water.util.PojoUtils;
 
 // TODO: move into hex.schemas!
@@ -68,7 +70,6 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
       this.name = f.getName();
       API annotation = f.getAnnotation(API.class);
 
-      boolean is_array = f.getType().isArray();
       Object o;
 
       o = f.get(default_schema);
@@ -81,14 +82,14 @@ public class ModelParameterSchemaV3 extends SchemaV3<Iced, ModelParameterSchemaV
       this.type = FieldMetadata.consType(schema, f.getType(), f.getName(), annotation);
 
       if (null != annotation) {
-        String l = annotation.label();
         this.label = this.name;
         this.help = annotation.help();
         this.required = annotation.required();
 
         this.level = annotation.level().toString();
 
-        this.values = annotation.values();
+        this.values = annotation.valuesProvider() == ValuesProvider.NULL ? annotation.values()
+                      : SchemaMetadata.getValues(annotation.valuesProvider());
 
         // If the field is an enum then the values annotation field had better be set. . .
         if (is_enum && (null == this.values || 0 == this.values.length)) {

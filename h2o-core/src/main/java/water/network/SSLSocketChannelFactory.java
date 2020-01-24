@@ -4,6 +4,7 @@ import water.H2O;
 import water.util.Log;
 
 import javax.net.ssl.*;
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.channels.ByteChannel;
@@ -20,8 +21,10 @@ public class SSLSocketChannelFactory {
 
     public SSLSocketChannelFactory() throws SSLContextException {
         try {
-            SSLProperties props = new SSLProperties();
-            props.load(new FileInputStream(H2O.ARGS.internal_security_conf));
+            File confFile = new File(H2O.ARGS.internal_security_conf); 
+            SSLProperties props = H2O.ARGS.internal_security_conf_rel_paths ? 
+                    new SSLProperties(confFile.getParentFile()) : new SSLProperties();
+            props.load(new FileInputStream(confFile));
             init(props);
         } catch (IOException e) {
             Log.err("Failed to initialized SSL context.", e);
@@ -113,4 +116,9 @@ public class SSLSocketChannelFactory {
         }
         return new SSLSocketChannel(channel, sslEngine);
     }
+
+    SSLProperties getProperties() {
+        return properties;
+    }
+
 }

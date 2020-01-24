@@ -231,6 +231,7 @@ public class ParseSetup extends Iced {
       case "real":
       case "double":
       case "int":
+      case "long":
       case "numeric": types[i] = Vec.T_NUM;  break;
       case "categorical":
       case "factor":

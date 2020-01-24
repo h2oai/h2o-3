@@ -4,7 +4,7 @@ import water.H2O;
 import water.nbhm.NonBlockingHashMap;
 
 import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Optional;
 
 /**
  * Utilities to deal with Java enums.
@@ -77,20 +77,19 @@ public class EnumUtils {
   }
 
   /**
-   *
    * @param enumeration Enumeration to search in
-   * @param value String to search fore
-   * @param <T> Class of the Enumeration to search in
+   * @param value       String to search fore
+   * @param <T>         Class of the Enumeration to search in
    * @return
    */
-  public static <T extends Enum<?>> T valueOfIgnoreCase(Class<T> enumeration,
-                                                 String value) {
-    for (T field : enumeration.getEnumConstants()) {
+  public static <T extends Enum<?>> Optional<T> valueOfIgnoreCase(Class<T> enumeration, String value) {
+    final T[] enumConstants = enumeration.getEnumConstants();
+    for (T field : enumConstants) {
       if (field.name().compareToIgnoreCase(value) == 0) {
-        return field;
+        return Optional.of(field);
       }
     }
-    return null;
+    return Optional.empty();
   }
 
 }

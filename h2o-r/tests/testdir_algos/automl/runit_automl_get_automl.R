@@ -15,8 +15,8 @@ automl.get.automl.test <- function() {
                        max_models=max_models,
                        seed=1234)
 
-    #Use h2o.getAutoML to get previous automl instance
-    get_aml1 <- h2o.getAutoML(aml1@project_name)
+    #Use h2o.get_automl to get previous automl instance
+    get_aml1 <- h2o.get_automl(aml1@project_name)
     
     print("Leader model ID/project_name for original automl object")
     print(aml1@leader@model_id)
@@ -33,4 +33,4 @@ automl.get.automl.test <- function() {
 
 }
 
-doTest("AutoML h2o.getAutoML Test", automl.get.automl.test)
+doTest("AutoML h2o.get_automl Test", automl.get.automl.test)

@@ -1,7 +1,7 @@
 package ai.h2o.automl;
 
 import hex.Model;
-import hex.ScoreKeeper;
+import hex.ScoreKeeper.StoppingMetric;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import hex.glm.GLMModel.GLMParameters;
@@ -62,13 +62,13 @@ public class AutoMLBuildSpec extends Iced {
       stopping_criteria = new AutoMLStoppingCriteria();
 
       // reasonable defaults:
-      stopping_criteria.set_max_models(0);
-      stopping_criteria.set_max_runtime_secs(3600);
-      stopping_criteria.set_max_runtime_secs_per_model(0);
+      stopping_criteria.set_max_models(0); //no limit
+      stopping_criteria.set_max_runtime_secs(0); //no limit
+      stopping_criteria.set_max_runtime_secs_per_model(0); //no limit
 
       stopping_criteria.set_stopping_rounds(3);
       stopping_criteria.set_stopping_tolerance(0.001);
-      stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUTO);
+      stopping_criteria.set_stopping_metric(StoppingMetric.AUTO);
     }
   }
 
@@ -103,7 +103,7 @@ public class AutoMLBuildSpec extends Iced {
       return _searchCriteria.stopping_rounds();
     }
 
-    public ScoreKeeper.StoppingMetric stopping_metric() {
+    public StoppingMetric stopping_metric() {
       return _searchCriteria.stopping_metric();
     }
 
@@ -127,7 +127,7 @@ public class AutoMLBuildSpec extends Iced {
       _searchCriteria.set_stopping_rounds(stopping_rounds);
     }
 
-    public void set_stopping_metric(ScoreKeeper.StoppingMetric stopping_metric) {
+    public void set_stopping_metric(StoppingMetric stopping_metric) {
       _searchCriteria.set_stopping_metric(stopping_metric);
     }
 
@@ -147,6 +147,16 @@ public class AutoMLBuildSpec extends Iced {
       return _searchCriteria;
     }
 
+    public AutoMLStoppingCriteria() {
+      // reasonable defaults:
+      set_max_models(0);
+      set_max_runtime_secs(3600);
+      set_max_runtime_secs_per_model(0);
+
+      set_stopping_rounds(3);
+      set_stopping_tolerance(0.001);
+      set_stopping_metric(StoppingMetric.AUTO);
+    }
   }
 
   /**
@@ -166,7 +176,7 @@ public class AutoMLBuildSpec extends Iced {
     public String fold_column;
     public String weights_column;
     public String[] ignored_columns;
-    public String sort_metric;
+    public String sort_metric = StoppingMetric.AUTO.name();
   }
 
   /**
@@ -193,12 +203,12 @@ public class AutoMLBuildSpec extends Iced {
     private static final String ROOT_PARAM = "algo_parameters";
 
     public static final class AutoMLCustomParameter<V> extends Iced {
-      public AutoMLCustomParameter(String name, V value) {
+      private AutoMLCustomParameter(String name, V value) {
         _name = name;
         _value = value;
       }
 
-      public AutoMLCustomParameter(Algo algo, String name, V value) {
+      private AutoMLCustomParameter(Algo algo, String name, V value) {
         _algo = algo;
         _name = name;
         _value = value;

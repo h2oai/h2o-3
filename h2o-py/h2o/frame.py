@@ -90,7 +90,7 @@ class H2OFrame(Keyed):
     def __init__(self, python_obj=None, destination_frame=None, header=0, separator=",",
                  column_names=None, column_types=None, na_strings=None, skipped_columns=None):
     
-        coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "numeric",
+        coltype = U(None, "unknown", "uuid", "string", "float", "real", "double", "int", "long", "numeric",
                     "categorical", "factor", "enum", "time")
         assert_is_type(python_obj, None, list, tuple, dict, numpy_ndarray, pandas_dataframe, scipy_sparse)
         assert_is_type(destination_frame, None, str)
@@ -204,7 +204,7 @@ class H2OFrame(Keyed):
         :param int cols: number of columns to fetch (all by default)
         :param full_cols: number of columns to fetch together with backed data
         :param int cols_offset: offset to fetch rows from (0 by default)
-        :param bool light: wether to use light frame endpoint or not
+        :param bool light: whether to use light frame endpoint or not
         :returns: an existing H2OFrame with the id provided; or None if such frame doesn't exist.
 
         :examples:
@@ -3247,7 +3247,7 @@ class H2OFrame(Keyed):
         return ExprNode("sd", self, na_rm)._eager_scalar()
 
 
-    def cor(self, y=None, na_rm=False, use=None):
+    def cor(self, y=None, na_rm=False, use=None, method="Pearson"):
         """
         Compute the correlation matrix of one or two H2OFrames.
 
@@ -3263,6 +3263,7 @@ class H2OFrame(Keyed):
         :param bool na_rm: an alternative to ``use``: when this is True then default value for ``use`` is
             ``"everything"``; and if False then default ``use`` is ``"complete.obs"``. This parameter has no effect
             if ``use`` is given explicitly.
+        :param str method: Which method to use - value must be in ["Pearson", "Spearman"]. Defaults to "Pearson".
 
         :returns: An H2OFrame of the correlation matrix of the columns of this frame (if ``y`` is not given),
             or with the columns of ``y`` (if ``y`` is given). However when this frame and ``y`` are both single rows
@@ -3284,8 +3285,8 @@ class H2OFrame(Keyed):
         if y is None:
             y = self
         if use is None: use = "complete.obs" if na_rm else "everything"
-        if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use)._eager_scalar()
-        return H2OFrame._expr(expr=ExprNode("cor", self, y, use))._frame()
+        if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use, method)._eager_scalar()
+        return H2OFrame._expr(expr=ExprNode("cor", self, y, use, method))._frame()
 
 
     def distance(self, y, measure=None):

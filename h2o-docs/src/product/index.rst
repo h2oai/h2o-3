@@ -25,6 +25,11 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
+   api-changes
+
+.. toctree::
+   :maxdepth: 2
+
    quick-start-videos
    
 .. toctree::
@@ -123,11 +128,6 @@ Additional Resources:
 
    glossary
 
-.. toctree::
-   :maxdepth: 1
-
-   migrating
-   
 .. toctree::
    :maxdepth: 1
 

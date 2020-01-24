@@ -3,25 +3,28 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import traceback
-import warnings
 
 import h2o
 from h2o.base import Keyed
 from h2o.exceptions import H2OValueError
 from h2o.job import H2OJob
-from h2o.utils.backward_compatibility import backwards_compatible
+from h2o.utils.metaclass import BackwardsCompatible, Deprecated as deprecated, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.compatibility import viewitems
 from h2o.utils.shared_utils import can_use_pandas
 from h2o.utils.typechecks import I, assert_is_type, assert_satisfies, Enum, is_type
 
 
-class ModelBase(backwards_compatible(Keyed)):
+@BackwardsCompatible(
+    instance_attrs=dict(
+        giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
+    )
+)
+class ModelBase(h2o_meta(Keyed)):
     """Base class for all models."""
 
     def __init__(self):
         """Construct a new model instance."""
-        super(ModelBase, self).__init__()
         self._id = None
         self._model_json = None
         self._metrics_class = None
@@ -342,6 +345,12 @@ class ModelBase(backwards_compatible(Keyed)):
         return self._model_json["output"]["catoffsets"]
 
 
+    def training_model_metrics(self):
+        """
+        Return training model metrics for any model.
+        """
+        return self._model_json["output"]["training_metrics"]._metric_json
+    
     def model_performance(self, test_data=None, train=False, valid=False, xval=False):
         """
         Generate model metrics for this model on test_data.
@@ -388,6 +397,20 @@ class ModelBase(backwards_compatible(Keyed)):
         if "scoring_history" in model and model["scoring_history"] is not None:
             return model["scoring_history"].as_data_frame()
         print("No score history for this model")
+
+
+    def ntrees_actual(self):
+        """
+        Returns actual number of trees in a tree model. If early stopping enabled, GBM can reset the ntrees value.
+        In this case, the actual ntrees value is less than the original ntrees value a user set before
+        building the model.
+    
+        Type: ``float``
+        """
+        tree_algos = ['gbm', 'drf', 'isolationforest', 'xgboost']
+        if self._model_json["algo"] in tree_algos:
+            return self.summary()['number_of_trees'][0]
+        print("No actual number of trees for this model")    
 
 
     def cross_validation_metrics_summary(self):
@@ -810,28 +833,45 @@ class ModelBase(backwards_compatible(Keyed)):
         for k, v in viewitems(tm): m[k] = None if v is None else v.gini()
         return list(m.values())[0] if len(m) == 1 else m
 
-    def pr_auc(self, train=False, valid=False, xval=False):
+    def aucpr(self, train=False, valid=False, xval=False):
         """
-        Get the pr_auc (Area Under PRECISION RECALL Curve).
+        Get the aucPR (Area Under PRECISION RECALL Curve).
 
         If all are False (default), then return the training metric value.
         If more than one options is set to True, then return a dictionary of metrics where the keys are "train",
         "valid", and "xval".
 
-        :param bool train: If train is True, then return the pr_auc value for the training data.
-        :param bool valid: If valid is True, then return the pr_auc value for the validation data.
-        :param bool xval:  If xval is True, then return the pr_auc value for the validation data.
+        :param bool train: If train is True, then return the aucpr value for the training data.
+        :param bool valid: If valid is True, then return the aucpr value for the validation data.
+        :param bool xval:  If xval is True, then return the aucpr value for the validation data.
 
-        :returns: The pr_auc.
+        :returns: The aucpr.
         """
         tm = ModelBase._get_metrics(self, train, valid, xval)
         m = {}
         for k, v in viewitems(tm): 
-            if not(v == None) and not(is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics)):
-                raise H2OValueError("pr_auc() is only available for Binomial classifiers.")
-            m[k] = None if v is None else v.pr_auc()
+            if v is not None and not is_type(v, h2o.model.metrics_base.H2OBinomialModelMetrics):
+                raise H2OValueError("aucpr() is only available for Binomial classifiers.")
+            m[k] = None if v is None else v.aucpr()
         return list(m.values())[0] if len(m) == 1 else m
+
+    @deprecated(replaced_by=aucpr)
+    def pr_auc(self, train=False, valid=False, xval=False):
+        pass
+
+    def download_model(self, path=""):
+        """
+        Download an H2O Model object to disk.
     
+        :param model: The model object to download.
+        :param path: a path to the directory where the model should be saved.
+    
+        :returns: the path of the downloaded model
+        """
+        assert_is_type(path, str)
+        return h2o.download_model(self, path)
+
+
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """
         Download the POJO for this model to the directory specified by path.
@@ -1552,11 +1592,6 @@ class ModelBase(backwards_compatible(Keyed)):
         """DEPRECATED. Use :meth:`scoring_history` instead."""
         return self.scoring_history()
 
-
-    # Deprecated functions; left here for backward compatibility
-    _bcim = {
-        "giniCoef": lambda self, *args, **kwargs: self.gini(*args, **kwargs),
-    }
 
 
 

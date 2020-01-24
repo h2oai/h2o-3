@@ -2,7 +2,7 @@ setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
 automl.model_selection.suite <- function() {
-  max_models <- 2
+  max_models <- 5
 
   import_dataset <- function() {
     y <- "CAPSULE"

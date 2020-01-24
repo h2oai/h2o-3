@@ -6,19 +6,17 @@ import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
-import hex.genmodel.algos.tree.SharedTreeGraph;
-import hex.genmodel.algos.tree.SharedTreeNode;
-import hex.genmodel.algos.tree.SharedTreeSubgraph;
-import hex.genmodel.algos.tree.SharedTreeGraphConverter;
+import hex.genmodel.algos.tree.*;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.Arrays;
 
 
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGraphConverter,Closeable {
+public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGraphConverter, PlattScalingMojoHelper.MojoModelWithCalibration, Closeable {
 
   private static final String SPACE = " ";
 
@@ -57,6 +55,12 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
   public boolean _useAllFactorLevels;
   public boolean _sparse;
   public String _featureMap;
+  public boolean _hasOffset;
+
+  /**
+   * GLM's beta used for calibrating output probabilities using Platt Scaling.
+   */
+  protected double[] _calib_glm_beta;
 
   public XGBoostMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
@@ -67,6 +71,9 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
 
   @Override
   public final double[] score0(double[] row, double[] preds) {
+    if (_hasOffset) {
+      throw new IllegalStateException("Model was trained with offset, use score0 with offset");
+    }
     return score0(row, 0.0, preds);
   }
 
@@ -85,6 +92,16 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
       preds[0] = out[0];
     }
     return preds;
+  }
+
+  @Override
+  public double[] getCalibGlmBeta() {
+    return _calib_glm_beta;
+  }
+
+  @Override
+  public boolean calibrateClassProbabilities(double[] preds) {
+    return PlattScalingMojoHelper.calibrateClassProbabilities(this, preds);
   }
 
   protected void constructSubgraph(final RegTreeNode[] xgBoostNodes, final SharedTreeNode sharedTreeNode,
@@ -161,7 +178,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
     return categorical;
   }
 
-  protected SharedTreeGraph _computeGraph(final GradBooster booster, final int treeNumber) {
+  SharedTreeGraph computeGraph(final GradBooster booster, final int treeNumber) {
 
     if (!(booster instanceof GBTree)) {
       throw new IllegalArgumentException(String.format("Given XGBoost model is not backed by a tree-based booster. Booster class is %d",
@@ -191,6 +208,11 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
                 true, features); // Root node is at index 0
     }
     return sharedTreeGraph;
+  }
+
+  @Override
+  public SharedTreeGraph convert(int treeNumber, String treeClass, ConvertTreeOptions options) {
+    return convert(treeNumber, treeClass); // no use for options as of now
   }
 
 }

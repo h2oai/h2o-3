@@ -15,6 +15,7 @@ import hex.genmodel.PredictContributions;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -71,11 +72,15 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   }
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {
-    if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
-
     FVec row = _1hotFactory.fromArray(doubles);
-    float[] out = _predictor.predict(row);
-
+    float[] out;
+    if (_hasOffset) {
+      out = _predictor.predict(row, (float) offset);
+    } else if (offset != 0) {
+      throw new UnsupportedOperationException("Unsupported: offset != 0");
+    } else {
+      out = _predictor.predict(row);
+    }
     return toPreds(doubles, out, preds, _nclasses, _priorClassDistrib, _defaultThreshold);
   }
 
@@ -109,10 +114,15 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   @Override
   public SharedTreeGraph convert(final int treeNumber, final String treeClass) {
     GradBooster booster = _predictor.getBooster();
-    return _computeGraph(booster, treeNumber);
+    return computeGraph(booster, treeNumber);
   }
 
-  private class OneHotEncoderFactory {
+  @Override
+  public SharedTreeGraph convert(final int treeNumber, final String treeClass, final ConvertTreeOptions options) {
+    return convert(treeNumber, treeClass); // Options currently do not apply to XGBoost trees conversion
+  }
+
+  private class OneHotEncoderFactory implements Serializable {
     private final int[] _catMap;
     private final float _notHot;
 

@@ -30,9 +30,10 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
                    "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred", "max_delta_step",
                    "monotone_constraints", "score_tree_interval", "min_split_improvement", "gamma", "nthread",
-                   "save_matrix_directory", "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf",
-                   "sample_type", "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy",
-                   "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
+                   "save_matrix_directory", "calibrate_model", "calibration_frame", "max_bins", "max_leaves",
+                   "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type", "normalize_type", "rate_drop",
+                   "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda", "reg_alpha",
+                   "dmatrix_type", "backend", "gpu_id"}
 
     def __init__(self, **kwargs):
         super(H2OXGBoostEstimator, self).__init__()
@@ -491,7 +492,7 @@ class H2OXGBoostEstimator(H2OEstimator):
         client.
 
         One of: ``"auto"``, ``"deviance"``, ``"logloss"``, ``"mse"``, ``"rmse"``, ``"mae"``, ``"rmsle"``, ``"auc"``,
-        ``"lift_top_group"``, ``"misclassification"``, ``"aucpr"``, ``"mean_per_class_error"``, ``"custom"``,
+        ``"aucpr"``, ``"lift_top_group"``, ``"misclassification"``, ``"mean_per_class_error"``, ``"custom"``,
         ``"custom_increasing"``  (default: ``"auto"``).
 
         :examples:
@@ -520,7 +521,7 @@ class H2OXGBoostEstimator(H2OEstimator):
 
     @stopping_metric.setter
     def stopping_metric(self, stopping_metric):
-        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "lift_top_group", "misclassification", "aucpr", "mean_per_class_error", "custom", "custom_increasing"))
+        assert_is_type(stopping_metric, None, Enum("auto", "deviance", "logloss", "mse", "rmse", "mae", "rmsle", "auc", "aucpr", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"))
         self._parms["stopping_metric"] = stopping_metric
 
 
@@ -1511,6 +1512,36 @@ class H2OXGBoostEstimator(H2OEstimator):
     def save_matrix_directory(self, save_matrix_directory):
         assert_is_type(save_matrix_directory, None, str)
         self._parms["save_matrix_directory"] = save_matrix_directory
+
+
+    @property
+    def calibrate_model(self):
+        """
+        Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more accurate estimates
+        of class probabilities.
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("calibrate_model")
+
+    @calibrate_model.setter
+    def calibrate_model(self, calibrate_model):
+        assert_is_type(calibrate_model, None, bool)
+        self._parms["calibrate_model"] = calibrate_model
+
+
+    @property
+    def calibration_frame(self):
+        """
+        Calibration frame for Platt Scaling
+
+        Type: ``H2OFrame``.
+        """
+        return self._parms.get("calibration_frame")
+
+    @calibration_frame.setter
+    def calibration_frame(self, calibration_frame):
+        self._parms["calibration_frame"] = H2OFrame._validate(calibration_frame, 'calibration_frame')
 
 
     @property

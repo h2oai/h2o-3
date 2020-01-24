@@ -396,7 +396,7 @@ public final class SchemaMetadata extends Iced {
     }
   }
 
-  private static String[] getValues(Class<? extends ValuesProvider> valuesProvider) {
+  public static String[] getValues(Class<? extends ValuesProvider> valuesProvider) {
     String[] values;
     try {
       ValuesProvider vp = valuesProvider.newInstance();

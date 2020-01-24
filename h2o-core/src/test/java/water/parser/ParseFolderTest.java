@@ -21,7 +21,7 @@ public class ParseFolderTest extends TestUtil {
     try {
       k2 = parse_test_folder("smalldata/junit/parse_folder" );
       k1 = parse_test_file  ("smalldata/junit/parse_folder_gold.csv");
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
+      TestUtil.assertBitIdentical(k1, k2);
     } finally {
       if( k1 != null ) k1.delete();
       if( k2 != null ) k2.delete();
@@ -38,13 +38,12 @@ public class ParseFolderTest extends TestUtil {
       k1 = parse_test_file  ("smalldata/junit/parse_folder_gold.csv");
       k2 = parse_test_folder("smalldata/junit/parse_folder" );
       Scope.track(k1,k2);
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k1,k2));
+      TestUtil.assertBitIdentical(k1,k2);
 
       k3 = parse_test_file  ("smalldata/junit/parse_folder_gold.csv", skippedColumns);
       k4 = parse_test_folder("smalldata/junit/parse_folder", skippedColumns);
       Scope.track(k3,k4);
-      Assert.assertTrue("parsed values do not match!", TestUtil.isBitIdentical(k3,k4));
-
+      TestUtil.assertBitIdentical(k3,k4);
     } finally {
       Scope.exit();
     }

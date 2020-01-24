@@ -26,40 +26,40 @@ Example
 
 To gain more insights into the variance of the holdout metrics (e.g., AUCs), you can look up the cross-validation models, and inspect their validation metrics. Here’s an example:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
-    df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-    df[,"CAPSULE"] <- as.factor(df[,"CAPSULE"])
-    model_fit <- h2o.gbm(x = 3:8, y = 2, training_frame = df, nfolds = 5, seed = 1)
+        library(h2o)
+        h2o.init()
+        df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        df[,"CAPSULE"] <- as.factor(df[,"CAPSULE"])
+        model_fit <- h2o.gbm(x = 3:8, y = 2, training_frame = df, nfolds = 5, seed = 1)
 
-    # AUC of cross-validated holdout predictions
-    h2o.auc(model_fit, xval = TRUE)
+        # AUC of cross-validated holdout predictions
+        h2o.auc(model_fit, xval = TRUE)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    import h2o
-    h2o.init()
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        import h2o
+        h2o.init()
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
-    # Import the prostate dataset
-    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # Import the prostate dataset
+        prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # Set the predictor names and the response column name
-    response = "CAPSULE"
-    predictors = prostate.names[3:8]
+        # Set the predictor names and the response column name
+        response = "CAPSULE"
+        predictors = prostate.names[3:8]
 
-    # Convert the response column to a factor
-    prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+        # Convert the response column to a factor
+        prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
 
-    # Train a GBM model setting nfolds to 5
-    prostate_gbm = H2OGradientBoostingEstimator(nfolds = 5, seed = 1)
-    prostate_gbm.train(x=predictors, y=response, training_frame=prostate)
+        # Train a GBM model setting nfolds to 5
+        prostate_gbm = H2OGradientBoostingEstimator(nfolds = 5, seed = 1)
+        prostate_gbm.train(x=predictors, y=response, training_frame=prostate)
 
-    # AUC of cross-validated holdout predictions
-    prostate_gbm.auc(xval=True)
+        # AUC of cross-validated holdout predictions
+        prostate_gbm.auc(xval=True)
 
 Using Cross-Validated Predictions
 ---------------------------------
@@ -145,48 +145,48 @@ Combining Holdout Predictions
 
 The frame of cross-validated predictions is a single-column frame, where each row is the cross-validated prediction of that row.  If you want H2O to keep these cross-validated predictions, you must set `keep_cross_validation_predictions <data-science/algo-params/keep_cross_validation_predictions.html>`__ to True.  Here's an example:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
+        library(h2o)
+        h2o.init()
 
-    # H2O Cross-validated K-means example
-    prostate.hex <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-    fit <- h2o.kmeans(training_frame = prostate.hex,
-                      k = 10,
-                      x = c("AGE", "RACE", "VOL", "GLEASON"),
-                      nfolds = 5,  #If you want to specify folds directly, then use "fold_column" arg
-                      keep_cross_validation_predictions = TRUE)
+        # H2O Cross-validated K-means example
+        prostate.hex <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        fit <- h2o.kmeans(training_frame = prostate.hex,
+                          k = 10,
+                          x = c("AGE", "RACE", "VOL", "GLEASON"),
+                          nfolds = 5,  #If you want to specify folds directly, then use "fold_column" arg
+                          keep_cross_validation_predictions = TRUE)
 
-    # This is where list of cv preds are stored (one element per fold):
-    fit@model[["cross_validation_predictions"]]
+        # This is where list of cv preds are stored (one element per fold):
+        fit@model[["cross_validation_predictions"]]
 
-    # However you most likely want a single-column frame including all cv preds
-    cvpreds <- h2o.getFrame(fit@model[["cross_validation_holdout_predictions_frame_id"]][["name"]])
+        # However you most likely want a single-column frame including all cv preds
+        cvpreds <- h2o.getFrame(fit@model[["cross_validation_holdout_predictions_frame_id"]][["name"]])
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # H2O Cross-validated K-means example
-    import h2o
-    h2o.init()
-    from h2o.estimators.kmeans import H2OKMeansEstimator
+        # H2O Cross-validated K-means example
+        import h2o
+        h2o.init()
+        from h2o.estimators.kmeans import H2OKMeansEstimator
 
-    # Import the prostate dataset
-    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # Import the prostate dataset
+        prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # Set the predictor names
-    predictors = prostate.names[2:9]
+        # Set the predictor names
+        predictors = prostate.names[2:9]
 
-    # Train a GBM model setting nfolds to 5
-    prostate_kmeans = H2OKMeansEstimator(k=10, keep_cross_validation_predictions=True, nfolds = 5)
-    prostate_kmeans.train(x=predictors, training_frame=prostate)
+        # Train a GBM model setting nfolds to 5
+        prostate_kmeans = H2OKMeansEstimator(k=10, keep_cross_validation_predictions=True, nfolds = 5)
+        prostate_kmeans.train(x=predictors, training_frame=prostate)
 
-    # This is where list of cv preds are stored (one element per fold):
-    prostate_kmeans.cross_validation_predictions()
+        # This is where list of cv preds are stored (one element per fold):
+        prostate_kmeans.cross_validation_predictions()
 
-    # However you most likely want a single-column frame including all cv preds
-    prostate_kmeans.cross_validation_holdout_predictions()
+        # However you most likely want a single-column frame including all cv preds
+        prostate_kmeans.cross_validation_holdout_predictions()
 
 
 Cross-Validation Cleanup

@@ -4,7 +4,14 @@ Performance and Prediction
 Model Performance
 -----------------
 
-This section describes how H2O-3 can be used to evaluate model performance through model metrics, stopping metrics, and performance graphs. 
+Given a trained H2O model, the ``h2o.performance()`` (R)/``model_performance()`` (Python) function computes a model's performance on a given dataset. 
+
+**Notes**: 
+
+- If the provided dataset does not contain the response/target column from the model object, no performance will be returned. Instead, a warning message will be printed.
+- For binary classification problems, H2O uses the model along with the given dataset to calculate the threshold that will give the maximum F1 for the given dataset.
+
+This section describes how H2O-3 can be used to evaluate model performance. Models can also be evaluated with specific model metrics, stopping metrics, and performance graphs. 
 
 Evaluation Model Metrics
 ~~~~~~~~~~~~~~~~~~~~~~~~
@@ -18,7 +25,6 @@ Regression
 
 The following evaluation metrics are available for regression models. (Note that H2O-3 also calculates regression metrics for `Classification`_ problems.) 
 
-
 - `R2 (R Squared)`_
 - `MSE (Mean Squared Error)`_
 - `RMSE (Root Mean Squared Error)`_
@@ -27,64 +33,64 @@ The following evaluation metrics are available for regression models. (Note that
 
 Each metric is described in greater detail in the sections that follow. The examples are based off of a GBM model built using the **cars_20mpg.csv** dataset.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
+        library(h2o)
+        h2o.init()
 
-    # import the cars dataset:
-    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import the cars dataset:
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictor names and the response column name
-    predictors <- c("displacement","power","weight","acceleration","year")
-    response <- "cylinders"
+        # set the predictor names and the response column name
+        predictors <- c("displacement","power","weight","acceleration","year")
+        response <- "cylinders"
 
-    # split into train and validation sets
-    cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
-    train <- cars.splits[[1]]
-    valid <- cars.splits[[2]]
+        # split into train and validation sets
+        cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
+        train <- cars.splits[[1]]
+        valid <- cars.splits[[2]]
 
-    # build and train the model:
-    cars.gbm <- h2o.gbm(x = predictors, 
-                        y = response, 
-                        training_frame = train,
-                        validation_frame = valid,
-                        distribution = "poisson",
-                        seed = 1234)
+        # build and train the model:
+        cars.gbm <- h2o.gbm(x = predictors, 
+                            y = response, 
+                            training_frame = train,
+                            validation_frame = valid,
+                            distribution = "poisson",
+                            seed = 1234)
 
-    # retrieve the model performance
-    perf <- h2o.performance(cars.gbm, valid)
-    perf
+        # retrieve the model performance
+        perf <- h2o.performance(cars.gbm, valid)
+        perf
 
-   .. code-block:: python
+   .. code-tab:: python
    
-    import h2o
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
-    h2o.init()
+        import h2o
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        h2o.init()
 
-    # import the cars dataset:
-    # this dataset is used to classify whether or not a car is economical based on
-    # the car's displacement, power, weight, and acceleration, and the year it was made
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import the cars dataset:
+        # this dataset is used to classify whether or not a car is economical based on
+        # the car's displacement, power, weight, and acceleration, and the year it was made
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictor names and the response column name
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response = "cylinders"
+        # set the predictor names and the response column name
+        predictors = ["displacement","power","weight","acceleration","year"]
+        response = "cylinders"
 
-    # split into train and validation sets
-    train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        # split into train and validation sets
+        train, valid = cars.split_frame(ratios = [.8], seed = 1234)
 
-    # train a GBM model
-    cars_gbm = H2OGradientBoostingEstimator(distribution = "poisson", seed = 1234)
-    cars_gbm.train(x = predictors, 
-                   y = response, 
-                   training_frame = train, 
-                   validation_frame = valid)
+        # train a GBM model
+        cars_gbm = H2OGradientBoostingEstimator(distribution = "poisson", seed = 1234)
+        cars_gbm.train(x = predictors, 
+                       y = response, 
+                       training_frame = train, 
+                       validation_frame = valid)
 
-    # retrieve the model performance
-    perf = cars_gbm.model_performance(valid)
-    perf
+        # retrieve the model performance
+        perf = cars_gbm.model_performance(valid)
+        perf
 
 
 R2 (R Squared)
@@ -96,28 +102,28 @@ The R2 value represents the degree that the predicted value and the actual value
 
 Using the previous example, run the following to retrieve the R2 value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the r2 value:
-    r2.basic <- h2o.r2(cars.gbm)
-    r2.basic
-    [1] 0.9930651
+        # retrieve the r2 value:
+        r2.basic <- h2o.r2(cars.gbm)
+        r2.basic
+        [1] 0.9930651
 
-    # retrieve the r2 value for the validation data:
-    r2.basic_valid <- h2o.r2(cars.gbm, valid=TRUE)
-    r2.basic_valid
-    [1] 0.9886704
+        # retrieve the r2 value for the validation data:
+        r2.basic_valid <- h2o.r2(cars.gbm, valid=TRUE)
+        r2.basic_valid
+        [1] 0.9886704
 
-   .. code-block:: python
+   .. code-tab:: python
    
-    # retrieve the r2 value:  
-    cars_gbm.r2()
-    0.9930650688408735
+        # retrieve the r2 value:  
+        cars_gbm.r2()
+        0.9930650688408735
 
-    # retrieve the r2 value for the validation data:
-    cars_gbm.r2(valid=True)
-    0.9886704207301097
+        # retrieve the r2 value for the validation data:
+        cars_gbm.r2(valid=True)
+        0.9886704207301097
 
 
 MSE (Mean Squared Error)
@@ -136,29 +142,29 @@ MSE equation:
 
 Using the previous example, run the following to retrieve the MSE value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the mse value:
-    mse.basic <- h2o.mse(cars.gbm)
-    mse.basic
-    [1] 0.01917327
+        # retrieve the mse value:
+        mse.basic <- h2o.mse(cars.gbm)
+        mse.basic
+        [1] 0.01917327
 
-    # retrieve the mse value for both the training and validation data:
-    mse.basic_valid <- h2o.mse(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-    mse.basic_valid
-         train      valid 
-    0.01917327 0.03769792 
+        # retrieve the mse value for both the training and validation data:
+        mse.basic_valid <- h2o.mse(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        mse.basic_valid
+             train      valid 
+        0.01917327 0.03769792 
 
-   .. code-block:: python
+   .. code-tab:: python
    
-    # retrieve the mse value:
-    cars_gbm.mse()
-    0.019173269728097173
+        # retrieve the mse value:
+        cars_gbm.mse()
+        0.019173269728097173
 
-    # retrieve the mse value for the validation data:
-    cars_gbm.mse(valid=True)
-    0.03769791966551617
+        # retrieve the mse value for the validation data:
+        cars_gbm.mse(valid=True)
+        0.03769791966551617
 
 
 RMSE (Root Mean Squared Error)
@@ -182,29 +188,29 @@ Where:
 
 Using the previous example, run the following to retrieve the RMSE value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the rmse value:
-    rmse.basic <- h2o.rmse(cars.gbm)
-    rmse.basic
-    [1] 0.1384676
+        # retrieve the rmse value:
+        rmse.basic <- h2o.rmse(cars.gbm)
+        rmse.basic
+        [1] 0.1384676
 
-    # retrieve the rmse value for both the training and validation data:
-    rmse.basic_valid <- h2o.rmse(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-    rmse.basic_valid
-         train     valid 
-    0.1384676  0.1941595  
+        # retrieve the rmse value for both the training and validation data:
+        rmse.basic_valid <- h2o.rmse(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        rmse.basic_valid
+             train     valid 
+        0.1384676  0.1941595  
    
-   .. code-block:: python
+   .. code-tab:: python
    
-    # retrieve the rmse value:
-    cars_gbm.rmse()
-    0.13846757645057983
+        # retrieve the rmse value:
+        cars_gbm.rmse()
+        0.13846757645057983
 
-    # retrieve the rmse value for the validation data:
-    cars_gbm.rmse(valid=True)
-    0.19415952118172358
+        # retrieve the rmse value for the validation data:
+        cars_gbm.rmse(valid=True)
+        0.19415952118172358
 
 
 RMSLE (Root Mean Squared Logarithmic Error)
@@ -227,29 +233,29 @@ Where:
 
 Using the previous example, run the following to retrieve the RMSLE value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the rmsle value:
-    rmsle.basic <- h2o.rmsle(cars.gbm)
-    rmsle.basic
-    [1] 0.02332083
+        # retrieve the rmsle value:
+        rmsle.basic <- h2o.rmsle(cars.gbm)
+        rmsle.basic
+        [1] 0.02332083
 
-    # retrieve the rmsle value for both the training and validation data:
-    rmsle.basic_valid <- h2o.rmsle(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-    rmsle.basic_valid
-         train      valid 
-    0.02332083 0.03359130  
+        # retrieve the rmsle value for both the training and validation data:
+        rmsle.basic_valid <- h2o.rmsle(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        rmsle.basic_valid
+             train      valid 
+        0.02332083 0.03359130  
    
-   .. code-block:: python
+   .. code-tab:: python
    
-    # retrieve the rmsle value:
-    cars_gbm.rmsle()
-    0.023320830800314333
+        # retrieve the rmsle value:
+        cars_gbm.rmsle()
+        0.023320830800314333
 
-    # retrieve the rmsle value for the validation data:
-    cars_gbm.rmsle(valid=True)
-    0.03359130162278705
+        # retrieve the rmsle value for the validation data:
+        cars_gbm.rmsle(valid=True)
+        0.03359130162278705
 
 MAE (Mean Absolute Error)
 #########################
@@ -270,29 +276,29 @@ Where:
 
 Using the previous example, run the following to retrieve the MAE value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the mae value:
-    mae.basic <- h2o.mae(cars.gbm)
-    mae.basic
-    [1] 0.06140515
+        # retrieve the mae value:
+        mae.basic <- h2o.mae(cars.gbm)
+        mae.basic
+        [1] 0.06140515
 
-    # retrieve the mae value for both the training and validation data:
-    mae.basic_valid <- h2o.mae(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-    mae.basic_valid
-         train      valid 
-    0.06140515 0.07947862 
+        # retrieve the mae value for both the training and validation data:
+        mae.basic_valid <- h2o.mae(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        mae.basic_valid
+             train      valid 
+        0.06140515 0.07947862 
 
-   .. code-block:: python
+   .. code-tab:: python
    
-    # retrieve the mae value:
-    cars_gbm.mae()
-    0.06140515094616347
+        # retrieve the mae value:
+        cars_gbm.mae()
+        0.06140515094616347
 
-    # retrieve the mae value for the validation data:
-    cars_gbm.mae(valid=True)
-    0.07947861719967757
+        # retrieve the mae value for the validation data:
+        cars_gbm.mae(valid=True)
+        0.07947861719967757
 
 .. _classification_metrics:
 
@@ -311,83 +317,83 @@ H2O-3 calculates regression metrics for classification problems. The following a
 - `AUC (Area Under the ROC Curve)`_
 - `AUCPR (Area Under the Precision-Recall Curve)`_
 
-Each metric is described in greater detail in the sectinos that follow. The examples are based off of a GBM model built using the **allyears2k_headers.zip** dataset.
+Each metric is described in greater detail in the sections that follow. The examples are based off of a GBM model built using the **allyears2k_headers.zip** dataset.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
-    # import the airlines dataset:
-    # This dataset is used to classify whether a flight will be delayed 'YES' or not "NO"
-    # original data can be found at http://www.transtats.bts.gov/
-    airlines <-  h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        library(h2o)
+        h2o.init()
+        # import the airlines dataset:
+        # This dataset is used to classify whether a flight will be delayed 'YES' or not "NO"
+        # original data can be found at http://www.transtats.bts.gov/
+        airlines <-  h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
-    # convert columns to factors
-    airlines["Year"] <- as.factor(airlines["Year"])
-    airlines["Month"] <- as.factor(airlines["Month"])
-    airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
-    airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
-    airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
+        # convert columns to factors
+        airlines["Year"] <- as.factor(airlines["Year"])
+        airlines["Month"] <- as.factor(airlines["Month"])
+        airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
+        airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
+        airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
 
-    # set the predictor names and the response column name
-    predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
-                    "DayOfWeek", "Month", "Distance", "FlightNum")
-    response <- "IsDepDelayed"
+        # set the predictor names and the response column name
+        predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
+                        "DayOfWeek", "Month", "Distance", "FlightNum")
+        response <- "IsDepDelayed"
 
-    # split into train and validation
-    airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-    train <- airlines.splits[[1]]
-    valid <- airlines.splits[[2]]
+        # split into train and validation
+        airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+        train <- airlines.splits[[1]]
+        valid <- airlines.splits[[2]]
 
-    # build a model
-    airlines.gbm <- h2o.gbm(x = predictors, 
-                            y = response, 
-                            training_frame = train,
-                            validation_frame = valid, 
-                            sample_rate =.7, 
-                            seed = 1234)
+        # build a model
+        airlines.gbm <- h2o.gbm(x = predictors, 
+                                y = response, 
+                                training_frame = train,
+                                validation_frame = valid, 
+                                sample_rate =.7, 
+                                seed = 1234)
 
-    # retrieve the model performance
-    perf <- h2o.performance(airlines.gbm, valid)
-    perf
+        # retrieve the model performance
+        perf <- h2o.performance(airlines.gbm, valid)
+        perf
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    import h2o
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
-    h2o.init()
+        import h2o
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        h2o.init()
 
-    # import the airlines dataset:
-    # This dataset is used to classify whether a flight will be delayed 'YES' or not "NO"
-    # original data can be found at http://www.transtats.bts.gov/
-    airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        # import the airlines dataset:
+        # This dataset is used to classify whether a flight will be delayed 'YES' or not "NO"
+        # original data can be found at http://www.transtats.bts.gov/
+        airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
-    # convert columns to factors
-    airlines["Year"]= airlines["Year"].asfactor()
-    airlines["Month"]= airlines["Month"].asfactor()
-    airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
-    airlines["Cancelled"] = airlines["Cancelled"].asfactor()
-    airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        # convert columns to factors
+        airlines["Year"]= airlines["Year"].asfactor()
+        airlines["Month"]= airlines["Month"].asfactor()
+        airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        airlines['FlightNum'] = airlines['FlightNum'].asfactor()
 
-    # set the predictor names and the response column name
-    predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
-                  "DayOfWeek", "Month", "Distance", "FlightNum"]
-    response = "IsDepDelayed"
+        # set the predictor names and the response column name
+        predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
+                      "DayOfWeek", "Month", "Distance", "FlightNum"]
+        response = "IsDepDelayed"
 
-    # split into train and validation sets 
-    train, valid = airlines.split_frame(ratios = [.8], seed = 1234)
+        # split into train and validation sets 
+        train, valid = airlines.split_frame(ratios = [.8], seed = 1234)
 
-    # train your model
-    airlines_gbm = H2OGradientBoostingEstimator(sample_rate = .7, seed = 1234) 
-    airlines_gbm.train(x = predictors, 
-                       y = response, 
-                       training_frame = train, 
-                       validation_frame = valid)
+        # train your model
+        airlines_gbm = H2OGradientBoostingEstimator(sample_rate = .7, seed = 1234) 
+        airlines_gbm.train(x = predictors, 
+                           y = response, 
+                           training_frame = train, 
+                           validation_frame = valid)
 
-    # retrieve the model performance
-    perf = airlines_gbm.model_performance(valid)
-    perf
+        # retrieve the model performance
+        perf = airlines_gbm.model_performance(valid)
+        perf
                        
 
 Gini Coefficient
@@ -408,27 +414,27 @@ The Gini index itself is independent of the model and only depends on the Lorenz
 
 Using the previous example, run the following to retrieve the Gini coefficient value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the gini value for the performance object:
-    h2o.giniCoef(perf)
-    [1] 0.482994
+        # retrieve the gini value for the performance object:
+        h2o.giniCoef(perf)
+        [1] 0.482994
 
-    # retrieve the gini value for both the training and validation data:
-    h2o.giniCoef(airlines_gbm, train=TRUE, valid=TRUE, xval=FALSE)
-        train     valid 
-    0.5715841 0.4829940 
+        # retrieve the gini value for both the training and validation data:
+        h2o.giniCoef(airlines_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+            train     valid 
+        0.5715841 0.4829940 
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # retrieve the gini coefficient:
-    perf.gini()
-    0.48299402265152613
+        # retrieve the gini coefficient:
+        perf.gini()
+        0.48299402265152613
 
-    # retrieve the gini coefficient for both the training and validation data:
-    airlines_gbm.gini(train=True, valid=True, xval=False)
-    {u'train': 0.5715841348613386, u'valid': 0.48299402265152613}
+        # retrieve the gini coefficient for both the training and validation data:
+        airlines_gbm.gini(train=True, valid=True, xval=False)
+        {u'train': 0.5715841348613386, u'valid': 0.48299402265152613}
 
 
 Absolute MCC (Matthews Correlation Coefficient)
@@ -443,39 +449,39 @@ Setting the ``absolute_mcc`` parameter sets the threshold for the model's confus
 
 Using the previous example, run the following to retrieve the MCC value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the mcc value for the performance object:
-    h2o.mcc(perf)
-      threshold absolute_mcc
-    1 0.9636255   0.01754051
-    2 0.9590688   0.03509912
-    3 0.9536574   0.03924877
-    4 0.9510736   0.04862323
-    5 0.9488456   0.05738251
+        # retrieve the mcc value for the performance object:
+        h2o.mcc(perf)
+          threshold absolute_mcc
+        1 0.9636255   0.01754051
+        2 0.9590688   0.03509912
+        3 0.9536574   0.03924877
+        4 0.9510736   0.04862323
+        5 0.9488456   0.05738251
 
-    ---
-         threshold absolute_mcc
-    395 0.10401437   0.04106864
-    396 0.09852580   0.03994376
-    397 0.09265314   0.03664277
-    398 0.08816490   0.02184613
-    399 0.06793601   0.01960485
-    400 0.06432841   0.00000000
+        ---
+             threshold absolute_mcc
+        395 0.10401437   0.04106864
+        396 0.09852580   0.03994376
+        397 0.09265314   0.03664277
+        398 0.08816490   0.02184613
+        399 0.06793601   0.01960485
+        400 0.06432841   0.00000000
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # retrieve the mcc for the performance object:
-    perf.mcc()
-    [0.5426977730968023, 0.36574105494931725]]
+        # retrieve the mcc for the performance object:
+        perf.mcc()
+        [0.5426977730968023, 0.36574105494931725]]
 
-    # retrieve the mcc for both the training and validation data:
-    airlines_gbm.mcc(train=True, valid=True, xval=False)
-    {u'train': [[0.5203060957871319, 0.42414048381779923]], u'valid': [[0.5426977730968023, 0.36574105494931725]]}
+        # retrieve the mcc for both the training and validation data:
+        airlines_gbm.mcc(train=True, valid=True, xval=False)
+        {u'train': [[0.5203060957871319, 0.42414048381779923]], u'valid': [[0.5426977730968023, 0.36574105494931725]]}
 
 F1
-##
+###
 
 The F1 score provides a measure for how well a binary classifier can classify positive cases (given a threshold value). The F1 score is calculated from the harmonic mean of the precision and recall. An F1 score of 1 means both precision and recall are perfect and the model correctly identified all the positive cases and didn't mark a negative case as a positive case. If either precision or recall are very low it will be reflected with a F1 score closer to 0.
 
@@ -491,36 +497,36 @@ Where:
 
 Using the previous example, run the following to retrieve the F1 value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the F1 value for the performance object:
-    h2o.F1(perf)
-      threshold          f1
-    1 0.9636255 0.001301801
-    2 0.9590688 0.005197055
-    3 0.9536574 0.006492101
-    4 0.9510736 0.009937351
-    5 0.9488456 0.013799051
+        # retrieve the F1 value for the performance object:
+        h2o.F1(perf)
+          threshold          f1
+        1 0.9636255 0.001301801
+        2 0.9590688 0.005197055
+        3 0.9536574 0.006492101
+        4 0.9510736 0.009937351
+        5 0.9488456 0.013799051
 
-    ---
-         threshold        f1
-    395 0.10401437 0.6916548
-    396 0.09852580 0.6915972
-    397 0.09265314 0.6914934
-    398 0.08816490 0.6911301
-    399 0.06793601 0.6910728
-    400 0.06432841 0.6909173
+        ---
+             threshold        f1
+        395 0.10401437 0.6916548
+        396 0.09852580 0.6915972
+        397 0.09265314 0.6914934
+        398 0.08816490 0.6911301
+        399 0.06793601 0.6910728
+        400 0.06432841 0.6909173
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # retrieve the F1 coefficient for the performance object:
-    perf.F1()
-    [[0.35417599264806404, 0.7228980805623143]]
+        # retrieve the F1 coefficient for the performance object:
+        perf.F1()
+        [[0.35417599264806404, 0.7228980805623143]]
 
-    # retrieve the F1 coefficient for both the training and validation data:
-    airlines_gbm.F1(train=True, valid=True, xval=False)
-    {u'train': [[0.3869697386893616, 0.7451099672437997]], u'valid': [[0.35417599264806404, 0.7228980805623143]]}
+        # retrieve the F1 coefficient for both the training and validation data:
+        airlines_gbm.F1(train=True, valid=True, xval=False)
+        {u'train': [[0.3869697386893616, 0.7451099672437997]], u'valid': [[0.35417599264806404, 0.7228980805623143]]}
 
 
 F0.5
@@ -542,42 +548,42 @@ Where:
 
 Using the previous example, run the following to retrieve the F0.5 value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the F0.5 value for the performance object:
-    h2o.F0point5(perf)
-      threshold    f0point5
-    1 0.9636255 0.003248159
-    2 0.9590688 0.012892136
-    3 0.9536574 0.016073725
-    4 0.9510736 0.024478501
-    5 0.9488456 0.033798057
+        # retrieve the F0.5 value for the performance object:
+        h2o.F0point5(perf)
+          threshold    f0point5
+        1 0.9636255 0.003248159
+        2 0.9590688 0.012892136
+        3 0.9536574 0.016073725
+        4 0.9510736 0.024478501
+        5 0.9488456 0.033798057
 
-    ---
+        ---
 
-         threshold  f0point5
-    395 0.10401437 0.5837602
-    396 0.09852580 0.5836502
-    397 0.09265314 0.5835319
-    398 0.08816490 0.5831181
-    399 0.06793601 0.5830085
-    400 0.06432841 0.5828314
+             threshold  f0point5
+        395 0.10401437 0.5837602
+        396 0.09852580 0.5836502
+        397 0.09265314 0.5835319
+        398 0.08816490 0.5831181
+        399 0.06793601 0.5830085
+        400 0.06432841 0.5828314
 
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # retrieve the F1 coefficient for the performance object:
-    perf.F0point5()
-    [[0.5426977730968023, 0.7047449127206096]]
+        # retrieve the F1 coefficient for the performance object:
+        perf.F0point5()
+        [[0.5426977730968023, 0.7047449127206096]]
 
-    # retrieve the F1 coefficient for both the training and validation data:
-    airlines_gbm.F0point5(train=True, valid=True, xval=False)
-    {u'train': [[0.5529885092975969, 0.7331482319556736]], u'valid': [[0.5426977730968023, 0.7047449127206096]]}
+        # retrieve the F1 coefficient for both the training and validation data:
+        airlines_gbm.F0point5(train=True, valid=True, xval=False)
+        {u'train': [[0.5529885092975969, 0.7331482319556736]], u'valid': [[0.5426977730968023, 0.7047449127206096]]}
 
 
 F2
-##
+###
 
 The F2 score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F2 score gives more weight to recall (penalizing the model more for false negatives then false positives). An F2 score ranges from 0 to 1, with 1 being a perfect model.
 
@@ -588,36 +594,36 @@ The F2 score is the weighted harmonic mean of the precision and recall (given a 
 
 Using the previous example, run the following to retrieve the F2 value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the F2 value for the performance object:
-    h2o.F2(perf)
-      threshold           f2
-    1 0.9636255 0.0008140229
-    2 0.9590688 0.0032545021
-    3 0.9536574 0.0040674657
-    4 0.9510736 0.0062340760
-    5 0.9488456 0.0086692674
+        # retrieve the F2 value for the performance object:
+        h2o.F2(perf)
+          threshold           f2
+        1 0.9636255 0.0008140229
+        2 0.9590688 0.0032545021
+        3 0.9536574 0.0040674657
+        4 0.9510736 0.0062340760
+        5 0.9488456 0.0086692674
 
-    ---
-         threshold        f2
-    395 0.10401437 0.8484759
-    396 0.09852580 0.8485351
-    397 0.09265314 0.8484726
-    398 0.08816490 0.8482538
-    399 0.06793601 0.8483130
-    400 0.06432841 0.8482192
+        ---
+             threshold        f2
+        395 0.10401437 0.8484759
+        396 0.09852580 0.8485351
+        397 0.09265314 0.8484726
+        398 0.08816490 0.8482538
+        399 0.06793601 0.8483130
+        400 0.06432841 0.8482192
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # retrieve the F2 coefficient for the performance object:
-    perf.F2()
-    [[0.1957813426628461, 0.8502311018339048]]
+        # retrieve the F2 coefficient for the performance object:
+        perf.F2()
+        [[0.1957813426628461, 0.8502311018339048]]
 
-    # retrieve the F2 coefficient for both the training and validation data:
-    airlines_gbm.F2(train=True, valid=True, xval=False)
-    {u'train': [[0.24968434313831914, 0.8548787509793371]], u'valid': [[0.1957813426628461, 0.8502311018339048]]}
+        # retrieve the F2 coefficient for both the training and validation data:
+        airlines_gbm.F2(train=True, valid=True, xval=False)
+        {u'train': [[0.24968434313831914, 0.8548787509793371]], u'valid': [[0.1957813426628461, 0.8502311018339048]]}
 
 Accuracy
 ########
@@ -633,36 +639,36 @@ Accuracy equation:
 
 Using the previous example, run the following to retrieve the Accurace value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the Accuracy value for the performance object:
-    h2o.accuracy(perf)
-      threshold  accuracy
-    1 0.9636255 0.4725564
-    2 0.9590688 0.4735877
-    3 0.9536574 0.4739315
-    4 0.9510736 0.4748482
-    5 0.9488456 0.4758795
+        # retrieve the Accuracy value for the performance object:
+        h2o.accuracy(perf)
+          threshold  accuracy
+        1 0.9636255 0.4725564
+        2 0.9590688 0.4735877
+        3 0.9536574 0.4739315
+        4 0.9510736 0.4748482
+        5 0.9488456 0.4758795
 
-    ---
-         threshold  accuracy
-    395 0.10401437 0.5296207
-    396 0.09852580 0.5293915
-    397 0.09265314 0.5291624
-    398 0.08816490 0.5283603
-    399 0.06793601 0.5281311
-    400 0.06432841 0.5277873
+        ---
+             threshold  accuracy
+        395 0.10401437 0.5296207
+        396 0.09852580 0.5293915
+        397 0.09265314 0.5291624
+        398 0.08816490 0.5283603
+        399 0.06793601 0.5281311
+        400 0.06432841 0.5277873
     
-   .. code-block:: python
+   .. code-tab:: python
     
-    # retrieve the accuracy coefficient for the performance object:
-    perf.accuracy()
-    [[0.5231232172827827, 0.6816775524235132]]
+        # retrieve the accuracy coefficient for the performance object:
+        perf.accuracy()
+        [[0.5231232172827827, 0.6816775524235132]]
 
-    # retrieve the accuracy coefficient for both the training and validation data:
-    airlines_gbm.accuracy(train=True, valid=True, xval=False)
-    {u'train': [[0.5164521833040745, 0.7118095940540694]], u'valid': [[0.5231232172827827, 0.6816775524235132]]}
+        # retrieve the accuracy coefficient for both the training and validation data:
+        airlines_gbm.accuracy(train=True, valid=True, xval=False)
+        {u'train': [[0.5164521833040745, 0.7118095940540694]], u'valid': [[0.5231232172827827, 0.6816775524235132]]}
 
 
 Logloss
@@ -693,27 +699,27 @@ Where:
 
 Using the previous example, run the following to retrieve the logloss value.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the logloss value for the performance object:
-    h2o.logloss(perf)
-    [1] 0.5967029
+        # retrieve the logloss value for the performance object:
+        h2o.logloss(perf)
+        [1] 0.5967029
 
-    # retrieve the logloss value for both the training and validation data:
-    h2o.logloss(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-        train     valid 
-    0.5607155 0.5967029 
+        # retrieve the logloss value for both the training and validation data:
+        h2o.logloss(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+            train     valid 
+        0.5607155 0.5967029 
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # retrieve the logloss for the performance object:
-    perf.gini()
-    0.5967028742962095
+        # retrieve the logloss for the performance object:
+        perf.gini()
+        0.5967028742962095
 
-    # retrieve the logloss for both the training and validation data:
-    airlines_gbm.logloss(train=True, valid=True, xval=False)
-    {u'train': 0.5607154587919981, u'valid': 0.5967028742962095}
+        # retrieve the logloss for both the training and validation data:
+        airlines_gbm.logloss(train=True, valid=True, xval=False)
+        {u'train': 0.5607154587919981, u'valid': 0.5967028742962095}
 
 
 AUC (Area Under the ROC Curve)
@@ -727,27 +733,27 @@ H2O uses the trapezoidal rule to approximate the area under the ROC curve. (**Ti
 
 Using the previous example, run the following to retrieve the AUC.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the AUC for the performance object:
-    h2o.auc(perf)
-    [1] 0.741497
+        # retrieve the AUC for the performance object:
+        h2o.auc(perf)
+        [1] 0.741497
 
-    # retrieve the AUC for both the training and validation data:
-    h2o.auc(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-        train     valid 
-    0.7857921 0.7414970
+        # retrieve the AUC for both the training and validation data:
+        h2o.auc(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+            train     valid 
+        0.7857921 0.7414970
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # retrieve the AUC for the performance object:
-    perf.auc()
-    0.7414970113257631
+        # retrieve the AUC for the performance object:
+        perf.auc()
+        0.7414970113257631
 
-    # retrieve the AUC for both the training and validation data:
-    airlines_gbm.auc(train=True, valid=True, xval=False)
-    {u'train': 0.7857920674306693, u'valid': 0.7414970113257631}
+        # retrieve the AUC for both the training and validation data:
+        airlines_gbm.auc(train=True, valid=True, xval=False)
+        {u'train': 0.7857920674306693, u'valid': 0.7414970113257631}
 
 AUCPR (Area Under the Precision-Recall Curve)
 #############################################
@@ -762,27 +768,27 @@ The main difference between AUC and AUCPR is that AUC calculates the area under 
 
 Using the previous example, run the following to retrieve the AUCPR.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # retrieve the AUCPR for the performance object:
-    h2o.pr_auc(perf)
-    [1] 0.7609887
+        # retrieve the AUCPR for the performance object:
+        h2o.pr_auc(perf)
+        [1] 0.7609887
 
-    # retrieve the AUCPR for both the training and validation data:
-    h2o.pr_auc(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-        train     valid 
-    0.8019599 0.7609887
+        # retrieve the AUCPR for both the training and validation data:
+        h2o.pr_auc(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+            train     valid 
+        0.8019599 0.7609887
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # retrieve the AUCPR for the performance object:
-    perf.pr_auc()
-    0.7609887253334723
+        # retrieve the AUCPR for the performance object:
+        perf.pr_auc()
+        0.7609887253334723
 
-    # retrieve the AUCPR for both the training and validation data:
-    airlines_gbm.pr_auc(train=True, valid=True, xval=False)
-    {u'train': 0.801959918132391, u'valid': 0.7609887253334723}
+        # retrieve the AUCPR for both the training and validation data:
+        airlines_gbm.pr_auc(train=True, valid=True, xval=False)
+        {u'train': 0.801959918132391, u'valid': 0.7609887253334723}
 
 Metric Best Practices - Regression
 '''''''''''''''''''''''''''''''''''
@@ -949,71 +955,71 @@ This parameter specifies that a model must improve its misclassification rate by
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the airlines dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        # import the airlines dataset:
+        from h2o.estimators import H2OGradientBoostingEstimator
+        airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
-    # set the factors:
-    airlines["Year"] <- as.factor(airlines["Year"])
-    airlines["Month"] <- as.factor(airlines["Month"])
-    airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
-    airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
-    airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
+        # set the factors:
+        airlines["Year"] <- as.factor(airlines["Year"])
+        airlines["Month"] <- as.factor(airlines["Month"])
+        airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
+        airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
+        airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
 
-    # set the predictors and response columns:
-    predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
-                    "DayOfWeek", "Month", "Distance", "FlightNum")
-    response <- "IsDepDelayed"
+        # set the predictors and response columns:
+        predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
+                        "DayOfWeek", "Month", "Distance", "FlightNum")
+        response <- "IsDepDelayed"
 
-    # split the training and validation sets:
-    airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-    train <- airlines.splits[[1]]
-    valid <- airlines.splits[[2]]
+        # split the training and validation sets:
+        airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+        train <- airlines.splits[[1]]
+        valid <- airlines.splits[[2]]
 
-    # build and train the model using the misclassification stopping metric:
-    airlines.gbm <- h2o.gbm(x = predictors, y = response, 
-                            training_frame = train, validation_frame = valid, 
-                            stopping_metric = "misclassification", stopping_rounds = 3, 
-                            stopping_tolerance = 1e-2, seed = 1234)
+        # build and train the model using the misclassification stopping metric:
+        airlines.gbm <- h2o.gbm(x = predictors, y = response, 
+                                training_frame = train, validation_frame = valid, 
+                                stopping_metric = "misclassification", stopping_rounds = 3, 
+                                stopping_tolerance = 1e-2, seed = 1234)
 
-    # retrieve the auc value:
-    h2o.auc(airlines.gbm, valid = TRUE)
+        # retrieve the auc value:
+        h2o.auc(airlines.gbm, valid = TRUE)
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # import H2OGradientBoostingEstimator and the airlines dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        # import H2OGradientBoostingEstimator and the airlines dataset:
+        from h2o.estimators import H2OGradientBoostingEstimator
+        airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
-    # set the factors:
-    airlines["Year"]= airlines["Year"].asfactor()
-    airlines["Month"]= airlines["Month"].asfactor()
-    airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
-    airlines["Cancelled"] = airlines["Cancelled"].asfactor()
-    airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        # set the factors:
+        airlines["Year"]= airlines["Year"].asfactor()
+        airlines["Month"]= airlines["Month"].asfactor()
+        airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        airlines['FlightNum'] = airlines['FlightNum'].asfactor()
 
-    # set the predictors and response columns:
-    predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
-                  "DayOfWeek", "Month", "Distance", "FlightNum"]
-    response = "IsDepDelayed"
+        # set the predictors and response columns:
+        predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
+                      "DayOfWeek", "Month", "Distance", "FlightNum"]
+        response = "IsDepDelayed"
 
-    # split the training and validation sets:
-    train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        # split the training and validation sets:
+        train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
 
-    # build and train the model using the misclassification stopping metric:
-    airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "misclassification", 
-                                                stopping_rounds = 3, 
-                                                stopping_tolerance = 1e-2, 
-                                                seed = 1234)
-    airlines_gbm.train(x = predictors, y = response, 
-                       training_frame = train, validation_frame = valid)
+        # build and train the model using the misclassification stopping metric:
+        airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "misclassification", 
+                                                    stopping_rounds = 3, 
+                                                    stopping_tolerance = 1e-2, 
+                                                    seed = 1234)
+        airlines_gbm.train(x = predictors, y = response, 
+                           training_frame = train, validation_frame = valid)
 
-    # retrieve the auc value:
-    airlines_gbm.auc(valid=True)
+        # retrieve the auc value:
+        airlines_gbm.auc(valid=True)
 
 Lift Top Group
 ''''''''''''''
@@ -1022,70 +1028,70 @@ This parameter specifies that a model must improve its lift within the top 1% of
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the airlines dataset:
-    airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        # import the airlines dataset:
+        airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
-    # set the factors:
-    airlines["Year"] <- as.factor(airlines["Year"])
-    airlines["Month"] <- as.factor(airlines["Month"])
-    airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
-    airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
-    airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
+        # set the factors:
+        airlines["Year"] <- as.factor(airlines["Year"])
+        airlines["Month"] <- as.factor(airlines["Month"])
+        airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
+        airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
+        airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
 
-    # set the predictors and response columns:
-    predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
-                    "DayOfWeek", "Month", "Distance", "FlightNum")
-    response <- "IsDepDelayed"
+        # set the predictors and response columns:
+        predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
+                        "DayOfWeek", "Month", "Distance", "FlightNum")
+        response <- "IsDepDelayed"
 
-    # split the training and validation sets:
-    airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-    train <- airlines.splits[[1]]
-    valid <- airlines.splits[[2]]
+        # split the training and validation sets:
+        airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+        train <- airlines.splits[[1]]
+        valid <- airlines.splits[[2]]
 
-    # build and train the model using the lift_top_group stopping metric:
-    airlines.gbm <- h2o.gbm(x = predictors, y = response, 
-                            training_frame = train, validation_frame = valid, 
-                            stopping_metric = "lift_top_group", stopping_rounds = 3, 
-                            stopping_tolerance = 1e-2, seed = 1234)
+        # build and train the model using the lift_top_group stopping metric:
+        airlines.gbm <- h2o.gbm(x = predictors, y = response, 
+                                training_frame = train, validation_frame = valid, 
+                                stopping_metric = "lift_top_group", stopping_rounds = 3, 
+                                stopping_tolerance = 1e-2, seed = 1234)
 
-    # retrieve the auc value:
-    h2o.auc(airlines.gbm, valid = TRUE)
+        # retrieve the auc value:
+        h2o.auc(airlines.gbm, valid = TRUE)
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # import H2OGradientBoostingEstimator and the airlines dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        # import H2OGradientBoostingEstimator and the airlines dataset:
+        from h2o.estimators import H2OGradientBoostingEstimator
+        airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
-    # set the factors:
-    airlines["Year"]= airlines["Year"].asfactor()
-    airlines["Month"]= airlines["Month"].asfactor()
-    airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
-    airlines["Cancelled"] = airlines["Cancelled"].asfactor()
-    airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        # set the factors:
+        airlines["Year"]= airlines["Year"].asfactor()
+        airlines["Month"]= airlines["Month"].asfactor()
+        airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        airlines['FlightNum'] = airlines['FlightNum'].asfactor()
 
-    # set the predictors and response columns:
-    predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
-                  "DayOfWeek", "Month", "Distance", "FlightNum"]
-    response = "IsDepDelayed"
+        # set the predictors and response columns:
+        predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
+                      "DayOfWeek", "Month", "Distance", "FlightNum"]
+        response = "IsDepDelayed"
 
-    # split the training and validation sets:
-    train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
+        # split the training and validation sets:
+        train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
 
-    # build and train the model using the lifttopgroup stopping metric:
-    airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "lifttopgroup", 
-                                                stopping_rounds = 3, 
-                                                stopping_tolerance = 1e-2, 
-                                                seed = 1234)
-    airlines_gbm.train(x = predictors, y = response, 
-                       training_frame = train, validation_frame = valid)
+        # build and train the model using the lifttopgroup stopping metric:
+        airlines_gbm = H2OGradientBoostingEstimator(stopping_metric = "lifttopgroup", 
+                                                    stopping_rounds = 3, 
+                                                    stopping_tolerance = 1e-2, 
+                                                    seed = 1234)
+        airlines_gbm.train(x = predictors, y = response, 
+                           training_frame = train, validation_frame = valid)
 
-    # retrieve the auc value:
-    airlines_gbm.auc(valid=True)
+        # retrieve the auc value:
+        airlines_gbm.auc(valid=True)
 
 
 Deviance
@@ -1099,54 +1105,54 @@ The model will stop building if the deviance fails to continue to improve. Devia
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the cars dataset:
-    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import the cars dataset:
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response columns:
-    predictors <- c("economy","cylinders","displacement","power","weight")
-    response = "acceleration"
+        # set the predictors and response columns:
+        predictors <- c("economy","cylinders","displacement","power","weight")
+        response = "acceleration"
 
-    #split the training and validation sets:
-    p.sid <- h2o.runif(cars, seed=1234)
-    train <- h2o.assign(cars[p.sid > .2, ], "train")
-    test <- h2o.assign(cars[p.sid <= .2, ], "test")
+        #split the training and validation sets:
+        p.sid <- h2o.runif(cars, seed=1234)
+        train <- h2o.assign(cars[p.sid > .2, ], "train")
+        test <- h2o.assign(cars[p.sid <= .2, ], "test")
 
-    # build and train the model using the deviance stopping metric:
-    cars_gbm <- h2o.gbm(x=predictors, y=repsonse, 
-                        training_frame=train, validation_frame=test, 
-                        stopping_metric = "deviance", stopping_rounds = 3, 
-                        stopping_tolerance = 1e-2, seed = 1234)
+        # build and train the model using the deviance stopping metric:
+        cars_gbm <- h2o.gbm(x=predictors, y=repsonse, 
+                            training_frame=train, validation_frame=test, 
+                            stopping_metric = "deviance", stopping_rounds = 3, 
+                            stopping_tolerance = 1e-2, seed = 1234)
 
-    # retrieve the mse value:
-    h2o.mse(cars_gbm, valid=TRUE)
+        # retrieve the mse value:
+        h2o.mse(cars_gbm, valid=TRUE)
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # import H2OGradientBoostingEstimator and the cars dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import H2OGradientBoostingEstimator and the cars dataset:
+        from h2o.estimators import H2OGradientBoostingEstimator
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response columns:
-    predictors = ["economy","cylinders","displacement","power","weight"]
-    response = "acceleration"
+        # set the predictors and response columns:
+        predictors = ["economy","cylinders","displacement","power","weight"]
+        response = "acceleration"
 
-    # split the training and validation sets:
-    train, valid = cars.split_frame(ratios=[.8],seed=1234)
+        # split the training and validation sets:
+        train, valid = cars.split_frame(ratios=[.8],seed=1234)
 
-    # build and train the model using the deviance stopping metric:
-    cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "deviance", 
-                                            stopping_rounds = 3, 
-                                            stopping_tolerance = 1e-2, 
-                                            seed = 1234)
-    cars_gbm.train(x=predictors, y=response, 
-                   training_frame=train, validation_frame=valid)
+        # build and train the model using the deviance stopping metric:
+        cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "deviance", 
+                                                stopping_rounds = 3, 
+                                                stopping_tolerance = 1e-2, 
+                                                seed = 1234)
+        cars_gbm.train(x=predictors, y=response, 
+                       training_frame=train, validation_frame=valid)
 
-    # retrieve the mse value:
-    cars_gbm.mse(valid=True)
+        # retrieve the mse value:
+        cars_gbm.mse(valid=True)
 
 Mean-Per-Class-Error
 ''''''''''''''''''''
@@ -1155,54 +1161,54 @@ The model will stop building after the mean-per-class error rate fails to improv
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the cars dataset:
-    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import the cars dataset:
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response columns:
-    predictors <- c("economy","cylinders","displacement","power","weight")
-    response = "acceleration"
+        # set the predictors and response columns:
+        predictors <- c("economy","cylinders","displacement","power","weight")
+        response = "acceleration"
 
-    #split the training and validation sets:
-    p.sid <- h2o.runif(cars, seed=1234)
-    train <- h2o.assign(cars[p.sid > .2, ], "train")
-    test <- h2o.assign(cars[p.sid <= .2, ], "test")
+        #split the training and validation sets:
+        p.sid <- h2o.runif(cars, seed=1234)
+        train <- h2o.assign(cars[p.sid > .2, ], "train")
+        test <- h2o.assign(cars[p.sid <= .2, ], "test")
 
-    # build and train the model using the mean_per_class_error stopping metric:
-    cars_gbm <- h2o.gbm(x=predictors, y=repsonse, 
-                        training_frame=train, validation_frame=test, 
-                        stopping_metric = "mean_per_class_error", stopping_rounds = 3, 
-                        stopping_tolerance = 1e-2, seed = 1234)
+        # build and train the model using the mean_per_class_error stopping metric:
+        cars_gbm <- h2o.gbm(x=predictors, y=repsonse, 
+                            training_frame=train, validation_frame=test, 
+                            stopping_metric = "mean_per_class_error", stopping_rounds = 3, 
+                            stopping_tolerance = 1e-2, seed = 1234)
 
-    # retrieve the mse value:
-    h2o.mse(cars_gbm, valid=TRUE)
+        # retrieve the mse value:
+        h2o.mse(cars_gbm, valid=TRUE)
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # import H2OGradientBoostingEstimator and the cars dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import H2OGradientBoostingEstimator and the cars dataset:
+        from h2o.estimators import H2OGradientBoostingEstimator
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the predictors and response columns:
-    predictors = ["economy","cylinders","displacement","power","weight"]
-    response = "acceleration"
+        # set the predictors and response columns:
+        predictors = ["economy","cylinders","displacement","power","weight"]
+        response = "acceleration"
 
-    # split the training and validation sets:
-    train, valid = cars.split_frame(ratios=[.8],seed=1234)
+        # split the training and validation sets:
+        train, valid = cars.split_frame(ratios=[.8],seed=1234)
 
-    # build and train the model using the meanperclasserror stopping metric:
-    cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "meanperclasserror", 
-                                            stopping_rounds = 3, 
-                                            stopping_tolerance = 1e-2, 
-                                            seed = 1234)
-    cars_gbm.train(x=predictors, y=repsonse, 
-                   training_frame=train, validation_frame=valid)
+        # build and train the model using the meanperclasserror stopping metric:
+        cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "meanperclasserror", 
+                                                stopping_rounds = 3, 
+                                                stopping_tolerance = 1e-2, 
+                                                seed = 1234)
+        cars_gbm.train(x=predictors, y=repsonse, 
+                       training_frame=train, validation_frame=valid)
 
-    # retrieve the mse value:
-    cars_gbm.mse(valid=True)
+        # retrieve the mse value:
+        cars_gbm.mse(valid=True)
 
 In addition to the above options, Logloss, MSE, RMSE, MAE, RMSLE, and AUC can also be used as the stopping metric. 
 
@@ -1219,58 +1225,58 @@ A confusion matrix is a table depicting performance of algorithm in terms of fal
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the cars dataset:
-    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import the cars dataset:
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the factor
-    cars["cylinders"] = as.factor(cars["cylinders"])
+        # set the factor
+        cars["cylinders"] = as.factor(cars["cylinders"])
 
-    # split the training and validation sets:
-    cars.splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
-    train <- cars.splits[[1]]
-    valid <- cars.splits[[2]]
+        # split the training and validation sets:
+        cars.splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
+        train <- cars.splits[[1]]
+        valid <- cars.splits[[2]]
 
-    # set the predictors columns, response column, and distribution type: 
-    predictors <- c("displacement","power","weight","acceleration","year")
-    response <- "cylinders"
-    distribution <- "multinomial"
+        # set the predictors columns, response column, and distribution type: 
+        predictors <- c("displacement","power","weight","acceleration","year")
+        response <- "cylinders"
+        distribution <- "multinomial"
 
-    # build and train the model:
-    cars_gbm <- h2o.gbm(x=predictors, y=response, 
-                        training_frame=train, validation_frame = valid, 
-                        nfolds=3, distribution=distribution)
+        # build and train the model:
+        cars_gbm <- h2o.gbm(x=predictors, y=response, 
+                            training_frame=train, validation_frame = valid, 
+                            nfolds=3, distribution=distribution)
 
-    # build the confusion matrix:
-    h2o.confusionMatrix(cars_gbm)
+        # build the confusion matrix:
+        h2o.confusionMatrix(cars_gbm)
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # import H2OGradientBoostingEstimator and the cars dataset:
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import H2OGradientBoostingEstimator and the cars dataset:
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the factor:
-    cars["cylinders"] = cars["cylinders"].asfactor()
+        # set the factor:
+        cars["cylinders"] = cars["cylinders"].asfactor()
 
-    # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+        # split the training and validation sets:
+        r = cars[0].runif()
+        train = cars[r > .2]
+        valid = cars[r <= .2]
 
-    # set the predictors columns, response column, and distribution type:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "cylinders"
-    distribution = "multinomial"
+        # set the predictors columns, response column, and distribution type:
+        predictors = ["displacement","power","weight","acceleration","year"]
+        response_col = "cylinders"
+        distribution = "multinomial"
 
-    # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds = 3, distribution = distribution)
-    gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
+        # build and train the model:
+        gbm = H2OGradientBoostingEstimator(nfolds = 3, distribution = distribution)
+        gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
 
-    # build the confusion matrix:
-    gbm.confusion_matrix(train)
+        # build the confusion matrix:
+        gbm.confusion_matrix(train)
 
 Variable Importances
 ''''''''''''''''''''
@@ -1282,59 +1288,59 @@ Variable importances represent the statistical significance of each variable in 
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the prostate dataset:
-    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # import the prostate dataset:
+        prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    prostate[,2] <- as.factor(prostate[,2])
+        # set the factor:
+        prostate[,2] <- as.factor(prostate[,2])
 
-    # split the training and validation sets:
-    pros.split <- h2o.splitFrame(data = prostate, ratio = .8, seed = 1234)
-    train <- pros.split[[1]]
-    valid <- pros.split[[2]]
+        # split the training and validation sets:
+        pros.split <- h2o.splitFrame(data = prostate, ratio = .8, seed = 1234)
+        train <- pros.split[[1]]
+        valid <- pros.split[[2]]
 
-    # build and train the model:
-    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
-                        training_frame = train, 
-                        validation_frame = valid, 
-                        distribution = "bernoulli")
+        # build and train the model:
+        pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                            training_frame = train, 
+                            validation_frame = valid, 
+                            distribution = "bernoulli")
 
-    # build the variable importances plot:
-    h2o.varimp_plot(pros_gbm)
+        # build the variable importances plot:
+        h2o.varimp_plot(pros_gbm)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # import H2OGradientBoostingEstimator and the prostate dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # import H2OGradientBoostingEstimator and the prostate dataset:
+        from h2o.estimators import H2OGradientBoostingEstimator
+        pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factors:
-    pros[1] = pros[1].asfactor()
-    pros[3] = pros[3].asfactor()
-    pros[4] = pros[4].asfactor()
-    pros[5] = pros[5].asfactor()
-    pros[8] = pros[8].asfactor()
+        # set the factors:
+        pros[1] = pros[1].asfactor()
+        pros[3] = pros[3].asfactor()
+        pros[4] = pros[4].asfactor()
+        pros[5] = pros[5].asfactor()
+        pros[8] = pros[8].asfactor()
 
-    # split the training and validation sets:
-    r = pros[1].runif()
-    train = pros[r > .2]
-    valid = pros[r <= .2]
+        # split the training and validation sets:
+        r = pros[1].runif()
+        train = pros[r > .2]
+        valid = pros[r <= .2]
 
-    # set the predictors and response columns:
-    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
-    response = "CAPSULE"
+        # set the predictors and response columns:
+        predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        response = "CAPSULE"
 
-    # build and train the model:
-    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
-    pros_gbm.train(x = predictors, y = response, 
-                   training_frame = train, 
-                   validation_frame = valid)
+        # build and train the model:
+        pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+        pros_gbm.train(x = predictors, y = response, 
+                       training_frame = train, 
+                       validation_frame = valid)
 
-    # build the variable importances plot:
-    pros_gbm.varimp_plot()
+        # build the variable importances plot:
+        pros_gbm.varimp_plot()
 
 
 ROC Curve
@@ -1357,64 +1363,64 @@ The lower-left side of the graph represents less tolerance for false positives w
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the prostate dataset:
-    pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # import the prostate dataset:
+        pros <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factors:
-    pros[,2] <- as.factor(pros[,2])
-    pros[,4] <- as.factor(pros[,4])
-    pros[,5] <- as.factor(pros[,5])
-    pros[,6] <- as.factor(pros[,6])
-    pros[,9] <- as.factor(pros[,9])
+        # set the factors:
+        pros[,2] <- as.factor(pros[,2])
+        pros[,4] <- as.factor(pros[,4])
+        pros[,5] <- as.factor(pros[,5])
+        pros[,6] <- as.factor(pros[,6])
+        pros[,9] <- as.factor(pros[,9])
 
-    # split the training and validation sets:
-    p.sid <- h2o.runif(pros, seed=1234)
-    pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
-    pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+        # split the training and validation sets:
+        p.sid <- h2o.runif(pros, seed=1234)
+        pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
+        pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
 
-    # build and train the model:
-    pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
-                        training_frame = pros.train, 
-                        validation_frame = pros.test, 
-                        nfolds = 2)
+        # build and train the model:
+        pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
+                            training_frame = pros.train, 
+                            validation_frame = pros.test, 
+                            nfolds = 2)
 
-    # build the roc curve:
-    perf <- h2o.performance(pros_gbm, pros)
-    plot(perf, type="roc")
+        # build the roc curve:
+        perf <- h2o.performance(pros_gbm, pros)
+        plot(perf, type="roc")
 
 
-   .. code-block:: python
+   .. code-tab:: python
    
-    # import H2OGradientBoostingEstimator and the prostate dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # import H2OGradientBoostingEstimator and the prostate dataset:
+        from h2o.estimators import H2OGradientBoostingEstimator
+        pros = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factors:
-    pros[1] = pros[1].asfactor()
-    pros[3] = pros[3].asfactor()
-    pros[4] = pros[4].asfactor()
-    pros[5] = pros[5].asfactor()
-    pros[8] = pros[8].asfactor() 
+        # set the factors:
+        pros[1] = pros[1].asfactor()
+        pros[3] = pros[3].asfactor()
+        pros[4] = pros[4].asfactor()
+        pros[5] = pros[5].asfactor()
+        pros[8] = pros[8].asfactor() 
 
-    # set the predictors and response columns:
-    predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"] 
-    response = "CAPSULE"
+        # set the predictors and response columns:
+        predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"] 
+        response = "CAPSULE"
 
-    # split the training and validation sets:
-    r = pros[1].runif()
-    train = pros[r > .2]
-    valid = pros[r <= .2]
+        # split the training and validation sets:
+        r = pros[1].runif()
+        train = pros[r > .2]
+        valid = pros[r <= .2]
 
-    # build and train the model:
-    pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
-    pros_gbm.train(x = predictors, y = response, training_frame = pros)
+        # build and train the model:
+        pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
+        pros_gbm.train(x = predictors, y = response, training_frame = pros)
 
-    # build the roc curve:
-    perf = pros_gbm.model_performance(pros)
-    perf.plot(type = "roc")
+        # build the roc curve:
+        perf = pros_gbm.model_performance(pros)
+        perf.plot(type = "roc")
 
 Hit Ratio
 '''''''''
@@ -1426,61 +1432,61 @@ The hit ratio is a table representing the number of times that the prediction wa
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the cars dataset:
-    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import the cars dataset:
+        cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the factor:
-    cars["cylinders"] = as.factor(cars["cylinders"])
+        # set the factor:
+        cars["cylinders"] = as.factor(cars["cylinders"])
 
-    # split the training and validation sets:
-    cars.splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
-    train <- cars.splits[[1]]
-    valid <- cars.splits[[2]
+        # split the training and validation sets:
+        cars.splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
+        train <- cars.splits[[1]]
+        valid <- cars.splits[[2]
 
-    # set the predictors columns, response column, and distribution type:
-    predictors <- c("displacement","power","weight","acceleration","year")
-    response <- "cylinders"
-    distribution <- "multinomial"
+        # set the predictors columns, response column, and distribution type:
+        predictors <- c("displacement","power","weight","acceleration","year")
+        response <- "cylinders"
+        distribution <- "multinomial"
 
-    # build and train model:
-    cars_gbm <- h2o.gbm(x=predictors, y=response, 
-                        training_frame=train, validation_frame = valid, 
-                        nfolds=3, distribution=distribution)
+        # build and train model:
+        cars_gbm <- h2o.gbm(x=predictors, y=response, 
+                            training_frame=train, validation_frame = valid, 
+                            nfolds=3, distribution=distribution)
 
-    # build the hit ratio table:
-    gbm_hit <- h2o.hit_ratio_table(cars_gbm, train = FALSE, valid = FALSE)
-    gbm_hit
+        # build the hit ratio table:
+        gbm_hit <- h2o.hit_ratio_table(cars_gbm, train = FALSE, valid = FALSE)
+        gbm_hit
 
 
-   .. code-block:: python
+   .. code-tab:: python
     
-    # import H2OGradientBoostingEstimator and the cars dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        # import H2OGradientBoostingEstimator and the cars dataset:
+        from h2o.estimators import H2OGradientBoostingEstimator
+        cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-    # set the factor:
-    cars["cylinders"] = cars["cylinders"].asfactor()
+        # set the factor:
+        cars["cylinders"] = cars["cylinders"].asfactor()
 
-    # split the training and validation sets:
-    r = cars[0].runif()
-    train = cars[r > .2]
-    valid = cars[r <= .2]
+        # split the training and validation sets:
+        r = cars[0].runif()
+        train = cars[r > .2]
+        valid = cars[r <= .2]
 
-    # set the predictors columns, repsonse column, and distribution type:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    response_col = "cylinders"
-    distribution = "multinomial"
+        # set the predictors columns, repsonse column, and distribution type:
+        predictors = ["displacement","power","weight","acceleration","year"]
+        response_col = "cylinders"
+        distribution = "multinomial"
 
-    # build and train the model:
-    gbm = H2OGradientBoostingEstimator(nfolds = 3, distribution = distribution)
-    gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
+        # build and train the model:
+        gbm = H2OGradientBoostingEstimator(nfolds = 3, distribution = distribution)
+        gbm.train(x=predictors, y=response_col, training_frame=train, validation_frame=valid)
 
-    # build the hit ratio table:
-    gbm_hit = gbm.hit_ratio_table(valid=True)
-    gbm_hit.show()
+        # build the hit ratio table:
+        gbm_hit = gbm.hit_ratio_table(valid=True)
+        gbm_hit.show()
 
 Standardized Coefficient Magnitudes
 '''''''''''''''''''''''''''''''''''
@@ -1492,50 +1498,50 @@ This chart represents the relationship of a specific feature to the response var
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the prostate dataset:
-    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # import the prostate dataset:
+        prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    prostate[,2] <- as.factor(prostate[,2])
+        # set the factor:
+        prostate[,2] <- as.factor(prostate[,2])
 
-    # set the predictors and response columns:
-    response <- "CAPSULE"
-    predictors <- c("AGE","RACE","PSA","DCAPS")
+        # set the predictors and response columns:
+        response <- "CAPSULE"
+        predictors <- c("AGE","RACE","PSA","DCAPS")
 
-    # build and train the model:
-    pros_glm <- h2o.glm(x = predictors, y = response, 
-                        training_frame = prostate, 
-                        family = "binomial", nfolds = 0, 
-                        alpha = 0.5, lambda_search = FALSE)
+        # build and train the model:
+        pros_glm <- h2o.glm(x = predictors, y = response, 
+                            training_frame = prostate, 
+                            family = "binomial", nfolds = 0, 
+                            alpha = 0.5, lambda_search = FALSE)
 
-    # build the standardized coefficient magnitudes plot:
-    h2o.std_coef_plot(pros_glm)
+        # build the standardized coefficient magnitudes plot:
+        h2o.std_coef_plot(pros_glm)
 
 
-   .. code-block:: python
+   .. code-tab:: python
    
-    # import H2OGeneralizedLinearEstimator and the prostate dataset:
-    from h2o.estimators import H2OGeneralizedLinearEstimator
-    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # import H2OGeneralizedLinearEstimator and the prostate dataset:
+        from h2o.estimators import H2OGeneralizedLinearEstimator
+        prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factor:
-    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+        # set the factor:
+        prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
 
-    # set the predictors and response columns:
-    response = "CAPSULE"
-    predictors = ["AGE","RACE","PSA","DCAPS"] 
+        # set the predictors and response columns:
+        response = "CAPSULE"
+        predictors = ["AGE","RACE","PSA","DCAPS"] 
 
-    # build and train the model:
-    glm = H2OGeneralizedLinearEstimator(nfolds = 5, alpha = 0.5, 
-                                        lambda_search = False, 
-                                        family = "binomial")
-    glm.train(x=predictors, y=response, training_frame=prostate)
+        # build and train the model:
+        glm = H2OGeneralizedLinearEstimator(nfolds = 5, alpha = 0.5, 
+                                            lambda_search = False, 
+                                            family = "binomial")
+        glm.train(x=predictors, y=response, training_frame=prostate)
 
-    # build the standardized coefficient magnitudes plot:
-    glm.std_coef_plot()
+        # build the standardized coefficient magnitudes plot:
+        glm.std_coef_plot()
 
 Partial Dependence Plots
 ''''''''''''''''''''''''
@@ -1563,46 +1569,46 @@ Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j
 
 Examples:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # import the prostate dataset:
-    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # import the prostate dataset:
+        prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factors:
-    prostate[, "CAPSULE"] <- as.factor(prostate[, "CAPSULE"])
-    prostate[, "RACE"] <- as.factor(prostate[, "RACE"])
+        # set the factors:
+        prostate[, "CAPSULE"] <- as.factor(prostate[, "CAPSULE"])
+        prostate[, "RACE"] <- as.factor(prostate[, "RACE"])
 
-    # build and train the model:
-    pros_gbm <- h2o.gbm(x = c("AGE","RACE"), y = "CAPSULE", 
-                        training_frame = prostate, 
-                        ntrees = 10, max_depth = 5, 
-                        learn_rate = 0.1)
+        # build and train the model:
+        pros_gbm <- h2o.gbm(x = c("AGE","RACE"), y = "CAPSULE", 
+                            training_frame = prostate, 
+                            ntrees = 10, max_depth = 5, 
+                            learn_rate = 0.1)
 
-    # build the partial dependence plot:
-    h2o.partialPlot(object = pros_gbm, data = prostate, cols = c("AGE","RACE"))
+        # build the partial dependence plot:
+        h2o.partialPlot(object = pros_gbm, data = prostate, cols = c("AGE","RACE"))
 
 
-   .. code-block:: python
+   .. code-tab:: python
    
-    # import H2OGradiantBoostingEstimator and the prostate dataset:
-    from h2o.estimators import H2OGradientBoostingEstimator
-    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # import H2OGradiantBoostingEstimator and the prostate dataset:
+        from h2o.estimators import H2OGradientBoostingEstimator
+        prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # set the factors:
-    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
-    prostate["RACE"] = prostate["RACE"].asfactor()
+        # set the factors:
+        prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+        prostate["RACE"] = prostate["RACE"].asfactor()
 
-    # set the predictors and response columns:
-    predictors = ["AGE","RACE"]
-    response = "CAPSULE"
+        # set the predictors and response columns:
+        predictors = ["AGE","RACE"]
+        response = "CAPSULE"
 
-    # build and train the model:
-    pros_gbm = H2OGradientBoostingEstimator(ntrees = 10, max_depth = 5, learn_rate = 0.1)
-    pros_gbm.train(x = predictors, y = response, training_frame = prostate)
+        # build and train the model:
+        pros_gbm = H2OGradientBoostingEstimator(ntrees = 10, max_depth = 5, learn_rate = 0.1)
+        pros_gbm.train(x = predictors, y = response, training_frame = prostate)
 
-    #build the partial dependence plot:
-    pros_gbm.partial_plot(data = prostate, cols = ["AGE","RACE"], server=True, plot = True)
+        #build the partial dependence plot:
+        pros_gbm.partial_plot(data = prostate, cols = ["AGE","RACE"], server=True, plot = True)
 
 Prediction
 ----------
@@ -1618,101 +1624,101 @@ In-Memory Prediction
 
 This section provides examples of performing predictions in Python and R. Refer to the :ref:`predictions_flow` topic in the Flow chapter to view an example of how to predict in Flow. 
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
+        library(h2o)
+        h2o.init()
 
-    # Import the prostate dataset
-    prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
-                                   destination_frame = "prostate.hex")
+        # Import the prostate dataset
+        prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
+                                       destination_frame = "prostate.hex")
 
-    # Split dataset giving the training dataset 75% of the data
-    prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
+        # Split dataset giving the training dataset 75% of the data
+        prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
 
-    # Create a training set from the 1st dataset in the split
-    prostate.train <- prostate.split[[1]]
+        # Create a training set from the 1st dataset in the split
+        prostate.train <- prostate.split[[1]]
 
-    # Create a testing set from the 2nd dataset in the split
-    prostate.test <- prostate.split[[2]]
+        # Create a testing set from the 2nd dataset in the split
+        prostate.test <- prostate.split[[2]]
 
-    # Convert the response column to a factor
-    prostate.train$CAPSULE <- as.factor(prostate.train$CAPSULE)
+        # Convert the response column to a factor
+        prostate.train$CAPSULE <- as.factor(prostate.train$CAPSULE)
 
-    # Build a GBM model
-    model <- h2o.gbm(y="CAPSULE",
-                     x=c("AGE", "RACE", "PSA", "GLEASON"),
-                     training_frame=prostate.train,
-                     distribution="bernoulli",
-                     ntrees=100,
-                     max_depth=4,
-                     learn_rate=0.1)
+        # Build a GBM model
+        model <- h2o.gbm(y="CAPSULE",
+                         x=c("AGE", "RACE", "PSA", "GLEASON"),
+                         training_frame=prostate.train,
+                         distribution="bernoulli",
+                         ntrees=100,
+                         max_depth=4,
+                         learn_rate=0.1)
 
-    # Predict using the GBM model and the testing dataset
-    pred <- h2o.predict(object=model, newdata=prostate.test)
-    pred
-      predict         p0          p1
-    1       0 0.7414373 0.25856274
-    2       1 0.3114293 0.68857073
-    3       0 0.9852284 0.01477161
-    4       0 0.6647902 0.33520975
-    5       0 0.6075046 0.39249538
-    6       1 0.4065468 0.59345323
+        # Predict using the GBM model and the testing dataset
+        pred <- h2o.predict(object=model, newdata=prostate.test)
+        pred
+          predict         p0          p1
+        1       0 0.7414373 0.25856274
+        2       1 0.3114293 0.68857073
+        3       0 0.9852284 0.01477161
+        4       0 0.6647902 0.33520975
+        5       0 0.6075046 0.39249538
+        6       1 0.4065468 0.59345323
 
-    [88 rows x 3 columns] 
+        [88 rows x 3 columns] 
 
-    # View a summary of the prediction with a probability of TRUE
-    summary(pred$p1, exact_quantiles=TRUE)
-     p1                
-     Min.   :0.008925  
-     1st Qu.:0.160050  
-     Median :0.350236  
-     Mean   :0.451507  
-     3rd Qu.:0.818486  
-     Max.   :0.99040  
+        # View a summary of the prediction with a probability of TRUE
+        summary(pred$p1, exact_quantiles=TRUE)
+         p1                
+         Min.   :0.008925  
+         1st Qu.:0.160050  
+         Median :0.350236  
+         Mean   :0.451507  
+         3rd Qu.:0.818486  
+         Max.   :0.99040  
  
-   .. code-block:: python
+   .. code-tab:: python
 
-    import h2o
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
-    h2o.init()
-    
-    # Import the prostate dataset
-    h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
-    
-    # Split the data into Train/Test/Validation with Train having 70% and test and validation 15% each
-    train,test,valid = h2o_df.split_frame(ratios=[.7, .15])
+        import h2o
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        h2o.init()
+        
+        # Import the prostate dataset
+        h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+        
+        # Split the data into Train/Test/Validation with Train having 70% and test and validation 15% each
+        train,test,valid = h2o_df.split_frame(ratios=[.7, .15])
 
-    # Convert the response column to a factor
-    h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
-    
-    # Generate a GBM model using the training dataset
-    model = H2OGradientBoostingEstimator(distribution="bernoulli",
-                                         ntrees=100,
-                                         max_depth=4,
-                                         learn_rate=0.1)
-    model.train(y="CAPSULE", x=["AGE","RACE","PSA","GLEASON"],training_frame=h2o_df)
-    
-    # Predict using the GBM model and the testing dataset
-    predict = model.predict(test)
-    
-    # View a summary of the prediction
-    predict.head()
-    predict        p0        p1
-    ---------  --------  --------
-            0  0.8993    0.1007
-            1  0.168391  0.831609
-            1  0.166067  0.833933
-            1  0.327212  0.672788
-            1  0.25991   0.74009
-            0  0.758978  0.241022
-            0  0.540797  0.459203
-            0  0.838489  0.161511
-            0  0.704853  0.295147
-            0  0.642381  0.357619
+        # Convert the response column to a factor
+        h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
+        
+        # Generate a GBM model using the training dataset
+        model = H2OGradientBoostingEstimator(distribution="bernoulli",
+                                             ntrees=100,
+                                             max_depth=4,
+                                             learn_rate=0.1)
+        model.train(y="CAPSULE", x=["AGE","RACE","PSA","GLEASON"],training_frame=h2o_df)
+        
+        # Predict using the GBM model and the testing dataset
+        predict = model.predict(test)
+        
+        # View a summary of the prediction
+        predict.head()
+        predict        p0        p1
+        ---------  --------  --------
+                0  0.8993    0.1007
+                1  0.168391  0.831609
+                1  0.166067  0.833933
+                1  0.327212  0.672788
+                1  0.25991   0.74009
+                0  0.758978  0.241022
+                0  0.540797  0.459203
+                0  0.838489  0.161511
+                0  0.704853  0.295147
+                0  0.642381  0.357619
 
-    [10 rows x 3 columns]
+        [10 rows x 3 columns]
 
 Predicting Leaf Node Assignment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1725,29 +1731,29 @@ This function returns an H2OFrame object with categorical leaf assignment identi
 
 Using the previous example, run the following to predict the leaf node assignments:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
   
-    # Predict the leaf node assigment using the GBM model and test data.
-    # Predict based on the path from the root node of the tree.
-    predict_lna <- h2o.predict_leaf_node_assignment(model, prostate.test)
+        # Predict the leaf node assigment using the GBM model and test data.
+        # Predict based on the path from the root node of the tree.
+        predict_lna <- h2o.predict_leaf_node_assignment(model, prostate.test)
 
-    # View a summary of the leaf node assignment prediction
-    summary(predict_lna$T1.C1, exact_quantiles=TRUE)
-    T1.C1   
-    RRLR:15 
-    RRR :13 
-    LLLR:12 
-    LLLL:11 
-    LLRR: 8 
-    LLRL: 6 
+        # View a summary of the leaf node assignment prediction
+        summary(predict_lna$T1.C1, exact_quantiles=TRUE)
+        T1.C1   
+        RRLR:15 
+        RRR :13 
+        LLLR:12 
+        LLLL:11 
+        LLRR: 8 
+        LLRL: 6 
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Predict the leaf node assigment using the GBM model and test data.
-    # Predict based on the path from the root node of the tree.
-    predict_lna = model.predict_leaf_node_assignment(test, "Path")
+        # Predict the leaf node assigment using the GBM model and test data.
+        # Predict based on the path from the root node of the tree.
+        predict_lna = model.predict_leaf_node_assignment(test, "Path")
 
 Predict Contributions
 ~~~~~~~~~~~~~~~~~~~~~
@@ -1759,70 +1765,70 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
 **Note**: Multinomial classification models are currently not supported.
 
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
   
-    # Predict the contributions using the GBM model and test data.
-    contributions <- h2o.predict_contributions(model, prostate.test)
-    contributions
+        # Predict the contributions using the GBM model and test data.
+        contributions <- h2o.predict_contributions(model, prostate.test)
+        contributions
 
-    AGE        RACE       PSA        GLEASON    BiasTerm
-    ---------  ---------- ---------  ---------  ----------
-    -0.3929753  0.02188157 0.3530045  0.5453218 -0.6589417
-    -0.6489378 -0.24417394 1.0434356  0.7937416 -0.6589417
-     0.3244801 -0.23901901 0.9877144  1.0463049 -0.6589417
-     0.9402978 -0.33412665 2.0499718  1.0571480 -0.6589417
-    -0.7762397  0.03393304 0.1952782  1.8620299 -0.6589417
-     0.5900557  0.03899451 0.6708371 -1.2606093 -0.6589417
+        AGE        RACE       PSA        GLEASON    BiasTerm
+        ---------  ---------- ---------  ---------  ----------
+        -0.3929753  0.02188157 0.3530045  0.5453218 -0.6589417
+        -0.6489378 -0.24417394 1.0434356  0.7937416 -0.6589417
+         0.3244801 -0.23901901 0.9877144  1.0463049 -0.6589417
+         0.9402978 -0.33412665 2.0499718  1.0571480 -0.6589417
+        -0.7762397  0.03393304 0.1952782  1.8620299 -0.6589417
+         0.5900557  0.03899451 0.6708371 -1.2606093 -0.6589417
 
-     [95 rows x 5 columns]
+         [95 rows x 5 columns]
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Predict the contributions using the GBM model and test data.
-    contributions = model.predict_contributions(test)
-    contributions
+        # Predict the contributions using the GBM model and test data.
+        contributions = model.predict_contributions(test)
+        contributions
 
-    AGE          RACE        PSA        GLEASON    BiasTerm
-    -----------  ----------  ---------  ---------  ----------
-    -0.414587     0.0263119  -0.120703   0.407889   -0.581522
-     0.0913486    0.0250697  -0.746584   1.16642    -0.581522
-     0.565866     0.0603216   2.51301    0.739406   -0.581522
-    -0.670981     0.0210115   0.164873  -2.03487    -0.581522
-    -0.398603     0.0255295  -0.494069   0.537647   -0.581522
-     0.00915739   0.0458912   0.557667  -0.262171   -0.581522
-    -0.199497    -0.265438    2.18964    2.89974    -0.581522
-    -0.137073     0.0271401  -1.00939    1.47302    -0.581522
-     0.440857     0.0407717  -0.574498  -0.537758   -0.581522
-    -0.901466     0.0216657   0.453894  -2.39536    -0.581522
+        AGE          RACE        PSA        GLEASON    BiasTerm
+        -----------  ----------  ---------  ---------  ----------
+        -0.414587     0.0263119  -0.120703   0.407889   -0.581522
+         0.0913486    0.0250697  -0.746584   1.16642    -0.581522
+         0.565866     0.0603216   2.51301    0.739406   -0.581522
+        -0.670981     0.0210115   0.164873  -2.03487    -0.581522
+        -0.398603     0.0255295  -0.494069   0.537647   -0.581522
+         0.00915739   0.0458912   0.557667  -0.262171   -0.581522
+        -0.199497    -0.265438    2.18964    2.89974    -0.581522
+        -0.137073     0.0271401  -1.00939    1.47302    -0.581522
+         0.440857     0.0407717  -0.574498  -0.537758   -0.581522
+        -0.901466     0.0216657   0.453894  -2.39536    -0.581522
 
-    [58 rows x 5 columns]
+        [58 rows x 5 columns]
 
-    # Import required packages for running SHAP commands
-    import shap
+        # Import required packages for running SHAP commands
+        import shap
 
-    # Load JS visualization code
-    shap.initjs()
+        # Load JS visualization code
+        shap.initjs()
 
-    # Convert the H2OFrame to use with SHAP's visualization functions
-    contributions_matrix = contributions.as_data_frame().as_matrix()
+        # Convert the H2OFrame to use with SHAP's visualization functions
+        contributions_matrix = contributions.as_data_frame().as_matrix()
 
-    # Calculate SHAP values for all features
-    shap_values = contributions_matrix[:,0:4]
+        # Calculate SHAP values for all features
+        shap_values = contributions_matrix[:,0:4]
 
-    # Expected values is the last returned column
-    expected_value = contributions_matrix[:,4].min()
+        # Expected values is the last returned column
+        expected_value = contributions_matrix[:,4].min()
 
-    # Visualize the training set predictions
-    X=["AGE","RACE","PSA","GLEASON"]
-    shap.force_plot(expected_value, shap_values, X)
+        # Visualize the training set predictions
+        X=["AGE","RACE","PSA","GLEASON"]
+        shap.force_plot(expected_value, shap_values, X)
 
-    # Summarize the effects of all the features
-    shap.summary_plot(shap_values, X)
+        # Summarize the effects of all the features
+        shap.summary_plot(shap_values, X)
 
-    # View the same summary as a bar chart
-    shap.summary_plot(shap_values, X, plot_type="bar")
+        # View the same summary as a bar chart
+        shap.summary_plot(shap_values, X, plot_type="bar")
 
 
 Predict Stage Probabilities
@@ -1832,27 +1838,27 @@ Use the ``staged_predict_proba`` function to predict class probabilities at each
 
 Using the previous example, run the following to predict probabilities at each stage in the model:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
   
-    # Predict the class probabilities using the GBM model and test data.
-    staged_predict_proba <- h2o.staged_predict_proba(model, prostate.test)
+        # Predict the class probabilities using the GBM model and test data.
+        staged_predict_proba <- h2o.staged_predict_proba(model, prostate.test)
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Predict the class probabilities using the GBM model and test data.
-    staged_predict_proba = model.staged_predict_proba(test)
+        # Predict the class probabilities using the GBM model and test data.
+        staged_predict_proba = model.staged_predict_proba(test)
 
 Prediction Threshold
 ~~~~~~~~~~~~~~~~~~~~
 
 For classification problems, when running ``h2o.predict()`` or ``.predict()``, the prediction threshold is selected as follows:
 
-- If you train a model with only training data, the Max F1 threshold from the train data model metrics is used.
-- If you train a model with train and validation data, the Max F1 threshold from the validation data model metrics is used.
-- If you train a model with train data and set the ``nfold`` parameter, the Max F1 threshold from the training data model metrics is used.
-- If you train a model with the train data and validation data and also set the ``nfold parameter``, the Max F1 threshold from the validation data model metrics is used.
+- If you only have training data, the max F1 threshold comes from the train data model.
+- If you train a model with training and validation data, the max F1 threshold comes from the validation data model.
+- If you train a model with training data and set the ``nfolds`` parameter, the Max F1 threshold from the training data model metrics is used.
+- If you train a model with the train data and validation data and also set the ``nfolds`` parameter, the Max F1 threshold from the validation data model metrics is used.
 
 Predict Feature Frequency
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1861,45 +1867,45 @@ Use the ``feature_frequencies`` function to retrieve the number of times a featu
 
 Using the previous example, run the following to the find frequency of each feature in the prediction path of the model:
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
   
-    # Retrieve the number of occurrences of each feature for given observations
-    # on their respective paths in a tree ensemble model
-    feature_frequencies <- h2o.feature_frequencies(model, prostate.train)
-    feature_frequencies
+        # Retrieve the number of occurrences of each feature for given observations
+        # on their respective paths in a tree ensemble model
+        feature_frequencies <- h2o.feature_frequencies(model, prostate.train)
+        feature_frequencies
 
-    AGE RACE PSA GLEASON
-     98    8 199      46
-    114    6 238      42
-    103    9 227      57
-     94   13 183      53
-    103    9 225      57
-    102    5 238      36
+        AGE RACE PSA GLEASON
+         98    8 199      46
+        114    6 238      42
+        103    9 227      57
+         94   13 183      53
+        103    9 225      57
+        102    5 238      36
 
-    [275 rows x 4 columns]
+        [275 rows x 4 columns]
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Retrieve the number of occurrences of each feature for given observations
-    # on their respective paths in a tree ensemble model
-    feature_frequencies = model.feature_frequencies(train)
-    feature_frequencies
+        # Retrieve the number of occurrences of each feature for given observations
+        # on their respective paths in a tree ensemble model
+        feature_frequencies = model.feature_frequencies(train)
+        feature_frequencies
 
-    AGE    RACE    PSA    GLEASON
-    -----  ------  -----  ---------
-    109      10    197         68
-    109       3    220         64
-    101      11    222         66
-    106       6    188         65
-     90       1    199         61
-    130       7    194         65
-    103       3    217         66
-    103      11    203         65
-    102       3    218         66
-    112       6    203         64
+        AGE    RACE    PSA    GLEASON
+        -----  ------  -----  ---------
+        109      10    197         68
+        109       3    220         64
+        101      11    222         66
+        106       6    188         65
+         90       1    199         61
+        130       7    194         65
+        103       3    217         66
+        103      11    203         65
+        102       3    218         66
+        112       6    203         64
 
-    [273 rows x 4 columns]
+        [273 rows x 4 columns]
 
 Predict using MOJOs
 ~~~~~~~~~~~~~~~~~~~

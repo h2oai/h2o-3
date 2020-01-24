@@ -5,6 +5,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -52,4 +53,16 @@ public class Jetty9HelperTest {
     assertEquals("test-alias", contextFactory.getCertAlias());
   }
 
+  @Test
+  public void testEnsureDaemonThreads() {
+    H2OHttpConfig cfg = new H2OHttpConfig();
+    cfg.ensure_daemon_threads = true;
+
+    when(_hhView.getConfig()).thenReturn(cfg);
+
+    Server s = new Jetty9Helper(_hhView).createJettyServer("127.0.0.1", 0);
+    assertTrue(s.getThreadPool() instanceof QueuedThreadPool);
+    assertTrue(((QueuedThreadPool) s.getThreadPool()).isDaemon());
+  }
+  
 }

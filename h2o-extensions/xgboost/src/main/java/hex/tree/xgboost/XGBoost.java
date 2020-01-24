@@ -3,6 +3,7 @@ package hex.tree.xgboost;
 import hex.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
+import hex.tree.PlattScalingHelper;
 import hex.tree.TreeUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.util.FeatureScore;
@@ -20,6 +21,7 @@ import water.util.*;
 import water.util.Timer;
 
 import java.io.*;
+import java.nio.file.Files;
 import java.util.*;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
@@ -30,7 +32,8 @@ import static water.H2O.technote;
  *
  *  Based on "Elements of Statistical Learning, Second Edition, page 387"
  */
-public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> {
+public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> 
+    implements PlattScalingHelper.ModelBuilderWithCalibration<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
   private static final double FILL_RATIO_THRESHOLD = 0.25D;
 
@@ -61,9 +64,19 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // Number of trees requested, including prior trees from a checkpoint
   private int _ntrees;
+  
+  // Back-end used for the build
+  private XGBoostModel.XGBoostParameters.Backend _backend;
+
+  // Calibration frame for Platt scaling
+  private transient Frame _calib;
 
   @Override protected int nModelsInParallel(int folds) {
-    return nModelsInParallel(folds, 2);
+    if (_backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
+      return 1;
+    } else {
+      return nModelsInParallel(folds, 2);
+    }
   }
 
   /** Start the XGBoost training Job on an F/J thread. */
@@ -92,6 +105,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if(!new XGBoostExtensionCheck().doAllNodes().enabled) {
         error("XGBoost", "XGBoost is not available on all nodes!");
       }
+    }
+    if (H2O.CLOUD.members().length == 0) {
+      // during rest-api registration we do not care about the actual back-end
+      _backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+    } else {
+      _backend = XGBoostModel.getActualBackend(_parms);
     }
 
     if (_parms.hasCheckpoint()) {  // Asking to continue from checkpoint?
@@ -131,9 +150,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (expensive) {
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(XGBoost.this);
-      if (hasOffsetCol()) {
-        error("_offset_column", "Offset is not supported for XGBoost.");
-      }
     }
 
     if ( _parms._backend == XGBoostModel.XGBoostParameters.Backend.gpu) {
@@ -201,6 +217,23 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if ((_train != null) && (_parms._monotone_constraints != null)) {
       TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
     }
+
+    PlattScalingHelper.initCalibration(this, _parms, expensive);
+  }
+
+  @Override
+  public XGBoost getModelBuilder() {
+    return this;
+  }
+
+  @Override
+  public Frame getCalibrationFrame() {
+    return _calib;
+  }
+
+  @Override
+  public void setCalibrationFrame(Frame f) {
+    _calib = f;
   }
 
   static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
@@ -225,7 +258,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (parms._weights_column != null && parms._offset_column != null) {
       Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
     }
-    if (parms._weights_column != null && parms._offset_column == null /*FIXME: offset not yet implemented*/) {
+    if (parms._weights_column != null && parms._offset_column == null) {
       dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
       if (nClasses == 1)
         dinfo.updateWeightedSigmaAndMeanForResponse(ymt.responseSDs(), ymt.responseMeans());
@@ -237,11 +270,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
   // ----------------------
   class XGBoostDriver extends Driver {
-
-    // Per driver instance
-    final private String featureMapFileName = "featureMap" + UUID.randomUUID().toString() + ".txt";
-    // Shared file to write list of features
-    private String featureMapFileAbsolutePath = null;
 
     @Override
     public void computeImpl() {
@@ -283,6 +311,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
 
       XGBoostSetupTask setupTask = null;
+      File featureMapFile = null;
       try {
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(_train);
 
@@ -298,7 +327,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         assert dataInfo != null;
         String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
         model.model_info().setFeatureMap(featureMap);
-        featureMapFileAbsolutePath = createFeatureMapFile(featureMap);
+        featureMapFile = createFeatureMapFile(featureMap);
 
         BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = boosterParms.toTwoDimTable();
@@ -311,7 +340,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         try {
           // initial iteration
           XGBoostUpdateTask nullModelTask = new XGBoostUpdateTask(setupTask, 0).run();
-          BoosterProvider boosterProvider = new BoosterProvider(model.model_info(), nullModelTask);
+          BoosterProvider boosterProvider = new BoosterProvider(model.model_info(), featureMapFile, nullModelTask);
 
           // train the model
           scoreAndBuildTrees(setupTask, boosterProvider, model);
@@ -328,6 +357,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         xgBoostError.printStackTrace();
         throw new RuntimeException("XGBoost failure", xgBoostError);
       } finally {
+        if (featureMapFile != null) {
+          if (! featureMapFile.delete()) {
+            Log.warn("Unable to delete file " + featureMapFile + ". Please do a manual clean-up.");
+          }
+        }
         if (setupTask != null) {
           try {
             XGBoostCleanupTask.cleanUp(setupTask);
@@ -374,19 +408,16 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
 
     // For feature importances - write out column info
-    private String createFeatureMapFile(String featureMap) {
-      OutputStream os = null;
+    private File createFeatureMapFile(String featureMap) {
       try {
-        File tmpModelDir = java.nio.file.Files.createTempDirectory("xgboost-model-" + _result.toString()).toFile();
-        File fmFile = new File(tmpModelDir, featureMapFileName);
-        os = new FileOutputStream(fmFile);
-        os.write(featureMap.getBytes());
-        os.close();
-        return fmFile.getAbsolutePath();
+        File fmFile = Files.createTempFile("h2o_xgb_" + _result.toString(), ".txt").toFile();
+        fmFile.deleteOnExit();
+        try (OutputStream os = new FileOutputStream(fmFile)) {
+          os.write(featureMap.getBytes());
+        }
+        return fmFile;
       } catch (IOException e) {
-        throw new RuntimeException("Cannot generate feature map file " + featureMapFileName, e);
-      } finally {
-        FileUtils.close(os);
+        throw new RuntimeException("Cannot generate feature map file" , e);
       }
     }
 
@@ -493,7 +524,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, FeatureScore>>() {
             @Override
             public Map<String, FeatureScore> apply(Booster booster) throws XGBoostError {
-              final String[] modelDump = booster.getModelDump(featureMapFileAbsolutePath, true);
+              String fmPath = boosterProvider._featureMapFile.getAbsolutePath();
+              final String[] modelDump = booster.getModelDump(fmPath, true);
               return XGBoostUtils.parseFeatureScores(modelDump);
             }
           }, booster);
@@ -512,6 +544,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model.update(_job);
         Log.info(model);
         scored = true;
+      }
+
+      // Model Calibration (only for the final model, not CV models)
+      if (finalScoring && _parms.calibrateModel() && (!_parms._is_cv_model)) {
+        model._output._calib_model = PlattScalingHelper.buildCalibrationModel(XGBoost.this, _parms, _job, model);
+        model.update(_job);
       }
 
       return scored;
@@ -542,11 +580,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   }
 
   private static final class BoosterProvider {
-    XGBoostModelInfo _modelInfo;
+    final XGBoostModelInfo _modelInfo;
+    final File _featureMapFile;
     XGBoostUpdateTask _updateTask;
 
-    BoosterProvider(XGBoostModelInfo modelInfo, XGBoostUpdateTask updateTask) {
+    BoosterProvider(XGBoostModelInfo modelInfo, File featureMapFile, XGBoostUpdateTask updateTask) {
       _modelInfo = modelInfo;
+      _featureMapFile = featureMapFile;
       _updateTask = updateTask;
       _modelInfo.setBoosterBytes(_updateTask.getBoosterBytes());
     }

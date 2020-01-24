@@ -9,11 +9,11 @@ configurations {
 dependencies {
     compile project(":h2o-core")
     compile('net.java.dev.jets3t:jets3t:0.9.0')
-    compile("org.apache.hadoop:hadoop-hdfs-client:$defaultHadoopClientVersion") {
+    compile("org.apache.hadoop:$defaultHdfsDependency:$defaultHadoopVersion") {
         // Pull all dependencies to allow run directly from IDE or command line
         transitive = true
     }
-    compile("org.apache.hadoop:hadoop-aws:$defaultHadoopClientVersion")
+    compile("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
     testCompile "junit:junit:${junitVersion}"
     testCompile "org.hamcrest:hamcrest-junit:2.0.0.0"
     testCompile project(path: ":h2o-core", configuration: "testArchives")

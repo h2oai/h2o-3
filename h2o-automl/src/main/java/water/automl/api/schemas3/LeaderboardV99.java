@@ -1,13 +1,14 @@
 package water.automl.api.schemas3;
 
-import ai.h2o.automl.Leaderboard;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import water.api.API;
-import water.api.Schema;
 import water.api.schemas3.KeyV3;
+import water.api.schemas3.SchemaV3;
+import water.api.schemas3.TwoDimTableV3;
 
 import java.util.stream.Stream;
 
-public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
+public class LeaderboardV99 extends SchemaV3<Leaderboard, LeaderboardV99> {
   /**
    * Identifier for models that should be grouped together in the leaderboard
    * (e.g., "airlines" and "iris").
@@ -52,6 +53,10 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
   @API(help="Metric direction used in the sort", direction=API.Direction.INOUT)
   public boolean sort_decreasing;
 
+
+  @API(help="A table representation of this leaderboard, for easy rendering",  direction=API.Direction.OUTPUT)
+  public TwoDimTableV3 table;
+
   @Override
   public LeaderboardV99 fillFromImpl(Leaderboard leaderboard) {
     super.fillFromImpl(leaderboard, new String[] { "models", "leaderboard_frame", "sort_metrics", "sort_decreasing" });
@@ -64,7 +69,7 @@ public class LeaderboardV99 extends Schema<Leaderboard, LeaderboardV99> {
 
     sort_metrics = leaderboard.getSortMetricValues();
     sort_decreasing = !Leaderboard.isLossFunction(sort_metric);
-
+    table = new TwoDimTableV3().fillFromImpl(leaderboard.toTwoDimTable());
     return this;
   }
 

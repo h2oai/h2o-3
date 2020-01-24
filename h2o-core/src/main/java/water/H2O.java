@@ -20,7 +20,10 @@ import water.server.ServletUtils;
 import water.util.*;
 import water.webserver.iface.WebServer;
 
-import java.io.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
 import java.lang.reflect.Field;
@@ -249,6 +252,9 @@ final public class H2O {
     /** -internal_security_conf path (absolute or relative) to a file containing all internal security related configurations */
     public String internal_security_conf = null;
 
+    /** -internal_security_conf_rel_paths interpret paths of internal_security_conf relative to the main config file */
+    public boolean internal_security_conf_rel_paths = false;
+
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
 
@@ -347,6 +353,11 @@ final public class H2O {
     /** -allow_clients, -allow_clients=true; Enable clients to connect to this H2O node - disabled by default */
     public boolean allow_clients = false;
 
+    /** If this timeout is set to non 0 value, stop the cluster if there hasn't been any rest api request to leader
+     * node after the given timeout. Unit is milliseconds.
+     */
+    public int rest_api_ping_timeout = 0;
+    
     /** specifies a file to write when the node is up */
     public String notify_local;
 
@@ -382,6 +393,9 @@ final public class H2O {
 
     /** Timeout specifying how long to wait before we check if the client has disconnected from this node */
     public long clientDisconnectTimeout = HeartBeatThread.CLIENT_TIMEOUT * 20;
+
+    /** -embedded; when running embedded into another application (eg. Sparkling Water) - enforce all threads to be daemon threads */
+    public boolean embedded = false;
 
     /**
      * Optionally disable algorithms marked as beta or experimental.
@@ -528,6 +542,9 @@ final public class H2O {
       }
       else if (s.matches("allow_clients")) {
         trgt.allow_clients = true;
+      } else if (s.matches("rest_api_ping_timeout")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.rest_api_ping_timeout = s.parseInt(args[i]);
       }
       else if (s.matches("notify_local")) {
         i = s.incrementAndCheck(i, args);
@@ -654,6 +671,9 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         trgt.internal_security_conf = args[i];
       }
+      else if (s.matches("internal_security_conf_rel_paths")) {
+        trgt.internal_security_conf_rel_paths = true;
+      }
       else if (s.matches("decrypt_tool")) {
         i = s.incrementAndCheck(i, args);
         trgt.decrypt_tool = args[i];
@@ -680,6 +700,8 @@ final public class H2O {
         i = s.incrementAndCheck(i, args);
         String value = args[i];
         trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
+      } else if(s.matches("embedded")) {
+        trgt.embedded = true;
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }
@@ -736,6 +758,10 @@ final public class H2O {
       }
       if (ARGS.session_timeout <= 0)
         parseFailed("Invalid session timeout specification (" + ARGS.session_timeout + ")");
+    }
+    
+    if (ARGS.rest_api_ping_timeout < 0) {
+      parseFailed(String.format("rest_api_ping_timeout needs to be 0 or higher, was (%d)", ARGS.rest_api_ping_timeout));
     }
 
     // Validate extension arguments
@@ -1568,10 +1594,7 @@ final public class H2O {
   /* A static list of acceptable Cloud members passed via -flatfile option.
    * It is updated also when a new client appears. */
   private static Set<H2ONode> STATIC_H2OS = null;
-
-  /* List of all clients that ever connected to this cloud. Keys are IP:PORT of these clients */
-  private static Map<String, H2ONode> CLIENTS_MAP = new ConcurrentHashMap<>();
-
+  
   // Reverse cloud index to a cloud; limit of 256 old clouds.
   static private final H2O[] CLOUDS = new H2O[256];
 
@@ -1622,6 +1645,7 @@ final public class H2O {
     Log.info("Java version: Java "+System.getProperty("java.version")+" (from "+System.getProperty("java.vendor")+")");
     List<String> launchStrings = ManagementFactory.getRuntimeMXBean().getInputArguments();
     Log.info("JVM launch parameters: "+launchStrings);
+    Log.info("JVM process id: " + ManagementFactory.getRuntimeMXBean().getName());
     Log.info("OS version: "+System.getProperty("os.name")+" "+System.getProperty("os.version")+" ("+System.getProperty("os.arch")+")");
     long totalMemory = OSUtils.getTotalPhysicalMemory();
     Log.info ("Machine physical memory: " + (totalMemory==-1 ? "NA" : PrettyPrint.bytes(totalMemory)));
@@ -1651,6 +1675,11 @@ final public class H2O {
               "  2. Point your browser to " + NetworkInit.h2oHttpView.getScheme() + "://localhost:55555");
     }
 
+    if (H2O.ARGS.rest_api_ping_timeout > 0) {
+      Log.info(String.format("Registering REST API Check Thread. If 3/Ping endpoint is not" +
+          " accessed during %d ms, the cluster will be terminated.", H2O.ARGS.rest_api_ping_timeout));
+      new RestApiPingCheckThread().start();
+    }
     // Create the starter Cloud with 1 member
     SELF._heartbeat._jar_md5 = JarHash.JARHASH;
     SELF._heartbeat._client = ARGS.client;
@@ -1822,13 +1851,19 @@ final public class H2O {
 
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
+    if(!cloudIsReady(x)) 
+      Log.info("Waiting for clouding to finish. Current number of nodes " + CLOUD.size() + ". Target number of nodes: " + x);
     while (System.currentTimeMillis() - start < ms) {
-      if (CLOUD.size() >= x && Paxos._commonKnowledge)
+      if (cloudIsReady(x))
         break;
       try { Thread.sleep(100); } catch (InterruptedException ignore) {}
     }
     if (CLOUD.size() < x)
-      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x);
+      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x + ". Consider to increase `DEFAULT_TIME_FOR_CLOUDING`.");
+  }
+
+  private static boolean cloudIsReady(int x) {
+    return CLOUD.size() >= x && Paxos._commonKnowledge;
   }
 
   public static int getCloudSize() {
@@ -1983,8 +2018,8 @@ final public class H2O {
     // Notes: 
     // - make sure that the following whitelist is logically consistent with whitelist in R code - see function .h2o.check_java_version in connection.R
     // - upgrade of the javassist library should be considered when adding support for a new java version
-    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>12)) {
-      System.err.println("Only Java 8, 9, 10, 11 and 12 are supported, system version is " + System.getProperty("java.version"));
+    if (JAVA_VERSION.isKnown() && !isUserEnabledJavaVersion() && (JAVA_VERSION.getMajor()<8 || JAVA_VERSION.getMajor()>13)) {
+      System.err.println("Only Java 8, 9, 10, 11, 12 and 13 are supported, system version is " + System.getProperty("java.version"));
       return true;
     }
     String vmName = System.getProperty("java.vm.name");
@@ -2176,6 +2211,12 @@ final public class H2O {
       new ClientDisconnectCheckThread().start();
     }
 
+    if (isGCLoggingEnabled()) {
+      Log.info(H2O.technote(16,
+              "GC logging is enabled, you might see messages containing \"GC (Allocation Failure)\". " +
+                      "Please note that this is a normal part of GC operations and occurrence of such messages doesn't directly indicate an issue."));
+    }
+    
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");
     Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
@@ -2191,6 +2232,18 @@ final public class H2O {
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
   }
 
+  private static boolean isGCLoggingEnabled() {
+    RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+    List<String> jvmArgs = runtimeMXBean.getInputArguments();
+    for (String arg : jvmArgs) {
+      if (arg.startsWith("-XX:+PrintGC") || 
+              arg.equals("-verbose:gc") || 
+              (arg.startsWith("-Xlog:") && arg.contains("gc")))
+        return true;
+    }
+    return false;
+  }
+  
   /** Find PID of the current process, use -1 if we can't find the value. */
   private static long getCurrentPID() {
     try {

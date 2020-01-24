@@ -17,7 +17,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.*;
-import water.util.ArrayUtils;
 
 import java.io.Serializable;
 import java.util.Arrays;
@@ -113,7 +112,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     if(domain == null && (_parms._family == Family.binomial || _parms._family == Family.quasibinomial))
       domain = binomialClassNames;
-    return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
+    if (_parms._HGLM) {
+      String[] domaint = new String[]{"HGLM_" + _parms._family.toString() + "_" + _parms._rand_family[0].toString()};
+      return new GLMMetricBuilder(domaint, null, null, 0, true, false);
+    } else
+      return new GLMMetricBuilder(domain, _ymu, new GLMWeightsFun(_parms), _output.bestSubmodel().rank(), true, _parms._intercept);
   }
 
   protected double [] beta_internal(){
@@ -173,6 +176,14 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _output.setSubmodelIdx(id);
   }
 
+  public void update(double [] beta, double[] ubeta, double devianceTrain, double devianceTest,int iter){
+    int id = _output._submodels.length-1;
+    Submodel sm = new Submodel(_output._submodels[id].lambda_value,beta,iter,devianceTrain,devianceTest);
+    sm.ubeta = Arrays.copyOf(ubeta, ubeta.length);
+    _output._submodels[id] = sm;
+    _output.setSubmodelIdx(id);
+  }
+
   public GLMModel clone2(){
     GLMModel res = clone();
     res._output = (GLMOutput)res._output.clone();
@@ -192,19 +203,26 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     @Override public long progressUnits() { return GLM.WORK_TOTAL; }
     // public int _response; // TODO: the standard is now _response_column in SupervisedModel.SupervisedParameters
     public boolean _standardize = true;
+    public boolean _useDispersion1 = false; // internal use only, not for users
     public Family _family;
-    public Link _link = Link.family_default;
+    public Family[] _rand_family;   // for HGLM
+    public Link _link;
+    public Link[] _rand_link;       // for HGLM
     public Solver _solver = Solver.AUTO;
     public double _tweedie_variance_power;
     public double _tweedie_link_power;
     public double _theta; // 1/k and is used by negative binomial distribution only
     public double _invTheta;
-    public double [] _alpha = null;
-    public double [] _lambda = null;
+    public double [] _alpha;
+    public double [] _lambda;
+    public double[] _startval;  // for HGLM, initialize fixed and random coefficients (init_u), init_sig_u, init_sig_e
+    public boolean _calc_like;
+    public int[] _random_columns;
     // Has to be Serializable for backwards compatibility (used to be DeepLearningModel.MissingValuesHandling)
     public Serializable _missing_values_handling = MissingValuesHandling.MeanImputation;
     public double _prior = -1;
     public boolean _lambda_search = false;
+    public boolean _HGLM = false; // true to enable HGLM
     public int _nlambdas = -1;
     public boolean _non_negative = false;
     public boolean _exactLambdas = false;
@@ -291,7 +309,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         glm.hide("_nlambdas", "only applies if lambda search is on.");
         glm.hide("_early_stopping","only applies if lambda search is on.");
       }
-      if (_family == Family.ordinal) {
+      if (_family==Family.ordinal) {
         if (_intercept == false)
           glm.error("Ordinal regression", "must have intercepts.  set _intercept to true.");
         if (!(_solver.equals(Solver.AUTO) || _solver.equals(Solver.GRADIENT_DESCENT_SQERR) || _solver.equals(Solver.GRADIENT_DESCENT_LH)))
@@ -299,6 +317,38 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
                   "Do not set Solver or set Solver to auto, GRADIENT_DESCENT_LH or GRADIENT_DESCENT_SQERR.");
         if (_lambda_search)
           glm.error("ordinal regression", "Ordinal regression do not support lambda search.");
+      }
+      if (_HGLM) {  // check correct parameter settings for HGLM
+        if (_random_columns==null)
+          throw new IllegalArgumentException("Need to specify the random component columns for HGLM.");
+        if (!(_random_columns.length == 1))
+          throw new IllegalArgumentException("HGLM only supports ONE random component for now.");
+        if (!(_rand_family==null) && !(_rand_family.length==_random_columns.length))
+          throw new IllegalArgumentException("HGLM _rand_family: must have the same length as random_columns.");
+        if (!(_rand_link==null) && !(_rand_link.length==_random_columns.length))
+          throw new IllegalArgumentException("HGLM _rand_link: must have the same length as random_columns.");   
+        if (!_family.equals(Family.gaussian))
+          throw new IllegalArgumentException("HGLM only supports Gaussian distributions for now.");
+        if (!(_rand_family==null)) {
+          for (Family fam : _rand_family) {
+            if (!fam.equals(Family.gaussian))
+              throw new IllegalArgumentException("HGLM only supports Gaussian distributions for now.");
+          }
+        }
+        if (!(_rand_link==null)) {
+          for (Link lin : _rand_link) {
+            if (!lin.equals(Link.identity) && !lin.equals(Link.family_default))
+            throw new IllegalArgumentException("HGLM only supports identity link functions for now.");
+          }
+        }
+        if (!(_link.equals(Link.family_default)) && !(_link.equals(Link.identity)))
+          throw new IllegalArgumentException("HGLM only supports identity link functions for now.");
+        if (_lambda_search)
+          throw new IllegalArgumentException("HGLM does not allow lambda search.  Set it to False/FALSE/false to disable it.");
+        if (_nfolds > 1)
+          throw new IllegalArgumentException("HGLM does not allow cross-validation.");
+        if (_valid != null)
+          throw new IllegalArgumentException("HGLM does not allow validation.");
       }
       if(_link != Link.family_default) { // check we have compatible link
         switch (_family) {
@@ -489,6 +539,32 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
+    public final double randLinkInv(double x, int index) {
+      switch(_rand_link[index]) {
+//        case multinomial: // should not be used
+        case identity:
+          return x;
+        case ologlog:
+          return 1.0-Math.exp(-1.0*Math.exp(x));
+        case oprobit:
+          return _dprobit.cumulativeProbability(x);
+        case ologit:
+        case logit:
+          return 1.0 / (Math.exp(-x) + 1.0);
+        case log:
+          return Math.exp(x);
+        case inverse:
+          double xx = (x < 0) ? Math.min(-1e-5, x) : Math.max(1e-5, x);
+          return 1.0 / xx;
+        case tweedie:
+          return _tweedie_link_power == 0
+                  ?Math.max(2e-16,Math.exp(x))
+                  :Math.pow(x, 1/ _tweedie_link_power);
+        default:
+          throw new RuntimeException("unexpected link function id  " + this);
+      }
+    }
+    
     public final double linkInv(double x) {
       switch(_link) {
 //        case multinomial: // should not be used
@@ -912,6 +988,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public final double devianceTest;
     public final int    [] idxs;
     public final double [] beta;
+    public double[] ubeta;  // store HGLM random coefficients
     public double _trainTheta;
 
     public double [] getBeta(double [] beta) {
@@ -981,6 +1058,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
     String[] _coefficient_names;
+    String[] _random_coefficient_names; // for HGLM
+    String[] _random_column_names;
     public int _best_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
     public int _lambda_1se = -1; // lambda_best + sd(lambda); only applicable if running lambda search with nfold
     public int _selected_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
@@ -989,12 +1068,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double lambda_1se(){return _lambda_1se == -1 || _lambda_1se >= _submodels.length?-1:_submodels.length == 0 ? -1 : _submodels[_lambda_1se].lambda_value;}
     public double lambda_selected(){return _submodels[_selected_lambda_idx].lambda_value;}
     double[] _global_beta;
+    double[] _ubeta;  // HGLM:  random coefficients
     private double[] _zvalues;
     double [][] _vcov;
     private double _dispersion;
     private boolean _dispersionEstimated;
-    double _trainTheta;
-
+    
     public boolean hasPValues(){return _zvalues != null;}
     public double [] stdErr(){
       double [] res = _zvalues.clone();
@@ -1029,12 +1108,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean isStandardized() {
       return _dinfo._predictor_transform == TransformType.STANDARDIZE;
     }
-
-
-
+    
     public String[] coefficientNames() {
       return _coefficient_names;
     }
+    public String[] randomcoefficientNames() { return _random_coefficient_names; }
+    public double[] ubeta() { return _ubeta; }
 
     // GLM is always supervised
     public boolean isSupervised() { return true; }
@@ -1071,6 +1150,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       assert !ArrayUtils.hasNaNsOrInfs(beta);
       _global_beta=beta;
       _submodels = new Submodel[]{new Submodel(0,beta,-1,Double.NaN,Double.NaN)};
+    }
+
+    public GLMOutput(DataInfo dinfo, String[] column_names, String[] column_types, String[][] domains, String[] coefficient_names, boolean binomial, double[] beta, double[] ubeta) {
+      this(dinfo,column_names,column_types, domains,coefficient_names,binomial);
+      assert !ArrayUtils.hasNaNsOrInfs(beta);
+      _global_beta=beta;
+      _ubeta = ubeta;
+      Submodel sm = new Submodel(0,beta,-1,Double.NaN,Double.NaN);
+      sm.ubeta = Arrays.copyOf(ubeta, ubeta.length);
+      _submodels = new Submodel[]{sm};
     }
 
     public GLMOutput() {_isSupervised = true; _nclasses = -1;}
@@ -1112,6 +1201,10 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       setNames(names, glm._dinfo._adaptedFrame.typesStr());
       _domains = domains;
       _coefficient_names = Arrays.copyOf(cnames, cnames.length + 1);
+      if (glm._parms._HGLM) {
+        _random_coefficient_names = Arrays.copyOf(glm._randCoeffNames, glm._randCoeffNames.length);
+        _random_column_names = Arrays.copyOf(glm._randomColNames, glm._randomColNames.length);
+      }
       _coefficient_names[_coefficient_names.length-1] = "Intercept";
       _binomial = (glm._parms._family == Family.binomial || glm._parms._family == Family.quasibinomial);
       _nclasses = glm.nclasses();
@@ -1178,6 +1271,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
     public void setSubmodelIdx(int l){
       _selected_lambda_idx = l;
+      if (_random_coefficient_names != null) 
+        _ubeta = Arrays.copyOf(_submodels[l].ubeta, _submodels[l].ubeta.length);
       if(_multinomial || _ordinal) {
         _global_beta_multinomial = getNormBetaMultinomial(l);
         for(int i = 0; i < _global_beta_multinomial.length; ++i)
@@ -1242,44 +1337,99 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
    * Re-do the TwoDim table generation with updated model.
    */
   public TwoDimTable generateSummary(Key train, int iter){
-    String[] names = new String[]{"Family", "Link", "Regularization", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
-    String[] types = new String[]{"string", "string", "string", "int", "int", "int", "string"};
-    String[] formats = new String[]{"%s", "%s", "%s", "%d", "%d", "%d", "%s"};
-    if (_parms._lambda_search) {
-      names = new String[]{"Family", "Link", "Regularization", "Lambda Search", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
-      types = new String[]{"string", "string", "string", "string", "int", "int", "int", "string"};
-      formats = new String[]{"%s", "%s", "%s", "%s", "%d", "%d", "%d", "%s"};
+      String[] names = new String[]{"Family", "Link", "Regularization", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
+      String[] types = new String[]{"string", "string", "string", "int", "int", "int", "string"};
+      String[] formats = new String[]{"%s", "%s", "%s", "%d", "%d", "%d", "%s"};
+      if (_parms._lambda_search) {
+        names = new String[]{"Family", "Link", "Regularization", "Lambda Search", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
+        types = new String[]{"string", "string", "string", "string", "int", "int", "int", "string"};
+        formats = new String[]{"%s", "%s", "%s", "%s", "%d", "%d", "%d", "%s"};
+      }
+      _output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, names, types, formats, "");
+      _output._model_summary.set(0, 0, _parms._family.toString());
+      _output._model_summary.set(0, 1, _parms._link.toString());
+      String regularization = "None";
+      if (_parms._lambda != null && !(_parms._lambda.length == 1 && _parms._lambda[0] == 0)) { // have regularization
+        if (_parms._alpha[0] == 0)
+          regularization = "Ridge ( lambda = ";
+        else if (_parms._alpha[0] == 1)
+          regularization = "Lasso (lambda = ";
+        else
+          regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(_parms._alpha[0], 4) + ", lambda = ";
+        regularization = regularization + MathUtils.roundToNDigits(_parms._lambda[_output._selected_lambda_idx], 4) + " )";
+      }
+      _output._model_summary.set(0, 2, regularization);
+      int lambdaSearch = 0;
+      if (_parms._lambda_search) {
+        lambdaSearch = 1;
+        _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda.max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", lambda.min = " + MathUtils.roundToNDigits(_output.lambda_best(), 4) + ", lambda.1se = " + MathUtils.roundToNDigits(_output.lambda_1se(), 4));
+      }
+      int intercept = _parms._intercept ? 1 : 0;
+      if (_output.nclasses() > 2) {
+        _output._model_summary.set(0, 3 + lambdaSearch, _output.nclasses() * _output._coefficient_names.length);
+        _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - _output.nclasses() * intercept));
+      } else {
+        _output._model_summary.set(0, 3 + lambdaSearch, beta().length - 1);
+        _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - intercept));
+      }
+      _output._model_summary.set(0, 5 + lambdaSearch, Integer.valueOf(iter));
+      _output._model_summary.set(0, 6 + lambdaSearch, train.toString());
+      return _output._model_summary;
+  }
+
+  /***
+   * This one is for HGLM
+   * @param train
+   * @param iter
+   * @return
+   */
+  public TwoDimTable generateSummaryHGLM(Key train, int iter){
+    String[] names = new String[]{"Family", "Link", "Number of Predictors Total", "Number of Active Predictors", "Number of Iterations", "Training Frame"};
+    String[] types = new String[]{"string", "string", "int", "int", "int", "string"};
+    String[] formats = new String[]{"%s", "%s", "%d", "%d", "%d", "%s"};
+    int numRand = _parms._rand_family.length;
+    String[] rand_family_links = new String[numRand * 2];
+    for (int index = 0; index < numRand; index++) {
+      int tindex = index * 2;
+      rand_family_links[tindex] = "rand_family_for_column_" + index;
+      rand_family_links[tindex + 1] = "rand_link_for_column_" + index;
     }
-    _output._model_summary = new TwoDimTable("GLM Model", "summary", new String[]{""}, names, types, formats, "");
-    _output._model_summary.set(0, 0, _parms._family.toString());
-    _output._model_summary.set(0, 1, _parms._link.toString());
-    String regularization = "None";
-    if (_parms._lambda != null && !(_parms._lambda.length == 1 && _parms._lambda[0] == 0)) { // have regularization
-      if (_parms._alpha[0] == 0)
-        regularization = "Ridge ( lambda = ";
-      else if (_parms._alpha[0] == 1)
-        regularization = "Lasso (lambda = ";
+    int totListLen = _parms._rand_family.length * 2 + names.length;
+    String[] tnames = new String[totListLen];
+    String[] ttypes = new String[totListLen];
+    String[] tformats = new String[totListLen];
+    System.arraycopy(names, 0, tnames, 0, 2); // copy family, link
+    System.arraycopy(types, 0, ttypes, 0, 2);
+    System.arraycopy(formats, 0, tformats, 0, 2);
+    int numCopy = 2 * numRand;
+    for (int index = 0; index < numCopy; index++) { // insert random family/link info
+      tnames[index + 2] = rand_family_links[index];
+      ttypes[index + 2] = "string";
+      tformats[index + 2] = "%s";
+    }
+    int offset = 2 + numCopy;
+    int copyLength = names.length - 2;
+    System.arraycopy(names, 2, tnames, offset, copyLength); // copy remaining of original names
+    System.arraycopy(types, 2, ttypes, offset, copyLength);
+    System.arraycopy(formats, 2, tformats, offset, copyLength);
+    _output._model_summary = new TwoDimTable("HGLM Model", "summary", new String[]{""},
+            tnames, ttypes, tformats, "");
+    int tableColIndex = 0;
+    _output._model_summary.set(0, tableColIndex++, _parms._family.toString());
+    _output._model_summary.set(0, tableColIndex++, _parms._link.toString());
+    int numFamily = _parms._rand_family.length;
+    for (int index = 0; index < numFamily; index++) {
+      _output._model_summary.set(0, tableColIndex++, _parms._rand_family[index].name());
+      if (_parms._rand_link == null)
+        _output._model_summary.set(0, tableColIndex++, _parms._rand_family[index].defaultLink.name());
       else
-        regularization = "Elastic Net (alpha = " + MathUtils.roundToNDigits(_parms._alpha[0], 4) + ", lambda = ";
-      regularization = regularization + MathUtils.roundToNDigits(_parms._lambda[_output._selected_lambda_idx], 4) + " )";
-    }
-    _output._model_summary.set(0, 2, regularization);
-    int lambdaSearch = 0;
-    if (_parms._lambda_search) {
-      lambdaSearch = 1;
-      _output._model_summary.set(0, 3, "nlambda = " + _parms._nlambdas + ", lambda.max = " + MathUtils.roundToNDigits(_lambda_max, 4) + ", lambda.min = "  + MathUtils.roundToNDigits(_output.lambda_best(), 4) + ", lambda.1se = " +  MathUtils.roundToNDigits(_output.lambda_1se(), 4));
+        _output._model_summary.set(0, tableColIndex++, _parms._rand_link[index].name());
     }
     int intercept = _parms._intercept ? 1 : 0;
-    if(_output.nclasses() > 2) {
-      _output._model_summary.set(0, 3 + lambdaSearch,_output.nclasses()*_output._coefficient_names.length);
-      _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - _output.nclasses()*intercept));
-    } else {
-      _output._model_summary.set(0, 3 + lambdaSearch, beta().length - 1);
-      _output._model_summary.set(0, 4 + lambdaSearch, Integer.toString(_output.rank() - intercept));
-    }
-
-    _output._model_summary.set(0, 5 + lambdaSearch, Integer.valueOf(iter));
-    _output._model_summary.set(0, 6 + lambdaSearch, train.toString());
+    _output._model_summary.set(0, tableColIndex++, beta().length - 1);
+    _output._model_summary.set(0, tableColIndex++, Integer.toString(_output.rank() - intercept));
+    _output._model_summary.set(0, tableColIndex++, Integer.valueOf(iter));
+    _output._model_summary.set(0, tableColIndex, train.toString());
     return _output._model_summary;
   }
 

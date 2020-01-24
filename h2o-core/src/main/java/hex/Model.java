@@ -43,12 +43,13 @@ import static water.util.FrameUtils.cleanUp;
  * same names as used to build the mode and any categorical columns can
  * be adapted.
  */
-public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M> {
+public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M>
+        implements StreamWriter {
 
   public P _parms;   // TODO: move things around so that this can be protected
   public O _output;  // TODO: move things around so that this can be protected
   public String[] _warnings = new String[0];  // warning associated with model building
-  public String[] _warningsP;     // warnings associated with prediction only
+  public transient String[] _warningsP;     // warnings associated with prediction only (transient, not persisted)
   public Distribution _dist;
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
@@ -1221,7 +1222,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     // whether we need to be careful with categorical encoding - the test frame could be either in original state or in encoded state
     // keep in sync with FrameUtils.categoricalEncoder: as soon as a categorical column has been encoded, we should check here.
-    final boolean checkCategoricals = Arrays.asList(
+    final boolean checkCategoricals = !catEncoded && Arrays.asList(
             Parameters.CategoricalEncodingScheme.Binary,
             Parameters.CategoricalEncodingScheme.LabelEncoder,
             Parameters.CategoricalEncodingScheme.Eigen,
@@ -1230,7 +1231,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     ).indexOf(parms._categorical_encoding) >= 0;
 
     // test frame matches the user-given frame (before categorical encoding, if applicable)
-    if( checkCategoricals && origNames != null ) {
+    if (checkCategoricals && origNames != null) {
       boolean match = Arrays.equals(origNames, test.names());
       if (!match) {
         // As soon as the test frame contains at least one original pre-encoding predictor,
@@ -1334,7 +1335,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     if( good == names.length || (response != null && test.find(response) == -1 && good == names.length - 1) )  // Only update if got something for all columns
       test.restructure(names, vvecs, good);
 
-    if (expensive && checkCategoricals && !catEncoded) {
+    if (expensive && checkCategoricals) {
       final boolean hasCategoricalPredictors = hasCategoricalPredictors(test, response, weights, offset, fold, names, domains);
 
       // check if we first need to expand categoricals before calling this method again
@@ -1426,9 +1427,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, true);
   }
 
-  public void addWarningP(String s) {
-    _warningsP = Arrays.copyOf(_warningsP, _warningsP.length + 1);
-    _warningsP[_warningsP.length - 1] = s;
+  /**
+   * Adds a scoring-related warning. 
+   * 
+   * Note: The implementation might lose a warning if scoring is triggered in parallel
+   * 
+   * @param s warning description
+   */
+  private void addWarningP(String s) {
+    String[] warningsP = _warningsP;
+    warningsP = warningsP != null ? Arrays.copyOf(warningsP, warningsP.length + 1) : new String[1];
+    warningsP[warningsP.length - 1] = s;
+    _warningsP = warningsP;
   }
 
   public boolean containsResponse(String s, String responseName) {
@@ -2036,6 +2046,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
     });
 
+    sb.nl();
+    sb.ip("@Override").nl();
+    sb.ip("public String[] getOrigNames() {").nl();
+    sb.ii(1).ip("return ORIG_NAMES;").nl();
+    sb.di(1).ip("}").nl();
+
     return sb;
   }
 
@@ -2103,7 +2119,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         );
       }
     }
-    return sb.ip("};").nl();
+    sb.ip("};").nl();
+
+    sb.nl();
+    sb.ip("@Override").nl();
+    sb.ip("public String[][] getOrigDomainValues() {").nl();
+    sb.ii(1).ip("return ORIG_DOMAINS;").nl();
+    sb.di(1).ip("}").nl();
+
+    return sb;
   }
 
   protected SBPrintStream toJavaPROB(SBPrintStream sb) {
@@ -2177,6 +2201,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public boolean testJavaScoring(Frame data, Frame model_predictions, EasyPredictModelWrapper.Config config,
                                  double rel_epsilon, double abs_epsilon, double fraction) {
     ModelBuilder mb = ModelBuilder.make(_parms.algoName().toLowerCase(), null, null);
+    mb._parms = _parms;
     boolean havePojo = mb.havePojo();
     boolean haveMojo = mb.haveMojo();
 
@@ -2292,7 +2317,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           final int ntrees = treemodel.getNTreeGroups();
           trees = new SharedTreeGraph[ntrees];
           for (int t = 0; t < ntrees; t++)
-            trees[t] = treemodel._computeGraph(t);
+            trees[t] = treemodel.computeGraph(t);
         }
 
         EasyPredictModelWrapper epmw;
@@ -2330,10 +2355,32 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           // Make a prediction
           AbstractPrediction p;
           try {
-            if (genmodel instanceof GlrmMojoModel)  // enable random seed setting to ensure reproducibilitypredictC
+            if (genmodel instanceof GlrmMojoModel)  // enable random seed setting to ensure reproducibility
               ((GlrmMojoModel) genmodel)._rcnt = row;
 
-            p = epmw.predict(rowData);
+            if (genmodel._offsetColumn != null) {
+              double offset = fr.vec(genmodel._offsetColumn).at(row);
+              // TODO: MOJO API is cumbersome in this case - will be fixed in https://0xdata.atlassian.net/browse/PUBDEV-7080
+              switch (genmodel.getModelCategory()) {
+                case Regression:
+                  p = epmw.predictRegression(rowData, offset);
+                  break;
+                case Binomial:
+                  p = epmw.predictBinomial(rowData, offset);
+                  break;
+                case Multinomial:
+                  p = epmw.predictMultinomial(rowData, offset);
+                  break;
+                case Ordinal:
+                  p = epmw.predictOrdinal(rowData, offset);
+                  break;
+                default:
+                  throw new UnsupportedOperationException("Predicting with offset current not supported for " + genmodel.getModelCategory());
+              }
+            } else {
+              p = epmw.predict(rowData);
+            }
+
           } catch (PredictException e) {
             num_errors++;
             if (num_errors < 20) {
@@ -2634,7 +2681,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       URI targetUri = FileUtils.getURI(location);
       Persist p = H2O.getPM().getPersistForURI(targetUri);
       os = p.create(targetUri.toString(), force);
-      this.writeAll(new AutoBuffer(os, true)).close();
+      writeTo(os);
       os.close();
       return targetUri;
     } finally {
@@ -2642,6 +2689,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+  @Override
+  public final void writeTo(OutputStream os) {
+    writeAll(new AutoBuffer(os, true)).close();
+  }
+  
   /**
    * Exports a MOJO representation of a model to a given location.
    * @param location target path, it can be on local filesystem, HDFS, S3...

@@ -16,6 +16,7 @@ import water.MemoryManager;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
+import water.fvec.Frame;
 
 import java.util.Arrays;
 import java.util.Comparator;
@@ -31,6 +32,7 @@ public final class ComputationState {
   double [] _z;
   boolean _allIn;
   int _iter;
+  int _iterHGLM_GLMMME; // keep track of iterations used in estimating fixed/random coefficients
   private double _lambda = 0;
   private double _lambdaMax = Double.NaN;
   private GLMGradientInfo _ginfo; // gradient info excluding l1 penalty
@@ -39,6 +41,15 @@ public final class ComputationState {
   private DataInfo _activeData;
   private BetaConstraint _activeBC = null;
   private double[] _beta; // vector of coefficients corresponding to active data
+  private double[] _ubeta;  // HGLM, store coefficients of random effects;
+  private double[] _psi; // HGLM, psi
+  private double[] _phi; // HGLM, size random columns levels
+  private double _tau; // HGLM for ei
+  private double _correction_HL; // HGLM
+  double[] _sumEtaSquareConvergence;  // HGLM: sotre sumEtaSquare, convergence
+  double[] _likelihoodInfo; // HGLM: stores 4 elements: hlik, pvh, pbvh, cAIC
+  public String[] _randCoeffNames; // store random coefficient names
+  private Frame _priorw_wpsi;  // weight calculated for psi
   final DataInfo _dinfo;
   private GLMGradientSolver _gslvr;
   private final Job _job;
@@ -58,6 +69,80 @@ public final class ComputationState {
     _intercept = _parms._intercept;
     _nclasses = (parms._family == Family.multinomial||parms._family == Family.ordinal)?nclasses:1;
     _alpha = _parms._alpha[0];
+    if (_parms._HGLM) {
+      _sumEtaSquareConvergence = new double[2];
+      if (_parms._calc_like)
+        _likelihoodInfo = new double[4];
+    }
+  }
+  public void set_sumEtaSquareConvergence(double[] sumInfo) {
+    _sumEtaSquareConvergence = sumInfo;
+  }
+
+  /***
+   * Copy GLM coefficients stored in beta to _beta of computationState
+   * @param beta: store coefficients to be copied from
+   * @param startIdx: first index of beta to copy from
+   * @param len: length of coefficients to copy from beta
+   * @param interceptFirst: true if the first index of beta stored the intercept term
+   */
+  public void set_beta_HGLM(double[] beta, int startIdx, int len, boolean interceptFirst) {
+    if (_beta==null)
+      _beta = new double[len];
+    if (interceptFirst) {
+      int lastIndex = len-1;
+      System.arraycopy(beta, startIdx+1, _beta, 0, lastIndex);
+      _beta[lastIndex] = beta[startIdx];
+    } else {
+      System.arraycopy(beta, startIdx, _beta, 0, len);
+    }
+  }
+  
+  public void set_likelihoodInfo(double hlik, double pvh, double pbvh, double cAIC) {
+    _likelihoodInfo[0] = hlik;
+    _likelihoodInfo[1] = pvh;
+    _likelihoodInfo[2] = pbvh;
+    _likelihoodInfo[3] = cAIC;
+  }
+  
+  public void set_ubeta_HGLM(double[] ubeta, int startIdx, int len) {
+    if (_ubeta==null)
+      _ubeta = new double[len];
+    System.arraycopy(ubeta, startIdx, _ubeta, 0, len);
+  }
+  
+  public double[] get_psi() {
+    return _psi;
+  }
+
+  public double get_correction_HL() {
+    return _correction_HL;
+  }
+  
+  public double[] get_phi() {
+    return _phi;
+  }
+  
+  public Frame get_priorw_wpsi() {
+    return _priorw_wpsi;
+  }
+  
+  public double get_tau() {
+    return _tau;
+  }
+
+  public void set_tau(double tau) {
+    _tau=tau;
+  }
+  
+  public void set_psi(double[] psi) {
+    assert _psi.length==psi.length:"Length of _psi and psi should be the same.";
+    System.arraycopy(psi, 0, _psi, 0, psi.length);
+  }
+
+  public void set_phi(double[] phi) {
+    assert _phi.length==phi.length:"Length of _phi and phi should be the same.";
+    System.arraycopy(phi, 0, _phi, 0, phi.length);
   }
 
   public GLMGradientSolver gslvr(){return _gslvr;}
@@ -81,6 +166,9 @@ public final class ComputationState {
     if(_activeClass != -1)
       return betaMultinomial(_activeClass,_beta);
     return _beta;
+  }
+  public double[] ubeta(){
+    return _ubeta;  // could be null.  Be careful
   }
   public GLMGradientInfo ginfo(){return _ginfo == null?(_ginfo = gslvr().getGradient(beta())):_ginfo;}
   public BetaConstraint activeBC(){return _activeBC;}
@@ -515,8 +603,6 @@ public final class ComputationState {
   private double _relImprovement;
 
   String convergenceMsg = "";
-
-
   public boolean converged(){
     boolean converged = false;
     if(_betaDiff < _parms._beta_epsilon) {
@@ -537,6 +623,19 @@ public final class ComputationState {
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
     return (_relImprovement = (objOld - objective())/Math.abs(objOld));
+  }
+
+  protected void setHGLMComputationState(double [] beta, double[] ubeta, double[] psi, double[] phi, 
+                                         double hlcorrection, double tau, Frame wpsi, String[] randCoeffNames){
+    _beta = Arrays.copyOf(beta, beta.length);
+    _ubeta = Arrays.copyOf(ubeta, ubeta.length);
+    _randCoeffNames = Arrays.copyOf(randCoeffNames, randCoeffNames.length);
+    _psi = Arrays.copyOf(psi, psi.length);
+    _phi = Arrays.copyOf(phi, phi.length);
+    _correction_HL = hlcorrection;
+    _tau = tau;
+    _priorw_wpsi = wpsi;  // store prior_weight and calculated wpsi value for coefficients of random columns
+    _iterHGLM_GLMMME = 0;
   }
 
   public double [] expandBeta(double [] beta) {

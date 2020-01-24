@@ -40,10 +40,14 @@ public class AutoMLTest extends water.TestUtil {
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
       fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      String target = "CAPSULE";
+      int tidx = fr.find(target);
+      fr.replace(tidx, fr.vec(tidx).toCategoricalVec()).remove(); DKV.put(fr);
       autoMLBuildSpec.input_spec.training_frame = fr._key;
-      autoMLBuildSpec.input_spec.response_column = "CAPSULE";
+      autoMLBuildSpec.input_spec.response_column = target;
+      autoMLBuildSpec.input_spec.sort_metric = "AUCPR";
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
@@ -54,9 +58,9 @@ public class AutoMLTest extends water.TestUtil {
       int count_se = 0, count_non_se = 0;
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
-      assertEquals("wrong amount of standard models", 3, count_non_se);
+      assertEquals("wrong amount of standard models", 5, count_non_se);
       assertEquals("wrong amount of SE models", 2, count_se);
-      assertEquals(3+2, aml.leaderboard().getModelCount());
+      assertEquals(5+2, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       if(aml!=null) aml.delete();
@@ -120,7 +124,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.leaderboard_frame = test._key;
       autoMLBuildSpec.input_spec.response_column = target;
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
       autoMLBuildSpec.build_control.nfolds = 0;
       autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
 
@@ -131,9 +135,9 @@ public class AutoMLTest extends water.TestUtil {
       int count_se = 0, count_non_se = 0;
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
-      assertEquals("wrong amount of standard models", 3, count_non_se);
+      assertEquals("wrong amount of standard models", 5, count_non_se);
       assertEquals("wrong amount of SE models", 2, count_se);
-      assertEquals(5, aml.leaderboard().getModelCount());
+      assertEquals(7, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       for (Lockable l: deletables) {
@@ -141,6 +145,43 @@ public class AutoMLTest extends water.TestUtil {
       }
     }
   }
+
+
+  @Test public void test_no_stacked_ensemble_trained_if_only_one_algo() {
+    List<Lockable> deletables = new ArrayList<>();
+    try {
+      final int seed = 62832;
+      final Frame train = parse_test_file("./smalldata/logreg/prostate_train.csv"); deletables.add(train);
+      String target = "CAPSULE";
+      int tidx = train.find(target);
+      train.replace(tidx, train.vec(tidx).toCategoricalVec()).remove(); DKV.put(train); deletables.add(train);
+
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      autoMLBuildSpec.input_spec.training_frame = train._key;
+      autoMLBuildSpec.input_spec.response_column = target;
+
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(3);
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
+      autoMLBuildSpec.build_models.include_algos = aro(Algo.GBM);
+
+      AutoML aml = AutoML.startAutoML(autoMLBuildSpec); deletables.add(aml);
+      aml.get();
+
+      Key[] modelKeys = aml.leaderboard().getModelKeys();
+      int count_se = 0, count_non_se = 0;
+      for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
+
+      assertEquals("wrong amount of standard models", 3, count_non_se);
+      assertEquals("wrong amount of SE models", 0, count_se);
+      assertEquals(3, aml.leaderboard().getModelCount());
+    } finally {
+      // Cleanup
+      for (Lockable l: deletables) {
+        l.delete();
+      }
+    }
+  }
+
 
 
   // timeout can cause interruption of steps at various levels, for example from top to bottom:
@@ -158,7 +199,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "CAPSULE";
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(new Random().nextInt(30));
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_runtime_secs(1+new Random().nextInt(30));
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
@@ -558,7 +599,7 @@ public class AutoMLTest extends water.TestUtil {
   }
 
 
-  @Test public void testTestAlgosHaveDefaultParametersEnforcingReproducibility() {
+  @Test public void testAlgosHaveDefaultParametersEnforcingReproducibility() {
     AutoML aml=null;
     Frame fr=null;
     try {

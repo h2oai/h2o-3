@@ -9,7 +9,7 @@ All H2O exceptions derive from :class:`H2OError`.
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 __all__ = ("H2OStartupError", "H2OConnectionError", "H2OServerError", "H2OResponseError",
-           "H2OValueError", "H2OTypeError", "H2OJobCancelled")
+           "H2OValueError", "H2OTypeError", "H2OJobCancelled", "H2OError")
 
 
 class H2OError(Exception):
