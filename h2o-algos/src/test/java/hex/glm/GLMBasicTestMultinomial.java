@@ -5,7 +5,6 @@ import hex.DataInfo;
 import hex.FrameSplitter;
 import hex.ModelMetricsBinomialGLM.ModelMetricsMultinomialGLM;
 import hex.SplitFrame;
-import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Solver;
@@ -102,7 +101,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
       Scope.exit();
     }
   }
-
+  
   @Test
   public void testCovtypeNoIntercept(){
     GLMParameters params = new GLMParameters(Family.multinomial);
