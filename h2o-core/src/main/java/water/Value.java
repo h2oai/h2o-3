@@ -457,13 +457,20 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   private byte[] replicas( ) {
     byte[] r = _replicas;
     if( r != null ) return r;
-    byte[] nr = new byte[H2O.CLOUD.size()+1/*1-based numbering*/+10/*limit of 10 clients*/];
+    byte[] nr = makeReplicaIndicatorSpace();
     if( REPLICAS_UPDATER.compareAndSet(this,null,nr) ) return nr;
     r = _replicas/*read again, since CAS failed must be set now*/;
     assert r!= null;
     return r;
   }
 
+  private byte[] makeReplicaIndicatorSpace() {
+    int size = H2ONode.IDX.length 
+            + 1 /*1-based numbering*/
+            + 10 /*buffer for 10 clients, if we exceed the buffer we just invalidate regardless if they have a copy or not*/;
+    return new byte[size];
+  }
+  
   // Bump the read lock, once per pending-GET or pending-Invalidate
   boolean read_lock() {
     while( true ) {     // Repeat, in case racing GETs are bumping the counter
@@ -485,9 +492,15 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // up, but the replica list does not account for the new replica.  However,
     // the rwlock cannot go down until an ACKACK is received, and the ACK
     // (hence ACKACK) doesn't go out until after this function returns.
-    replicas()[h2o._unique_idx] = 1;
+    markHotReplica(h2o._unique_idx);
     // Both rwlock taken, and replica count is up now.
     return true;
+  }
+
+  private void markHotReplica(short idx) {
+    byte[] r = replicas();
+    if (idx < r.length)
+      r[idx] = 1; 
   }
 
   /** Atomically lower active GET and Invalidate count */
@@ -498,7 +511,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
       int old = _rwlock.get(); // Read the lock-word
       assert old > 0;      // Since lowering, must be at least 1
       assert old != -1;    // Not write-locked, because we are an active reader
-      assert (h2o==null) || (_replicas!=null && _replicas[h2o._unique_idx]==1); // Self-bit is set
+      assert (h2o==null) || (_replicas!=null && (h2o._unique_idx >= _replicas.length || _replicas[h2o._unique_idx]==1)); // Self-bit is set
       if( RW_CAS(old,old-1,"rlock-") ) {
         if( old-1 == 0 )   // GET count fell to zero?
           synchronized( this ) { notifyAll(); } // Notify any pending blocked PUTs
@@ -533,9 +546,14 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // Bump the newval read-lock by 1 for each pending invalidate
     byte[] r = _replicas;
     if( r!=null ) { // No replicas, nothing to invalidate
-      int max = r.length;
+      final int max = r.length;
       for( int i=0; i<max; i++ )
         if( r[i]==1 && H2ONode.IDX[i] != sender )
+          TaskInvalidateKey.invalidate(H2ONode.IDX[i],_key,newval,fs);
+      final int idxMax = H2ONode.IDX.length;
+      // Speculatively invalidate replicas also on nodes that were not known when the cluster was formed (clients)
+      for (int i=max; i<idxMax; i++)
+        if( H2ONode.IDX[i] != sender )
           TaskInvalidateKey.invalidate(H2ONode.IDX[i],_key,newval,fs);
     }
     newval.lowerActiveGetCount(null);  // Remove initial read-lock, accounting for pending inv counts
@@ -563,7 +581,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = key;
     // Set the replica bit for the one node we know about, and leave the
     // rest clear.
-    replicas()[h2o._unique_idx]=1;
+    markHotReplica(h2o._unique_idx);
     _rwlock.set(1);             // An initial read-lock, so a fast PUT cannot wipe this one out before invalidates have a chance of being counted
   }
 
