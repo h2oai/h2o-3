@@ -435,6 +435,11 @@ def _locate(path):
       Path to search for
 
     :return: Absolute path if it is found.  None otherwise.
+
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _locate
+    >>> _locate("Datasets/CreditCard_test.csv")
     """
 
     tmp_dir = os.path.realpath(os.getcwd())
