@@ -38,6 +38,13 @@ __all__ = ('mojo_predict_csv', 'mojo_predict_pandas')
 
 
 def _py_tmp_key(append):
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _py_tmp_key
+    >>> h2o.init()
+    >>> _py_tmp_key(append=h2o.connection().session_id)
+    """
     global _id_ctr
     _id_ctr += 1
     return "py_" + str(_id_ctr) + append
@@ -45,6 +52,14 @@ def _py_tmp_key(append):
 
 def check_frame_id(frame_id):
     check_id(frame_id, "H2OFrame")
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import check_frame_id
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv")
+    >>> airlines.frame_id
+    >>> check_frame_id('AirlinesTrain.hex')
+    """
 
 
 def check_id(id, type):
@@ -60,9 +75,30 @@ def check_id(id, type):
             raise H2OValueError("Character '%s' is illegal in %s id: %s" % (ch, type, id))
     if re.match(r"-?[0-9]", id):
         raise H2OValueError("%s id cannot start with a number: %s" % (type, id))
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import check_id
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv")
+    >>> gbm = H2OGradientBoostingEstimator(ntrees=1)
+    >>> gbm.train(x=["Origin","Dest"],
+    ...           y="IsDepDelayed",
+    ...           training_frame=airlines)
+    >>> id = gbm.model_id
+    >>> check_id(id, "model_id")
+    """
 
 
 def temp_ctr():
+
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import temp_ctr
+    >>> h2o.init()
+    >>> temp_ctr()
+    """
     return _id_ctr
 
 
@@ -72,6 +108,13 @@ def can_use_pandas():
         return True
     except ImportError:
         return False
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import can_use_pandas
+    >>> h2o.init()
+    >>> can_use_pandas()
+    """
 
 
 def can_use_numpy():
@@ -80,6 +123,13 @@ def can_use_numpy():
         return True
     except ImportError:
         return False
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import can_use_numpy
+    >>> h2o.init()
+    >>> can_use_numpy()
+    """
 
 
 _url_safe_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_.~"
@@ -87,16 +137,48 @@ _url_chars_map = [chr(i) if chr(i) in _url_safe_chars else "%%%02X" % i for i in
 
 def url_encode(s):
     # Note: type cast str(s) will not be needed once all code is made compatible
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import url_encode
+    >>> url_encode("https://h2o.ai")
+    """
     return "".join(_url_chars_map[c] for c in bytes_iterator(s))
 
 def quote(s):
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import quote, url_encode
+    >>> water = url_encode("https://h2o.ai")
+    >>> quote(water)
+    """
     return url_encode(s)
 
 def clamp(x, xmin, xmax):
-    """Return the value of x, clamped from below by `xmin` and from above by `xmax`."""
+    """Return the value of x, clamped from below by `xmin` and from above by `xmax`.
+
+    :examples:
+
+    >>> from h2o.estimators import H2OGradientBoostingEstimator
+    >>> from h2o.utils.shared_utils import clamp
+    >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    >>> response = "class"
+    >>> predictors = ["sepal_len","sepal_wid","petal_len","petal_wid"]
+    >>> gbm_iris = H2OGradientBoostingEstimator()
+    >>> gbm_iris.train(x=predictors, y=response, training_frame=iris)
+    >>> mse = gbm_iris.mse()
+    >>> clamp(mse, 0, 0.0028)
+    """
     return max(xmin, min(x, xmax))
 
 def _gen_header(cols):
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _gen_header
+    >>> _gen_header(5)
+    """
     return ["C" + str(c) for c in range(1, cols + 1, 1)]
 
 
@@ -114,6 +196,13 @@ def _check_lists_of_lists(python_obj):
             if isinstance(ll, (tuple, list)):
                 raise ValueError("`python_obj` is not a list of flat lists!")
     return most_cols
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _check_lists_of_lists
+    >>> list = [[1,2,3], [4,5,6], [7,6,5], [7], [2,3,4,5]]
+    >>> _check_lists_of_lists(list)
+    """
 
 
 def _handle_python_lists(python_obj, check_header):
@@ -135,45 +224,137 @@ def _handle_python_lists(python_obj, check_header):
     # shape up the data for csv.DictWriter
     # data_to_write = [dict(list(zip(header, row))) for row in python_obj]
     return header, python_obj
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _handle_python_lists
+    >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    >>> _handle_python_lists(iris["sepal_len"], "sepal_len")
+    """
 
 
 def stringify_dict(d):
     return stringify_list(["{'key': %s, 'value': %s}" % (_quoted(k), v) for k, v in d.items()])
+    """
+    :examples:
 
+    >>> from h2o.utils.shared_utils import stringify_dict
+    >>> MLB_TEAM = {
+    ...     'Colorado' : 'Rockies',
+    ...     'Boston'   : 'Red Sox',
+    ...     'Minnesota': 'Twins',
+    ...     'Milwaukee': 'Brewers',
+    ...     'Seattle'  : 'Mariners'
+    ... }
+    >>> stringify_dict(MLB_TEAM)
+    """
 
 def stringify_list(arr):
     return "[%s]" % ",".join(stringify_list(item) if isinstance(item, list) else _str(item)
                              for item in arr)
+    """
+    :examples:
 
+    >>> from h2o.utils.shared_utils import stringify_list
+    >>> list = [[1,2,3], [4,5,6], [7,6,5]]
+    >>> stringify_list(list)
+    """
+    
 def _str(item):
     return _str_tuple(item) if isinstance(item, tuple) else str(item)
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _str
+    >>> list = [[1,2,3], [4,5,6], [7,6,5]]
+    >>> _str(list)
+    """
 
 def _str_tuple(t):
     return "{%s}" % ",".join(["%s: %s" % (ti[0], str(ti[1])) for ti in zip(list(string.ascii_lowercase), t)])
+    """
+    :examples:
 
+    >>> from h2o.utils.shared_utils import _str_tuple
+    >>> list = [[1,2,3], [4,5,6], [7,6,5]]
+    >>> _str_tuple(list)
+    """
+    
 def _is_list(l):
     return isinstance(l, (tuple, list))
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _is_list
+    >>> list = [[1,2,3], [4,5,6], [7,6,5]]
+    >>> _is_list(list)
+    """
 
 
 def _is_str_list(l):
     return is_type(l, [str])
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _is_str_list
+    >>> fruit = ['apple','peach','pear']
+    >>> _is_str_list(fruit)
+    """
 
 
 def _is_num_list(l):
     return is_type(l, [numeric])
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _is_num_list
+    >>> num = [2,4,6,8]
+    >>> _is_num_list(num)
+    """
 
 
 def _is_list_of_lists(o):
     return any(isinstance(l, (tuple, list)) for l in o)
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _is_list_of_lists
+    >>> list = [[1,2,3], [4,5,6], [7,6,5]]
+    >>> _is_list_of_lists(list)
+    """
 
 
 def _handle_numpy_array(python_obj, header):
     return _handle_python_lists(python_obj.tolist(), header)
+    """
+    :examples:
+
+    >>> import numpy as np
+    >>> from h2o.utils.shared_utils import _handle_numpy_array
+    >>> m = 1000
+    >>> n = 100
+    >>> k = 10
+    >>> y = np.random.rand(k,n)
+    >>> x = np.random.rand(m,k)
+    >>> train = np.dot(x,y)
+    >>> train_h2o = h2o.H2OFrame(train.tolist())
+    >>> _handle_numpy_array(train, "C1")
+    """
 
 
 def _handle_pandas_data_frame(python_obj, header):
     data = _handle_python_lists(python_obj.values.tolist(), -1)[1]
     return list(str(c) for c in python_obj.columns), data
+    """
+    :examples:
+
+    >>> import pandas as pd
+    >>> from h2o.utils.shared_utils import _handle_pandas_data_frame
+    >>> python_obj = pd.DataFrame({'foo' : pd.Series([1]),
+    ...                            'bar' : pd.Series([6]),
+    ...                            'baz' : pd.Series(["a"]) })
+    >>> _handle_pandas_data_frame(python_obj, "foo")
+    """
 
 def _handle_python_dicts(python_obj, check_header):
     header = list(python_obj.keys()) if python_obj else _gen_header(1)
@@ -195,10 +376,30 @@ def _handle_python_dicts(python_obj, check_header):
     rows = list(map(list, zipper(*list(python_obj.values()))))
     data_to_write = [dict(list(zip(header, row))) for row in rows]
     return header, data_to_write
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _handle_python_dicts
+    >>> MLB_TEAM = {
+    ...     'Colorado' : 'Rockies',
+    ...     'Boston'   : 'Red Sox',
+    ...     'Minnesota': 'Twins',
+    ...     'Milwaukee': 'Brewers',
+    ...     'Seattle'  : 'Mariners'
+    ... }
+    >>> _handle_python_dicts(MLB_TEAM, check_header=1)
+    """
 
 
 def _is_fr(o):
-    return o.__class__.__name__ == "H2OFrame"  # hack to avoid circular imports
+    return o.__class__.__name__ == """H2OFrame
+
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _is_fr
+    >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    >>> _is_fr(iris)
+    """  # hack to avoid circular imports
 
 
 def _quoted(key):
@@ -208,6 +409,18 @@ def _quoted(key):
     # key = key.replace("&", ".")
     is_quoted = len(re.findall(r'\"(.+?)\"', key)) != 0
     key = key if is_quoted else '"' + key + '"'
+    """
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _quoted
+    >>> col_types = ['enum','numeric','enum','enum','enum',
+    ...              'numeric','numeric','numeric']
+    >>> col_headers = ["CAPSULE","AGE","RACE","DPROS",
+    ...                "DCAPS","PSA","VOL","GLEASON"] 
+    >>> hex_key = "prostate.hex"
+    >>> prostate = h2o.import_file(("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_cat.csv"), destination_frame=hex_key, header=1, sep = ',', col_names=col_headers, col_types=col_types, na_strings=["NA"])
+    >>> _quoted("prostate.hex")
+    """
     return key
 
 
@@ -239,7 +452,14 @@ def _locate(path):
 
 
 def _colmean(column):
-    """Return the mean of a single-column frame."""
+    """Return the mean of a single-column frame.
+
+    :examples:
+
+    >>> from h2o.utils.shared_utils import _colmean
+    >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    >>> _colmean(iris["sepal_len"])
+    """
     assert column.ncols == 1
     return column.mean(return_frame=True).flatten()
 
@@ -251,6 +471,11 @@ def get_human_readable_bytes(size):
 
     :param size: integer representing byte size of something
     :return: string representation of the size, in human-readable form
+
+    :examples:
+
+    >>> from h2o.utils.shared_utils import get_human_readable_bytes
+    >>> get_human_readable_bytes(1234567890)
     """
     if size == 0: return "0"
     if size is None: return ""
@@ -291,6 +516,11 @@ def get_human_readable_time(time_ms):
 
     :param time_ms: duration, as a number of elapsed milliseconds.
     :return: human-readable string representation of the provided duration.
+
+    :examples:
+
+    >>> from h2o.utils.shared_utils import get_human_readable_time
+    >>> get_human_readable_time(1234567890) 
     """
     millis = time_ms % 1000
     secs = (time_ms // 1000) % 60
@@ -327,6 +557,11 @@ def print2(msg, flush=False, end="\n"):
     This function exists here ONLY because Sphinx.ext.autodoc gets into a bad state when seeing the print()
     function. When in that state, autodoc doesn't display any errors or warnings, but instead completely
     ignores the "bysource" member-order option.
+
+    :examples:
+
+    >>> from h2o.utils.shared_utils import print2
+    >>> print2("Hello World", flush=False, end="/n")
     """
     print(msg, end=end)
     if flush: sys.stdout.flush()
