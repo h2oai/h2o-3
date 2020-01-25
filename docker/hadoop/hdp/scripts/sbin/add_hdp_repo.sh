@@ -15,6 +15,11 @@ function print_green {
 }
 
 case "${1}" in
+  3.2)
+    major_version="3"
+    hdp_version="3.2.0.0"
+    ubuntu_repo_version="14"
+    ;;
   3.1)
     major_version="3"
     hdp_version="3.1.0.0"

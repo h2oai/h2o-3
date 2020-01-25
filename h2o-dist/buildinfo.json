@@ -134,6 +134,11 @@
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp3.1.zip"
         },
         {
+            "distribution" : "hdp3.2",
+            "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-hdp3.2.zip",
+            "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-hdp3.2.zip"
+        },
+        {
             "distribution" : "mapr4.0",
             "zip_file_name" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.zip",
             "zip_file_path" : "h2o-SUBST_PROJECT_VERSION-mapr4.0.zip"
