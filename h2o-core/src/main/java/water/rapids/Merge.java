@@ -115,28 +115,20 @@ public class Merge {
     RadixOrder riteIndex = createIndex(false,rightFrame,riteCols,id_maps, ascendingR);
 
     // TODO: start merging before all indexes had been created. Use callback?
-
+    boolean leftFrameEmpty = (leftFrame.numRows()==0);
+    boolean riteFrameEmpty = (riteFrame.numRows()==0);
     Log.info("Making BinaryMerge RPC calls ... ");
     long t0 = System.nanoTime();
     ArrayList<BinaryMerge> bmList = new ArrayList<>();
     Futures fs = new Futures();
-    final int leftShift = leftIndex._shift[0];
-    final BigInteger leftBase = leftIndex._base[0];
-    final int riteShift = hasRite ? riteIndex._shift[0] : -1;
-    final BigInteger riteBase = hasRite ? riteIndex._base [0] : leftBase;
+    final int leftShift = leftFrameEmpty?-1:leftIndex._shift[0];
+    final BigInteger leftBase = leftFrameEmpty?ZERO:leftIndex._base[0];
+    final int riteShift = riteFrameEmpty?-1:riteIndex._shift[0];
+    final BigInteger riteBase = riteFrameEmpty?ZERO : riteIndex._base [0];
 
     // initialize for double columns, may not be used....
-    boolean leftFrameEmpty = (leftFrame.numRows()==0);
-    boolean riteFrameEmpty = (riteFrame.numRows()==0);
     long leftMSBfrom = riteBase.subtract(leftBase).shiftRight(leftShift).longValue();  // value when all frames nonempty
-    if (riteFrameEmpty) { // if riteFrame is empty, need to modify it because riteBase is Long.MIN_VALUE
-      if (leftFrameEmpty) { // if both left and rite frames are empty.
-        leftMSBfrom = 0;
-      } else {  // only riteFrame is empty
-        leftMSBfrom = ZERO.subtract(leftBase).shiftRight(leftShift).longValue();
-      }
-    }
-    boolean riteBaseExceedsleftBase=riteBase.compareTo(leftBase)>0;
+    boolean riteBaseExceedsleftBase=riteFrameEmpty?false:riteBase.compareTo(leftBase)>0;
     // deal with the left range below the right minimum, if any
     if (riteBaseExceedsleftBase) {  // right branch has higher minimum column value
       // deal with the range of the left below the start of the right, if any
@@ -163,15 +155,7 @@ public class Merge {
     }
 
     BigInteger rightS = BigInteger.valueOf(256L<<riteShift);
-    long leftMSBto = riteBase.add(rightS).subtract(ONE).subtract(leftBase).shiftRight(leftShift).longValue();
-    if (riteFrameEmpty) { // rite frame is empty
-      if (leftFrameEmpty) { // both left and rite frames are empty
-        leftMSBto = ZERO.add(rightS).subtract(ONE).shiftRight(leftShift).longValue();
-      } else {  // only riteFrame is empty
-        leftMSBto = ZERO.add(rightS).subtract(ONE).subtract(leftBase).shiftRight(leftShift).longValue();
-      }
-    }
-
+    long leftMSBto = leftFrameEmpty?0:riteBase.add(rightS).subtract(ONE).subtract(leftBase).shiftRight(leftShift).longValue();
     // deal with the left range above the right maximum, if any.  For doubles, -1 from shift to avoid negative outcome
     boolean leftRangeAboveRightMax = leftIndex._isCategorical[0]?
             leftBase.add(BigInteger.valueOf(256L<<leftShift)).compareTo(riteBase.add(rightS)) > 0:
@@ -194,12 +178,10 @@ public class Merge {
           bmList.add(bm);
           fs.add(new RPC<>(SplitByMSBLocal.ownerOfMSB(leftMSB), bm).call());
       }
-    } else {
+    } else if (!leftFrameEmpty){
       // completely ignore right MSBs after the right peak
-      if (!leftFrameEmpty) {
         assert leftMSBto >= 255;
         leftMSBto = 255;
-      }
     }
 
     // the overlapped region; i.e. between [ max(leftMin,rightMin), min(leftMax, rightMax) ]
