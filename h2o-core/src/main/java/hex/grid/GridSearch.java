@@ -121,7 +121,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     long gridWork=0;
     if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
       int count=0;
-      while (it.hasNext(model) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
+      while (it.hasNext(model) && (it.max_models() == 0 || count++ < it.max_models())) { //only walk the first max_models models, if specified
         try {
           Model.Parameters parms = it.nextModelParameters(model);
           gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
@@ -346,12 +346,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       // Get iterator to traverse hyper space
       HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
 
-      // This counter will be used as index to generate keys for corresponding `successful` models
-      int numberOfBuiltModels = grid.getModelCount();
+      int indexOfLastBuiltModel = grid.getModelCount();
 
-      int maxNumberOfModelsToBuild = numberOfBuiltModels + it.max_models();
-
-      while (it.hasNext(model) && (it.max_models() == 0 || grid.getModelCount() < maxNumberOfModelsToBuild)) {
+      while (it.hasNext(model) && (it.max_models() == 0 || grid.getModelCount() < it.max_models())) {
         if (_job.stop_requested()) throw new Job.JobCancelledException();  // Handle end-user cancel request
 
         MP params = null;
@@ -369,7 +366,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             scoringInfo.time_stamp_ms = System.currentTimeMillis();
 
             //// build the model!
-            model = buildModel(params, grid, ++numberOfBuiltModels, protoModelKey);
+            model = buildModel(params, grid, ++indexOfLastBuiltModel, protoModelKey);
             if (model != null) {
               model.fillScoringInfo(scoringInfo);
               grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
