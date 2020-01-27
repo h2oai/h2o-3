@@ -492,16 +492,16 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // up, but the replica list does not account for the new replica.  However,
     // the rwlock cannot go down until an ACKACK is received, and the ACK
     // (hence ACKACK) doesn't go out until after this function returns.
-    
-    markHotReplica(h2o._unique_idx);
+    markHotReplica(h2o);
     // Both rwlock taken, and replica count is up now.
     return true;
   }
 
-  private void markHotReplica(short idx) {
+  private void markHotReplica(H2ONode n) {
+    n.markLocalDKVAccess();
     byte[] r = replicas();
-    if (idx < r.length)
-      r[idx] = 1; 
+    if (n._unique_idx < r.length)
+      r[n._unique_idx] = 1; 
   }
 
   /** Atomically lower active GET and Invalidate count */
@@ -586,7 +586,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = key;
     // Set the replica bit for the one node we know about, and leave the
     // rest clear.
-    markHotReplica(h2o._unique_idx);
+    markHotReplica(h2o);
     _rwlock.set(1);             // An initial read-lock, so a fast PUT cannot wipe this one out before invalidates have a chance of being counted
   }
 
