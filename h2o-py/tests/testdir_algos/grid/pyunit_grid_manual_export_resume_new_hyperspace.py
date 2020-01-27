@@ -18,10 +18,13 @@ def grid_resume():
     hyper_parameters = OrderedDict()
     hyper_parameters["learn_rate"] = learn_rate_opts
     hyper_parameters["ntrees"] = ntrees_opts
+
+    search_criteria = {'strategy': 'RandomDiscrete', 'max_models': 4, 'seed': 1}
+
     print("GBM grid with the following hyper_parameters:", hyper_parameters)
     
     export_dir = pyunit_utils.locate("results")
-    gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters)
+    gs = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters, search_criteria=search_criteria)
     gs.train(x=list(range(4)), y=4, training_frame=train)
     grid_id = gs.grid_id
     old_grid_model_count = len(gs.model_ids)
@@ -35,7 +38,9 @@ def grid_resume():
     assert len(grid.model_ids) == old_grid_model_count
     # Modify the hyperspace - should add new models to the grid
     hyper_parameters["ntrees"] = [2,5]
-    grid = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters, grid_id = grid.grid_id)
+    search_criteria_for_new_hps = {'strategy': 'RandomDiscrete', 'max_models': 8, 'seed': 1}
+
+    grid = H2OGridSearch(H2OGradientBoostingEstimator, hyper_params=hyper_parameters, search_criteria=search_criteria_for_new_hps, grid_id = grid.grid_id)
     grid.train(x=list(range(4)), y=4, training_frame=train)
     print("Newly grained grid has %d models" % len(grid.model_ids))
     assert len(grid.model_ids) == 2 * old_grid_model_count
