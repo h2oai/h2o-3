@@ -578,7 +578,13 @@ public class GridTest extends TestUtil {
       params._train = trainingFrame._key;
       params._response_column = "species";
 
-      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      GridSearch.SimpleParametersBuilderFactory<GBMModel.GBMParameters> simpleParametersBuilderFactory =
+              new GridSearch.SimpleParametersBuilderFactory<>();
+      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria =
+              new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      hyperSpaceSearchCriteria.set_max_models(1);
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
       Scope.track_generic(gs);
       final Grid errGrid = gs.get();
       Scope.track_generic(errGrid);
@@ -595,7 +601,9 @@ public class GridTest extends TestUtil {
 
       // Train a second model with modified parameters to forcefully produce a new model
       hyperParms.put("_learn_rate", new Double[]{0.5});
-      gs = GridSearch.startGridSearch(errGrid._key, params, hyperParms);
+
+      hyperSpaceSearchCriteria.set_max_models(2); // In order to be able to train new models we need to increase max_models here
+      gs = GridSearch.startGridSearch(errGrid._key, params, hyperParms, simpleParametersBuilderFactory, hyperSpaceSearchCriteria, 1);
       Scope.track_generic(gs);
       final Grid grid = gs.get();
       Scope.track_generic(grid);
