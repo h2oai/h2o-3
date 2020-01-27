@@ -176,9 +176,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     private final Grid grid;
     private final Lock parallelSearchGridLock = new ReentrantLock();
 
-    // Is used to make sure that counters for inProgress and completed models are consistent with availability of model parameters in an iterator
-    private final Lock getNextModelParametersLock = new ReentrantLock();
-
     public ModelFeeder(HyperSpaceWalker.HyperSpaceIterator<MPF> hyperspaceIterator, Grid grid) {
       this.hyperspaceIterator = hyperspaceIterator;
       this.grid = grid;
@@ -218,7 +215,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     private void attemptBuildNextModel(final ParallelModelBuilder parallelModelBuilder, final Model previousModel) {
 
-      getNextModelParametersLock.lock();
+      parallelSearchGridLock.lock();
       try {
         if (hyperspaceIterator.hasNext(previousModel)
                 && isThereEnoughTime()
@@ -235,7 +232,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           parallelModelBuilder.noMoreModels();
         }
       } finally {
-        getNextModelParametersLock.unlock();
+        parallelSearchGridLock.unlock();
       }
     }
 
