@@ -106,7 +106,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         error("XGBoost", "XGBoost is not available on all nodes!");
       }
     }
-    if (H2O.CLOUD.members().length == 0) {
+    if (!Paxos._cloudLocked) {
       // during rest-api registration we do not care about the actual back-end
       _backend = XGBoostModel.XGBoostParameters.Backend.cpu;
     } else {
