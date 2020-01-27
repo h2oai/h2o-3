@@ -7,7 +7,7 @@ Disassembly support.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-from opcode import *  # an undocumented builtin module
+import dis
 import inspect
 
 from h2o.utils.compatibility import *
@@ -15,7 +15,7 @@ from .expr import ExprNode, ASTId
 from . import h2o
 
 #
-# List of supported bytecode instructions.
+# List of supported bytecode instructions: cf. https://docs.python.org/3/library/dis.html#python-bytecode-instructions
 #
 BYTECODE_INSTRS = {
     "BINARY_SUBSCR": "cols",  # column slice; could be row slice?
@@ -33,11 +33,13 @@ BYTECODE_INSTRS = {
     "BINARY_AND": "&",
     "BINARY_OR": "|",
     "COMPARE_OP": "",  # some cmp_op
+    # from https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION :
     # Calls a function. argc indicates the number of positional arguments. The positional arguments
     # are on the stack, with the right-most argument on top. Below the arguments, the function o
     # bject to call is on the stack. Pops all function arguments, and the function
     # itself off the stack, and pushes the return value.
     "CALL_FUNCTION": "",
+    # from https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_KW :
     # Calls a function. argc indicates the number of arguments (positional and keyword).
     # The top element on the stack contains a tuple of keyword argument names.
     # Below the tuple, keyword arguments are on the stack, in the order corresponding to the tuple.
@@ -45,7 +47,28 @@ BYTECODE_INSTRS = {
     # right-most parameter on top. Below the arguments, the function object to call is on the stack.
     # Pops all function arguments, and the function itself off the stack,
     # and pushes the return value.
-    "CALL_FUNCTION_KW" : "",
+    "CALL_FUNCTION_KW": "",
+    # from https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_EX :
+    # Calls a callable object with variable set of positional and keyword arguments.
+    # If the lowest bit of flags is set, the top of the stack contains a mapping object
+    # containing additional keyword arguments.
+    # Below that is an iterable object containing positional arguments and a callable object to call.
+    # BUILD_MAP_UNPACK_WITH_CALL and BUILD_TUPLE_UNPACK_WITH_CALL can be used
+    # for merging multiple mapping objects and iterables containing arguments.
+    # Before the callable is called, the mapping object and iterable object are each “unpacked”
+    # and their contents passed in as keyword and positional arguments respectively.
+    # CALL_FUNCTION_EX pops all arguments and the callable object off the stack,
+    # calls the callable object with those arguments,
+    # and pushes the return value returned by the callable object.
+    "CALL_FUNCTION_EX": "",
+    # from https://docs.python.org/3/library/dis.html#opcode-CALL_METHOD :
+    # Calls a method. argc is the number of positional arguments.
+    # Keyword arguments are not supported. This opcode is designed to be used with LOAD_METHOD.
+    # Positional arguments are on top of the stack.
+    # Below them, the two items described in LOAD_METHOD are on the stack
+    # (either self and an unbound method object or NULL and an arbitrary callable).
+    # All of them are popped and the return value is pushed.
+    "CALL_METHOD": "",
 }
 
 
@@ -67,11 +90,23 @@ def is_func(instr):
 def is_func_kw(instr):
     return "CALL_FUNCTION_KW" == instr
 
+def is_func_ex(instr):
+    return "CALL_FUNCTION_EX" == instr
+
+def is_method_call(instr):
+    return "CALL_METHOD" == instr
+
+def is_callable(instr):
+    return is_func(instr) or is_func_kw(instr) or is_func_ex(instr) or is_method_call(instr)
+
 def is_load_fast(instr):
     return "LOAD_FAST" == instr
 
 def is_attr(instr):
     return "LOAD_ATTR" == instr
+
+def is_method(instr):
+    return "LOAD_METHOD" == instr or is_attr(instr)  # LOAD_METHOD available since 3.7, fallback to `isattr` for backwards compatibility
 
 def is_load_global(instr):
     return "LOAD_GLOBAL" == instr
@@ -92,14 +127,14 @@ except ImportError:
             op = ord(code[i]) if PY2 else code[i]
             pos = i
             i += 1
-            if op >= HAVE_ARGUMENT:
+            if op >= dis.HAVE_ARGUMENT:
                 if PY2:
                     arg = ord(code[i]) + ord(code[i+1])*256 + extended_arg
                 else: # to support Python version (3,3.5)
                     arg = code[i] + code[i+1]*256 + extended_arg
                 extended_arg = 0
                 i += 2
-                if op == EXTENDED_ARG:
+                if op == dis.EXTENDED_ARG:
                     extended_arg = arg*65536
             else:
                 arg = None
@@ -112,19 +147,19 @@ def _disassemble_lambda(co):
     for offset, op, arg in _unpack_opargs(code):
         args = []
         if arg is not None:
-            if op in hasconst:
+            if op in dis.hasconst:
                 args.append(co.co_consts[arg])  # LOAD_CONST
-            elif op in hasname:
+            elif op in dis.hasname:
                 args.append(co.co_names[arg])  # LOAD_CONST
-            elif op in hasjrel:
+            elif op in dis.hasjrel:
                 raise ValueError("unimpl: op in hasjrel")
-            elif op in haslocal:
+            elif op in dis.haslocal:
                 args.append(co.co_varnames[arg])  # LOAD_FAST
-            elif op in hascompare:
-                args.append(cmp_op[arg])  # COMPARE_OP
-            elif is_func(opname[op]) or is_func_kw(opname[op]):
+            elif op in dis.hascompare:
+                args.append(dis.cmp_op[arg])  # COMPARE_OP
+            elif is_callable(dis.opname[op]):
                 args.append(arg)  # oparg == nargs(fcn)
-        ops.append([opname[op], args])
+        ops.append([dis.opname[op], args])
 
     return ops
 
@@ -160,8 +195,10 @@ def _lambda_bytecode_to_ast(co, ops):
 
 
 def _opcode_read_arg(start_index, ops, keys):
+    # print(locals())  # XXX: temporarily print arguments
     instr = keys[start_index]
     return_idx = start_index - 1
+    # print(instr)  # XXX
     if is_bytecode_instruction(instr):
         if is_binary(instr):
             return _binop_bc(BYTECODE_INSTRS[instr], return_idx, ops, keys)
@@ -173,6 +210,10 @@ def _opcode_read_arg(start_index, ops, keys):
             return _call_func_bc(ops[start_index][1][0], return_idx, ops, keys)
         elif is_func_kw(instr):
             return _call_func_kw_bc(ops[start_index][1][0], return_idx, ops, keys)
+        elif is_func_ex(instr):
+            return _call_func_ex_bc(ops[start_index][1][0], return_idx, ops, keys)
+        elif is_method_call(instr):
+            return _call_method_bc(ops[start_index][1][0], return_idx, ops, keys)
         else:
             raise ValueError("unimpl bytecode op: " + instr)
     elif is_load_fast(instr):
@@ -197,7 +238,7 @@ def _call_func_bc(nargs, idx, ops, keys):
     """
     Implements transformation of CALL_FUNCTION bc inst to Rapids expression.
     The implementation follows definition of behavior defined in
-    https://docs.python.org/3/library/dis.html
+    https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION
     
     :param nargs: number of arguments including keyword and positional arguments
     :param idx: index of current instruction on the stack
@@ -221,7 +262,7 @@ def _call_func_bc(nargs, idx, ops, keys):
             nargs -= 1
     # LOAD_ATTR <method_name>: Map call arguments to a call of method on H2OFrame class
     op = ops[idx][1][0]
-    args = _get_h2o_frame_method_args(op, named_args, unnamed_args) if is_attr(ops[idx][0]) else []
+    args = _get_h2o_frame_method_args(op, named_args, unnamed_args) if is_method(ops[idx][0]) else []
     # Map function name to proper rapids name
     op = _get_func_name(op, args)
     # Go to next instruction
@@ -238,7 +279,8 @@ def _call_func_bc(nargs, idx, ops, keys):
 def _call_func_kw_bc(nargs, idx, ops, keys):
     named_args = {}
     unnamed_args = []
-    # Implemente calling convetion defined by CALL_FUNCTION_KW
+    # Implements calling convention defined by CALL_FUNCTION_KW
+    # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_KW
     # Read tuple of keyword arguments
     keyword_args = ops[idx][1][0]
     # Skip the LOAD_CONST tuple
@@ -255,7 +297,7 @@ def _call_func_kw_bc(nargs, idx, ops, keys):
         nargs -= 1
     # LOAD_ATTR <method_name>: Map call arguments to a call of method on H2OFrame class
     op = ops[idx][1][0]
-    args = _get_h2o_frame_method_args(op, named_args, unnamed_args) if is_attr(ops[idx][0]) else []
+    args = _get_h2o_frame_method_args(op, named_args, unnamed_args) if is_method(ops[idx][0]) else []
     # Map function name to proper rapids name
     op = _get_func_name(op, args)
     # Go to next instruction
@@ -267,6 +309,15 @@ def _call_func_kw_bc(nargs, idx, ops, keys):
         args.insert(0, _load_fast(ops[idx][1][0]))
         idx -= 1
     return [ExprNode(op, *args), idx]
+
+
+def _call_func_ex_bc(nargs, idx, ops, keys):
+    raise ValueError("Not implemented instruction: ")
+    # return _call_func_kw_bc(nargs, idx, ops, keys)
+
+
+def _call_method_bc(nargs, idx, ops, keys):
+    return _call_func_bc(nargs, idx, ops, keys)
 
 
 def _get_h2o_frame_method_args(op, named_args, unnamed_args):
