@@ -492,6 +492,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     // up, but the replica list does not account for the new replica.  However,
     // the rwlock cannot go down until an ACKACK is received, and the ACK
     // (hence ACKACK) doesn't go out until after this function returns.
+    
     markHotReplica(h2o._unique_idx);
     // Both rwlock taken, and replica count is up now.
     return true;
@@ -550,11 +551,15 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
       for( int i=0; i<max; i++ )
         if( r[i]==1 && H2ONode.IDX[i] != sender )
           TaskInvalidateKey.invalidate(H2ONode.IDX[i],_key,newval,fs);
-      final int idxMax = H2ONode.IDX.length;
       // Speculatively invalidate replicas also on nodes that were not known when the cluster was formed (clients)
-      for (int i=max; i<idxMax; i++)
-        if( H2ONode.IDX[i] != sender )
-          TaskInvalidateKey.invalidate(H2ONode.IDX[i],_key,newval,fs);
+      final int unseenMax = H2ONode.IDX.length;
+      for (int i=max; i<unseenMax; i++) {
+        H2ONode node = H2ONode.IDX[i];
+        if (node != sender && 
+                node.isRemovedFromCloud() && // ignore nodes that are not active anymore 
+                node.accessedLocalDKV())     // ignore nodes that appear active but didn't actually read DKV ever 
+          TaskInvalidateKey.invalidate(node, _key, newval, fs);
+      }
     }
     newval.lowerActiveGetCount(null);  // Remove initial read-lock, accounting for pending inv counts
     return fs;
