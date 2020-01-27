@@ -121,7 +121,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     long gridWork=0;
     if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
       int count=0;
-      while (it.hasNext(model) && (it.max_models() == 0 || count++ < it.max_models())) { //only walk the first max_models models, if specified
+      while (it.hasNext(model) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
         try {
           Model.Parameters parms = it.nextModelParameters(model);
           gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
