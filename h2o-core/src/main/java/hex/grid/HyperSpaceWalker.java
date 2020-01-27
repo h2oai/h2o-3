@@ -397,7 +397,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         @Override
         public double max_runtime_secs() { return Double.MAX_VALUE; }
 
-        public int max_models() { return _maxHyperSpaceSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)_maxHyperSpaceSize; }
+        public int max_models() { return 0; }
 
         @Override
         public void modelFailed(Model failedModel) {
