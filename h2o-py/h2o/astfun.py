@@ -60,7 +60,7 @@ BYTECODE_INSTRS = {
     # CALL_FUNCTION_EX pops all arguments and the callable object off the stack,
     # calls the callable object with those arguments,
     # and pushes the return value returned by the callable object.
-    "CALL_FUNCTION_EX": "",
+    # "CALL_FUNCTION_EX": "",
     # from https://docs.python.org/3/library/dis.html#opcode-CALL_METHOD :
     # Calls a method. argc is the number of positional arguments.
     # Keyword arguments are not supported. This opcode is designed to be used with LOAD_METHOD.
@@ -90,7 +90,7 @@ def is_func(instr):
 def is_func_kw(instr):
     return "CALL_FUNCTION_KW" == instr
 
-def is_func_ex(instr):
+def is_func_ex(instr):  # since 3.6
     return "CALL_FUNCTION_EX" == instr
 
 def is_method_call(instr):
@@ -169,6 +169,7 @@ def lambda_to_expr(fun):
     lambda_dis = _disassemble_lambda(code)
     return _lambda_bytecode_to_ast(code, lambda_dis)
 
+
 def _lambda_bytecode_to_ast(co, ops):
     # have a stack of ops, read from R->L to get correct oops
     s = len(ops) - 1
@@ -195,10 +196,8 @@ def _lambda_bytecode_to_ast(co, ops):
 
 
 def _opcode_read_arg(start_index, ops, keys):
-    # print(locals())  # XXX: temporarily print arguments
     instr = keys[start_index]
     return_idx = start_index - 1
-    # print(instr)  # XXX
     if is_bytecode_instruction(instr):
         if is_binary(instr):
             return _binop_bc(BYTECODE_INSTRS[instr], return_idx, ops, keys)
@@ -210,9 +209,9 @@ def _opcode_read_arg(start_index, ops, keys):
             return _call_func_bc(ops[start_index][1][0], return_idx, ops, keys)
         elif is_func_kw(instr):
             return _call_func_kw_bc(ops[start_index][1][0], return_idx, ops, keys)
-        elif is_func_ex(instr):
-            return _call_func_ex_bc(ops[start_index][1][0], return_idx, ops, keys)
-        elif is_method_call(instr):
+        # elif is_func_ex(instr):  # since 3.6
+            # return _call_func_ex_bc(ops[start_index][1][0], return_idx, ops, keys)
+        elif is_method_call(instr):  # since 3.7
             return _call_method_bc(ops[start_index][1][0], return_idx, ops, keys)
         else:
             raise ValueError("unimpl bytecode op: " + instr)
@@ -311,12 +310,14 @@ def _call_func_kw_bc(nargs, idx, ops, keys):
     return [ExprNode(op, *args), idx]
 
 
-def _call_func_ex_bc(nargs, idx, ops, keys):
-    raise ValueError("Not implemented instruction: ")
+# def _call_func_ex_bc(nargs, idx, ops, keys):
+    # Also try to improve code reuse between this and _call_func_kw_bc and _call_func_bc
     # return _call_func_kw_bc(nargs, idx, ops, keys)
 
 
 def _call_method_bc(nargs, idx, ops, keys):
+    # still need to verify it handles all use-cases:
+    # delegating to basic func call will work most of the time though in the context we're using this (H2OFrame.apply).
     return _call_func_bc(nargs, idx, ops, keys)
 
 
