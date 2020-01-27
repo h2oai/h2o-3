@@ -67,14 +67,14 @@ Finding Synonyms
 
 A ``find_synonyms`` function can be used to find synonyms in a Word2vec model. This function has the following usage:
 
-.. tabs::
-   .. code-tab:: r R
+.. example-code::
+   .. code-block:: r
 
-    	h2o.findSyonyms(word2vec, word, count)
+    h2o.findSyonyms(word2vec, word, count)
 
-   .. code-tab:: python
+   .. code-block:: python
 
-    	h2o.find_synonyms(word2vec, word, count)
+    h2o.find_synonyms(word2vec, word, count)
 
 - ``word2vec``: A Word2Vec model.
 - ``words``: The word for which you want to find synonyms.
