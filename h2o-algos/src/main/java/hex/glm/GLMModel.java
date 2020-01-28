@@ -1246,10 +1246,16 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return best;
     }
 
-    public double[] getNormBeta() {return _submodels[_selected_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1));}
+    public double[] getNormBeta() {
+      if(this.isStandardized()) {
+        return _submodels[_selected_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1));
+      } else {
+        return _dinfo.denormalizeBeta(_submodels[_selected_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1)), this.isStandardized());
+      }
+    }
 
     public double[][] getNormBetaMultinomial() {
-      return getNormBetaMultinomial(_selected_lambda_idx);
+      return getNormBetaMultinomial(_selected_lambda_idx, this.isStandardized());
     }
 
     public double[][] getNormBetaMultinomial(int idx) {
@@ -1263,6 +1269,24 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         beta = ArrayUtils.expandAndScatter(beta,nclasses()*(_dinfo.fullN()+1),sm.idxs);
       for(int i = 0; i < res.length; ++i)
         res[i] = Arrays.copyOfRange(beta,i*N,(i+1)*N);
+      return res;
+    }
+
+    public double[][] getNormBetaMultinomial(int idx, boolean standardized) {
+      if(_submodels == null || _submodels.length == 0) // no model yet
+        return null;
+      double [][] res = new double[nclasses()][];
+      Submodel sm = _submodels[idx];
+      int N = _dinfo.fullN()+1;
+      double [] beta = sm.beta;
+      if(sm.idxs != null)
+        beta = ArrayUtils.expandAndScatter(beta,nclasses()*(_dinfo.fullN()+1),sm.idxs);
+      for(int i = 0; i < res.length; ++i)
+        if(standardized) {
+          res[i] = Arrays.copyOfRange(beta, i * N, (i + 1) * N);
+        } else {
+          res[i] = _dinfo.denormalizeBeta(Arrays.copyOfRange(beta, i * N, (i + 1) * N), standardized);
+        }
       return res;
     }
 
@@ -1329,9 +1353,27 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         res.put(_output._coefficient_names[i], b[i]);
     return res;
   }
-
-
-
+  
+  public HashMap<String,Double> standardizedCoefficients(){
+    HashMap<String, Double> res = new HashMap<>();
+    final double [] b = dinfo().denormalizeBeta(beta(), _parms._standardize);
+    if(b == null) return res;
+    if(_parms._family == Family.multinomial || _parms._family == Family.ordinal){
+      String [] responseDomain = _output._domains[_output._domains.length-1];
+      int len = b.length/_output.nclasses();
+      assert b.length == len*_output.nclasses();
+      for(int c = 0; c < _output.nclasses(); ++c) {
+        String prefix =  responseDomain[c] + "_";
+        for (int i = 0; i < len; ++i)
+          res.put(prefix + _output._coefficient_names[i], b[c*len+i]);
+      }
+    } else for (int i = 0; i < b.length; ++i)
+      res.put(_output._coefficient_names[i], b[i]);
+    return res;
+  }
+  
+  
+  
   // TODO: Shouldn't this be in schema? have it here for now to be consistent with others...
   /**
    * Re-do the TwoDim table generation with updated model.
