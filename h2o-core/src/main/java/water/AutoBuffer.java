@@ -805,7 +805,7 @@ public final class AutoBuffer {
     return put1(254).put4(x);
   }
   // Get a (compressed) integer.  See above for the compression strategy and reasoning.
-  int getInt( ) {
+  public int getInt( ) {
     int x = get1U();
     if( x <= 253 ) return x-1;
     if( x==255 ) return (short)get2();
