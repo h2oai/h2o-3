@@ -71,6 +71,10 @@ public abstract class Paxos {
       ListenerService.getInstance().report("different_cloud", h2o);
       return 0;
     }
+
+    if (H2O.isFlatfileEnabled() && !H2O.ARGS.client && h2o._heartbeat._client && !H2O.isNodeInFlatfile(h2o)) {
+        H2O.addNodeToFlatfile(h2o);
+    }
     
     // Never heard of this dude?  See if we want to kill him off for being cloud-locked
     if( !PROPOSED.contains(h2o) && !h2o._heartbeat._client ) {
