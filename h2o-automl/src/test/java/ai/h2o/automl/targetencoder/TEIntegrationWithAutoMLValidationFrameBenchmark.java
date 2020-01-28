@@ -3,7 +3,7 @@ package ai.h2o.automl.targetencoder;
 import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
-import ai.h2o.automl.Leaderboard;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.targetencoder.strategy.HPsSelectionStrategy;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;

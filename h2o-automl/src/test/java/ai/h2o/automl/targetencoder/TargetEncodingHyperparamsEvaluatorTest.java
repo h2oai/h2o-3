@@ -121,7 +121,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       // checking that we can clone/reuse modelBuilder
       double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboardCopy2, columnsToEncode, seedForFoldColumn);
 
-      assertTrue(isBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train()));
+      assertBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train());
       assertTrue(auc > 0);
       assertEquals(auc, auc2, 1e-5);
     } finally {
@@ -175,7 +175,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       // checking that we can clone/reuse modelBuilder
       double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
 
-      assertTrue(isBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train()));
+      assertBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train());
       assertTrue(auc > 0);
       assertEquals(auc, auc2, 1e-5);
     } finally {

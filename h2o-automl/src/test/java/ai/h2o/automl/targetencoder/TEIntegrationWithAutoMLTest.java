@@ -57,7 +57,7 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       leader = aml.leader();
 
       // Expect that if we don't have categorical vectors in training frame then we will return it unchanged
-      assert isBitIdentical(aml.getTrainingFrame(), originalCopyOfTrainingFrame):"The two frames are not the same.";
+      assertBitIdentical(aml.getTrainingFrame(), originalCopyOfTrainingFrame);
 
     } finally {
       // Cleanup
@@ -114,7 +114,7 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
       trainingFrame = aml.getTrainingFrame();
 
-      assertFalse(" Two frames should be different.", isBitIdentical(fr, trainingFrame));
+      assertIdenticalUpToRelTolerance(fr, trainingFrame, 0, false, "Two frames should be different.");
       assertTrue(leader!= null && Arrays.asList(leader._output._names).contains(teColumnName + "_te"));
 
       printOutFrameAsTable(trainingFrame, false, 100);
@@ -174,7 +174,7 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
       trainingFrame = aml.getTrainingFrame();
 
-      assertFalse(" Two frames should be different.", isBitIdentical(fr, trainingFrame));
+      assertIdenticalUpToRelTolerance(fr, trainingFrame, 0, false, "Two frames should be different.");
       assertTrue(leader!= null && Arrays.asList(leader._output._names).contains(teColumnName + "_te"));
 
       printOutFrameAsTable(trainingFrame, false, 100);

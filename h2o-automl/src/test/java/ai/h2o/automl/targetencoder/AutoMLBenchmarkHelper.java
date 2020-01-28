@@ -1,7 +1,7 @@
 package ai.h2o.automl.targetencoder;
 
 
-import ai.h2o.automl.Leaderboard;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.splitframe.ShuffleSplitFrame;
 import water.Key;
