@@ -10,73 +10,45 @@ import hex.grid.HyperSpaceWalker;
 import hex.schemas.TargetEncoderV3;
 import water.api.GridSearchHandler;
 import water.fvec.Frame;
-import water.util.Log;
 import water.util.TwoDimTable;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.PriorityQueue;
 
 /**
- *  Random grid search for searching optimal hyperparameters for target encoding
+ *  Random grid search for searching optimal hyper parameters for target encoding
  */
-// TODO make it generic with MP type
 public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrategy<TargetEncoderModel.TargetEncoderParameters>{
 
   private Frame _leaderboardData;
-  private String _responseColumn;
-  private boolean _theBiggerTheBetter;
 
   private PriorityQueue<TEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters>> _evaluatedQueue;
-  private TargetEncodingHyperparamsEvaluator _evaluator = null;
+  private TargetEncodingHyperparamsEvaluator _evaluator = new TargetEncodingHyperparamsEvaluator();
 
-  protected ModelValidationMode _modelValidationMode;
+  protected ModelValidationMode _validationMode;
   protected HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> _walker;
-  protected double _ratioOfHyperSpaceToExplore;
-  protected double _earlyStoppingRatio;
 
   protected transient String[] _columnNamesToEncode;
-  protected transient Map<String, Double> _columnNameToIdxMap;
-  protected boolean _searchOverColumns;
-
-  protected long _seed;
+  private AutoMLBuildSpec.AutoMLTEControl _teBuildSpec;
 
   public GridSearchTEParamsSelectionStrategy(Frame leaderboard,
-                                             String responseColumn,
                                              String[] columnNamesToEncode,
-                                             Map<String, Double> columnNameToIdxMap,
-                                             boolean theBiggerTheBetter,
-                                             AutoMLBuildSpec.AutoMLTEControl teBuildSpec) {
-
-    this(leaderboard, responseColumn, columnNamesToEncode, columnNameToIdxMap,
-            theBiggerTheBetter, teBuildSpec, new TargetEncodingHyperparamsEvaluator());
-  }
-
-  public GridSearchTEParamsSelectionStrategy(Frame leaderboard,
-                                             String responseColumn,
-                                             String[] columnNamesToEncode,
-                                             Map<String, Double> columnNameToIdxMap,
                                              boolean theBiggerTheBetter,
                                              AutoMLBuildSpec.AutoMLTEControl teBuildSpec,
-                                             TargetEncodingHyperparamsEvaluator evaluator) {
-    _seed = teBuildSpec.seed;
-
-    _evaluator = evaluator;
+                                             ModelValidationMode validationMode) {
+    _teBuildSpec = teBuildSpec;
 
     _leaderboardData = leaderboard;
-    _responseColumn = responseColumn;
     _columnNamesToEncode = columnNamesToEncode;
-    _columnNameToIdxMap = columnNameToIdxMap;
 
-    _ratioOfHyperSpaceToExplore = teBuildSpec.ratio_of_hyperspace_to_explore;
-    _earlyStoppingRatio = teBuildSpec.early_stopping_ratio;
-    _theBiggerTheBetter = theBiggerTheBetter;
+    _evaluatedQueue = new PriorityQueue<>(new EvaluatedComparator(theBiggerTheBetter));
 
+    _validationMode = validationMode;
+    setTESearchSpace(_validationMode);
   }
 
-  public void setTESearchSpace(ModelValidationMode modelValidationMode) {
-    _modelValidationMode = modelValidationMode;
+  private void setTESearchSpace(ModelValidationMode modelValidationMode) {
 
     HashMap<String, Object[]> grid = new HashMap<>();
     grid.put("blending", new Boolean[]{true, false});
@@ -84,7 +56,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     grid.put("k", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
     grid.put("f", new Double[]{5.0, 10.0, 20.0});
 
-    switch (_modelValidationMode) {
+    switch (modelValidationMode) {
       case CV:
         grid.put("data_leakage_handling", new TargetEncoder.DataLeakageHandlingStrategy[]{TargetEncoder.DataLeakageHandlingStrategy.KFold});
         break;
@@ -100,13 +72,9 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
             new GridSearchHandler.DefaultModelParametersBuilderFactory<>();
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
-    HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> walker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(parameters, grid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
 
-    _walker = walker;
+    _walker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(parameters, grid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
 
-    Log.info("Size of TE hyperspace to explore " + walker.getMaxHyperSpaceSize());
-    int expectedNumberOfEntries = (int) (Math.max(1, walker.getMaxHyperSpaceSize() * _ratioOfHyperSpaceToExplore));
-    _evaluatedQueue = new PriorityQueue<>(expectedNumberOfEntries, new EvaluatedComparator(_theBiggerTheBetter));
   }
 
   public TargetEncoderModel.TargetEncoderParameters getBestParams(ModelBuilder modelBuilder) {
@@ -114,54 +82,24 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
   }
 
   public TEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> getBestParamsWithEvaluation(ModelBuilder modelBuilder) {
-    assert _modelValidationMode != null : "`setTESearchSpace()` method should has been called to setup appropriate grid search.";
-
-    EarlyStopper earlyStopper = new EarlyStopper(_earlyStoppingRatio, _ratioOfHyperSpaceToExplore, _walker.getMaxHyperSpaceSize(), -1, _theBiggerTheBetter);
 
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = _walker.iterator();
 
-//    try {
-      while (earlyStopper.proceed()) {
+    long attemptIdx = 0;
+    while (_evaluatedQueue.size() < _teBuildSpec.te_max_models) {
 
-        TargetEncoderModel.TargetEncoderParameters nextModelParameters = iterator.nextModelParameters(null);
+      TargetEncoderModel.TargetEncoderParameters nextModelParameters = iterator.nextModelParameters(null);
 
-        ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
+      ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
 
-        clonedModelBuilder.init(false);
+      clonedModelBuilder.init(false);
 
-        double evaluationResult = _evaluator.evaluate(nextModelParameters, clonedModelBuilder, _modelValidationMode, _leaderboardData, _columnNamesToEncode, _seed);
+      double evaluationResult = _evaluator.evaluate(nextModelParameters, clonedModelBuilder, _validationMode, _leaderboardData, _columnNamesToEncode, _teBuildSpec.seed);
 
-        earlyStopper.update(evaluationResult);
-
-        _evaluatedQueue.add(new Evaluated<>(nextModelParameters, evaluationResult, earlyStopper.getTotalAttemptsCount()));
-      }
-//    } catch (RandomGridEntrySelector.GridSearchCompleted ex) { // TODO consider to wrap in try-catch
-      // just proceed by returning best gridEntry found so far
-//    }
+      _evaluatedQueue.add(new Evaluated<>(nextModelParameters, evaluationResult, ++attemptIdx));
+    }
 
     return _evaluatedQueue.peek();
-  }
-
-  private String[] extractColumnsToEncodeFromGridEntry(Map<String, Object> gridEntry) {
-    ArrayList<String> columnsIdxsToEncode = new ArrayList();
-    for (Map.Entry<String, Object> entry : gridEntry.entrySet()) {
-      String column_to_encode_prefix = "_column_to_encode_";
-      if(entry.getKey().contains(column_to_encode_prefix)) {
-        double entryValue = (double) entry.getValue();
-        if(entryValue != -1.0)
-          columnsIdxsToEncode.add(entry.getKey().substring(column_to_encode_prefix.length()));
-      }
-
-    }
-    return columnsIdxsToEncode.toArray(new String[]{});
-  }
-
-  public String getResponseColumn() {
-    return _responseColumn;
-  }
-
-  public boolean isTheBiggerTheBetter() {
-    return _theBiggerTheBetter;
   }
 
   public PriorityQueue<Evaluated<TargetEncoderModel.TargetEncoderParameters>> getEvaluatedQueue() {
@@ -177,41 +115,5 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
     assert limit <= Integer.MAX_VALUE;
     TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
     System.out.println(twoDimTable.toString(2, true));
-  }
-
-  public static class EarlyStopper {
-    private int _seqAttemptsBeforeStopping;
-    private int _totalAttemptsBeforeStopping;
-    private double _currentThreshold;
-    private boolean _theBiggerTheBetter;
-    private int _totalAttemptsCount = 0;
-    private int _fruitlessAttemptsSinceLastResetCount = 0;
-
-    public EarlyStopper(double earlyStoppingRatio, double ratioOfHyperspaceToExplore, long numberOfUnexploredEntries, double initialThreshold, boolean theBiggerTheBetter) {
-
-      _seqAttemptsBeforeStopping = (int) (numberOfUnexploredEntries * earlyStoppingRatio);
-      _totalAttemptsBeforeStopping = (int) (numberOfUnexploredEntries * ratioOfHyperspaceToExplore );
-      _currentThreshold = initialThreshold;
-      _theBiggerTheBetter = theBiggerTheBetter;
-    }
-
-    public boolean proceed() {
-      return _fruitlessAttemptsSinceLastResetCount < _seqAttemptsBeforeStopping && _totalAttemptsCount < _totalAttemptsBeforeStopping;
-    };
-
-    public void update(double newValue) {
-      boolean conditionToContinue = _theBiggerTheBetter ? newValue <= _currentThreshold : newValue > _currentThreshold;
-      if(conditionToContinue) _fruitlessAttemptsSinceLastResetCount++;
-      else {
-        _fruitlessAttemptsSinceLastResetCount = 0;
-        _currentThreshold = newValue;
-      }
-      _totalAttemptsCount++;
-    }
-
-    public int getTotalAttemptsCount() {
-      return _totalAttemptsCount;
-    }
-
   }
 }

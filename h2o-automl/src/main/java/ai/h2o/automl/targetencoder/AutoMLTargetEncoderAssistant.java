@@ -16,7 +16,6 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.util.StringUtils;
-import water.util.TwoDimTable;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -38,7 +37,7 @@ public class AutoMLTargetEncoderAssistant{
   private String _responseColumnName;
   private AutoMLBuildSpec _buildSpec;
   private ModelBuilder _modelBuilder;
-  private boolean _CVEarlyStoppingEnabled;
+  private ModelValidationMode _validationMode;
 
   public TEParamsSelectionStrategy<TargetEncoderModel.TargetEncoderParameters> getTeParamsSelectionStrategy() {
     return _teParamsSelectionStrategy;
@@ -64,7 +63,7 @@ public class AutoMLTargetEncoderAssistant{
 
     _buildSpec = buildSpec;
 
-    _CVEarlyStoppingEnabled = _modelBuilder._parms.valid() == null;
+    _validationMode = _modelBuilder._parms.valid() == null ? ModelValidationMode.CV : ModelValidationMode.VALIDATION_FRAME;
 
   }
 
@@ -92,21 +91,8 @@ public class AutoMLTargetEncoderAssistant{
         for (String column : _columnsToEncode) {
           _columnNameToIdxMap.put(column, (double) _trainingFrame.find(column));
         }
-        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(_leaderboardFrame, _responseColumnName, _columnsToEncode,
-                _columnNameToIdxMap, theBiggerTheBetter, _buildSpec.te_spec);
+        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(_leaderboardFrame, _columnsToEncode, theBiggerTheBetter, _buildSpec.te_spec, _validationMode);
         break;
-    }
-
-    // Pre-setup for grid-based strategies based on AutoML's ways of validating models
-    if(getTeParamsSelectionStrategy() instanceof GridSearchTEParamsSelectionStrategy) {
-
-      GridSearchTEParamsSelectionStrategy selectionStrategy = (GridSearchTEParamsSelectionStrategy) getTeParamsSelectionStrategy();
-      if(_CVEarlyStoppingEnabled) {
-        selectionStrategy.setTESearchSpace(ModelValidationMode.CV);
-      }
-      else {
-        selectionStrategy.setTESearchSpace(ModelValidationMode.VALIDATION_FRAME);
-      }
     }
 
     TargetEncoderModel.TargetEncoderParameters bestTEParams = getTeParamsSelectionStrategy().getBestParams(_modelBuilder);
@@ -145,7 +131,7 @@ public class AutoMLTargetEncoderAssistant{
       Frame trainCopy = _trainingFrame.deepCopy(Key.make("train_frame_copy_for_encodings_generation_" + Key.make()).toString());
       DKV.put(trainCopy);
 
-      if (_CVEarlyStoppingEnabled) {
+      if (_validationMode == ModelValidationMode.CV) {
         switch (holdoutType) {
           case KFold:
 
@@ -162,7 +148,7 @@ public class AutoMLTargetEncoderAssistant{
             break;
           case LeaveOneOut:
           case None:
-            throw new IllegalStateException("With CV being enabled KFOLD strategy is only supported for now. But we probably should support other strategies as well");
+            throw new IllegalStateException("With CV being enabled KFOLD strategy is only supported for now.");
         }
       } else {
         switch (holdoutType) {

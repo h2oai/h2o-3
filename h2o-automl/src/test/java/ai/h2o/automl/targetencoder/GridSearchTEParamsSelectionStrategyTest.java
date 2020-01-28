@@ -29,13 +29,12 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
   }
 
   @Test
-  public void strategyDoesNotLeakKeysWithValidationFrameMode() {
+  public void GridSearchTEParamsSelectionStrategy_does_not_leak_keys_with_validation_mode() {
     Scope.enter();
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
-      double ratioOfHPToExplore = 0.05;
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.VALIDATION_FRAME, "survived", ratioOfHPToExplore);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.VALIDATION_FRAME, "survived");
       bestParamsEv.getItem();
     } finally {
       Scope.exit();
@@ -43,20 +42,19 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
   }
 
   @Test
-  public void strategyDoesNotLeakKeysWithCVMode() {
+  public void GridSearchTEParamsSelectionStrategy_does_not_leak_keys_with_cv_mode() {
     Scope.enter();
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
-      double ratioOfHPToExplore = 0.01;
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.CV, "survived", ratioOfHPToExplore);
+      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.CV, "survived");
       bestParamsEv.getItem();
     } finally {
       Scope.exit();
     }
   }
 
-  private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> findBestTargetEncodingParams(Frame fr, ModelValidationMode modelValidationMode, String responseColumnName, double ratioOfHPToExplore) {
+  private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> findBestTargetEncodingParams(Frame fr, ModelValidationMode modelValidationMode, String responseColumnName) {
 
     asFactor(fr, responseColumnName);
     Frame train = null;
@@ -79,20 +77,15 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
     long seedForFoldColumn = 2345L;
 
-    AutoMLBuildSpec.AutoMLTEControl autoMLTEControl = new AutoMLBuildSpec.AutoMLTEControl();
-    autoMLTEControl.ratio_of_hyperspace_to_explore = 0.1;
-    autoMLTEControl.search_over_columns = true;
-    autoMLTEControl.early_stopping_ratio = 1.0;
-    autoMLTEControl.seed = seedForFoldColumn;
+    AutoMLBuildSpec.AutoMLTEControl teBuildSpec = new AutoMLBuildSpec.AutoMLTEControl();
+    teBuildSpec.ratio_of_hyperspace_to_explore = 0.1;
+    teBuildSpec.search_over_columns = true;
+    teBuildSpec.early_stopping_ratio = 1.0;
+    teBuildSpec.seed = seedForFoldColumn;
 
-    Map<String, Double> _columnNameToIdxMap = new HashMap<>();
-    for (String column : columnsToEncode) {
-      _columnNameToIdxMap.put(column, (double) fr.find(column));
-    }
     GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(leaderboard, responseColumnName, columnsToEncode, _columnNameToIdxMap, true, autoMLTEControl);
+            new GridSearchTEParamsSelectionStrategy(leaderboard, columnsToEncode, true, teBuildSpec, modelValidationMode);
 
-    gridSearchTEParamsSelectionStrategy.setTESearchSpace(modelValidationMode);
     ModelBuilder mb = null;
     switch (modelValidationMode) {
       case CV:
@@ -162,44 +155,5 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     double expectedToEvaluate = teSpec.early_stopping_ratio * selectionStrategy.getRandomGridEntrySelector().spaceSize();
     assertEquals((int) expectedToEvaluate + 1, actuallyEvaluatedCount, 1e-5);
   }*/
-
-  @Test
-  public void earlyStopperTest() {
-    double _earlyStoppingRatio = 0.1;
-    double _ratioOfHyperSpaceToExplore = 0.2;
-    int _numberOfIterations = 100;
-
-    GridSearchTEParamsSelectionStrategy.EarlyStopper earlyStopper = new GridSearchTEParamsSelectionStrategy.EarlyStopper(_earlyStoppingRatio, _ratioOfHyperSpaceToExplore, _numberOfIterations, -1, true);
-    int counter = 0;
-    while(earlyStopper.proceed()) {
-      earlyStopper.update(0.42);
-      counter++;
-    }
-
-    assertEquals(11, counter); // 1 for changing  -1 to 0.42 and then 10 fruitless attempts
-  }
-
-  @Test
-  public void early_stopping_is_not_happening_when_we_improve_within_early_stopping_ratio_test() {
-    double earlyStoppingRatio = 0.1;
-    double ratioOfHyperSpaceToExplore = 0.2;
-    int numberOfIterations = 100;
-
-    GridSearchTEParamsSelectionStrategy.EarlyStopper earlyStopper = new GridSearchTEParamsSelectionStrategy.EarlyStopper(earlyStoppingRatio, ratioOfHyperSpaceToExplore, numberOfIterations, -1, true);
-    int counter = 0;
-    double score = 0.42;
-
-    while(earlyStopper.proceed()) {
-      if (counter % 10 == 9) {
-        score += 0.1;
-        earlyStopper.update(score);
-      } else
-        earlyStopper.update(score);
-
-      counter++;
-    }
-
-    assertEquals(numberOfIterations * ratioOfHyperSpaceToExplore, counter, 1e-5);
-  }
 
 }
