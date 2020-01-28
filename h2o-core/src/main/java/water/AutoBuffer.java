@@ -421,7 +421,7 @@ public final class AutoBuffer {
           // For small-packet write, send via UDP.  Since nothing is sent until
           // now, this close() call trivially orders - since the reader will not
           // even start (much less close()) until this packet is sent.
-          if( _bb.position() < MTU) return udpSend();
+          if( _bb.limit() < MTU) return udpSend();
           // oops - Big Write, switch to TCP and finish out there
         }
       }
