@@ -691,13 +691,13 @@ final public class H2O {
       } else if (s.matches("useUDP")) {
         Log.warn("Support for UDP communication was removed from H2O, using TCP.");
       } else if (s.matches("watchdog_client_retry_timeout")) {
-        warnWatchdogRemoved();
+        warnWatchdogRemoved("watchdog_client_retry_timeout");
       } else if (s.matches("watchdog_client")) {
-        warnWatchdogRemoved();
+        warnWatchdogRemoved("watchdog_client");
       } else if (s.matches("watchdog_client_connect_timeout")) {
-        warnWatchdogRemoved();
+        warnWatchdogRemoved("watchdog_client_connect_timeout");
       } else if (s.matches("watchdog_stop_without_client")) {
-        warnWatchdogRemoved();
+        warnWatchdogRemoved("watchdog_stop_without_client");
       } else if (s.matches("features")) {
         i = s.incrementAndCheck(i, args);
         trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
@@ -717,8 +717,8 @@ final public class H2O {
     return trgt;
   }
 
-  private static void warnWatchdogRemoved() {
-    Log.warn("Support for watchdog client communication was removed and this argument has no longer any effect. " +
+  private static void warnWatchdogRemoved(String param) {
+    Log.warn("Support for watchdog client communication was removed and '" + param + "' argument has no longer any effect. " +
             "It will be removed in the next major release 3.30.");
   }
   
