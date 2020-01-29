@@ -11,6 +11,7 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.targetencoder.AutoMLTargetEncoderAssistant;
 import ai.h2o.targetencoding.TargetEncoderModel;
+import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
@@ -36,6 +37,7 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.Optional;
 
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
@@ -301,14 +303,14 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
 
         /**
-         * @param key (optional) model key.
+         * @param keyNullable (optional) model key.
          * @param parms the model builder params.
          * @return a started training model.
          */
-        protected Job<M> trainModel(Key<M> key, Model.Parameters parms) {
+        protected Job<M> trainModel(Key<M> keyNullable, Model.Parameters parms) {
             String algoName = ModelBuilder.algoName(_algo.urlName());
 
-            if (null == key) key = makeKey(algoName, true);
+            final Key<M> key = keyNullable == null ? makeKey(algoName, true) : keyNullable;
 
             Model.Parameters defaults = ModelBuilder.make(_algo.urlName(), null, null)._parms;
             setCommonModelBuilderParams(parms);
@@ -329,17 +331,24 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             if (buildSpec.te_spec.enabled) {
-                // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
-                String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns == null ? null : buildSpec.input_spec.ignored_columns.clone(); //TODO test
 
-                try {
-                    performAutoTargetEncoding(builder, buildSpec, aml());
-                    return runModelTrainingWithTEJob(key, algoName, builder, originalIgnoredColumns, buildSpec, aml());
-                } catch (AutoMLTargetEncoderAssistant.NoColumnsToEncodeException ex) { // TODO without exception-driven development we could just use condition in `if` and avoid duplication with `runModelTrainingJob`
-                    Log.info("Target encoding is enabled but there were no columns found to apply encoding to. Falling back to execution without TE.");
-                    //TODO we need to make sure that builder is in a state that was before we tried to apply TE. It is most likely not the case now. Consider deep copy of ModelBuilder.
-                    return runModelTrainingJob(key, algoName, builder);
-                }
+                AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(aml(),
+                        buildSpec,
+                        builder);
+
+                Optional<TargetEncoderModel.TargetEncoderParameters> bestTEParamsOpt = teAssistant.findBestTEParams();
+
+                return bestTEParamsOpt
+                        .map(bestParams -> {
+                            teAssistant.applyTE(bestParams);
+                            // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
+                            String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns == null ? null : buildSpec.input_spec.ignored_columns.clone(); //TODO test
+
+                            //TODO maybe it is better to return ModelBuilder with new encoded frames so that we can explicitly pass it to `trainModel` method
+                            return runModelTrainingWithTEJob(key, algoName, builder, originalIgnoredColumns, buildSpec, aml());
+                        })
+                        .orElseGet(() -> runModelTrainingJob(key, algoName, builder));
+
             } else {
                 return runModelTrainingJob(key, algoName, builder);
             }
@@ -377,7 +386,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             teAssistant.applyTE(bestTEParams);
         }
 
-        private Job<M> runModelTrainingWithTEJob(Key<M> key, String algoName,
+        private Job<M> runModelTrainingWithTEJob(final Key<M> key, String algoName,
                                                  ModelBuilder builder,
                                                  String[] originalIgnoredColumns,
                                                  AutoMLBuildSpec buildSpec,

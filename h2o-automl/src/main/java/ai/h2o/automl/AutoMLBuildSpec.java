@@ -1,6 +1,5 @@
 package ai.h2o.automl;
 
-import ai.h2o.automl.targetencoder.strategy.HPsSelectionStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import hex.Model;
@@ -350,12 +349,9 @@ public class AutoMLBuildSpec extends Iced {
 
     public boolean enabled = true;
     public TEApplicationStrategy application_strategy;
-    public HPsSelectionStrategy params_selection_strategy;
-    public TargetEncoderModel.TargetEncoderParameters fixedTEParams;
     public double early_stopping_ratio = 1.0;
     public double ratio_of_hyperspace_to_explore;
     public int te_max_models = 3;
-    public boolean search_over_columns = true;
     public long seed = new Random().nextLong();
   }
 

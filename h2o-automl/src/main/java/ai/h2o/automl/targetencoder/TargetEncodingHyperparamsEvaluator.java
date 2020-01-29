@@ -23,7 +23,12 @@ import static ai.h2o.targetencoding.TargetEncoderFrameHelper.concat;
 
 public class TargetEncodingHyperparamsEvaluator extends Iced {
 
-  public double evaluate(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder modelBuilder, ModelValidationMode modelValidationMode, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {
+  public double evaluate(TargetEncoderModel.TargetEncoderParameters teParams,
+                         ModelBuilder modelBuilder,
+                         ModelValidationMode modelValidationMode,
+                         Frame leaderboard,
+                         String[] columnNamesToEncode,
+                         long seedForFoldColumn) {
     Scope.enter();
     try {
       Frame trainCopy = modelBuilder._parms.train().deepCopy(Key.make("train_frame_copy_for_mb_validation_case" + Key.make()).toString());
@@ -56,60 +61,56 @@ public class TargetEncodingHyperparamsEvaluator extends Iced {
   public double evaluateForCVMode(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder clonedModelBuilder, String[] columnNamesToEncode, long seedForFoldColumn) {
 
     double score = 0;
-    if (columnNamesToEncode.length != 0) {
-      Map<String, Frame> encodingMap = null;
-      Frame trainEncoded = null;
+    Map<String, Frame> encodingMap = null;
+    Frame trainEncoded = null;
 
-      Frame trainCopy = clonedModelBuilder.train();
+    Frame trainCopy = clonedModelBuilder.train();
 
-      String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
-      try {
-        String responseColumn = clonedModelBuilder._parms._response_column;
-        String[] teColumnsToExclude = columnNamesToEncode;
-        TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
-        TargetEncoder.DataLeakageHandlingStrategy holdoutType = teParams._data_leakage_handling;
+    String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
+    try {
+      String responseColumn = clonedModelBuilder._parms._response_column;
+      String[] teColumnsToExclude = columnNamesToEncode;
+      TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
+      TargetEncoder.DataLeakageHandlingStrategy holdoutType = teParams._data_leakage_handling;
 
-        String foldColumnForTE = null;
+      String foldColumnForTE = null;
 
-        switch (holdoutType) {
-          case KFold:
-            // Maybe we can use the same folds that we will use for splitting but in that case we will have only 4 folds for encoding map
-            // generation and application of this map to the frame that was used for creating map
-            foldColumnForTE = clonedModelBuilder._job._key.toString() + "_fold";
-            int nfolds = 5;
-            addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
+      switch (holdoutType) {
+        case KFold:
+          // Maybe we can use the same folds that we will use for splitting but in that case we will have only 4 folds for encoding map
+          // generation and application of this map to the frame that was used for creating map
+          foldColumnForTE = clonedModelBuilder._job._key.toString() + "_fold";
+          int nfolds = 5;
+          addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
 
-            //TODO consider optimising this as encoding map will be the same for whole runs as long as we only use KFold scenario with same seed for fold assignments
-            encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
+          //TODO consider optimising this as encoding map will be the same for whole runs as long as we only use KFold scenario with same seed for fold assignments
+          encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
 
-            trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams._blending, teParams._noise_level, true, teParams.getBlendingParameters(), seedForFoldColumn);
-            Scope.track(trainEncoded);
-            break;
-          case LeaveOneOut:
-          case None:
-          default:
-            // For `None` strategy we can make sure that holdouts from `otherFolds` frame are being chosen in a mutually exclusive way across all folds
-            throw new IllegalStateException("Only `KFold` strategy is being used in current version for CV mode.");
-        }
-
-        clonedModelBuilder._parms._ignored_columns = concat(concat(originalIgnoredColumns, teColumnsToExclude), new String[]{foldColumnForTE});
-
-        clonedModelBuilder.setTrain(trainEncoded);
-        score += scoreCV(clonedModelBuilder);
-      } catch (Exception ex) {
-        throw ex;
-      } finally {
-        //Setting back original data
-        clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns;
-
-        if (encodingMap == null) {
-          Log.debug("Illegal state. encodingMap == null.");
-        } else {
-          TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
-        }
+          trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams._blending, teParams._noise_level, true, teParams.getBlendingParameters(), seedForFoldColumn);
+          Scope.track(trainEncoded);
+          break;
+        case LeaveOneOut:
+        case None:
+        default:
+          // For `None` strategy we can make sure that holdouts from `otherFolds` frame are being chosen in a mutually exclusive way across all folds
+          throw new IllegalStateException("Only `KFold` strategy is being used in current version for CV mode.");
       }
-    } else {
+
+      clonedModelBuilder._parms._ignored_columns = concat(concat(originalIgnoredColumns, teColumnsToExclude), new String[]{foldColumnForTE});
+
+      clonedModelBuilder.setTrain(trainEncoded);
       score += scoreCV(clonedModelBuilder);
+    } catch (Exception ex) {
+      throw ex;
+    } finally {
+      //Setting back original data
+      clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns;
+
+      if (encodingMap == null) {
+        Log.debug("Illegal state. encodingMap == null.");
+      } else {
+        TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
+      }
     }
     return score;
   }

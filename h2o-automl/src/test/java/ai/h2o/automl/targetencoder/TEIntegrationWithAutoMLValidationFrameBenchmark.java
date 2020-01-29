@@ -4,12 +4,12 @@ import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.leaderboard.Leaderboard;
-import ai.h2o.automl.targetencoder.strategy.HPsSelectionStrategy;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
 import hex.Model;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * We want to test here the cases when in AutoML we use Validation frame for Early Stopping
  */
+@Ignore
 public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestUtil {
 
   @BeforeClass
@@ -91,12 +92,10 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
         autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.05;
         autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
-        autoMLBuildSpec.te_spec.search_over_columns = false;
         autoMLBuildSpec.te_spec.seed = splitSeed;
         autoMLBuildSpec.te_spec.enabled = true;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
         autoMLBuildSpec.build_control.project_name = "with_te_" + splitSeed;
         autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);

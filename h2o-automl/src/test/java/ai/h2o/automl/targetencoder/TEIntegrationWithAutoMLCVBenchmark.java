@@ -4,12 +4,12 @@ import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.leaderboard.Leaderboard;
-import ai.h2o.automl.targetencoder.strategy.HPsSelectionStrategy;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
 import hex.Model;
 import org.junit.Assert;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
@@ -23,8 +23,9 @@ import static ai.h2o.automl.targetencoder.AutoMLBenchmarkHelper.getPreparedTitan
 import static org.junit.Assert.assertTrue;
 
 /**
- * We want to test here the cases when in AutoML we use Validation frame for Early Stopping
+ * We want to test here the cases when in AutoML we use CV for Early Stopping
  */
+@Ignore
 public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
 
   @BeforeClass
@@ -77,7 +78,6 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
         autoMLBuildSpec.te_spec.seed = splitSeed;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-        autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
 
         autoMLBuildSpec.build_control.project_name = "with_te_" + splitSeed;
         autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);

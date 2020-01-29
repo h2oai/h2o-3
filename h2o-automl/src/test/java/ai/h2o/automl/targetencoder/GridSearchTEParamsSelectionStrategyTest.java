@@ -15,8 +15,6 @@ import water.TestUtil;
 import water.fvec.Frame;
 
 import java.util.Comparator;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 import static org.junit.Assert.assertEquals;
@@ -79,7 +77,6 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
 
     AutoMLBuildSpec.AutoMLTEControl teBuildSpec = new AutoMLBuildSpec.AutoMLTEControl();
     teBuildSpec.ratio_of_hyperspace_to_explore = 0.1;
-    teBuildSpec.search_over_columns = true;
     teBuildSpec.early_stopping_ratio = 1.0;
     teBuildSpec.seed = seedForFoldColumn;
 

@@ -1,5 +1,6 @@
 package ai.h2o.automl.targetencoder;
 
+import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.targetencoder.strategy.*;
 import ai.h2o.targetencoding.BlendingParams;
@@ -19,6 +20,7 @@ import water.util.StringUtils;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.KFold;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
@@ -45,20 +47,17 @@ public class AutoMLTargetEncoderAssistant{
 
   private TEParamsSelectionStrategy _teParamsSelectionStrategy;
 
-  private TEApplicationStrategy _applicationStrategy;
   private String[] _columnsToEncode;
 
   private TargetEncoderModel.TargetEncoderParameters _teParams;
 
-  public AutoMLTargetEncoderAssistant(Frame trainingFrame, // maybe we don't need all these as we are working with particular modelBuilder and not the main AutoML data
-                                       Frame validationFrame,
-                                       Frame leaderboardFrame,
-                                       AutoMLBuildSpec buildSpec,
-                                       ModelBuilder modelBuilder) {
+  public AutoMLTargetEncoderAssistant(AutoML aml,
+                                      AutoMLBuildSpec buildSpec,
+                                      ModelBuilder modelBuilder) {
     _modelBuilder = modelBuilder;
-    _trainingFrame = modelBuilder._parms.train();
-    _validationFrame = validationFrame;
-    _leaderboardFrame = leaderboardFrame;
+    _trainingFrame = modelBuilder._parms.train(); //TODO ? aml.getTrainingFrame();
+    _validationFrame = aml.getValidationFrame();
+    _leaderboardFrame = aml.getLeaderboardFrame();
     _responseColumnName = _modelBuilder._parms._response_column;
 
     _buildSpec = buildSpec;
@@ -67,53 +66,28 @@ public class AutoMLTargetEncoderAssistant{
 
   }
 
-  public TargetEncoderModel.TargetEncoderParameters findBestTEParams() throws NoColumnsToEncodeException {
-    TEApplicationStrategy applicationStrategy = _buildSpec.te_spec.application_strategy;
+  public Optional<TargetEncoderModel.TargetEncoderParameters> findBestTEParams() {
+    return selectColumnsForEncoding(_buildSpec.te_spec.application_strategy)
+            .map(columnsToEncode -> {
+              _columnsToEncode = columnsToEncode;
+              //TODO what is the canonical way to get metric we are going to use. DistributionFamily, leaderboard metrics?
+              boolean theBiggerTheBetter = _modelBuilder._parms.train().vec(_responseColumnName).get_type() != Vec.T_NUM;
 
-    _columnsToEncode = selectColumnsForEncoding(applicationStrategy);
+              _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(_leaderboardFrame, columnsToEncode, theBiggerTheBetter, _buildSpec.te_spec, _validationMode);
 
-    //TODO what is the canonical way to get metric we are going to use. DistributionFamily, leaderboard metrics?
-    boolean theBiggerTheBetter = _modelBuilder._parms.train().vec(_responseColumnName).get_type() != Vec.T_NUM;
-
-    // Selection strategy
-    HPsSelectionStrategy selectionStrategyFromTEScpec = _buildSpec.te_spec.params_selection_strategy;
-    HPsSelectionStrategy teParamsSelectionStrategy = selectionStrategyFromTEScpec != null ? selectionStrategyFromTEScpec : HPsSelectionStrategy.RGS;
-    switch(teParamsSelectionStrategy) {
-      case Fixed:
-        assert _buildSpec.te_spec.fixedTEParams != null : "When `HPsSelectionStrategy.Fixed` selection strategy is chosen it is required to provide `buildSpec.te_spec.fixedTEParams`";
-        _teParamsSelectionStrategy = new FixedTEParamsStrategy(_buildSpec.te_spec.fixedTEParams);
-        break;
-      case RGS:
-      default:
-        //After filtering out some categorical columns with `applicationStrategy` we can try to search for optimal combinationof the rest as well.
-        // This covers the case with no columns to encode, i.e. no target encoding
-        Map<String, Double> _columnNameToIdxMap = new HashMap<>();//leaderboard.find(_columnsToEncode);
-        for (String column : _columnsToEncode) {
-          _columnNameToIdxMap.put(column, (double) _trainingFrame.find(column));
-        }
-        _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(_leaderboardFrame, _columnsToEncode, theBiggerTheBetter, _buildSpec.te_spec, _validationMode);
-        break;
-    }
-
-    TargetEncoderModel.TargetEncoderParameters bestTEParams = getTeParamsSelectionStrategy().getBestParams(_modelBuilder);
-    Log.info("Best TE parameters were selected to be: columnsToEncode = [ " + StringUtils.join(",", _columnsToEncode ) +
-            " ], te_params = " + bestTEParams);
-    return bestTEParams;
+              TargetEncoderModel.TargetEncoderParameters bestTEParams = getTeParamsSelectionStrategy().getBestParams(_modelBuilder);
+              Log.info("Best TE parameters for chosen columns " + StringUtils.join(",", columnsToEncode) + " were selected to be: " + bestTEParams);
+              return bestTEParams;
+            });
   }
 
-  private String[] selectColumnsForEncoding(TEApplicationStrategy applicationStrategy) throws NoColumnsToEncodeException{
-    _applicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(_trainingFrame, new String[]{_responseColumnName});
-    String[] columnsToEncode = _applicationStrategy.getColumnsToEncode();
-    if(columnsToEncode.length == 0) throw new NoColumnsToEncodeException();
-    return columnsToEncode;
+  private Optional<String[]> selectColumnsForEncoding(TEApplicationStrategy applicationStrategy) {
+    TEApplicationStrategy effectiveApplicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(_trainingFrame, new String[]{_responseColumnName});
+    String[] columnsToEncode = effectiveApplicationStrategy.getColumnsToEncode();
+    return columnsToEncode.length == 0 ? Optional.empty() : Optional.of(columnsToEncode);
   }
-
-  public static class NoColumnsToEncodeException extends Exception { }
-
 
   public void applyTE(TargetEncoderModel.TargetEncoderParameters bestTEParams) {
-
-    if (_columnsToEncode.length > 0) { // TODO we already checked it with NoColumnsToEncodeException?
 
       //TODO move it inside TargetEncoder. add constructor ?
       BlendingParams blendingParams = bestTEParams.getBlendingParameters();
@@ -221,8 +195,6 @@ public class AutoMLTargetEncoderAssistant{
         TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
       }
       trainCopy.delete();
-    }
-
     setColumnsToIgnore(_columnsToEncode);
   }
 
