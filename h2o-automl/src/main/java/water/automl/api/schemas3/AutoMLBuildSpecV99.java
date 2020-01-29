@@ -319,23 +319,4 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
   public AutoMLBuildSpec fillImpl(AutoMLBuildSpec impl) {
     return super.fillImpl(impl, new String[] {"job"});
   }
-
-  @Override
-  public AutoMLBuildSpecV99 fillFromBody(String body) {
-    AutoMLBuildSpecV99 schema = super.fillFromBody(body); //default JSON filling
-
-    // TODO: need to understand why we set stopping tolerance to AUTO iff stopping_criteria is provided without stopping_tolerance
-    Map<String, Object> json_body = JSONUtils.parse(body);
-    if (json_body.containsKey("build_control")) {
-      Map<String, Object> build_control = (Map)json_body.get("build_control");
-      if (build_control.containsKey("stopping_criteria")) {
-        Map<String, Object> stopping_criteria = (Map)build_control.get("stopping_criteria");
-
-        if (!stopping_criteria.containsKey("stopping_tolerance")) {
-          schema.build_control.stopping_criteria.stopping_tolerance = AUTO_STOPPING_TOLERANCE;
-        }
-      }
-    }
-    return schema;
-  }
 }
