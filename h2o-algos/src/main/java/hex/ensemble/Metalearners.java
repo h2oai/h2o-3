@@ -3,24 +3,14 @@ package hex.ensemble;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.ensemble.Metalearner.Algorithm;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
-import hex.naivebayes.NaiveBayes;
-import hex.naivebayes.NaiveBayesModel;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
-import hex.psvm.PSVM;
-import hex.psvm.PSVMModel;
 import hex.psvm.PSVMModel.PSVMParameters;
-import hex.tree.drf.DRF;
-import hex.tree.drf.DRFModel;
 import hex.tree.drf.DRFModel.DRFParameters;
-import hex.tree.gbm.GBM;
-import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
@@ -100,10 +90,10 @@ public class Metalearners {
         }
     }
 
-    static class GenericMetalearner extends Metalearner {
+    public static class SimpleMetalearner extends Metalearner {
         private String _algo;
 
-        public GenericMetalearner(String algo) {
+        public SimpleMetalearner(String algo) {
             _algo = algo;
         }
 
@@ -113,24 +103,21 @@ public class Metalearners {
         }
     }
 
-    static class DLMetalearner extends Metalearner<DeepLearning, DeepLearningModel, DeepLearningParameters> {
-        @Override
-        DeepLearning createBuilder() {
-            return ModelBuilder.make("DeepLearning", _metalearnerJob, _metalearnerKey);
+    static class DLMetalearner extends SimpleMetalearner {
+        public DLMetalearner() {
+            super(Algorithm.deeplearning.name());
         }
     }
 
-    static class DRFMetalearner extends Metalearner<DRF, DRFModel, DRFParameters> {
-        @Override
-        DRF createBuilder() {
-            return ModelBuilder.make("DRF", _metalearnerJob, _metalearnerKey);
+    static class DRFMetalearner extends SimpleMetalearner {
+        public DRFMetalearner() {
+            super(Algorithm.drf.name());
         }
     }
 
-    static class GBMMetalearner extends Metalearner<GBM, GBMModel, GBMParameters> {
-        @Override
-        GBM createBuilder() {
-            return ModelBuilder.make("GBM", _metalearnerJob, _metalearnerKey);
+    static class GBMMetalearner extends SimpleMetalearner {
+        public GBMMetalearner() {
+            super(Algorithm.gbm.name());
         }
     }
 
@@ -154,17 +141,15 @@ public class Metalearners {
         }
     }
 
-    static class NaiveBayesMetalearner extends Metalearner<NaiveBayes, NaiveBayesModel, NaiveBayesParameters> {
-        @Override
-        NaiveBayes createBuilder() {
-            return ModelBuilder.make("NaiveBayes", _metalearnerJob, _metalearnerKey);
+    static class NaiveBayesMetalearner extends SimpleMetalearner {
+        public NaiveBayesMetalearner() {
+            super(Algorithm.naivebayes.name());
         }
     }
 
-    static class PSVMMetalearner extends Metalearner<PSVM, PSVMModel, PSVMParameters> {
-        @Override
-        PSVM createBuilder() {
-            return ModelBuilder.make("PSVM", _metalearnerJob, _metalearnerKey);
+    static class PSVMMetalearner extends SimpleMetalearner {
+        public PSVMMetalearner() {
+            super(Algorithm.psvm.name());
         }
     }
 
