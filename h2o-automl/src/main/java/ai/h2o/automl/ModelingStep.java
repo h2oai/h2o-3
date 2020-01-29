@@ -420,6 +420,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 //                    removeTEColumnsFrom(originalIgnoredColumns, builder.train(), buildSpec);
 //                }
 //                builder.setTrain(trainMBBeforeTE);
+                builder._parms.train().delete();
                 buildSpec.input_spec.ignored_columns = originalIgnoredColumns;
             }
         }

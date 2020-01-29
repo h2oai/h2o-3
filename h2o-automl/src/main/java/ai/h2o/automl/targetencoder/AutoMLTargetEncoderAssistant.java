@@ -61,7 +61,7 @@ public class AutoMLTargetEncoderAssistant<MP extends Model.Parameters>{ // TODO 
     _leaderboardFrame = aml.getLeaderboardFrame();
     _responseColumnName = _modelBuilder._parms._response_column;
 
-    _validationMode = _modelBuilder._parms.valid() == null ? ModelValidationMode.CV : ModelValidationMode.VALIDATION_FRAME;
+    _validationMode = aml.getValidationFrame() == null ? ModelValidationMode.CV : ModelValidationMode.VALIDATION_FRAME;
   }
 
   public Optional<TargetEncoderModel.TargetEncoderParameters> findBestTEParams() {
@@ -170,14 +170,14 @@ public class AutoMLTargetEncoderAssistant<MP extends Model.Parameters>{ // TODO 
           case None:
             //We not only want to search for optimal parameters based on separate test split during grid search but also apply these parameters in the same fashion.
             //But seed is different in current case
-            Frame[] trainAndHoldoutSplits = splitByRatio(trainCopy, new double[]{0.7, 0.3}, seed);
+            Frame[] trainAndHoldoutSplits = splitByRatio(trainCopy, new double[]{0.7, 0.3}, seed); // TODO move to te_spec
             Frame trainNone = trainAndHoldoutSplits[0];
             Frame holdoutNone = trainAndHoldoutSplits[1];
             encodingMap = tec.prepareEncodingMap(holdoutNone, responseColumnName, null);
             Frame encodedTrainingFrameNone = tec.applyTargetEncoding(trainNone, responseColumnName, encodingMap, holdoutType, withBlendedAvg, 0.0, imputeNAsWithNewCategory, blendingParams, seed);
             copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedTrainingFrameNone, trainNone);
 
-            _modelBuilder.setTrain(trainNone);
+            _modelBuilder._parms.setTrain(trainNone._key);
 
             if (_validationFrame != null) {
               Frame encodedValidationFrameNone = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, imputeNAsWithNewCategory, blendingParams, seed);

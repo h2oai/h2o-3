@@ -9,8 +9,12 @@ import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
 import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.experimental.runners.Enclosed;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
 import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 
 import java.util.Date;
@@ -20,283 +24,133 @@ import static ai.h2o.automl.targetencoder.AutoMLBenchmarkHelper.getPreparedTitan
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
-public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
+@RunWith(Enclosed.class)
+public class AutoMLTargetEncodingAssistantTest {
 
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
+  public static class AutoMLTargetEncodingAssistantNonParametrizedTest extends water.TestUtil {
+    @BeforeClass
+    public static void setup() {
+      stall_till_cloudsize(1);
+    }
 
-  @Test
-  public void findBestTEParams_returns_none_if_no_columns_for_encoding(){
+    @Test
+    public void findBestTEParams_returns_none_if_no_columns_for_encoding() {
 
-    AutoML aml = null;
-    Scope.enter();
-    try {
+      AutoML aml = null;
+      Scope.enter();
+      try {
 
-      String responseColumnName = "survived";
-      Frame train = getPreparedTitanicFrame(responseColumnName);
-      Scope.track(train);
+        String responseColumnName = "survived";
+        Frame train = getPreparedTitanicFrame(responseColumnName);
+        Scope.track(train);
 
-      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      autoMLBuildSpec.input_spec.training_frame = train._key;
-      autoMLBuildSpec.input_spec.validation_frame = null;
-      autoMLBuildSpec.input_spec.leaderboard_frame = null;
-      autoMLBuildSpec.build_control.nfolds = 5;
-      autoMLBuildSpec.input_spec.response_column = responseColumnName;
+        AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+        autoMLBuildSpec.input_spec.training_frame = train._key;
+        autoMLBuildSpec.input_spec.validation_frame = null;
+        autoMLBuildSpec.input_spec.leaderboard_frame = null;
+        autoMLBuildSpec.build_control.nfolds = 5;
+        autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
-      autoMLBuildSpec.te_spec.seed = 1234;
+        autoMLBuildSpec.te_spec.seed = 1234;
 
-      //  This will make sure that no columns will be selected for encoding
-      int nonExceedableThreshold = Integer.MAX_VALUE;
+        //  This will make sure that no columns will be selected for encoding
+        int nonExceedableThreshold = Integer.MAX_VALUE;
 
-      autoMLBuildSpec.te_spec.application_strategy = new ThresholdTEApplicationStrategy(train, nonExceedableThreshold, new String[]{responseColumnName});
+        autoMLBuildSpec.te_spec.application_strategy = new ThresholdTEApplicationStrategy(train, nonExceedableThreshold, new String[]{responseColumnName});
 
-      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, 1234);
+        ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, 1234);
 
-      aml = new AutoML(null, new Date(), autoMLBuildSpec);
+        aml = new AutoML(null, new Date(), autoMLBuildSpec);
 
-      AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(aml, autoMLBuildSpec, modelBuilder);
+        AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(aml, autoMLBuildSpec, modelBuilder);
 
-      Optional<TargetEncoderModel.TargetEncoderParameters> bestTEParamsOpt = teAssistant.findBestTEParams();
+        Optional<TargetEncoderModel.TargetEncoderParameters> bestTEParamsOpt = teAssistant.findBestTEParams();
 
-      assertFalse(bestTEParamsOpt.isPresent());
-    } finally {
-      if (aml != null) aml.delete();
-      Scope.exit();
+        assertFalse(bestTEParamsOpt.isPresent());
+      } finally {
+        if (aml != null) aml.delete();
+        Scope.exit();
+      }
     }
   }
 
-  @Test
-  public void applyTe_encoded_training_frame(){
+  @RunWith(Parameterized.class)
+  public static class AutoMLTargetEncodingAssistantParametrizedTest extends TestUtil {
 
-    AutoML aml = null;
-    Scope.enter();
-    try {
+    @BeforeClass
+    public static void setup() {
+      stall_till_cloudsize(1);
+    }
 
-      String responseColumnName = "survived";
-      Frame train = getPreparedTitanicFrame(responseColumnName);
-      Scope.track(train);
+    @Parameterized.Parameters(name = "Assistant applies TE parameters: strategy = {0}")
+    public static Object[] strategy() {
+      return new TargetEncoder.DataLeakageHandlingStrategy[]{
+              TargetEncoder.DataLeakageHandlingStrategy.KFold, TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, TargetEncoder.DataLeakageHandlingStrategy.None
+      };
+    }
 
-      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      autoMLBuildSpec.input_spec.training_frame = train._key;
-      autoMLBuildSpec.input_spec.validation_frame = null;
-      autoMLBuildSpec.input_spec.leaderboard_frame = null;
-      autoMLBuildSpec.build_control.nfolds = 5;
-      autoMLBuildSpec.input_spec.response_column = responseColumnName;
+    @Parameterized.Parameter
+    public TargetEncoder.DataLeakageHandlingStrategy strategy;
 
-      autoMLBuildSpec.te_spec.seed = 1234;
+    @Test
+    public void applyTe_encoded_training_when_validation_frame_is_being_used() {
 
-      autoMLBuildSpec.te_spec.application_strategy = new ThresholdTEApplicationStrategy(train, 5, new String[]{responseColumnName});
+      AutoML aml = null;
+      Scope.enter();
+      try {
 
-      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, 1234);
+        String responseColumnName = "survived";
+        Frame train = getPreparedTitanicFrame(responseColumnName);
 
-      aml = new AutoML(null, new Date(), autoMLBuildSpec);
+        AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+        autoMLBuildSpec.input_spec.training_frame = train._key;
+        Frame[] splits = AutoMLBenchmarkHelper.getRandomSplitsFromDataframe(train, new double[]{0.7, 0.15, 0.15}, 1234);
+        Frame trainSplit = splits[0];
+        Frame validSplit = splits[1];
+        Frame leaderboardSplit = splits[2];
+        Scope.track(train, trainSplit, validSplit, leaderboardSplit);
 
-      AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(aml, autoMLBuildSpec, modelBuilder);
 
-      AutoMLTargetEncoderAssistant teAssistantSpy = spy(teAssistant);
+        autoMLBuildSpec.input_spec.training_frame = trainSplit._key;
+        autoMLBuildSpec.input_spec.validation_frame = validSplit._key;
+        autoMLBuildSpec.input_spec.leaderboard_frame = leaderboardSplit._key;
+        autoMLBuildSpec.build_control.nfolds = 0;
+        autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
-      TargetEncoderModel.TargetEncoderParameters bestTEParams = new TargetEncoderModel.TargetEncoderParameters();
-      bestTEParams._k = 10;
-      bestTEParams._f = 1;
-      bestTEParams._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.KFold;
-      bestTEParams._noise_level = 0.1;
+        autoMLBuildSpec.te_spec.seed = 1234;
 
-      GridSearchModelParametersSelectionStrategy selectionStrategyMock = mock(GridSearchModelParametersSelectionStrategy.class);
-      when(selectionStrategyMock.getBestParams()).thenReturn(bestTEParams);
+        autoMLBuildSpec.te_spec.application_strategy = new ThresholdTEApplicationStrategy(train, 5, new String[]{responseColumnName});
 
-      Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
+        ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, 1234);
 
-      Optional<TargetEncoderModel.TargetEncoderParameters> bestTEParams1 = teAssistantSpy.findBestTEParams();
+        aml = new AutoML(null, new Date(), autoMLBuildSpec);
 
-      teAssistantSpy.applyTE(bestTEParams1.get());
+        AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(aml, autoMLBuildSpec, modelBuilder);
 
-      assertNotNull(modelBuilder._parms.train().vec("home.dest_te"));
-    } finally {
-      if (aml != null) aml.delete();
-      Scope.exit();
+        AutoMLTargetEncoderAssistant teAssistantSpy = spy(teAssistant);
+
+        TargetEncoderModel.TargetEncoderParameters bestTEParams = new TargetEncoderModel.TargetEncoderParameters();
+        bestTEParams._k = 10;
+        bestTEParams._f = 1;
+        bestTEParams._data_leakage_handling = strategy;
+        bestTEParams._noise_level = 0.1;
+
+        GridSearchModelParametersSelectionStrategy selectionStrategyMock = mock(GridSearchModelParametersSelectionStrategy.class);
+        when(selectionStrategyMock.getBestParams()).thenReturn(bestTEParams);
+
+        Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
+
+        Optional<TargetEncoderModel.TargetEncoderParameters> bestTEParams1 = teAssistantSpy.findBestTEParams();
+
+        teAssistantSpy.applyTE(bestTEParams1.get());
+
+        assertNotNull(modelBuilder._parms.train().vec("home.dest_te"));
+
+        Scope.track(modelBuilder._parms.train());
+      } finally {
+        if (aml != null) aml.delete();
+        Scope.exit();
+      }
     }
   }
-/*
-  @Test
-  public void performAutoTargetEncoding_validation_frame_KFOLD() throws AutoMLTargetEncodingAssistant.NoColumnsToEncodeException {
-    String columnNameToEncode = "home.dest";
-
-    String responseColumnName = "survived";
-    Frame fr = getPreparedTitanicFrame(responseColumnName);
-
-    AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-    Frame[] splits = AutoMLBenchmarkHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, 1234);
-    Frame trainSplit = splits[0];
-    Frame validSplit = splits[1];
-    Frame leaderboardSplit = splits[2];
-
-    autoMLBuildSpec.input_spec.training_frame = trainSplit._key;
-    autoMLBuildSpec.input_spec.validation_frame = validSplit._key;
-    autoMLBuildSpec.input_spec.leaderboard_frame = leaderboardSplit._key;
-    autoMLBuildSpec.build_control.nfolds = 0;
-    autoMLBuildSpec.input_spec.response_column = responseColumnName;
-
-    TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr,5, new String[]{responseColumnName});
-
-    autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.1;
-    autoMLBuildSpec.te_spec.early_stopping_ratio = 0.05;
-    autoMLBuildSpec.te_spec.seed = 1234;
-
-    autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-    autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
-
-    ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumnName, 1234);
-    modelBuilder.findBestTEParams(false);
-
-    AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(fr,
-            null,
-            null,
-            autoMLBuildSpec,
-            modelBuilder);
-
-    AutoMLTargetEncodingAssistant teAssistantSpy = spy(teAssistant);
-
-    TargetEncodingParams bestTEParams = new TargetEncodingParams(new String[]{columnNameToEncode}, new BlendingParams(10, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.1);
-
-    GridBasedTEParamsSelectionStrategy selectionStrategyMock = mock(GridBasedTEParamsSelectionStrategy.class);
-    when(selectionStrategyMock.getBestParams(any(ModelBuilder.class))).thenReturn(bestTEParams);
-
-    Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
-
-    teAssistantSpy.findBestTEParams();
-
-    teAssistantSpy.applyTE();
-
-    assertTrue(modelBuilder.train().vec("home.dest_te") != null);
-
-    modelBuilder.train().delete();
-    fr.delete();
-    trainSplit.delete();
-    validSplit.delete();
-    leaderboardSplit.delete();
-
-  }
-
-  @Test
-  public void performAutoTargetEncoding_validation_frame_LOO() throws AutoMLTargetEncodingAssistant.NoColumnsToEncodeException {
-    String columnNameToEncode = "home.dest";
-
-    String responseColumnName = "survived";
-    Frame fr = getPreparedTitanicFrame(responseColumnName);
-
-    AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-    Frame[] splits = AutoMLBenchmarkHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, 1234);
-    Frame trainSplit = splits[0];
-    Frame validSplit = splits[1];
-    Frame leaderboardSplit = splits[2];
-
-    autoMLBuildSpec.input_spec.training_frame = trainSplit._key;
-    autoMLBuildSpec.input_spec.validation_frame = validSplit._key;
-    autoMLBuildSpec.input_spec.leaderboard_frame = leaderboardSplit._key;
-    autoMLBuildSpec.build_control.nfolds = 0;
-    autoMLBuildSpec.input_spec.response_column = responseColumnName;
-
-    TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr,5, new String[]{responseColumnName});
-
-    autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.1;
-    autoMLBuildSpec.te_spec.early_stopping_ratio = 0.05;
-    autoMLBuildSpec.te_spec.seed = 1234;
-
-    autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-    autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
-
-    ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumnName, 1234);
-    modelBuilder.findBestTEParams(false);
-
-    AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(fr,
-            null,
-            null,
-            autoMLBuildSpec,
-            modelBuilder);
-
-    AutoMLTargetEncodingAssistant teAssistantSpy = spy(teAssistant);
-
-    TargetEncodingParams bestTEParams = new TargetEncodingParams(new String[]{columnNameToEncode}, new BlendingParams(10, 1), TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut, 0.1);
-
-    GridBasedTEParamsSelectionStrategy selectionStrategyMock = mock(GridBasedTEParamsSelectionStrategy.class);
-    when(selectionStrategyMock.getBestParams(any(ModelBuilder.class))).thenReturn(bestTEParams);
-
-    Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
-
-    teAssistantSpy.findBestTEParams();
-
-    teAssistantSpy.applyTE();
-
-    assertTrue(modelBuilder.train().vec("home.dest_te") != null);
-
-    modelBuilder.train().delete();
-    fr.delete();
-    trainSplit.delete();
-    validSplit.delete();
-    leaderboardSplit.delete();
-
-  }
-
-  @Test
-  public void performAutoTargetEncoding_validation_frame_NONE() throws AutoMLTargetEncodingAssistant.NoColumnsToEncodeException {
-    String columnNameToEncode = "home.dest";
-
-    String responseColumnName = "survived";
-    Frame fr = getPreparedTitanicFrame(responseColumnName);
-
-    AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-    Frame[] splits = AutoMLBenchmarkHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.15, 0.15}, 1234);
-    Frame trainSplit = splits[0];
-    Frame validSplit = splits[1];
-    Frame leaderboardSplit = splits[2];
-
-    autoMLBuildSpec.input_spec.training_frame = trainSplit._key;
-    autoMLBuildSpec.input_spec.validation_frame = validSplit._key;
-    autoMLBuildSpec.input_spec.leaderboard_frame = leaderboardSplit._key;
-    autoMLBuildSpec.build_control.nfolds = 0;
-    autoMLBuildSpec.input_spec.response_column = responseColumnName;
-
-    Vec responseColumn = fr.vec(responseColumnName);
-    TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr, responseColumn, 5);
-
-    autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.1;
-    autoMLBuildSpec.te_spec.early_stopping_ratio = 0.05;
-    autoMLBuildSpec.te_spec.seed = 1234;
-
-    autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-    autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
-
-    ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(trainSplit, validSplit, responseColumnName, 1234);
-    modelBuilder.findBestTEParams(false);
-
-    AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(fr,
-            null,
-            null,
-            autoMLBuildSpec,
-            modelBuilder);
-
-    AutoMLTargetEncodingAssistant teAssistantSpy = spy(teAssistant);
-
-    TargetEncodingParams bestTEParams = new TargetEncodingParams(new String[]{columnNameToEncode}, new BlendingParams(10, 1), TargetEncoder.DataLeakageHandlingStrategy.None, 0.1);
-
-    GridBasedTEParamsSelectionStrategy selectionStrategyMock = mock(GridBasedTEParamsSelectionStrategy.class);
-    when(selectionStrategyMock.getBestParams(any(ModelBuilder.class))).thenReturn(bestTEParams);
-
-    Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
-
-    teAssistantSpy.findBestTEParams();
-
-    teAssistantSpy.applyTE();
-
-    assertTrue(modelBuilder.train().vec("home.dest_te") != null);
-
-    modelBuilder.train().delete();
-    fr.delete();
-    trainSplit.delete();
-    validSplit.delete();
-    leaderboardSplit.delete();
-
-  }*/
 }
