@@ -310,7 +310,8 @@ public class TCPReceiverThread extends Thread {
     boolean is_client = ab._h2o.isClient();
 
 
-    if(ctrl > UDP.udp.UDPS.length) {
+    // Skip garbage traffic
+    if(ctrl >= UDP.udp.UDPS.length) {
       return;
     }
 
