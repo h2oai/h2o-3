@@ -19,7 +19,6 @@ public abstract class UDP {
     heartbeat     ( true, new UDPHeartbeat(),H2O.MAX_PRIORITY),
     rebooted      ( true, new UDPRebooted() ,H2O.MAX_PRIORITY), // This node has rebooted recently
     timeline      (false, new TimeLine()    ,H2O.MAX_PRIORITY), // Get timeline dumps from across the Cloud
-    client_event  ( true, new UDPClientEvent(), H2O.MAX_PRIORITY), // This packet informs about a client action (connect/disconnect)
 
     // All my *reliable* tasks (below), are sent to remote nodes who then ACK
     // back an answer.  To be reliable, I might send the TASK multiple times.

@@ -70,6 +70,11 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
   public void postReadInit() {}
 
   @Override
+  public boolean requiresOffset() {
+    return _hasOffset;
+  }
+
+  @Override
   public final double[] score0(double[] row, double[] preds) {
     if (_hasOffset) {
       throw new IllegalStateException("Model was trained with offset, use score0 with offset");

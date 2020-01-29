@@ -44,6 +44,10 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     this(names, domains, null);
   }
 
+  public boolean requiresOffset() {
+    return false;
+  }
+
   //--------------------------------------------------------------------------------------------------------------------
   // IGenModel interface
   //--------------------------------------------------------------------------------------------------------------------
