@@ -309,6 +309,11 @@ public class TCPReceiverThread extends Thread {
     boolean is_member = cloud.contains(ab._h2o);
     boolean is_client = ab._h2o.isClient();
 
+
+    if(ctrl > UDP.udp.UDPS.length) {
+      return;
+    }
+
     // Some non-Paxos packet from a non-member.  Probably should record & complain.
     // Filter unknown-packet-reports.  In bad situations of poisoned Paxos
     // voting we can get a LOT of these packets/sec, flooding the logs.
