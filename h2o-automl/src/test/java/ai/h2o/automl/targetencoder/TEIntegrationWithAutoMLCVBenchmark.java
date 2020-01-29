@@ -73,8 +73,6 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
         Vec responseColumn = fr.vec(responseColumnName);
         TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr,5, new String[]{responseColumnName});
 
-        autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.05;
-        autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
         autoMLBuildSpec.te_spec.seed = splitSeed;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;

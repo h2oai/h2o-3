@@ -349,8 +349,6 @@ public class AutoMLBuildSpec extends Iced {
 
     public boolean enabled = true;
     public TEApplicationStrategy application_strategy;
-    public double early_stopping_ratio = 1.0;
-    public double ratio_of_hyperspace_to_explore;
     public int te_max_models = 3;
     public long seed = new Random().nextLong();
   }

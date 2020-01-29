@@ -1,17 +1,24 @@
 package ai.h2o.automl.targetencoder;
 
+import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
+import ai.h2o.automl.targetencoder.strategy.GridSearchModelParametersSelectionStrategy;
+import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
-import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
 import hex.ModelBuilder;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.mockito.Mockito;
+import water.Scope;
 import water.fvec.Frame;
 
+import java.util.Date;
+import java.util.Optional;
+
 import static ai.h2o.automl.targetencoder.AutoMLBenchmarkHelper.getPreparedTitanicFrame;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
 
@@ -20,57 +27,98 @@ public class AutoMLTargetEncodingAssistantTest extends water.TestUtil{
     stall_till_cloudsize(1);
   }
 
-  // Check that we added encoded column to the training frame
-  /*@Test
-  public void performAutoTargetEncoding_CV() throws AutoMLTargetEncodingAssistant.NoColumnsToEncodeException {
-    String columnNameToEncode = "home.dest";
+  @Test
+  public void findBestTEParams_returns_none_if_no_columns_for_encoding(){
 
-    String responseColumnName = "survived";
-    Frame train = getPreparedTitanicFrame(responseColumnName);
+    AutoML aml = null;
+    Scope.enter();
+    try {
 
-    AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-    autoMLBuildSpec.input_spec.training_frame = train._key;
-    autoMLBuildSpec.build_control.nfolds = 5;
-    autoMLBuildSpec.input_spec.response_column = responseColumnName;
+      String responseColumnName = "survived";
+      Frame train = getPreparedTitanicFrame(responseColumnName);
+      Scope.track(train);
 
-    Vec responseColumn = train.vec(responseColumnName);
-    TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(train, 5, new String[]{responseColumnName});
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      autoMLBuildSpec.input_spec.training_frame = train._key;
+      autoMLBuildSpec.input_spec.validation_frame = null;
+      autoMLBuildSpec.input_spec.leaderboard_frame = null;
+      autoMLBuildSpec.build_control.nfolds = 5;
+      autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
-    autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.1;
-    autoMLBuildSpec.te_spec.early_stopping_ratio = 0.05;
-    autoMLBuildSpec.te_spec.seed = 1234;
+      autoMLBuildSpec.te_spec.seed = 1234;
 
-    autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
-    autoMLBuildSpec.te_spec.params_selection_strategy = HPsSelectionStrategy.RGS;
+      //  This will make sure that no columns will be selected for encoding
+      int nonExceedableThreshold = Integer.MAX_VALUE;
 
-    ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, 1234);
-    modelBuilder.findBestTEParams(false);
+      autoMLBuildSpec.te_spec.application_strategy = new ThresholdTEApplicationStrategy(train, nonExceedableThreshold, new String[]{responseColumnName});
 
-    AutoMLTargetEncodingAssistant teAssistant = new AutoMLTargetEncodingAssistant(train,
-            null,
-            null,
-            autoMLBuildSpec,
-            modelBuilder);
+      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, 1234);
 
-    AutoMLTargetEncodingAssistant teAssistantSpy = spy(teAssistant);
+      aml = new AutoML(null, new Date(), autoMLBuildSpec);
 
-    TargetEncodingParams bestTEParams = new TargetEncodingParams(new String[]{columnNameToEncode}, new BlendingParams(10, 1), TargetEncoder.DataLeakageHandlingStrategy.KFold, 0.1);
+      AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(aml, autoMLBuildSpec, modelBuilder);
 
-    GridBasedTEParamsSelectionStrategy selectionStrategyMock = mock(GridBasedTEParamsSelectionStrategy.class);
-    when(selectionStrategyMock.getBestParams(any(ModelBuilder.class))).thenReturn(bestTEParams);
+      Optional<TargetEncoderModel.TargetEncoderParameters> bestTEParamsOpt = teAssistant.findBestTEParams();
 
-    Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
-
-    teAssistantSpy.findBestTEParams();
-
-    teAssistantSpy.applyTE();
-
-    assertTrue(modelBuilder.train().vec("home.dest_te") != null);
-
-    modelBuilder.train().delete();
-    train.delete();
+      assertFalse(bestTEParamsOpt.isPresent());
+    } finally {
+      if (aml != null) aml.delete();
+      Scope.exit();
+    }
   }
 
+  @Test
+  public void applyTe_encoded_training_frame(){
+
+    AutoML aml = null;
+    Scope.enter();
+    try {
+
+      String responseColumnName = "survived";
+      Frame train = getPreparedTitanicFrame(responseColumnName);
+      Scope.track(train);
+
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      autoMLBuildSpec.input_spec.training_frame = train._key;
+      autoMLBuildSpec.input_spec.validation_frame = null;
+      autoMLBuildSpec.input_spec.leaderboard_frame = null;
+      autoMLBuildSpec.build_control.nfolds = 5;
+      autoMLBuildSpec.input_spec.response_column = responseColumnName;
+
+      autoMLBuildSpec.te_spec.seed = 1234;
+
+      autoMLBuildSpec.te_spec.application_strategy = new ThresholdTEApplicationStrategy(train, 5, new String[]{responseColumnName});
+
+      ModelBuilder modelBuilder = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, 1234);
+
+      aml = new AutoML(null, new Date(), autoMLBuildSpec);
+
+      AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(aml, autoMLBuildSpec, modelBuilder);
+
+      AutoMLTargetEncoderAssistant teAssistantSpy = spy(teAssistant);
+
+      TargetEncoderModel.TargetEncoderParameters bestTEParams = new TargetEncoderModel.TargetEncoderParameters();
+      bestTEParams._k = 10;
+      bestTEParams._f = 1;
+      bestTEParams._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.KFold;
+      bestTEParams._noise_level = 0.1;
+
+      GridSearchModelParametersSelectionStrategy selectionStrategyMock = mock(GridSearchModelParametersSelectionStrategy.class);
+      when(selectionStrategyMock.getBestParams()).thenReturn(bestTEParams);
+
+      Mockito.doReturn(selectionStrategyMock).when(teAssistantSpy).getTeParamsSelectionStrategy();
+
+      Optional<TargetEncoderModel.TargetEncoderParameters> bestTEParams1 = teAssistantSpy.findBestTEParams();
+
+      teAssistantSpy.applyTE(bestTEParams1.get());
+
+      assertNotNull(modelBuilder._parms.train().vec("home.dest_te"));
+    } finally {
+      if (aml != null) aml.delete();
+      Scope.exit();
+    }
+  }
+/*
   @Test
   public void performAutoTargetEncoding_validation_frame_KFOLD() throws AutoMLTargetEncodingAssistant.NoColumnsToEncodeException {
     String columnNameToEncode = "home.dest";

@@ -90,8 +90,6 @@ public class TEIntegrationWithAutoMLValidationFrameBenchmark extends water.TestU
 
         TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(trainSplit, 5, new String[]{responseColumnName});
 
-        autoMLBuildSpec.te_spec.ratio_of_hyperspace_to_explore = 0.05;
-        autoMLBuildSpec.te_spec.early_stopping_ratio = 0.15;
         autoMLBuildSpec.te_spec.seed = splitSeed;
         autoMLBuildSpec.te_spec.enabled = true;
 

@@ -1,9 +1,9 @@
 package ai.h2o.automl.targetencoder;
 
 import ai.h2o.automl.AutoMLBuildSpec;
-import ai.h2o.automl.targetencoder.strategy.GridSearchTEParamsSelectionStrategy;
+import ai.h2o.automl.targetencoder.strategy.GridSearchModelParametersSelectionStrategy;
 import ai.h2o.automl.targetencoder.strategy.ModelValidationMode;
-import ai.h2o.automl.targetencoder.strategy.TEParamsSelectionStrategy;
+import ai.h2o.automl.targetencoder.strategy.ModelParametersSelectionStrategy;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
@@ -19,7 +19,7 @@ import java.util.PriorityQueue;
 
 import static org.junit.Assert.assertEquals;
 
-public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
+public class GridSearchModelParametersSelectionStrategyTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
@@ -32,7 +32,7 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.VALIDATION_FRAME, "survived");
+      GridSearchModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.VALIDATION_FRAME, "survived");
       bestParamsEv.getItem();
     } finally {
       Scope.exit();
@@ -45,14 +45,14 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     try {
       Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
       Scope.track(fr);
-      GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.CV, "survived");
+      GridSearchModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsEv = findBestTargetEncodingParams(fr , ModelValidationMode.CV, "survived");
       bestParamsEv.getItem();
     } finally {
       Scope.exit();
     }
   }
 
-  private GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> findBestTargetEncodingParams(Frame fr, ModelValidationMode modelValidationMode, String responseColumnName) {
+  private GridSearchModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> findBestTargetEncodingParams(Frame fr, ModelValidationMode modelValidationMode, String responseColumnName) {
 
     asFactor(fr, responseColumnName);
     Frame train = null;
@@ -76,12 +76,8 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     long seedForFoldColumn = 2345L;
 
     AutoMLBuildSpec.AutoMLTEControl teBuildSpec = new AutoMLBuildSpec.AutoMLTEControl();
-    teBuildSpec.ratio_of_hyperspace_to_explore = 0.1;
-    teBuildSpec.early_stopping_ratio = 1.0;
     teBuildSpec.seed = seedForFoldColumn;
 
-    GridSearchTEParamsSelectionStrategy gridSearchTEParamsSelectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(leaderboard, columnsToEncode, true, teBuildSpec, modelValidationMode);
 
     ModelBuilder mb = null;
     switch (modelValidationMode) {
@@ -92,8 +88,12 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
         mb = TargetEncodingTestFixtures.modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, seedForFoldColumn);
     }
     mb.init(false);
-    TEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsWithEvaluation =
-            gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation(mb);
+
+    GridSearchModelParametersSelectionStrategy gridSearchTEParamsSelectionStrategy =
+            new GridSearchModelParametersSelectionStrategy(mb, teBuildSpec, leaderboard, columnsToEncode, modelValidationMode);
+
+    ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsWithEvaluation =
+            gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation();
 
     if(train != null) train.delete();
     if(valid != null) valid.delete();
@@ -105,16 +105,16 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
   @Test
   public void priorityQueueOrderingWithEvaluatedTest() {
     boolean theBiggerTheBetter = true;
-    Comparator comparator = new GridSearchTEParamsSelectionStrategy.EvaluatedComparator(theBiggerTheBetter);
-    PriorityQueue<GridSearchTEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters>> evaluatedQueue = new PriorityQueue<>(200, comparator);
+    Comparator comparator = new GridSearchModelParametersSelectionStrategy.EvaluatedComparator(theBiggerTheBetter);
+    PriorityQueue<GridSearchModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters>> evaluatedQueue = new PriorityQueue<>(200, comparator);
 
 
     TargetEncoderModel.TargetEncoderParameters params1 = TargetEncodingTestFixtures.randomTEParams();
     TargetEncoderModel.TargetEncoderParameters params2 = TargetEncodingTestFixtures.randomTEParams();
     TargetEncoderModel.TargetEncoderParameters params3 = TargetEncodingTestFixtures.randomTEParams();
-    evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params1, 0.9984, 0));
-    evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params2, 0.9996, 1));
-    evaluatedQueue.add(new GridSearchTEParamsSelectionStrategy.Evaluated<>(params3, 0.9784, 2));
+    evaluatedQueue.add(new GridSearchModelParametersSelectionStrategy.Evaluated<>(params1, 0.9984, 0));
+    evaluatedQueue.add(new GridSearchModelParametersSelectionStrategy.Evaluated<>(params2, 0.9996, 1));
+    evaluatedQueue.add(new GridSearchModelParametersSelectionStrategy.Evaluated<>(params3, 0.9784, 2));
 
     assertEquals(0.9996, evaluatedQueue.poll().getScore(), 1e-5);
     assertEquals(0.9984, evaluatedQueue.poll().getScore(), 1e-5);
@@ -137,8 +137,8 @@ public class GridSearchTEParamsSelectionStrategyTest extends TestUtil {
     when(evaluatorMock.evaluate(any(TargetEncodingParams.class), any(ModelBuilder.class), any(ModelValidationMode.class), any(Frame.class), anyLong())).thenReturn(0.42);
 
     // Let's check only CV case. Logic for stopping is using same code for both cases.
-    GridSearchTEParamsSelectionStrategy selectionStrategy =
-            new GridSearchTEParamsSelectionStrategy(null, "survived", columnNameToIdxMap, true, teSpec, evaluatorMock);
+    GridSearchModelParametersSelectionStrategy selectionStrategy =
+            new GridSearchModelParametersSelectionStrategy(null, "survived", columnNameToIdxMap, true, teSpec, evaluatorMock);
     selectionStrategy.setTESearchSpace(ModelValidationMode.CV);
 
     ModelBuilder modelBuilderMock = mock(ModelBuilder.class);

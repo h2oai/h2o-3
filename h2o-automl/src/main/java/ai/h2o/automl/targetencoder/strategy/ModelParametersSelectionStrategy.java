@@ -6,9 +6,11 @@ import water.Iced;
 
 import java.util.Comparator;
 
-public abstract class TEParamsSelectionStrategy<MP extends Model.Parameters> extends Iced {
+public abstract class ModelParametersSelectionStrategy<MP extends Model.Parameters> extends Iced {
 
-  public abstract MP getBestParams(ModelBuilder modelBuilder);
+  protected ModelBuilder _modelBuilder;
+
+  public abstract MP getBestParams();
 
 
   public static class Evaluated<P> extends Iced<Evaluated<P>> {

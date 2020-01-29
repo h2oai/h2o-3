@@ -10,7 +10,7 @@ import org.junit.runners.Suite;
         AutoMLTargetEncodingAssistantTest.class,
         TEIntegrationWithAutoMLTest.class,
 //        AllCategoricalTEApplicationStrategyTest.class, // TODO move test from targetencider ext module
-        GridSearchTEParamsSelectionStrategyTest.class,
+        GridSearchModelParametersSelectionStrategyTest.class,
         TargetEncodingHyperparamsEvaluatorTest.class,
 //        ThresholdTEApplicationStrategyTest.class  // TODO move test from targetencider ext module
 })

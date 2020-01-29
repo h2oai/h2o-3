@@ -9,6 +9,7 @@ dependencies {
 
   // Test dependencies only
   testCompile "junit:junit:${junitVersion}"
+  testCompile "org.mockito:mockito-core:2.23.0"
   testCompile "com.pholser:junit-quickcheck-core:0.9"
   testCompile 'com.pholser:junit-quickcheck-generators:0.9'
   testCompile "com.github.stefanbirkner:system-rules:1.18.0"

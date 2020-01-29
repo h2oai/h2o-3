@@ -9,16 +9,17 @@ import ai.h2o.targetencoding.TargetEncoderFrameHelper;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
+import hex.Model;
 import hex.ModelBuilder;
 import hex.splitframe.ShuffleSplitFrame;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.Log;
 import water.util.StringUtils;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
@@ -31,7 +32,7 @@ import static ai.h2o.targetencoding.TargetEncoderFrameHelper.concat;
  * Perform TargetEncoding based on a strategy of searching best TE parameters.
  * Side effects will be done mostly through mutating modelBuilder.
  */
-public class AutoMLTargetEncoderAssistant{
+public class AutoMLTargetEncoderAssistant<MP extends Model.Parameters>{ // TODO generalize with  MP. Probably something like PreProcessingStepAssistant
 
   private Frame _trainingFrame;
   private Frame _validationFrame;
@@ -41,41 +42,35 @@ public class AutoMLTargetEncoderAssistant{
   private ModelBuilder _modelBuilder;
   private ModelValidationMode _validationMode;
 
-  public TEParamsSelectionStrategy<TargetEncoderModel.TargetEncoderParameters> getTeParamsSelectionStrategy() {
-    return _teParamsSelectionStrategy;
+  public ModelParametersSelectionStrategy<TargetEncoderModel.TargetEncoderParameters> getTeParamsSelectionStrategy() {
+    return _modelParametersSelectionStrategy;
   }
 
-  private TEParamsSelectionStrategy _teParamsSelectionStrategy;
+  private ModelParametersSelectionStrategy<TargetEncoderModel.TargetEncoderParameters> _modelParametersSelectionStrategy;
 
   private String[] _columnsToEncode;
-
-  private TargetEncoderModel.TargetEncoderParameters _teParams;
 
   public AutoMLTargetEncoderAssistant(AutoML aml,
                                       AutoMLBuildSpec buildSpec,
                                       ModelBuilder modelBuilder) {
     _modelBuilder = modelBuilder;
-    _trainingFrame = modelBuilder._parms.train(); //TODO ? aml.getTrainingFrame();
+    _buildSpec = buildSpec;
+
+    _trainingFrame = modelBuilder._parms.train();
     _validationFrame = aml.getValidationFrame();
     _leaderboardFrame = aml.getLeaderboardFrame();
     _responseColumnName = _modelBuilder._parms._response_column;
 
-    _buildSpec = buildSpec;
-
     _validationMode = _modelBuilder._parms.valid() == null ? ModelValidationMode.CV : ModelValidationMode.VALIDATION_FRAME;
-
   }
 
   public Optional<TargetEncoderModel.TargetEncoderParameters> findBestTEParams() {
     return selectColumnsForEncoding(_buildSpec.te_spec.application_strategy)
             .map(columnsToEncode -> {
               _columnsToEncode = columnsToEncode;
-              //TODO what is the canonical way to get metric we are going to use. DistributionFamily, leaderboard metrics?
-              boolean theBiggerTheBetter = _modelBuilder._parms.train().vec(_responseColumnName).get_type() != Vec.T_NUM;
+              _modelParametersSelectionStrategy = new GridSearchModelParametersSelectionStrategy(_modelBuilder, _buildSpec.te_spec, _leaderboardFrame, columnsToEncode, _validationMode);
 
-              _teParamsSelectionStrategy = new GridSearchTEParamsSelectionStrategy(_leaderboardFrame, columnsToEncode, theBiggerTheBetter, _buildSpec.te_spec, _validationMode);
-
-              TargetEncoderModel.TargetEncoderParameters bestTEParams = getTeParamsSelectionStrategy().getBestParams(_modelBuilder);
+              TargetEncoderModel.TargetEncoderParameters bestTEParams = getTeParamsSelectionStrategy().getBestParams();
               Log.info("Best TE parameters for chosen columns " + StringUtils.join(",", columnsToEncode) + " were selected to be: " + bestTEParams);
               return bestTEParams;
             });
@@ -89,6 +84,8 @@ public class AutoMLTargetEncoderAssistant{
 
   public void applyTE(TargetEncoderModel.TargetEncoderParameters bestTEParams) {
 
+    Scope.enter();
+    try {
       //TODO move it inside TargetEncoder. add constructor ?
       BlendingParams blendingParams = bestTEParams.getBlendingParameters();
       boolean withBlendedAvg = bestTEParams._blending;
@@ -115,7 +112,7 @@ public class AutoMLTargetEncoderAssistant{
             addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seed);
 
             encodingMap = tec.prepareEncodingMap(trainCopy, responseColumnName, foldColumnForTE, true);
-            Frame encodedTrainingFrame  = tec.applyTargetEncoding(trainCopy, responseColumnName, encodingMap, KFold, foldColumnForTE, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, blendingParams, seed);
+            Frame encodedTrainingFrame = tec.applyTargetEncoding(trainCopy, responseColumnName, encodingMap, KFold, foldColumnForTE, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, blendingParams, seed);
             copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedTrainingFrame, _trainingFrame);
 
             TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
@@ -135,7 +132,7 @@ public class AutoMLTargetEncoderAssistant{
             // then we need kfold column with preferably the same folds as during grid search.
             // 2) Case when original _trainingFrame does not have fold column. Even with CV enabled we at this point have not yet reached code of folds autoassignments.
             // Best we can do is to add fold column with the same seed as we use during Grid search of TE parameters. Otherwise just apply to the `_foldColumn` from the AutoML setup.
-            if(foldColumnName == null) {
+            if (foldColumnName == null) {
               foldColumnName = "te_fold_column"; // TODO consider introducing config `AutoMLTEControl` keep_te_fold_assignments
               int nfolds = 5; // TODO move to `AutoMLTEControl`
               addKFoldColumn(trainCopy, foldColumnName, nfolds, seed);
@@ -145,11 +142,11 @@ public class AutoMLTargetEncoderAssistant{
             Frame encodedTrainingFrame = tec.applyTargetEncoding(trainCopy, responseColumnName, encodingMap, holdoutType, foldColumnName, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, blendingParams, seed);
             copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedTrainingFrame, _trainingFrame);
 
-            if(_validationFrame != null) {
+            if (_validationFrame != null) {
               Frame encodedValidationFrame = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, imputeNAsWithNewCategory, blendingParams, seed);
               copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedValidationFrame, _validationFrame);
             }
-            if(_leaderboardFrame != null) {
+            if (_leaderboardFrame != null) {
               Frame encodedLeaderboardFrame = tec.applyTargetEncoding(_leaderboardFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, foldColumnName, withBlendedAvg, 0, imputeNAsWithNewCategory, blendingParams, seed);
               copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedLeaderboardFrame, _leaderboardFrame);
             }
@@ -161,11 +158,11 @@ public class AutoMLTargetEncoderAssistant{
             Frame encodedTrainingFrameLOO = tec.applyTargetEncoding(trainCopy, responseColumnName, encodingMap, holdoutType, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, blendingParams, seed);
             copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedTrainingFrameLOO, _trainingFrame);
 
-            if(_validationFrame != null) {
-              Frame encodedValidationFrame = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0.0,  imputeNAsWithNewCategory, blendingParams, seed);
+            if (_validationFrame != null) {
+              Frame encodedValidationFrame = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0.0, imputeNAsWithNewCategory, blendingParams, seed);
               copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedValidationFrame, _validationFrame);
             }
-            if(_leaderboardFrame != null) {
+            if (_leaderboardFrame != null) {
               Frame encodedLeaderboardFrame = tec.applyTargetEncoding(_leaderboardFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0.0, imputeNAsWithNewCategory, blendingParams, seed);
               copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedLeaderboardFrame, _leaderboardFrame);
             }
@@ -182,11 +179,11 @@ public class AutoMLTargetEncoderAssistant{
 
             _modelBuilder.setTrain(trainNone);
 
-            if(_validationFrame != null) {
+            if (_validationFrame != null) {
               Frame encodedValidationFrameNone = tec.applyTargetEncoding(_validationFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, imputeNAsWithNewCategory, blendingParams, seed);
               copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedValidationFrameNone, _validationFrame);
             }
-            if(_leaderboardFrame != null) {
+            if (_leaderboardFrame != null) {
               Frame encodedLeaderboardFrameNone = tec.applyTargetEncoding(_leaderboardFrame, responseColumnName, encodingMap, TargetEncoder.DataLeakageHandlingStrategy.None, withBlendedAvg, 0, imputeNAsWithNewCategory, blendingParams, seed);
               copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedLeaderboardFrameNone, _leaderboardFrame);
             }
@@ -195,7 +192,10 @@ public class AutoMLTargetEncoderAssistant{
         TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
       }
       trainCopy.delete();
-    setColumnsToIgnore(_columnsToEncode);
+      setColumnsToIgnore(_columnsToEncode);
+    } finally {
+      Scope.exit();
+    }
   }
 
   private Frame[] splitByRatio(Frame fr,double[] ratios, long seed) {
@@ -218,6 +218,6 @@ public class AutoMLTargetEncoderAssistant{
       Vec encodedVecCopy = encodedVec.makeCopy();
       destinationFrame.add(encodedColumnName, encodedVecCopy);
     }
-    sourceWithEncodings.delete();
+    Scope.track(sourceWithEncodings);
   }
 }

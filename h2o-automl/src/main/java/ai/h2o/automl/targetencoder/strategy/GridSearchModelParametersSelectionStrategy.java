@@ -10,41 +10,49 @@ import hex.grid.HyperSpaceWalker;
 import hex.schemas.TargetEncoderV3;
 import water.api.GridSearchHandler;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.TwoDimTable;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.PriorityQueue;
 
 /**
  *  Random grid search for searching optimal hyper parameters for target encoding
  */
-public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrategy<TargetEncoderModel.TargetEncoderParameters>{
+public class GridSearchModelParametersSelectionStrategy extends ModelParametersSelectionStrategy<TargetEncoderModel.TargetEncoderParameters> {
 
-  private Frame _leaderboardData;
-
-  private PriorityQueue<TEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters>> _evaluatedQueue;
-  private TargetEncodingHyperparamsEvaluator _evaluator = new TargetEncodingHyperparamsEvaluator();
-
-  protected ModelValidationMode _validationMode;
-  protected HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> _walker;
-
-  protected transient String[] _columnNamesToEncode;
+  private ModelBuilder _modelBuilder;
   private AutoMLBuildSpec.AutoMLTEControl _teBuildSpec;
 
-  public GridSearchTEParamsSelectionStrategy(Frame leaderboard,
-                                             String[] columnNamesToEncode,
-                                             boolean theBiggerTheBetter,
-                                             AutoMLBuildSpec.AutoMLTEControl teBuildSpec,
-                                             ModelValidationMode validationMode) {
+  protected HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> _walker;
+
+  private TargetEncodingHyperparamsEvaluator _evaluator = new TargetEncodingHyperparamsEvaluator();
+  private PriorityQueue<ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters>> _evaluatedQueue;
+
+  protected ModelValidationMode _validationMode;
+  private Frame _leaderboardData;
+  protected transient String[] _columnNamesToEncode;
+
+
+  public GridSearchModelParametersSelectionStrategy(ModelBuilder modelBuilder,
+                                                    AutoMLBuildSpec.AutoMLTEControl teBuildSpec,
+                                                    Frame leaderboard,
+                                                    String[] columnNamesToEncode,
+                                                    ModelValidationMode validationMode) {
     _teBuildSpec = teBuildSpec;
+    _modelBuilder = modelBuilder;
 
     _leaderboardData = leaderboard;
     _columnNamesToEncode = columnNamesToEncode;
 
+    //TODO what is the canonical way to get metric we are going to use. DistributionFamily, leaderboard metrics?
+    boolean theBiggerTheBetter = modelBuilder._parms.train().vec(modelBuilder._parms._response_column).get_type() != Vec.T_NUM;
+
     _evaluatedQueue = new PriorityQueue<>(new EvaluatedComparator(theBiggerTheBetter));
 
     _validationMode = validationMode;
+
+
     setTESearchSpace(_validationMode);
   }
 
@@ -77,11 +85,11 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
 
   }
 
-  public TargetEncoderModel.TargetEncoderParameters getBestParams(ModelBuilder modelBuilder) {
-    return getBestParamsWithEvaluation(modelBuilder).getItem();
+  public TargetEncoderModel.TargetEncoderParameters getBestParams() {
+    return getBestParamsWithEvaluation().getItem();
   }
 
-  public TEParamsSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> getBestParamsWithEvaluation(ModelBuilder modelBuilder) {
+  public ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> getBestParamsWithEvaluation() {
 
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = _walker.iterator();
 
@@ -90,7 +98,7 @@ public class GridSearchTEParamsSelectionStrategy extends TEParamsSelectionStrate
 
       TargetEncoderModel.TargetEncoderParameters nextModelParameters = iterator.nextModelParameters(null);
 
-      ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
+      ModelBuilder clonedModelBuilder = ModelBuilder.make(_modelBuilder._parms);
 
       clonedModelBuilder.init(false);
 
