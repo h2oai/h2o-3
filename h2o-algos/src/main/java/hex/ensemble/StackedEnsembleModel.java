@@ -7,7 +7,6 @@ import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.nbhm.NonBlockingHashSet;
 import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -80,7 +79,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
      */
     public void initMetalearnerParams(Metalearner.Algorithm algo) {
       _metalearner_algorithm = algo;
-      _metalearner_parameters = Metalearner.createParameters(algo);
+      _metalearner_parameters = Metalearners.createParameters(algo.name());
     }
     
     public final Frame blending() { return _blending == null ? null : _blending.get(); }

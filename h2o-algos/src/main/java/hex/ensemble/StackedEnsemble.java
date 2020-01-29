@@ -255,7 +255,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       }
 
       Metalearner.Algorithm metalearnerAlgoSpec = _model._parms._metalearner_algorithm;
-      Metalearner.Algorithm metalearnerAlgoImpl = Metalearner.getActualMetalearnerAlgo(metalearnerAlgoSpec);
+      Metalearner.Algorithm metalearnerAlgoImpl = Metalearners.getActualMetalearnerAlgo(metalearnerAlgoSpec);
 
       // Compute metalearner
       if(metalearnerAlgoImpl != null) {
@@ -267,7 +267,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         boolean hasMetaLearnerParams = _model._parms._metalearner_parameters != null;
         long metalearnerSeed = _model._parms._seed;
 
-        Metalearner metalearner = Metalearner.createInstance(metalearnerAlgoSpec);
+        Metalearner metalearner = Metalearners.createInstance(metalearnerAlgoSpec.name());
         metalearner.init(
           levelOneTrainingFrame,
           levelOneValidationFrame,
