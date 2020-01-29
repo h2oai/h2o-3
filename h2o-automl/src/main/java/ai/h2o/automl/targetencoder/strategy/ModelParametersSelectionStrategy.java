@@ -1,14 +1,11 @@
 package ai.h2o.automl.targetencoder.strategy;
 
 import hex.Model;
-import hex.ModelBuilder;
 import water.Iced;
 
 import java.util.Comparator;
 
 public abstract class ModelParametersSelectionStrategy<MP extends Model.Parameters> extends Iced {
-
-  protected ModelBuilder _modelBuilder;
 
   public abstract MP getBestParams();
 

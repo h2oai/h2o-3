@@ -1,7 +1,7 @@
 package ai.h2o.automl.targetencoder.strategy;
 
 import ai.h2o.automl.AutoMLBuildSpec;
-import ai.h2o.automl.targetencoder.TargetEncodingHyperparamsEvaluator;
+import ai.h2o.automl.targetencoder.ModelParametersEvaluator;
 import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import hex.ModelBuilder;
@@ -11,13 +11,12 @@ import hex.schemas.TargetEncoderV3;
 import water.api.GridSearchHandler;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.TwoDimTable;
 
 import java.util.HashMap;
 import java.util.PriorityQueue;
 
 /**
- *  Random grid search for searching optimal hyper parameters for target encoding
+ *  Random grid search of optimal hyper parameters for target encoding
  */
 public class GridSearchModelParametersSelectionStrategy extends ModelParametersSelectionStrategy<TargetEncoderModel.TargetEncoderParameters> {
 
@@ -26,7 +25,7 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
 
   protected HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> _walker;
 
-  private TargetEncodingHyperparamsEvaluator _evaluator = new TargetEncodingHyperparamsEvaluator();
+  private ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> _evaluator;
   private PriorityQueue<ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters>> _evaluatedQueue;
 
   protected ModelValidationMode _validationMode;
@@ -38,9 +37,11 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
                                                     AutoMLBuildSpec.AutoMLTEControl teBuildSpec,
                                                     Frame leaderboard,
                                                     String[] columnNamesToEncode,
-                                                    ModelValidationMode validationMode) {
+                                                    ModelValidationMode validationMode,
+                                                    ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> evaluator) {
     _teBuildSpec = teBuildSpec;
     _modelBuilder = modelBuilder;
+    _evaluator = evaluator;
 
     _leaderboardData = leaderboard;
     _columnNamesToEncode = columnNamesToEncode;
@@ -59,7 +60,7 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
   private void setTESearchSpace(ModelValidationMode modelValidationMode) {
 
     HashMap<String, Object[]> grid = new HashMap<>();
-    grid.put("blending", new Boolean[]{true, false});
+    grid.put("blending", new Boolean[]{true, /*false*/}); // TODO use filtering when PUBDEV-7037 is available
     grid.put("noise_level", new Double[]{0.0, 0.01, 0.1});
     grid.put("k", new Double[]{1.0, 2.0, 3.0, 5.0, 10.0, 50.0, 100.0});
     grid.put("f", new Double[]{5.0, 10.0, 20.0});
@@ -80,6 +81,7 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
             new GridSearchHandler.DefaultModelParametersBuilderFactory<>();
 
     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria hyperSpaceSearchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+    hyperSpaceSearchCriteria.set_seed(_teBuildSpec.seed);
 
     _walker = new HyperSpaceWalker.RandomDiscreteValueWalker<>(parameters, grid, modelParametersBuilderFactory, hyperSpaceSearchCriteria);
 
@@ -94,7 +96,7 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = _walker.iterator();
 
     long attemptIdx = 0;
-    while (_evaluatedQueue.size() < _teBuildSpec.te_max_models) {
+    while (iterator.hasNext(null) && (_teBuildSpec.te_max_models == 0 || _evaluatedQueue.size() < _teBuildSpec.te_max_models)) {
 
       TargetEncoderModel.TargetEncoderParameters nextModelParameters = iterator.nextModelParameters(null);
 
@@ -110,18 +112,7 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
     return _evaluatedQueue.peek();
   }
 
-  public PriorityQueue<Evaluated<TargetEncoderModel.TargetEncoderParameters>> getEvaluatedQueue() {
+  public PriorityQueue<Evaluated<TargetEncoderModel.TargetEncoderParameters>> getEvaluatedModelParameters() {
     return _evaluatedQueue;
-  }
-
-
-  public static void printOutFrameAsTable(Frame fr) {
-    printOutFrameAsTable(fr, false, fr.numRows());
-  }
-
-  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
-    assert limit <= Integer.MAX_VALUE;
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
-    System.out.println(twoDimTable.toString(2, true));
   }
 }

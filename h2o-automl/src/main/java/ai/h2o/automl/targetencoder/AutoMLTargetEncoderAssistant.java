@@ -68,7 +68,8 @@ public class AutoMLTargetEncoderAssistant<MP extends Model.Parameters>{ // TODO 
     return selectColumnsForEncoding(_buildSpec.te_spec.application_strategy)
             .map(columnsToEncode -> {
               _columnsToEncode = columnsToEncode;
-              _modelParametersSelectionStrategy = new GridSearchModelParametersSelectionStrategy(_modelBuilder, _buildSpec.te_spec, _leaderboardFrame, columnsToEncode, _validationMode);
+              TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
+              _modelParametersSelectionStrategy = new GridSearchModelParametersSelectionStrategy(_modelBuilder, _buildSpec.te_spec, _leaderboardFrame, columnsToEncode, _validationMode, evaluator);
 
               TargetEncoderModel.TargetEncoderParameters bestTEParams = getTeParamsSelectionStrategy().getBestParams();
               Log.info("Best TE parameters for chosen columns " + StringUtils.join(",", columnsToEncode) + " were selected to be: " + bestTEParams);

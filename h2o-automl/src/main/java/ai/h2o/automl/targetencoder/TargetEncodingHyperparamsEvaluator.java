@@ -20,8 +20,7 @@ import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.Le
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.concat;
 
-
-public class TargetEncodingHyperparamsEvaluator extends Iced {
+public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> {
 
   public double evaluate(TargetEncoderModel.TargetEncoderParameters teParams,
                          ModelBuilder modelBuilder,
