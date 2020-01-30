@@ -19,7 +19,7 @@ public enum Algo {
     private static final String DISTRIBUTED_XGBOOST_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "automl.xgboost.multinode.enabled";
 
     @Override
-    boolean enabled() {
+    public boolean enabled() {
       // on single node, XGBoost is enabled by default if the extension is enabled.
       // on multinode, the same condition applies, but only on Linux by default: needs to be activated explicitly for other platforms.
       boolean enabledOnMultinode = Boolean.parseBoolean(System.getProperty(DISTRIBUTED_XGBOOST_ENABLED, isLinux() ? "true" : "false"));
@@ -32,7 +32,7 @@ public enum Algo {
     return this.name().toLowerCase();
   }
 
-  boolean enabled() {
+  public boolean enabled() {
     return true;
   }
 }

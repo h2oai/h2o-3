@@ -9,7 +9,9 @@ import water.Key;
 
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
-public class DRFStepsProvider implements ModelingStepsProvider<DRFStepsProvider.DRFSteps> {
+public class DRFStepsProvider
+        implements ModelingStepsProvider<DRFStepsProvider.DRFSteps>
+                 , ModelParametersProvider<DRFParameters> {
 
     public static class DRFSteps extends ModelingSteps {
 
@@ -74,6 +76,11 @@ public class DRFStepsProvider implements ModelingStepsProvider<DRFStepsProvider.
     @Override
     public DRFSteps newInstance(AutoML aml) {
         return new DRFSteps(aml);
+    }
+
+    @Override
+    public DRFParameters newDefaultParameters() {
+        return new DRFParameters();
     }
 }
 
