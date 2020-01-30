@@ -1250,7 +1250,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       if(this.isStandardized()) {
         return _submodels[_selected_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1));
       } else {
-        return _dinfo.denormalizeBeta(_submodels[_selected_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1)), this.isStandardized());
+        return _dinfo.normalizeBeta(_submodels[_selected_lambda_idx].getBeta(MemoryManager.malloc8d(_dinfo.fullN()+1)), this.isStandardized());
+
       }
     }
 
@@ -1285,7 +1286,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         if(standardized) {
           res[i] = Arrays.copyOfRange(beta, i * N, (i + 1) * N);
         } else {
-          res[i] = _dinfo.denormalizeBeta(Arrays.copyOfRange(beta, i * N, (i + 1) * N), standardized);
+          //res[i] = _dinfo.denormalizeBeta(Arrays.copyOfRange(beta, i * N, (i + 1) * N), standardized);
+          res[i] = _dinfo.normalizeBeta(Arrays.copyOfRange(beta, i * N, (i + 1) * N), standardized);
         }
       return res;
     }
@@ -1353,12 +1355,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         res.put(_output._coefficient_names[i], b[i]);
     return res;
   }
-  
-  public HashMap<String,Double> standardizedCoefficients(){
+
+  public HashMap<String,Double> coefficients(boolean standardized){
     HashMap<String, Double> res = new HashMap<>();
-    final double [] b = dinfo().denormalizeBeta(beta(), _parms._standardize);
-    if(b == null) return res;
+    double [] b = beta();
     if(_parms._family == Family.multinomial || _parms._family == Family.ordinal){
+      if (standardized) b = ArrayUtils.flat(this._output.getNormBetaMultinomial());
+      if(b == null) return res;
       String [] responseDomain = _output._domains[_output._domains.length-1];
       int len = b.length/_output.nclasses();
       assert b.length == len*_output.nclasses();
@@ -1367,11 +1370,13 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
         for (int i = 0; i < len; ++i)
           res.put(prefix + _output._coefficient_names[i], b[c*len+i]);
       }
-    } else for (int i = 0; i < b.length; ++i)
-      res.put(_output._coefficient_names[i], b[i]);
+    } else {
+      if (standardized) b = this._output.getNormBeta();
+      for (int i = 0; i < b.length; ++i)
+        res.put(_output._coefficient_names[i], b[i]);
+    }
     return res;
   }
-  
   
   
   // TODO: Shouldn't this be in schema? have it here for now to be consistent with others...

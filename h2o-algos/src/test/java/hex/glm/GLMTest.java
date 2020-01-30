@@ -150,11 +150,65 @@ public class GLMTest  extends TestUtil {
       double[] colMeans = new double[enumCols];
       double[] oneOSigma = new double[enumCols];
       int countIndex = 0;
+      HashMap<String, Double> cMeans = new HashMap<>();
+      HashMap<String, Double> cSigmas = new HashMap<>();
+      String[] cnames = train.names();
       for (int cindex = numStart; cindex < response_index; cindex++) {
         numCols2Transform[countIndex]=cindex;
         colMeans[countIndex] = train.vec(cindex).mean();
         oneOSigma[countIndex] = 1.0/train.vec(cindex).sigma();
+        cMeans.put(cnames[cindex], colMeans[countIndex]);
+        cSigmas.put(cnames[cindex], train.vec(cindex).sigma());
         countIndex++;
+      }
+
+      params._standardize = false;  // build a model on non-standardized columns with no standardization.
+      GLMModel glmF = new GLM(params).trainModel().get();
+      Scope.track_generic(glmF);
+
+      HashMap<String, Double> coeffSF = glmF.coefficients(true);
+      HashMap<String, Double> coeffF = glmF.coefficients();
+      if (family.equals(Family.multinomial)) {
+        double[] interPClass = new double[glmF._output._nclasses];
+        for (String key : coeffSF.keySet()) {
+          double temp1 = coeffSF.get(key);
+          double temp2 = coeffF.get(key);
+          if (Math.abs(temp1 - temp2) > 1e-6) { // coefficient same for categoricals, different for numericals
+            String[] coNames = key.split("_");
+            if (!(coNames[1].equals("Intercept"))) {  // skip over intercepts
+              String colnames = coNames[1];
+              interPClass[Integer.valueOf(coNames[0])] += temp2 * cMeans.get(colnames);
+              temp2 = temp2 * cSigmas.get(colnames);
+              assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + coNames[1] + " is " + temp1 + " but actual " + temp2;
+            }
+          }
+        }
+        // check for equality of intercepts
+        for (int index = 0; index < glmF._output._nclasses; index++) {
+          String interceptKey = index + "_Intercept";
+          double temp1 = coeffSF.get(interceptKey);
+          double temp2 = coeffF.get(interceptKey) + interPClass[index];
+          assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + interceptKey + " is " + temp1 + " but actual "
+                  + temp2;
+        }
+      } else {
+        double interceptOffset = 0;
+        for (String key:coeffF.keySet()) {
+          double temp1 = coeffSF.get(key);
+          double temp2 = coeffF.get(key);
+          if (Math.abs(temp1 - temp2) > 1e-6) {
+            if (!key.equals("Intercept")) {
+              interceptOffset += temp2*cMeans.get(key);
+              temp2 = temp2*cSigmas.get(key);
+              assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + key + " is " + temp1 + " but actual " + temp2;
+            }
+          }
+        }
+        // check intercept terms 
+        double temp1 = coeffSF.get("Intercept");
+        double temp2 = coeffF.get("Intercept")+interceptOffset;
+        assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for Intercept is " + temp1 + " but actual "
+                + temp2;
       }
       new TestUtil.StandardizeColumns(numCols2Transform, colMeans, oneOSigma, train).doAll(train);
       DKV.put(train);
@@ -174,10 +228,9 @@ public class GLMTest  extends TestUtil {
       } else {
         assert TestUtil.equalTwoArrays(glm._output.getNormBeta(), glmS._output.getNormBeta(), 1e-6);
       }
-      // Zuzana:  this is for you.  Right now it does not work.
- /*     HashMap<String, Double> coeff1 = glm.standardized_coefficients();
-       HashMap<String, Double> coeff2 = glmS.standardized_coefficients();
-       assert TestUtil.equalTwoHashMaps(coeff1, coeff2, 1e-6); */
+      HashMap<String, Double> coeff1 = glm.coefficients(true);
+      HashMap<String, Double> coeff2 = glmS.coefficients(true);
+      assert TestUtil.equalTwoHashMaps(coeff1, coeff2, 1e-6); 
     } finally {
       Scope.exit();
     }

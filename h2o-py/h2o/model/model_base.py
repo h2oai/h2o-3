@@ -629,9 +629,9 @@ class ModelBase(h2o_meta(Keyed)):
         coeffNames = tbl["names"]
         all_col_header = tbl.col_header
         startIndex = 1
-        endIndex = len(all_col_header)
+        endIndex = int((len(all_col_header)-1)/2+1)
         if standardize:
-            startIndex = (len(all_col_header)-1)/2+1 # start index for standardized coefficients
+            startIndex = int((len(all_col_header)-1)/2+1) # start index for standardized coefficients
             endIndex = len(all_col_header)
         for nameIndex in list(range(startIndex, endIndex)):
             coeffList = tbl[all_col_header[nameIndex]]

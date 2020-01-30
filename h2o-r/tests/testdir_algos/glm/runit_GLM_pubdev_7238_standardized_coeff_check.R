@@ -40,8 +40,7 @@ checkCoeffs <- function(filename, family) {
     training_frame[colNames[index]] <- (training_frame[colNames[index]]-aver)*sig
   }
   m2 <- h2o.glm(y = Y, x = x, training_frame = training_frame, family = family, standardize=FALSE)
-  # coeff2 <- h2o.coef_norm(m2) # this will fail before zuzana's fix
-  coeff2 <- h2o.coef(m2) # Zuzana:  please use the above once you fix the JIRA
+  coeff2 <- h2o.coef_norm(m2)
   if ((family=="multinomial") || (family=="binomial")) {
    numCompares = length(coeff1)
    for (index in c(2:numCompares)) { # skip the coefficient names

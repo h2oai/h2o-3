@@ -1472,9 +1472,8 @@ h2o.coef_norm <- function(object) {
 grabCoeff <- function(tempTable, nameStart, standardize=FALSE) {
     coeffNamesPerClass <- tempTable$names # contains coeff names per class
     totTableLength <- length(tempTable)
-    numClass <- totTableLength
     startIndex <- 2
-    endIndex <- numClass
+    endIndex <- (totTableLength-1)/2+1
     if (standardize) {
         startIndex <- (totTableLength-1)/2+2   # starting index for standardized coefficients
         endIndex <- totTableLength
