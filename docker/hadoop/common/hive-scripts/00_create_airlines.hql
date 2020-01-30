@@ -8,7 +8,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS AirlinesTest(
   UniqueCarrier STRING ,
   Origin STRING ,
   Dest STRING ,
-  Distance BIGINT ,
+  Distance INT ,
   IsDepDelayed STRING ,
   IsDepDelayed_REC INT
 )
