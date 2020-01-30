@@ -18,6 +18,11 @@ import water.nbhm.NonBlockingHashMap;
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
 
+/**
+ * Entry point class to load and access the supported metalearners.
+ * Most of them are defined in this class, but some others can be loaded dynamically from the classpath,
+ * this is for example the case with the XGBoostMetalearner.
+ */
 public class Metalearners {
 
     static final NonBlockingHashMap<String, MetalearnerProvider> providersByName = new NonBlockingHashMap<>();
@@ -43,23 +48,28 @@ public class Metalearners {
     }
 
     static Algorithm getActualMetalearnerAlgo(Algorithm algo) {
+        assertAvailable(algo.name());
         return algo == Algorithm.AUTO ? Algorithm.glm : algo;
     }
 
     static Model.Parameters createParameters(String name) {
-        if (providersByName.containsKey(name)) {
-            return providersByName.get(name).newParameters();
-        }
-        throw new H2OIllegalArgumentException("'"+name+"' metalearner is not supported or available.");
+        assertAvailable(name);
+        return providersByName.get(name).newParameters();
     }
 
     static Metalearner createInstance(String name) {
-        if (providersByName.containsKey(name)) {
-            return providersByName.get(name).newInstance();
-        }
-        throw new H2OIllegalArgumentException("'"+name+"' metalearner is not supported or available.");
+        assertAvailable(name);
+        return providersByName.get(name).newInstance();
     }
 
+    private static void assertAvailable(String algo) {
+        if (!providersByName.containsKey(algo))
+            throw new H2OIllegalArgumentException("'"+algo+"' metalearner is not supported or available.");
+    }
+
+    /**
+     * A local implementation of {@link MetalearnerProvider} to expose the {@link Metalearner}s defined in this class.
+     */
     static class LocalProvider<M extends Metalearner, P extends Model.Parameters> implements MetalearnerProvider<M, P> {
 
         private Algorithm _algorithm;
@@ -90,10 +100,13 @@ public class Metalearners {
         }
     }
 
+    /**
+     * A simple implementation of {@link Metalearner} suitable for any algo; it is just using the algo with its default parameters.
+     */
     public static class SimpleMetalearner extends Metalearner {
         private String _algo;
 
-        public SimpleMetalearner(String algo) {
+        protected SimpleMetalearner(String algo) {
             _algo = algo;
         }
 

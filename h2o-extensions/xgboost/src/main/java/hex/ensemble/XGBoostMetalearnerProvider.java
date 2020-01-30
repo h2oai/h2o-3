@@ -4,7 +4,7 @@ import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 
 public class XGBoostMetalearnerProvider implements MetalearnerProvider<XGBoostMetalearnerProvider.XGBoostMetalearner, XGBoostParameters> {
 
-    public static class XGBoostMetalearner extends Metalearners.SimpleMetalearner {
+    static class XGBoostMetalearner extends Metalearners.SimpleMetalearner {
         public XGBoostMetalearner() {
             super(Algorithm.xgboost.name());
         }

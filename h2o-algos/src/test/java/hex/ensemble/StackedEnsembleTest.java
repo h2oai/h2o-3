@@ -820,6 +820,7 @@ public class StackedEnsembleTest extends TestUtil {
 
     @Test public void test_SE_scoring_with_missing_response_column() {
         for (Algorithm algo: Algorithm.values()) {
+            if (algo == Algorithm.xgboost) continue; // skipping XGBoost: not in UTs classpath.
             try {
                 test_SE_scoring_with_missing_response_column(algo);
             } catch (Exception e) {
