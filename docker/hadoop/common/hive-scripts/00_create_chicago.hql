@@ -7,7 +7,7 @@ CREATE EXTERNAL TABLE IF NOT EXISTS chicago(
   pct_25plus DOUBLE,
   pct_yng_old DOUBLE,
   per_cpt_income INT,
-  hardship_index INT
+  hardship_index BIGINT
 )
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
