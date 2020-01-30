@@ -8,11 +8,10 @@ CREATE EXTERNAL TABLE IF NOT EXISTS AirlinesTest(
   UniqueCarrier STRING ,
   Origin STRING ,
   Dest STRING ,
-  Distance INT ,
+  Distance BIGINT ,
   IsDepDelayed STRING ,
   IsDepDelayed_REC INT
 )
-COMMENT 'stefan test table'
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
 tblproperties ("skip.header.line.count"="1");
