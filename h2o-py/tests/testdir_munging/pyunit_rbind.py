@@ -30,12 +30,10 @@ def rbind_check():
     except H2OValueError:
         pass
 
-    try:
-        frame6 = h2o.H2OFrame({"a": [1.1, 1.2, 1.3]})
-        frame4.rbind(frame6)
-        assert False, "Expected the rbind of vecs of different types to fail"
-    except H2OValueError:
-        pass
+    frame6 = h2o.H2OFrame({"a": [1.1, 1.2, 1.3]})
+    frameNew = frame4.rbind(frame6)
+    assert frameNew.nrow==(frame6.nrow+frame4.nrow), "Expected number of row: {0}, Actual number of row: " \
+                                      "{1}".format((frame6.nrow+frame4.nrow), frameNew.nrow)
 
     try:
         frame7 = h2o.H2OFrame({"b": [1, 2, 3, 4, 5]})
