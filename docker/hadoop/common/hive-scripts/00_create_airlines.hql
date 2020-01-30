@@ -12,7 +12,6 @@ CREATE EXTERNAL TABLE IF NOT EXISTS AirlinesTest(
   IsDepDelayed STRING ,
   IsDepDelayed_REC INT
 )
-COMMENT 'stefan test table'
 ROW FORMAT DELIMITED
 FIELDS TERMINATED BY ','
 tblproperties ("skip.header.line.count"="1");

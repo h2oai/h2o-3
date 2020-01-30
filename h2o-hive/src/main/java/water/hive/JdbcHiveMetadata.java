@@ -1,5 +1,6 @@
 package water.hive;
 
+import water.jdbc.SQLManager;
 import water.util.JSONUtils;
 
 import java.sql.*;
@@ -159,7 +160,7 @@ public class JdbcHiveMetadata implements HiveMetaData {
 
     @Override
     public Table getTable(String tableName) throws SQLException {
-        try (Connection conn = DriverManager.getConnection(url)) {
+        try (Connection conn = SQLManager.getConnectionSafe(url, null, null)) {
             try (Statement stmt = conn.createStatement()) {
                 stmt.execute(SQL_SET_JSON_OUTPUT);
             }

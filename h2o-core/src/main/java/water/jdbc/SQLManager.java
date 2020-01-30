@@ -48,8 +48,8 @@ public class SQLManager {
     final Key<Frame> destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
     final Job<Frame> j = new Job<>(destination_key, Frame.class.getName(), "Import SQL Table");
 
-    final String databaseType = connection_url.split(":", 3)[1];
-    initializeDatabaseDriver(databaseType);
+    final String databaseType = getDatabaseType(connection_url);
+    initializeDatabaseDriver(databaseType); // fail early if driver is not present
 
     SQLImportDriver importDriver = new SQLImportDriver(
         j, destination_key, databaseType, connection_url, 
@@ -481,12 +481,31 @@ public class SQLManager {
     }
   }
 
-  private static Connection getConnectionSafe(String url, String username, String password) throws SQLException {
+  /**
+   * Makes sure the appropriate database driver is initialized before calling DriverManager#getConnection.
+   * 
+   * @param url JDBC connection string
+   * @param username username
+   * @param password password
+   * @return a connection to the URL
+   * @throws SQLException if a database access error occurs or the url is
+   */
+  public static Connection getConnectionSafe(String url, String username, String password) throws SQLException {
+    initializeDatabaseDriver(getDatabaseType(url));
     try {
       return DriverManager.getConnection(url, username, password);
     } catch (NoClassDefFoundError e) {
       throw new RuntimeException("Failed to get database connection, probably due to using thin jdbc driver jar.", e);
     }
+  }
+
+  static String getDatabaseType(String url) {
+    if (url == null)
+      return null;
+    String[] parts = url.split(":", 3);
+    if (parts.length < 2)
+      return null;
+    return parts[1];
   }
 
   /**
