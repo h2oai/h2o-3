@@ -156,11 +156,11 @@ cp -p h2o-docs/src/booklets/v2_2015/source/*.pdf target/docs-website/h2o-docs/bo
 cp -p h2o-r/R/h2o_package.pdf target/docs-website/h2o-r
 cp -rp h2o-py/docs/docs target/docs-website/h2o-py
 cp -rp h2o-r/h2o-package/docs target/docs-website/h2o-r
-cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core
-cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos
-cp -rp h2o-genmodel/build/docs/javadoc target/docs-website/h2o-genmodel
-cp -rp h2o-scala/build/h2o-scala_2.10/docs/scaladoc target/docs-website/h2o-scala_2.10
-cp -rp h2o-scala/build/h2o-scala_2.11/docs/scaladoc target/docs-website/h2o-scala_2.11
+#cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core
+#cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos
+#cp -rp h2o-genmodel/build/docs/javadoc target/docs-website/h2o-genmodel
+#cp -rp h2o-scala/build/h2o-scala_2.10/docs/scaladoc target/docs-website/h2o-scala_2.10
+#cp -rp h2o-scala/build/h2o-scala_2.11/docs/scaladoc target/docs-website/h2o-scala_2.11
 
 # Copy content of distribution site
 cp h2o-dist/* target/ 2>/dev/null || true
