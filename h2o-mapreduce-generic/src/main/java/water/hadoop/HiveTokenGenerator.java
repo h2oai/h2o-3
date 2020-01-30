@@ -124,6 +124,9 @@ public class HiveTokenGenerator {
   }
 
   private String getDelegationTokenFromConnection(String url, String principal, String userName) {
+    if (!isHiveDriverPresent()) {
+      throw new IllegalStateException("Hive Driver not found");
+    }
     try (Connection connection = DriverManager.getConnection(url)) {
       return ((HiveConnection) connection).getDelegationToken(userName, principal);
     } catch (SQLException e) {
