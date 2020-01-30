@@ -2,6 +2,7 @@ package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
 import hex.Model;
+import hex.ModelBuilder;
 import water.util.Log;
 
 
@@ -23,14 +24,7 @@ public class XGBoostStepsProvider implements ModelingStepsProvider<XGBoostSteps>
 
     @Override
     public Model.Parameters newDefaultParameters() {
-        if (Algo.XGBoost.enabled()) {
-            try {
-                return (Model.Parameters)Class.forName("hex.tree.xgboost.XGBoostModel.XGBoostParameters").getConstructor().newInstance();
-            } catch (ReflectiveOperationException e) {
-                throw Log.throwErr(e);
-            }
-        }
-        return null;
+        return Algo.XGBoost.enabled() ? ModelBuilder.make(getName(), null, null)._parms : null;
     }
 }
 

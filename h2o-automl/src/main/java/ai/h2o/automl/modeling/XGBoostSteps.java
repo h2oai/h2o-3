@@ -158,8 +158,8 @@ public class XGBoostSteps extends ModelingSteps {
 //                    searchParams.put("_learn_rate", new Double[]{0.01, 0.05, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5, 0.8, 1.0}); // = _eta
 //                    searchParams.put("_min_split_improvement", new Float[]{0.01f, 0.05f, 0.1f, 0.5f, 1f, 5f, 10f, 50f}); // = _gamma
 //                    searchParams.put("_tree_method", new XGBoostParameters.TreeMethod[]{XGBoostParameters.TreeMethod.auto});
-                    searchParams.put("_booster", new XGBoostParameters.Booster[]{ //gblinear crashes currently
-                            XGBoostParameters.Booster.gbtree, //default, let's use it more often
+                    searchParams.put("_booster", new XGBoostParameters.Booster[]{ // include gblinear? cf. https://0xdata.atlassian.net/browse/PUBDEV-7254
+                            XGBoostParameters.Booster.gbtree, //default, let's use it more often: note that some combinations may be trained multiple time by the RGS then.
                             XGBoostParameters.Booster.gbtree,
                             XGBoostParameters.Booster.dart
                     });
