@@ -60,7 +60,8 @@ class Jetty9Helper {
 
         final ServerConnector connector;
         if (isSecured) {
-            final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
+            final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
+            sslContextFactory.addExcludeProtocols("TLSv1.1", "TLSv1");
             sslContextFactory.setKeyStorePassword(config.jks_pass);
             if (config.jks_alias != null) {
                 sslContextFactory.setCertAlias(config.jks_alias);
@@ -154,10 +155,10 @@ class Jetty9Helper {
 
         final SessionHandler sessionHandler = new SessionHandler();
         if (config.session_timeout > 0) {
-            sessionHandler.getSessionManager().setMaxInactiveInterval(config.session_timeout * 60);
+            sessionHandler.setMaxInactiveInterval(config.session_timeout * 60);
         }
         sessionHandler.setHandler(security);
-        jettyServer.setSessionIdManager(sessionHandler.getSessionManager().getSessionIdManager());
+        jettyServer.setSessionIdManager(sessionHandler.getSessionIdManager());
 
         // Pass-through to H2O if authenticated.
         jettyServer.setHandler(sessionHandler);
