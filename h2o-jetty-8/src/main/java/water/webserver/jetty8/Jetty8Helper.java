@@ -62,6 +62,7 @@ class Jetty8Helper {
     if (config.jks != null) {
       proto = "https";
       final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
+      sslContextFactory.setIncludeCipherSuites("TLSv1.2"); // TLS 1.2 is prioritized
       sslContextFactory.setKeyStorePassword(config.jks_pass);
       if (config.jks_alias != null) {
         sslContextFactory.setCertAlias(config.jks_alias);

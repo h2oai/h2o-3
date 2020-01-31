@@ -2,14 +2,7 @@ package water.webserver.jetty9;
 
 import ai.h2o.org.eclipse.jetty.security.authentication.SpnegoAuthenticator;
 import org.eclipse.jetty.jaas.JAASLoginService;
-import org.eclipse.jetty.security.Authenticator;
-import org.eclipse.jetty.security.ConstraintMapping;
-import org.eclipse.jetty.security.ConstraintSecurityHandler;
-import org.eclipse.jetty.security.DefaultIdentityService;
-import org.eclipse.jetty.security.HashLoginService;
-import org.eclipse.jetty.security.IdentityService;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.security.SpnegoLoginService;
+import org.eclipse.jetty.security.*;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.server.*;
@@ -60,8 +53,8 @@ class Jetty9Helper {
 
         final ServerConnector connector;
         if (isSecured) {
-            final SslContextFactory.Server sslContextFactory = new SslContextFactory.Server();
-            sslContextFactory.addExcludeProtocols("TLSv1.1", "TLSv1");
+            final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
+            sslContextFactory.setIncludeCipherSuites("TLSv1.2"); // TLS 1.2 is prioritized
             sslContextFactory.setKeyStorePassword(config.jks_pass);
             if (config.jks_alias != null) {
                 sslContextFactory.setCertAlias(config.jks_alias);
@@ -155,10 +148,10 @@ class Jetty9Helper {
 
         final SessionHandler sessionHandler = new SessionHandler();
         if (config.session_timeout > 0) {
-            sessionHandler.setMaxInactiveInterval(config.session_timeout * 60);
+            sessionHandler.getSessionManager().setMaxInactiveInterval(config.session_timeout * 60);
         }
         sessionHandler.setHandler(security);
-        jettyServer.setSessionIdManager(sessionHandler.getSessionIdManager());
+        jettyServer.setSessionIdManager(sessionHandler.getSessionManager().getSessionIdManager());
 
         // Pass-through to H2O if authenticated.
         jettyServer.setHandler(sessionHandler);
