@@ -544,7 +544,7 @@ Hadoop Launch Parameters
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of memory to allocate to H2O (at least 6g).
 -  ``-extramempercent``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``. **Recommendation**: Set this to a high value when running XGBoost, for example, 120. 
 -  ``-n | -nodes <number of H2O nodes>``: Specify the number of nodes.
--  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. This should be the maximum number of parallel threads of execution. This is usually capped by the max number of vcores.
+-  ``-nthreads <maximum number of CPUs>``: Specify the maximum number of parallel threads of execution. This is usually capped by the max number of vcores.
 -  ``-baseport <initialization port for H2O nodes>``: Specify the initialization port for the H2O nodes. The default is ``54321``.
 -  ``-license <license file name>``: Specify the directory of local filesytem location and the license file name.
 -  ``-o | -output <HDFS output directory>``: Specify the HDFS directory for the output.
