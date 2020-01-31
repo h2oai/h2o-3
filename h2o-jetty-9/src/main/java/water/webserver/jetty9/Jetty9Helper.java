@@ -15,6 +15,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
+import water.network.SecurityUtils;
 import water.webserver.iface.H2OHttpConfig;
 import water.webserver.iface.H2OHttpView;
 import water.webserver.iface.LoginType;
@@ -54,7 +55,7 @@ class Jetty9Helper {
         final ServerConnector connector;
         if (isSecured) {
             final SslContextFactory sslContextFactory = new SslContextFactory(config.jks);
-            sslContextFactory.setIncludeCipherSuites("TLSv1.2"); // TLS 1.2 is prioritized
+            sslContextFactory.setIncludeCipherSuites(SecurityUtils.defaultTLSVersion()); // Prioritize the default TLS version
             sslContextFactory.setKeyStorePassword(config.jks_pass);
             if (config.jks_alias != null) {
                 sslContextFactory.setCertAlias(config.jks_alias);

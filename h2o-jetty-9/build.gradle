@@ -1,5 +1,6 @@
 dependencies {
     compile project(":h2o-webserver-iface")
+    compile project(":h2o-security")
     compile 'org.eclipse.jetty:jetty-server:9.3.20.v20170531'
     compile "org.eclipse.jetty:jetty-servlets:9.3.20.v20170531"
     compile 'org.eclipse.jetty:jetty-jaas:9.3.20.v20170531'
