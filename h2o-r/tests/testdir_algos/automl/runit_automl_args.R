@@ -135,7 +135,7 @@ automl.args.test <- function() {
                    max_models = max_models,
                    project_name = "aml_early_stopping_defaults",
         )
-        json <- attr(aml, "_build_json")
+        json <- attr(aml, "_build_resp")
         stopping_criteria <- json$build_control$stopping_criteria
         auto_stopping_tolerance <- (function(fr) min(0.05, max(0.001, 1/sqrt((1 - sum(h2o.nacnt(fr)) / (ncol(fr) * nrow(fr))) * nrow(fr)))))(ds$train)
         expect_equal(stopping_criteria$stopping_rounds, 3)
@@ -162,7 +162,7 @@ automl.args.test <- function() {
             sort_metric = "RMSE",
             project_name = "aml7",
         )
-        json <- attr(aml, "_build_json")
+        json <- attr(aml, "_build_resp")
         stopping_criteria <- json$build_control$stopping_criteria
         expect_equal(stopping_criteria$stopping_rounds, 2)
         expect_equal(stopping_criteria$stopping_tolerance,0.001)
