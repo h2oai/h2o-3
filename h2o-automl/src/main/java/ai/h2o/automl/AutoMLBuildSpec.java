@@ -140,9 +140,9 @@ public class AutoMLBuildSpec extends Iced {
 
     public AutoMLStoppingCriteria() {
       // reasonable defaults:
-      set_max_models(0);
-      set_max_runtime_secs(3600);
-      set_max_runtime_secs_per_model(0);
+      set_max_models(0); // no limit
+      set_max_runtime_secs(0); // no limit
+      set_max_runtime_secs_per_model(0); // no limit
 
       set_stopping_rounds(3);
       set_stopping_tolerance(AUTO_STOPPING_TOLERANCE);

@@ -127,20 +127,49 @@ automl.args.test <- function() {
         )
     }
 
+    test_early_stopping_defaults <- function () {
+        print("Early stopping defaults")
+        ds <- import_dataset()
+        aml <- h2o.automl(x = ds$x, y = ds$y,
+                   training_frame = ds$train,
+                   max_models = max_models,
+                   project_name = "aml_early_stopping_defaults",
+        )
+        json <- attr(aml, "_build_json")
+        stopping_criteria <- json$build_control$stopping_criteria
+        auto_stopping_tolerance <- (function(fr) min(0.05, max(0.001, 1/sqrt((1 - sum(h2o.nacnt(fr)) / (ncol(fr) * nrow(fr))) * nrow(fr)))))(ds$train)
+        expect_equal(stopping_criteria$stopping_rounds, 3)
+        expect_equal(stopping_criteria$stopping_tolerance, auto_stopping_tolerance)
+        expect_equal(stopping_criteria$stopping_metric, 'AUTO')
+        expect_equal(stopping_criteria$max_models, max_models)
+        expect_equal(stopping_criteria$max_runtime_secs, 0)
+        expect_equal(stopping_criteria$max_runtime_secs_per_model, 0)
+    }
+
     test_early_stopping <- function() {
         print("Early stopping args")
         ds <- import_dataset()
-        h2o.automl(x = ds$x, y = ds$y,
+        aml <- h2o.automl(x = ds$x, y = ds$y,
             training_frame = ds$train,
             validation_frame = ds$valid,
             leaderboard_frame = ds$test,
             max_models = max_models,
+            max_runtime_secs = 1200,
+            max_runtime_secs_per_model = 60,
             stopping_metric = "AUC",
             stopping_tolerance = 0.001,
-            stopping_rounds = 3,
+            stopping_rounds = 2,
             sort_metric = "RMSE",
             project_name = "aml7",
         )
+        json <- attr(aml, "_build_json")
+        stopping_criteria <- json$build_control$stopping_criteria
+        expect_equal(stopping_criteria$stopping_rounds, 2)
+        expect_equal(stopping_criteria$stopping_tolerance,0.001)
+        expect_equal(stopping_criteria$stopping_metric, 'AUC')
+        expect_equal(stopping_criteria$max_models, max_models)
+        expect_equal(stopping_criteria$max_runtime_secs, 1200)
+        expect_equal(stopping_criteria$max_runtime_secs_per_model, 60)
     }
 
     test_metrics_case_insensitive <- function() {
@@ -449,6 +478,7 @@ automl.args.test <- function() {
         test_training_with_validation_frame,
         test_training_with_leaderboard_frame,
         test_training_with_validation_and_leaderboard_frame,
+        test_early_stopping_defaults,
         test_early_stopping,
         test_metrics_case_insensitive,
         test_leaderboard_growth,
