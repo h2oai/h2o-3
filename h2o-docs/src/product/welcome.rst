@@ -544,7 +544,7 @@ Hadoop Launch Parameters
 -  ``-mapperXmx <per mapper Java Xmx heap size>``: Specify the amount of memory to allocate to H2O (at least 6g).
 -  ``-extramempercent``: Specify the extra memory for internal JVM use outside of the Java heap. This is a percentage of ``mapperXmx``. **Recommendation**: Set this to a high value when running XGBoost, for example, 120. 
 -  ``-n | -nodes <number of H2O nodes>``: Specify the number of nodes.
--  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. This defaults to using all CPUs on the host, or you can enter a positive integer.
+-  ``-nthreads <maximum number of CPUs>``: Specify the number of CPUs to use. This should be the maximum number of parallel threads of execution. This is usually capped by the max number of vcores.
 -  ``-baseport <initialization port for H2O nodes>``: Specify the initialization port for the H2O nodes. The default is ``54321``.
 -  ``-license <license file name>``: Specify the directory of local filesytem location and the license file name.
 -  ``-o | -output <HDFS output directory>``: Specify the HDFS directory for the output.
@@ -675,11 +675,9 @@ To verify the values were changed, check the values for the following properties
 Limiting CPU Usage
 ''''''''''''''''''
 
-To limit the number of CPUs used by H2O, use the ``-nthreads`` option and specify the maximum number of CPUs for a single container to use. The following example limits the number of CPUs to four:
+To limit the number of CPUs used by H2O, use the ``-nthreads`` option and specify the maximum number of vcores for a single container to use. The following example limits the number of vcores to four:
 
 ``hadoop jar h2odriver.jar -nthreads 4 -nodes 1 -mapperXmx 6g -output hdfsOutputDirName``
-
-**Note**: The default is 4\*the number of CPUs. You must specify at least four CPUs; otherwise, the following error message displays: ``ERROR: nthreads invalid (must be >= 4)``
 
 Specifying Queues
 '''''''''''''''''
