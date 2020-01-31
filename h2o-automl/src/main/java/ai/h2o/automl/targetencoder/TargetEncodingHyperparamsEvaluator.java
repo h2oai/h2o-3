@@ -13,12 +13,14 @@ import water.fvec.Frame;
 import water.util.Log;
 import water.util.TwoDimTable;
 
+import java.util.Enumeration;
 import java.util.Map;
 
 import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.KFold;
 import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.concat;
+import static water.H2O.*;
 
 public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> {
 
@@ -63,7 +65,10 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
     Map<String, Frame> encodingMap = null;
     Frame trainEncoded = null;
 
-    Frame trainCopy = clonedModelBuilder.train();
+    Frame originalTrain = clonedModelBuilder._parms.train();
+    Frame trainCopy = originalTrain.deepCopy(Key.make().toString());
+    DKV.put(trainCopy);
+    Scope.track(trainCopy);
 
     String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
     try {
@@ -96,28 +101,30 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
       }
 
       clonedModelBuilder._parms._ignored_columns = concat(concat(originalIgnoredColumns, teColumnsToExclude), new String[]{foldColumnForTE});
+      clonedModelBuilder._parms.setTrain(trainEncoded._key);
 
-      clonedModelBuilder.setTrain(trainEncoded);
       score += scoreCV(clonedModelBuilder);
     } catch (Exception ex) {
       throw ex;
     } finally {
       //Setting back original data
-      clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns;
+      clonedModelBuilder._parms.setTrain(originalTrain._key);
+      clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns; //TODO Do we need to do this if we made a clone? Or we can do this once before evaluating all parameters and after all of them
+      if(encodingMap != null) TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
 
-      if (encodingMap == null) {
-        Log.debug("Illegal state. encodingMap == null.");
-      } else {
-        TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
-      }
     }
     return score;
   }
 
   private double scoreCV(ModelBuilder modelBuilder) { // TODO move it in when no need to call scoreCV twice
     Model retrievedModel = null;
-    Keyed model = modelBuilder.trainModel().get();
-    retrievedModel = DKV.getGet(model._key);
+    Keyed model = null;
+    try {
+      model = modelBuilder.trainModel().get();
+      retrievedModel = DKV.getGet(modelBuilder.dest());
+    } catch (Throwable ex) {
+      throw ex;
+    }
     double cvScore = retrievedModel._output._cross_validation_metrics.auc_obj()._auc;
     retrievedModel.delete();
     retrievedModel.deleteCrossValidationModels();
@@ -127,25 +134,28 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
   }
 
   private double scoreOnTest(ModelBuilder modelBuilder, Frame testEncodedFrame) {
-    Model retrievedModel = null;
-    Keyed model = modelBuilder.trainModelOnH2ONode().get(); // or modelBuilder.trainModel().get();  ?
-    retrievedModel = DKV.getGet(model._key);
+    Keyed model = modelBuilder.trainModel().get();
+    Model retrievedModel = DKV.getGet(model._key);
     retrievedModel.score(testEncodedFrame).delete();
 
     hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(retrievedModel, testEncodedFrame);
     if(retrievedModel!=null) retrievedModel.delete();
-//    model.remove();
     return mmb.auc();
   }
 
   public double evaluateForValidationFrameMode(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder clonedModelBuilder, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {
-    double score = 0;
-    if (columnNamesToEncode.length != 0) {
+      double score = 0;
       Map<String, Frame> encodingMap = null;
       Frame trainEncoded, validEncoded, leaderBoardEncoded = null;
+      Frame originalTrain = clonedModelBuilder._parms.train();
+      Frame trainCopy = originalTrain.deepCopy(Key.make().toString());
+      DKV.put(trainCopy);
+      Scope.track(trainCopy);
 
-      Frame trainCopy = clonedModelBuilder.train();
-      Frame validCopy = clonedModelBuilder.valid();
+      Frame originalValid = clonedModelBuilder._parms.valid();
+      Frame validCopy = originalValid.deepCopy(Key.make().toString());
+      DKV.put(validCopy);
+      Scope.track(validCopy);
 
       String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
       String foldColumnForTE = null;
@@ -160,12 +170,11 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
         TargetEncoder.DataLeakageHandlingStrategy holdoutType = teParams._data_leakage_handling;
 
         if (holdoutType == KFold) {
-          foldColumnForTE = clonedModelBuilder._job._key.toString() + "_fold"; //TODO quite long but feels unique though
-          //TODO default value for KFOLD target encoding. We might want to search for this value but it is quite expensive.
+          foldColumnForTE = clonedModelBuilder._job._key.toString() + "_fold";
+          //Note: default value for KFOLD target encoding. We might want to search for this value but it is quite expensive.
           // We might want to optimize and add fold column once per group of hyperparameters.
           int nfolds = 5;
           addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
-          // We might want to fine tune selection of the te column in Grid search as well ( even after TEApplicationStrategy)
 
           teColumnsToExclude = concat(teColumnsToExclude, new String[]{foldColumnForTE});
           encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
@@ -196,42 +205,21 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
 
         Scope.track(trainEncoded, validEncoded, leaderBoardEncoded);
 
-
         clonedModelBuilder._parms._ignored_columns = concat(originalIgnoredColumns, teColumnsToExclude);
+        clonedModelBuilder._parms.setTrain(trainEncoded._key);
+        clonedModelBuilder._parms.setValid(validEncoded._key);
 
-        // Temporary set encoded frame as training set and afterwards we can set original back
-        // It look like model is using frames from modelBuilder but reports to the console come from modelBuilder._param object
-        clonedModelBuilder.setTrain(trainEncoded);
-        clonedModelBuilder.setValid(validEncoded);
-
-        try {
-          score += scoreOnTest(clonedModelBuilder, leaderBoardEncoded);
-        } catch (H2OIllegalArgumentException exception) {
-          Log.debug("Exception during modelBuilder evaluation: " + exception.getMessage());
-          throw exception;
-        }
-      } catch (Exception ex) {
-        Log.debug("Exception during applying TE in TargetEncodingHyperparamsEvaluator.evaluate(): " + ex.getMessage());
-        throw ex;
+        score += scoreOnTest(clonedModelBuilder, leaderBoardEncoded);
 
       } finally {
 
         clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns;
+        clonedModelBuilder._parms.setTrain(originalTrain._key);
+        clonedModelBuilder._parms.setValid(originalValid._key);
 
-        if (encodingMap == null) {
-          Log.debug("Illegal state. encodingMap == null.");
-        } else {
-          TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
-        }
+        if (encodingMap != null) TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
       }
-    } else { //TODO handle this case somewhere before
-      score += scoreOnTest(clonedModelBuilder, leaderboard);
-    }
-    return score;
-  }
-
-  public static void printOutFrameAsTable(Frame fr) {
-    printOutFrameAsTable(fr, false, fr.numRows());
+      return score;
   }
 
   public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {

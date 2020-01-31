@@ -11,7 +11,6 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import ai.h2o.automl.targetencoder.AutoMLTargetEncoderAssistant;
 import ai.h2o.targetencoding.TargetEncoderModel;
-import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
@@ -32,6 +31,7 @@ import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.EnumUtils;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -332,7 +332,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             if (buildSpec.te_spec.enabled) {
 
-                AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(aml(),
+                AutoMLTargetEncoderAssistant<TargetEncoderModel.TargetEncoderParameters> teAssistant = new AutoMLTargetEncoderAssistant<>(aml(),
                         buildSpec,
                         builder);
 
@@ -397,30 +397,18 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml.timeRemainingMs());
             Job trainingModelJob = null;
             try {
+//                printOutFrameAsTable(builder._parms.train(), false, 50);
                 trainingModelJob = builder.trainModelOnH2ONode();
+                trainingModelJob.get();
                 return trainingModelJob;
             } catch (H2OIllegalArgumentException exception) {
                 aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model " + key + " due to exception: " + exception);
                 return null;
             } finally {
-                //TODO we have to block and only then remove data with te encodings.
-                // This is bad and we probably want to use something like Future but still our object is not immutable and we can't proceed before cleaning up.
-                trainingModelJob.get();
-
-                // Now we need to remove what we have added during TE to original data of current model builder
-//                if (trainMBAfterTE.numRows() != trainMBBeforeTE.numRows()) // Only when we change training frame by setting it to another one ( e.g. when holdout strategy is NONE)
-//                    trainMBAfterTE.delete();
-//                else if (builder instanceof DeepLearning) { // DeepLearning change training data in the builder so we need to remove what DL has overwritten without caring to cleanup.
-//                    if (aml.getLeaderboardFrame() != null)  // Validation frame case
-//                        trainMBAfterTE.delete();
-//                    else { // CV case
-//                        removeTEColumnsFrom(originalIgnoredColumns, trainMBAfterTE, buildSpec);
-//                    }
-//                } else {
-//                    removeTEColumnsFrom(originalIgnoredColumns, builder.train(), buildSpec);
-//                }
-//                builder.setTrain(trainMBBeforeTE);
-                builder._parms.train().delete();
+                /*Arrays.stream(buildSpec.input_spec.ignored_columns).forEach(ic -> {
+                    builder._parms.train().remove(ic + "_te").remove();
+                });*/
+                removeTEColumnsFrom(originalIgnoredColumns, builder._parms.train(), buildSpec);
                 buildSpec.input_spec.ignored_columns = originalIgnoredColumns;
             }
         }
@@ -432,6 +420,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 if (train.vec(teColumn + "_te") != null)
                     train.remove(teColumn + "_te").remove();
             }
+        }
+
+        public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+            assert limit <= Integer.MAX_VALUE;
+            TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
+            System.out.println(twoDimTable.toString(2, true));
         }
     }
 

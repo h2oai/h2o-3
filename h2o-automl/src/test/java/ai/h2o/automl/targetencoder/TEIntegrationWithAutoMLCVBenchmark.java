@@ -11,15 +11,14 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
+import water.*;
 import water.fvec.Frame;
-import water.fvec.Vec;
 
 import java.util.Random;
 
 import static ai.h2o.automl.targetencoder.AutoMLBenchmarkHelper.getCumulativeAUCScore;
 import static ai.h2o.automl.targetencoder.AutoMLBenchmarkHelper.getPreparedTitanicFrame;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
 /**
@@ -33,21 +32,25 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     stall_till_cloudsize(1);
   }
 
-  long autoMLSeed = 2345;
+  long autoMLSeed = 3456;
 
-  int numberOfModelsToCompareWith = 1;
+  int numberOfTopModelsToCompareWith = 1;
   //  Algo[] excludeAlgos = {Algo.DeepLearning, /*Algo.DRF,*/ Algo.GLM /*Algo.XGBoost*/ /* Algo.GBM,*/, Algo.StackedEnsemble};
-  Algo[] excludeAlgos = {/*Algo.DeepLearning,*/ Algo.DRF, Algo.GLM, Algo.XGBoost, Algo.GBM, Algo.StackedEnsemble};
+//  Algo[] excludeAlgos = {/*Algo.DeepLearning,*/ Algo.DRF, Algo.GLM, Algo.XGBoost, Algo.GBM, Algo.StackedEnsemble}; // ONly DeepLearning
+//  Algo[] excludeAlgos = {Algo.DeepLearning,Algo.DRF, Algo.GLM, /*Algo.XGBoost,*/ Algo.GBM, Algo.StackedEnsemble}; // only XGBoost
+  Algo[] excludeAlgos = {Algo.DeepLearning,Algo.DRF, Algo.GLM, Algo.XGBoost/*, Algo.GBM*/, Algo.StackedEnsemble}; //ONly GBM
+//  Algo[] excludeAlgos = {Algo.DeepLearning,/*Algo.DRF,*/ Algo.GLM, Algo.XGBoost, Algo.GBM, Algo.StackedEnsemble}; //Only DRF  lower performance
+//  Algo[] excludeAlgos = {Algo.DeepLearning,Algo.DRF, /*Algo.GLM,*/ Algo.XGBoost, Algo.GBM, Algo.StackedEnsemble}; //Only GLM  lower performance: WARN: Test/Validation dataset is missing column 'cabin_te': substituting in a column of NaN
 
   @Test
-  public void random_tvl_split_with_RGS_vs_random_tvl_split_withoutTE_benchmark_with_leaderboard_evaluation() {
+  public void with_TE_vs_without_TE() {
     AutoML aml = null;
     AutoML amlWithoutTE = null;
     Frame fr = null;
     Frame frForWithoutTE = null;
 
     String responseColumnName = "survived";
-    Random generator = new Random();
+    Random generator = new Random(autoMLSeed);
     double avgAUCWith = 0.0;
     double avgAUCWithoutTE = 0.0;
 
@@ -70,16 +73,16 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
         autoMLBuildSpec.input_spec.response_column = responseColumnName;
         autoMLBuildSpec.build_models.exclude_algos = excludeAlgos;
 
-        Vec responseColumn = fr.vec(responseColumnName);
         TEApplicationStrategy thresholdTEApplicationStrategy = new ThresholdTEApplicationStrategy(fr,5, new String[]{responseColumnName});
 
         autoMLBuildSpec.te_spec.seed = splitSeed;
 
         autoMLBuildSpec.te_spec.application_strategy = thresholdTEApplicationStrategy;
+        autoMLBuildSpec.te_spec.max_models = 10;
 
         autoMLBuildSpec.build_control.project_name = "with_te_" + splitSeed;
-        autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);
-        autoMLBuildSpec.build_control.stopping_criteria.set_seed(autoMLSeed);
+        autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfTopModelsToCompareWith);
+        autoMLBuildSpec.build_control.stopping_criteria.set_seed(splitSeed);
         autoMLBuildSpec.build_control.keep_cross_validation_models = true;
         autoMLBuildSpec.build_control.keep_cross_validation_predictions = true;
 
@@ -89,7 +92,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
         long timeWithTE = System.currentTimeMillis() - start1;
 
         Leaderboard leaderboardWithTE = aml.leaderboard();
-        assertTrue(leaderboardWithTE.getModels().length == numberOfModelsToCompareWith);
+        assertTrue(leaderboardWithTE.getModels().length == numberOfTopModelsToCompareWith);
         double cumulativeLeaderboardScoreWithTE = 0;
         cumulativeLeaderboardScoreWithTE = getCumulativeAUCScore(leaderboardWithTE);
 
@@ -176,7 +179,7 @@ public class TEIntegrationWithAutoMLCVBenchmark extends water.TestUtil {
     autoMLBuildSpec.te_spec.enabled = false;
 
     autoMLBuildSpec.build_control.project_name = "without_te" + seed;
-    autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfModelsToCompareWith);
+    autoMLBuildSpec.build_control.stopping_criteria.set_max_models(numberOfTopModelsToCompareWith);
     autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
     autoMLBuildSpec.build_control.keep_cross_validation_models = true;
     autoMLBuildSpec.build_control.keep_cross_validation_predictions = true;

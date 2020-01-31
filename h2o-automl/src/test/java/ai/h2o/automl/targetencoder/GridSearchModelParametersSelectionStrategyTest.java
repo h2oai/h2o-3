@@ -115,7 +115,7 @@ public class GridSearchModelParametersSelectionStrategyTest {
 
         AutoMLBuildSpec.AutoMLTEControl teBuildSpec = new AutoMLBuildSpec.AutoMLTEControl();
         teBuildSpec.seed = seed;
-        teBuildSpec.te_max_models = 0;
+        teBuildSpec.max_models = 0;
 
 
         ModelBuilder mb = null;
@@ -203,7 +203,7 @@ public class GridSearchModelParametersSelectionStrategyTest {
 
         AutoMLBuildSpec.AutoMLTEControl teBuildSpec = new AutoMLBuildSpec.AutoMLTEControl();
         teBuildSpec.seed = seed;
-        teBuildSpec.te_max_models = 0;
+        teBuildSpec.max_models = 0;
 
 
         ModelBuilder mb = null;
@@ -271,7 +271,7 @@ public class GridSearchModelParametersSelectionStrategyTest {
 
         AutoMLBuildSpec.AutoMLTEControl teBuildSpec = new AutoMLBuildSpec.AutoMLTEControl();
         teBuildSpec.seed = seed;
-        teBuildSpec.te_max_models = 5;
+        teBuildSpec.max_models = 5;
 
         ModelBuilder mb = null;
         switch (validationMode) {
@@ -289,7 +289,7 @@ public class GridSearchModelParametersSelectionStrategyTest {
 
         gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation();
 
-        assertEquals(teBuildSpec.te_max_models, gridSearchTEParamsSelectionStrategy.getEvaluatedModelParameters().size());
+        assertEquals(teBuildSpec.max_models, gridSearchTEParamsSelectionStrategy.getEvaluatedModelParameters().size());
 
       } finally {
         Scope.exit();

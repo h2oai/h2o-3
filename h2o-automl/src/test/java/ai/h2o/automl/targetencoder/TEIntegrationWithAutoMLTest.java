@@ -159,6 +159,7 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
       autoMLBuildSpec.te_spec.application_strategy = new ThresholdTEApplicationStrategy(fr, 5, new String[]{responseColumnName});
+      autoMLBuildSpec.te_spec.max_models = 6;
 
       autoMLBuildSpec.build_control.nfolds = 0;   // For validation frame to be used we need to satisfy nfolds == 0.
 

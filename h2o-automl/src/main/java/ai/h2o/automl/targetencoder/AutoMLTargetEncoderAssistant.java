@@ -87,6 +87,8 @@ public class AutoMLTargetEncoderAssistant<MP extends Model.Parameters>{ // TODO 
 
     Scope.enter();
     try {
+//      Scope.untrack(_trainingFrame.keys());
+//      Scope.untrack_generic(_trainingFrame);
       //TODO move it inside TargetEncoder. add constructor ?
       BlendingParams blendingParams = bestTEParams.getBlendingParameters();
       boolean withBlendedAvg = bestTEParams._blending;
@@ -115,8 +117,9 @@ public class AutoMLTargetEncoderAssistant<MP extends Model.Parameters>{ // TODO 
             encodingMap = tec.prepareEncodingMap(trainCopy, responseColumnName, foldColumnForTE, true);
             Frame encodedTrainingFrame = tec.applyTargetEncoding(trainCopy, responseColumnName, encodingMap, KFold, foldColumnForTE, withBlendedAvg, noiseLevel, imputeNAsWithNewCategory, blendingParams, seed);
             copyEncodedColumnsToDestinationFrameAndRemoveSource(_columnsToEncode, encodedTrainingFrame, _trainingFrame);
+            Scope.track(encodedTrainingFrame);
 
-            TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
+            TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);// do once in the end?
             break;
           case LeaveOneOut:
           case None:
@@ -217,8 +220,8 @@ public class AutoMLTargetEncoderAssistant<MP extends Model.Parameters>{ // TODO 
       String encodedColumnName = column + "_te";
       Vec encodedVec = sourceWithEncodings.vec(encodedColumnName);
       Vec encodedVecCopy = encodedVec.makeCopy();
+      Scope.untrack(encodedVecCopy._key);
       destinationFrame.add(encodedColumnName, encodedVecCopy);
     }
-    Scope.track(sourceWithEncodings);
   }
 }

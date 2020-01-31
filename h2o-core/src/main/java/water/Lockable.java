@@ -218,7 +218,9 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     }
     return false;
   }
-  private boolean is_wlocked() { return _lockers!=null && _lockers.length==1; }
+  public boolean is_wlocked() {
+    return _lockers!=null && _lockers.length==1;
+  }
   private boolean is_wlocked(Key<Job> job_key) { return is_wlocked() && (_lockers[0] == job_key || (_lockers[0] != null && _lockers[0].equals(job_key))); }
   private boolean is_unlocked() { return _lockers== null; }
   private void set_write_lock( Key<Job> job_key ) { 

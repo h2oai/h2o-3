@@ -349,7 +349,7 @@ public class AutoMLBuildSpec extends Iced {
 
     public boolean enabled = true;
     public TEApplicationStrategy application_strategy;
-    public int te_max_models = 3;
+    public int max_models = 3;
     public long seed = new Random().nextLong();
   }
 

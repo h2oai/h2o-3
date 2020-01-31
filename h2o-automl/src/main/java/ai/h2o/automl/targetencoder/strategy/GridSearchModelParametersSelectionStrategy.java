@@ -96,7 +96,7 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = _walker.iterator();
 
     long attemptIdx = 0;
-    while (iterator.hasNext(null) && (_teBuildSpec.te_max_models == 0 || _evaluatedQueue.size() < _teBuildSpec.te_max_models)) {
+    while (iterator.hasNext(null) && (_teBuildSpec.max_models == 0 || _evaluatedQueue.size() < _teBuildSpec.max_models)) {
 
       TargetEncoderModel.TargetEncoderParameters nextModelParameters = iterator.nextModelParameters(null);
 
