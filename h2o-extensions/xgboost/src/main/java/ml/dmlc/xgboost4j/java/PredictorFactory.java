@@ -5,7 +5,6 @@ import biz.k11i.xgboost.config.PredictorConfiguration;
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeFactory;
 import biz.k11i.xgboost.util.ModelReader;
-import hex.genmodel.algos.xgboost.XGBoostJavaObjFunRegistration;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -13,10 +12,6 @@ import java.io.InputStream;
 import java.nio.ByteOrder;
 
 public class PredictorFactory {
-  
-  static {
-    XGBoostJavaObjFunRegistration.register();
-  }
   
   public static Predictor makePredictor(byte[] boosterBytes) {
     return makePredictor(boosterBytes, true);
