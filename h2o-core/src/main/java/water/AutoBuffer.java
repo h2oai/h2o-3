@@ -421,7 +421,7 @@ public final class AutoBuffer {
           // For small-packet write, send via UDP.  Since nothing is sent until
           // now, this close() call trivially orders - since the reader will not
           // even start (much less close()) until this packet is sent.
-          if( _bb.limit() < MTU) return udpSend();
+          if( _bb.position() < MTU) return udpSend();
           // oops - Big Write, switch to TCP and finish out there
         }
       }
@@ -1359,7 +1359,7 @@ public final class AutoBuffer {
 
     put1(8);                    // Ship as full longs
     int sofar = x;
-    if ((y-sofar)*8 > _bb.remaining()) expandByteBuffer(ary.length*8);
+    if ((y-sofar)*8 > _bb.remaining()) expandByteBuffer(nzlen*8);
     while( sofar < y ) {
       LongBuffer lb = _bb.asLongBuffer();
       int len = Math.min(y - sofar, lb.remaining());
