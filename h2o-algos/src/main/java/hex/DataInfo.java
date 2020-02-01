@@ -118,6 +118,8 @@ public class DataInfo extends Keyed<DataInfo> {
   public int [] _permutation; // permutation matrix mapping input col indices to adaptedFrame
   public double [] _normMul;  // scale the predictor column by this value
   public double [] _normSub;  // subtract from the predictor this value
+  public double [] _normSigmaStandardizationOff;
+  public double [] _normSubStandardizationOff;
   public double [] _normRespMul;  // scale the response column by this value
   public double [] _normRespSub;  // subtract from the response column this value
   public double [] _numMeans;
@@ -377,6 +379,28 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     return beta;
   }
+  
+  public double[] normalizeBeta(double [] beta, boolean standardize){
+    int N = fullN()+1;
+    assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
+    int nclasses = beta.length/N;
+    beta = MemoryManager.arrayCopyOf(beta,beta.length);
+    if (standardize == false && _predictor_transform == DataInfo.TransformType.NONE && _normSubStandardizationOff != null && _normSigmaStandardizationOff != null) {
+      for(int c = 0; c < nclasses; ++c) {
+        int off = N*c;
+        double norm = 0.0;        // Reverse any normalization on the intercept
+        // denormalize only the numeric coefs (categoricals are not normalized)
+        final int numoff = numStart();
+        for (int i = numoff; i < N-1; i++) {
+          double b = beta[off + i] * _normSigmaStandardizationOff[i - numoff];
+          norm += beta[off + i] * _normSubStandardizationOff[i - numoff]; // Also accumulate the intercept adjustment
+          beta[off + i] = b;
+        }
+        beta[off + N - 1] += norm;
+      }
+    }
+    return beta;
+  }
 
   private int [] _fullCatOffsets;
   private int [][] _catMap;
@@ -614,6 +638,18 @@ public class DataInfo extends Keyed<DataInfo> {
             normSub[idx] = v.mean();
           }
           break;
+        case NONE:
+          if( isIWV ) {
+            InteractionWrappedVec iwv = (InteractionWrappedVec)v;
+            for(int offset=0;offset<iwv.expandedLength();++offset) {
+                normMul[idx+offset] = iwv.getSigma(offset+(iwv._useAllFactorLevels?0:1));
+                normSub[idx+offset] = iwv.getSub(offset+(iwv._useAllFactorLevels?0:1));
+            }
+          } else {
+            normMul[idx] = v.sigma();
+            normSub[idx] = v.mean();
+          }
+          break;
         case NORMALIZE:
           if( isIWV ) throw H2O.unimpl();
           normMul[idx] = (v.max() - v.min() > 0)?1.0/(v.max() - v.min()):1.0;
@@ -649,6 +685,11 @@ public class DataInfo extends Keyed<DataInfo> {
     if(t == TransformType.NONE) {
       _normMul = null;
       _normSub = null;
+      if (_adaptedFrame != null) { 
+        _normSigmaStandardizationOff = MemoryManager.malloc8d(numNums());
+        _normSubStandardizationOff = MemoryManager.malloc8d(numNums());
+        setTransform(t, _normSigmaStandardizationOff, _normSubStandardizationOff, _cats, _nums);
+      }
     } else {
       _normMul = MemoryManager.malloc8d(numNums());
       _normSub = MemoryManager.malloc8d(numNums());
