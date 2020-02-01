@@ -264,6 +264,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
     Map<String, Object> params = new HashMap<>();
 
+    params.put("nround", p._ntrees);
     // Common parameters with H2O GBM
     if (p._eta != 0.3) {
       Log.info("Using user-provided parameter eta instead of learn_rate.");
