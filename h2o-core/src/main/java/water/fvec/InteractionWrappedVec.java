@@ -96,6 +96,10 @@ public class InteractionWrappedVec extends WrappedVec {
     return sigma == 0? 1.0 : 1.0/sigma;
   }
 
+  public double getSigma(int i) {
+    return (t == null)? sigma() : t._sigma[i];
+  }
+
   private static class GetMeanTask extends MRTask<GetMeanTask> {
     private double[] _d;     // means, NA skipped
     private double[] _sigma; // sds, NA skipped

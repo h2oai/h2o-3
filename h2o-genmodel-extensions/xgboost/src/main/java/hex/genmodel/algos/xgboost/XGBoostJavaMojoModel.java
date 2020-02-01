@@ -29,10 +29,6 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   private TreeSHAPPredictor<FVec> _treeSHAPPredictor;
   private OneHotEncoderFactory _1hotFactory;
 
-  static {
-    XGBoostJavaObjFunRegistration.register();
-  }
-
   public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
     this(boosterBytes, columns, domains, responseColumn, false);
   }

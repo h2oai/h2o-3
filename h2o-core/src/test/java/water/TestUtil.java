@@ -841,6 +841,56 @@ public class TestUtil extends Iced {
     return flipped;
   }
 
+  public static boolean equalTwoArrays(double[] array1, double[] array2, double tol) {
+    assert array1.length==array2.length:"Arrays have different lengths";
+    for (int index=0; index < array1.length; index++) {
+      if (Math.abs(array1[index]-array2[index])>tol)
+        return false;
+    }
+    return true;
+  }
+
+  public static class StandardizeColumns extends MRTask<StandardizeColumns> {
+    int[] _columns2Transform;
+    double[] _colMeans;
+    double[] _oneOStd;
+
+    public StandardizeColumns(int[] cols, double[] colMeans, double[] oneOSigma,
+                              Frame transF) {
+      assert cols.length==colMeans.length;
+      assert colMeans.length==oneOSigma.length;
+      _columns2Transform = cols;
+      _colMeans = colMeans;
+      _oneOStd = oneOSigma;
+
+      int numCols = transF.numCols();
+      for (int cindex:cols) { // check to make sure columns are numerical
+        assert transF.vec(cindex).isNumeric();
+      }
+    }
+
+    @Override public void map(Chunk[] chks) {
+      int chunkLen = chks[0].len();
+      int colCount = 0;
+      for (int cindex:_columns2Transform) {
+        for (int rindex=0; rindex < chunkLen; rindex++) {
+          double temp = (chks[cindex].atd(rindex)-_colMeans[colCount])*_oneOStd[colCount];
+          chks[cindex].set(rindex, temp);
+        }
+        colCount += 1;
+      }
+    }
+  }
+  
+  public static boolean equalTwoHashMaps(HashMap<String, Double> coeff1, HashMap<String, Double> coeff2, double tol) {
+    assert coeff1.size()==coeff2.size():"HashMap sizes are differenbt";
+    for (String key:coeff1.keySet()) {
+      if (Math.abs(coeff1.get(key)-coeff2.get(key)) > tol)
+        return false;
+    }
+    return true;
+  }
+  
   public static boolean equalTwoDimTables(TwoDimTable tab1, TwoDimTable tab2, double tol) {
     boolean same = true;
     //compare colHeaders

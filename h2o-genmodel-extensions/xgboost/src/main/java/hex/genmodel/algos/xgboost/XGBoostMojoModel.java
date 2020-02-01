@@ -25,7 +25,8 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
     REG_GAMMA("reg:gamma"),
     REG_TWEEDIE("reg:tweedie"),
     COUNT_POISSON("count:poisson"),
-    REG_LINEAR("reg:linear"),
+    REG_SQUAREDERROR("reg:squarederror"),
+    @Deprecated REG_LINEAR("reg:linear"), // deprectated in favour of REG_SQUAREDERROR
     MULTI_SOFTPROB("multi:softprob"),
     RANK_PAIRWISE("rank:pairwise");
 

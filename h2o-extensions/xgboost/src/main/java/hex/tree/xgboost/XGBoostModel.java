@@ -272,6 +272,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._ntrees = p._n_estimators;
     } else {
       params.put("nround", p._ntrees);
+      p._n_estimators = p._ntrees;
     }
     if (p._eta != 0.3) {
       Log.info("Using user-provided parameter eta instead of learn_rate.");
@@ -279,6 +280,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._learn_rate = p._eta;
     } else {
       params.put("eta", p._learn_rate);
+      p._eta = p._learn_rate;
     }
     params.put("max_depth", p._max_depth);
     if (System.getProperty(PROP_VERBOSITY) != null) {
@@ -286,33 +288,37 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     } else {
       params.put("silent", p._quiet_mode);
     }
-    if (p._subsample!=1.0) {
+    if (p._subsample != 1.0) {
       Log.info("Using user-provided parameter subsample instead of sample_rate.");
       params.put("subsample", p._subsample);
       p._sample_rate = p._subsample;
     } else {
       params.put("subsample", p._sample_rate);
+      p._subsample = p._sample_rate;
     }
-    if (p._colsample_bytree!=1.0) {
+    if (p._colsample_bytree != 1.0) {
       Log.info("Using user-provided parameter colsample_bytree instead of col_sample_rate_per_tree.");
       params.put("colsample_bytree", p._colsample_bytree);
       p._col_sample_rate_per_tree = p._colsample_bytree;
     } else {
       params.put("colsample_bytree", p._col_sample_rate_per_tree);
+      p._colsample_bytree = p._col_sample_rate_per_tree;
     }
-    if (p._colsample_bylevel!=1.0) {
+    if (p._colsample_bylevel != 1.0) {
       Log.info("Using user-provided parameter colsample_bylevel instead of col_sample_rate.");
       params.put("colsample_bylevel", p._colsample_bylevel);
       p._col_sample_rate = p._colsample_bylevel;
     } else {
       params.put("colsample_bylevel", p._col_sample_rate);
+      p._colsample_bylevel = p._col_sample_rate;
     }
-    if (p._max_delta_step!=0) {
+    if (p._max_delta_step != 0) {
       Log.info("Using user-provided parameter max_delta_step instead of max_abs_leafnode_pred.");
       params.put("max_delta_step", p._max_delta_step);
       p._max_abs_leafnode_pred = p._max_delta_step;
     } else {
       params.put("max_delta_step", p._max_abs_leafnode_pred);
+      p._max_delta_step = p._max_abs_leafnode_pred;
     }
     params.put("seed", (int)(p._seed % Integer.MAX_VALUE));
 
@@ -357,19 +363,21 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         params.put("max_bin", p._max_bins);
       }
     }
-    if (p._min_child_weight!=1) {
+    if (p._min_child_weight != 1) {
       Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
       params.put("min_child_weight", p._min_child_weight);
       p._min_rows = p._min_child_weight;
     } else {
       params.put("min_child_weight", p._min_rows);
+      p._min_child_weight = p._min_rows;
     }
-    if (p._gamma!=0) {
+    if (p._gamma != 0) {
       Log.info("Using user-provided parameter gamma instead of min_split_improvement.");
       params.put("gamma", p._gamma);
       p._min_split_improvement = p._gamma;
     } else {
       params.put("gamma", p._min_split_improvement);
+      p._gamma = p._min_split_improvement;
     }
 
     params.put("lambda", p._reg_lambda);
@@ -385,8 +393,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         params.put("tweedie_variance_power", p._tweedie_power);
       } else if (p._distribution == DistributionFamily.poisson) {
         params.put("objective", ObjectiveType.COUNT_POISSON.getId());
-      } else if (p._distribution == DistributionFamily.gaussian || p._distribution==DistributionFamily.AUTO) {
-        params.put("objective", ObjectiveType.REG_LINEAR.getId());
+      } else if (p._distribution == DistributionFamily.gaussian || p._distribution == DistributionFamily.AUTO) {
+        params.put("objective", ObjectiveType.REG_SQUAREDERROR.getId());
       } else {
         throw new UnsupportedOperationException("No support for distribution=" + p._distribution.toString());
       }
