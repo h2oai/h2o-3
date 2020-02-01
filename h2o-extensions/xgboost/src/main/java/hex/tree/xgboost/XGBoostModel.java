@@ -385,8 +385,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         params.put("tweedie_variance_power", p._tweedie_power);
       } else if (p._distribution == DistributionFamily.poisson) {
         params.put("objective", ObjectiveType.COUNT_POISSON.getId());
-      } else if (p._distribution == DistributionFamily.gaussian || p._distribution==DistributionFamily.AUTO) {
-        params.put("objective", ObjectiveType.REG_LINEAR.getId());
+      } else if (p._distribution == DistributionFamily.gaussian || p._distribution == DistributionFamily.AUTO) {
+        params.put("objective", ObjectiveType.REG_SQUAREDERROR.getId());
       } else {
         throw new UnsupportedOperationException("No support for distribution=" + p._distribution.toString());
       }
