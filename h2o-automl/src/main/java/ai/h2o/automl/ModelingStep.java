@@ -9,8 +9,7 @@ import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
-import ai.h2o.automl.targetencoder.AutoMLTargetEncoderAssistant;
-import ai.h2o.targetencoding.TargetEncoderModel;
+import ai.h2o.automl.preprocessing.UniversalPreprocessingSteps;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
@@ -34,6 +33,7 @@ import water.util.EnumUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 
+import java.util.Arrays;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
@@ -331,36 +331,22 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             }
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
-            if (buildSpec.te_spec.enabled) {
 
-                Frame originalTrain = builder._parms.train();
-                // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
-                String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns == null ? null : buildSpec.input_spec.ignored_columns.clone(); //TODO test
+            // for now we use universal preprocessing which does not depend on type of model at this particular ModelingStep. Can be instantiated once.
+            PreprocessingStep[] steps = new UniversalPreprocessingSteps(aml()).getSteps();
 
-                AutoMLTargetEncoderAssistant<TargetEncoderModel.TargetEncoderParameters> teAssistant = new AutoMLTargetEncoderAssistant<>(aml(),
-                        buildSpec,
-                        builder);
+            Arrays.stream(steps).forEach(preprocessingStep -> {
+                preprocessingStep.applyIfUseful(builder);
+            });
 
-                Optional<TargetEncoderModel.TargetEncoderParameters> bestTEParamsOpt = teAssistant.findBestTEParams();
-
-                return bestTEParamsOpt
-                        .map(bestParams -> {
-                            teAssistant.applyTE(bestParams);
-
-                            //TODO maybe it is better to return ModelBuilder with new encoded frames so that we can explicitly pass it to `trainModel` method
-                            return runModelTrainingWithTEJob(key, algoName, builder, originalTrain, originalIgnoredColumns, buildSpec, aml());
-                        })
-                        .orElseGet(() -> runModelTrainingJob(key, algoName, builder));
-
-            } else {
-                return runModelTrainingJob(key, algoName, builder);
-            }
-
-            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
-            aml().eventLog().debug(Stage.ModelTraining, parms._max_runtime_secs == 0
-                    ? "No time limitation for "+key
-                    : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
-            return startModel(key, parms);
+            // At this point builder should have information about which Preprocessing steps are going to be beneficial to applyIfUseful.
+            // If preprocessing step was not usefull during evaluation phase it will be ignored overall as a fallback strategy.
+            return runModelTrainingJob(key, algoName, builder);
+//            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
+//            aml().eventLog().debug(Stage.ModelTraining, parms._max_runtime_secs == 0
+//                    ? "No time limitation for "+key
+//                    : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
+//            return startModel(key, parms);
         }
 
         private Job<M> runModelTrainingJob(Key<M> key, String algoName, ModelBuilder builder) {
@@ -409,9 +395,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model " + key + " due to exception: " + exception);
                 return null;
             } finally {
-                /*Arrays.stream(buildSpec.input_spec.ignored_columns).forEach(ic -> {
-                    builder._parms.train().remove(ic + "_te").remove();
-                });*/
+
                 removeTEColumnsFrom(originalIgnoredColumns, builder._parms.train(), buildSpec);
                 removeTEColumnsFrom(originalIgnoredColumns, builder._parms.valid(), buildSpec);
                 removeTEColumnsFrom(originalIgnoredColumns, aml.getLeaderboardFrame(), buildSpec);
