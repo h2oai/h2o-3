@@ -184,7 +184,7 @@ public class TimeLine extends UDP {
   // possible to the same point in time.
   static long[][] SNAPSHOT;
   static long TIME_LAST_SNAPSHOT = 1;
-  static private H2O CLOUD = H2O.CLOUD;      // Cloud instance being snapshotted
+  static private H2O CLOUD;      // Cloud instance being snapshotted
   public static H2O getCLOUD(){return CLOUD;}
   static public long[][] system_snapshot() {
     // Now spin-wait until we see all snapshots check in.
@@ -221,6 +221,9 @@ public class TimeLine extends UDP {
 
   // Send our most recent timeline to the remote via TCP
   @Override AutoBuffer call( AutoBuffer ab ) {
+    if (CLOUD == null) {
+      return null;
+    }
     long[] a = snapshot();
     if( ab._h2o == H2O.SELF ) {
       synchronized(TimeLine.class) {
@@ -236,6 +239,9 @@ public class TimeLine extends UDP {
 
   // Receive a remote timeline
   static void tcp_call( final AutoBuffer ab ) {
+    if (CLOUD == null) {
+      return;
+    }
     ab.getPort();
     long[] snap = ab.getA8();
     int idx = CLOUD.nidx(ab._h2o);
