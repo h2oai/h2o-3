@@ -8,19 +8,16 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
-import water.util.Log;
 import water.util.TwoDimTable;
 
-import java.util.Enumeration;
 import java.util.Map;
+import java.util.Random;
 
 import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.KFold;
 import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.concat;
-import static water.H2O.*;
 
 public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> {
 
@@ -32,27 +29,13 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
                          long seedForFoldColumn) {
     Scope.enter();
     try {
-      Frame trainCopy = modelBuilder._parms.train().deepCopy(Key.make("train_frame_copy_for_mb_validation_case" + Key.make()).toString());
-      DKV.put(trainCopy);
-      Scope.track(trainCopy);
-      modelBuilder.setTrain(trainCopy);
-
       switch (modelValidationMode) {
         case CV:
           assert leaderboard == null : "Leaderboard frame should not be provided in case of CV evaluations in AutoML";
           return evaluateForCVMode(teParams, modelBuilder, columnNamesToEncode, seedForFoldColumn);
         case VALIDATION_FRAME:
         default:
-          Frame validCopy = modelBuilder._parms.valid().deepCopy(Key.make("valid_frame_copy_for_mb_validation_case" + Key.make()).toString()); //TODO  change keys
-          DKV.put(validCopy);
-          modelBuilder.setValid(validCopy);
-
-          Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_mb_validation_case" + Key.make()).toString());
-          DKV.put(leaderboardCopy);
-
-          Scope.track(validCopy, leaderboardCopy);
-
-          return evaluateForValidationFrameMode(teParams, modelBuilder, leaderboardCopy, columnNamesToEncode, seedForFoldColumn);
+          return evaluateForValidationFrameMode(teParams, modelBuilder, leaderboard, columnNamesToEncode, seedForFoldColumn);
       }
     } finally {
       Scope.exit();
@@ -104,8 +87,6 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
       clonedModelBuilder._parms.setTrain(trainEncoded._key);
 
       score += scoreCV(clonedModelBuilder);
-    } catch (Exception ex) {
-      throw ex;
     } finally {
       //Setting back original data
       clonedModelBuilder._parms.setTrain(originalTrain._key);
@@ -148,14 +129,18 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
       Map<String, Frame> encodingMap = null;
       Frame trainEncoded, validEncoded, leaderBoardEncoded = null;
       Frame originalTrain = clonedModelBuilder._parms.train();
-      Frame trainCopy = originalTrain.deepCopy(Key.make().toString());
+      Frame trainCopy = originalTrain.deepCopy(Key.make("train_frame_copy_for_mb_validation_case" + Key.make()).toString());
       DKV.put(trainCopy);
-      Scope.track(trainCopy);
 
       Frame originalValid = clonedModelBuilder._parms.valid();
-      Frame validCopy = originalValid.deepCopy(Key.make().toString());
+      Frame validCopy = originalValid.deepCopy(Key.make("valid_frame_copy_for_mb_validation_case" + Key.make()).toString());
       DKV.put(validCopy);
-      Scope.track(validCopy);
+
+      Frame leaderboardCopy = leaderboard.deepCopy(Key.make("leaderboard_frame_copy_for_mb_validation_case" + Key.make()).toString());
+      DKV.put(leaderboardCopy);
+
+
+      Scope.track(trainCopy, validCopy, leaderboardCopy);
 
       String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
       String foldColumnForTE = null;

@@ -21,6 +21,7 @@ import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import water.*;
 import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
@@ -332,6 +333,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             if (buildSpec.te_spec.enabled) {
 
+                Frame originalTrain = builder._parms.train();
+                // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
+                String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns == null ? null : buildSpec.input_spec.ignored_columns.clone(); //TODO test
+
                 AutoMLTargetEncoderAssistant<TargetEncoderModel.TargetEncoderParameters> teAssistant = new AutoMLTargetEncoderAssistant<>(aml(),
                         buildSpec,
                         builder);
@@ -341,11 +346,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 return bestTEParamsOpt
                         .map(bestParams -> {
                             teAssistant.applyTE(bestParams);
-                            // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
-                            String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns == null ? null : buildSpec.input_spec.ignored_columns.clone(); //TODO test
 
                             //TODO maybe it is better to return ModelBuilder with new encoded frames so that we can explicitly pass it to `trainModel` method
-                            return runModelTrainingWithTEJob(key, algoName, builder, originalIgnoredColumns, buildSpec, aml());
+                            return runModelTrainingWithTEJob(key, algoName, builder, originalTrain, originalIgnoredColumns, buildSpec, aml());
                         })
                         .orElseGet(() -> runModelTrainingJob(key, algoName, builder));
 
@@ -388,6 +391,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         private Job<M> runModelTrainingWithTEJob(final Key<M> key, String algoName,
                                                  ModelBuilder builder,
+                                                 Frame originalTrain,
                                                  String[] originalIgnoredColumns,
                                                  AutoMLBuildSpec buildSpec,
                                                  AutoML aml) {
@@ -409,6 +413,15 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     builder._parms.train().remove(ic + "_te").remove();
                 });*/
                 removeTEColumnsFrom(originalIgnoredColumns, builder._parms.train(), buildSpec);
+                removeTEColumnsFrom(originalIgnoredColumns, builder._parms.valid(), buildSpec);
+                removeTEColumnsFrom(originalIgnoredColumns, aml.getLeaderboardFrame(), buildSpec);
+                if(originalTrain._key != builder._parms.train()._key) {
+                    builder._parms.train().delete();
+                    builder._parms.setTrain(originalTrain._key);
+                }
+                printOutFrameAsTable(builder._parms.train(), false, 10);
+                printOutFrameAsTable(builder._parms.valid(), false, 10);
+                printOutFrameAsTable(aml.getLeaderboardFrame(), false, 10);
                 buildSpec.input_spec.ignored_columns = originalIgnoredColumns;
             }
         }

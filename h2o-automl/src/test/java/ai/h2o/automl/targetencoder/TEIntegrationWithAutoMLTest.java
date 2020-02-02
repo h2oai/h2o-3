@@ -8,9 +8,11 @@ import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
 import hex.Model;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import water.DKV;
 import water.Key;
+import water.Scope;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
@@ -19,6 +21,7 @@ import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
+// This test suite also checks how we apply preprocessing at ModellingStep and then revert all the changes in the data afterwards
 public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
@@ -121,8 +124,23 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
   }
 
   @Test
-  public void validation_and_leaderboard_frames_were_encoded_when_validation_mode_was_used() {
+  public void scopeUntrack() {
+    Scope.enter();
+    Frame fr = null;
+    try{
+      fr = parse_test_file("./smalldata/logreg/prostate_train.csv");
+      Scope.track(fr);
+      Scope.untrack(fr.keys());
+    } finally {
+//      Scope.exit(fr._key);
+      Scope.exit();
+    }
+  }
+
+  @Ignore
+  public void we_can_score_with_model_from_the_leadearboard() {
     AutoML aml=null;
+    AutoML amlWithoutTE=null;
     Frame fr=null;
     Model leader = null;
     Frame validationFrame = null;
@@ -160,7 +178,10 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
       autoMLBuildSpec.te_spec.application_strategy = new ThresholdTEApplicationStrategy(fr, 5, new String[]{responseColumnName});
       autoMLBuildSpec.te_spec.max_models = 6;
+//      autoMLBuildSpec.te_spec.seed = 1234; // None
+      autoMLBuildSpec.te_spec.seed = 2345;
 
+      autoMLBuildSpec.build_control.project_name = "with_te";
       autoMLBuildSpec.build_control.nfolds = 0;   // For validation frame to be used we need to satisfy nfolds == 0.
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
@@ -172,22 +193,24 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
       leader = aml.leader();
 
-      validationFrame = aml.getValidationFrame();
+      double auc = leader.auc();
 
-      assertIdenticalUpToRelTolerance(copyOfValidFrame, validationFrame, 0, false,"Two frames should be different.");
-      assertTrue(Arrays.asList(validationFrame.names()).contains(columnThatIsSupposedToBeEncoded + "_te")); ;
-
-      leaderboardFrame = aml.getLeaderboardFrame();
-      assertTrue(Arrays.asList(leaderboardFrame.names()).contains(columnThatIsSupposedToBeEncoded + "_te")); ;
+      //TODO fix this test when we are able to store data preprocessing steps used during training
 
     } finally {
       if(aml!=null) aml.delete();
+      if(amlWithoutTE!=null) amlWithoutTE.delete();
       if(leader!=null) leader.delete();
       if(validationFrame != null)  validationFrame.delete();
       if(leaderboardFrame != null)  leaderboardFrame.delete();
       if(copyOfValidFrame != null)  copyOfValidFrame.delete();
       if(fr != null) fr.delete();
     }
+  }
+
+  @Test
+  public void when_none_of_TE_parameters_improved_performance_we_fallback_to_original_model() {
+    //TODO
   }
 
   @Test

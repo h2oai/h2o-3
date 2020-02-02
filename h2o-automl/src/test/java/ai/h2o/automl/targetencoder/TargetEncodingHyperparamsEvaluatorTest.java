@@ -28,37 +28,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
   }
 
   @Test
-  public void fixtureForMBTest() {
-
-    Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-    String responseColumnName = "survived";
-
-    asFactor(fr, responseColumnName);
-
-    Frame[] splits = AutoMLBenchmarkHelper.getRandomSplitsFromDataframe(fr, new double[]{0.7, 0.3}, 2345);
-    Frame train = splits[0];
-    Frame valid = splits[1];
-    long builderSeed = 3456;
-    ModelBuilder modelBuilder = modelBuilderGBMWithValidFrameFixture(train, valid, responseColumnName, builderSeed);
-
-    // Just testing that we can train a model from the fixture
-    Keyed model = modelBuilder.trainModel().get();
-
-    // Checking that we can't reuse model builder as after the training it is being left in unusable state
-    assertTrue(modelBuilder.train().vec("Tree_0") != null);
-
-    fr.delete();
-    train.delete();
-    valid.delete();
-
-    Model retrievedModel = DKV.getGet(model._key);
-    retrievedModel.delete();
-  }
-
-  // We test here that we can reuse model builder by cloning it.
-  // Also we check that two evaluations with the same TE params return same result.
-  @Test
-  public void evaluate_method_works_with_cloned_modelBuilder_validation_case() {
+  public void evaluate_method_for_validation_case() {
 
     ModelBuilder modelBuilder = null;
     Scope.enter();
