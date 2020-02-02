@@ -67,6 +67,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     public boolean _quiet_mode = true;
 
     public int _ntrees = 50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
+    /**
+     * @deprecated will be removed in 3.30.0.1, use _ntrees
+     */
+    public int _n_estimators; // This doesn't seem to be used anywhere... (not in clients)
 
     public int _max_depth = 6; // Maximum tree depth. Grid Search, comma sep values:5,7
 
@@ -264,8 +268,15 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
     Map<String, Object> params = new HashMap<>();
 
-    params.put("nround", p._ntrees);
     // Common parameters with H2O GBM
+    if (p._n_estimators != 0) {
+      Log.info("Using user-provided parameter n_estimators instead of ntrees.");
+      params.put("nround", p._n_estimators);
+      p._ntrees = p._n_estimators;
+    } else {
+      params.put("nround", p._ntrees);
+      p._n_estimators = p._ntrees;
+    }
     if (p._eta != 0.3) {
       Log.info("Using user-provided parameter eta instead of learn_rate.");
       params.put("eta", p._eta);
