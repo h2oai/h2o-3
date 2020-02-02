@@ -1,8 +1,9 @@
 package ai.h2o.automl.targetencoder;
 
+import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
-import ai.h2o.targetencoding.TargetEncoderFrameHelper;
+import ai.h2o.automl.StepDefinition;
 import ai.h2o.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
@@ -18,14 +19,23 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
-import java.util.Arrays;
-
-import static org.junit.Assert.*;
+import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 
 // This test suite also checks how we apply preprocessing at ModellingStep and then revert all the changes in the data afterwards
 public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+
+
+  public static Frame getPreparedTitanicFrame(String responseColumnName) {
+    Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
+    fr.remove("name").remove();
+    fr.remove("ticket").remove();
+    fr.remove("boat").remove();
+    fr.remove("body").remove();
+    asFactor(fr, responseColumnName);
+    return fr;
+  }
 
   @Test public void testWhenGridSizeIsOne() {
     //TODO
@@ -75,30 +85,22 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
     Frame fr=null;
     Model leader = null;
     Frame trainingFrame = null;
-    String teColumnName = "ColA";
-    String responseColumnName = "ColC";
     String foldColumnName = "fold";
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
-      //NOTE: We can't use parse_test_file method because behaviour of the Frame would be different comparing to TestFrameBuilder's frames
-      //fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
-      fr = new TestFrameBuilder()
-              .withName("trainingFrame")
-              .withColNames(teColumnName, "ColB", responseColumnName, foldColumnName)
-              .withVecTypes(Vec.T_CAT, Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
-              .withDataForCol(0, ar("a", "b", "b", "b", "a"))
-              .withDataForCol(1, ard(1, 1, 4, 7, 4))
-              .withDataForCol(2, ar("2", "6", "6", "6", "6"))
-              .withDataForCol(3, ar(1, 2, 2, 3, 2))
-              .build();
 
-      TargetEncoderFrameHelper.factorColumn(fr, responseColumnName);
+      String responseColumnName = "survived";
+      fr = getPreparedTitanicFrame(responseColumnName);
+
+      int nfolds = 5;
+      addKFoldColumn(fr, foldColumnName, nfolds, 3456);
 
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.fold_column = foldColumnName;
       autoMLBuildSpec.input_spec.response_column = responseColumnName;
 
       autoMLBuildSpec.te_spec.application_strategy = new AllCategoricalTEApplicationStrategy(fr, new String[]{responseColumnName});
+      autoMLBuildSpec.te_spec.max_models = 2;
       autoMLBuildSpec.te_spec.seed = 2345;
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
@@ -106,6 +108,9 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.keep_cross_validation_models = true;
       autoMLBuildSpec.build_control.keep_cross_validation_models = true;
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = true;
+      autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
+              new StepDefinition(Algo.GBM.name(), new String[]{ "def_1" })
+      };
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -114,8 +119,10 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
       trainingFrame = aml.getTrainingFrame();
 
-      assertIdenticalUpToRelTolerance(fr, trainingFrame, 0, false, "Two frames should be different.");
-      assertTrue(leader!= null && Arrays.asList(leader._output._names).contains(teColumnName + "_te"));
+//      assertIdenticalUpToRelTolerance(fr, trainingFrame, 0, false, "Two frames should be different.");
+//      assertTrue(leader!= null && Arrays.asList(leader._output._names).contains(teColumnName + "_te"));
+
+      // TODO asserts
 
       printOutFrameAsTable(trainingFrame, false, 100);
 

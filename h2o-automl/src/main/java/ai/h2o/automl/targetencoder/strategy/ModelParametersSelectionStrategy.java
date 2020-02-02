@@ -2,7 +2,6 @@ package ai.h2o.automl.targetencoder.strategy;
 
 import hex.Model;
 import water.Iced;
-import water.Key;
 
 import java.util.Comparator;
 
@@ -43,15 +42,15 @@ public abstract class ModelParametersSelectionStrategy<MP extends Model.Paramete
   }
 
   public static class EvaluatedComparator extends Iced<EvaluatedComparator> implements Comparator<Evaluated> {
-    private boolean _theBiggerTheBetter;
+    private boolean _theLessTheBetter;
 
-    public EvaluatedComparator(boolean theBiggerTheBetter) {
-      _theBiggerTheBetter = theBiggerTheBetter;
+    public EvaluatedComparator(boolean theLessTheBetter) {
+      _theLessTheBetter = theLessTheBetter;
     }
 
     @Override
     public int compare(Evaluated o1, Evaluated o2) {
-      int inverseTerm = _theBiggerTheBetter ? -1 : 1;
+      int inverseTerm = _theLessTheBetter ? -1 : 1;
       return inverseTerm * Double.compare(o1.getScore(), o2.getScore());
     }
   }

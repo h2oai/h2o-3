@@ -9,10 +9,7 @@ import ai.h2o.targetencoding.TargetEncoderModel;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.splitframe.ShuffleSplitFrame;
-import water.DKV;
-import water.Key;
-import water.Keyed;
-import water.Scope;
+import water.*;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.TwoDimTable;
@@ -84,18 +81,20 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
         trainEncoded = targetEncoderModel.score(trainCopy);
         Scope.track(trainEncoded);
         trainEncoded.remove(foldColumnForTE).remove();
-        printOutFrameAsTable(trainEncoded, false, 20);
+//        printOutFrameAsTable(trainEncoded, false, 20);
+//        Job export = Frame.export(trainEncoded, "encoder_" + teParams.toString(), trainEncoded._key.toString(), true, 1);
+//        export.get();
 
       }
 
       // TODO maybe remove foldColumnForTE here?
       clonedModelBuilder._parms._ignored_columns = concat(originalIgnoredColumns, columnNamesToEncode);
-      clonedModelBuilder._parms.setTrain(trainEncoded._key);
+      clonedModelBuilder.setTrain(trainEncoded);
 
       score += scoreCV(clonedModelBuilder);
     } finally {
       //Setting back original data
-      clonedModelBuilder._parms.setTrain(originalTrain._key);
+      clonedModelBuilder.setTrain(originalTrain);
       clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns; //TODO Do we need to do this if we made a clone? Or we can do this once before evaluating all parameters and after all of them
     }
     return new ModelParametersSelectionStrategy.Evaluated<>(targetEncoderModel, score);
@@ -110,7 +109,7 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
     } catch (Throwable ex) {
       throw ex;
     }
-    double cvScore = retrievedModel._output._cross_validation_metrics.auc_obj().pr_auc(); // TODO choose proper metric here
+    double cvScore = retrievedModel.loss();
     retrievedModel.delete();
     retrievedModel.deleteCrossValidationModels();
     retrievedModel.deleteCrossValidationPreds();

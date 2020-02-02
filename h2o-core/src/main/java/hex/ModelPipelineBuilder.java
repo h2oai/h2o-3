@@ -22,6 +22,11 @@ import java.util.*;
 public class ModelPipelineBuilder<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends ModelBuilder<M, P, O> {
 
   private ModelBuilder<M, P, O> _primaryBuilder;
+
+  public List<Key<Model>> getPreprocessingModels() {
+    return _preprocessingModels;
+  }
+
   private List<Key<Model>> _preprocessingModels = new ArrayList<>();
 
 
@@ -38,8 +43,8 @@ public class ModelPipelineBuilder<M extends Model<M,P,O>, P extends Model.Parame
   protected Driver trainModelImpl() {
     _preprocessingModels.forEach(preprocessingModelKey -> {
       Model preprocessingModel = DKV.getGet(preprocessingModelKey);
-      preprocessingModel.score(_parms.train());
-      if( _parms.valid() != null) preprocessingModel.score(_parms.valid());
+      _parms.setTrain(preprocessingModel.score(_parms.train())._key);
+      if( _parms.valid() != null) _parms.setValid(preprocessingModel.score(_parms.valid())._key);
       // leaderboard frame should be available when we add model to the Leaderboard
     });
     return _primaryBuilder.trainModelImpl();

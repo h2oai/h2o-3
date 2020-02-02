@@ -25,14 +25,14 @@ public class TEPreprocessingStep extends PreprocessingStep<TargetEncoderModel> {
   }
 
   @Override
-  protected void applyIfUseful(ModelBuilder modelBuilder, ModelPipelineBuilder modelPipelineBuilder, double baseLineScore) {
+  protected void applyIfUseful(ModelBuilder modelBuilder, ModelPipelineBuilder modelPipelineBuilder, double baseLineLoss) {
 
     Optional<ModelParametersSelectionStrategy.Evaluated> bestTEParamsOpt = findBestPreprocessingParams(modelBuilder);
 
     if(bestTEParamsOpt.isPresent()) {
-      boolean theBiggerTheBetter = true; //TODO
+//      boolean theBiggerTheBetter = !Leaderboard.isLossFunction(_aml.getBuildSpec().input_spec.sort_metric); // TODO try to avoid dependency on Leaderboard
       ModelParametersSelectionStrategy.Evaluated evaluatedBest = bestTEParamsOpt.get();
-      boolean scoreIsBetterThanBaseline = theBiggerTheBetter ? evaluatedBest.getScore() > baseLineScore : evaluatedBest.getScore() < baseLineScore;
+      boolean scoreIsBetterThanBaseline = evaluatedBest.getScore() < baseLineLoss;
 
       if (scoreIsBetterThanBaseline) {
         modelPipelineBuilder.addPreprocessorModel(evaluatedBest.getModel()._key);
