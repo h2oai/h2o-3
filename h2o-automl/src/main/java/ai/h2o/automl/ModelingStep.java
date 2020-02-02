@@ -14,6 +14,7 @@ import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
 import hex.ModelContainer;
+import hex.ModelPipelineBuilder;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
@@ -330,23 +331,28 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
             }
 
-            AutoMLBuildSpec buildSpec = aml().getBuildSpec();
+            runModelTrainingJob(key, algoName, builder).get();
+            Model retrievedBaselineModel = DKV.getGet(builder.dest());
+            double baselineScore = retrievedBaselineModel._output._cross_validation_metrics.auc_obj()._auc; // TODO need to choose corresponding metric here
+
+            // Attempt to beat base line model performance with data preprocessing
+
+            ModelPipelineBuilder modelPipelineBuilder = new ModelPipelineBuilder(builder);
 
             // for now we use universal preprocessing which does not depend on type of model at this particular ModelingStep. Can be instantiated once.
             PreprocessingStep[] steps = new UniversalPreprocessingSteps(aml()).getSteps();
-
             Arrays.stream(steps).forEach(preprocessingStep -> {
-                preprocessingStep.applyIfUseful(builder);
+                preprocessingStep.applyIfUseful(builder, modelPipelineBuilder, baselineScore);
             });
 
             // At this point builder should have information about which Preprocessing steps are going to be beneficial to applyIfUseful.
             // If preprocessing step was not usefull during evaluation phase it will be ignored overall as a fallback strategy.
-            return runModelTrainingJob(key, algoName, builder);
 //            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
 //            aml().eventLog().debug(Stage.ModelTraining, parms._max_runtime_secs == 0
 //                    ? "No time limitation for "+key
 //                    : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
 //            return startModel(key, parms);
+            return runModelTrainingJob(key, algoName, modelPipelineBuilder);
         }
 
         private Job<M> runModelTrainingJob(Key<M> key, String algoName, ModelBuilder builder) {

@@ -1,5 +1,6 @@
 package ai.h2o.automl.targetencoder;
 
+import ai.h2o.automl.targetencoder.strategy.ModelParametersSelectionStrategy;
 import ai.h2o.automl.targetencoder.strategy.ModelValidationMode;
 import ai.h2o.targetencoding.TargetEncoder;
 import ai.h2o.targetencoding.TargetEncoderModel;
@@ -71,7 +72,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       DKV.put(leaderboardCopy);
       Scope.track(trainCopy, validCopy, leaderboardCopy);
 
-      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboardCopy, columnsToEncode, seedForFoldColumn);
+      ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboardCopy, columnsToEncode, seedForFoldColumn);
 
       ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
       clonedModelBuilder.init(false);
@@ -89,11 +90,11 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       Scope.track(trainCopy2, validCopy2, leaderboardCopy2);
 
       // checking that we can clone/reuse modelBuilder
-      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboardCopy2, columnsToEncode, seedForFoldColumn);
+      ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.VALIDATION_FRAME, leaderboardCopy2, columnsToEncode, seedForFoldColumn);
 
       assertBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train());
-      assertTrue(auc > 0);
-      assertEquals(auc, auc2, 1e-5);
+      assertTrue(auc.getScore() > 0);
+      assertEquals(auc.getScore(), auc2.getScore(), 1e-5);
     } finally {
       Scope.exit();
     }
@@ -132,7 +133,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       Scope.track(trainCopy);
       modelBuilder.setTrain(trainCopy);
 
-      double auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
+      ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
 
       ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
       clonedModelBuilder.init(false);
@@ -143,11 +144,11 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       clonedModelBuilder.setTrain(trainCopy2);
 
       // checking that we can clone/reuse modelBuilder
-      double auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
+      ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
 
       assertBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train());
-      assertTrue(auc > 0);
-      assertEquals(auc, auc2, 1e-5);
+      assertTrue(auc.getScore() > 0);
+      assertEquals(auc.getScore(), auc2.getScore(), 1e-5);
     } finally {
       Scope.exit();
     }
@@ -182,17 +183,18 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       for (int evaluationAttempt = 0; evaluationAttempt < 1; evaluationAttempt++) {
         ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
         clonedModelBuilder.init(false);
-        double evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(teParams,
+        ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> evaluationResult = targetEncodingHyperparamsEvaluator.evaluate(teParams,
                 clonedModelBuilder,
                 ModelValidationMode.CV,
                 null,
                 allCategoricalTEApplicationStrategy.getColumnsToEncode(),
                 testSeed);
+        double score = evaluationResult.getScore();
 
-        if(lastResult == 0.0) lastResult = evaluationResult;
+        if(lastResult == 0.0) lastResult = score;
         else {
           assertEquals("evaluationAttempt #" + evaluationAttempt + " for teParamAttempt #" +
-                  teParamAttempt + " has failed. " + teParams , lastResult, evaluationResult, precisionForAUCEvaluations);
+                  teParamAttempt + " has failed. " + teParams , lastResult, score, precisionForAUCEvaluations);
         }
       }
     }

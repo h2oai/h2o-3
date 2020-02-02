@@ -2,24 +2,24 @@ package ai.h2o.automl.preprocessing;
 
 import ai.h2o.automl.*;
 
+import java.util.ArrayList;
+
 /**
  * Universal means applies for any kind of models
  */
 public class UniversalPreprocessingSteps extends PreprocessingSteps {
 
-  private boolean _teEnabled;
-
-  private PreprocessingStep[] defaults = _teEnabled ?
-          new PreprocessingStep[]{new TEPreprocessingStep(Preprocessor.TE, aml())} : new PreprocessingStep[0];
+  private ArrayList<PreprocessingStep> defaults = new ArrayList<>();
 
   public UniversalPreprocessingSteps(AutoML autoML) {
     super(autoML);
-    _teEnabled = autoML.getBuildSpec().te_spec.enabled;
+    if(autoML.getBuildSpec().te_spec.enabled)
+      defaults.add(new TEPreprocessingStep(Preprocessor.TE, aml()));
   }
 
   @Override
   protected PreprocessingStep[] getDefaultPreprocessors() {
-    return defaults;
+    return defaults.toArray(new PreprocessingStep[0]);
   }
 
 }

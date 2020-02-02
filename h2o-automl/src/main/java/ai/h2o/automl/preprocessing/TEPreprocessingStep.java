@@ -3,10 +3,18 @@ package ai.h2o.automl.preprocessing;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.PreprocessingStep;
-import ai.h2o.automl.targetencoder.AutoMLTargetEncoderAssistant;
+import ai.h2o.automl.targetencoder.TargetEncodingHyperparamsEvaluator;
+import ai.h2o.automl.targetencoder.strategy.GridSearchModelParametersSelectionStrategy;
+import ai.h2o.automl.targetencoder.strategy.ModelParametersSelectionStrategy;
+import ai.h2o.automl.targetencoder.strategy.ModelValidationMode;
 import ai.h2o.targetencoding.TargetEncoderModel;
+import ai.h2o.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
+import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import hex.ModelBuilder;
+import hex.ModelPipelineBuilder;
 import water.fvec.Frame;
+import water.util.Log;
+import water.util.StringUtils;
 
 import java.util.Optional;
 
@@ -17,23 +25,41 @@ public class TEPreprocessingStep extends PreprocessingStep<TargetEncoderModel> {
   }
 
   @Override
-  protected void applyIfUseful(ModelBuilder modelBuilder) {
-    AutoMLBuildSpec buildSpec = _aml.getBuildSpec();
+  protected void applyIfUseful(ModelBuilder modelBuilder, ModelPipelineBuilder modelPipelineBuilder, double baseLineScore) {
 
-    Frame originalTrain = modelBuilder._parms.train();
-    // NOTE: here we will also affect `_buildSpec.input_spec.ignored_columns`. We will switch it back below in `finally` block after model is trained.
-    String[] originalIgnoredColumns = buildSpec.input_spec.ignored_columns == null ? null : buildSpec.input_spec.ignored_columns.clone();
+    Optional<ModelParametersSelectionStrategy.Evaluated> bestTEParamsOpt = findBestPreprocessingParams(modelBuilder);
 
-    AutoMLTargetEncoderAssistant<TargetEncoderModel.TargetEncoderParameters> teAssistant = new AutoMLTargetEncoderAssistant<>(_aml,
-            buildSpec,
-            modelBuilder);
+    if(bestTEParamsOpt.isPresent()) {
+      boolean theBiggerTheBetter = true; //TODO
+      ModelParametersSelectionStrategy.Evaluated evaluatedBest = bestTEParamsOpt.get();
+      boolean scoreIsBetterThanBaseline = theBiggerTheBetter ? evaluatedBest.getScore() > baseLineScore : evaluatedBest.getScore() < baseLineScore;
 
-    Optional<TargetEncoderModel.TargetEncoderParameters> bestTEParamsOpt = teAssistant.findBestTEParams();
+      if (scoreIsBetterThanBaseline) {
+        modelPipelineBuilder.addPreprocessorModel(evaluatedBest.getModel()._key);
+      }
+    }
+  }
 
-    //TODO store parameters/or better best Model if proved useful  inside ModelBuilder (or inside ModelPipelineBuilder class).
-    // ModelPipeline should has references to preprocessing Models to apply before scoring
+  private Optional<ModelParametersSelectionStrategy.Evaluated> findBestPreprocessingParams(ModelBuilder modelBuilder) {
+    AutoMLBuildSpec.AutoMLTEControl te_spec = _aml.getBuildSpec().te_spec;
+    Frame leaderboardFrame = _aml.getLeaderboardFrame();
+    String responseColumnName = modelBuilder._parms._response_column;
+    ModelValidationMode validationMode = _aml.getValidationFrame() == null ? ModelValidationMode.CV : ModelValidationMode.VALIDATION_FRAME; // mode could be just boolean
 
-    // TODO Evaluation of particular preprocessing parameters should be done with Model
+    return selectColumnsForEncoding(te_spec.application_strategy, modelBuilder._parms.train(), responseColumnName)
+            .map(columnsToEncode -> {
+              TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
+              GridSearchModelParametersSelectionStrategy modelParametersSelectionStrategy = new GridSearchModelParametersSelectionStrategy(modelBuilder, te_spec, leaderboardFrame, columnsToEncode, validationMode, evaluator);
 
+              ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> bestEvaluated = modelParametersSelectionStrategy.getBestParamsWithEvaluation();
+              Log.info("Best TE parameters for chosen columns " + StringUtils.join(",", columnsToEncode) + " were selected to be: " + bestEvaluated.getParams());
+              return bestEvaluated;
+            });
+  }
+
+  private Optional<String[]> selectColumnsForEncoding(TEApplicationStrategy applicationStrategy, Frame trainingFrame, String responseColumnName) {
+    TEApplicationStrategy effectiveApplicationStrategy = applicationStrategy != null ? applicationStrategy : new AllCategoricalTEApplicationStrategy(trainingFrame, new String[]{responseColumnName});
+    String[] columnsToEncode = effectiveApplicationStrategy.getColumnsToEncode();
+    return columnsToEncode.length == 0 ? Optional.empty() : Optional.of(columnsToEncode);
   }
 }

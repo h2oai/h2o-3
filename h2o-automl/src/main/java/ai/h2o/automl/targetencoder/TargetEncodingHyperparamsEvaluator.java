@@ -1,27 +1,32 @@
 package ai.h2o.automl.targetencoder;
 
+import ai.h2o.automl.targetencoder.strategy.ModelParametersSelectionStrategy;
 import ai.h2o.automl.targetencoder.strategy.ModelValidationMode;
 import ai.h2o.targetencoding.TargetEncoder;
+import ai.h2o.targetencoding.TargetEncoderBuilder;
 import ai.h2o.targetencoding.TargetEncoderFrameHelper;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.splitframe.ShuffleSplitFrame;
-import water.*;
+import water.DKV;
+import water.Key;
+import water.Keyed;
+import water.Scope;
 import water.fvec.Frame;
+import water.util.ArrayUtils;
 import water.util.TwoDimTable;
 
 import java.util.Map;
-import java.util.Random;
 
 import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.KFold;
 import static ai.h2o.targetencoding.TargetEncoder.DataLeakageHandlingStrategy.LeaveOneOut;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.concat;
 
-public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> {
+public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters> {
 
-  public double evaluate(TargetEncoderModel.TargetEncoderParameters teParams,
+  public ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> evaluate(TargetEncoderModel.TargetEncoderParameters teParams,
                          ModelBuilder modelBuilder,
                          ModelValidationMode modelValidationMode,
                          Frame leaderboard,
@@ -42,10 +47,10 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
     }
   }
 
-  public double evaluateForCVMode(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder clonedModelBuilder, String[] columnNamesToEncode, long seedForFoldColumn) {
+  public ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> evaluateForCVMode(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder clonedModelBuilder, String[] columnNamesToEncode, long seedForFoldColumn) {
 
+    final TargetEncoderModel targetEncoderModel;
     double score = 0;
-    Map<String, Frame> encodingMap = null;
     Frame trainEncoded = null;
 
     Frame originalTrain = clonedModelBuilder._parms.train();
@@ -55,35 +60,36 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
 
     String[] originalIgnoredColumns = clonedModelBuilder._parms._ignored_columns;
     try {
-      String responseColumn = clonedModelBuilder._parms._response_column;
-      String[] teColumnsToExclude = columnNamesToEncode;
-      TargetEncoder tec = new TargetEncoder(columnNamesToEncode);
-      TargetEncoder.DataLeakageHandlingStrategy holdoutType = teParams._data_leakage_handling;
 
-      String foldColumnForTE = null;
+      assert teParams._data_leakage_handling == KFold : "Only `KFold` strategy is being used in current version for CV mode.";
 
-      switch (holdoutType) {
-        case KFold:
-          // Maybe we can use the same folds that we will use for splitting but in that case we will have only 4 folds for encoding map
-          // generation and application of this map to the frame that was used for creating map
-          foldColumnForTE = clonedModelBuilder._job._key.toString() + "_fold";
-          int nfolds = 5;
-          addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
 
-          //TODO consider optimising this as encoding map will be the same for whole runs as long as we only use KFold scenario with same seed for fold assignments
-          encodingMap = tec.prepareEncodingMap(trainCopy, responseColumn, foldColumnForTE, true);
+      { //Applying encoding here
+        // Maybe we can use the same folds that we will use for splitting but in that case we will have only 4 folds for encoding map
+        // generation and application of this map to the frame that was used for creating map
+        String foldColumnForTE = clonedModelBuilder._job._key.toString() + "_fold";
+        int nfolds = 5;
+        addKFoldColumn(trainCopy, foldColumnForTE, nfolds, seedForFoldColumn);
 
-          trainEncoded = tec.applyTargetEncoding(trainCopy, responseColumn, encodingMap, KFold, foldColumnForTE, teParams._blending, teParams._noise_level, true, teParams.getBlendingParameters(), seedForFoldColumn);
-          Scope.track(trainEncoded);
-          break;
-        case LeaveOneOut:
-        case None:
-        default:
-          // For `None` strategy we can make sure that holdouts from `otherFolds` frame are being chosen in a mutually exclusive way across all folds
-          throw new IllegalStateException("Only `KFold` strategy is being used in current version for CV mode.");
+        teParams._response_column = clonedModelBuilder._parms._response_column;
+        teParams._fold_column = foldColumnForTE;
+        String[] ignoredColumnsDuringEncoding = ArrayUtils.difference(trainCopy.names(), concat(columnNamesToEncode, new String[]{teParams._response_column, foldColumnForTE}));
+        teParams._ignored_columns = ignoredColumnsDuringEncoding;
+        teParams._train = trainCopy._key;
+        teParams._seed = seedForFoldColumn;
+
+        TargetEncoderBuilder job = new TargetEncoderBuilder(teParams);
+        targetEncoderModel = job.trainModel().get();
+//          Scope.track_generic(targetEncoderModel);
+        trainEncoded = targetEncoderModel.score(trainCopy);
+        Scope.track(trainEncoded);
+        trainEncoded.remove(foldColumnForTE).remove();
+        printOutFrameAsTable(trainEncoded, false, 20);
+
       }
 
-      clonedModelBuilder._parms._ignored_columns = concat(concat(originalIgnoredColumns, teColumnsToExclude), new String[]{foldColumnForTE});
+      // TODO maybe remove foldColumnForTE here?
+      clonedModelBuilder._parms._ignored_columns = concat(originalIgnoredColumns, columnNamesToEncode);
       clonedModelBuilder._parms.setTrain(trainEncoded._key);
 
       score += scoreCV(clonedModelBuilder);
@@ -91,10 +97,8 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
       //Setting back original data
       clonedModelBuilder._parms.setTrain(originalTrain._key);
       clonedModelBuilder._parms._ignored_columns = originalIgnoredColumns; //TODO Do we need to do this if we made a clone? Or we can do this once before evaluating all parameters and after all of them
-      if(encodingMap != null) TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
-
     }
-    return score;
+    return new ModelParametersSelectionStrategy.Evaluated<>(targetEncoderModel, score);
   }
 
   private double scoreCV(ModelBuilder modelBuilder) { // TODO move it in when no need to call scoreCV twice
@@ -106,7 +110,7 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
     } catch (Throwable ex) {
       throw ex;
     }
-    double cvScore = retrievedModel._output._cross_validation_metrics.auc_obj()._auc;
+    double cvScore = retrievedModel._output._cross_validation_metrics.auc_obj().pr_auc(); // TODO choose proper metric here
     retrievedModel.delete();
     retrievedModel.deleteCrossValidationModels();
     retrievedModel.deleteCrossValidationPreds();
@@ -124,7 +128,7 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
     return mmb.auc();
   }
 
-  public double evaluateForValidationFrameMode(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder clonedModelBuilder, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {
+  public ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> evaluateForValidationFrameMode(TargetEncoderModel.TargetEncoderParameters teParams, ModelBuilder clonedModelBuilder, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {
       double score = 0;
       Map<String, Frame> encodingMap = null;
       Frame trainEncoded, validEncoded, leaderBoardEncoded = null;
@@ -204,7 +208,7 @@ public class TargetEncodingHyperparamsEvaluator extends ModelParametersEvaluator
 
         if (encodingMap != null) TargetEncoderFrameHelper.encodingMapCleanUp(encodingMap);
       }
-      return score;
+      return new ModelParametersSelectionStrategy.Evaluated<>(null, score); //TODO null !!!!
   }
 
   public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {

@@ -7,6 +7,7 @@ import ai.h2o.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
 import hex.Model;
+import hex.ScoreKeeper;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -68,7 +69,8 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
     }
   }
 
-  public void all_categoricals_with_KFold_TE_strategy() {
+  @Test
+  public void all_categoricals_with_CV_mode() {
     AutoML aml=null;
     Frame fr=null;
     Model leader = null;
@@ -100,8 +102,10 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       autoMLBuildSpec.te_spec.seed = 2345;
 
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
-      autoMLBuildSpec.build_control.keep_cross_validation_models = false;
-      autoMLBuildSpec.build_control.keep_cross_validation_predictions = false;
+      autoMLBuildSpec.build_control.stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUC);
+      autoMLBuildSpec.build_control.keep_cross_validation_models = true;
+      autoMLBuildSpec.build_control.keep_cross_validation_models = true;
+      autoMLBuildSpec.build_control.keep_cross_validation_predictions = true;
 
       aml = AutoML.startAutoML(autoMLBuildSpec);
       aml.get();
@@ -137,7 +141,7 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
     }
   }
 
-  @Ignore
+  @Test
   public void we_can_score_with_model_from_the_leadearboard() {
     AutoML aml=null;
     AutoML amlWithoutTE=null;

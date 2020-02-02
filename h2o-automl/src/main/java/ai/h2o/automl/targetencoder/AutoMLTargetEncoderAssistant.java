@@ -72,7 +72,7 @@ public class AutoMLTargetEncoderAssistant<MP extends Model.Parameters>{ // TODO 
               TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
               _modelParametersSelectionStrategy = new GridSearchModelParametersSelectionStrategy(_modelBuilder, _buildSpec.te_spec, _leaderboardFrame, columnsToEncode, _validationMode, evaluator);
 
-              TargetEncoderModel.TargetEncoderParameters bestTEParams = getTeParamsSelectionStrategy().getBestParams();
+              TargetEncoderModel.TargetEncoderParameters bestTEParams = null ;//getTeParamsSelectionStrategy().getBestParams();
               Log.info("Best TE parameters for chosen columns " + StringUtils.join(",", columnsToEncode) + " were selected to be: " + bestTEParams);
               return bestTEParams;
             });

@@ -7,14 +7,13 @@ import ai.h2o.automl.targetencoder.strategy.ModelValidationMode;
 import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.ThresholdTEApplicationStrategy;
-import hex.ModelBuilder;
+import hex.*;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 
 import java.util.Comparator;
@@ -28,21 +27,42 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Enclosed.class)
 public class GridSearchModelParametersSelectionStrategyTest {
 
+  public static class DummyModel extends Model<DummyModel, TargetEncoderModel.TargetEncoderParameters, TargetEncoderModel.Output> {
+    public DummyModel(TargetEncoderModel.TargetEncoderParameters parms) {
+      super(Key.make(), parms, null);
+    }
+
+    @Override
+    public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
+      return new ModelMetricsBinomial.MetricBuilderBinomial(domain);
+    }
+    @Override
+    protected double[] score0(double[] data, double[] preds) { return preds; }
+    @Override
+    protected Futures remove_impl(Futures fs, boolean cascade) {
+//      super.remove_impl(fs, cascade);
+//      DKV.remove(_parms._trgt);
+      return fs;
+    }
+  }
+
   public static class GridSearchModelParametersSelectionStrategyNonParametrizedTest extends water.TestUtil {
 
     @Test
     public void priorityQueueOrderingWithEvaluatedTest() {
       boolean theBiggerTheBetter = true;
       Comparator comparator = new GridSearchModelParametersSelectionStrategy.EvaluatedComparator(theBiggerTheBetter);
-      PriorityQueue<GridSearchModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters>> evaluatedQueue = new PriorityQueue<>(comparator);
+      PriorityQueue<GridSearchModelParametersSelectionStrategy.Evaluated<DummyModel>> evaluatedQueue = new PriorityQueue<>(comparator);
 
 
       TargetEncoderModel.TargetEncoderParameters params1 = TargetEncodingTestFixtures.randomTEParams();
       TargetEncoderModel.TargetEncoderParameters params2 = TargetEncodingTestFixtures.randomTEParams();
       TargetEncoderModel.TargetEncoderParameters params3 = TargetEncodingTestFixtures.randomTEParams();
-      evaluatedQueue.add(new GridSearchModelParametersSelectionStrategy.Evaluated<>(params1, 0.9984, 0));
-      evaluatedQueue.add(new GridSearchModelParametersSelectionStrategy.Evaluated<>(params2, 0.9996, 1));
-      evaluatedQueue.add(new GridSearchModelParametersSelectionStrategy.Evaluated<>(params3, 0.9784, 2));
+
+
+      evaluatedQueue.add(new GridSearchModelParametersSelectionStrategy.Evaluated<>(new DummyModel(params1), 0.9984));
+      evaluatedQueue.add(new GridSearchModelParametersSelectionStrategy.Evaluated<>(new DummyModel(params2), 0.9996));
+      evaluatedQueue.add(new GridSearchModelParametersSelectionStrategy.Evaluated<>(new DummyModel(params3), 0.9784));
 
       assertEquals(0.9996, evaluatedQueue.poll().getScore(), 1e-5);
       assertEquals(0.9984, evaluatedQueue.poll().getScore(), 1e-5);
@@ -128,13 +148,13 @@ public class GridSearchModelParametersSelectionStrategyTest {
         }
         mb.init(false);
 
-        ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> evaluator = new DummyEvaluator();
+        ModelParametersEvaluator<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters> evaluator = new DummyEvaluator();
 
 
         GridSearchModelParametersSelectionStrategy gridSearchTEParamsSelectionStrategy =
                 new GridSearchModelParametersSelectionStrategy(mb, teBuildSpec, leaderboard, columnsToEncode, validationMode, evaluator);
 
-        ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsWithEvaluation =
+        ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> bestParamsWithEvaluation =
                 gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation();
 
         assertTrue(gridSearchTEParamsSelectionStrategy.getEvaluatedModelParameters()
@@ -164,7 +184,7 @@ public class GridSearchModelParametersSelectionStrategyTest {
     @Parameterized.Parameters(name = "Validation mode = {0}")
     public static Object[] validationMode() {
       return new ModelValidationMode[]{
-              CV, ModelValidationMode.VALIDATION_FRAME
+              CV/*, ModelValidationMode.VALIDATION_FRAME*/
       };
     }
 
@@ -216,14 +236,13 @@ public class GridSearchModelParametersSelectionStrategyTest {
         }
         mb.init(false);
 
-        ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> evaluator = new DummyEvaluator();
+        ModelParametersEvaluator<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters> evaluator = new DummyEvaluator();
 
 
         GridSearchModelParametersSelectionStrategy gridSearchTEParamsSelectionStrategy =
                 new GridSearchModelParametersSelectionStrategy(mb, teBuildSpec, leaderboard, columnsToEncode, validationMode, evaluator);
 
-        ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> bestParamsWithEvaluation =
-                gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation();
+        gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation();
 
         if(validationMode == CV) {
           int sizeOfEmbeddedTEHyperSpaceForCV = 63;
@@ -299,10 +318,11 @@ public class GridSearchModelParametersSelectionStrategyTest {
   }
 
 
-  private static class DummyEvaluator extends ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> {
+  private static class DummyEvaluator extends ModelParametersEvaluator<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters> {
+
     @Override
-    public double evaluate(TargetEncoderModel.TargetEncoderParameters modelParameters, ModelBuilder modelBuilder, ModelValidationMode modelValidationMode, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {
-      return new Random().nextDouble();
+    public ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> evaluate(TargetEncoderModel.TargetEncoderParameters modelParameters, ModelBuilder modelBuilder, ModelValidationMode modelValidationMode, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {
+      return new ModelParametersSelectionStrategy.Evaluated<>(null, new Random().nextDouble());
     }
   }
 

@@ -25,8 +25,8 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
 
   protected HyperSpaceWalker.RandomDiscreteValueWalker<TargetEncoderModel.TargetEncoderParameters> _walker;
 
-  private ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> _evaluator;
-  private PriorityQueue<ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters>> _evaluatedQueue;
+  private ModelParametersEvaluator<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters> _evaluator;
+  private PriorityQueue<ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel>> _evaluatedQueue;
 
   protected ModelValidationMode _validationMode;
   private Frame _leaderboardData;
@@ -38,7 +38,7 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
                                                     Frame leaderboard,
                                                     String[] columnNamesToEncode,
                                                     ModelValidationMode validationMode,
-                                                    ModelParametersEvaluator<TargetEncoderModel.TargetEncoderParameters> evaluator) {
+                                                    ModelParametersEvaluator<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters> evaluator) {
     _teBuildSpec = teBuildSpec;
     _modelBuilder = modelBuilder;
     _evaluator = evaluator;
@@ -87,11 +87,8 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
 
   }
 
-  public TargetEncoderModel.TargetEncoderParameters getBestParams() {
-    return getBestParamsWithEvaluation().getItem();
-  }
 
-  public ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel.TargetEncoderParameters> getBestParamsWithEvaluation() {
+  public ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> getBestParamsWithEvaluation() {
 
     HyperSpaceWalker.HyperSpaceIterator<TargetEncoderModel.TargetEncoderParameters> iterator = _walker.iterator();
 
@@ -104,15 +101,17 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
 
       clonedModelBuilder.init(false);
 
-      double evaluationResult = _evaluator.evaluate(nextModelParameters, clonedModelBuilder, _validationMode, _leaderboardData, _columnNamesToEncode, _teBuildSpec.seed);
+      Evaluated evaluationResult = _evaluator.evaluate(nextModelParameters, clonedModelBuilder, _validationMode, _leaderboardData, _columnNamesToEncode, _teBuildSpec.seed);
 
-      _evaluatedQueue.add(new Evaluated<>(nextModelParameters, evaluationResult, ++attemptIdx));
+      evaluationResult.setAttemptIdx(attemptIdx);
+      // Compare with best seen result so far and remove model from `evaluationResult` to save space
+      _evaluatedQueue.add(evaluationResult);
     }
 
     return _evaluatedQueue.peek();
   }
 
-  public PriorityQueue<Evaluated<TargetEncoderModel.TargetEncoderParameters>> getEvaluatedModelParameters() {
+  public PriorityQueue<Evaluated<TargetEncoderModel>> getEvaluatedModelParameters() {
     return _evaluatedQueue;
   }
 }

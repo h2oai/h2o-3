@@ -2,33 +2,43 @@ package ai.h2o.automl.targetencoder.strategy;
 
 import hex.Model;
 import water.Iced;
+import water.Key;
 
 import java.util.Comparator;
 
 public abstract class ModelParametersSelectionStrategy<MP extends Model.Parameters> extends Iced {
 
-  public abstract MP getBestParams();
+  public abstract Evaluated getBestParamsWithEvaluation();
 
 
-  public static class Evaluated<P> extends Iced<Evaluated<P>> {
-    public P getItem() {
-      return _item;
+  public static class Evaluated< M extends Model> extends Iced<Evaluated> {
+
+    transient M _model;
+    transient M.Parameters _params;
+    private double _score;
+    // One-based index of evaluation run
+    private long _index;
+
+    public Evaluated(M model, double score) {
+      _model = model;
+      _params = model == null ? null : model._parms;
+      _score = score;
+    }
+
+    public void setAttemptIdx(long _index) {
+      this._index = _index;
+    }
+
+    public M getModel() {
+      return _model;
+    }
+
+    public M.Parameters getParams() {
+      return _params;
     }
 
     public double getScore() {
       return _score;
-    }
-
-    transient P _item;
-    private double _score;
-
-    // One-based index of evaluation run
-    private long _index;
-
-    public Evaluated(P item, double score, long index) {
-      _item = item;
-      _score = score;
-      _index = index;
     }
   }
 
