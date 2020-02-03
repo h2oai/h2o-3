@@ -6,10 +6,6 @@ description = 'H2O HDFS client shadowjar for Hadoop ' + hadoopVersion
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-java {
-  disableAutoTargetJvm()
-}
-
 def hasCustomHdfsDep = ext.has("hdfsDependency") && (ext.get("hdfsDependency") != defaultHdfsDependency)
 
 if (hasCustomHdfsDep) {
