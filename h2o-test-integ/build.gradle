@@ -6,9 +6,6 @@ dependencies {
 
 def runner = new File("$rootDir/scripts/run.py").canonicalPath
 
-java {
-    disableAutoTargetJvm()
-}
 
 // Python MultiJVMTests
 // --------------------
@@ -65,8 +62,6 @@ task cleanNodeJsSingleJVMTests(type: Delete) {
 task cleanNodeJsSingleJVMTestsCoverageData(type: Delete) {
     delete "$nodeJsSingleJVMTestsPath/results/jacoco"
 }
-
-
 
 // Commented out on 12/15/2014
 // test.dependsOn runNodeJsSingleJVMTests
