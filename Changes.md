@@ -11,7 +11,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6745'>PUBDEV-6745</a>] - In the R client, fixed a parsing bug that occurred when using quotes with .csv files in as.data.frame().
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6818'>PUBDEV-6818</a>] - Fixed an Unsupported Operation Exception in UDP-TCP-SEND. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6818'>PUBDEV-6818</a>] - Fixed an Unsupported Operation Exception in UDP-TCP-SEND. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7118'>PUBDEV-7118</a>] - GLM now supports coefficients on variable importance when model standardization is disabled.
 </li>
@@ -49,6 +49,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7190'>PUBDEV-7190</a>] - import_folder() can now be used when running H2O in GCS.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7226'>PUBDEV-7226</a>] - Added support for registering custom servlets.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7258'>PUBDEV-7258</a>] - In XGBoost, when a parameter with a synonym is updated, the synonymous parameter is now also updated. 
 </li>
 </ul>
 
