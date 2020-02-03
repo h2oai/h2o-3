@@ -11,7 +11,7 @@ import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import hex.ModelBuilder;
-import hex.ModelPipelineBuilder;
+import hex.PipelineModelBuilder;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.StringUtils;
@@ -25,17 +25,16 @@ public class TEPreprocessingStep extends PreprocessingStep<TargetEncoderModel> {
   }
 
   @Override
-  protected void applyIfUseful(ModelBuilder modelBuilder, ModelPipelineBuilder modelPipelineBuilder, double baseLineLoss) {
+  protected void applyIfUseful(ModelBuilder modelBuilder, PipelineModelBuilder pipelineModelBuilder, double baseLineLoss) {
 
     Optional<ModelParametersSelectionStrategy.Evaluated> bestTEParamsOpt = findBestPreprocessingParams(modelBuilder);
 
     if(bestTEParamsOpt.isPresent()) {
-//      boolean theBiggerTheBetter = !Leaderboard.isLossFunction(_aml.getBuildSpec().input_spec.sort_metric); // TODO try to avoid dependency on Leaderboard
       ModelParametersSelectionStrategy.Evaluated evaluatedBest = bestTEParamsOpt.get();
       boolean scoreIsBetterThanBaseline = evaluatedBest.getScore() < baseLineLoss;
 
       if (scoreIsBetterThanBaseline) {
-        modelPipelineBuilder.addPreprocessorModel(evaluatedBest.getModel()._key);
+        pipelineModelBuilder.addPreprocessorModel(evaluatedBest.getModel()._key);
       }
     }
   }

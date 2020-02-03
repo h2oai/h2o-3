@@ -3,7 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.preprocessing.Preprocessor;
 import hex.Model;
 import hex.ModelBuilder;
-import hex.ModelPipelineBuilder;
+import hex.PipelineModelBuilder;
 import water.Iced;
 
 /**
@@ -21,5 +21,5 @@ public abstract class PreprocessingStep<PM extends Model> extends Iced<Preproces
         _aml = autoML;
     }
 
-    protected abstract void applyIfUseful(ModelBuilder modelBuilder, ModelPipelineBuilder modelPipelineBuilder, double baseLineScore);
+    protected abstract void applyIfUseful(ModelBuilder modelBuilder, PipelineModelBuilder pipelineModelBuilder, double baseLineScore);
 }

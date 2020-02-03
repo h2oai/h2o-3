@@ -124,8 +124,6 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
       // TODO asserts
 
-      printOutFrameAsTable(trainingFrame, false, 100);
-
     } finally {
       if(leader!=null) leader.delete();
       if(aml!=null) aml.delete();

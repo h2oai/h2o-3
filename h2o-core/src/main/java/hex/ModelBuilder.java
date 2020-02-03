@@ -1096,7 +1096,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public void hide (String field_name, String message) { message(Log.TRACE, field_name, message); }
   public void info (String field_name, String message) { message(Log.INFO , field_name, message); }
   public void warn (String field_name, String message) { message(Log.WARN , field_name, message); }
-  public void error(String field_name, String message) { message(Log.ERRR , field_name, message); _error_count++; }
+  public void error(String field_name, String message) { message(Log.ERRR , field_name, message); _error_count++; } //TODO error is counted twice for Log.ERRR
   public void clearValidationErrors() {
     _messages = new ValidationMessage[0];
     _error_count = 0;
