@@ -59,15 +59,29 @@ def buildModelCheckStdCoeffs(training_fileName, family):
     model2 = H2OGeneralizedLinearEstimator(family=family, standardize=False)
     model2.train(training_frame=training_data, x=x, y=Y)
     coeff2 = model2.coef_norm()
+    compare_coeffs_2_model(family, stdCoeff1, coeff2)   # make sure standardized coefficients from model 1 and 2 are the same
 
+    # this part of the test is to check and make sure the changes I made int coef() and coef_norm() accurately
+    # capture the correct coefficients.
+    coeff2Coef = model2.coef() # = coeff2 since training data are standardized already
+    compare_coeffs_2_model(family, coeff2, coeff2Coef, sameModel=True) # make sure coefficients from coef_norm and coef are the same
+
+def compare_coeffs_2_model(family, coeff1, coeff2, sameModel=False):
     if family == 'multinomial': # special treatment, it contains a dict of dict
-        assert len(stdCoeff1) == len(coeff2), "Coefficient dictionary lengths are different.  One has length {0} while" \
-                                              " the other one has length {1}.".format(len(stdCoeff1), len(coeff2))
-        for name in stdCoeff1.keys():
-            pyunit_utils.equal_two_dicts(stdCoeff1[name], coeff2[name])
+        assert len(coeff1) == len(coeff2), "Coefficient dictionary lengths are different.  One has length {0} while" \
+                                          " the other one has length {1}.".format(len(coeff1), len(coeff2))
+        if sameModel:   # coef_norm return std_class_ and coef return class_.  Hence, need to change key here
+            coeff2CoefKeyChanged = dict()
+            for index in range(len(coeff2)):
+                key = "coefs_class_"+str(index)
+                coeff2CoefKeyChanged['std_'+key]= coeff2[key]
+            coeff2 = coeff2CoefKeyChanged
+        
+        for name in coeff1.keys():
+            pyunit_utils.equal_two_dicts(coeff1[name], coeff2[name])
     else:
-        pyunit_utils.equal_two_dicts(stdCoeff1, stdCoeff1)
-
+        pyunit_utils.equal_two_dicts(coeff1, coeff2)
+    
 def assert_coeffs_equal(coeffStandard, coeff, training_data):
     interceptOffset = 0
     for key in coeffStandard.keys():
