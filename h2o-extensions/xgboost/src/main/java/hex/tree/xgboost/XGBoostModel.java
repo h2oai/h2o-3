@@ -66,8 +66,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     // H2O GBM options
     public boolean _quiet_mode = true;
 
-    public int _ntrees=50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
-    public int _n_estimators;  // This doesn't seem to be used anywhere... (not in clients)
+    public int _ntrees = 50; // Number of trees in the final model. Grid Search, comma sep values:50,100,150,200
+    /**
+     * @deprecated will be removed in 3.30.0.1, use _ntrees
+     */
+    public int _n_estimators; // This doesn't seem to be used anywhere... (not in clients)
 
     public int _max_depth = 6; // Maximum tree depth. Grid Search, comma sep values:5,7
 
