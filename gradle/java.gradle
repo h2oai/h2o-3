@@ -18,7 +18,11 @@ task testJar(type: Jar, dependsOn: testClasses, group: "build") {
 // Create a configuration containing only for test artifacts
 configurations {
     testArchives
-    toPublish
+}
+
+// Explicitly 
+artifacts {
+    testArchives testJar
 }
 
 // Enable support for multi-node testing
@@ -43,18 +47,13 @@ task javadocJar(type: Jar) {
     from javadoc
 }
 
-task sourcesJar(type: Jar) {
-    classifier = 'sources'
-    from sourceSets.main.allSource
+plugins.withType(org.gradle.api.publish.maven.plugins.MavenPublishPlugin) {
+    // Publish it only if "maven-publish" plugin is in the context
+    artifacts {
+        toPublish javadocJar
+        toPublish testJar
+    }
 }
-
-artifacts {
-    testArchives testJar
-    toPublish sourcesJar
-    toPublish javadocJar
-    toPublish testJar
-}
-
 
 
 clean {

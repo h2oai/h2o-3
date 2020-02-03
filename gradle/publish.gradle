@@ -1,7 +1,12 @@
+apply plugin: 'java'
 apply plugin: 'maven-publish'
 apply plugin: "signing"
 
-
+// Default task to bundle sources code as jar
+task sourcesJar(type: Jar) {
+  classifier = 'sources'
+  from sourceSets.main.allSource
+}
 
 // Container for generated POMs (by default added into archive configuration)
 configurations {
@@ -10,6 +15,21 @@ configurations {
     }
 }
 
+configurations {
+    toPublish
+}
+
+artifacts {
+    toPublish sourcesJar
+}
+
+task signAll(type : Sign) {
+    sign configurations.archives
+    // Sign additional artifacts
+    sign configurations.toPublish
+    // Sign only in case of release
+    required = project.ext.isRelease || project.hasProperty("doSignAll")
+}
 
 //
 // Record all generated POM files for given publishing task
@@ -29,62 +49,83 @@ project.tasks.whenTaskAdded({ t ->
 // The code is here to support Spark assembly which expects modules in local Ivy cache
 publishing {
   publications {
+
       mavenAll(MavenPublication) {
-          from components.java
           artifactId project.name
 
           H2OBuildVersion bv = new H2OBuildVersion(rootDir, version);
           def projectVersion = bv.getProjectVersion()
           version isRelease || !projectVersion.contains("99999") ? "${projectVersion}" : "${projectVersion.replace('99999','1')}-SNAPSHOT"
-          
-          // Publish additional artifacts as documentation or source code
+
+          // Publish all artifacts
+          // NOTE: needs to be here to create a POM file with correct dependencies
+          from components.java
+
+          // Publish additional artifacts as documentaiton or source code
           configurations.toPublish.allArtifacts.each { art ->
               logger.debug("Publishing artifact for: " + art)
               artifact art
           }
 
-          pom {
-              name = project.name
-              afterEvaluate {
-                  description = project.description
+          if (signAll.required) {
+              signAll.signatures.all { Signature signature ->
+                  logger.debug("Publishing signature for: " + signature.file + ", type=" + signature.type)
+                  artifact(signature, new Action<MavenArtifact>() {
+                      @Override
+                      void execute(MavenArtifact t) {
+                          t.classifier = signature.toSignArtifact.classifier != "" ? signature.toSignArtifact.classifier : null
+                          t.extension = signature.type == "xml.asc" ? "pom.asc" : signature.type
+                      }
+                  })
               }
-              url = 'https://github.com/h2oai/h2o-3'
-              inceptionYear = '2013'
+          }
 
-              organization {
-                  name = 'H2O.ai'
-                  url = 'http://h2o.ai/'
-              }
+          pom.withXml { provider ->
+                def h2oPOM = {
+                  // See https://discuss.gradle.org/t/some-elements-are-removed-when-generate-a-pom-xml-using-the-maven-publish-plugin/2073/4
+                  resolveStrategy = Closure.DELEGATE_FIRST
+                  name project.name
+                  description project.description
+                  url 'https://github.com/h2oai/h2o-3'
+                  inceptionYear '2013'
 
-              // H2O licensing
-              licenses {
-                  license {
-                      name = 'The Apache Software License, Version 2.0'
-                      url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-                      distribution = 'repo'
+                  organization {
+                      name 'H2O.ai'
+                      url  'http://h2o.ai/'
+                  }
+
+                  // H2O licensing
+                  licenses {
+                      license {
+                          name 'The Apache Software License, Version 2.0'
+                          url  'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                          distribution 'repo'
+                      }
+                  }
+
+                  // Info for contributors
+                  scm {
+                      url        'https://github.com/h2oai/h2o-dev'
+                      connection 'scm:git:https://github.com/h2oai/h2o-dev.git'
+                      developerConnection 'scm:git:git@github.com:h2oai/h2o-dev.git'
+                  }
+
+                  // Public H2O JIRA for issue management
+                  issueManagement {
+                      system 'Jira'
+                      url    'http://jira.h2o.ai'
+                  }
+                  // Developer information
+                  developers {
+                      developer {
+                          id 'oss'
+                          name 'Open Source Google Group'
+                          email 'https://groups.google.com/forum/#!forum/h2ostream'
+                      }
                   }
               }
-
-              // Info for contributors
-              scm {
-                  url = 'https://github.com/h2oai/h2o-dev'
-                  connection = 'scm:git:https://github.com/h2oai/h2o-dev.git'
-                  developerConnection = 'scm:git:git@github.com:h2oai/h2o-dev.git'
-              }
-
-              // Public H2O JIRA for issue management
-              issueManagement {
-                  system = 'Jira'
-                  url = 'http://jira.h2o.ai'
-              }
-              // Developer information
-              developers {
-                  developer {
-                      id = 'oss'
-                      name = 'Open Source Google Group'
-                      email = 'https://groups.google.com/forum/#!forum/h2ostream'
-                  }
-              }
+              // Append basic POM information
+              provider.asNode().children().last() + h2oPOM
           }
       }
   }
@@ -126,9 +167,3 @@ publishing {
   }
 }
 
-signing {
-    required {
-        project.ext.isRelease || project.hasProperty("doSignAll")
-    }
-    sign publishing.publications
-}
