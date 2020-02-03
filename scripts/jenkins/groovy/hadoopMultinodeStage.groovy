@@ -21,7 +21,7 @@ def call(final pipelineContext, final stageConfig) {
             BUILD_HADOOP=true H2O_TARGET=${stageConfig.customData.distribution}${stageConfig.customData.version} ./gradlew clean build -x test
     
             echo 'Starting H2O on Hadoop'
-            ${startH2OScript(stageConfig.customData, branch)}
+            ${startH2OScript(stageConfig.customData, branch, buildId)}
             if [ -z \${CLOUD_IP} ]; then
                 echo "CLOUD_IP must be set"
                 exit 1
