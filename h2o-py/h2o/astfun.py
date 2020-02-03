@@ -164,6 +164,12 @@ def _disassemble_lambda(co):
     return ops
 
 
+def _get_instr(ops, idx=0, argpos=0):
+    # returns tuple (instruction, op)
+    instr, args = ops[idx][0], ops[idx][1]
+    return instr, args[argpos] if args else None
+
+
 def lambda_to_expr(fun):
     code = fun.__code__
     lambda_dis = _disassemble_lambda(code)
@@ -196,30 +202,30 @@ def _lambda_bytecode_to_ast(co, ops):
 
 
 def _opcode_read_arg(start_index, ops, keys):
-    instr = keys[start_index]
+    instr, op = _get_instr(ops, start_index)
     return_idx = start_index - 1
     if is_bytecode_instruction(instr):
         if is_binary(instr):
             return _binop_bc(BYTECODE_INSTRS[instr], return_idx, ops, keys)
         elif is_comp(instr):
-            return _binop_bc(ops[start_index][1][0], return_idx, ops, keys)
+            return _binop_bc(op, return_idx, ops, keys)
         elif is_unary(instr):
             return _unop_bc(BYTECODE_INSTRS[instr], return_idx, ops, keys)
         elif is_func(instr):
-            return _call_func_bc(ops[start_index][1][0], return_idx, ops, keys)
+            return _call_func_bc(op, return_idx, ops, keys)
         elif is_func_kw(instr):
-            return _call_func_kw_bc(ops[start_index][1][0], return_idx, ops, keys)
+            return _call_func_kw_bc(op, return_idx, ops, keys)
         # elif is_func_ex(instr):  # since 3.6
-            # return _call_func_ex_bc(ops[start_index][1][0], return_idx, ops, keys)
+            # return _call_func_ex_bc(op, return_idx, ops, keys)
         elif is_method_call(instr):  # since 3.7
-            return _call_method_bc(ops[start_index][1][0], return_idx, ops, keys)
+            return _call_method_bc(op, return_idx, ops, keys)
         else:
             raise ValueError("unimpl bytecode op: " + instr)
     elif is_load_fast(instr):
-        return [_load_fast(ops[start_index][1][0]), return_idx]
+        return [_load_fast(op), return_idx]
     elif is_load_global(instr):
-        return [_load_global(ops[start_index][1][0]), return_idx]
-    return [ops[start_index][1][0], return_idx]
+        return [_load_global(op), return_idx]
+    return [op, return_idx]
 
 
 def _binop_bc(op, idx, ops, keys):
@@ -245,69 +251,45 @@ def _call_func_bc(nargs, idx, ops, keys):
     :param keys:  names of instructions
     :return: ExprNode representing method call
     """
-    named_args = {}
-    unnamed_args = []
     args = []
+    kwargs = {}
     # Extract arguments based on calling convention for CALL_FUNCTION_KW
     while nargs > 0:
         if nargs >= 256:  # named args ( foo(50,True,x=10) ) read first  ( right -> left )
             arg, idx = _opcode_read_arg(idx, ops, keys)
-            named_args[ops[idx][1][0]] = arg
+            _, op = _get_instr(ops, idx)
+            kwargs[op] = arg
             idx -= 1  # skip the LOAD_CONST for the named args
             nargs -= 256  # drop 256
         else:
             arg, idx = _opcode_read_arg(idx, ops, keys)
-            unnamed_args.insert(0, arg)
+            args.append(arg)
             nargs -= 1
-    # LOAD_ATTR <method_name>: Map call arguments to a call of method on H2OFrame class
-    op = ops[idx][1][0]
-    args = _get_h2o_frame_method_args(op, named_args, unnamed_args) if is_method(ops[idx][0]) else []
-    # Map function name to proper rapids name
-    op = _get_func_name(op, args)
-    # Go to next instruction
-    idx -= 1
-    if is_bytecode_instruction(ops[idx][0]):
-        arg, idx = _opcode_read_arg(idx, ops, keys)
-        args.insert(0, arg)
-    elif is_load_fast(ops[idx][0]):
-        args.insert(0, _load_fast(ops[idx][1][0]))
-        idx -= 1
-    return [ExprNode(op, *args), idx]
+    args.reverse()
+    return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
 
 def _call_func_kw_bc(nargs, idx, ops, keys):
-    named_args = {}
-    unnamed_args = []
+    args = []
+    kwargs = {}
     # Implements calling convention defined by CALL_FUNCTION_KW
     # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_KW
     # Read tuple of keyword arguments
-    keyword_args = ops[idx][1][0]
+    _, keywords = _get_instr(ops, idx)
     # Skip the LOAD_CONST tuple
     idx -= 1
     # Load keyword arguments from stack
-    for keyword_arg in keyword_args:
+    for k in keywords:
         arg, idx = _opcode_read_arg(idx, ops, keys)
-        named_args[keyword_arg] = arg
+        kwargs[k] = arg
         nargs -= 1
     # Load positional arguments from stack
     while nargs > 0:
         arg, idx = _opcode_read_arg(idx, ops, keys)
-        unnamed_args.insert(0, arg)
+        args.append(arg)
         nargs -= 1
-    # LOAD_ATTR <method_name>: Map call arguments to a call of method on H2OFrame class
-    op = ops[idx][1][0]
-    args = _get_h2o_frame_method_args(op, named_args, unnamed_args) if is_method(ops[idx][0]) else []
-    # Map function name to proper rapids name
-    op = _get_func_name(op, args)
-    # Go to next instruction
-    idx -= 1
-    if is_bytecode_instruction(ops[idx][0]):
-        arg, idx = _opcode_read_arg(idx, ops, keys)
-        args.insert(0, arg)
-    elif is_load_fast(ops[idx][0]):
-        args.insert(0, _load_fast(ops[idx][1][0]))
-        idx -= 1
-    return [ExprNode(op, *args), idx]
+    args.reverse()
+    return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
 
 # def _call_func_ex_bc(nargs, idx, ops, keys):
@@ -316,12 +298,31 @@ def _call_func_kw_bc(nargs, idx, ops, keys):
 
 
 def _call_method_bc(nargs, idx, ops, keys):
-    # still need to verify it handles all use-cases:
-    # delegating to basic func call will work most of the time though in the context we're using this (H2OFrame.apply).
+    # delegating to basic func call works with or without additional args.
+    # actually, when the method has keyword arguments,
+    # then it is disassembled into LOAD_ATTR+CALL_FUNCTION instead of LOAD_METHOD+CALL_METHOD.
     return _call_func_bc(nargs, idx, ops, keys)
 
 
-def _get_h2o_frame_method_args(op, named_args, unnamed_args):
+def _to_rapids_expr(idx, ops, keys, *args, **kwargs):
+    # LOAD_ATTR <method_name> or LOAD_METHOD <method_name>: Map call arguments to a call of method on H2OFrame class
+    instr, op = _get_instr(ops, idx)
+    rapids_args = _get_h2o_frame_method_args(op, *args, **kwargs) if is_method(instr) else []
+    # Map function name to proper rapids name
+    rapids_op = _get_func_name(op, rapids_args)
+    # Go to next instruction
+    idx -= 1
+    instr, op = _get_instr(ops, idx)
+    if is_bytecode_instruction(instr):
+        arg, idx = _opcode_read_arg(idx, ops, keys)
+        rapids_args.insert(0, arg)
+    elif is_load_fast(instr):
+        rapids_args.insert(0, _load_fast(op))
+        idx -= 1
+    return [ExprNode(rapids_op, *rapids_args), idx]
+
+
+def _get_h2o_frame_method_args(op, *args, **kwargs):
     fr_cls = h2o.H2OFrame
     if not hasattr(fr_cls, op):
         raise ValueError("Unimplemented: op <%s> not bound in H2OFrame" % op)
@@ -337,9 +338,9 @@ def _get_h2o_frame_method_args(op, named_args, unnamed_args):
             if param.kind == inspect._VAR_KEYWORD: continue
             argnames.append(name)
             argdefs.append(param.default)
-    args = unnamed_args + argdefs[len(unnamed_args):]
-    for a in named_args: args[argnames.index(a)] = named_args[a]
-    return args
+    method_args = list(args) + argdefs[len(args):]
+    for a in kwargs: method_args[argnames.index(a)] = kwargs[a]
+    return method_args
 
 
 def _get_func_name(op, args):

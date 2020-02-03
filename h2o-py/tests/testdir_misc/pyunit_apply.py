@@ -42,6 +42,8 @@ def pd_to_int(h2o, pd):
 #
 OPS_VEC_TO_SCALAR = {
     "mean": [lambda x: x.mean(), [0,1], None, None],
+    "mean_with_arg": [lambda x: x.mean(False), [0,1], lambda x: x.mean(skipna=False), None],
+    "mean_with_kwarg": [lambda x: x.mean(skipna=False), [0,1], None, None],
     "median": [lambda x: x.median(), [0], None, h2o_to_float],
     "max": [lambda x: x.max(), [0,1], None, h2o_to_float],
     "min": [lambda x: x.min(), [0,1], None, h2o_to_float],
@@ -88,7 +90,7 @@ def test_ops(fr, pf, ops_map):
             fce, supported_axes, pandas_fce, assert_transf = op
             assert_fce = get_assert_fce_for_axis(axis, assert_transf)
             op_desc = "Op '{}' (axis={}) ".format(name, axis)
-            sys.stdout.write(op_desc)
+            print(op_desc, end='')
             if axis not in supported_axes:
                 print("UNSUPPORTED")
             else:
