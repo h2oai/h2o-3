@@ -40,13 +40,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   transient public int _tcp_readers;               // Count of started TCP reader threads
     
   transient private short _timestamp;
-
   transient private boolean _removed_from_cloud;
+  transient private volatile boolean _accessed_local_dkv; // Did this remote node ever accessed the local portion of DKV?   
 
   public final boolean isClient() {
     return _heartbeat._client;
   }
-
+  
   final void setTimestamp(short newTimestamp) {
     if (!H2ONodeTimestamp.isDefined(_timestamp) && H2ONodeTimestamp.isDefined(newTimestamp)) {
       // Note: time stamp is only known when the H2ONode actually opens a connection to this node
@@ -199,6 +199,14 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     return (now - _last_heard_from) < HeartBeatThread.TIMEOUT;
   }
 
+  public void markLocalDKVAccess() {
+    _accessed_local_dkv = true;
+  }
+
+  public boolean accessedLocalDKV() {
+    return _accessed_local_dkv;
+  }
+  
   // ---------------
   // A dense integer index for every unique IP ever seen, since the JVM booted.
   // Used to track "known replicas" per-key across Cloud change-ups.  Just use
