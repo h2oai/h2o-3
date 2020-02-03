@@ -60,15 +60,6 @@ public class AutoMLBuildSpec extends Iced {
 
     public AutoMLBuildControl() {
       stopping_criteria = new AutoMLStoppingCriteria();
-
-      // reasonable defaults:
-      stopping_criteria.set_max_models(0); //no limit
-      stopping_criteria.set_max_runtime_secs(0); //no limit
-      stopping_criteria.set_max_runtime_secs_per_model(0); //no limit
-
-      stopping_criteria.set_stopping_rounds(3);
-      stopping_criteria.set_stopping_tolerance(0.001);
-      stopping_criteria.set_stopping_metric(StoppingMetric.AUTO);
     }
   }
 
@@ -149,12 +140,12 @@ public class AutoMLBuildSpec extends Iced {
 
     public AutoMLStoppingCriteria() {
       // reasonable defaults:
-      set_max_models(0);
-      set_max_runtime_secs(3600);
-      set_max_runtime_secs_per_model(0);
+      set_max_models(0); // no limit
+      set_max_runtime_secs(0); // no limit
+      set_max_runtime_secs_per_model(0); // no limit
 
       set_stopping_rounds(3);
-      set_stopping_tolerance(0.001);
+      set_stopping_tolerance(AUTO_STOPPING_TOLERANCE);
       set_stopping_metric(StoppingMetric.AUTO);
     }
   }
