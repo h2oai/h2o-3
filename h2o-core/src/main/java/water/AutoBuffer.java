@@ -1359,7 +1359,7 @@ public final class AutoBuffer {
 
     put1(8);                    // Ship as full longs
     int sofar = x;
-    if ((y-sofar)*8 > _bb.remaining()) expandByteBuffer(ary.length*8);
+    if ((y-sofar)*8 > _bb.remaining()) expandByteBuffer(nzlen*8);
     while( sofar < y ) {
       LongBuffer lb = _bb.asLongBuffer();
       int len = Math.min(y - sofar, lb.remaining());

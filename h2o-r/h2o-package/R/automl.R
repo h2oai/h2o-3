@@ -317,6 +317,7 @@ h2o.automl <- function(x, y, training_frame,
   # GET AutoML object
   aml <- h2o.get_automl(project_name = res$job$dest$name)
   attr(aml, "id") <- res$job$dest$name
+  attr(aml, '_build_resp') <- res # hidden attribute for debugging/testing
   return(aml)
 }
 

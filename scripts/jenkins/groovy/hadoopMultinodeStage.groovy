@@ -1,5 +1,6 @@
 def call(final pipelineContext, final stageConfig) {
     def branch = env.BRANCH_NAME.replaceAll("\\/", "-")
+    def buildId = env.BUILD_ID
     def workDir = "/user/jenkins/workspaces/$branch"
     withCredentials([
             usernamePassword(credentialsId: 'mr-0xd-admin-credentials', usernameVariable: 'ADMIN_USERNAME', passwordVariable: 'ADMIN_PASSWORD'),
@@ -20,7 +21,7 @@ def call(final pipelineContext, final stageConfig) {
             BUILD_HADOOP=true H2O_TARGET=${stageConfig.customData.distribution}${stageConfig.customData.version} ./gradlew clean build -x test
     
             echo 'Starting H2O on Hadoop'
-            ${startH2OScript(stageConfig.customData, branch)}
+            ${startH2OScript(stageConfig.customData, branch, buildId)}
             if [ -z \${CLOUD_IP} ]; then
                 echo "CLOUD_IP must be set"
                 exit 1
@@ -92,7 +93,7 @@ private GString downloadConfigsScript(Map config) {
     """
 }
 
-private GString startH2OScript(final config, final branch) {
+private GString startH2OScript(final config, final branch, final buildId) {
     def nodes = config.nodes
     def xmx = config.xmx
     def extraMem = config.extramem
@@ -110,6 +111,7 @@ private GString startH2OScript(final config, final branch) {
             export HADOOP_CLASSPATH=\$HIVE_JDBC_JAR
             hadoop jar h2o-hadoop-*/h2o-${config.distribution}${config.version}-assembly/build/libs/h2odriver.jar \\
                 -libjars \$HIVE_JDBC_JAR \\
+                -jobname multinode_${branch}_${buildId} \\
                 -disable_flow -ea ${krbArgs} \\
                 -clouding_method filesystem -clouding_dir ${cloudingDir} \\
                 -n ${nodes} -mapperXmx ${xmx} -extramempercent ${extraMem} -baseport 54445 -timeout 360 \\
@@ -137,11 +139,17 @@ private GString startH2OScript(final config, final branch) {
 private String getKillScript() {
     return """
         if [ -f h2o_one_node ]; then
-            export YARN_APPLICATION_ID=\$(cat h2o_one_node | grep job | sed 's/job/application/g')
+            YARN_APPLICATION_ID=\$(cat h2o_one_node | grep job | sed 's/job/application/g')
+        elif [ -f h2odriver.log ]; then
+            YARN_APPLICATION_ID=\$(cat h2odriver.log | grep 'yarn logs -applicationId' | sed -r 's/.*(application_[0-9]+_[0-9]+).*/\\1/')
+        fi
+        if [ "\$YARN_APPLICATION_ID" != "" ]; then
             echo "YARN Application ID is \${YARN_APPLICATION_ID}"
             yarn application -kill \${YARN_APPLICATION_ID}
             yarn logs -applicationId \${YARN_APPLICATION_ID} > h2o_yarn.log
-        fi
+        else
+            echo "No cleanup, did not find yarn application id."
+        fi        
     """
 }
 

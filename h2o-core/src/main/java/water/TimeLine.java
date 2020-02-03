@@ -221,6 +221,9 @@ public class TimeLine extends UDP {
 
   // Send our most recent timeline to the remote via TCP
   @Override AutoBuffer call( AutoBuffer ab ) {
+    if (CLOUD == null) {
+      return null;
+    }
     long[] a = snapshot();
     if( ab._h2o == H2O.SELF ) {
       synchronized(TimeLine.class) {
@@ -236,6 +239,9 @@ public class TimeLine extends UDP {
 
   // Receive a remote timeline
   static void tcp_call( final AutoBuffer ab ) {
+    if (CLOUD == null) {
+      return;
+    }
     ab.getPort();
     long[] snap = ab.getA8();
     int idx = CLOUD.nidx(ab._h2o);
