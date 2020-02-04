@@ -184,7 +184,7 @@ public class TimeLine extends UDP {
   // possible to the same point in time.
   static long[][] SNAPSHOT;
   static long TIME_LAST_SNAPSHOT = 1;
-  static private H2O CLOUD = H2O.CLOUD;      // Cloud instance being snapshotted
+  static private H2O CLOUD;      // Cloud instance being snapshotted
   public static H2O getCLOUD(){return CLOUD;}
   static public long[][] system_snapshot() {
     // Now spin-wait until we see all snapshots check in.
@@ -224,9 +224,11 @@ public class TimeLine extends UDP {
     long[] a = snapshot();
     if( ab._h2o == H2O.SELF ) {
       synchronized(TimeLine.class) {
-        for( int i=0; i<CLOUD._memary.length; i++ )
-          if( CLOUD._memary[i]==H2O.SELF )
-            SNAPSHOT[i] = a;
+        if (CLOUD != null) {
+          for (int i = 0; i < CLOUD._memary.length; i++)
+            if (CLOUD._memary[i] == H2O.SELF)
+              SNAPSHOT[i] = a;
+        }
         TimeLine.class.notify();
       }
     } else // Send timeline to remote
@@ -238,9 +240,11 @@ public class TimeLine extends UDP {
   static void tcp_call( final AutoBuffer ab ) {
     ab.getPort();
     long[] snap = ab.getA8();
-    int idx = CLOUD.nidx(ab._h2o);
-    if (idx >= 0 && idx < SNAPSHOT.length)
-      SNAPSHOT[idx] = snap;     // Ignore out-of-cloud timelines
+    if (CLOUD != null) {
+      int idx = CLOUD.nidx(ab._h2o);
+      if (idx >= 0 && idx < SNAPSHOT.length)
+        SNAPSHOT[idx] = snap;     // Ignore out-of-cloud timelines
+    }
     ab.close();
     synchronized (TimeLine.class) {
       TimeLine.class.notify();
