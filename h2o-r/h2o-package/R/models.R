@@ -2788,7 +2788,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
     fallout='fpr',
     missrate='fnr',
     recall='tpr',
-    sensitivity='fnr',
+    sensitivity='tpr',
     specificity='tnr'
 )
 .h2o.maximizing_metrics <- c('absolute_mcc', 'accuracy', 'precision',
