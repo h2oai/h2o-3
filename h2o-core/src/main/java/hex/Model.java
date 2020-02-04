@@ -1466,8 +1466,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics) throws IllegalArgumentException {
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
+
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
+    return score(fr, destination_key, j, computeMetrics, customMetricFunc,  adaptFr);
+  }
+
+  public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc, Frame adaptFr) throws IllegalArgumentException {
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     // clean up the previous score warning messages

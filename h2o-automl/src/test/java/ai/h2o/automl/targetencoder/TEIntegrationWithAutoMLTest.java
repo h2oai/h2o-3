@@ -135,7 +135,7 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test
+  @Test // test does not leak keys. Is it expected?
   public void scopeUntrack() {
     Scope.enter();
     Frame fr = null;

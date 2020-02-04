@@ -95,21 +95,6 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineMo
     throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring on raw data. Use score() instead.");
   }
 
-  //TODO better to overload score() method and allow to provide adapted frame from outside. Is coming in next commit
-  private static class FixedChecksumFrame extends Frame {
-    private final long _checksum;
-
-    public FixedChecksumFrame(Frame fr, long checksum) {
-      super(fr);
-      _checksum = checksum;
-    }
-
-    @Override
-    protected long checksum_impl() {
-      return _checksum;
-    }
-  }
-
   @Override
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
 
@@ -119,10 +104,8 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineMo
       Model preprocessingModel = DKV.getGet(preprocessingModelKey);
       preprocessedFrame = preprocessingModel.score(fr);
     }
-    Frame finalFrame = new FixedChecksumFrame(preprocessedFrame, fr.checksum());
-    finalFrame._key = fr._key;
 
-    Frame frameWithScores = _output.getScoringModel().score(finalFrame, destination_key, j, computeMetrics, customMetricFunc);
+    Frame frameWithScores = _output.getScoringModel().score(fr, destination_key, j, computeMetrics, customMetricFunc, preprocessedFrame);
     return frameWithScores;
   }
   

@@ -71,15 +71,6 @@ public class Scope {
     return keyed;
   }
 
-  static public <T extends Keyed> Keyed<T>[] untrack_generic(Keyed<T>... keyed) {
-    Scope scope = _scope.get();
-    assert scope != null;
-    if (scope._keys.size() == 0) throw new IllegalStateException("Nothing to untrack");
-    HashSet<Key> xkeys = scope._keys.peek();
-    for (Keyed<T> key : keyed) xkeys.remove(key._key); // Untrack keys
-    return keyed;
-  }
-
   static public Vec track( Vec vec ) {
     Scope scope = _scope.get();                   // Pay the price of T.L.S. lookup
     assert scope != null;
