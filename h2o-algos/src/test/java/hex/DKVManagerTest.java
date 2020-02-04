@@ -4,37 +4,45 @@ import hex.naivebayes.NaiveBayes;
 import hex.naivebayes.NaiveBayesModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
-import water.fvec.*;
+import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
-import static water.fvec.VecHelper.*;
+import static water.TestUtil.ar;
+import static water.fvec.VecHelper.vecChunkIdx;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DKVManagerTest {
 
-public class DKVManagerTest extends TestUtil {
-
-    @BeforeClass()
-    public static void setup() {
-        stall_till_cloudsize(1);
-    }
-    
     @Rule
-    public ExpectedException expectedException = ExpectedException.none(); 
+    public ExpectedException expectedException = ExpectedException.none();
+
+    private static void testRetainModel(Model model, Frame trainingFrame){
+        assertNotNull(DKV.get(model._key));
+        DKVManager.retain(new Key[]{model._key, trainingFrame._key});
+        assertNotNull(DKV.get(model._key));
+        
+    }
 
     @Test
     public void testNaiveBayesModel() {
         NaiveBayesModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
-            trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+            trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
             List<Key> retainedKeys = new ArrayList<>();
             retainedKeys.add(trainingFrame._key);
             // Test the training frame has not been deleted
@@ -64,13 +72,12 @@ public class DKVManagerTest extends TestUtil {
         }
     }
 
-
     @Test
     public void testGBM() {
         GBMModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
-            trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            trainingFrame = TestUtil.parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
 
             // Test the training frame has not been deleted
             testRetainFrame(trainingFrame);
@@ -152,6 +159,51 @@ public class DKVManagerTest extends TestUtil {
       }
     }
 
+    @Test
+    public void testGBM_TwoModels() {
+        try {
+            Scope.enter();
+            final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            Scope.track(trainingFrame);
+
+            // Test the training frame has not been deleted
+            testRetainFrame(trainingFrame);
+
+            // A little integration test
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = trainingFrame._names[1];
+            parms._ntrees = 1;
+            parms._max_depth = 1;
+            parms._min_rows = 1;
+            parms._nbins = 20;
+            parms._learn_rate = 1.0f;
+            parms._score_each_iteration = true;
+
+            GBM job = new GBM(parms);
+            Model model = job.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+
+            final Frame preds = model.score(trainingFrame);
+            assertNotNull(preds);
+
+            DKVManager.retain(new Key[]{trainingFrame._key});
+
+            Value value = DKV.get(model._key);
+            assertNull(value);
+
+            // Second model is trained after the original has been deleted, with same parameters
+            job = new GBM(parms);
+            model = job.trainModel().get();
+            assertNotNull(model);
+            Scope.track_generic(model);
+        } finally {
+            Scope.exit();
+        }
+    }
+
     /**
      * Train a model by using a single input data frame. Retain the model. The frame should be retained (remain in DKV),
      * as the model links to it as a training frame.
@@ -160,7 +212,7 @@ public class DKVManagerTest extends TestUtil {
     public void testRetainModels_sharedFrames() {
         try {
             Scope.enter();
-            Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+            Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
             Scope.track(trainingFrame);
 
             // A little integration test
@@ -190,7 +242,6 @@ public class DKVManagerTest extends TestUtil {
         
     }
 
-
   /**
    * If a model has been trained using a Frame with shared vecs and the model is retained, the training frame should stay
    * intact.
@@ -199,7 +250,7 @@ public class DKVManagerTest extends TestUtil {
   public void testRetainModels_sharedVecs() {
     try {
       Scope.enter();
-      Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
+      Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
 
       Frame sharedFrame = new Frame(Key.<Frame>make("sharedFrame"));
@@ -241,43 +292,6 @@ public class DKVManagerTest extends TestUtil {
     }
 
   }
-
-    /**
-     * Train a model from a frame. Retain the frame only and let the model be deleted. The frame should remain in DKV.
-     */
-    @Test
-    public void testdeleteModel_retainFrame() {
-        try {
-            Scope.enter();
-            Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
-            Scope.track(trainingFrame);
-
-          NaiveBayesModel.NaiveBayesParameters parms = new NaiveBayesModel.NaiveBayesParameters();
-            parms._train = trainingFrame._key;
-            parms._laplace = 0;
-            parms._response_column = trainingFrame._names[4];
-            parms._compute_metrics = false;
-
-            final Model model = new NaiveBayes(parms).trainModel().get();
-            Scope.track_generic(model);
-
-          DKVManager.retain(new Key[]{trainingFrame._key});
-
-          // Training frame of the model should be retained as well
-            final Value value = DKV.get(trainingFrame._key);
-            assertNotNull(value);
-            assertTrue(value.isFrame());
-            assertFalse(value.isDeleted());
-
-            assertNotNull(value.get()); // The training frame should be there
-            
-            assertNull(DKV.get(model._key)); // The model should be deleted
-
-        } finally {
-            Scope.exit();
-        }
-
-    }
 
   // Retaining models & integration test with models is in h2o-algos subproject.
   @Test
@@ -329,11 +343,41 @@ public class DKVManagerTest extends TestUtil {
         }
     }
     
-    private static void testRetainModel(Model model, Frame trainingFrame){
-      assertNotNull(DKV.get(model._key));
-      DKVManager.retain(new Key[]{model._key});
-      assertNotNull(DKV.get(model._key));
-        
+    /**
+     * Train a model from a frame. Retain the frame only and let the model be deleted. The frame should remain in DKV.
+     */
+    @Test
+    public void testdeleteModel_retainFrame() {
+        try {
+            Scope.enter();
+            Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
+            Scope.track(trainingFrame);
+
+          NaiveBayesModel.NaiveBayesParameters parms = new NaiveBayesModel.NaiveBayesParameters();
+            parms._train = trainingFrame._key;
+            parms._laplace = 0;
+            parms._response_column = trainingFrame._names[4];
+            parms._compute_metrics = false;
+
+            final Model model = new NaiveBayes(parms).trainModel().get();
+            Scope.track_generic(model);
+
+          DKVManager.retain(new Key[]{trainingFrame._key});
+
+          // Training frame of the model should be retained as well
+            final Value value = DKV.get(trainingFrame._key);
+            assertNotNull(value);
+            assertTrue(value.isFrame());
+            assertFalse(value.isDeleted());
+
+            assertNotNull(value.get()); // The training frame should be there
+            
+            assertNull(DKV.get(model._key)); // The model should be deleted
+
+        } finally {
+            Scope.exit();
+        }
+
     }
     
     private static void testModelDeletion(final Model model){

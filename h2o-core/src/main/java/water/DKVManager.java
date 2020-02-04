@@ -3,7 +3,7 @@ package water;
 import hex.Model;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
+import water.util.ArrayUtils;
 
 import java.util.*;
 
@@ -17,14 +17,81 @@ public class DKVManager {
    *
    * @param retainedKeys Keys of {@link Frame}s and {@link Model}s to be retained. Only Frame and Model keys are accepted.
    */
-  public static void retain(final Key[] retainedKeys){
-    final Set<Key> retainedSet = new HashSet<>(retainedKeys.length);
-    retainedSet.addAll(Arrays.asList(retainedKeys));
+  public static void retain(final Key[] retainedKeys) {
+    final Set<Key> retainedKeysSet = new HashSet<>(retainedKeys.length);
+    retainedKeysSet.addAll(Arrays.asList(retainedKeys));
     // Frames and models have multiple nested keys. Those must be extracted and kept from deletion as well.
-    extractNestedKeys(retainedSet);
+    extractNestedKeys(retainedKeysSet);
+    Set<Value> removedKeys = collectUniqueKeys();
+    removeValues(removedKeys, retainedKeysSet);
+  }
 
-    new ClearDKVTask(retainedSet.toArray(new Key[retainedSet.size()]))
-            .doAllNodes();
+  /**
+   * Collects a {@link Set} of keys available cluster-wide
+   *
+   * @return
+   */
+  private static final Set<Value> collectUniqueKeys() {
+    final Value[] collectedValues = new CollectValuesTask()
+            .doAllNodes()
+            ._collectedValues;
+    final Set<Value> clusterValues = new HashSet<>(collectedValues.length);
+
+    for (final Value value : collectedValues) {
+      clusterValues.add(value);
+    }
+
+    return clusterValues;
+  }
+
+  /**
+   * Removes values from DKV, except for keys meant to be retained.
+   *
+   * @param removedValues Values to be removed
+   * @param retainedKeys  A {@link Set} of keys to be retained
+   */
+  private static void removeValues(final Set<Value> removedValues, final Set<Key> retainedKeys) {
+
+    for (final Value value : removedValues) {
+      if (retainedKeys.contains(value._key)) {
+        continue;
+      }
+      final Futures removalFutures = new Futures();
+      if (value == null || value._key == null || value.isNull()) continue;
+      if (value.isFrame()) {
+        final Frame frame = value.get();
+        frame.retain(removalFutures, retainedKeys);
+      } else if (value.isModel()) {
+        final Model model = value.get();
+        model.remove(removalFutures, false);
+      }
+      removalFutures.blockForPending();
+    }
+
+  }
+
+  /**
+   * Collects all {@link Value}(s) cluster-wide and stores them inside the _collectedValues field
+   */
+  private static class CollectValuesTask extends MRTask<CollectValuesTask> {
+    private Value[] _collectedValues;
+
+    @Override
+    protected void setupLocal() {
+      final Collection<Value> localkeysSet = H2O.values();
+      _collectedValues = localkeysSet.toArray(new Value[localkeysSet.size()]);
+    }
+
+    @Override
+    public void reduce(final CollectValuesTask mrt) {
+      try {
+        // Protection against too many keys present on a cluster to fit into a single array. 
+        Math.addExact(_collectedValues.length, mrt._collectedValues.length);
+      } catch (ArithmeticException e) {
+        throw new IllegalStateException("Too many keys on cluster - Array of keys is overflown.", e);
+      }
+      _collectedValues = ArrayUtils.append(_collectedValues, mrt._collectedValues);
+    }
   }
 
   /**
@@ -87,57 +154,5 @@ public class DKVManager {
       retainedKeys.add(model._parms._valid);
       extractFrameKeys(retainedKeys, model._parms._valid.get());
     }
-  }
-
-  private static class ClearDKVTask extends MRTask<ClearDKVTask> {
-
-    private final Key[] _retainedKeys; // Original model & frame keys provided by the user, accompanied with extracted internal keys
-
-    /**
-     *
-     * @param retainedKeys Keys that are NOT deleted and will remain in DKV. Only Model keys and Frame keys are accepted
-     */
-    public ClearDKVTask(Key[] retainedKeys) {
-      _retainedKeys = retainedKeys;
-    }
-
-    @Override
-    protected void setupLocal() {
-      final Set<Key> retainedKeys = new HashSet<>(_retainedKeys.length);
-      retainedKeys.addAll(Arrays.asList(_retainedKeys));
-
-      final Collection<Value> storeKeys = H2O.STORE.values();
-      Futures removalFutures = new Futures();
-      for (final Value value : storeKeys) {
-        if (retainedKeys.contains(value._key)) {
-          continue;
-        }
-        try {
-          // The `is*` methods of the Value class (isFrame, isModel() etc.) do call getFreezable method, which might
-          // throw ClassNotFoundException if the value has already been removed (type BAD). However, the methods do not
-          // declare the ClassNotFound exception, thefore the catch block does not compile. To avoid catching general
-          // Exception here,  the `TypeMap.getTheFreezableOrThrow` is called beforehand, as this method declares the 
-          // exception and the code compiles.
-          TypeMap.getTheFreezableOrThrow(value.type());
-
-          if (value.isNull()) continue;
-          if (value.isFrame()) {
-            ((Frame) value.get()).retain(removalFutures, retainedKeys);
-          } else if (value.isModel()) {
-            ((Model) value.get()).remove(removalFutures);
-          }
-        } catch (ClassNotFoundException e) {
-          // Keys are collected globally and then, on each node, this ClearDKVTask is invoked. Local H2O.STORE on each node is
-          // deleted, as it might contain local-only keys. This strategy is used to prevent collecting keys from all nodes and then
-          // invoking "remove" on one node. When each node iterates over local keys, one key might be removed multiple times.
-          // This might result in ClassNotFoundException, as getTheFreezable might from TypeMap might throw this error.
-          Log.debug(e);
-          continue; // Value not present, ignore
-        }
-      }
-      removalFutures.blockForPending();
-    }
-
-
   }
 }
