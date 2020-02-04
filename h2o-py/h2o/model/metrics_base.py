@@ -658,7 +658,7 @@ class H2OBinomialModelMetrics(MetricsBase):
         fallout='fpr',
         missrate='fnr',
         recall='tpr',
-        sensitivity='fnr',
+        sensitivity='tpr',
         specificity='tnr'
     )
 
