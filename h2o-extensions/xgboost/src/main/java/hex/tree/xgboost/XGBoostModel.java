@@ -359,6 +359,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     } else if (p._booster == XGBoostParameters.Booster.gblinear) {
       Log.info("Using coord_descent updater.");
       params.put("updater", "coord_descent");
+    } else if (H2O.CLOUD.size() > 1 && p._tree_method == XGBoostParameters.TreeMethod.auto &&
+        p._monotone_constraints != null) {
+      Log.info("Using hist tree method for distributed computation with monotone_constraints.");
+      params.put("tree_method", XGBoostParameters.TreeMethod.hist.toString());
+      params.put("max_bin", p._max_bins);
     } else {
       Log.info("Using " + p._tree_method.toString() + " tree method.");
       params.put("tree_method", p._tree_method.toString());
