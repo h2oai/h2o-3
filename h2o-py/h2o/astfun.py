@@ -60,7 +60,7 @@ BYTECODE_INSTRS = {
     # CALL_FUNCTION_EX pops all arguments and the callable object off the stack,
     # calls the callable object with those arguments,
     # and pushes the return value returned by the callable object.
-    # "CALL_FUNCTION_EX": "",
+    "CALL_FUNCTION_EX": "",
     # from https://docs.python.org/3/library/dis.html#opcode-CALL_METHOD :
     # Calls a method. argc is the number of positional arguments.
     # Keyword arguments are not supported. This opcode is designed to be used with LOAD_METHOD.
@@ -99,6 +99,9 @@ def is_method_call(instr):
 def is_callable(instr):
     return is_func(instr) or is_func_kw(instr) or is_func_ex(instr) or is_method_call(instr)
 
+def is_builder(instr):
+    return instr.startswith('BUILD_')
+
 def is_load_fast(instr):
     return "LOAD_FAST" == instr
 
@@ -110,6 +113,12 @@ def is_method(instr):
 
 def is_load_global(instr):
     return "LOAD_GLOBAL" == instr
+
+def is_load_deref(instr):
+    return "LOAD_DEREF" == instr
+
+def is_load_outer_scope(instr):
+    return is_load_deref(instr) or is_load_global(instr)
 
 def is_return(instr):
     return "RETURN_VALUE" == instr
@@ -155,12 +164,15 @@ def _disassemble_lambda(co):
                 raise ValueError("unimpl: op in hasjrel")
             elif op in dis.haslocal:
                 args.append(co.co_varnames[arg])  # LOAD_FAST
+            elif op in dis.hasfree:
+                args.append(co.co_freevars[arg])  # LOAD_DEREF
             elif op in dis.hascompare:
                 args.append(dis.cmp_op[arg])  # COMPARE_OP
             elif is_callable(dis.opname[op]):
                 args.append(arg)  # oparg == nargs(fcn)
+            else:
+                args.append(arg)
         ops.append([dis.opname[op], args])
-
     return ops
 
 
@@ -185,7 +197,7 @@ def _lambda_bytecode_to_ast(co, ops):
     if is_return(instr):
         s -= 1
         instr = keys[s]
-    if is_bytecode_instruction(instr) or is_load_fast(instr) or is_load_global(instr):
+    if is_bytecode_instruction(instr) or is_load_fast(instr) or is_load_outer_scope(instr):
         body, s = _opcode_read_arg(s, ops, keys)
     else:
         raise ValueError("unimpl bytecode instr: " + instr)
@@ -205,6 +217,7 @@ def _opcode_read_arg(start_index, ops, keys):
     instr, op = _get_instr(ops, start_index)
     return_idx = start_index - 1
     if is_bytecode_instruction(instr):
+        # print(ops)
         if is_binary(instr):
             return _binop_bc(BYTECODE_INSTRS[instr], return_idx, ops, keys)
         elif is_comp(instr):
@@ -215,28 +228,28 @@ def _opcode_read_arg(start_index, ops, keys):
             return _call_func_bc(op, return_idx, ops, keys)
         elif is_func_kw(instr):
             return _call_func_kw_bc(op, return_idx, ops, keys)
-        # elif is_func_ex(instr):  # since 3.6
-            # return _call_func_ex_bc(op, return_idx, ops, keys)
+        elif is_func_ex(instr):  # since 3.6
+            return _call_func_ex_bc(op, return_idx, ops, keys)
         elif is_method_call(instr):  # since 3.7
             return _call_method_bc(op, return_idx, ops, keys)
         else:
             raise ValueError("unimpl bytecode op: " + instr)
     elif is_load_fast(instr):
         return [_load_fast(op), return_idx]
-    elif is_load_global(instr):
-        return [_load_global(op), return_idx]
-    return [op, return_idx]
+    elif is_load_outer_scope(instr):
+        return [_load_outer_scope(op), return_idx]
+    return op, return_idx
 
 
 def _binop_bc(op, idx, ops, keys):
     rite, idx = _opcode_read_arg(idx, ops, keys)
     left, idx = _opcode_read_arg(idx, ops, keys)
-    return [ExprNode(op, left, rite), idx]
+    return ExprNode(op, left, rite), idx
 
 
 def _unop_bc(op, idx, ops, keys):
     arg, idx = _opcode_read_arg(idx, ops, keys)
-    return [ExprNode(op, arg), idx]
+    return ExprNode(op, arg), idx
 
 
 def _call_func_bc(nargs, idx, ops, keys):
@@ -292,9 +305,26 @@ def _call_func_kw_bc(nargs, idx, ops, keys):
     return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
 
-# def _call_func_ex_bc(nargs, idx, ops, keys):
-    # Also try to improve code reuse between this and _call_func_kw_bc and _call_func_bc
-    # return _call_func_kw_bc(nargs, idx, ops, keys)
+def _call_func_ex_bc(flags, idx, ops, keys):
+    # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_EX
+    if flags & 1:
+        kwargs, idx = _opcode_read_arg(idx, ops, keys)
+    else:
+        kwargs = {}
+
+    instr, nargs = _get_instr(ops, idx)
+    if is_builder(instr):
+        idx -= 1
+        args = []
+        while nargs > 0:
+            new_args, idx = _opcode_read_arg(idx, ops, keys)
+            args.insert(0, *new_args)
+            nargs -= 1
+    else:
+        args, idx = _opcode_read_arg(idx, ops, keys)
+        args = [] if args is None else args
+
+    return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
 
 def _call_method_bc(nargs, idx, ops, keys):
@@ -319,7 +349,7 @@ def _to_rapids_expr(idx, ops, keys, *args, **kwargs):
     elif is_load_fast(instr):
         rapids_args.insert(0, _load_fast(op))
         idx -= 1
-    return [ExprNode(rapids_op, *rapids_args), idx]
+    return ExprNode(rapids_op, *rapids_args), idx
 
 
 def _get_h2o_frame_method_args(op, *args, **kwargs):
@@ -356,9 +386,17 @@ def _load_fast(x):
     return ASTId(x)
 
 
-def _load_global(x):
+def _load_outer_scope(x):
     if x == 'True':
         return True
     elif x == 'False':
         return False
+    stack = inspect.stack()
+    for rec in stack:
+        module = rec.frame.f_globals.get('__name__', None)
+        if module and module.startswith('h2o.'):
+            continue
+        scope = rec[0].f_locals
+        if x in scope:
+            return scope[x]
     return x

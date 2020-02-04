@@ -42,8 +42,6 @@ def pd_to_int(h2o, pd):
 #
 OPS_VEC_TO_SCALAR = {
     "mean": [lambda x: x.mean(), [0,1], None, None],
-    "mean_with_arg": [lambda x: x.mean(False), [0,1], lambda x: x.mean(skipna=False), None],
-    "mean_with_kwarg": [lambda x: x.mean(skipna=False), [0,1], None, None],
     "median": [lambda x: x.median(), [0], None, h2o_to_float],
     "max": [lambda x: x.max(), [0,1], None, h2o_to_float],
     "min": [lambda x: x.min(), [0,1], None, h2o_to_float],
@@ -116,6 +114,36 @@ def pyunit_apply_n_to_n_ops():
     test_ops(fr, pf, OPS_VEC_TO_VEC)
 
 
+def pyunit_apply_with_args():
+    fr = h2o_frame_fixture()
+    ref = fr.scale(center=False, scale=False).as_data_frame()
+
+    #vars
+    false = False
+    args = (False, False)
+    kwargs = dict(center=False, scale=False)
+    partial_args = (False,)
+    partial_kwargs = dict(scale=False)
+
+    to_test = dict(
+        scale_with_arg=lambda x: x.scale(False, False),
+        scale_with_kwarg=lambda x: x.scale(center=False, scale=False),
+        scale_with_argkwarg=lambda x: x.scale(False, scale=False),
+        scale_with_global_arg=lambda x: x.scale(false, scale=false),
+        scale_with_args=lambda x: x.scale(*args),
+        scale_with_kwargs=lambda x: x.scale(**kwargs),
+        scale_with_partial_args=lambda x: x.scale(False, *partial_args),
+        scale_with_partial_kwargs=lambda x: x.scale(False, **partial_kwargs),
+        scale_with_args_and_kwargs=lambda x: x.scale(*partial_args, **partial_kwargs),
+        scale_with_all_kind_args=lambda x: x.scale(False, *partial_args, **partial_kwargs),  # strangely this works because our signature verification is not that strict, but it's fine... at least behaves as expected.
+    )
+    for test, lbd in to_test.items():
+        print(test)
+        res = fr.apply(lbd).as_data_frame()
+        assert_frame_equal(res, ref)
+
+
+
 def test_lambda(h2o_frame, panda_frame, fce, axis, assert_fce, pandas_fce=None):
     h2o_result = h2o_frame.apply(fce, axis=axis).as_data_frame()
     pd_result = panda_frame.apply(pandas_fce if pandas_fce else fce, axis=axis)
@@ -145,7 +173,7 @@ def assert_column_equal(h2o_result, pd_result):
 
 __AXIS_ASSERTS__ = { 0: assert_column_equal, 1: assert_row_equal}
 
-__TESTS__ = [pyunit_apply_n_to_n_ops, pyunit_apply_n_to_1_ops]
+__TESTS__ = [pyunit_apply_n_to_n_ops, pyunit_apply_n_to_1_ops, pyunit_apply_with_args]
 
 if __name__ == "__main__":
     for func in __TESTS__:
