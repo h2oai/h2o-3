@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Yu (3.28.0.3) - 2/3/2020
+### Yu (3.28.0.3) - 2/4/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html</a>
 
@@ -24,6 +24,10 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7244'>PUBDEV-7244</a>] - Fixed an issue that caused import_hive_table to not classload the JDBC driver.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7246'>PUBDEV-7246</a>] - MOJOs can now be built from XGBoost models built with an offset column.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7272'>PUBDEV-7272</a>] - Fixed an issue that cause the R and Python clients to return the wrong sensitivity metric value.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7273'>PUBDEV-7273</a>] - Fixed an incorrect sender port calculation in TimestampSnapshot.
 </li>
 </ul>
 
