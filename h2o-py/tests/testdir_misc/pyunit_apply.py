@@ -175,8 +175,7 @@ def assert_column_equal(h2o_result, pd_result):
 
 __AXIS_ASSERTS__ = { 0: assert_column_equal, 1: assert_row_equal}
 
-# __TESTS__ = [pyunit_apply_n_to_n_ops, pyunit_apply_n_to_1_ops, pyunit_apply_with_args]
-__TESTS__ = [pyunit_apply_with_args]
+__TESTS__ = [pyunit_apply_n_to_n_ops, pyunit_apply_n_to_1_ops, pyunit_apply_with_args]
 
 if __name__ == "__main__":
     for func in __TESTS__:
