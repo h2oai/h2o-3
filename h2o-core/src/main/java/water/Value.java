@@ -554,8 +554,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
       // Speculatively invalidate replicas also on nodes that were not known when the cluster was formed (clients)
       final int unseenMax = H2ONode.IDX.length;
       for (int i=max; i<unseenMax; i++) {
-        H2ONode node = H2ONode.IDX[i];
-        if (node != sender && 
+        final H2ONode node = H2ONode.IDX[i];
+        if (node != null &&                  // can happen when the IDX array is being expanded
+                node != sender &&            // ignore myself
                 node.isRemovedFromCloud() && // ignore nodes that are not active anymore 
                 node.accessedLocalDKV())     // ignore nodes that appear active but didn't actually read DKV ever 
           TaskInvalidateKey.invalidate(node, _key, newval, fs);
