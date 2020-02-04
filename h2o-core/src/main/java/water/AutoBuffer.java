@@ -992,6 +992,8 @@ public final class AutoBuffer {
   // This ensures getPort will still have the same side-effect except we skip also the timestamp which is desired
   short getTimestamp() { return getSz(1+2).getShort(1);}
   // Get the port in next 2 bytes
+  // Same port extraction is done in portPack method in TimelineSnapshot. If 'getPort' method is changed,
+  // there is a big chance that 'portPack' method needs to be changed as well to be consistent.
   int getPort( ) { return getSz(1+2+2).getChar(1+2); }
   // Get the task# in the next 4 bytes
   int  getTask( ) { return getSz(1+2+2+4).getInt(1+2+2); }
