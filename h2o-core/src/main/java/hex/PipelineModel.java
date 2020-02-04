@@ -11,15 +11,12 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineMo
   protected static final String ALGO_NAME = "ModelPipeline";
 
   private final Key<Model>[] _preprocessingModels;
-  private final Model _scoringModel;
 
   public PipelineModel(Key<PipelineModel> selfKey,
                        PipelineModelParameters parms,
                        PipelineModelOutput output,
-                       Model scoringModel,
                        List<Key<Model>> preprocessingModels) {
     super(selfKey, parms, output);
-    _scoringModel = scoringModel;
     _preprocessingModels = preprocessingModels.toArray(new Key[0]);
   }
 
@@ -67,13 +64,20 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineMo
   public static class PipelineModelOutput extends Model.Output {
 
     public PipelineModelParameters _parms;
+
     public Model _scoringModel;
 
     public PipelineModelOutput(PipelineModelBuilder b, Model scoringModel) {
       super(b);
       _parms = b._parms;
       _scoringModel = scoringModel;
-      _cross_validation_metrics = _scoringModel._output._cross_validation_metrics;
+      // Need this to get PipelineModel arranged within Leaderboard based on scoring model's metrics
+      if(_scoringModel != null)
+        _cross_validation_metrics = _scoringModel._output._cross_validation_metrics;
+    }
+
+    public Model getScoringModel() {
+      return _scoringModel;
     }
 
     @Override public ModelCategory getModelCategory() {
@@ -83,12 +87,27 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineMo
 
   @Override
   protected long checksum_impl() {
-    return _scoringModel.checksum_impl();
+    return _output.getScoringModel().checksum_impl();
   }
 
   @Override
   protected double[] score0(double data[], double preds[]){
     throw new UnsupportedOperationException("TargetEncoderModel doesn't support scoring on raw data. Use score() instead.");
+  }
+
+  //TODO better to overload score() method and allow to provide adapted frame from outside. Is coming in next commit
+  private static class FixedChecksumFrame extends Frame {
+    private final long _checksum;
+
+    public FixedChecksumFrame(Frame fr, long checksum) {
+      super(fr);
+      _checksum = checksum;
+    }
+
+    @Override
+    protected long checksum_impl() {
+      return _checksum;
+    }
   }
 
   @Override
@@ -100,9 +119,10 @@ public class PipelineModel extends Model<PipelineModel, PipelineModel.PipelineMo
       Model preprocessingModel = DKV.getGet(preprocessingModelKey);
       preprocessedFrame = preprocessingModel.score(fr);
     }
-    Frame frameWithScores = _scoringModel.score(preprocessedFrame);
-    ModelMetrics training_metrics = _scoringModel._output._training_metrics;
-    ModelMetrics cv_metrics = _scoringModel._output._cross_validation_metrics;
+    Frame finalFrame = new FixedChecksumFrame(preprocessedFrame, fr.checksum());
+    finalFrame._key = fr._key;
+
+    Frame frameWithScores = _output.getScoringModel().score(finalFrame, destination_key, j, computeMetrics, customMetricFunc);
     return frameWithScores;
   }
   

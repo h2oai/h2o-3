@@ -13,13 +13,11 @@ import java.util.stream.Stream;
  */
 public class PipelineModelBuilder extends ModelBuilder<PipelineModel, PipelineModel.PipelineModelParameters, PipelineModel.PipelineModelOutput>{
 
-  private PipelineModel _pipelineModel; // can be local field
-
   private ModelBuilder _scoringModelBuilder;
   private final List<Key<Model>> _preprocessingModels = new ArrayList<>();
 
   public PipelineModelBuilder(PipelineModel.PipelineModelParameters parameters, ModelBuilder scoringModelBuilder) {
-    super(parameters);
+    super(parameters, scoringModelBuilder.dest());
     _scoringModelBuilder = scoringModelBuilder;
     super.init(false);
   }
@@ -27,16 +25,17 @@ public class PipelineModelBuilder extends ModelBuilder<PipelineModel, PipelineMo
   private class ModelPipelineDriver extends Driver {
     @Override
     public void computeImpl() {
-      _pipelineModel = null;
+      PipelineModel pipelineModel = null;
+      Model retrievedScoringModel = null;
       try {
         // Making PipelineModel to be a proxy for the underlying scoringModel.
         // Training frame and response column are needed to define distribution family and corresponding model metrics.
         _parms.setTrain(_scoringModelBuilder._parms.train()._key);
+
         _parms._response_column = _scoringModelBuilder._parms._response_column;
         init(true);
 
         Model.Parameters scoringModelParams = _scoringModelBuilder._parms;
-        _scoringModelBuilder._result = _result;
 
         // Applying preprocessing to train and valid frames
         ArrayList<String> featuresToIgnore = new ArrayList<>();
@@ -63,21 +62,26 @@ public class PipelineModelBuilder extends ModelBuilder<PipelineModel, PipelineMo
         if(preprocessedValidFrame != null) scoringModelParams.setValid(preprocessedValidFrame._key);
         scoringModelParams._ignored_columns = featuresToIgnore.toArray(new String[0]);
 
+//        _result = _scoringModelBuilder.dest(); // we can probably modify key a bit to signify case when preprocessing happened
+//       _scoringModelBuilder._result  = _result; // To make PipelineModel to be a proxy for underlying model
         _scoringModelBuilder.init(false);
         Log.debug("Training scoring model for PipelineModel: " );
         Job scoringModelJob = _scoringModelBuilder.trainModelOnH2ONode();
         scoringModelJob.get();
-        Model retrievedScoringModel = DKV.getGet(_scoringModelBuilder.dest());
+        retrievedScoringModel = DKV.getGet(_scoringModelBuilder.dest());
 
-        PipelineModel.PipelineModelOutput pipelineModelOutput = new PipelineModel.PipelineModelOutput(PipelineModelBuilder.this, retrievedScoringModel);
-        PipelineModel pipelineModel = new PipelineModel(dest(), _parms, pipelineModelOutput, retrievedScoringModel, getPreprocessingModels());
-        _pipelineModel = pipelineModel.delete_and_lock(_job);
+        // Preparing PipelineModel
+        PipelineModel.PipelineModelOutput emptyOutput = new PipelineModel.PipelineModelOutput(PipelineModelBuilder.this, null);
+        pipelineModel = new PipelineModel(_result, _parms, emptyOutput, getPreprocessingModels()); // TODO output should have also preprocessing models
+        pipelineModel.write_lock(_job._key); // we don't want to use `delete_lock` here as `pipelineModel` uses dest() and `_scoringModelBuilder` was already trained with same destination key
+
+        pipelineModel._output = new PipelineModel.PipelineModelOutput(PipelineModelBuilder.this, retrievedScoringModel);
 
         _job.update(1);
-        _pipelineModel.update(_job);
+        pipelineModel.update(_job);
       } finally {
-        if (_pipelineModel != null) {
-          _pipelineModel.unlock(_job);
+        if (pipelineModel != null) {
+          pipelineModel.unlock(_job);
         }
       }
     }

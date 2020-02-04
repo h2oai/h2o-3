@@ -20,6 +20,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
+import static org.junit.Assert.assertTrue;
 
 // This test suite also checks how we apply preprocessing at ModellingStep and then revert all the changes in the data afterwards
 public class TEIntegrationWithAutoMLTest extends water.TestUtil {
@@ -80,17 +81,17 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
   }
 
   @Test
-  public void all_categoricals_with_CV_mode() {
+  public void automaticTE_is_being_applied_with_cv_automl_case() {
     AutoML aml=null;
-    Frame fr=null;
+    Scope.enter();
     Model leader = null;
-    Frame trainingFrame = null;
     String foldColumnName = "fold";
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
 
       String responseColumnName = "survived";
-      fr = getPreparedTitanicFrame(responseColumnName);
+      Frame fr = getPreparedTitanicFrame(responseColumnName);
+      Scope.track(fr);
 
       int nfolds = 5;
       addKFoldColumn(fr, foldColumnName, nfolds, 3456);
@@ -106,7 +107,6 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUC);
       autoMLBuildSpec.build_control.keep_cross_validation_models = true;
-      autoMLBuildSpec.build_control.keep_cross_validation_models = true;
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = true;
       autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
               new StepDefinition(Algo.GBM.name(), new String[]{ "def_1" })
@@ -117,18 +117,21 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
 
       leader = aml.leader();
 
-      trainingFrame = aml.getTrainingFrame();
+      Frame trainingFrame = aml.getTrainingFrame();
+      Scope.track(trainingFrame);
 
-//      assertIdenticalUpToRelTolerance(fr, trainingFrame, 0, false, "Two frames should be different.");
-//      assertTrue(leader!= null && Arrays.asList(leader._output._names).contains(teColumnName + "_te"));
+      //Check that trainingFrame was not affected by TE data preprocessing
+      String[] encodedColumns = {"sex_te", "cabin_te", "home.dest_te", "embarked_te"};
+      assertIdenticalUpToRelTolerance(fr, trainingFrame, 0, true, "Two frames should be identical.");
 
-      // TODO asserts
+      leader.score(fr).delete();
+
+      hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(leader, fr);
+      assertTrue(mmb.auc() > /*score without preprocessing for a given seed*/ 0.0); //TODO
 
     } finally {
       if(leader!=null) leader.delete();
       if(aml!=null) aml.delete();
-      if(trainingFrame != null)  trainingFrame.delete();
-      if(fr != null) fr.delete();
     }
   }
 
