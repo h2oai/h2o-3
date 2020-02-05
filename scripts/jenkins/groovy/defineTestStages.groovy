@@ -32,16 +32,60 @@ def call(final pipelineContext) {
   // Stages executed after each push to PR branch.
   def PR_STAGES = [
     [
-      stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      stageName: 'Py3.6 Medium-large #0', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
       timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-            stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
-            timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      stageName: 'Py3.6 Medium-large #1', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-            stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
-            timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+      stageName: 'Py3.6 Medium-large #2', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large #3', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large #4', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large #5', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large #6', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large #7', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large #8', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large #9', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large #10', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.6 Medium-large #11', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py2.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '2.7',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.5 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
   ]
 
