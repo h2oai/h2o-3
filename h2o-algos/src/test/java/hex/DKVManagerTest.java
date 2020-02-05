@@ -24,7 +24,7 @@ import static water.TestUtil.ar;
 import static water.fvec.VecHelper.vecChunkIdx;
 
 @RunWith(H2ORunner.class)
-@CloudSize(5)
+@CloudSize(1)
 public class DKVManagerTest {
 
     @Rule
@@ -180,7 +180,6 @@ public class DKVManagerTest {
             parms._nbins = 20;
             parms._learn_rate = 1.0f;
             parms._score_each_iteration = true;
-            parms._nfolds = 5;
 
             GBM job = new GBM(parms);
             Model model = job.trainModel().get();
@@ -191,7 +190,6 @@ public class DKVManagerTest {
             assertNotNull(preds);
 
             DKVManager.retain(new Key[]{trainingFrame._key});
-            model.deleteCrossValidationFoldAssignment();
 
             Value value = DKV.get(model._key);
             assertNull(value);
@@ -252,7 +250,7 @@ public class DKVManagerTest {
   public void testRetainModels_sharedVecs() {
     try {
       Scope.enter();
-      final Frame trainingFrame = TestUtil.parse_test_file("/home/pavel/Work/h2o-3/smalldata/iris/iris_wheader.csv");
+      Frame trainingFrame = TestUtil.parse_test_file("./smalldata/iris/iris_wheader.csv");
       Scope.track(trainingFrame);
 
       Frame sharedFrame = new Frame(Key.<Frame>make("sharedFrame"));
@@ -287,6 +285,8 @@ public class DKVManagerTest {
       for (Key k : trainingFrame.keys()) {
         assertNotNull(DKV.get(k));
       }
+
+
     } finally {
       Scope.exit();
     }
