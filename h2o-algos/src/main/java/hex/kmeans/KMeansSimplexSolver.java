@@ -23,10 +23,9 @@ class KMeansSimplexSolver {
     public long _resultSize;
 
     // Input graph to store K-means configuration
-    public Vec _demands; // store demand of all nodes (-1 for data points, constraints values for constraints nodes, )
-    public Vec _capacities; // store capacities of all edges + edges from all node to leader node
+    public Vec.Reader _demandsReader; // store demand of all nodes (-1 for data points, constraints values for constraints nodes, )
+    public Vec.Reader _capacitiesReader; // store capacities of all edges + edges from all node to leader node
     public Frame _weights; // input data + weight column, calculated distances from all points to all centres + columns to store result of cluster assignments 
-    public Vec _additiveWeights; // additive weight vector to store edge weight from constraints nodes to additive and leader nodes
     public double _sumWeights; // calculated sum of all weights to calculate maximal capacity value
     public double _maxAbsDemand; // maximal absolute demand to calculate maximal capacity value
     public boolean _hasWeightsColumn; // weight column existence flag
@@ -48,21 +47,21 @@ class KMeansSimplexSolver {
         this._edgeSize = _numberOfPoints * constrains.length + constrains.length;
         this._constraintsLength = constrains.length;
 
-        this._demands = Vec.makeCon(0, _nodeSize, Vec.T_NUM);
-        this._capacities = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
+        Vec demands = Vec.makeCon(0, _nodeSize, Vec.T_NUM);
+        Vec capacities = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
         this._resultSize = this._numberOfPoints * _constraintsLength;
         this._hasWeightsColumn = hasWeights;
         this._numberOfNonZeroWeightPoints = numberOfNonZeroWeightPoints;
         
         this._weights = weights;
-        this._additiveWeights = Vec.makeCon(0, _constraintsLength, Vec.T_NUM);
         this._sumWeights = sumDistances;
 
         long constraintsSum = 0;
         _maxAbsDemand = Double.MIN_VALUE;
+        Vec.Writer demandWriter = demands.open();
         for (long i = 0; i < _nodeSize; i++) {
             if (i < _numberOfPoints) {
-                _demands.set(i, -1);
+                demandWriter.set(i, -1);
             } else {
                 long tmpDemand;
                 if (i < _nodeSize - 1) {
@@ -71,12 +70,13 @@ class KMeansSimplexSolver {
                 } else {
                     tmpDemand = _numberOfNonZeroWeightPoints - constraintsSum;
                 }
-                _demands.set(i, tmpDemand);
+                demandWriter.set(i, tmpDemand);
                 if (Math.abs(tmpDemand) > _maxAbsDemand) {
                     _maxAbsDemand = Math.abs(tmpDemand);
                 }
             }
         }
+        demandWriter.close();
         
         int edgeIndexStart = _weights.numCols() - 3 - _constraintsLength;
         long edgeIndex = 0; 
@@ -86,10 +86,11 @@ class KMeansSimplexSolver {
             }
         }
         
+        Vec.Writer capacitiesWriter = capacities.open();
         // Initialize graph and spanning tree.
         // always start with infinity _capacities
         for (long i = 0; i < _edgeSize; i++) {
-            _capacities.set(i, Long.MAX_VALUE);
+            capacitiesWriter.set(i, Long.MAX_VALUE);
         }
 
         // find maximum value for capacity
@@ -97,11 +98,17 @@ class KMeansSimplexSolver {
 
         // fill max capacity from the leader node to all others _nodes
         for (long i = 0; i < _nodeSize; i++) {
-            _capacities.set(i + _edgeSize, maxCapacity);
+            capacitiesWriter.set(i + _edgeSize, maxCapacity);
         }
+        
+        capacitiesWriter.close();
+        
+        this._capacitiesReader = capacities.new Reader();
+        //this._additiveWeightsReader = additiveWeights.new Reader();
+        this._demandsReader = demands.new Reader();
 
         this.tree = new SpanningTree(_nodeSize, _edgeSize, _constraintsLength);
-        tree.init(_numberOfPoints, maxCapacity, _demands);
+        tree.init(_numberOfPoints, maxCapacity, demands);
     }
 
     /**
@@ -116,7 +123,7 @@ class KMeansSimplexSolver {
             int j = _weights.numCols() - 2 * _constraintsLength - 3 + (int)(edgeIndex % _constraintsLength);        
             return _weights.vec(j).at(i);
         }
-        return _additiveWeights.at(edgeIndex - numberOfFrameWeights);
+        return 0;
     }
 
     /**
@@ -174,9 +181,9 @@ class KMeansSimplexSolver {
         if(checkIfContinue()) {
             long minimalIndex = findMinimalReducedWeight();
             if (tree._edgeFlow.at8(minimalIndex) == 0) {
-                return new Edge(minimalIndex, tree._sources.at8(minimalIndex), tree._targets.at8(minimalIndex));
+                return new Edge(minimalIndex, tree._sourcesReader.at8(minimalIndex), tree._targetsReader.at8(minimalIndex));
             } else {
-                return new Edge(minimalIndex, tree._targets.at8(minimalIndex), tree._sources.at8(minimalIndex));
+                return new Edge(minimalIndex, tree._targetsReader.at8(minimalIndex), tree._sourcesReader.at8(minimalIndex));
             }
         }
         return null;
@@ -215,7 +222,7 @@ class KMeansSimplexSolver {
         double minResidualCapacity = Double.MAX_VALUE;
         int minIndex = -1;
         for (int i = 0; i < cycle.edgeSize(); i++) {
-            double tmpResidualCapacity = tree.getResidualCapacity(cycle.getEdge(i), cycle.getNode(i), _capacities.at(cycle.getEdge(i)));
+            double tmpResidualCapacity = tree.getResidualCapacity(cycle.getEdge(i), cycle.getNode(i), _capacitiesReader.at(cycle.getEdge(i)));
             boolean countValue = !_hasWeightsColumn || isNonZeroWeight(cycle.getEdge(i));
             if (countValue && tmpResidualCapacity < minResidualCapacity) {
                 minResidualCapacity = tmpResidualCapacity;
@@ -225,7 +232,7 @@ class KMeansSimplexSolver {
         assert minIndex != -1;
         long nodeIndex = cycle.getNode(minIndex);
         long edgeIndex = cycle.getEdge(minIndex);
-        return new Edge(edgeIndex, nodeIndex, nodeIndex == tree._sources.at8(edgeIndex) ? tree._targets.at8(edgeIndex) : tree._sources.at8(edgeIndex));
+        return new Edge(edgeIndex, nodeIndex, nodeIndex == tree._sourcesReader.at8(edgeIndex) ? tree._targetsReader.at8(edgeIndex) : tree._sourcesReader.at8(edgeIndex));
     }
 
     /**
@@ -242,7 +249,7 @@ class KMeansSimplexSolver {
             long leavingEdgeIndex = leavingEdge.getEdgeIndex();
             long leavingEdgeSourceIndex = leavingEdge.getSourceIndex();
             long leavingEdgeTargetIndex = leavingEdge.getTargetIndex();
-            double residualCap = tree.getResidualCapacity(leavingEdgeIndex, leavingEdgeSourceIndex, _capacities.at(leavingEdgeIndex));
+            double residualCap = tree.getResidualCapacity(leavingEdgeIndex, leavingEdgeSourceIndex, _capacitiesReader.at(leavingEdgeIndex));
             if(residualCap != 0) {
                 tree.augmentFlow(cycle, residualCap);
             }
@@ -272,7 +279,7 @@ class KMeansSimplexSolver {
 
     public void checkConstraintsCondition(int[] numberOfPointsInCluster){
         for(int i = 0; i<_constraintsLength; i++){
-            assert numberOfPointsInCluster[i] >= _demands.at8(_numberOfPoints+i) : String.format("Cluster %d has %d assigned points however should has assigned at least %d points.", i+1, numberOfPointsInCluster[i], _demands.at8(_numberOfPoints+i));
+            assert numberOfPointsInCluster[i] >= _demandsReader.at8(_numberOfPoints+i) : String.format("Cluster %d has %d assigned points however should has assigned at least %d points.", i+1, numberOfPointsInCluster[i], _demandsReader.at8(_numberOfPoints+i));
         }
     }
 
@@ -303,7 +310,6 @@ class KMeansSimplexSolver {
         for (long i = 0; i < _weights.numRows(); i++) {
             if(!_hasWeightsColumn || _weights.vec(dataStopLength).at8(i) == 1) {
                 for (int j = 0; j < _constraintsLength; j++) {
-                    //long edgeIndex = i + j * _weights.numRows();
                     long edgeIndex = i * _constraintsLength + j;
                     if (tree._edgeFlow.at8(edgeIndex) == 1) {
                         // old assignment
@@ -319,7 +325,7 @@ class KMeansSimplexSolver {
             }
         }
         checkConstraintsCondition(numberOfPointsInCluster);
-        //remove distances columns
+        // remove distances columns
         for(int i = 0; i < 2 * _constraintsLength; i++) {
             _weights.remove(dataStopLength+(_hasWeightsColumn ? 1 : 0));
         }
@@ -349,6 +355,9 @@ class SpanningTree extends Iced<SpanningTree> {
     public Vec _nextDepthFirst;    //         node size + 1, integer
     public Vec _previousNodes;     //         node size + 1, integer
     public Vec _lastDescendants;    //         node size + 1, integer
+    
+    public Vec.Reader _sourcesReader;   //    edge size + node size
+    public Vec.Reader _targetsReader;   //    edge size + node size
 
     SpanningTree(long nodeSize, long edgeSize, long secondLayerSize){
         this._nodeSize = nodeSize;
@@ -382,7 +391,7 @@ class SpanningTree extends Iced<SpanningTree> {
                 }
             }
         }
-
+        
         for (long i = 0; i < _nodeSize; i++) {
             long demand = demands.at8(i);
             if (demand >= 0) {
@@ -402,12 +411,16 @@ class SpanningTree extends Iced<SpanningTree> {
             _previousNodes.set(i, i - 1);
             _lastDescendants.set(i, i);
         }
+        
         _parents.set(_nodeSize, -1);
         _subtreeSize.set(_nodeSize, _nodeSize + 1);
         _nextDepthFirst.set(_nodeSize - 1, _nodeSize);
         _previousNodes.set(0, _nodeSize);
         _previousNodes.set(_nodeSize, _nodeSize - 1);
         _lastDescendants.set(_nodeSize, _nodeSize - 1);
+        
+        _sourcesReader = _sources.new Reader();
+        _targetsReader = _targets.new Reader();
     }
 
     public boolean isInfeasible() {
@@ -461,14 +474,14 @@ class SpanningTree extends Iced<SpanningTree> {
     }
 
     public double getResidualCapacity(long edgeIndex, long nodeIndex, double capacity) {
-        return nodeIndex == _sources.at8(edgeIndex) ? capacity - _edgeFlow.at(edgeIndex) : _edgeFlow.at(edgeIndex);
+        return nodeIndex == _sourcesReader.at8(edgeIndex) ? capacity - _edgeFlow.at(edgeIndex) : _edgeFlow.at(edgeIndex);
     }
 
     public void augmentFlow(NodesEdgesObject nodesEdges, double flow) {
         for (int i = 0; i < nodesEdges.edgeSize(); i++) {
             long edge = nodesEdges.getEdge(i);
             long node = nodesEdges.getNode(i);
-            if (node == _sources.at8(edge)) {
+            if (node == _sourcesReader.at8(edge)) {
                 _edgeFlow.set(edge, _edgeFlow.at(edge) + flow);
             } else {
                 _edgeFlow.set(edge, _edgeFlow.at(edge) - flow);
@@ -550,21 +563,20 @@ class SpanningTree extends Iced<SpanningTree> {
         _previousNodes.set(targetIndex, lastSourceIndex);
         _previousNodes.set(nextSourceIndex, lastTargetIndex);
         _nextDepthFirst.set(lastTargetIndex, nextSourceIndex);
-
+        
         while (sourceIndex != -1) {
             _subtreeSize.set(sourceIndex, _subtreeSize.at8(sourceIndex) + subtreeSizeTarget);
             if (lastSourceIndex == _lastDescendants.at8(sourceIndex)) {
                 _lastDescendants.set(sourceIndex, lastTargetIndex);
             }
             sourceIndex = _parents.at8(sourceIndex);
-
         }
     }
 
 
     public void updatePotentials(long edgeIndex, long sourceIndex, long targetIndex, double weight) {
         double potential;
-        if (targetIndex == _targets.at8(edgeIndex)) {
+        if (targetIndex == _targetsReader.at8(edgeIndex)) {
             potential = _nodePotentials.at(sourceIndex) - weight - _nodePotentials.at(targetIndex);
         } else {
             potential = _nodePotentials.at(sourceIndex) + weight - _nodePotentials.at(targetIndex);
