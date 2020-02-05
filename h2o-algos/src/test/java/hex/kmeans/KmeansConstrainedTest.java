@@ -267,7 +267,6 @@ public class KmeansConstrainedTest extends TestUtil {
         try {
             Scope.enter();
             fr = Scope.track(parse_test_file("bigdata/laptop/mnist/train.csv.gz"));
-            //fr = Scope.track(parse_test_file("/home/mori/Documents/h2o/code/h2o-3/bigdata/laptop/mnist/train.csv.gz"));
 
             KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
             parms._train = fr._key;
