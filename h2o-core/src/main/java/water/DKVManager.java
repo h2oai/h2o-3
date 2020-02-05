@@ -22,26 +22,10 @@ public class DKVManager {
     retainedKeysSet.addAll(Arrays.asList(retainedKeys));
     // Frames and models have multiple nested keys. Those must be extracted and kept from deletion as well.
     extractNestedKeys(retainedKeysSet);
-    Set<Value> removedKeys = collectUniqueKeys();
-    removeValues(removedKeys, retainedKeysSet);
-  }
-
-  /**
-   * Collects a {@link Set} of keys available cluster-wide
-   *
-   * @return
-   */
-  private static final Set<Value> collectUniqueKeys() {
-    final Value[] collectedValues = new CollectValuesTask()
+    final Value[] removedKeys = new CollectValuesTask()
             .doAllNodes()
             ._collectedValues;
-    final Set<Value> clusterValues = new HashSet<>(collectedValues.length);
-
-    for (final Value value : collectedValues) {
-      clusterValues.add(value);
-    }
-
-    return clusterValues;
+    removeValues(removedKeys, retainedKeysSet);
   }
 
   /**
@@ -50,7 +34,7 @@ public class DKVManager {
    * @param removedValues Values to be removed
    * @param retainedKeys  A {@link Set} of keys to be retained
    */
-  private static void removeValues(final Set<Value> removedValues, final Set<Key> retainedKeys) {
+  private static void removeValues(final Value[] removedValues, final Set<Key> retainedKeys) {
 
     for (final Value value : removedValues) {
       if (retainedKeys.contains(value._key)) {
