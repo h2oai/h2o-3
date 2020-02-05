@@ -52,7 +52,6 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
 
     _validationMode = validationMode;
 
-
     setTESearchSpace(_validationMode);
   }
 
@@ -112,5 +111,20 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
 
   public PriorityQueue<Evaluated<TargetEncoderModel>> getEvaluatedModelParameters() {
     return _evaluatedQueue;
+  }
+
+  /**
+   * this method will keep a best model, delete all the other models and purge the queue
+   */
+  public void removeAllButBest() {
+    _evaluatedQueue.poll();
+    _evaluatedQueue.forEach(evaluated -> evaluated._model.delete());
+    _evaluatedQueue.clear();
+  }
+
+  @Override
+  public void removeAll() {
+    _evaluatedQueue.forEach(evaluated -> evaluated._model.delete());
+    _evaluatedQueue.clear();
   }
 }

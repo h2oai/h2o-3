@@ -8,8 +8,12 @@ import java.util.Comparator;
 public abstract class ModelParametersSelectionStrategy<MP extends Model.Parameters> extends Iced {
 
   public abstract Evaluated getBestParamsWithEvaluation();
+  public abstract void removeAllButBest();
+  public abstract void removeAll();
 
 
+  // TODO could be renamed to EvaluatedModelParams or even eliminated as we can probably use just Model with corresponding Comparator.
+  //  Attempt's index might be still valuable.
   public static class Evaluated< M extends Model> extends Iced<Evaluated> {
 
     transient M _model;

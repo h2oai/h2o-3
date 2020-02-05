@@ -21,8 +21,7 @@ import java.util.PriorityQueue;
 import java.util.Random;
 
 import static ai.h2o.automl.targetencoder.strategy.ModelValidationMode.CV;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(Enclosed.class)
 public class GridSearchModelParametersSelectionStrategyTest {
@@ -254,6 +253,7 @@ public class GridSearchModelParametersSelectionStrategyTest {
     @Test
     public void max_models_is_being_respected() {
       Scope.enter();
+      GridSearchModelParametersSelectionStrategy modelSelectionStrategy = null;
       try {
         Frame fr = parse_test_file("./smalldata/gbm_test/titanic.csv");
         Scope.track(fr);
@@ -283,7 +283,7 @@ public class GridSearchModelParametersSelectionStrategyTest {
 
         AutoMLBuildSpec.AutoMLTEControl teBuildSpec = new AutoMLBuildSpec.AutoMLTEControl();
         teBuildSpec.seed = seed;
-        teBuildSpec.max_models = 5;
+        teBuildSpec.max_models = 2;
 
         ModelBuilder mb = null;
         switch (validationMode) {
@@ -296,22 +296,86 @@ public class GridSearchModelParametersSelectionStrategyTest {
         mb.init(false);
 
         TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
-        GridSearchModelParametersSelectionStrategy gridSearchTEParamsSelectionStrategy =
-                new GridSearchModelParametersSelectionStrategy(mb, teBuildSpec, leaderboard, columnsToEncode, validationMode, evaluator);
+        modelSelectionStrategy = new GridSearchModelParametersSelectionStrategy(mb, teBuildSpec, leaderboard, columnsToEncode, validationMode, evaluator);
 
-        gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation();
+        ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> bestEvaluated = modelSelectionStrategy.getBestParamsWithEvaluation();
+        Scope.track_generic(bestEvaluated.getModel());
 
-        assertEquals(teBuildSpec.max_models, gridSearchTEParamsSelectionStrategy.getEvaluatedModelParameters().size());
+        assertEquals(teBuildSpec.max_models, modelSelectionStrategy.getEvaluatedModelParameters().size());
+
+      } finally {
+        if(modelSelectionStrategy != null)
+          modelSelectionStrategy.removeAllButBest();
+        Scope.exit();
+      }
+    }
+  }
+
+  @RunWith(Parameterized.class)
+  public static class ModelsCleanupTest extends TestUtil {
+
+    @BeforeClass
+    public static void setup() {
+      stall_till_cloudsize(1);
+    }
+
+    @Parameterized.Parameters(name = "Beneficial search = {0}")
+    public static Object[] validationMode() {
+      return new Boolean[]{
+              true, false
+      };
+    }
+
+    @Parameterized.Parameter
+    public Boolean beneficialSearch;
+
+    @Test
+    public void evaluated_during_search_models_are_being_removed_properly() {
+      Scope.enter();
+      GridSearchModelParametersSelectionStrategy modelSelectionStrategy = null;
+      try {
+        Frame train = parse_test_file("./smalldata/gbm_test/titanic.csv");
+        Scope.track(train);
+        long seed = 1234;
+
+        String responseColumnName = "survived";
+
+        asFactor(train, responseColumnName);
+        Frame leaderboard = null;
+
+        TEApplicationStrategy strategy = new ThresholdTEApplicationStrategy(train, 4, new String[]{"survived"});
+        String[] columnsToEncode = strategy.getColumnsToEncode();
+
+        AutoMLBuildSpec.AutoMLTEControl teBuildSpec = new AutoMLBuildSpec.AutoMLTEControl();
+        teBuildSpec.seed = seed;
+        teBuildSpec.max_models = 2;
+
+        ModelBuilder mb = TargetEncodingTestFixtures.modelBuilderGBMWithCVFixture(train, responseColumnName, seed);
+        mb.init(false);
+
+        TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
+        modelSelectionStrategy = new GridSearchModelParametersSelectionStrategy(mb, teBuildSpec, leaderboard, columnsToEncode, CV, evaluator);
+
+        ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> bestEvaluated = modelSelectionStrategy.getBestParamsWithEvaluation();
+        if(beneficialSearch) {
+          modelSelectionStrategy.removeAllButBest();
+          assertNotNull(DKV.get(bestEvaluated.getModel()._key));
+          Scope.track_generic(bestEvaluated.getModel());
+        } else {
+          // verifying by the fact that test does not leak keys
+          modelSelectionStrategy.removeAll();
+        }
+
+        assertEquals(0, modelSelectionStrategy.getEvaluatedModelParameters().size());
 
       } finally {
         Scope.exit();
       }
     }
-
   }
 
 
-  private static class DummyEvaluator extends ModelParametersEvaluator<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters> {
+    private static class DummyEvaluator extends ModelParametersEvaluator<TargetEncoderModel, TargetEncoderModel.TargetEncoderParameters> {
 
     @Override
     public ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> evaluate(TargetEncoderModel.TargetEncoderParameters modelParameters, ModelBuilder modelBuilder, ModelValidationMode modelValidationMode, Frame leaderboard, String[] columnNamesToEncode, long seedForFoldColumn) {

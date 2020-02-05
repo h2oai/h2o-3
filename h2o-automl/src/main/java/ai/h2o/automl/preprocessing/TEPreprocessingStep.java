@@ -20,6 +20,8 @@ import java.util.Optional;
 
 public class TEPreprocessingStep extends PreprocessingStep<TargetEncoderModel> {
 
+  ModelParametersSelectionStrategy<TargetEncoderModel.TargetEncoderParameters> _modelParametersSelectionStrategy = null;
+
   public TEPreprocessingStep(Preprocessor preprocessor, AutoML autoML) {
     super(preprocessor, autoML);
   }
@@ -35,10 +37,14 @@ public class TEPreprocessingStep extends PreprocessingStep<TargetEncoderModel> {
 
       if (scoreIsBetterThanBaseline) {
         pipelineModelBuilder.addPreprocessorModel(evaluatedBest.getModel()._key);
+        _modelParametersSelectionStrategy.removeAllButBest();
+      } else {
+        _modelParametersSelectionStrategy.removeAll();
       }
     }
   }
 
+  //TODO probably better to move most of the logic into a constructor
   private Optional<ModelParametersSelectionStrategy.Evaluated> findBestPreprocessingParams(ModelBuilder modelBuilder) {
     AutoMLBuildSpec.AutoMLTEControl te_spec = _aml.getBuildSpec().te_spec;
     Frame leaderboardFrame = _aml.getLeaderboardFrame();
@@ -48,9 +54,10 @@ public class TEPreprocessingStep extends PreprocessingStep<TargetEncoderModel> {
     return selectColumnsForEncoding(te_spec.application_strategy, modelBuilder._parms.train(), responseColumnName)
             .map(columnsToEncode -> {
               TargetEncodingHyperparamsEvaluator evaluator = new TargetEncodingHyperparamsEvaluator();
-              GridSearchModelParametersSelectionStrategy modelParametersSelectionStrategy = new GridSearchModelParametersSelectionStrategy(modelBuilder, te_spec, leaderboardFrame, columnsToEncode, validationMode, evaluator);
 
-              ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> bestEvaluated = modelParametersSelectionStrategy.getBestParamsWithEvaluation();
+              _modelParametersSelectionStrategy = new GridSearchModelParametersSelectionStrategy(modelBuilder, te_spec, leaderboardFrame, columnsToEncode, validationMode, evaluator);
+
+              ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> bestEvaluated = _modelParametersSelectionStrategy.getBestParamsWithEvaluation();
               Log.info("Best TE parameters for chosen columns " + StringUtils.join(",", columnsToEncode) + " were selected to be: " + bestEvaluated.getParams());
               return bestEvaluated;
             });
