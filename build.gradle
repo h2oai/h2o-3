@@ -240,13 +240,7 @@ subprojects {
             }
         }
     }
-
-    // Publish artifacts - we should filter subproject in future but now apply publisher plugin
-    // to all projects
-    if (project in publishedProjects) {
-      apply from: "$rootDir/gradle/publish.gradle"
-    }
-
+    
     // Note: this is deprecated and will be removed in the future
     apply from: "$rootDir/gradle/makeSupport.gradle"
 
@@ -301,6 +295,11 @@ subprojects {
             apply from: "$rootDir/gradle/ubench.gradle"
         }
     }
+
+    if (project in publishedProjects) {
+        apply from: "$rootDir/gradle/publish.gradle"
+    }
+
 }
 
 //

@@ -8,6 +8,10 @@ description = "H2O GenModel Assembly which is embedded into H2O.jar"
 sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
+java {
+   disableAutoTargetJvm()
+}
+
 // Dependencies
 dependencies {
     compile project(":h2o-genmodel")
