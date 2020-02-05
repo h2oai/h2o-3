@@ -83,9 +83,14 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
   @Test
   public void automaticTE_is_being_applied_with_cv_automl_case() {
     AutoML aml=null;
+    AutoML amlWithoutTE=null;
     Scope.enter();
     Model leader = null;
+    Model leaderWithoutTE = null;
     String foldColumnName = "fold";
+
+    int seed = 3456;
+
     try {
       AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
 
@@ -94,7 +99,7 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       Scope.track(fr);
 
       int nfolds = 5;
-      addKFoldColumn(fr, foldColumnName, nfolds, 3456);
+      addKFoldColumn(fr, foldColumnName, nfolds, seed);
 
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.fold_column = foldColumnName;
@@ -104,8 +109,10 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       autoMLBuildSpec.te_spec.max_models = 2;
       autoMLBuildSpec.te_spec.seed = 2345;
 
+      autoMLBuildSpec.build_control.project_name = "withTE";
       autoMLBuildSpec.build_control.stopping_criteria.set_max_models(1);
       autoMLBuildSpec.build_control.stopping_criteria.set_stopping_metric(ScoreKeeper.StoppingMetric.AUC);
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(seed);
       autoMLBuildSpec.build_control.keep_cross_validation_models = true;
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = true;
       autoMLBuildSpec.build_models.modeling_plan = new StepDefinition[] {
@@ -124,14 +131,25 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       String[] encodedColumns = {"sex_te", "cabin_te", "home.dest_te", "embarked_te"};
       assertIdenticalUpToRelTolerance(fr, trainingFrame, 0, true, "Two frames should be identical.");
 
+      //Check that we can score on non-encoded frames
       leader.score(fr).delete();
-
       hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(leader, fr);
-      assertTrue(mmb.auc() > /*score without preprocessing for a given seed*/ 0.0); //TODO
+
+      // automl without enabled TE
+      autoMLBuildSpec.build_control.project_name = "withoutTE";
+      autoMLBuildSpec.te_spec.enabled = false;
+      amlWithoutTE = AutoML.startAutoML(autoMLBuildSpec);
+      amlWithoutTE.get();
+
+      leaderWithoutTE = amlWithoutTE.leader();
+
+      assertTrue(leader.auc() > leaderWithoutTE.auc());
 
     } finally {
       if(leader!=null) leader.delete();
       if(aml!=null) aml.delete();
+      if(leaderWithoutTE!=null) leaderWithoutTE.delete();
+      if(amlWithoutTE!=null) amlWithoutTE.delete();
     }
   }
 

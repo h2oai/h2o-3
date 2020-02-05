@@ -62,8 +62,6 @@ public class PipelineModelBuilder extends ModelBuilder<PipelineModel, PipelineMo
         if(preprocessedValidFrame != null) scoringModelParams.setValid(preprocessedValidFrame._key);
         scoringModelParams._ignored_columns = featuresToIgnore.toArray(new String[0]);
 
-//        _result = _scoringModelBuilder.dest(); // we can probably modify key a bit to signify case when preprocessing happened
-//       _scoringModelBuilder._result  = _result; // To make PipelineModel to be a proxy for underlying model
         _scoringModelBuilder.init(false);
         Log.debug("Training scoring model for PipelineModel: " );
         Job scoringModelJob = _scoringModelBuilder.trainModelOnH2ONode();
