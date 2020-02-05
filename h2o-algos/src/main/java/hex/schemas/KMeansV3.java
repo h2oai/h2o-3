@@ -56,7 +56,7 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
     @API(help = "Whether to estimate the number of clusters (<=k) iteratively and deterministically.", level = API.Level.critical, gridable = true)
     public boolean estimate_k = false;
 
-    @API(help = "How many points should be at least in each cluster. The length of constraints array has to be same as number of clusters.", level = API.Level.expert)
+    @API(help = "An array specifying the minimum number of points that should be in each cluster. The length of the constraints array has to be the same as the number of clusters.", level = API.Level.expert)
     public int[] cluster_size_constraints = null;
   }
 }
