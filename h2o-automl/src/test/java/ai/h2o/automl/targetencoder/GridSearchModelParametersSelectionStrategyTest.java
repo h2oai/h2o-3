@@ -40,8 +40,6 @@ public class GridSearchModelParametersSelectionStrategyTest {
     protected double[] score0(double[] data, double[] preds) { return preds; }
     @Override
     protected Futures remove_impl(Futures fs, boolean cascade) {
-//      super.remove_impl(fs, cascade);
-//      DKV.remove(_parms._trgt);
       return fs;
     }
   }
@@ -104,14 +102,11 @@ public class GridSearchModelParametersSelectionStrategyTest {
         long seed = 1234;
 
         String responseColumnName;
-        boolean theBiggerTheBetter;
         if (taskType.equals("classification")) {
           responseColumnName = "survived";
           asFactor(fr, responseColumnName);
-          theBiggerTheBetter = true; // accuracy, f1 but not true for logloss
         } else {
           responseColumnName = "age";
-          theBiggerTheBetter = false;
         }
 
         Frame train = null;
@@ -157,14 +152,12 @@ public class GridSearchModelParametersSelectionStrategyTest {
         ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> bestParamsWithEvaluation =
                 gridSearchTEParamsSelectionStrategy.getBestParamsWithEvaluation();
 
-        assertTrue(gridSearchTEParamsSelectionStrategy.getEvaluatedModelParameters()
+        PriorityQueue<ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel>> evaluatedModelParameters = gridSearchTEParamsSelectionStrategy.getEvaluatedModelParameters();
+        evaluatedModelParameters.poll();
+
+        assertTrue("Best score should be less or equal than all the other scores", evaluatedModelParameters
                 .stream()
-                .allMatch(mp -> {
-                  if (theBiggerTheBetter)
-                    return mp.getScore() <= bestParamsWithEvaluation.getScore();
-                  else
-                    return mp.getScore() >= bestParamsWithEvaluation.getScore();
-                })
+                .allMatch(mp -> mp.getScore() >= bestParamsWithEvaluation.getScore())
         );
       } finally {
         Scope.exit();

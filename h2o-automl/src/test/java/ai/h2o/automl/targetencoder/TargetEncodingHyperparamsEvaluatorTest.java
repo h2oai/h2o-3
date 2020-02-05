@@ -133,7 +133,7 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       Scope.track(trainCopy);
       modelBuilder.setTrain(trainCopy);
 
-      ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> auc = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
+      ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> evaluated = evaluator.evaluate(randomTEParams, modelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
 
       ModelBuilder clonedModelBuilder = ModelBuilder.make(modelBuilder._parms);
       clonedModelBuilder.init(false);
@@ -144,11 +144,11 @@ public class TargetEncodingHyperparamsEvaluatorTest extends TestUtil {
       clonedModelBuilder.setTrain(trainCopy2);
 
       // checking that we can clone/reuse modelBuilder
-      ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> auc2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
+      ModelParametersSelectionStrategy.Evaluated<TargetEncoderModel> evaluated2 = evaluator.evaluate(randomTEParams, clonedModelBuilder, ModelValidationMode.CV, leaderboard, columnsToEncode, seedForFoldColumn);
 
       assertBitIdentical(clonedModelBuilder._parms.train(), modelBuilder._parms.train());
-      assertTrue(auc.getScore() > 0);
-      assertEquals(auc.getScore(), auc2.getScore(), 1e-5);
+      assertTrue(evaluated.getScore() > 0);
+      assertEquals(evaluated.getScore(), evaluated2.getScore(), 1e-5);
     } finally {
       Scope.exit();
     }

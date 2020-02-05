@@ -131,11 +131,11 @@ public class TEIntegrationWithAutoMLTest extends water.TestUtil {
       String[] encodedColumns = {"sex_te", "cabin_te", "home.dest_te", "embarked_te"};
       assertIdenticalUpToRelTolerance(fr, trainingFrame, 0, true, "Two frames should be identical.");
 
-      //Check that we can score on non-encoded frames
+      //Check that we can score on non-encoded frames and retrieve corresponding metrics
       leader.score(fr).delete();
       hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(leader, fr);
 
-      // automl without enabled TE
+      // Compare with another automl that was trained without enabled TE
       autoMLBuildSpec.build_control.project_name = "withoutTE";
       autoMLBuildSpec.te_spec.enabled = false;
       amlWithoutTE = AutoML.startAutoML(autoMLBuildSpec);

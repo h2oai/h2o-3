@@ -50,7 +50,7 @@ public abstract class ModelParametersSelectionStrategy<MP extends Model.Paramete
 
     @Override
     public int compare(Evaluated o1, Evaluated o2) {
-      int inverseTerm = _theLessTheBetter ? -1 : 1;
+      int inverseTerm = _theLessTheBetter ? 1 : -1;
       return inverseTerm * Double.compare(o1.getScore(), o2.getScore());
     }
   }

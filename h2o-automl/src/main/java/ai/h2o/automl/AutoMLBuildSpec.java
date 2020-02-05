@@ -350,7 +350,7 @@ public class AutoMLBuildSpec extends Iced {
     public boolean enabled = true;
     public TEApplicationStrategy application_strategy;
     public int max_models = 3;
-    public long seed = new Random().nextLong();
+    public long seed = new Random().nextLong(); //todo probably can stopping_criteria.set_seed but naming is not generic
   }
 
   public final AutoMLBuildControl build_control = new AutoMLBuildControl();

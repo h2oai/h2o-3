@@ -46,7 +46,6 @@ public class GridSearchModelParametersSelectionStrategy extends ModelParametersS
     _leaderboardData = leaderboard;
     _columnNamesToEncode = columnNamesToEncode;
 
-    //TODO what is the canonical way to get metric we are going to use. DistributionFamily, leaderboard metrics?
     boolean theLessTheBetter = true; // we are using Model.loss() function to evaluate performance
 
     _evaluatedQueue = new PriorityQueue<>(new EvaluatedComparator(theLessTheBetter));
