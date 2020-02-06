@@ -244,6 +244,10 @@ public class RegisterV3Api extends AbstractRegister {
     context.registerEndpoint("modelBinary",
             "GET /3/Models.fetch.bin/{model_id}", ModelsHandler.class, "fetchBinaryModel",
             "Return the model in the binary format.");
+
+    context.registerEndpoint("modelVisualizeTree",
+            "GET /3/Models.visualize.tree/{model_id}", ModelsHandler.class, "exportTreeVisualization",
+            "Export tree visualization of the given model.");
     
     context.registerEndpoint("makePDP",
             "POST /3/PartialDependence/", ModelsHandler.class, "makePartialDependence",

@@ -60,11 +60,11 @@ public class PrintMojo implements MojoPrinter {
       mojoPrinter.run();
     } catch (Exception e) {
       e.printStackTrace();
-      System.exit(2);
+      //System.exit(2);
     }
 
     // Success
-    System.exit(0);
+    //System.exit(0);
   }
 
   @Override

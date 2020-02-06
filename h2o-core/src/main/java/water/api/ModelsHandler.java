@@ -2,6 +2,7 @@ package water.api;
 
 import hex.Model;
 import hex.PartialDependence;
+import hex.genmodel.tools.PrintMojo;
 import water.*;
 import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -13,11 +14,13 @@ import water.persist.Persist;
 import water.util.FileUtils;
 import water.util.JCodeGen;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.URI;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
 
 public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,S>>
     extends Handler {
@@ -210,6 +213,84 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
     return models;
   }
 
+  private void zipDirectory(File folder, String parentFolder,
+                            ZipOutputStream zos) throws FileNotFoundException, IOException {
+    for (File file : folder.listFiles()) {
+      if (file.isDirectory()) {
+        zipDirectory(file, parentFolder + "/" + file.getName(), zos);
+        continue;
+      }
+      zos.putNextEntry(new ZipEntry(parentFolder + "/" + file.getName()));
+      BufferedInputStream bis = new BufferedInputStream(
+              new FileInputStream(file));
+      long bytesRead = 0;
+      byte[] bytesIn = new byte[4096];
+      int read = 0;
+      while ((read = bis.read(bytesIn)) != -1) {
+        zos.write(bytesIn, 0, read);
+        bytesRead += read;
+      }
+      zos.closeEntry();
+    }
+  }
+  
+  @SuppressWarnings("unused") // called through reflection by RequestServer
+  public StreamingSchema exportTreeVisualization(int version, ModelExportV3 mexport) {
+    Model model = getFromDKV("model_id", mexport.model_id.key());
+    class ModelPngWriter implements StreamWriter {
+
+      public ModelPngWriter() {
+      }
+
+      @Override
+      public void writeTo(OutputStream os) {
+        try {
+            Path temp = Files.createTempFile("","mojo.zip");
+            Path pngtemp = Files.createTempFile("","pngdir.png");
+            Path destZipFile = Files.createTempFile("", "pngdir.zip");
+            
+            URI targetUri = model.exportMojo(temp.toAbsolutePath().toString(), true);
+            PrintMojo.main(new String[]{"--input", temp.toAbsolutePath().toString(), "--output", pngtemp.toAbsolutePath().toString(), "--format", "png"});
+            if (Files.exists(pngtemp)){
+              try {
+                ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(destZipFile.toFile()));
+                if(Files.isDirectory(pngtemp)){
+                  zipDirectory(pngtemp.toFile(), pngtemp.toFile().getName(), zos);
+                  zos.flush();
+                  zos.close();
+                }
+                
+                byte[] buf = new byte[8192];
+                InputStream is = null;
+                if (Files.isDirectory(pngtemp))
+                   is = new FileInputStream(destZipFile.toFile());
+                else
+                   is = new FileInputStream(pngtemp.toFile());
+                
+                int c = 0;
+                while ((c = is.read(buf, 0, buf.length)) > 0) {
+                  os.write(buf, 0, c);
+                  os.flush();
+                }
+
+                os.close();
+                System.out.println("stop");
+                is.close();
+              } catch (Exception e){
+                e.printStackTrace();
+              }
+            }
+        } catch (IOException e) {
+          e.printStackTrace();
+        }
+    }
+    }
+    
+    ModelPngWriter writer = new ModelPngWriter();
+    String filename = JCodeGen.toJavaId(mexport.model_id.key().toString()) + ".zip";
+    return new StreamingSchema(writer,filename);
+  }
+  
   @SuppressWarnings("unused") // called through reflection by RequestServer
   public ModelsV3 importModel(int version, ModelImportV3 mimport) {
     ModelsV3 s = Schema.newInstance(ModelsV3.class);
