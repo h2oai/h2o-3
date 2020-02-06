@@ -149,7 +149,11 @@ class ExprNode(object):
             return self._cache._id  # Data already computed under ID, but not cached
         assert isinstance(self._children,tuple)
         exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
-        gc_ref_cnt = len(gc.get_referrers(self))
+        # explicit call to gc.collect as recommended before calling gc.get_referrers to obtain only live referrers;
+        # otherwise, this creates subtle bugs for Py < 3.7 as we have logic below based on the ref count.
+        gc.collect()
+        referrers = gc.get_referrers(self)
+        gc_ref_cnt = len(referrers)
         if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
             self._cache._id = _py_tmp_key(append=h2o.connection().session_id)
             exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
