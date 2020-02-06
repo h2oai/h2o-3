@@ -130,19 +130,22 @@ def pyunit_apply_with_args():
         scale_with_arg=lambda x: x.scale(False, False),
         scale_with_kwarg=lambda x: x.scale(center=False, scale=False),
         scale_with_argkwarg=lambda x: x.scale(False, scale=False),
-        scale_with_global_arg=(lambda x: x.scale(false, scale=false)) if not PY2 else None,
-        scale_with_args=(lambda x: x.scale(*args)) if not PY2 else None,
-        scale_with_kwargs=(lambda x: x.scale(**kwargs)) if not PY2 else None,
-        scale_with_partial_args=(lambda x: x.scale(False, *partial_args)) if not PY2 else None,
-        scale_with_partial_kwargs=(lambda x: x.scale(False, **partial_kwargs)) if not PY2 else None,
-        scale_with_args_and_kwargs=(lambda x: x.scale(*partial_args, **partial_kwargs)) if not PY2 else None,
-        scale_with_all_kind_args=(lambda x: x.scale(False, *partial_args, **partial_kwargs)) if not PY2 else None,  # strangely this works because our signature verification is not that strict, but it's fine... at least behaves as expected.
+        scale_with_global_arg=(lambda x: x.scale(false, scale=false)),
+        scale_with_args=(lambda x: x.scale(*args)),
+        scale_with_kwargs=(lambda x: x.scale(**kwargs)),
+        scale_with_partial_args=(lambda x: x.scale(False, *partial_args)),
+        scale_with_partial_kwargs=(lambda x: x.scale(False, **partial_kwargs)),
+        scale_with_partial_kwargs2=(lambda x: x.scale(center=False, **partial_kwargs)),
+        scale_with_args_and_kwargs=(lambda x: x.scale(*partial_args, **partial_kwargs)),
+        scale_with_all_kind_args=(lambda x: x.scale(False, *partial_args, scale=False, **partial_kwargs)) if not PY2 else None,  # surprisingly this works because our signature verification is not that strict, but it's fine... at least behaves as expected.
     )
     for test, lbd in to_test.items():
         if lbd:
             print(test)
-            res = fr.apply(lbd).as_data_frame()
-            assert_frame_equal(res, ref)
+            res = fr.apply(lbd)
+            res_df = res.as_data_frame()
+            assert_frame_equal(res_df, ref)
+            h2o.remove(res)
 
 
 
@@ -175,7 +178,8 @@ def assert_column_equal(h2o_result, pd_result):
 
 __AXIS_ASSERTS__ = { 0: assert_column_equal, 1: assert_row_equal}
 
-__TESTS__ = [pyunit_apply_n_to_n_ops, pyunit_apply_n_to_1_ops, pyunit_apply_with_args]
+# __TESTS__ = [pyunit_apply_n_to_n_ops, pyunit_apply_n_to_1_ops, pyunit_apply_with_args]
+__TESTS__ = [pyunit_apply_with_args]
 
 if __name__ == "__main__":
     for func in __TESTS__:

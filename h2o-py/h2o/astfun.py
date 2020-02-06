@@ -39,6 +39,8 @@ BYTECODE_INSTRS = {
     # bject to call is on the stack. Pops all function arguments, and the function
     # itself off the stack, and pushes the return value.
     "CALL_FUNCTION": "",
+    "CALL_FUNCTION_VAR": "",  # Py <= 3.5
+    "CALL_FUNCTION_VAR_KW": "",  # Py <= 3.5
     # from https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_KW :
     # Calls a function. argc indicates the number of arguments (positional and keyword).
     # The top element on the stack contains a tuple of keyword argument names.
@@ -60,7 +62,7 @@ BYTECODE_INSTRS = {
     # CALL_FUNCTION_EX pops all arguments and the callable object off the stack,
     # calls the callable object with those arguments,
     # and pushes the return value returned by the callable object.
-    "CALL_FUNCTION_EX": "",
+    "CALL_FUNCTION_EX": "",  # Py >= 3.6
     # from https://docs.python.org/3/library/dis.html#opcode-CALL_METHOD :
     # Calls a method. argc is the number of positional arguments.
     # Keyword arguments are not supported. This opcode is designed to be used with LOAD_METHOD.
@@ -68,7 +70,7 @@ BYTECODE_INSTRS = {
     # Below them, the two items described in LOAD_METHOD are on the stack
     # (either self and an unbound method object or NULL and an arbitrary callable).
     # All of them are popped and the return value is pushed.
-    "CALL_METHOD": "",
+    "CALL_METHOD": "",  # Py >= 3.7
 }
 
 
@@ -90,10 +92,16 @@ def is_func(instr):
 def is_func_kw(instr):
     return "CALL_FUNCTION_KW" == instr
 
-def is_func_ex(instr):  # since 3.6
+def is_func_ex(instr):  # Py >= 3.6
     return "CALL_FUNCTION_EX" == instr
 
-def is_method_call(instr):
+def is_func_var(instr): # Py <= 3.5
+    return "CALL_FUNCTION_VAR" == instr
+
+def is_func_var_kw(instr): # Py <= 3.5
+    return "CALL_FUNCTION_VAR_KW" == instr
+
+def is_method_call(instr): # Py >= 3.7
     return "CALL_METHOD" == instr
 
 def is_callable(instr):
@@ -228,10 +236,14 @@ def _opcode_read_arg(start_index, ops, keys):
             return _call_func_bc(op, return_idx, ops, keys)
         elif is_func_kw(instr):
             return _call_func_kw_bc(op, return_idx, ops, keys)
-        elif is_func_ex(instr):  # since 3.6
+        elif is_func_ex(instr):
             return _call_func_ex_bc(op, return_idx, ops, keys)
-        elif is_method_call(instr):  # since 3.7
+        elif is_method_call(instr):
             return _call_method_bc(op, return_idx, ops, keys)
+        elif is_func_var(instr):
+            return _call_func_var_bc(op, return_idx, ops, keys)
+        elif is_func_var_kw(instr):
+            return _call_func_var_kw_bc(op, return_idx, ops, keys)
         else:
             raise ValueError("unimpl bytecode op: " + instr)
     elif is_load_fast(instr):
@@ -264,56 +276,80 @@ def _call_func_bc(nargs, idx, ops, keys):
     :param keys:  names of instructions
     :return: ExprNode representing method call
     """
-    args = []
-    kwargs = {}
-    # Extract arguments based on calling convention for CALL_FUNCTION_KW
-    while nargs > 0:
-        if nargs >= 256:  # named args ( foo(50,True,x=10) ) read first  ( right -> left )
-            arg, idx = _opcode_read_arg(idx, ops, keys)
-            _, op = _get_instr(ops, idx)
-            kwargs[op] = arg
-            idx -= 1  # skip the LOAD_CONST for the named args
-            nargs -= 256  # drop 256
-        else:
-            arg, idx = _opcode_read_arg(idx, ops, keys)
-            args.append(arg)
-            nargs -= 1
-    args.reverse()
+    kwargs, idx, nargs = _read_explicit_keyword_args(nargs, idx, ops, keys)
+    args, idx, nargs = _read_explicit_positional_args(nargs, idx, ops, keys)
     return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
 
 def _call_func_kw_bc(nargs, idx, ops, keys):
-    args = []
-    kwargs = {}
     # Implements calling convention defined by CALL_FUNCTION_KW
     # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_KW
-    # Read tuple of keyword arguments
+    # Read keyword arguments
     _, keywords = _get_instr(ops, idx)
-    # Skip the LOAD_CONST tuple
-    idx -= 1
-    # Load keyword arguments from stack
-    for k in keywords:
-        arg, idx = _opcode_read_arg(idx, ops, keys)
-        kwargs[k] = arg
-        nargs -= 1
-    # Load positional arguments from stack
-    while nargs > 0:
-        arg, idx = _opcode_read_arg(idx, ops, keys)
-        args.append(arg)
-        nargs -= 1
-    args.reverse()
+    if isinstance(keywords, tuple):  # Py >= 3.6
+        # Skip the LOAD_CONST tuple
+        idx -= 1
+        # Load keyword arguments from stack
+        kwargs = {}
+        for key in keywords:
+            val, idx = _opcode_read_arg(idx, ops, keys)
+            kwargs[key] = val
+            nargs -= 1
+    else:  # Py <= 3.5
+        kwargs, idx = _opcode_read_arg(idx, ops, keys)
+
+    exp_kwargs, idx, nargs = _read_explicit_keyword_args(nargs, idx, ops, keys)
+    kwargs.update(exp_kwargs)
+    args, idx, nargs = _read_explicit_positional_args(nargs, idx, ops, keys)
+    return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
+
+
+def _call_func_var_bc(nargs, idx, ops, keys):
+    # Py <= 3.5 only
+    var_args, idx = _opcode_read_arg(idx, ops, keys)
+    args, idx, _ = _read_explicit_positional_args(nargs, idx, ops, keys)
+    args.extend(var_args)
+    return _to_rapids_expr(idx, ops, keys, *args)
+
+
+def _call_func_var_kw_bc(nargs, idx, ops, keys):
+    # Py <= 3.5 only
+    kwargs, idx = _opcode_read_arg(idx, ops, keys)
+    exp_kwargs, idx, nargs = _read_explicit_keyword_args(nargs, idx, ops, keys)
+    kwargs.update(exp_kwargs)
+    var_args, idx = _opcode_read_arg(idx, ops, keys)
+    args, idx, _ = _read_explicit_positional_args(nargs, idx, ops, keys)
+    args.extend(var_args)
     return _to_rapids_expr(idx, ops, keys, *args, **kwargs)
 
 
 def _call_func_ex_bc(flags, idx, ops, keys):
     # https://docs.python.org/3/library/dis.html#opcode-CALL_FUNCTION_EX
     if flags & 1:
-        kwargs, idx = _opcode_read_arg(idx, ops, keys)
+        instr, nargs = _get_instr(ops, idx)
+        if is_builder(instr):  # first instr can be a map builder if we have to unpack kwargs, followed by normal keywords args
+            idx -= 1
+            # load **kwargs
+            kwargs, idx = _opcode_read_arg(idx, ops, keys)
+            # load other keywords args
+            nargs -= 1
+            if nargs > 0:
+                instr, nargs = _get_instr(ops, idx)
+                if is_builder(instr):  # BUILD_MAP identifies the start of explicit keyword args
+                    idx -= 1
+                    while nargs > 0:
+                        val, idx = _opcode_read_arg(idx, ops, keys)
+                        key, idx = _opcode_read_arg(idx, ops, keys)
+                        kwargs[key] = val
+                        nargs -= 1
+        else:
+            # load **kwargs
+            kwargs, idx = _opcode_read_arg(idx, ops, keys)
     else:
         kwargs = {}
 
     instr, nargs = _get_instr(ops, idx)
-    if is_builder(instr):
+    if is_builder(instr):  # if there are positional args, it will start with a BUILD_TUPLE instr
         idx -= 1
         args = []
         while nargs > 0:
@@ -328,10 +364,29 @@ def _call_func_ex_bc(flags, idx, ops, keys):
 
 
 def _call_method_bc(nargs, idx, ops, keys):
-    # delegating to basic func call works with or without additional args.
-    # actually, when the method has keyword arguments,
-    # then it is disassembled into LOAD_ATTR+CALL_FUNCTION instead of LOAD_METHOD+CALL_METHOD.
-    return _call_func_bc(nargs, idx, ops, keys)
+    # CALL_METHOD instr doesn't support keyword or unpacking arguments
+    args, idx, _ = _read_explicit_positional_args(nargs, idx, ops, keys)
+    return _to_rapids_expr(idx, ops, keys, *args)
+
+
+def _read_explicit_keyword_args(nargs, idx, ops, keys):
+    kwargs = {}
+    while nargs >= 256:  # named args ( foo(50,True,x=10) ) read first  ( right -> left ): used for PY <= 3.5
+        val, idx = _opcode_read_arg(idx, ops, keys)
+        key, idx = _opcode_read_arg(idx, ops, keys)
+        kwargs[key] = val
+        nargs -= 256  # drop 256
+    return kwargs, idx, nargs
+
+
+def _read_explicit_positional_args(nargs, idx, ops, keys):
+    args = []
+    while nargs > 0:
+        arg, idx = _opcode_read_arg(idx, ops, keys)
+        args.append(arg)
+        nargs -= 1
+    args.reverse()
+    return args, idx, nargs
 
 
 def _to_rapids_expr(idx, ops, keys, *args, **kwargs):
@@ -393,10 +448,11 @@ def _load_outer_scope(x):
         return False
     stack = inspect.stack()
     for rec in stack:
-        module = rec.frame.f_globals.get('__name__', None)
+        frame = rec[0]
+        module = frame.f_globals.get('__name__', None)
         if module and module.startswith('h2o.'):
             continue
-        scope = rec[0].f_locals
+        scope = frame.f_locals
         if x in scope:
             return scope[x]
     return x
