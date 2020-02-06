@@ -623,8 +623,8 @@ class H2OKMeansEstimator(H2OEstimator):
     @property
     def cluster_size_constraints(self):
         """
-        How many points should be at least in each cluster. The length of constraints array has to be same as number of
-        clusters.
+        An array specifying the minimum number of points that should be in each cluster. The length of the constraints
+        array has to be the same as the number of clusters.
 
         Type: ``List[int]``.
 

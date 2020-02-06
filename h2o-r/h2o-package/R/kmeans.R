@@ -36,8 +36,8 @@
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param cluster_size_constraints How many points should be at least in each cluster. The length of constraints array has to be same as number
-#'        of clusters.
+#' @param cluster_size_constraints An array specifying the minimum number of points that should be in each cluster. The length of the constraints
+#'        array has to be the same as the number of clusters.
 #' @return an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}}, \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}}, \code{\link{h2o.centersSTD}}, \code{\link{h2o.centers}}
 #' @examples
