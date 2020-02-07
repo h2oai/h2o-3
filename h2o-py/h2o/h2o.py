@@ -7,7 +7,6 @@ h2o -- module for using H2O services.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import inspect
 import logging
 import os
 import subprocess
@@ -15,11 +14,11 @@ import tempfile
 import warnings
 import webbrowser
 
-from . import estimators
 from .backend import H2OConnection
 from .backend import H2OConnectionConf
 from .backend import H2OLocalServer
 from .base import Keyed
+from .estimators import get_estimator_cls
 from .estimators.generic import H2OGenericEstimator
 from .exceptions import H2OConnectionError, H2OValueError, H2OError
 from .expr import ExprNode
@@ -950,17 +949,6 @@ def deep_copy(data, xid):
     return duplicate
 
 
-def _algo_for_estimator_(shortname, cls):
-    if shortname == 'H2OAutoEncoderEstimator':
-        return 'autoencoder'
-    return cls.algo
-
-
-_estimator_class_by_algo_ = {_algo_for_estimator_(name, cls): cls
-                             for name, cls in inspect.getmembers(estimators, inspect.isclass)
-                             if hasattr(cls, 'algo')}
-
-
 def get_model(model_id):
     """
     Load a model from the server.
@@ -995,9 +983,8 @@ def get_model(model_id):
     if algo == 'deeplearning' and model_json["output"]["model_category"] == "AutoEncoder":
         algo = 'autoencoder'
 
-    if algo in _estimator_class_by_algo_:
-        m = _estimator_class_by_algo_[algo]()
-    else:
+    m = get_estimator_cls(algo)
+    if m is None:
         raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)
     return m
