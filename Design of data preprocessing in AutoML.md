@@ -40,7 +40,7 @@ PipelineModel model could be seen as a proxy to a main scoring model. Even name 
 #### Cons:
 - wrapping original main model into PipelineModel will hide its functionality. It can be mitigated by introducing ProxyModel interface with `getMainModel` method that will provide main model to the user. Though, for the clients (theoretically) PipelineModel could be flattenned automatically. Complexity of doing this  depends on how flexible we are with serialisation at rest api layer.
 
-![PipelineModel approach](https://drive.google.com/open?id=1UITv2TwNE2j7i0GMdYn6oD4jXz-AtsGd)
+![PipelineModel approach](https://drive.google.com/uc?id=1UITv2TwNE2j7i0GMdYn6oD4jXz-AtsGd)
 
 *Integration preprocessing functionality into a Model class*
 
@@ -60,7 +60,7 @@ Not sure which approach is better but probably we can avoid introduction of the 
 - increased number of responsibilities of the ModelBuilder and Model, which could be otherwise be located in other classes.
 
 
-![Integration preprocessing functionality into a Model class](https://drive.google.com/open?id=1erAwlLK1nULxmrb3Srhtuczk5bgqw-0U)
+![Integration preprocessing functionality into a Model class](https://drive.google.com/uc?id=1erAwlLK1nULxmrb3Srhtuczk5bgqw-0U)
 
 
 #### General concerns:
@@ -68,7 +68,9 @@ Wanted one more time to draw our attention to the fact how we handle cornerstone
 
 For comparison I will be using SparkML framework:
 
-![SparkML vs H2O.ai](https://drive.google.com/open?id=1e8Onfn_jCla13xvCJ6p71bBN90PN__h4)
+![SparkML vs H2O.ai](https://drive.google.com/uc?id=1e8Onfn_jCla13xvCJ6p71bBN90PN__h4)
+
+fyi. https://www.youtube.com/watch?v=jEyahxFp3ak
 
 Model is being overflowed with responsibilities imho. Transformation logic is being spread over many places in different forms.
 
