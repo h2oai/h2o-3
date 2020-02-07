@@ -40,7 +40,9 @@ PipelineModel model could be seen as a proxy to a main scoring model. Even name 
 #### Cons:
 - wrapping original main model into PipelineModel will hide its functionality. It can be mitigated by introducing ProxyModel interface with `getMainModel` method that will provide main model to the user. Though, for the clients (theoretically) PipelineModel could be flattenned automatically. Complexity of doing this  depends on how flexible we are with serialisation at rest api layer.
 
-![PipelineModel approach](https://drive.google.com/uc?id=1UITv2TwNE2j7i0GMdYn6oD4jXz-AtsGd)
+<p align="center">
+  <img alt="PipelineModel approach" src="https://drive.google.com/uc?id=1UITv2TwNE2j7i0GMdYn6oD4jXz-AtsGd" width="100%"/>
+</p>
 
 *Integration preprocessing functionality into a Model class*
 
@@ -59,16 +61,18 @@ Not sure which approach is better but probably we can avoid introduction of the 
 - new functionality will be exposed not only to AutoML scope. All algos will be "aware" about data preprocessing from now on. With first approach we would just add notion of ability to be a Proxy model and not all the models will have to realise this interface. Though, absense of the preprocessing models could be seen as "no-impact" on Model, still from code perspective there will a bigger impact. Hopefully preprocessing functionality will be generic enough without depenedencies on a particular types of the models.
 - increased number of responsibilities of the ModelBuilder and Model, which could be otherwise be located in other classes.
 
-
-![Integration preprocessing functionality into a Model class](https://drive.google.com/uc?id=1erAwlLK1nULxmrb3Srhtuczk5bgqw-0U)
-
+<p align="center">
+  <img alt="Integration preprocessing functionality into a Model class" src="https://drive.google.com/uc?id=1erAwlLK1nULxmrb3Srhtuczk5bgqw-0U" width="100%"/>
+</p>
 
 #### General concerns:
 Wanted one more time to draw our attention to the fact how we handle cornerstone abstractions in our project. And let's say we are not going to use Pipelines.
 
 For comparison I will be using SparkML framework:
 
-![SparkML vs H2O.ai](https://drive.google.com/uc?id=1e8Onfn_jCla13xvCJ6p71bBN90PN__h4)
+<p align="center">
+  <img alt="SparkML vs H2O.ai" src="https://drive.google.com/uc?id=1e8Onfn_jCla13xvCJ6p71bBN90PN__h4" width="100%"/>
+</p>
 
 fyi. https://www.youtube.com/watch?v=jEyahxFp3ak
 
