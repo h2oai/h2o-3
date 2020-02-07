@@ -7,6 +7,7 @@ import water.fvec.C0DChunk;
 import water.fvec.Chunk;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
+import water.fvec.Frame;
 import water.nbhm.NonBlockingHashMapLong;
 import water.parser.BufferedString;
 import water.parser.Categorical;
@@ -870,6 +871,19 @@ public class VecUtils {
       n[i] = random.nextGaussian();
     }
     return Vec.makeVec(n, Vec.newKey());
+  }
+
+  public static Vec uniformDistrFromFrame(Frame frame, long seed) {
+    double[] p = new double[frame.numCols()];
+    Vec[] vecs = frame.vecs();
+    Random random = new Random(seed);
+    for (int i = 0; i < vecs.length; i++) {
+      Vec vec = vecs[i];
+      double min = vec.min();
+      double max = vec.max();
+      p[i] = min + random.nextDouble() * (max - min);
+    }
+    return Vec.makeVec(p, Vec.newKey());
   }
 
 }
