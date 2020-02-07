@@ -863,4 +863,13 @@ public class VecUtils {
     }
   }
 
+  public static Vec makeGaussianVec(int length, long seed) {
+    double[] n = new double[length];
+    Random random = new Random(seed);
+    for (int i = 0; i < length; i++) {
+      n[i] = random.nextGaussian();
+    }
+    return Vec.makeVec(n, Vec.newKey());
+  }
+
 }
