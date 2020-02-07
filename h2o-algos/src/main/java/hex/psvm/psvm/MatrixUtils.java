@@ -6,7 +6,7 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
-class MatrixUtils {
+public class MatrixUtils {
 
   /**
    * Calculates matrix product M'DM
@@ -14,7 +14,7 @@ class MatrixUtils {
    * @param diagonal Vec representation of a diagonal matrix (m x m)
    * @return lower triangular portion of the product (the product is a symmetrical matrix, only the lower portion is represented)
    */
-  static LLMatrix productMtDM(Frame m, Vec diagonal) {
+  public static LLMatrix productMtDM(Frame m, Vec diagonal) {
     Vec[] vecs = ArrayUtils.append(m.vecs(), diagonal);
     double result[] = new ProductMMTask().doAll(vecs)._result;
     
@@ -34,7 +34,7 @@ class MatrixUtils {
    * @param v Vec representing vector v (n x 1)
    * @return m-element array representing the result of the product
    */
-  static double[] productMtv(Frame m, Vec v) {
+  public static double[] productMtv(Frame m, Vec v) {
     Vec[] vecs = ArrayUtils.append(m.vecs(), v);
     return new ProductMtvTask().doAll(vecs)._result;
   }
