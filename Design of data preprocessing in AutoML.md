@@ -24,7 +24,7 @@ After an investigation I have come to a conclusion that there is no such a thing
 3. GenericModel. Is it supposed to work only with Mojo models and is not supposed to provide any information of the original models. So it is not what we need for inspiration.
 
 ### Approaches to consider
-*PipelineModel approach*
+(1) *PipelineModel approach*
 
 Similar to MojoPipelineBuilder we can have PipelineModelBuilder. It will have ability to add main model that is supposed to perform final scoring and also an ability to add preprocessing models ( keys to those trained models).
 
@@ -42,7 +42,7 @@ PipelineModel model could be seen as a proxy to a main scoring model. Even name 
 
 ![PipelineModel approach](pipelinemodel.png)
 
-*Integration preprocessing functionality into a Model class*
+(2) *Integration preprocessing functionality into a Model class*
 
 We can probably have two sub-approaches here:
 - when we have PipelineModelBuilder and during training it collapses into main model without any wrapper around it
@@ -76,14 +76,14 @@ Model is being overflowed with responsibilities imho. Transformation logic is be
 
 ### Summary
 - we tend to keep adding functionality into Model class. We might be going to add pipeline related aspect into Model
-- lack of symmetry between production and non-production code
+- lack of symmetry between production and non-production code ( Model vs MojoPipeline )
 - both approaches can solve the problem. Second approach will be smoother from user's perspective at least in Java API as there will be no need to pull out main model. For clients I think we can flatten representation automatically.
 - Some functionality that could be represented via existing approach of Models(transformer) is hardcoded. Lack of consistency. ( not too much related to a current task)
 
 
 Given current state of h2o-3's design and given we are ready to put responsibility of data preprocessing onto a Model class I think that second approach should be fine.
 But ideally I would want to see
- - a Pipeline class to be responsible for pipelining/data preprocessing
+ - a PipelineModel related classes to be responsible for pipelining/data preprocessing
  - and hardcoded transformations to be represented as models. ( not too much related to a current task)
 
 ### Other approaches to consider ???
