@@ -39,6 +39,17 @@ public class MatrixUtils {
     return new ProductMtvTask().doAll(vecs)._result;
   }
 
+  /**
+   * Calculates vector-vector product v1*v2
+   *
+   * @param v1 vec representing first element (1 x n)
+   * @param v2 Vec representing second element (n x 1)
+   * @return double value (vector 1 x 1)
+   */
+  public static double productVtV(Vec v1, Vec v2) {
+    return new ProductMtvTask().doAll(v1, v2)._result[0];
+  }
+
   private static class ProductMMTask extends MRTask<ProductMMTask> {
     // OUT
     private double[] _result;
