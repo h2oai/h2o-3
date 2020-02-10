@@ -15,7 +15,7 @@ test.km.constrained <- function() {
     predictors <-colnames(iris)[-length(iris)]
 
     # try using the `cluster_size_constraints` parameter:
-    iris_kmeans <- h2o.kmeans(x = predictors, k=3, standardize=T, cluster_size_constraints=list(2, 5, 8),
+    iris_kmeans <- h2o.kmeans(x = predictors, k=3, standardize=T, cluster_size_constraints=c(2, 5, 8),
     training_frame=iris, score_each_iteration=T, seed=1234)
 
     # print the model summary to see the number of datapoints are in each cluster
