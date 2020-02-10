@@ -193,9 +193,13 @@ public class JdbcHiveMetadata implements HiveMetaData {
         return new JdbcTable(name, storableData, columns, partitions, partitionKeys);
     }
     
-    private String getHiveVersionMajor(Connection conn) throws SQLException {
-        String versionStr = executeQuery(conn, SQL_GET_VERSION);
-        return versionStr.substring(0, 1);
+    private String getHiveVersionMajor(Connection conn) {
+        try {
+            String versionStr = executeQuery(conn, SQL_GET_VERSION);
+            return versionStr.substring(0, 1);
+        } catch (SQLException e) {
+            return "1"; // older hive versions do not support version() function
+        }
     }
 
     private StorableMetadata readStorableMetadata(Map<String, Object> tableInfo) {
