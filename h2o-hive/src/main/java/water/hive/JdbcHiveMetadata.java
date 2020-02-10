@@ -154,17 +154,10 @@ public class JdbcHiveMetadata implements HiveMetaData {
     private Map<String, Object> executeAndParseJsonResultSet(
         Connection conn, String queryPattern, String tableName
     ) throws SQLException {
-        return executeAndParseJsonResultSet(conn, queryPattern, tableName, emptyList());
-    }
-
-    private Map<String, Object> executeAndParseJsonResultSet(
-        Connection conn, String queryPattern, String tableName, List<String> args
-    ) throws SQLException {
         String query = String.format(queryPattern, tableName);
         Log.info("Executing Hive metadata query " + query);
-        try (PreparedStatement stmt = conn.prepareStatement(query)) {
-            for (int i = 0; i < args.size(); i++) stmt.setString(i+1, args.get(i));
-            try (ResultSet rs = stmt.executeQuery()) {
+        try (Statement stmt = conn.createStatement()) {
+            try (ResultSet rs = stmt.executeQuery(query)) {
                 rs.next();
                 String json = rs.getString(1);
                 return JSONUtils.parse(json);
@@ -229,18 +222,19 @@ public class JdbcHiveMetadata implements HiveMetaData {
         List<Column> partitionKeys,
         List<String> values
     ) throws SQLException {
-        String query = getDescribePartitionQuery(partitionKeys);
-        Map<String, Object> data = executeAndParseJsonResultSet(conn, query, tableName, values);
+        String query = getDescribePartitionQuery(partitionKeys, values);
+        Map<String, Object> data = executeAndParseJsonResultSet(conn, query, tableName);
         Map<String, Object> info = (Map<String, Object>) data.get("partitionInfo");
         return readStorableMetadata(info);
     }
     
-    private String getDescribePartitionQuery(List<Column> partitionKeys) {
+    private String getDescribePartitionQuery(List<Column> partitionKeys, List<String> values) {
         StringBuilder sb = new StringBuilder();
         sb.append(SQL_DESCRIBE_PARTITION).append("(");
         for (int i = 0; i < partitionKeys.size(); i++) {
             if (i > 0) sb.append(", ");
-            sb.append(partitionKeys.get(i).getName()).append("=?");
+            String escapedValue = values.get(i).replace("\"", "\\\"");
+            sb.append(partitionKeys.get(i).getName()).append("=\"").append(escapedValue).append("\"");
         }
         sb.append(")");
         return sb.toString();
