@@ -367,6 +367,9 @@ final public class H2O {
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
     public String hdfs_config = null;
 
+    /** Whole hadoop configuration to be used by H2O **/
+    public String hadoop_config = null;
+
     /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
     public boolean hdfs_skip = false;
 
@@ -710,7 +713,11 @@ final public class H2O {
         trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
       } else if(s.matches("embedded")) {
         trgt.embedded = true;
-      } else {
+      } else if(s.matches("hadoop_config")){
+        i = s.incrementAndCheck(i, args);
+        trgt.hadoop_config = args[i];
+      }
+      else {
         parseFailed("Unknown argument (" + s + ")");
       }
     }

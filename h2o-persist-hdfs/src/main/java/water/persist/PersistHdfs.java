@@ -1,13 +1,15 @@
 package water.persist;
 
 import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.*;
+import water.*;
+import water.api.HDFSIOException;
+import water.fvec.HDFSFileVec;
+import water.util.FileUtils;
+import water.util.Log;
 
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -15,16 +17,6 @@ import java.util.ArrayList;
 import java.util.concurrent.Callable;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import water.Futures;
-import water.H2O;
-import water.Key;
-import water.MemoryManager;
-import water.Value;
-import water.api.HDFSIOException;
-import water.fvec.HDFSFileVec;
-import water.util.FileUtils;
-import water.util.Log;
 
 import static water.fvec.FileVec.getPathForKey;
 
@@ -50,11 +42,20 @@ public final class PersistHdfs extends Persist {
   // Global HDFS initialization
   // FIXME: do not share it via classes, but initialize it by object
   static {
-    Configuration conf = null;
-    if( H2O.ARGS.hdfs_config != null ) {
+    Configuration conf;
+    final String configurationFilePath;
+    if (H2O.ARGS.hdfs_config != null) { // HDFS config has priority, as it is more specialized
+      Log.info(String.format("Using HDFS configuration '%s'", H2O.ARGS.hdfs_config));
+      configurationFilePath = H2O.ARGS.hdfs_config;
+    } else if (H2O.ARGS.hadoop_config != null) {
+      Log.info("Using whole Hadoop configuration '%s'".format(H2O.ARGS.hadoop_config));
+      configurationFilePath = H2O.ARGS.hadoop_config;
+    } else configurationFilePath = null;
+
+    if (configurationFilePath != null) {
       conf = new Configuration();
-      File p = new File(H2O.ARGS.hdfs_config);
-      if( !p.exists() ) H2O.die("Unable to open hdfs configuration file " + p.getAbsolutePath());
+      File p = new File(configurationFilePath);
+      if (!p.exists()) H2O.die("Unable to open hdfs configuration file " + p.getAbsolutePath());
       conf.addResource(new Path(p.getAbsolutePath()));
       Log.debug("resource ", p.getAbsolutePath(), " added to the hadoop configuration");
     } else {
