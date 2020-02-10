@@ -74,7 +74,7 @@ INSERT INTO TABLE test_table_multi_key PARTITION (year=2017, month=2) VALUES
 
 CREATE TABLE test_table_escaping(
     code STRING
-) 
+)
 PARTITIONED BY (part_key STRING)
 STORED AS TEXTFILE;
 ALTER TABLE test_table_escaping ADD PARTITION (part_key="'single'");
@@ -83,3 +83,5 @@ ALTER TABLE test_table_escaping ADD PARTITION (part_key="\"double\"");
 INSERT INTO TABLE test_table_escaping PARTITION (part_key="\"double\"") VALUES ("21"), ("22");
 ALTER TABLE test_table_escaping ADD PARTITION (part_key="both'\"");
 INSERT INTO TABLE test_table_escaping PARTITION (part_key="both'\"") VALUES ("31"), ("32");
+ALTER TABLE test_table_escaping ADD PARTITION (part_key="specials=\n");
+INSERT INTO TABLE test_table_escaping PARTITION (part_key="specials=\n") VALUES ("41"), ("42");

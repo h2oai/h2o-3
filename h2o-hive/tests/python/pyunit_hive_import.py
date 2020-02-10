@@ -74,13 +74,13 @@ def hive_import():
     # import from partitioned table with single format and special characters in partition names
     test_table_escaping = h2o.import_hive_table("default", "test_table_escaping")
     assert_is_type(test_table_multi_key, H2OFrame)
-    assert test_table_escaping.nrow==6, "test_table_escaping number of rows is incorrect. h2o.import_hive_table() is not working."
+    assert test_table_escaping.nrow==8, "test_table_escaping number of rows is incorrect. h2o.import_hive_table() is not working."
     assert test_table_escaping.ncol==2, "test_table_escaping number of columns is incorrect. h2o.import_hive_table() is not working."
 
     # import from partitioned table with single format and special characters in partition names JDBC
     test_table_escaping = h2o.import_hive_table(connection_url, "test_table_escaping")
     assert_is_type(test_table_escaping, H2OFrame)
-    assert test_table_escaping.nrow==6, "test_table_escaping JDBC number of rows is incorrect. h2o.import_hive_table() is not working."
+    assert test_table_escaping.nrow==8, "test_table_escaping JDBC number of rows is incorrect. h2o.import_hive_table() is not working."
     assert test_table_escaping.ncol==2, "test_table_escaping JDBC number of columns is incorrect. h2o.import_hive_table() is not working."
 
 
