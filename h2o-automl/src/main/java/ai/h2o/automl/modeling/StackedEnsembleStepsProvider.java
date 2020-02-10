@@ -17,7 +17,9 @@ import java.util.stream.Stream;
 
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
-public class StackedEnsembleStepsProvider implements ModelingStepsProvider<StackedEnsembleStepsProvider.StackedEnsembleSteps> {
+public class StackedEnsembleStepsProvider
+        implements ModelingStepsProvider<StackedEnsembleStepsProvider.StackedEnsembleSteps>
+                 , ModelParametersProvider<StackedEnsembleParameters> {
 
     public static class StackedEnsembleSteps extends ModelingSteps {
 
@@ -155,6 +157,11 @@ public class StackedEnsembleStepsProvider implements ModelingStepsProvider<Stack
     @Override
     public StackedEnsembleSteps newInstance(AutoML aml) {
         return new StackedEnsembleSteps(aml);
+    }
+
+    @Override
+    public StackedEnsembleParameters newDefaultParameters() {
+        return new StackedEnsembleParameters();
     }
 }
 

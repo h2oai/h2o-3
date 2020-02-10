@@ -13,7 +13,9 @@ import java.util.Map;
 import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
-public class GBMStepsProvider implements ModelingStepsProvider<GBMStepsProvider.GBMSteps> {
+public class GBMStepsProvider
+        implements ModelingStepsProvider<GBMStepsProvider.GBMSteps>
+                 , ModelParametersProvider<GBMParameters> {
 
     public static class GBMSteps extends ModelingSteps {
 
@@ -149,6 +151,11 @@ public class GBMStepsProvider implements ModelingStepsProvider<GBMStepsProvider.
     @Override
     public GBMSteps newInstance(AutoML aml) {
         return new GBMSteps(aml);
+    }
+
+    @Override
+    public GBMParameters newDefaultParameters() {
+        return new GBMParameters();
     }
 }
 
