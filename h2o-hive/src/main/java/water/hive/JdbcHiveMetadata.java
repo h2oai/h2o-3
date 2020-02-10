@@ -246,14 +246,16 @@ public class JdbcHiveMetadata implements HiveMetaData {
         sb.append(SQL_DESCRIBE_PARTITION).append("(");
         for (int i = 0; i < partitionKeys.size(); i++) {
             if (i > 0) sb.append(", ");
-            sb.append(partitionKeys.get(i).getName()).append("=\"").append(values.get(i)).append("\"");
+            String escapedValue = values.get(i).replace("\"", "\\\"");
+            sb.append(partitionKeys.get(i).getName()).append("=\"").append(escapedValue).append("\"");
         }
         sb.append(")");
         return sb.toString();
     }
     
-    private String handleEscapingInPartitionValue(String value, String hiveVersion) {
+    private String unescapePartitionValue(String value, String hiveVersion) {
         if (!"1".equals(hiveVersion)) {
+            // hive 2+ does the un-escaping automatically
             return value;
         } else {
             return value.replace("\\\"", "\"");
@@ -264,7 +266,7 @@ public class JdbcHiveMetadata implements HiveMetaData {
         List<String> values = new ArrayList<>();
         List<Map<String, Object>> valuesData = (List<Map<String, Object>>) partition.get("values");
         for (Map<String, Object> valueRecord : valuesData) {
-            String value = handleEscapingInPartitionValue((String) valueRecord.get("columnValue"), hiveVersion);
+            String value = unescapePartitionValue((String) valueRecord.get("columnValue"), hiveVersion);
             values.add(value);
         }
         return values;
