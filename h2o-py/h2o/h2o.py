@@ -18,7 +18,7 @@ from .backend import H2OConnection
 from .backend import H2OConnectionConf
 from .backend import H2OLocalServer
 from .base import Keyed
-from .estimators import get_estimator_cls
+from .estimators import create_estimator
 from .estimators.generic import H2OGenericEstimator
 from .exceptions import H2OConnectionError, H2OValueError, H2OError
 from .expr import ExprNode
@@ -983,7 +983,7 @@ def get_model(model_id):
     if algo == 'deeplearning' and model_json["output"]["model_category"] == "AutoEncoder":
         algo = 'autoencoder'
 
-    m = get_estimator_cls(algo)
+    m = create_estimator(algo)
     if m is None:
         raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)

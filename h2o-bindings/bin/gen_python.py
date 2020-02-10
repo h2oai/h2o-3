@@ -347,12 +347,12 @@ def _algo_for_estimator_(shortname, cls):
         return 'autoencoder'
     return cls.algo
 
-_estimators_by_algo_ = {_algo_for_estimator_(name, cls): cls
-                        for name, cls in inspect.getmembers(module, inspect.isclass)
-                        if hasattr(cls, 'algo')}
+_estimator_cls_by_algo_ = {_algo_for_estimator_(name, cls): cls
+                           for name, cls in inspect.getmembers(module, inspect.isclass)
+                           if hasattr(cls, 'algo')}
 
-def get_estimator_cls(algo):
-    return _estimators_by_algo_[algo]
+def create_estimator(algo, **params):
+    return _estimator_cls_by_algo_[algo](**params)
 
 """
     yield "__all__ = ("
