@@ -352,11 +352,13 @@ _estimator_cls_by_algo_ = {_algo_for_estimator_(name, cls): cls
                            if hasattr(cls, 'algo')}
 
 def create_estimator(algo, **params):
+    if algo not in _estimator_cls_by_algo_:
+        raise ValueError("Unknown algo type: " + algo)
     return _estimator_cls_by_algo_[algo](**params)
 
 """
     yield "__all__ = ("
-    yield bi.wrap('"get_estimator_cls",', indent=" "*4)
+    yield bi.wrap('"create_estimator",', indent=" "*4)
     yield bi.wrap(", ".join(module_strs), indent=" "*4)
     yield ")"
 

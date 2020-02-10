@@ -984,8 +984,6 @@ def get_model(model_id):
         algo = 'autoencoder'
 
     m = create_estimator(algo)
-    if m is None:
-        raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)
     return m
 

@@ -42,11 +42,13 @@ _estimator_cls_by_algo_ = {_algo_for_estimator_(name, cls): cls
                            if hasattr(cls, 'algo')}
 
 def create_estimator(algo, **params):
+    if algo not in _estimator_cls_by_algo_:
+        raise ValueError("Unknown algo type: " + algo)
     return _estimator_cls_by_algo_[algo](**params)
 
 
 __all__ = (
-    "get_estimator_cls",
+    "create_estimator",
     "H2OAggregatorEstimator", "H2OCoxProportionalHazardsEstimator", "H2OAutoEncoderEstimator",
     "H2ODeepLearningEstimator", "H2ODeepWaterEstimator", "H2OEstimator", "H2OGradientBoostingEstimator",
     "H2OGenericEstimator", "H2OGeneralizedLinearEstimator", "H2OGeneralizedLowRankEstimator",
