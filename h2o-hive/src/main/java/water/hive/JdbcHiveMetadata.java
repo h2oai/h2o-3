@@ -2,6 +2,7 @@ package water.hive;
 
 import water.jdbc.SQLManager;
 import water.util.JSONUtils;
+import water.util.Log;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -9,12 +10,14 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Collections.emptyList;
+
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class JdbcHiveMetadata implements HiveMetaData {
 
     private static final String SQL_SET_JSON_OUTPUT = "set hive.ddl.output.format=json";
     private static final String SQL_DESCRIBE_TABLE = "DESCRIBE EXTENDED %s";
-    private static final String SQL_DESCRIBE_PARTITION = "DESCRIBE EXTENDED %s PARTITION (%s)";
+    private static final String SQL_DESCRIBE_PARTITION = "DESCRIBE EXTENDED %s PARTITION ";
     private static final String SQL_SHOW_PARTS = "SHOW PARTITIONS %s";
 
     private final String url;
@@ -148,9 +151,20 @@ public class JdbcHiveMetadata implements HiveMetaData {
         }
     }
 
-    private Map<String, Object> executeAndParseJsonResultSet(Connection conn, String query) throws SQLException {
-        try (Statement stmt = conn.createStatement()) {
-            try (ResultSet rs = stmt.executeQuery(query)) {
+    private Map<String, Object> executeAndParseJsonResultSet(
+        Connection conn, String queryPattern, String tableName
+    ) throws SQLException {
+        return executeAndParseJsonResultSet(conn, queryPattern, tableName, emptyList());
+    }
+
+    private Map<String, Object> executeAndParseJsonResultSet(
+        Connection conn, String queryPattern, String tableName, List<String> args
+    ) throws SQLException {
+        String query = String.format(queryPattern, tableName);
+        Log.info("Executing Hive metadata query " + query);
+        try (PreparedStatement stmt = conn.prepareStatement(query)) {
+            for (int i = 0; i < args.size(); i++) stmt.setString(i+1, args.get(i));
+            try (ResultSet rs = stmt.executeQuery()) {
                 rs.next();
                 String json = rs.getString(1);
                 return JSONUtils.parse(json);
@@ -169,8 +183,7 @@ public class JdbcHiveMetadata implements HiveMetaData {
     }
 
     private Table getTable(Connection conn, String name) throws SQLException {
-        String query = String.format(SQL_DESCRIBE_TABLE, name);
-        Map<String, Object> tableData = executeAndParseJsonResultSet(conn, query);
+        Map<String, Object> tableData = executeAndParseJsonResultSet(conn, SQL_DESCRIBE_TABLE, name);
         List<Column> columns = readColumns((List<Map<String, Object>>) tableData.get("columns"));
         Map<String, Object> tableInfo = (Map<String, Object>) tableData.get("tableInfo");
         List<Column> partitionKeys = readPartitionKeys(tableInfo);
@@ -197,10 +210,9 @@ public class JdbcHiveMetadata implements HiveMetaData {
         List<Column> partitionKeys
     ) throws SQLException {
         if (partitionKeys.isEmpty()) {
-            return Collections.emptyList();
+            return emptyList();
         }
-        String query = String.format(SQL_SHOW_PARTS, tableName);
-        Map<String, Object> partitionsResult = executeAndParseJsonResultSet(conn, query);
+        Map<String, Object> partitionsResult = executeAndParseJsonResultSet(conn, SQL_SHOW_PARTS, tableName);
         List<Partition> partitions = new ArrayList<>();
         List<Map<String, Object>> partitionsData = (List<Map<String, Object>>) partitionsResult.get("partitions");
         for (Map<String, Object> partition : partitionsData) {
@@ -217,21 +229,23 @@ public class JdbcHiveMetadata implements HiveMetaData {
         List<Column> partitionKeys,
         List<String> values
     ) throws SQLException {
-        String query = String.format(SQL_DESCRIBE_PARTITION, tableName, toPartitionIdentifier(partitionKeys, values));
-        Map<String, Object> data = executeAndParseJsonResultSet(conn, query);
+        String query = getDescribePartitionQuery(partitionKeys);
+        Map<String, Object> data = executeAndParseJsonResultSet(conn, query, tableName, values);
         Map<String, Object> info = (Map<String, Object>) data.get("partitionInfo");
         return readStorableMetadata(info);
     }
-
-    private String toPartitionIdentifier(List<Column> partitionKeys, List<String> values) {
+    
+    private String getDescribePartitionQuery(List<Column> partitionKeys) {
         StringBuilder sb = new StringBuilder();
+        sb.append(SQL_DESCRIBE_PARTITION).append("(");
         for (int i = 0; i < partitionKeys.size(); i++) {
-            if (i > 0) sb.append(",");
-            sb.append(partitionKeys.get(i).getName()).append(("=")).append(values.get(i));
+            if (i > 0) sb.append(", ");
+            sb.append(partitionKeys.get(i).getName()).append("=?");
         }
+        sb.append(")");
         return sb.toString();
     }
-
+    
     private List<String> parsePartitionValues(Map<String, Object> partition) {
         List<String> values = new ArrayList<>();
         List<Map<String, Object>> valuesData = (List<Map<String, Object>>) partition.get("values");
@@ -243,7 +257,7 @@ public class JdbcHiveMetadata implements HiveMetaData {
 
     private List<Column> readPartitionKeys(Map<String, Object> tableInfo) {
         if (!tableInfo.containsKey("partitionKeys")) {
-            return Collections.emptyList();
+            return emptyList();
         } else {
             List<Map<String, Object>> partitionColumns = (List<Map<String, Object>>) tableInfo.get("partitionKeys");
             return readColumns(partitionColumns);
