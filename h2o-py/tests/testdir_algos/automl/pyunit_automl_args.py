@@ -259,14 +259,14 @@ def test_stacked_ensembles_are_trained_after_timeout():
     print("Check that Stacked Ensembles are still trained after timeout")
     max_runtime_secs = 20
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_SE_after_timeout", seed=1, max_runtime_secs=max_runtime_secs, exclude_algos=['DeepLearning'])
+    aml = H2OAutoML(project_name="py_aml_SE_after_timeout", seed=1, max_runtime_secs=max_runtime_secs, exclude_algos=['XGBoost', 'DeepLearning'])
     start = time.time()
     aml.train(y=ds['target'], training_frame=ds['train'])
     end = time.time()
     assert end-start - max_runtime_secs > 0
 
     _, _, se = get_partitioned_model_names(aml.leaderboard)
-    assert len(se) == 2, "StackedEnsemble should still be trained after timeout"
+    assert len(se) > 0, "StackedEnsemble should still be trained after timeout"  # we don't need to test if all SEs are built, there may be only one if just one model type was built.
 
 
 def test_automl_stops_after_max_models():
