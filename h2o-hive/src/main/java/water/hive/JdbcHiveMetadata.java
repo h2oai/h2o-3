@@ -16,6 +16,7 @@ import static java.util.Collections.emptyList;
 public class JdbcHiveMetadata implements HiveMetaData {
 
     private static final String SQL_SET_JSON_OUTPUT = "set hive.ddl.output.format=json";
+    private static final String SQL_GET_VERSION = "select version()";
     private static final String SQL_DESCRIBE_TABLE = "DESCRIBE EXTENDED %s";
     private static final String SQL_DESCRIBE_PARTITION = "DESCRIBE EXTENDED %s PARTITION ";
     private static final String SQL_SHOW_PARTS = "SHOW PARTITIONS %s";
@@ -150,19 +151,25 @@ public class JdbcHiveMetadata implements HiveMetaData {
             return partitionKeys;
         }
     }
+    
+    private String executeQuery(Connection conn, String query) throws SQLException {
+        try (Statement stmt = conn.createStatement()) {
+            try (ResultSet rs = stmt.executeQuery(query)) {
+                boolean hasData = rs.next();
+                assert hasData : "Query has no result rows.";
+                return rs.getString(1);
+            }
+        }
+
+    }
 
     private Map<String, Object> executeAndParseJsonResultSet(
         Connection conn, String queryPattern, String tableName
     ) throws SQLException {
         String query = String.format(queryPattern, tableName);
         Log.info("Executing Hive metadata query " + query);
-        try (Statement stmt = conn.createStatement()) {
-            try (ResultSet rs = stmt.executeQuery(query)) {
-                rs.next();
-                String json = rs.getString(1);
-                return JSONUtils.parse(json);
-            }
-        }
+        String json = executeQuery(conn, query);
+        return JSONUtils.parse(json);
     }
 
     @Override
@@ -185,6 +192,11 @@ public class JdbcHiveMetadata implements HiveMetaData {
         StorableMetadata storableData = readStorableMetadata(tableInfo);
         return new JdbcTable(name, storableData, columns, partitions, partitionKeys);
     }
+    
+    private String getHiveVersionMajor(Connection conn) throws SQLException {
+        String versionStr = executeQuery(conn, SQL_GET_VERSION);
+        return versionStr.substring(0, 1);
+    }
 
     private StorableMetadata readStorableMetadata(Map<String, Object> tableInfo) {
         StorableMetadata res = new StorableMetadata();
@@ -206,10 +218,11 @@ public class JdbcHiveMetadata implements HiveMetaData {
             return emptyList();
         }
         Map<String, Object> partitionsResult = executeAndParseJsonResultSet(conn, SQL_SHOW_PARTS, tableName);
+        String hiveVersion = getHiveVersionMajor(conn);
         List<Partition> partitions = new ArrayList<>();
         List<Map<String, Object>> partitionsData = (List<Map<String, Object>>) partitionsResult.get("partitions");
         for (Map<String, Object> partition : partitionsData) {
-            List<String> values = parsePartitionValues(partition);
+            List<String> values = parsePartitionValues(partition, hiveVersion);
             StorableMetadata data = readPartitionMetadata(conn, tableName, partitionKeys, values);
             partitions.add(new JdbcPartition(data, values));
         }
@@ -233,18 +246,26 @@ public class JdbcHiveMetadata implements HiveMetaData {
         sb.append(SQL_DESCRIBE_PARTITION).append("(");
         for (int i = 0; i < partitionKeys.size(); i++) {
             if (i > 0) sb.append(", ");
-            String escapedValue = values.get(i).replace("\"", "\\\"");
-            sb.append(partitionKeys.get(i).getName()).append("=\"").append(escapedValue).append("\"");
+            sb.append(partitionKeys.get(i).getName()).append("=\"").append(values.get(i)).append("\"");
         }
         sb.append(")");
         return sb.toString();
     }
     
-    private List<String> parsePartitionValues(Map<String, Object> partition) {
+    private String handleEscapingInPartitionValue(String value, String hiveVersion) {
+        if (!"1".equals(hiveVersion)) {
+            return value;
+        } else {
+            return value.replace("\\\"", "\"");
+        }
+    }
+    
+    private List<String> parsePartitionValues(Map<String, Object> partition, String hiveVersion) {
         List<String> values = new ArrayList<>();
         List<Map<String, Object>> valuesData = (List<Map<String, Object>>) partition.get("values");
-        for (Map<String, Object> value : valuesData) {
-            values.add((String) value.get("columnValue"));
+        for (Map<String, Object> valueRecord : valuesData) {
+            String value = handleEscapingInPartitionValue((String) valueRecord.get("columnValue"), hiveVersion);
+            values.add(value);
         }
         return values;
     }
