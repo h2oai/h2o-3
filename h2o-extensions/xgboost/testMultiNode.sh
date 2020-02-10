@@ -27,7 +27,8 @@ function cleanup () {
   kill -9 ${PID_1} ${PID_2} ${PID_3} 1> /dev/null 2>&1
   wait 1> /dev/null 2>&1
   RC=`cat $OUTDIR/status.0`
-  if [ "$RC" != "00000" ]; then
+  if [ $RC -ne 0 ]; then
+    echo Status: $RC
     cat $OUTDIR/out.*
     echo h2o-ext-xgboost junit tests FAILED
     exit 1
@@ -74,7 +75,6 @@ echo "$JVM" > $OUTDIR/jvm_cmd.txt
 # Tests
 # Must run first, before the cloud locks (because it tests cloud locking)
 JUNIT_TESTS_BOOT=""
-JUNIT_TESTS_BIG="hex.word2vec.Word2VecTest"
 
 # Runner
 # Default JUnit runner is org.junit.runner.JUnitCore
@@ -90,7 +90,7 @@ JUNIT_RUNNER="water.junit.H2OTestRunner"
 # If randomness is desired, replace sort with the unix 'shuf'
 # Use /usr/bin/sort because of cygwin on windows.
 # Windows has sort.exe which you don't want. Fails? (is it a lineend issue)
-(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | grep -v $JUNIT_TESTS_BIG | /usr/bin/sort > $OUTDIR/tests.txt
+(cd src/test/java; /usr/bin/find . -name '*.java' | cut -c3- | sed 's/.....$//' | sed -e 's/\//./g') | /usr/bin/sort > $OUTDIR/tests.txt
 
 # Output the comma-separated list of ignored/dooonly tests
 # Ignored tests trump do-only tests
@@ -114,9 +114,6 @@ fi
 
 # Launch last driver JVM.  All output redir'd at the OS level to sandbox files.
 echo Running ${PROJECT_NAME} junit tests...
-
-sleep 10
-
 ($JVM $TEST_SSL -Ddoonly.tests=$DOONLY -Dbuild.id=$BUILD_ID -Dignore.tests=$IGNORE -Djob.name=$JOB_NAME -Dgit.commit=$GIT_COMMIT -Dgit.branch=$GIT_BRANCH -Dai.h2o.name=$CLUSTER_NAME -Dai.h2o.ip=$H2O_NODE_IP -Dai.h2o.baseport=$CLUSTER_BASEPORT -Dai.h2o.ga_opt_out=yes $JACOCO_FLAG $JUNIT_RUNNER $JUNIT_TESTS_BOOT `cat $OUTDIR/tests.txt` 2>&1 ; echo $? > $OUTDIR/status.0) 1> $OUTDIR/out.0 2>&1
 
 grep EXECUTION $OUTDIR/out.0 | sed -e "s/.*TEST \(.*\) EXECUTION TIME: \(.*\) (Wall.*/\2 \1/" | sort -gr | head -n 10 >> $OUTDIR/out.0
