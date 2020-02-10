@@ -83,5 +83,5 @@ ALTER TABLE test_table_escaping ADD PARTITION (part_key="\"double\"");
 INSERT INTO TABLE test_table_escaping PARTITION (part_key="\"double\"") VALUES ("21"), ("22");
 ALTER TABLE test_table_escaping ADD PARTITION (part_key="both'\"");
 INSERT INTO TABLE test_table_escaping PARTITION (part_key="both'\"") VALUES ("31"), ("32");
-ALTER TABLE test_table_escaping ADD PARTITION (part_key="specials=\n");
-INSERT INTO TABLE test_table_escaping PARTITION (part_key="specials=\n") VALUES ("41"), ("42");
+ALTER TABLE test_table_escaping ADD PARTITION (part_key="specials-=-\n");
+INSERT INTO TABLE test_table_escaping PARTITION (part_key="specials-=-\n") VALUES ("41"), ("42");
