@@ -25,7 +25,7 @@ public class BoosterParmsTest {
       put("boolean", true);
     }});
 
-    Map<String, Object> localized = BoosterParms.fromMap(map).get();
+    Map<String, Object> localized = BoosterParms.fromMap(new XGBoostModel.XGBoostParameters(), map).get();
     assertEquals(expected, localized);
   }
 

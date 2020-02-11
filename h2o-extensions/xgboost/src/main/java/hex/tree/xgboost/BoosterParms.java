@@ -15,11 +15,15 @@ import java.util.Map;
 public class BoosterParms extends Iced<BoosterParms> {
 
   private IcedHashMapGeneric.IcedHashMapStringObject _parms;
-
-  public static BoosterParms fromMap(Map<String, Object> map) {
+  private double _eta;
+  private double _eta_decay;
+  
+  public static BoosterParms fromMap(XGBoostModel.XGBoostParameters xgBoostParameters, Map<String, Object> map) {
     BoosterParms bp = new BoosterParms();
     bp._parms = new IcedHashMapGeneric.IcedHashMapStringObject();
     bp._parms.putAll(map);
+    bp._eta = xgBoostParameters._eta;
+    bp._eta_decay = xgBoostParameters._learn_rate_annealing;
     return bp;
   }
 
@@ -28,6 +32,14 @@ public class BoosterParms extends Iced<BoosterParms> {
    */
   public Map<String, Object> get() {
     return localizeDecimalParams(_parms);
+  }
+
+  public Map<String, Object> getIterParams(int iter) {
+    return localizeDecimalParams(Collections.singletonMap("eta", effectiveLearningRate(iter)));
+  }
+
+  private double effectiveLearningRate(int iter) {
+    return _eta * Math.pow(_eta_decay, iter);
   }
 
   /**

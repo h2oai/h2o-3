@@ -142,6 +142,7 @@ public class XGBoostUpdater extends Thread {
       } else {
         // Do one iteration
         assert _booster != null;
+        _booster.setParams(_boosterParms.getIterParams(_tid));
         _booster.update(_trainMat, _tid);
         _booster.saveRabitCheckpoint();
       }

@@ -1793,6 +1793,37 @@ public class XGBoostTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testLearnRateAnnealingDoesSomething() { // FIXME
+    try {
+      Scope.enter();
+      Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
+      fr.replace(fr.find("survived"), fr.vec("survived").toCategoricalVec());
+      DKV.put(fr);
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = fr._key;
+      parms._distribution = bernoulli;
+      parms._response_column = "survived";
+      parms._ntrees = 10;
+      parms._max_depth = 4;
+      parms._min_rows = 1;
+      parms._learn_rate = .2f;
+      parms._score_each_iteration = true;
+      parms._seed = 42;
+
+      XGBoostModel.XGBoostParameters params_annealing = (XGBoostModel.XGBoostParameters) parms.clone();
+      params_annealing._learn_rate_annealing = 0.5;
+
+      Model model = (Model) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
+      Model model_ann = (Model) Scope.track_generic(new hex.tree.xgboost.XGBoost(params_annealing).trainModel().get());
+
+      assertNotEquals(model.auc(), model_ann.auc(), 0.005);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+
   private static XGBoostModel trainWithConstraints(XGBoostModel.XGBoostParameters p, KeyValue... constraints) {
     XGBoostModel.XGBoostParameters parms = (XGBoostModel.XGBoostParameters) p.clone();
     parms._monotone_constraints = constraints;

@@ -442,7 +442,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     }
     Log.info("");
 
-    return BoosterParms.fromMap(Collections.unmodifiableMap(params));
+    return BoosterParms.fromMap(p, Collections.unmodifiableMap(params));
   }
 
   /** Performs deep clone of given model.  */
