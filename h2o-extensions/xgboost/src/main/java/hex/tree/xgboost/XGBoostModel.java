@@ -461,7 +461,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return newModel;
   }
   
-  private static int getMaxNThread() {
+  static int getMaxNThread() {
     if (System.getProperty(PROP_NTHREAD) != null) {
       return Integer.getInteger(System.getProperty(PROP_NTHREAD));
     } else {

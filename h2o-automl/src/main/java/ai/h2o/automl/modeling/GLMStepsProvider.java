@@ -8,7 +8,9 @@ import water.Job;
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
 
-public class GLMStepsProvider implements ModelingStepsProvider<GLMStepsProvider.GLMSteps> {
+public class GLMStepsProvider
+        implements ModelingStepsProvider<GLMStepsProvider.GLMSteps>
+                 , ModelParametersProvider<GLMParameters> {
 
     public static class GLMSteps extends ModelingSteps {
 
@@ -87,6 +89,11 @@ public class GLMStepsProvider implements ModelingStepsProvider<GLMStepsProvider.
     @Override
     public GLMSteps newInstance(AutoML aml) {
         return new GLMSteps(aml);
+    }
+
+    @Override
+    public GLMParameters newDefaultParameters() {
+        return new GLMParameters();
     }
 }
 

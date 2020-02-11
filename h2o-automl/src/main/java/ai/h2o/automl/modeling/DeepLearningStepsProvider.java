@@ -12,7 +12,9 @@ import java.util.Map;
 import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
 
-public class DeepLearningStepsProvider implements ModelingStepsProvider<DeepLearningStepsProvider.DeepLearningSteps> {
+public class DeepLearningStepsProvider
+        implements ModelingStepsProvider<DeepLearningStepsProvider.DeepLearningSteps>
+                 , ModelParametersProvider<DeepLearningParameters> {
 
     public static class DeepLearningSteps extends ModelingSteps {
 
@@ -156,6 +158,11 @@ public class DeepLearningStepsProvider implements ModelingStepsProvider<DeepLear
     @Override
     public DeepLearningSteps newInstance(AutoML aml) {
         return new DeepLearningSteps(aml);
+    }
+
+    @Override
+    public DeepLearningParameters newDefaultParameters() {
+        return new DeepLearningParameters();
     }
 }
 
