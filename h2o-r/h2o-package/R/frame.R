@@ -3564,6 +3564,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   
   if (verbose) pt <- proc.time()[[3]]
   if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
+    if (identical(colClasses, NA_character_) || identical(colClasses, "")) colClasses <- NULL  # workaround for data.table length-1 bug #4237 fixed in v1.12.9
     df <- data.table::fread(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
     if (sum(dates))
       for (i in which(dates)) data.table::setattr(df[[i]], "class", "POSIXct")
