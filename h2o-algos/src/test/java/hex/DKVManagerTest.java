@@ -8,24 +8,26 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
+import static water.TestUtil.ar;
+import static water.TestUtil.parse_test_file;
 import static water.fvec.VecHelper.*;
 
 
-public class DKVManagerTest extends TestUtil {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class DKVManagerTest {
 
-    @BeforeClass()
-    public static void setup() {
-        stall_till_cloudsize(1);
-    }
-    
     @Rule
     public ExpectedException expectedException = ExpectedException.none(); 
 
@@ -54,7 +56,7 @@ public class DKVManagerTest extends TestUtil {
             assertNotNull(preds);
             
             // Test model retainment
-            testRetainModel(model, trainingFrame);
+            testRetainModel(model);
             testModelDeletion(model);
 
         } finally {
@@ -95,7 +97,7 @@ public class DKVManagerTest extends TestUtil {
             assertNotNull(preds);
 
             // Test model retainment
-            testRetainModel(model, trainingFrame);
+            testRetainModel(model);
             testModelDeletion(model);
         } finally {
             if (trainingFrame != null) trainingFrame.remove();
@@ -285,7 +287,7 @@ public class DKVManagerTest extends TestUtil {
     Frame frame = null;
 
     try {
-      frame = TestUtil.parse_test_file("./smalldata/testng/airlines_train.csv");
+      frame = parse_test_file("./smalldata/testng/airlines_train.csv");
       DKVManager.retain(new Key[]{frame._key});
       assertNotNull(DKV.get(frame._key));
 
@@ -307,7 +309,7 @@ public class DKVManagerTest extends TestUtil {
     Frame frame = null;
 
     try {
-      frame = TestUtil.parse_test_file("smalldata/testng/airlines_train.csv");
+      frame = parse_test_file("smalldata/testng/airlines_train.csv");
       DKVManager.retain(new Key[]{});
       assertNull(DKV.get(frame._key));
 
@@ -329,7 +331,7 @@ public class DKVManagerTest extends TestUtil {
         }
     }
     
-    private static void testRetainModel(Model model, Frame trainingFrame){
+    private static void testRetainModel(Model model){
       assertNotNull(DKV.get(model._key));
       DKVManager.retain(new Key[]{model._key});
       assertNotNull(DKV.get(model._key));
