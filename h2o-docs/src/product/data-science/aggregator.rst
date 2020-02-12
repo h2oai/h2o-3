@@ -53,7 +53,7 @@ Defining an Aggregator Model
 Aggregator Output
 ~~~~~~~~~~~~~~~~~
 
-The output of the aggregation is a new aggregrated frame that can be accessed in R and Python.
+The output of the aggregation is a new aggregated frame that can be accessed in R and Python.
 
 .. example-code::
    .. code-block:: r
