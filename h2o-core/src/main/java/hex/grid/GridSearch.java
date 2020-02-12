@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * possible parameters, it launches a separated model building job. The launch of jobs is sequential
  * and blocking. So after finish the last model, whole grid search job is done as well.
  *
- * By default, the grid search invokes cartezian grid search, but it can be
+ * By default, the grid search invokes cartesian grid search, but it can be
  * modified by passing explicit hyper space walk strategy via the
  * {@link #startGridSearch(Key, HyperSpaceWalker)} method.
  *
@@ -106,8 +106,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         throw new H2OIllegalArgumentException("training_frame", "grid", "Cannot append new models to a grid with different training input");
       grid.write_lock(_job);
     } else {
-      grid =
-              new Grid<>(_result,
+      grid = new Grid<>(_result,
                       _hyperSpaceWalker.getParams(),
                       _hyperSpaceWalker.getHyperParamNames(),
                       _hyperSpaceWalker.getParametersBuilderFactory().getFieldNamingStrategy());
@@ -118,8 +117,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
     long gridWork=0;
     if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
-      int count=0;
-      while (it.hasNext(model) && (it.max_models() > 0 && count++ < it.max_models())) { //only walk the first max_models models, if specified
+      while (it.hasNext(model)) {
         try {
           Model.Parameters parms = it.nextModelParameters(model);
           gridWork += (parms._nfolds > 0 ? (parms._nfolds+1/*main model*/) : 1) *parms.progressUnits();
@@ -153,7 +151,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         Log.warn("GridSearch job "+_job._description+" completed with exception: "+ex);
         return true;
       }
-    }, gridWork, it.max_runtime_secs());
+    }, gridWork, maxRuntimeSecs());
   }
 
   /**
@@ -168,6 +166,22 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     return _hyperSpaceWalker.getMaxHyperSpaceSize();
   }
 
+  private double maxRuntimeSecs() {
+    return  _hyperSpaceWalker.search_criteria().stopping_criteria() == null ? 0 : _hyperSpaceWalker.search_criteria().stopping_criteria()._max_runtime_secs;
+  }
+
+  private double remainingTimeSecs() {
+    return _job != null && _job._max_runtime_msecs > 0  // compute only if a time limit was assigned to the job
+            ? (_job.start_time() + _job._max_runtime_msecs - System.currentTimeMillis()) / 1000.
+            : Double.MAX_VALUE;
+  }
+
+  private ScoreKeeper.StoppingMetric sortingMetric() {
+    return _hyperSpaceWalker.search_criteria().stopping_criteria() == null
+            ? ScoreKeeper.StoppingMetric.AUTO
+            : _hyperSpaceWalker.search_criteria().stopping_criteria()._stopping_metric;
+  }
+
   private class ModelFeeder<MP extends Model.Parameters, D extends ModelFeeder> extends ParallelModelBuilder.ParallelModelBuilderCallback<D>{
 
     private final HyperSpaceWalker.HyperSpaceIterator<MP> hyperspaceIterator;
@@ -180,7 +194,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     }
 
     @Override
-    public void onBuildSucces(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
+    public void onBuildSuccess(final Model finishedModel, final ParallelModelBuilder parallelModelBuilder) {
       try {
         parallelSearchGridLock.lock();
         constructScoringInfo(finishedModel);
@@ -219,7 +233,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
                 && !_hyperSpaceWalker.stopEarly(previousModel, grid.getScoringInfos())) {
 
           // FIXME: ModelFeeder's <MP> type parameter is hiding GridSearch's one. Ideally would have moved ModelFeeder outside but it is too coupled with GridSearch class.
-          reconcileMaxRuntime(grid._key, hyperspaceIterator, nextModelParams);
+          reconcileMaxRuntime(grid._key, nextModelParams);
 
           parallelModelBuilder.run(Collections.singletonList(ModelBuilder.make(nextModelParams)));
         } else {
@@ -236,16 +250,14 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
       model.fillScoringInfo(scoringInfo);
       grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
-      ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric());
+      ScoringInfo.sort(grid.getScoringInfos(), sortingMetric());
     }
 
     private boolean isThereEnoughTime() {
-      final boolean enoughTime = hyperspaceIterator.max_runtime_secs() == 0 || ( hyperspaceIterator.max_runtime_secs() > 0 && hyperspaceIterator.time_remaining_secs() > 0);
-
+      final boolean enoughTime = remainingTimeSecs() > 0;
       if (!enoughTime) {
-        Log.info("Grid max_runtime_secs of " + hyperspaceIterator.max_runtime_secs() + " secs has expired; stopping early.");
+        Log.info("Grid max_runtime_secs of " + maxRuntimeSecs() + " secs has expired; stopping early.");
       }
-
       return enoughTime;
     }
 
@@ -280,8 +292,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
 
     List<ModelBuilder> startModels = new ArrayList<>();
 
-    int numberOfInitialModels = iterator.max_models() == 0 ? _parallelism : Math.min(_parallelism, iterator.max_models());
-    final List<MP> mps = initialModelParameters(numberOfInitialModels, iterator);
+    final List<MP> mps = initialModelParameters(_parallelism, iterator);
 
     for (int i = 0; i < mps.size(); i++) {
       final MP nextModelParameters = mps.get(i);
@@ -347,7 +358,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           // Sequential model building, should never propagate
           // exception up, just mark combination of model parameters as wrong
 
-          reconcileMaxRuntime(grid._key, it, params);
+          reconcileMaxRuntime(grid._key, params);
 
           try {
             ScoringInfo scoringInfo = new ScoringInfo();
@@ -358,7 +369,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             if (model != null) {
               model.fillScoringInfo(scoringInfo);
               grid.setScoringInfos(ScoringInfo.prependScoringInfo(scoringInfo, grid.getScoringInfos()));
-              ScoringInfo.sort(grid.getScoringInfos(), _hyperSpaceWalker.search_criteria().stopping_metric()); // Currently AUTO for Cartesian and user-specified for RandomDiscrete
+
+              ScoringInfo.sort(grid.getScoringInfos(), sortingMetric());
             }
           } catch (RuntimeException e) { // Catch everything
             if (!Job.isCancelledException(e)) {
@@ -397,12 +409,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   /**
    * see {@code RandomDiscreteValueSearchCriteria.max_runtime_secs} for reconciliation logic
    */
-  private void reconcileMaxRuntime(Key<Grid<MP>> gridKey, HyperSpaceWalker.HyperSpaceIterator<? extends Model.Parameters> it, Model.Parameters params) {
-    double grid_max_runtime_secs = it.max_runtime_secs();
-
-    double time_remaining_secs = Double.MAX_VALUE;
+  private void reconcileMaxRuntime(Key<Grid<MP>> gridKey, Model.Parameters params) {
+    double grid_max_runtime_secs = _job._max_runtime_msecs / 1000.;
+    double time_remaining_secs = remainingTimeSecs();
     if (grid_max_runtime_secs > 0) {
-      time_remaining_secs = it.time_remaining_secs();
       Log.info("Grid time is limited to: " + grid_max_runtime_secs + " for grid: " + gridKey + ". Remaining time is: " + time_remaining_secs);
       if (time_remaining_secs < 0) {
         Log.info("Grid max_runtime_secs of " + grid_max_runtime_secs + " secs has expired; stopping early.");

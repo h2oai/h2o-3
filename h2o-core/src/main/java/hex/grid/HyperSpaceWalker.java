@@ -43,21 +43,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     void reset();
 
     /**
-     * @return the total time allowed for building this grid, in seconds.
-     */
-    double max_runtime_secs();
-
-    /**
-     * @return the maximum number of models to build
-     */
-    int max_models();
-
-    /**
-     * @return the time remaining for building this grid, in seconds.
-     */
-    double time_remaining_secs();
-
-    /**
      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
      * @param failedModel
      */
@@ -320,7 +305,8 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     }
 
     /** Given a list of indices for the hyperparameter values return an Object[] of the actual values. */
-    protected Object[] hypers(int[] hidx, Object[] hypers) {
+    protected Object[] hypers(int[] hidx) {
+      Object[] hypers = new Object[_hyperParamNames.length];
       for (int i = 0; i < hidx.length; i++) {
         hypers[i] = _hyperParams.get(_hyperParamNames[i])[hidx[i]];
       }
@@ -361,7 +347,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           _currentHyperparamIndices = _currentHyperparamIndices != null ? nextModelIndices(_currentHyperparamIndices) : new int[_hyperParamNames.length];
           if (_currentHyperparamIndices != null) {
             // Fill array of hyper-values
-            Object[] hypers = hypers(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
+            Object[] hypers = hypers(_currentHyperparamIndices);
             // Get clone of parameters
             MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
@@ -392,22 +378,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         }
 
         @Override
-        public double time_remaining_secs() { return Double.MAX_VALUE; }
-
-        @Override
-        public double max_runtime_secs() { return Double.MAX_VALUE; }
-
-        public int max_models() { return _maxHyperSpaceSize > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int)_maxHyperSpaceSize; }
-
-        @Override
         public void modelFailed(Model failedModel) {
           // nada
         }
 
         @Override
         public Object[] getCurrentRawParameters() {
-          Object[] hyperValues = new Object[_hyperParamNames.length];
-          return hypers(_currentHyperparamIndices, hyperValues);
+          return hypers(_currentHyperparamIndices);
         }
       }; // anonymous HyperSpaceIterator class
     } // iterator()
@@ -480,9 +457,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         /** One-based count of the permutations we've visited, primarily used as an index into _visitedHyperparamIndices. */
         private int _currentPermutationNum = 0;
 
-        /** Start time of this grid */
-        private long _start_time = System.currentTimeMillis();
-
         // TODO: override into a common subclass:
         @Override
         public MP nextModelParameters(Model previousModel) {
@@ -497,7 +471,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             _currentPermutationNum++; // NOTE: 1-based counting
 
             // Fill array of hyper-values
-            Object[] hypers = hypers(_currentHyperparamIndices, new Object[_hyperParamNames.length]);
+            Object[] hypers = hypers(_currentHyperparamIndices);
             // Get clone of parameters
             MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
@@ -510,16 +484,6 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
               if (_set_model_seed_from_search_seed) {
                 // set model seed = search_criteria.seed+(0, 1, 2,..., model number)
                 params._seed = _search_criteria.seed() + (model_number++);
-              }
-
-              // set max_runtime_secs
-              double timeleft = this.time_remaining_secs();
-              if (timeleft > 0)  {
-                if (params._max_runtime_secs > 0) {
-                  params._max_runtime_secs = min(params._max_runtime_secs, timeleft);
-                } else {
-                  params._max_runtime_secs = timeleft;
-                }
               }
             }
             return params;
@@ -541,24 +505,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         @Override
         public void reset() {
-          _start_time = System.currentTimeMillis();
           _currentPermutationNum = 0;
           _currentHyperparamIndices = null;
           _visitedPermutations.clear();
           _visitedPermutationHashes.clear();
-        }
-
-        public double max_runtime_secs() {
-          return search_criteria().max_runtime_secs();
-        }
-
-        public int max_models() {
-          return search_criteria().max_models();
-        }
-
-        @Override
-        public double time_remaining_secs() {
-          return search_criteria().max_runtime_secs() - (System.currentTimeMillis() - _start_time) / 1000.0;
         }
 
         @Override
@@ -571,8 +521,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         @Override
         public Object[] getCurrentRawParameters() {
-          Object[] hyperValues = new Object[_hyperParamNames.length];
-          return hypers(_currentHyperparamIndices, hyperValues);
+          return hypers(_currentHyperparamIndices);
         }
       }; // anonymous HyperSpaceIterator class
     } // iterator()
