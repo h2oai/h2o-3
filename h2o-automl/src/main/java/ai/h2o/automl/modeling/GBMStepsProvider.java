@@ -1,6 +1,7 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import hex.Model;
 import hex.grid.Grid;
 import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBMModel;
@@ -21,6 +22,7 @@ public class GBMStepsProvider
 
         static GBMParameters prepareModelParameters() {
             GBMParameters gbmParameters = new GBMParameters();
+            gbmParameters._learn_rate = 0.5;  //default is 0.1
             gbmParameters._score_tree_interval = 5;
             gbmParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
             return gbmParameters;
@@ -117,7 +119,7 @@ public class GBMStepsProvider
                         Map<String, Object[]> searchParams = new HashMap<>();
                         searchParams.put("_max_depth", new Integer[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
                         searchParams.put("_min_rows", new Integer[]{1, 5, 10, 15, 30, 100});
-                        searchParams.put("_learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
+//                        searchParams.put("_learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
                         searchParams.put("_sample_rate", new Double[]{0.50, 0.60, 0.70, 0.80, 0.90, 1.00});
                         searchParams.put("_col_sample_rate", new Double[]{ 0.4, 0.7, 1.0});
                         searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
@@ -126,6 +128,35 @@ public class GBMStepsProvider
                         return hyperparameterSearch(gbmParameters, searchParams);
                     }
                 },
+        };
+
+        private ModelingStep[] exploitation = new GBMModelStep[] {
+               new GBMModelStep("exploit_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+
+                   private GBMModel getBestGBM() {
+                     for (Model model : getTrainedModels()) {
+                         if (model instanceof GBMModel) {
+                             return (GBMModel) model;
+                         }
+                     }
+                     return null;
+                   }
+
+                   @Override
+                   protected boolean canRun() {
+                       // TODO: add event log message here?
+                       return getBestGBM() != null;
+                   }
+
+                   @Override
+                   protected Job<GBMModel> startJob() {
+                       GBMModel bestGBM = getBestGBM();
+                       GBMParameters gbmParameters = (GBMParameters) bestGBM._parms.clone();
+                       gbmParameters._learn_rate = 0.5;
+                       gbmParameters._learn_rate_annealing = 0.9;
+                       return trainModel(gbmParameters);
+                   }
+               }
         };
 
         public GBMSteps(AutoML autoML) {
@@ -140,6 +171,11 @@ public class GBMStepsProvider
         @Override
         protected ModelingStep[] getGrids() {
             return grids;
+        }
+
+        @Override
+        protected ModelingStep[] getExploitation() {
+            return exploitation;
         }
     }
 

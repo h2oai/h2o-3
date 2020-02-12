@@ -49,6 +49,8 @@ public class AutoMLBuildSpec extends Iced {
     public boolean keep_cross_validation_predictions = false;
     public boolean keep_cross_validation_models = false;
     public boolean keep_cross_validation_fold_assignment = false;
+
+    public double exploration_ratio = 0.67;
     public String export_checkpoints_dir = null;
 
     public AutoMLBuildControl() {
