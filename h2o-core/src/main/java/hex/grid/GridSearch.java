@@ -383,7 +383,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
           Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
           // Model parameters cannot be constructed for some reason
           final Model failedModel = model;
-          it.onModelFailure(failedModel, history -> grid.appendFailedModelParameters(failedModel != null ? failedModel._key : null, history, e));
+          it.onModelFailure(failedModel, failedHyperParams -> grid.appendFailedModelParameters(failedModel != null ? failedModel._key : null, failedHyperParams, e));
         } finally {
           // Update progress by 1 increment
           _job.update(1);

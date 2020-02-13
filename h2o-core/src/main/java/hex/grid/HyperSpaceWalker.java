@@ -43,7 +43,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
     /**
      * Inform the Iterator that a model build failed in case it needs to adjust its internal state.
-     * Implementations are expected to consume the {@code withHistory} callback with the iterator permutations history.
+     * Implementations are expected to consume the {@code withFailedModelHyperParams} callback with the hyperParams used to create the failed model.
      * @param failedModel: the model whose training failed.
      * @param withFailedModelHyperParams: consumes the "raw" hyperparameters values used for the failed model.
      */
