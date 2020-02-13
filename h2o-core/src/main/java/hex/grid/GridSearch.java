@@ -129,7 +129,6 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       //TODO: Future totally unbounded search: need a time-based progress bar
       gridWork = Long.MAX_VALUE;
     }
-    it.reset();
 
     // Install this as job functions
     return _job.start(new H2O.H2OCountedCompleter() {
@@ -261,12 +260,12 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
       return enoughTime;
     }
 
-    private MP getNextModelParams(final HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceWalker, final Model model, final Grid grid){
+    private MP getNextModelParams(final HyperSpaceWalker.HyperSpaceIterator<MP> hyperSpaceIterator, final Model model, final Grid grid){
       MP params = null;
 
       while (params == null) {
-        if (hyperSpaceWalker.hasNext(model)) {
-          params = hyperSpaceWalker.nextModelParameters(model);
+        if (hyperSpaceIterator.hasNext(model)) {
+          params = hyperSpaceIterator.nextModelParameters(model);
           final Key modelKey = grid.getModelKey(params.checksum(IGNORED_FIELDS_PARAM_HASH));
           if(modelKey != null){
             params = null;
@@ -383,9 +382,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
         } catch (IllegalArgumentException e) {
           Log.warn("Grid search: construction of model parameters failed! Exception: ", e);
           // Model parameters cannot be constructed for some reason
-          it.modelFailed(model);
-          Object[] rawParams = it.getCurrentRawParameters();
-          grid.appendFailedModelParameters(model != null ? model._key : null, rawParams, e);
+          final Model failedModel = model;
+          it.onModelFailure(failedModel, history -> grid.appendFailedModelParameters(failedModel != null ? failedModel._key : null, history, e));
         } finally {
           // Update progress by 1 increment
           _job.update(1);
