@@ -5,22 +5,22 @@ import hex.SplitFrame;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.H2O;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-public class XGBoostMonotoneTest  extends TestUtil  {
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class XGBoostMultiNodeTest extends TestUtil  {
 
-    @BeforeClass
-    public static void stall() {
-        stall_till_cloudsize(1);
-    }
-    
     private Frame[] loadData() {
         Frame df = Scope.track(parse_test_file("smalldata/demos/bank-additional-full.csv"));
         SplitFrame splits = new SplitFrame(df, new double[]{0.7, 0.3}, null);
@@ -39,19 +39,40 @@ public class XGBoostMonotoneTest  extends TestUtil  {
         parms._response_column = "y";
         parms._ntrees = 100;
         parms._max_depth = 3;
-        parms._monotone_constraints = new KeyValue[] {
-            new KeyValue("duration", -1), new KeyValue("age", -1)
-        };
         parms._seed = 0xCAFEBABE;
         return parms;
     }
-
+    
     @Test
-    public void shouldFailWithApprox() {
+    public void shouldFailWithExact() {
         Assume.assumeTrue(H2O.getCloudSize() > 1);
         Scope.enter();
         try {
             XGBoostModel.XGBoostParameters parms = makeParms();
+            parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+            Exception thrown = null;
+            try {
+                XGBoostModel model1 = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+                Scope.track_generic(model1); // should not happen
+            } catch (Exception e) {
+                thrown = e;
+            }
+            assertNotNull("Expected exception, but none was thrown", thrown);
+            assertTrue("Unexpected exception" + thrown.getMessage(), thrown.getMessage().contains("exact is not supported in distributed environment"));
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void shouldFailWithMonotoneApprox() {
+        Assume.assumeTrue(H2O.getCloudSize() > 1);
+        Scope.enter();
+        try {
+            XGBoostModel.XGBoostParameters parms = makeParms();
+            parms._monotone_constraints = new KeyValue[] {
+                new KeyValue("duration", -1), new KeyValue("age", -1)
+            };
             parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.approx;
             Exception thrown = null;
             try {
@@ -68,11 +89,14 @@ public class XGBoostMonotoneTest  extends TestUtil  {
     }
 
     @Test
-    public void shouldUseHistWithAuto() {
+    public void shouldUseHistWithMonotoneAuto() {
         Assume.assumeTrue(H2O.getCloudSize() > 1);
         Scope.enter();
         try {
             XGBoostModel.XGBoostParameters parms = makeParms();
+            parms._monotone_constraints = new KeyValue[] {
+                new KeyValue("duration", -1), new KeyValue("age", -1)
+            };
             parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.auto;
             XGBoostModel model1 = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
             Scope.track_generic(model1); // should not happen

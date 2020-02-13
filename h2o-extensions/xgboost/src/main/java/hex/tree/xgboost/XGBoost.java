@@ -230,6 +230,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
     }
 
+    if ((_train != null) && (_parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.exact) || H2O.CLOUD.size() > 1) {
+      error("_tree_method", "exact is not supported in distributed environment");
+    }
+
     PlattScalingHelper.initCalibration(this, _parms, expensive);
   }
 
