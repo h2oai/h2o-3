@@ -22,9 +22,10 @@ public class DKVManager {
     retainedSet.addAll(Arrays.asList(retainedKeys));
     // Frames and models have multiple nested keys. Those must be extracted and kept from deletion as well.
     extractNestedKeys(retainedSet);
+    final Key[] allRetainedkeys = retainedSet.toArray(new Key[retainedSet.size()]);
 
     for (final H2ONode node : H2O.CLOUD.members()) {
-      final NodeKeysRemovalTask nodeKeysRemovalTask = new NodeKeysRemovalTask(retainedSet.toArray(new Key[retainedSet.size()]));
+      final NodeKeysRemovalTask nodeKeysRemovalTask = new NodeKeysRemovalTask(allRetainedkeys);
       H2O.runOnH2ONode(node, nodeKeysRemovalTask);
     }
   }
