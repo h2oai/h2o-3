@@ -98,6 +98,14 @@ public class HyperSpaceSearchCriteria extends Iced {
       return Math.min(0.05, Math.max(0.001, 1/Math.sqrt((1 - frame.naFraction()) * frame.numRows())));
     }
 
+    /**
+     * Allows to set all the stopping criteria at once
+     * @param stopping_criteria
+     */
+    public void set_stopping_criteria(StoppingCriteria stopping_criteria) {
+      _stopping_criteria = stopping_criteria;
+    }
+
     public void set_default_stopping_tolerance_for_frame(Frame frame) {
       _stopping_criteria._stopping_tolerance = default_stopping_tolerance_for_frame(frame);
     }

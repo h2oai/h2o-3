@@ -12,7 +12,9 @@ import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
+import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 import water.Iced;
 import water.Job;
 import water.Key;
@@ -322,6 +324,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             RandomDiscreteValueSearchCriteria searchCriteria =
                     (RandomDiscreteValueSearchCriteria) buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
+            searchCriteria.set_stopping_criteria((StoppingCriteria) searchCriteria.stopping_criteria().clone());
+
             Work work = getAllocatedWork();
             double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
             // predicate can be removed if/when we decide to include SEs in the max_models limit
