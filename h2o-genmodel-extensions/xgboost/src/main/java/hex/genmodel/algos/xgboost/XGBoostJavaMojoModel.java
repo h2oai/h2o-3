@@ -45,14 +45,13 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     _1hotFactory = new OneHotEncoderFactory();
   }
 
-  private static Predictor makePredictor(byte[] boosterBytes) {
+  public static Predictor makePredictor(byte[] boosterBytes) {
     try (InputStream is = new ByteArrayInputStream(boosterBytes)) {
       return new Predictor(is);
     } catch (IOException e) {
-      throw new IllegalStateException(e);
+      throw new IllegalStateException("Failed to load predictor.", e);
     }
   }
-
   private static TreeSHAPPredictor<FVec> makeTreeSHAPPredictor(Predictor predictor) {
     if (predictor.getNumClass() > 2) {
       throw new UnsupportedOperationException("Calculating contributions is currently not supported for multinomial models.");

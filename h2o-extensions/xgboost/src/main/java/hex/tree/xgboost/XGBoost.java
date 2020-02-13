@@ -1,10 +1,14 @@
 package hex.tree.xgboost;
 
+import biz.k11i.xgboost.gbm.GBTree;
+import biz.k11i.xgboost.gbm.GradBooster;
+import biz.k11i.xgboost.tree.RegTree;
+import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
+import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
-import hex.tree.PlattScalingHelper;
-import hex.tree.TreeUtils;
+import hex.tree.*;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
@@ -214,7 +218,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
       error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
 
-    if ((_train != null) && (_parms._monotone_constraints != null)) {
+    if ((_train != null) && !_parms.monotoneConstraints().isEmpty()) {
       if (_parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.approx) {
         error("_tree_method", "approx is not supported with _monotone_constraints, use auto/exact/hist instead");
       } else {
@@ -438,11 +442,92 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           break;
         }
       }
+
+      Map<String, Integer> monotoneConstraints = _parms.monotoneConstraints();
+      if ((!monotoneConstraints.isEmpty()) && constraintCheckEnabled()) {
+        checkConstraints(model.model_info(), monotoneConstraints);
+      }
+      
       _job.update(0, "Scoring the final model");
       // Final scoring
       doScoring(model, boosterProvider, true);
       // Finish remaining work (if stopped early)
       _job.update(_parms._ntrees-model._output._ntrees);
+    }
+
+    private boolean constraintCheckEnabled() {
+      return Boolean.parseBoolean(getSysProperty("xgboost.monotonicity.checkEnabled", "true"));
+    }
+
+    private void checkConstraints(XGBoostModelInfo model_info, Map<String, Integer> monotoneConstraints) {
+      GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
+      if (!(booster instanceof GBTree)) {
+        return;
+      }
+      final RegTree[][] groupedTrees = ((GBTree) booster).getGroupedTrees();
+      final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
+
+      for (RegTree[] classTrees : groupedTrees) {
+        for (RegTree tree : classTrees) {
+          if (tree == null) continue;
+          checkConstraints(tree.getNodes(), monotoneConstraints, featureProperties);
+        }
+      }
+    }
+
+    private void checkConstraints(RegTreeNode[] tree, Map<String, Integer> monotoneConstraints, XGBoostUtils.FeatureProperties featureProperties) {
+      float[] mins = new float[tree.length];
+      int[] min_ids = new int[tree.length];
+      float[] maxs = new float[tree.length];
+      int[] max_ids = new int[tree.length];
+      rollupMinMaxPreds(tree, 0, mins, min_ids, maxs, max_ids);
+      for (int i = 0; i < tree.length; i++) {
+        RegTreeNode node = tree[i];
+        if (node.isLeaf()) continue;
+        String splitColumn = featureProperties._names[node.getSplitIndex()];
+        if (!monotoneConstraints.containsKey(splitColumn)) continue;
+        int constraint = monotoneConstraints.get(splitColumn);
+        int left = node.getLeftChildIndex();
+        int right = node.getRightChildIndex();
+        if (constraint > 0) {
+          if (maxs[left] > mins[right]) {
+            throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + splitColumn + "' (max(left) > min(right)): " +
+                maxs[left] + " > " + mins[right] +
+                "\nNode: " + node +
+                "\nLeft Node (max): " + tree[max_ids[left]] +
+                "\nRight Node (min): " + tree[min_ids[right]]);
+          }
+        } else if (constraint < 0) {
+          if (mins[left] < maxs[right]) {
+            throw new IllegalStateException("Monotonicity constraint " + constraint + " violated on column '" + splitColumn + "' (min(left) < max(right)): " +
+                mins[left] + " < " + maxs[right] +
+                "\nNode: " + node +
+                "\nLeft Node (min): " + tree[min_ids[left]] +
+                "\nRight Node (max): " + tree[max_ids[right]]);
+          }
+        }
+      }
+    }
+
+    private void rollupMinMaxPreds(RegTreeNode[] tree, int nid, float[] mins, int min_ids[], float[] maxs, int[] max_ids) {
+      RegTreeNode node = tree[nid];
+      if (node.isLeaf()) {
+        mins[nid] = node.getLeafValue();
+        min_ids[nid] = nid;
+        maxs[nid] = node.getLeafValue();
+        max_ids[nid] = nid;
+        return;
+      }
+      int left = node.getLeftChildIndex();
+      int right = node.getRightChildIndex();
+      rollupMinMaxPreds(tree, left, mins, min_ids, maxs, max_ids);
+      rollupMinMaxPreds(tree, right, mins, min_ids, maxs, max_ids);
+      final int min_id = mins[left] < mins[right] ? left : right;
+      mins[nid] = mins[min_id];
+      min_ids[nid] = min_ids[min_id];
+      final int max_id = maxs[left] > maxs[right] ? left : right;
+      maxs[nid] = maxs[max_id];
+      max_ids[nid] = max_ids[max_id];
     }
 
     // Don't start the tracker for 1 node clouds -> the GPU plugin fails in such a case
