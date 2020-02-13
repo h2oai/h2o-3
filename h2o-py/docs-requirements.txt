@@ -1,0 +1,3 @@
+sphinx==1.6.6
+sphinx_rtd_theme==0.2.4
+git+https://github.com/svx/sphinxcontrib-osexample@1cc4afcc6089083256aa642d9faa12352ef45d68#egg=sphinxcontrib-osexample

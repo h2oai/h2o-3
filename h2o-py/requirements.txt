@@ -21,9 +21,6 @@ sklearn
 six
 seaborn
 matplotlib
-sphinx
 numpydoc
 mysqlclient
 recommonmark
-sphinx_rtd_theme
-sphinxcontrib-osexample
