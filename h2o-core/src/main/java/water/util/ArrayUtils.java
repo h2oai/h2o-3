@@ -66,6 +66,19 @@ public class ArrayUtils {
       a[i] = Math.max(a[i], b[i]);
     return a;
   }
+
+  public static double[] reduceMin(double[] a, double[] b) {
+    for (int i=0; i<a.length; ++i)
+      a[i] = Math.min(a[i], b[i]);
+    return a;
+  }
+  
+  public static double[] reduceMax(double[] a, double[] b) {
+    for (int i=0; i<a.length; ++i)
+      a[i] = Math.max(a[i], b[i]);
+    return a;
+  }  
+  
   public static double innerProduct(double [] x, double [] y){
     double result = 0;
     for (int i = 0; i < x.length; i++)

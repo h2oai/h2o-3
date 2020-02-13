@@ -889,5 +889,42 @@ public class VecUtils {
     }
     return Vec.makeVec(p, Vec.newKey());
   }
+  
+  public static Vec uniformDistrFromFrameMR(Frame frame, long seed) {
+    UniformDistrFromFrameTask task = new UniformDistrFromFrameTask().doAll(frame);
+    Random random = new Random(seed);
+    double [] uniformDistribution = new double[task.mins.length];
+    for (int i = 0; i < task.mins.length; i++) {
+      uniformDistribution[i] = task.mins[i] + random.nextDouble() * (task.maxs[i] - task.mins[i]);
+    }
+    return Vec.makeVec(uniformDistribution, Vec.newKey());
+  }
+
+  static class UniformDistrFromFrameTask extends MRTask<UniformDistrFromFrameTask> {
+    // OUT
+    private double[] mins;
+    private double[] maxs;
+
+    @Override
+    public void map(Chunk[] cs) {
+      mins = new double[cs.length];
+      maxs = new double[cs.length];
+      Arrays.fill(mins, Double.MAX_VALUE);
+      Arrays.fill(maxs, Double.MIN_VALUE);
+      
+      for (int column = 0; column < cs.length; column++) {
+        for (int row = 0; row < cs[column]._len; row++) {
+          mins[column] = Math.min(mins[column], cs[column].atd(row));
+          maxs[column] = Math.max(maxs[column], cs[column].atd(row));
+        }
+      }
+    }
+
+    @Override
+    public void reduce(UniformDistrFromFrameTask mrt) {
+      mins = ArrayUtils.reduceMin(mrt.mins, mins);
+      maxs = ArrayUtils.reduceMax(mrt.maxs, maxs); 
+    }    
+  }
 
 }
