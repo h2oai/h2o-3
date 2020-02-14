@@ -3273,6 +3273,7 @@ destination_frame.guess <- function(x) {
 #' It is possible to control just \code{\link[data.table]{fread}} or \code{\link[data.table]{fwrite}} with \code{options("h2o.fread"=FALSE, "h2o.fwrite"=FALSE)}.
 #' \code{h2o.fread} and \code{h2o.fwrite} options are not handled in this function but next to \emph{fread} and \emph{fwrite} calls.
 #' @export
+#' @importFrom utils installed.packages
 #' @seealso \code{\link{as.h2o.data.frame}}, \code{\link{as.data.frame.H2OFrame}}
 #' @examples
 #' op <- options("h2o.use.data.table" = TRUE)
