@@ -783,6 +783,7 @@ Pavel Pscheidl
 Michal Kurka
 Veronika Maurerova
 Jan Sterba
+Jan Jendrusak
 ```
 
 <a name="Advisors"></a>
