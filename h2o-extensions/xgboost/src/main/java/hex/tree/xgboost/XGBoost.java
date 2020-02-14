@@ -444,7 +444,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
 
       Map<String, Integer> monotoneConstraints = _parms.monotoneConstraints();
-      if ((!monotoneConstraints.isEmpty()) && constraintCheckEnabled()) {
+      if (!monotoneConstraints.isEmpty() &&
+          _parms._booster != XGBoostModel.XGBoostParameters.Booster.gblinear &&
+          constraintCheckEnabled()
+      ) {
+        _job.update(0, "Checking monotonicity constraints on the final model");
+        boosterProvider.updateBooster();
         checkConstraints(model.model_info(), monotoneConstraints);
       }
       
@@ -462,7 +467,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     private void checkConstraints(XGBoostModelInfo model_info, Map<String, Integer> monotoneConstraints) {
       GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
       if (!(booster instanceof GBTree)) {
-        return;
+        throw new IllegalStateException("Expected booster object to be GBTree instead it is " + booster.getClass().getName());
       }
       final RegTree[][] groupedTrees = ((GBTree) booster).getGroupedTrees();
       final XGBoostUtils.FeatureProperties featureProperties = XGBoostUtils.assembleFeatureNames(model_info.dataInfo()); // XGBoost's usage of one-hot encoding assumed
