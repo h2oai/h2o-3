@@ -106,6 +106,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     // Runtime options
     public int _nthread = -1;
     public String _save_matrix_directory; // dump the xgboost matrix to this directory
+    public boolean _build_tree_one_node = false; // force to run on single node
 
     // LightGBM specific (only for grow_policy == lossguide)
     public int _max_bins = 256;

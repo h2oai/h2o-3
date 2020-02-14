@@ -43,6 +43,24 @@ public class XGBoostMultiNodeTest extends TestUtil  {
         return parms;
     }
     
+    @Test 
+    public void shouldBuildExactOnSingleNode() {
+        Assume.assumeTrue(H2O.getCloudSize() > 1);
+        Scope.enter();
+        try {
+            XGBoostModel.XGBoostParameters parms = makeParms();
+            parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+            parms._build_tree_one_node = true;
+            XGBoostModel model1 = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+            Scope.track_generic(model1);
+            int treeMethodIdx = 0;
+            while (!model1._output._native_parameters.get(treeMethodIdx, 0).equals("tree_method")) treeMethodIdx++;
+            assertEquals("exact", model1._output._native_parameters.get(treeMethodIdx, 1));
+        } finally {
+            Scope.exit();
+        }
+    }
+
     @Test
     public void shouldFailWithExact() {
         Assume.assumeTrue(H2O.getCloudSize() > 1);
