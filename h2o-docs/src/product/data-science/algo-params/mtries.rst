@@ -9,7 +9,7 @@ Description
 
 Use this option to specify the number of columns to randomly select at each level. 
 
-This value defaults to -1, and the range for this option is -2 to >=1. If a value other that -1 or -2 is used, then the number of variables is:
+This value defaults to -1. Valid values for this option are -2, -1, and any value >= 1. If a value other than -1 or -2 is used, then the number of variables is:
 
 - the square root of the number of columns for classification 
 - p/3 for regression (where p is the number of predictors). 
