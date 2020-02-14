@@ -20,6 +20,7 @@ import ml.dmlc.xgboost4j.java.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.*;
 import water.util.Timer;
@@ -102,6 +103,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         throw new H2OIllegalArgumentException("Cannot run XGBoost on an SSL enabled cluster larger than 1 node. XGBoost does not support SSL encryption.");
       }
     }
+    if (H2O.ARGS.client && _parms._build_tree_one_node)
+      error("_build_tree_one_node", "Cannot run on a single node in client mode.");
     if (expensive) {
       if (_response.naCnt() > 0) {
         error("_response_column", "Response contains missing values (NAs) - not supported by XGBoost.");
@@ -231,9 +234,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
     }
 
-    if ((_train != null) && (_parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.exact) && 
-        (H2O.CLOUD.size() > 1))
-      error("_tree_method", "exact is not supported in distributed environment");
+    if ((_train != null) && (H2O.CLOUD.size() > 1) &&
+        (_parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.exact) &&    
+        !_parms._build_tree_one_node)
+      error("_tree_method", "exact is not supported in distributed environment, set build_tree_one_node to true to use exact");
 
     PlattScalingHelper.initCalibration(this, _parms, expensive);
   }
@@ -285,6 +289,24 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     return dinfo;
   }
 
+  @Override
+  protected Frame rebalance(Frame original_fr, boolean local, String name) {
+    if (_parms._build_tree_one_node) {
+      int original_chunks = original_fr.anyVec().nChunks();
+      if (original_chunks == 1)
+        return original_fr;
+      Log.info("Rebalancing " + name.substring(name.length()-5) + " dataset onto a single node.");
+      Key newKey = Key.make(name + ".1chk");
+      RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, 1);
+      H2O.submitTask(rb).join();
+      Frame singleChunkFr = DKV.get(newKey).get();
+      Scope.track(singleChunkFr);
+      return singleChunkFr;
+    } else {
+      return super.rebalance(original_fr, local, name);
+    }
+  }
+
   // ----------------------
   class XGBoostDriver extends Driver {
 
@@ -329,6 +351,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
       File featureMapFile = null;
       try {
+        
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(_train);
 
         // Prepare Rabit tracker for this job
