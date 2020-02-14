@@ -3284,7 +3284,7 @@ destination_frame.guess <- function(x) {
 #' options(op)
 use.package <- function(package, 
                         version="1.9.8"[package=="data.table"], 
-                        use=getOption("h2o.use.data.table", FALSE)[package=="data.table"]) {
+                        use=getOption("h2o.use.data.table", TRUE)[package=="data.table"]) {
   ## methods that depends on use.package default arguments (to have control in single place):
   # as.h2o.data.frame
   # as.data.frame.H2OFrame
