@@ -1,6 +1,7 @@
 package hex.grid;
 
 import hex.Model;
+import hex.ModelBuilderTest;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
@@ -9,13 +10,16 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.*;
 import water.fvec.Frame;
+import water.util.Log;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -550,5 +554,29 @@ public class GridTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testCanceledModelReporting() {
+    try {
+      Scope.enter();
+
+      Frame trainingFrame = TestFrameCatalog.oneChunkFewRows();
+
+      Map<String, Object[]> hyperParms = Collections.singletonMap(
+        "_cancel_job", new Boolean[]{true}
+      );
+
+      ModelBuilderTest.DummyModelParameters params = new ModelBuilderTest.DummyModelParameters();
+      params._train = trainingFrame._key;
+      
+      Grid grid = GridSearch.startGridSearch(null, params, hyperParms).get();
+      Scope.track_generic(grid);
+
+      assertArrayEquals(new String[]{"Job Canceled"}, grid.getFailures().getFailureDetails());
+    } finally {
+      Scope.exit();
+    }
+  }
+
 
 }
