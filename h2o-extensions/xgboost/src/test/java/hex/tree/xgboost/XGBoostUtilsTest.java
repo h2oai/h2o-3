@@ -785,7 +785,7 @@ public class XGBoostUtilsTest extends TestUtil {
             put("max_depth", 16);
             put("ntrees", 5);
             put("colsample_bytree", 1.0);
-            put("tree_method", "exact");
+            put("tree_method", "hist");
             put("backend", "cpu");
             put("booster", "gbtree");
             put("lambda", 1.0);
@@ -823,7 +823,7 @@ public class XGBoostUtilsTest extends TestUtil {
         parms._train = matrices._h2oFrame._key;
         parms._response_column = "response";
         parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
-        parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+        parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
         parms._seed = 1;
         XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
         assertNotNull(model);

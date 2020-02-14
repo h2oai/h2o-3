@@ -215,7 +215,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       error("_learn_rate", "learn_rate must be between 0 and 1");
     if( !(0. < _parms._col_sample_rate && _parms._col_sample_rate <= 1.0) )
       error("_col_sample_rate", "col_sample_rate must be between 0 and 1");
-    if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
+    if (_parms._grow_policy== XGBoostModel.XGBoostParameters.GrowPolicy.lossguide && 
+        _parms._tree_method!= XGBoostModel.XGBoostParameters.TreeMethod.hist)
       error("_grow_policy", "must use tree_method=hist for grow_policy=lossguide");
 
     if ((_train != null) && !_parms.monotoneConstraints().isEmpty()) {
@@ -230,9 +231,9 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       TreeUtils.checkMonotoneConstraints(this, _train, _parms._monotone_constraints);
     }
 
-    if ((_train != null) && (_parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.exact) || H2O.CLOUD.size() > 1) {
+    if ((_train != null) && (_parms._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.exact) && 
+        (H2O.CLOUD.size() > 1))
       error("_tree_method", "exact is not supported in distributed environment");
-    }
 
     PlattScalingHelper.initCalibration(this, _parms, expensive);
   }
