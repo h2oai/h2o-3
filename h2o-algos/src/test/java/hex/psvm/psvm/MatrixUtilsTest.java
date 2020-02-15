@@ -1,5 +1,6 @@
 package hex.psvm.psvm;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
@@ -7,6 +8,10 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.util.FrameUtils;
+import water.util.VecUtils;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 import static water.TestUtil.ar;
@@ -40,5 +45,43 @@ public class MatrixUtilsTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void subtractionMtv() {
+    try {
+      Scope.enter();
+      Frame m = new TestFrameBuilder()
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(1.0, 1.0))
+              .withDataForCol(1, ard(1.0, 1.0))
+              .withDataForCol(2, ard(1.0, 1.0))
+              .build();
+      Scope.track(m);
+      Vec v = m.remove(2);
+      
+      Frame res = MatrixUtils.subtractionMtv(m, v);
+
+      // check result
+      Assert.assertEquals(2, res.vecs().length);
+      for (Vec vec : res.vecs()) {
+        Assert.assertTrue(vec.isConst());
+        Assert.assertEquals(0, vec.min(),0);
+      }
+
+      // check given matrix
+      Assert.assertEquals(2, m.vecs().length);
+      for (Vec vec : m.vecs()) {
+        Assert.assertTrue(vec.isConst());
+        Assert.assertEquals(1, vec.min(),0);
+      }
+
+      // check given vector
+      Assert.assertTrue(v.isConst());
+      Assert.assertEquals(1, v.min(),0);
+      
+    } finally {
+      Scope.exit();
+    }
+  }  
 
 }
