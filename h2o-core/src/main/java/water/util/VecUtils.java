@@ -900,6 +900,11 @@ public class VecUtils {
     }.doAll(Vec.makeZero(length))._fr.vecs()[0];
   }
 
+  /**
+   * 
+   * @return Vector dimension of frame.numCols with values from uniform distribution with bounds taken from frame.
+   *         For example first value of the result is from Unif(First column min value, First column max value)
+   */
   public static Vec uniformDistrFromFrame(Frame frame, long seed) {
     double[] p = new double[frame.numCols()];
     Vec[] vecs = frame.vecs();
@@ -912,41 +917,63 @@ public class VecUtils {
     }
     return Vec.makeVec(p, Vec.newKey());
   }
-  
+
+  /**
+   * Map reduce version of uniformDistrFromFrame(frame, seed)
+   */
   public static Vec uniformDistrFromFrameMR(Frame frame, long seed) {
-    UniformDistrFromFrameTask task = new UniformDistrFromFrameTask().doAll(frame);
-    Random random = new Random(seed);
-    double [] uniformDistribution = new double[task.mins.length];
-    for (int i = 0; i < task.mins.length; i++) {
-      uniformDistribution[i] = task.mins[i] + random.nextDouble() * (task.maxs[i] - task.mins[i]);
-    }
-    return Vec.makeVec(uniformDistribution, Vec.newKey());
+    UniformDistrFromFrameTask task = new UniformDistrFromFrameTask(seed).doAll(frame);
+    return task.uniformDistribution;
   }
 
   static class UniformDistrFromFrameTask extends MRTask<UniformDistrFromFrameTask> {
-    // OUT
-    private double[] mins;
-    private double[] maxs;
+    private Vec mins;
+    private Vec maxs;
+    private Vec uniformDistribution;
+    private Random random;
+    private Long seed;
+    
+    public UniformDistrFromFrameTask(long seed) {
+      random = new Random(seed);
+      this.seed = seed;
+    }
 
     @Override
     public void map(Chunk[] cs) {
-      mins = new double[cs.length];
-      maxs = new double[cs.length];
-      Arrays.fill(mins, Double.MAX_VALUE);
-      Arrays.fill(maxs, Double.MIN_VALUE);
+      mins = Vec.makeCon(Double.MAX_VALUE, cs.length);
+      maxs = Vec.makeCon(Double.MIN_VALUE, cs.length);
+      uniformDistribution = Vec.makeZero(cs.length);
       
       for (int column = 0; column < cs.length; column++) {
+        double min = mins.at(column);
+        double max = maxs.at(column);
         for (int row = 0; row < cs[column]._len; row++) {
-          mins[column] = Math.min(mins[column], cs[column].atd(row));
-          maxs[column] = Math.max(maxs[column], cs[column].atd(row));
+          min = Math.min(min, cs[column].atd(row));
+          max = Math.max(max, cs[column].atd(row));
         }
+        mins.set(column, min);
+        maxs.set(column, max);
+        uniformDistribution.set(column, min + random.nextDouble() * (max - min));        
       }
     }
 
     @Override
     public void reduce(UniformDistrFromFrameTask mrt) {
       mins = ArrayUtils.reduceMin(mrt.mins, mins);
-      maxs = ArrayUtils.reduceMax(mrt.maxs, maxs); 
+      maxs = ArrayUtils.reduceMax(mrt.maxs, maxs);
+      random = new Random(seed);
+      uniformDistribution = new MRTask() {
+
+        @Override
+        public void map(Chunk[] cs){
+          Chunk cUnif = cs[0];
+          Chunk cMins = cs[1];
+          Chunk cMaxs = cs[2];
+          for(int row = 0; row < cUnif._len; ++row) {
+            cUnif.set(row, cMins.atd(row) + random.nextDouble() * (cMaxs.atd(row) - cMins.atd(row)));
+          }
+        }
+      }.doAll(uniformDistribution, mins, maxs)._fr.vecs()[0];
     }    
   }
 
