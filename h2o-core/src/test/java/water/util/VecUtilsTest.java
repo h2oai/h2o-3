@@ -10,6 +10,8 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
+import java.util.Arrays;
+
 /**
  * Test VecUtils interface.
  */
@@ -55,6 +57,18 @@ public class VecUtilsTest extends TestUtil {
       if (frame != null) frame.remove();
     }
   }
+
+  @Test
+  public void testMakeGaussian() {
+    Vec v = VecUtils.makeGaussianVec(5, 3,0xDECAF);
+    Assert.assertArrayEquals(new int[]{0, 1, 0, 0, 0}, FrameUtils.asInts(v));
+  }
+
+  @Test
+  public void testMakeGaussian2() {
+    Vec v = VecUtils.makeGaussianVec(5,0xDECAF);
+    Assert.assertArrayEquals(new int[]{0, 1, 0, -1, 0}, FrameUtils.asInts(v));
+  }  
 
   @Test
   public void testUniformDistrFromFrame() {

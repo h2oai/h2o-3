@@ -864,17 +864,40 @@ public class VecUtils {
     }
   }
 
-  public static Vec makeGaussianVec(int length, long seed) {
-      return makeGaussianVec(length, seed, 0);
+  /**
+   * Make a new vector initialized to random Gaussian N(0,1) values with the given seed.
+   * 
+   * @param length length of generated vector
+   * @return vector with gaussian values
+   */
+  public static Vec makeGaussianVec(long length, long seed) {
+      return makeGaussianVec(length, 0, seed);
   }
 
-  public static Vec makeGaussianVec(int length, long seed, int zeroNum) {
-    double[] n = new double[length];
-    Random random = new Random(seed);
-    for (int i = 0; i < length - zeroNum; i++) {
-      n[i] = random.nextGaussian();
-    }
-    return Vec.makeVec(n, Vec.newKey());
+  /**
+   * Make a new vector initialized to random Gaussian N(0,1) values with the given seed.
+   * Make last {@code zeroNum} zeros. Used in Extended isolation forest.
+   * 
+   * @param length length of generated vector
+   * @param zeroNum Make last {@code zeroNum} zeros
+   * @return vector with gaussian values. Last {@code zeroNum} values are zeros.
+   */
+  public static Vec makeGaussianVec(long length, long zeroNum, long seed) {
+    return new MRTask() {
+      
+      @Override 
+      public void map(Chunk c){
+        Random rng = new RandomUtils.PCGRNG(c.start(),1);
+
+        for(int row = 0; row < c._len; ++row) {
+          rng.setSeed(seed + c.start() + row);
+          if ((c.start() + row) >= (length - zeroNum)) {
+            break;
+          }
+          c.set(row, rng.nextGaussian());
+        }
+      }
+    }.doAll(Vec.makeZero(length))._fr.vecs()[0];
   }
 
   public static Vec uniformDistrFromFrame(Frame frame, long seed) {
