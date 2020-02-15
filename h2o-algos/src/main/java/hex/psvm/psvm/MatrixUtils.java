@@ -3,6 +3,7 @@ package hex.psvm.psvm;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.FrameCreator;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
@@ -49,6 +50,20 @@ public class MatrixUtils {
   public static double productVtV(Vec v1, Vec v2) {
     return new ProductMtvTask().doAll(v1, v2)._result[0];
   }
+
+  /**
+   * Calculates matrix-vector subtraction M'v
+   * 
+   * @param m Frame representing matrix M (m x n)
+   * @param v Vec representing vector v (n x 1)
+   * @return m-element array representing the result of the subtraction
+   */
+  public static Frame subtractionMtv(Frame m, Vec v) {
+    Vec[] vecs = ArrayUtils.append(m.deepCopy("keyName").vecs(), v);
+    Frame result = new SubMtvTask().doAll(vecs)._fr;
+    result.remove(result.vecs().length - 1);
+    return result;
+  }  
 
   private static class ProductMMTask extends MRTask<ProductMMTask> {
     // OUT
@@ -105,5 +120,19 @@ public class MatrixUtils {
       ArrayUtils.add(_result, mrt._result);
     }
   }
+
+  static class SubMtvTask extends MRTask<SubMtvTask> {
+
+    @Override
+    public void map(Chunk[] cs) {
+      final int lastColumn = cs.length - 1;
+      final Chunk v = cs[lastColumn];
+      for (int column = 0; column < lastColumn; column++) {
+        for (int row = 0; row < cs[0]._len; row++) {
+          cs[column].set(row, cs[column].atd(row) - v.atd(row));
+        }
+      }
+    }
+  }  
 
 }
