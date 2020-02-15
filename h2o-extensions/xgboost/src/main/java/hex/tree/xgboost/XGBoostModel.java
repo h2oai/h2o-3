@@ -7,6 +7,7 @@ import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
 import hex.genmodel.algos.tree.*;
+import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.PlattScalingHelper;
@@ -105,6 +106,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     // Runtime options
     public int _nthread = -1;
     public String _save_matrix_directory; // dump the xgboost matrix to this directory
+    public boolean _build_tree_one_node = false; // force to run on single node
 
     // LightGBM specific (only for grow_policy == lossguide)
     public int _max_bins = 256;
@@ -622,17 +624,10 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public SharedTreeGraph convert(final int treeNumber, final String treeClassName) {
-    GradBooster booster;
-    try {
-      booster = new Predictor(new ByteArrayInputStream(model_info._boosterBytes)).getBooster();
-    } catch (IOException e) {
-      Log.err(e);
-      throw new IllegalStateException("Booster bytes inaccessible. Not able to extract the predictor and construct tree graph.");
-    }
-
+    GradBooster booster = XGBoostJavaMojoModel.makePredictor(model_info._boosterBytes).getBooster();
     if (!(booster instanceof GBTree)) {
-      throw new IllegalArgumentException(String.format("Given XGBoost model is not backed by a tree-based booster. Booster class is %d",
-              booster.getClass().getCanonicalName()));
+      throw new IllegalArgumentException("XGBoost model is not backed by a tree-based booster. Booster class is " + 
+              booster.getClass().getCanonicalName());
     }
 
     final RegTree[][] groupedTrees = ((GBTree) booster).getGroupedTrees();
