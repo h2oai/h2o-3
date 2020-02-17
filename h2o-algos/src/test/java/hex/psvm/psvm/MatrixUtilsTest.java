@@ -51,13 +51,12 @@ public class MatrixUtilsTest extends TestUtil {
     try {
       Scope.enter();
       Frame m = new TestFrameBuilder()
-              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
-              .withDataForCol(0, ard(1.0, 1.0))
-              .withDataForCol(1, ard(1.0, 1.0))
-              .withDataForCol(2, ard(1.0, 1.0))
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(1.0, 1.0, 1.0))
+              .withDataForCol(1, ard(1.0, 1.0, 1.0))
               .build();
       Scope.track(m);
-      Vec v = m.remove(2);
+      Vec v = Vec.makeVec(ard(1.0, 1.0), Vec.newKey());
       
       Frame res = MatrixUtils.subtractionMtv(m, v);
 

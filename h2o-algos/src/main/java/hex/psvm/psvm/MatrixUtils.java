@@ -59,9 +59,10 @@ public class MatrixUtils {
    * @return m-element array representing the result of the subtraction
    */
   public static Frame subtractionMtv(Frame m, Vec v) {
-    Vec[] vecs = ArrayUtils.append(m.deepCopy("keyName").vecs(), v);
-    Frame result = new SubMtvTask().doAll(vecs)._fr;
-    result.remove(result.vecs().length - 1);
+    if (v.length() != m.numCols()) {
+      throw new UnsupportedOperationException("Vector elements number must be the same as matrix column number");
+    }
+    Frame result = new SubMtvTask(v).doAll(m.deepCopy("newKey"))._fr;
     return result;
   }  
 
@@ -123,16 +124,20 @@ public class MatrixUtils {
 
   static class SubMtvTask extends MRTask<SubMtvTask> {
 
+    private Vec v;
+
+    public SubMtvTask(Vec v) {
+      this.v = v;
+    }
+
     @Override
     public void map(Chunk[] cs) {
-      final int lastColumn = cs.length - 1;
-      final Chunk v = cs[lastColumn];
-      for (int column = 0; column < lastColumn; column++) {
+      for (int column = 0; column < cs.length; column++) {
         for (int row = 0; row < cs[0]._len; row++) {
-          cs[column].set(row, cs[column].atd(row) - v.atd(row));
+          cs[column].set(row, cs[column].atd(row) - v.at(column));
         }
       }
     }
-  }  
+  }
 
 }
