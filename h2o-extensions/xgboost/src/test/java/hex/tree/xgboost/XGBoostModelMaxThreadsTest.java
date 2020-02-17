@@ -3,6 +3,7 @@ package hex.tree.xgboost;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ClearSystemProperties;
+import water.H2O;
 
 import static org.junit.Assert.assertEquals;
 
@@ -13,7 +14,8 @@ public class XGBoostModelMaxThreadsTest {
 
     @Test
     public void shouldGetCorrectMaxThread() {
-        assertEquals(Runtime.getRuntime().availableProcessors(), XGBoostModel.getMaxNThread());
+        int cloudSize = Math.max(1, H2O.CLOUD.size());
+        assertEquals(Runtime.getRuntime().availableProcessors() / cloudSize, XGBoostModel.getMaxNThread());
         System.setProperty("sys.ai.h2o.xgboost.nthreadMax", "2");
         assertEquals(2, XGBoostModel.getMaxNThread());
     }
