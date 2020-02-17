@@ -43,14 +43,12 @@ RUN \
 
 # Install python dependencies
 RUN \
-  wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-py/test-requirements.txt && \
-  wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-py/docs-requirements.txt && \
+  wget https://raw.githubusercontent.com/h2oai/h2o-3/master/h2o-py/requirements.txt && \
   /usr/bin/pip install --upgrade pip && \
-  /usr/bin/pip install -r test-requirements.txt && \
+  /usr/bin/pip install -r requirements.txt && \
   /usr/bin/pip3 install --upgrade pip && \
-  /usr/bin/pip3 install -r test-requirements.txt && \
-  /usr/bin/pip3 install -r docs-requirements.txt && \
-  rm *requirements.txt 
+  /usr/bin/pip3 install -r requirements.txt && \
+  rm requirements.txt 
 
 # Install R dependencies
 RUN \
