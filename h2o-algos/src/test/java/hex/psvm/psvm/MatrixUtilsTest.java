@@ -82,5 +82,42 @@ public class MatrixUtilsTest extends TestUtil {
       Scope.exit();
     }
   }  
+  
+  @Test
+  public void workingProductMtv() {
+    try {
+      Scope.enter();
+      Frame m = new TestFrameBuilder()
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(1.0, 1.0, 1.0, 1.0))
+              .withDataForCol(1, ard(1.0, 1.0, 1.0, 1.0))
+              .build();
+      Scope.track(m);
+      Vec v = Vec.makeVec(ard(2.0, 2.0), Vec.newKey());
+
+      Vec resVec = MatrixUtils.workingProductMtv(m, v);
+
+      // check result
+      Assert.assertEquals(m.numRows(), resVec.length());
+      Assert.assertEquals(4, resVec.at(0),0);
+      Assert.assertEquals(4, resVec.at(1),0);
+      Assert.assertEquals(4, resVec.at(2),0);
+      Assert.assertEquals(4, resVec.at(3),0);
+
+      // check given matrix
+      Assert.assertEquals(2, m.vecs().length);
+      for (Vec vec : m.vecs()) {
+        Assert.assertTrue(vec.isConst());
+        Assert.assertEquals(1, vec.min(),0);
+      } 
+
+      // check given vector
+      Assert.assertTrue(v.isConst());
+      Assert.assertEquals(2, v.min(),0);
+
+    } finally {
+      Scope.exit();
+    }
+  }
 
 }

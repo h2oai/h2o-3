@@ -32,13 +32,27 @@ public class MatrixUtils {
   /**
    * Calculates matrix-vector product M'v
    * @param m Frame representing matrix M (m x n)
-   * @param v Vec representing vector v (n x 1)
+   * @param v Vec representing vector v (n x 1) - TODO avalenta NOT WORKING, dimension must be m x 1
    * @return m-element array representing the result of the product
    */
   public static double[] productMtv(Frame m, Vec v) {
     Vec[] vecs = ArrayUtils.append(m.vecs(), v);
     return new ProductMtvTask().doAll(vecs)._result;
   }
+
+  /**
+   * Previous Mtv method is not working.
+   * 
+   * Calculates matrix-vector product M'v
+   * 
+   * @param m Frame representing matrix M (m x n)
+   * @param v Vec representing vector v (n x 1)
+   * @return m-element array representing the result of the product
+   */
+  public static Vec workingProductMtv(Frame m, Vec v) {
+    // TODO avalenta better vec creation
+    return Vec.makeVec(new ProductMtvTask2(v).doAll(m)._result, Vec.newKey());
+  }  
 
   /**
    * Calculates vector-vector product v1*v2
@@ -137,6 +151,33 @@ public class MatrixUtils {
           cs[column].set(row, cs[column].atd(row) - v.at(column));
         }
       }
+    }
+  }
+
+  static class ProductMtvTask2 extends MRTask<ProductMtvTask2> {
+    private final Vec v;
+
+    private double[] _result;
+
+    public ProductMtvTask2(Vec v) {
+      this.v = v;
+    }
+    
+    @Override
+    public void map(Chunk[] cs) {
+      _result = new double[cs[0]._len];
+      for (int i = 0; i < cs[0]._len; i++) {
+        double sum = 0.0;
+        for (int j = 0; j < cs.length; ++j) {
+          sum += cs[j].atd(i) * v.at(j);
+        }
+        _result[i] = sum;
+      }
+    }
+
+    @Override
+    public void reduce(ProductMtvTask2 mrt) {
+      ArrayUtils.add(_result, mrt._result);
     }
   }
 
