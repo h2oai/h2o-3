@@ -15,6 +15,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
     private static final String ENABLED_PROP = "util.frameSizeMonitor.enabled";
     private static final String SAFE_COEF_PROP = "util.frameSizeMonitor.safetyCoefficient";
     private static final String SAFE_FREE_MEM_DEFAULT_COEF = "0.1";
+    private static final int LOG_LEVEL = Log.INFO;
 
     private static final boolean ENABLED;
     private static final float SAFE_FREE_MEM_COEF;
@@ -72,8 +73,8 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
                 } else {
                     nextProgress = currentProgress + 0.1f;
                 }
-            } else if (Log.isLoggingFor(Log.DEBUG)) {
-                Log.debug("FrameSizeMonitor: waiting for progress " + currentProgress + " to jump over " + nextProgress);
+            } else if (Log.isLoggingFor(LOG_LEVEL)) {
+                Log.log(LOG_LEVEL, "FrameSizeMonitor: waiting for progress " + currentProgress + " to jump over " + nextProgress);
             }
             try {
                 Thread.sleep(SLEEP_MS);
@@ -81,12 +82,12 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
                 Thread.currentThread().interrupt();
             }
         }
-        if (Log.isLoggingFor(Log.DEBUG)) {
+        if (Log.isLoggingFor(LOG_LEVEL)) {
             if (!job.isStopped()) {
                 job.get(); // wait for job to finish
             }
             if (job.isDone()) {
-                Log.debug("FrameSizeMonitor: finished monitoring job " + jobKey +
+                Log.log(LOG_LEVEL, "FrameSizeMonitor: finished monitoring job " + jobKey +
                     ", final frame size is " + (job._result.get().byteSize() / MB) + " MB");
             }
         }
@@ -97,12 +98,12 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
         long availableMemory = getAvailableMemory();
         long minimumAvailableMemory = (long) (totalMemory * 2 * SAFE_FREE_MEM_COEF);
         if (availableMemory < minimumAvailableMemory) {
-            Log.debug("FrameSizeMonitor: Checking output of job " + jobKey + " because the available memory " + 
+            Log.log(LOG_LEVEL, "FrameSizeMonitor: Checking output of job " + jobKey + " because the available memory " + 
                 (availableMemory / MB) + " MB is lower than threshold " + (minimumAvailableMemory / MB) + " MB " +
                 "(" + SAFE_FREE_MEM_COEF + " of " + (totalMemory / MB) + " MB total memory)");
             return true;
         } else {
-            Log.debug("FrameSizeMonitor: Overall memory usage is ok, still have " + 
+            Log.log(LOG_LEVEL, "FrameSizeMonitor: Overall memory usage is ok, still have " + 
                 (availableMemory / MB) + " MB available of " + (minimumAvailableMemory / MB) + " MB required.");
             return false;
         }
@@ -113,8 +114,8 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
         long projectedAdditionalFrameSize = (long) ((1 - progress) * (currentFrameSize / progress));
         long availableMemory = getAvailableMemory();
         long usableMemory = (long) (availableMemory - (totalMemory * SAFE_FREE_MEM_COEF));
-        if (Log.isLoggingFor(Log.DEBUG)) {
-            Log.debug("FrameSizeMonitor: Frame " + job._result + ": \n" +
+        if (Log.isLoggingFor(LOG_LEVEL)) {
+            Log.log(LOG_LEVEL, "FrameSizeMonitor: Frame " + job._result + ": \n" +
                 " used: " + (currentFrameSize / MB) + " MB\n" +
                 " progress: " + (progress) + "\n" +
                 " projected additional: " + (projectedAdditionalFrameSize / MB) + " MB\n" +
@@ -130,8 +131,8 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
                 " does not safely fit in " + (availableMemory / MB) + " MB of available memory.");
             return true;
         } else {
-            if (Log.isLoggingFor(Log.DEBUG)) {
-                Log.debug("FrameSizeMonitor: Projected memory " + (projectedAdditionalFrameSize / MB) + "MB for frame " +
+            if (Log.isLoggingFor(LOG_LEVEL)) {
+                Log.log(LOG_LEVEL, "FrameSizeMonitor: Projected memory " + (projectedAdditionalFrameSize / MB) + "MB for frame " +
                     job._result + " fits safely into " + (availableMemory / MB) + " MB of available memory.");
             }
             return false;
