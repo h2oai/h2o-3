@@ -56,7 +56,39 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
         @Override
         public void computeImpl() {
+            Vec p = VecUtils.uniformDistrFromFrameMR(_train, _parms._seed);
+            Vec n = VecUtils.makeGaussianVec(_train.numCols(), _train.numCols() - _parms._extension_level - 1, _parms._seed);
+            System.out.println(Arrays.toString(FrameUtils.asDoubles(n)));
+            System.out.println(n.length());
+            Frame res = MatrixUtils.subtractionMtv(_train, p);
+            Vec mul = MatrixUtils.workingProductMtv(res, n);
+        }
+    }
+    
+    private class SplitFrameMRTask extends MRTask<SplitFrameMRTask> {
+        private Vec p;
+        private Vec n;
+        
+        private Frame left;
+        private Frame right;
+        
+        public SplitFrameMRTask(Vec p, Vec n) {
+            this.p = p;
+            this.n = n;
+        }
+        
+        @Override
+        public void map(Chunk[] cs) {
+            for (int i = 0; i < cs.length; i++) {
+                for (int j = 0; j < cs[i]._len; j++) {
+                    System.out.println(cs[i].atd(j));
+                }
+            }
+        }
 
+        @Override
+        public void reduce(SplitFrameMRTask mrt) {
+            // nothing to do
         }
     }
     
