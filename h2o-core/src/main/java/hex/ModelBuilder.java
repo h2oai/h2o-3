@@ -275,15 +275,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (res != null && res._output != null) {
       res._output._job = _job;
       res._output.stopClock();
-      try {
-        res.write_lock(_job);
-        res.update(_job);
-        res.unlock(_job);
-      } catch (Exception e) {
-        Log.info("current job: ", _job);
-        Log.info("lockers: ", res._lockers);
-        throw e;
-      }
+      res.write_lock(_job);
+      res.update(_job);
+      res.unlock(_job);
     }
     Log.info("Completing model "+ reskey);
   }
