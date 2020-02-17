@@ -52,79 +52,79 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
+        library(h2o)
+        h2o.init()
 
-    # Import the prostate dataset
+        # Import the prostate dataset
 
-    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # Set the predictor names and the response column name
-    p_y <- "CAPSULE"
-    p_x <- setdiff(names(prostate), c(p_y, "ID"))
-    p_n <- length(p_x)
+        # Set the predictor names and the response column name
+        p_y <- "CAPSULE"
+        p_x <- setdiff(names(prostate), c(p_y, "ID"))
+        p_n <- length(p_x)
 
-    # Create a beta_constraints frame
-    con <- data.frame(names = p_x, 
-                      lower_bounds = rep(-10000, time = p_n),
-                      upper_bounds = rep(10000, time = p_n),
-                      beta_given = rep(1, time = p_n),
-                      rho = rep(0.2, time = p_n))
+        # Create a beta_constraints frame
+        con <- data.frame(names = p_x, 
+                          lower_bounds = rep(-10000, time = p_n),
+                          upper_bounds = rep(10000, time = p_n),
+                          beta_given = rep(1, time = p_n),
+                          rho = rep(0.2, time = p_n))
 
-    # Build a GLM with beta constraints and standardization.
-    # When standardization is turned on, the beta_given is also standardized.
-    glm1 <- h2o.glm(x = p_x, 
-                    y = p_y, 
-                    training_frame = prostate, 
-                    standardize = TRUE, 
-                    beta_constraints = con)
+        # Build a GLM with beta constraints and standardization.
+        # When standardization is turned on, the beta_given is also standardized.
+        glm1 <- h2o.glm(x = p_x, 
+                        y = p_y, 
+                        training_frame = prostate, 
+                        standardize = TRUE, 
+                        beta_constraints = con)
 
-    # Build a GLM with beta constraints and without standardization
-    glm2 <- h2o.glm(x = p_x, 
-                    y = p_y, 
-                    training_frame = prostate, 
-                    standardize = FALSE, 
-                    beta_constraints = con)
+        # Build a GLM with beta constraints and without standardization
+        glm2 <- h2o.glm(x = p_x, 
+                        y = p_y, 
+                        training_frame = prostate, 
+                        standardize = FALSE, 
+                        beta_constraints = con)
 
-    # Check the coefficients for both models
-    glm1@model$coefficients_table
-    glm2@model$coefficients_table
+        # Check the coefficients for both models
+        glm1@model$coefficients_table
+        glm2@model$coefficients_table
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    import h2o
-    h2o.init()
-    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        import h2o
+        h2o.init()
+        from h2o.estimators.glm import H2OGeneralizedLinearEstimator
 
-    # Import the prostate dataset
-    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        # Import the prostate dataset
+        prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
 
-    # Set the predictor names and the response column name
-    response = "CAPSULE"
-    predictor = prostate.names[2:9]
-    n = len(predictor)
+        # Set the predictor names and the response column name
+        response = "CAPSULE"
+        predictor = prostate.names[2:9]
+        n = len(predictor)
 
-    # Create a beta_constraints frame
-    constraints = h2o.H2OFrame({'names':predictor,
-                                'lower_bounds': [-1000]*n,
-                                'upper_bounds': [1000]*n,
-                                'beta_given': [1]*n,
-                                'rho': [0.2]*n})
+        # Create a beta_constraints frame
+        constraints = h2o.H2OFrame({'names':predictor,
+                                    'lower_bounds': [-1000]*n,
+                                    'upper_bounds': [1000]*n,
+                                    'beta_given': [1]*n,
+                                    'rho': [0.2]*n})
 
-    # Build a GLM model with beta constraints and standardization
-    prostate_glm1 = H2OGeneralizedLinearEstimator(standardize=True, beta_constraints=constraints)
-    prostate_glm1.train(x = predictor, y = response, training_frame=prostate)
+        # Build a GLM model with beta constraints and standardization
+        prostate_glm1 = H2OGeneralizedLinearEstimator(standardize=True, beta_constraints=constraints)
+        prostate_glm1.train(x = predictor, y = response, training_frame=prostate)
 
-    # Build a GLM model with beta constraints and without standardization
-    prostate_glm2 = H2OGeneralizedLinearEstimator(standardize=False, beta_constraints=constraints)
-    prostate_glm2.train(x = predictor, y = response, training_frame=prostate)
+        # Build a GLM model with beta constraints and without standardization
+        prostate_glm2 = H2OGeneralizedLinearEstimator(standardize=False, beta_constraints=constraints)
+        prostate_glm2.train(x = predictor, y = response, training_frame=prostate)
 
-    # Check the coefficients for both models
-    coeff_table1 = prostate_glm1._model_json['output']['coefficients_table']
-    coeff_table1
+        # Check the coefficients for both models
+        coeff_table1 = prostate_glm1._model_json['output']['coefficients_table']
+        coeff_table1
 
-    coeff_table2 = prostate_glm2._model_json['output']['coefficients_table']
-    coeff_table2
+        coeff_table2 = prostate_glm2._model_json['output']['coefficients_table']
+        coeff_table2

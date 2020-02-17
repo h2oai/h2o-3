@@ -29,57 +29,57 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
-	# import the higgs dataset:
-	# This dataset is used to classify whether or not a signal process produces a Higgs bosons.
-	# original data can be found at https://archive.ics.uci.edu/ml/datasets/HIGGS
-	higgs <-  h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv")
+		library(h2o)
+		h2o.init()
+		# import the higgs dataset:
+		# This dataset is used to classify whether or not a signal process produces a Higgs bosons.
+		# original data can be found at https://archive.ics.uci.edu/ml/datasets/HIGGS
+		higgs <-  h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv")
 
-	# set the predictor names and the response column name
-	predictors <- colnames(higgs)[-1]
-	response <- "response"
+		# set the predictor names and the response column name
+		predictors <- colnames(higgs)[-1]
+		response <- "response"
 
-	# split into train and validation
-	higgs.splits <- h2o.splitFrame(data =  higgs, ratios = .8)
-	train <- higgs.splits[[1]]
-	valid <- higgs.splits[[2]]
+		# split into train and validation
+		higgs.splits <- h2o.splitFrame(data =  higgs, ratios = .8)
+		train <- higgs.splits[[1]]
+		valid <- higgs.splits[[2]]
 
-	# try using the `max_active_predictors` parameter:
-	higgs_glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
-	                        validation_frame = valid, 
-	                        max_active_predictors = 200)
+		# try using the `max_active_predictors` parameter:
+		higgs_glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
+		                        validation_frame = valid, 
+		                        max_active_predictors = 200)
 
-	# print the AUC for the validation data
-	print(h2o.auc(higgs_glm, valid = TRUE))
+		# print the AUC for the validation data
+		print(h2o.auc(higgs_glm, valid = TRUE))
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+		h2o.init()
 
-	# import the higgs dataset:
-	# This dataset is used to classify whether or not a signal process produces a Higgs bosons.
-	# original data can be found at https://archive.ics.uci.edu/ml/datasets/HIGGS
-	higgs= h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv")
+		# import the higgs dataset:
+		# This dataset is used to classify whether or not a signal process produces a Higgs bosons.
+		# original data can be found at https://archive.ics.uci.edu/ml/datasets/HIGGS
+		higgs= h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/testng/higgs_train_5k.csv")
 
-	# set the predictor names and the response column name
-	predictors = higgs.names
-	predictors.remove('response')
-	# The response 
-	response = "response"
+		# set the predictor names and the response column name
+		predictors = higgs.names
+		predictors.remove('response')
+		# The response 
+		response = "response"
 
-	# split into train and validation sets
-	train, valid = higgs.split_frame(ratios = [.8])
+		# split into train and validation sets
+		train, valid = higgs.split_frame(ratios = [.8])
 
-	# try using the `max_active_predictors` parameter:
-	# initialize the estimator then train the model
-	higgs_glm = H2OGeneralizedLinearEstimator(family = 'binomial', max_active_predictors = 200)
-	higgs_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+		# try using the `max_active_predictors` parameter:
+		# initialize the estimator then train the model
+		higgs_glm = H2OGeneralizedLinearEstimator(family = 'binomial', max_active_predictors = 200)
+		higgs_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# print the auc for the validation data
-	print(higgs_glm.auc(valid=True))
+		# print the auc for the validation data
+		print(higgs_glm.auc(valid=True))
