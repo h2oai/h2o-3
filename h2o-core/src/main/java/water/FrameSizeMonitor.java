@@ -13,7 +13,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
 
     private static final String ENABLED_PROP = "util.frameSizeMonitor.enabled";
     private static final String SAFE_COEF_PROP = "util.frameSizeMonitor.safetyCoefficient";
-    private static final String SAFE_FREE_MEM_DEFAULT_COEF = "0.1";
+    private static final String SAFE_FREE_MEM_DEFAULT_COEF = "0.2";
     private static final int LOG_LEVEL = Log.INFO;
 
     private static final boolean ENABLED;
@@ -62,9 +62,14 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
         float nextProgress = 0.02f;
         Job<Frame> job = DKV.getGet(jobKey);
         while (job.isRunning() && nextProgress < 1f) {
+            if (!MemoryManager.canAlloc()) {
+                Log.log(LOG_LEVEL, "FrameSizeMonitor: MemoryManager is running low on memory, stopping job " + jobKey + " writing frame " + job._result);
+                job.stop();
+                break;
+            }
             float currentProgress = job.progress();
             if (currentProgress >= nextProgress) {
-                if (isFrameSizeOverLimit(currentProgress, job)) {
+                if (isMemoryUsageOverLimit() && isFrameSizeOverLimit(currentProgress, job)) {
                     job.stop();
                     break;
                 } else if (nextProgress < 0.1f) {
@@ -74,16 +79,6 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
                 }
             } else if (Log.isLoggingFor(LOG_LEVEL)) {
                 Log.log(LOG_LEVEL, "FrameSizeMonitor: waiting for progress " + currentProgress + " to jump over " + nextProgress);
-            }
-            if (isMemoryUsageOverLimit()) {
-                job.stop();
-                break;
-            } else if (!MemoryManager.canAlloc()) {
-                Log.log(LOG_LEVEL, "FrameSizeMonitor: MemoryManager is running low on memory, stopping job " + jobKey + " writing frame " + job._result);
-                job.stop();
-                break;
-            } else {
-                Log.log(LOG_LEVEL, "FrameSizeMonitor: overall memory usage seems good.");
             }
             try {
                 Thread.sleep(SLEEP_MS);
