@@ -218,7 +218,9 @@ Defining a GBM Model
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
    training. Use 0 to disable.
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: To run on a single node, check this
+   checkbox. This is suitable for small datasets as there is no network
+   overhead but fewer CPUs are used.
 
 -  `quantile_alpha <algo-params/quantile_alpha.html>`__: (Only applicable if *Quantile* is specified for
    **distribution**) Specify the quantile to be used for Quantile

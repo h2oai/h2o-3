@@ -176,7 +176,9 @@ Defining a DRF Model
    consistent for each H2O instance so that you can create models with
    the same starting conditions in alternative configurations.
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: To run on a single node, check this
+   checkbox. This is suitable for small datasets as there is no network
+   overhead but fewer CPUs are used.
 
 -  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If
    the default value of ``-1`` is used, the number of variables is the
@@ -296,8 +298,7 @@ FAQ
 
   No errors will occur, but nothing will be learned from rows containing missing values in the response column.
 
--  **What happens when you try to predict on a categorical level not
-   seen during training?**
+-  **What happens when you try to predict on a categorical level not seen during training?**
 
   DRF converts a new categorical level to a NA value in the test set, and then splits left on the NA value during scoring. The algorithm splits left on NA values because, during training, NA values are grouped with the outliers in the left-most bin.
 
@@ -309,8 +310,7 @@ FAQ
 
   No.
 
--  **How does the algorithm handle highly imbalanced data in a response
-   column?**
+-  **How does the algorithm handle highly imbalanced data in a response column?**
 
   Specify ``balance_classes``, ``class_sampling_factors`` and ``max_after_balance_size`` to control over/under-sampling.
 
@@ -322,35 +322,35 @@ FAQ
 
   Large numbers of categoricals are handled very efficiently - there is never any one-hot encoding.
 
-- **Does the algo stop splitting when all the possible splits lead to worse error measures?**
+-  **Does the algo stop splitting when all the possible splits lead to worse error measures?**
 
- It does if you use ``min_split_improvement`` (min_split_improvement turned ON by default (0.00001).) When properly tuned, this option can help reduce overfitting. 
+  It does if you use ``min_split_improvement`` (min_split_improvement turned ON by default (0.00001).) When properly tuned, this option can help reduce overfitting. 
 
-- **When does the algo stop splitting on an internal node?**
+-  **When does the algo stop splitting on an internal node?**
 
- A single tree will stop splitting when there are no more splits that satisfy the minimum rows parameter, if it reaches ``max_depth``, or if there are no splits that satisfy the ``min_split_improvement`` parameter.
+  A single tree will stop splitting when there are no more splits that satisfy the minimum rows parameter, if it reaches ``max_depth``, or if there are no splits that satisfy the ``min_split_improvement`` parameter.
 
-- **How does DRF decide which feature to split on?**
+-  **How does DRF decide which feature to split on?**
 
- It splits on the column and level that results in the greatest reduction in residual sum of the squares (RSS) in the subtree at that point. It considers all fields available from the algorithm. Note that any use of column sampling and row sampling will cause each decision to not consider all data points, and that this is on purpose to generate more robust trees. To find the best level, the histogram binning process is used to quickly compute the potential MSE of each possible split. The number of bins is controlled via ``nbins_cats`` for categoricals, the pair of ``nbins`` (the number of bins for the histogram to build, then split at the best point), and ``nbins_top_level`` (the minimum number of bins at the root level to use to build the histogram). This number will then be decreased by a factor of two per level. 
+  It splits on the column and level that results in the greatest reduction in residual sum of the squares (RSS) in the subtree at that point. It considers all fields available from the algorithm. Note that any use of column sampling and row sampling will cause each decision to not consider all data points, and that this is on purpose to generate more robust trees. To find the best level, the histogram binning process is used to quickly compute the potential MSE of each possible split. The number of bins is controlled via ``nbins_cats`` for categoricals, the pair of ``nbins`` (the number of bins for the histogram to build, then split at the best point), and ``nbins_top_level`` (the minimum number of bins at the root level to use to build the histogram). This number will then be decreased by a factor of two per level. 
 
- For ``nbins_top_level``, higher = more precise, but potentially more prone to overfitting. Higher also takes more memory and possibly longer to run.
+  For ``nbins_top_level``, higher = more precise, but potentially more prone to overfitting. Higher also takes more memory and possibly longer to run.
 
-- **What is the difference between nbins and nbins_top_level?**
+-  **What is the difference between nbins and nbins_top_level?**
 
- ``nbins`` and ``nbins_top_level`` are both for numerics (real and integer). ``nbins_top_level`` is the number of bins DRF uses at the top of each tree. It then divides by 2 at each ensuing level to find a new number. ``nbins`` controls when DRF stops dividing by 2.
+  ``nbins`` and ``nbins_top_level`` are both for numerics (real and integer). ``nbins_top_level`` is the number of bins DRF uses at the top of each tree. It then divides by 2 at each ensuing level to find a new number. ``nbins`` controls when DRF stops dividing by 2.
 
-- **How is variable importance calculated for DRF?**
+-  **How is variable importance calculated for DRF?**
 
   When calculating variable importances, H2O-3 looks at the squared error before and after the split using a particular variable. The difference is the improvement. H2O uses the improvement in squared error for each feature that was split on (rather than the accuracy). Each features improvement is then summed up at the end to get its total feature importance (and then scaled between 0-1).
 
-- **How is column sampling implemented for DRF?**
+-  **How is column sampling implemented for DRF?**
 
   For an example model using:
 
-  - 100 columns
-  - ``col_sample_rate_per_tree`` is 0.602
-  - ``mtries`` is -1 or 7 (refers to the number of active predictor columns for the dataset)
+  -  100 columns
+  -  ``col_sample_rate_per_tree`` is 0.602
+  -  ``mtries`` is -1 or 7 (refers to the number of active predictor columns for the dataset)
 
   For each tree, the floor is used to determine the number of columns that are randomly picked (for this example, (0.602*100)=60 out of the 100 columns). 
 
@@ -360,7 +360,7 @@ FAQ
 
   ``mtries`` is configured independently of ``col_sample_rate_per_tree``, but it can be limited by it. For example, if ``col_sample_rate_per_tree=0.01``, then there’s only one column left for each split, regardless of how large the value for ``mtries`` is.
 
-- **Why does performance appear slower in DRF than in GBM?**
+-  **Why does performance appear slower in DRF than in GBM?**
 
   With DRF, depth and size of trees can result in speed tradeoffs.
 
@@ -372,9 +372,9 @@ FAQ
 
   For both algorithms, finding one split requires a pass over one column and all rows. Assume a dataset with 250k rows and 500 columns. GBM can take minutes minutes, while DRF may take hours. This is because:
 
-  - Assuming the above, GBM needs to pass over up to 31\*500\*250k = 4 billion numbers per tree, and assuming 50 trees, that’s up to (typically equal to) 200 billion numbers in 11 minutes, or 300M per second, which is pretty fast.
+  -  Assuming the above, GBM needs to pass over up to 31\*500\*250k = 4 billion numbers per tree, and assuming 50 trees, that’s up to (typically equal to) 200 billion numbers in 11 minutes, or 300M per second, which is pretty fast.
 
-  - DRF needs to pass over up to 1M\*22\*250k = 5500 billion numbers per tree, and assuming 50 trees, that’s up to 275 trillion numbers, which can take a few hours
+  -  DRF needs to pass over up to 1M\*22\*250k = 5500 billion numbers per tree, and assuming 50 trees, that’s up to 275 trillion numbers, which can take a few hours
 
 
 DRF Algorithm

@@ -38,108 +38,108 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the boston dataset:
-	# this dataset looks at features of the boston suburbs and predicts median housing prices
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
-	boston <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
+		# import the boston dataset:
+		# this dataset looks at features of the boston suburbs and predicts median housing prices
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
+		boston <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
 
-	# set the predictor names and the response column name
-	predictors <- colnames(boston)[1:13]
-	# set the response column to "medv", the median value of owner-occupied homes in $1000's
-	response <- "medv"
+		# set the predictor names and the response column name
+		predictors <- colnames(boston)[1:13]
+		# set the response column to "medv", the median value of owner-occupied homes in $1000's
+		response <- "medv"
 
-	# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
-	boston["chas"] <- as.factor(boston["chas"])
+		# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
+		boston["chas"] <- as.factor(boston["chas"])
 
-	# split into train and validation sets
-	boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
-	train <- boston.splits[[1]]
-	valid <- boston.splits[[2]]
+		# split into train and validation sets
+		boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
+		train <- boston.splits[[1]]
+		valid <- boston.splits[[2]]
 
-	# try using the `alpha` parameter:
-	# train your model, where you specify alpha
-	boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
-	                      validation_frame = valid,
-	                      alpha = .25)
+		# try using the `alpha` parameter:
+		# train your model, where you specify alpha
+		boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
+		                      validation_frame = valid,
+		                      alpha = .25)
 
-	# print the mse for the validation data
-	print(h2o.mse(boston_glm, valid=TRUE))
+		# print the mse for the validation data
+		print(h2o.mse(boston_glm, valid=TRUE))
 
-	# grid over `alpha`
-	# select the values for `alpha` to grid over
-	hyper_params <- list( alpha = c(0, .25, .5, .75, .1) )
+		# grid over `alpha`
+		# select the values for `alpha` to grid over
+		hyper_params <- list( alpha = c(0, .25, .5, .75, .1) )
 
-	# this example uses cartesian grid search because the search space is small
-	# and we want to see the performance of all models. For a larger search space use
-	# random grid search instead: {'strategy': "RandomDiscrete"}
+		# this example uses cartesian grid search because the search space is small
+		# and we want to see the performance of all models. For a larger search space use
+		# random grid search instead: {'strategy': "RandomDiscrete"}
 
-	# build grid search with previously selected hyperparameters
-	grid <- h2o.grid(x = predictors, y = response, training_frame = train, validation_frame = valid,
-	                 algorithm = "glm", grid_id = "boston_grid", hyper_params = hyper_params,
-	                 search_criteria = list(strategy = "Cartesian"))
+		# build grid search with previously selected hyperparameters
+		grid <- h2o.grid(x = predictors, y = response, training_frame = train, validation_frame = valid,
+		                 algorithm = "glm", grid_id = "boston_grid", hyper_params = hyper_params,
+		                 search_criteria = list(strategy = "Cartesian"))
 
-	# Sort the grid models by mse
-	sortedGrid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
-	sortedGrid
-
-
-   .. code-block:: python
-
-	import h2o
-	from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-	h2o.init()
-
-	# import the boston dataset:
-	# this dataset looks at features of the boston suburbs and predicts median housing prices
-	# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
-	boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
-
-	# set the predictor names and the response column name
-	predictors = boston.columns[:-1]
-	# set the response column to "medv", the median value of owner-occupied homes in $1000's
-	response = "medv"
-
-	# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
-	boston['chas'] = boston['chas'].asfactor()
-
-	# split into train and validation sets
-	train, valid = boston.split_frame(ratios = [.8])
+		# Sort the grid models by mse
+		sortedGrid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
+		sortedGrid
 
 
-	# try using the `alpha` parameter:
-	# initialize the estimator then train the model
-	boston_glm = H2OGeneralizedLinearEstimator(alpha = .25)
-	boston_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+   .. code-tab:: python
 
-	# print the mse for the validation data
-	print(boston_glm.mse(valid=True))
+		import h2o
+		from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+		h2o.init()
 
-	# grid over `alpha`
-	# import Grid Search
-	from h2o.grid.grid_search import H2OGridSearch
+		# import the boston dataset:
+		# this dataset looks at features of the boston suburbs and predicts median housing prices
+		# the original dataset can be found at https://archive.ics.uci.edu/ml/datasets/Housing
+		boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
 
-	# select the values for `alpha` to grid over
-	hyper_params = {'alpha': [0, .25, .5, .75, .1]}
+		# set the predictor names and the response column name
+		predictors = boston.columns[:-1]
+		# set the response column to "medv", the median value of owner-occupied homes in $1000's
+		response = "medv"
 
-	# this example uses cartesian grid search because the search space is small
-	# and we want to see the performance of all models. For a larger search space use
-	# random grid search instead: {'strategy': "RandomDiscrete"}
-	# initialize the GLM estimator
-	boston_glm_2 = H2OGeneralizedLinearEstimator()
+		# convert the chas column to a factor (chas = Charles River dummy variable (= 1 if tract bounds river; 0 otherwise))
+		boston['chas'] = boston['chas'].asfactor()
 
-	# build grid search with previously made GLM and hyperparameters
-	grid = H2OGridSearch(model = boston_glm_2, hyper_params = hyper_params,
-	                     search_criteria = {'strategy': "Cartesian"})
+		# split into train and validation sets
+		train, valid = boston.split_frame(ratios = [.8])
 
-	# train using the grid
-	grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# sort the grid models by mse
-	sorted_grid = grid.get_grid(sort_by='mse', decreasing=False)
-	print(sorted_grid)
+		# try using the `alpha` parameter:
+		# initialize the estimator then train the model
+		boston_glm = H2OGeneralizedLinearEstimator(alpha = .25)
+		boston_glm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+
+		# print the mse for the validation data
+		print(boston_glm.mse(valid=True))
+
+		# grid over `alpha`
+		# import Grid Search
+		from h2o.grid.grid_search import H2OGridSearch
+
+		# select the values for `alpha` to grid over
+		hyper_params = {'alpha': [0, .25, .5, .75, .1]}
+
+		# this example uses cartesian grid search because the search space is small
+		# and we want to see the performance of all models. For a larger search space use
+		# random grid search instead: {'strategy': "RandomDiscrete"}
+		# initialize the GLM estimator
+		boston_glm_2 = H2OGeneralizedLinearEstimator()
+
+		# build grid search with previously made GLM and hyperparameters
+		grid = H2OGridSearch(model = boston_glm_2, hyper_params = hyper_params,
+		                     search_criteria = {'strategy': "Cartesian"})
+
+		# train using the grid
+		grid.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+
+		# sort the grid models by mse
+		sorted_grid = grid.get_grid(sort_by='mse', decreasing=False)
+		print(sorted_grid)

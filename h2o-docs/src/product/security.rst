@@ -505,9 +505,6 @@ with SPNEGO authentication:
 
     h2o.init(ip = "a.b.c.d", port = 54321, use_spnego = TRUE)
 
-**Limitation:** The R client uses the **RCurl** library, which does not allow you to specify service principal and
-is limited to automatic service principal generation via the template http/HOSTNAME@DOMAIN.
-
 
 Python Client
 '''''''''''''
@@ -520,7 +517,8 @@ For Python, connecting to H2O with authentication is similar:
 
     h2o.connect(ip="a.b.c.d", port=54321, auth=SpnegoAuth(service_principal="HTTP/h2o_server@EXAMPLE.COM"))
 
-**Limitation:** Connecting to a SPNEGO-configured H2O server is currently possible only via ``h2o.connect``. (``h2o.init`` not supported). The next section describes how to specify ``service_principal``.
+Connecting to SPNEGO configured H2O server is currently possible only via h2o.connect (h2o.init not supported).
+Read below on what to specify as service_principal.
 
 Kerberos H2O Server Side
 ^^^^^^^^^^^^^^^^^^^^^^^^
@@ -615,12 +613,10 @@ Example:
 ::
 
     hadoop jar h2odriver.jar -n 3 -mapperXmx 10g -output hdfsOutputDirectory \
-        -proxy -spnego_login -user_name pricipal@DOMAIN \
+        -spnego_login -user_name pricipal@DOMAIN \
         -login_conf /path/to/spnego.conf \
         -spnego_properties /path/to/spnego.properties
 
-**Limitation:** Because a Kerberos service principal is tied to a hostname, we recommend that you use SPNEGO authentication
-only with the ``-proxy`` option.
 
 ----------------
 
