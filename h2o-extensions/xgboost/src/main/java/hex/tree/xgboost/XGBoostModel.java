@@ -35,7 +35,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions {
 
   private static final String PROP_VERBOSITY = H2O.OptArgs.SYSTEM_PROP_PREFIX + ".xgboost.verbosity";
-  private static final String PROP_NTHREAD = SYSTEM_PROP_PREFIX + "xgboost.nthread";
+  private static final String PROP_NTHREAD = SYSTEM_PROP_PREFIX + "xgboost.nthreadMax";
 
   private XGBoostModelInfo model_info;
 
@@ -465,7 +465,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   
   static int getMaxNThread() {
     if (System.getProperty(PROP_NTHREAD) != null) {
-      return Integer.getInteger(System.getProperty(PROP_NTHREAD));
+      return Integer.getInteger(PROP_NTHREAD);
     } else {
       int maxNodesPerHost = 1;
       Set<String> checkedNodes = new HashSet<>();
