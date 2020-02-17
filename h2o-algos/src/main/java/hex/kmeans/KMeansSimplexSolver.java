@@ -5,7 +5,6 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-
 import java.util.ArrayList;
 import java.util.Collections;
 
@@ -119,9 +118,9 @@ class KMeansSimplexSolver {
     public double getWeight(long edgeIndex) {
         long numberOfFrameWeights = this._numberOfPoints * this._constraintsLength;
         if (edgeIndex < numberOfFrameWeights) {
-            long i = Math.round(edgeIndex / _constraintsLength);
-            int j = _weights.numCols() - 2 * _constraintsLength - 3 + (int)(edgeIndex % _constraintsLength);        
-            return _weights.vec(j).at(i);
+            int i = _weights.numCols() - 2 * _constraintsLength - 3 + (int)(edgeIndex % _constraintsLength);
+            long j = Math.round(edgeIndex / _constraintsLength);
+            return _weights.vec(i).at(j);
         }
         return 0;
     }
@@ -141,19 +140,6 @@ class KMeansSimplexSolver {
             }
         }
         return true;
-    }
-    
-    /**
-     * Check edges flow where constraints flows and additive node flow should be zero at the end of calculation.
-     * @return true if the flows are not zero yet
-     */
-    private boolean checkIfContinue() {
-        for (long i = tree._edgeFlow.length() - 1; i > tree._edgeFlow.length() - _constraintsLength - 2; i--) {
-            if (tree._edgeFlow.at8(i) != 0) {
-                return true;
-            }
-        }
-        return false;
     }
 
     public long findMinimalReducedWeight() {
@@ -178,9 +164,10 @@ class KMeansSimplexSolver {
      * @return index of the edge
      */
     public Edge findNextEnteringEdge() {
-        if(checkIfContinue()) {
+        // Check if continue
+        if(!tree.areConstraintsSatisfied()) {
             long minimalIndex = findMinimalReducedWeight();
-            if (tree._edgeFlow.at8(minimalIndex) == 0) {
+            if (tree.getFlowByEdgeIndex(minimalIndex) == 0) {
                 return new Edge(minimalIndex, tree._sourcesReader.at8(minimalIndex), tree._targetsReader.at8(minimalIndex));
             } else {
                 return new Edge(minimalIndex, tree._targetsReader.at8(minimalIndex), tree._sourcesReader.at8(minimalIndex));
@@ -273,10 +260,6 @@ class KMeansSimplexSolver {
         }
     }
 
-    public void checkInfeasibility() {
-        assert !tree.isInfeasible(): "Spanning tree to calculate K-means cluster assignments is not infeasible.";
-    }
-
     public void checkConstraintsCondition(int[] numberOfPointsInCluster){
         for(int i = 0; i<_constraintsLength; i++){
             assert numberOfPointsInCluster[i] >= _demandsReader.at8(_numberOfPoints+i) : String.format("Cluster %d has %d assigned points however should has assigned at least %d points.", i+1, numberOfPointsInCluster[i], _demandsReader.at8(_numberOfPoints+i));
@@ -288,7 +271,6 @@ class KMeansSimplexSolver {
      */
     private void calculateMinimalCostFlow() {
         pivotLoop();
-        checkInfeasibility();
     }
 
     /**
@@ -297,57 +279,39 @@ class KMeansSimplexSolver {
      */
     public Frame assignClusters() {
         calculateMinimalCostFlow();
-        int distanceAssignmentIndex = _weights.numCols() - 3;
-        int oldAssignmentIndex = _weights.numCols() - 2;
-        int newAssignmentIndex = _weights.numCols() - 1;
-        int dataStopLength = _weights.numCols() - (_hasWeightsColumn ? 1 : 0) - 2 * _constraintsLength - 3;
-
-        int[] numberOfPointsInCluster = new int[_constraintsLength];
-        for(int i = 0; i<_constraintsLength; i++){
-            numberOfPointsInCluster[i] = 0;
-        }
-
-        for (long i = 0; i < _weights.numRows(); i++) {
-            if(!_hasWeightsColumn || _weights.vec(dataStopLength).at8(i) == 1) {
-                for (int j = 0; j < _constraintsLength; j++) {
-                    long edgeIndex = i * _constraintsLength + j;
-                    if (tree._edgeFlow.at8(edgeIndex) == 1) {
-                        // old assignment
-                        _weights.vec(oldAssignmentIndex).set(i, _weights.vec(newAssignmentIndex).at(i));
-                        // new assignment
-                        _weights.vec(newAssignmentIndex).set(i, j);
-                        // distances
-                        _weights.vec(distanceAssignmentIndex).set(i, _weights.vec(dataStopLength + j + (_hasWeightsColumn ? 1 : 0)).at(i));
-                        numberOfPointsInCluster[j]++;
-                        break;
-                    }
-                }
-            }
-        }
-        checkConstraintsCondition(numberOfPointsInCluster);
-        // remove distances columns
+        assert _weights.numRows() == tree._edgeFlowDataPoints[0].length();
+        // add flow columns
+        _weights = _weights.add(new Frame(tree._edgeFlowDataPoints));
+        int dataStopLength = _weights.numCols() - (_hasWeightsColumn ? 1 : 0) - 3 * _constraintsLength - 3;
+        // assign cluster based on calculated flow
+        AssignClusterTask task = new AssignClusterTask(_constraintsLength, _hasWeightsColumn, _weights.numCols());
+        task.doAll(_weights);
+        checkConstraintsCondition(task._numberOfPointsInCluster);
+        // remove distances columns + edge indices columns
         for(int i = 0; i < 2 * _constraintsLength; i++) {
             _weights.remove(dataStopLength+(_hasWeightsColumn ? 1 : 0));
+        }
+        //remove flow columns 
+        for(int i = 0; i < _constraintsLength; i++) {
+            _weights.remove(_weights.numCols()-1);
         }
         return _weights;
     }
 }
 
 /**
- * Experimental
- * Class to store calculation of flow in minimal cost flow problem.
+ * Class to store structures for calculation of flow for minimal cost flow problem.
  */
 class SpanningTree extends Iced<SpanningTree> {
 
     public long _nodeSize;
     public long _edgeSize;
-    public long _secondLayerSize;
+    public int _secondLayerSize;
 
-
-    public Vec _sources;   //    edge size + node size
-    public Vec _targets;   //    edge size + node size
-
-    public Vec _edgeFlow;          //         edge size + node size, integer
+    public long _dataPointSize;
+    public Vec[] _edgeFlowDataPoints;  //     [constraints size] nodeSize - secondLayerSize - 1 (number of data)
+    public Vec _edgeFlowRest;        //       secondLayerSize size + node size
+     
     public Vec _nodePotentials;    //         node size, long
     public Vec _parents;           //         node size + 1, integer
     public Vec _parentEdges;       //         node size + 1, integer
@@ -359,15 +323,18 @@ class SpanningTree extends Iced<SpanningTree> {
     public Vec.Reader _sourcesReader;   //    edge size + node size
     public Vec.Reader _targetsReader;   //    edge size + node size
 
-    SpanningTree(long nodeSize, long edgeSize, long secondLayerSize){
+    SpanningTree(long nodeSize, long edgeSize, int secondLayerSize){
         this._nodeSize = nodeSize;
         this._edgeSize = edgeSize;
         this._secondLayerSize = secondLayerSize;
 
-        this._sources = Vec.makeCon(0, edgeSize+nodeSize, Vec.T_NUM);
-        this._targets = Vec.makeCon(0, edgeSize+nodeSize, Vec.T_NUM);
-
-        this._edgeFlow =  Vec.makeCon(0, edgeSize+nodeSize, Vec.T_NUM);
+        this._dataPointSize = nodeSize - secondLayerSize - 1;
+        this._edgeFlowDataPoints = new Vec[secondLayerSize];
+        for(int i=0; i < secondLayerSize; i++){
+            this._edgeFlowDataPoints[i] = Vec.makeCon(0, _dataPointSize, Vec.T_NUM);
+        }
+        this._edgeFlowRest = Vec.makeCon(0, secondLayerSize + nodeSize, Vec.T_NUM);
+        
         this._nodePotentials =  Vec.makeCon(0, nodeSize, Vec.T_NUM);
         this._parents =  Vec.makeCon(0, nodeSize+1, Vec.T_NUM);
         this._parentEdges =  Vec.makeCon(0, nodeSize+1, Vec.T_NUM);
@@ -378,16 +345,18 @@ class SpanningTree extends Iced<SpanningTree> {
     }
 
     public void init(long numberOfPoints, double maxCapacity, Vec demands){
+        Vec sources = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
+        Vec targets = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
         for (long i = 0; i < _nodeSize; i++) {
             if (i < numberOfPoints) {
                 for (int j = 0; j < _secondLayerSize; j++) {
-                    _sources.set(i * _secondLayerSize + j, i);
-                    _targets.set(i * _secondLayerSize + j, numberOfPoints + j);
+                    sources.set(i * _secondLayerSize + j, i);
+                    targets.set(i * _secondLayerSize + j, numberOfPoints + j);
                 }
             } else {
                 if (i < _nodeSize - 1) {
-                    _sources.set(numberOfPoints* _secondLayerSize +i-numberOfPoints, i);
-                    _targets.set(numberOfPoints* _secondLayerSize +i-numberOfPoints, _nodeSize - 1);
+                    sources.set(numberOfPoints* _secondLayerSize +i-numberOfPoints, i);
+                    targets.set(numberOfPoints* _secondLayerSize +i-numberOfPoints, _nodeSize - 1);
                 }
             }
         }
@@ -395,16 +364,18 @@ class SpanningTree extends Iced<SpanningTree> {
         for (long i = 0; i < _nodeSize; i++) {
             long demand = demands.at8(i);
             if (demand >= 0) {
-                _sources.set(_edgeSize + i, _nodeSize);
-                _targets.set(_edgeSize + i, i);
+                sources.set(_edgeSize + i, _nodeSize);
+                targets.set(_edgeSize + i, i);
             } else {
-                _sources.set(_edgeSize + i, i);
-                _targets.set(_edgeSize + i, _nodeSize);
+                sources.set(_edgeSize + i, i);
+                targets.set(_edgeSize + i, _nodeSize);
             }
             if (i < _nodeSize - 1) {
                 _nextDepthFirst.set(i, i + 1);
             }
-            _edgeFlow.set(_edgeSize +i, Math.abs(demand));
+            
+            _edgeFlowRest.set(_secondLayerSize+i, Math.abs(demand));
+            
             _nodePotentials.set(i, demand < 0 ? maxCapacity : -maxCapacity);
             _parents.set(i, _nodeSize);
             _parentEdges.set(i, i + _edgeSize);
@@ -419,17 +390,35 @@ class SpanningTree extends Iced<SpanningTree> {
         _previousNodes.set(_nodeSize, _nodeSize - 1);
         _lastDescendants.set(_nodeSize, _nodeSize - 1);
         
-        _sourcesReader = _sources.new Reader();
-        _targetsReader = _targets.new Reader();
+        _sourcesReader = sources.new Reader();
+        _targetsReader = targets.new Reader();
     }
 
+    /**
+     * Check if tree is feasible and the algorithm can stop.
+     * @return
+     */
     public boolean isInfeasible() {
-        for(long i = _edgeFlow.length() - _secondLayerSize + 1; i < _edgeFlow.length(); i++) {
-            if(_edgeFlow.at8(i) > 0){
+        for(long i = 1; i < _secondLayerSize + 2; i++) {
+            if(_edgeFlowRest.at8(_edgeFlowRest.length() - i) > 0) {
                 return true;
             }
         }
         return false;
+    }
+
+    /**
+     * Check if the constraints are satisfied. 
+     * If yes, the algorithm can continue as standard K-means and save time. Useful when constraints are small numbers
+     * @return 
+     */
+    public boolean areConstraintsSatisfied() {
+        for(long i = 2; i < _secondLayerSize + 2; i++) {
+            if(_edgeFlowRest.at8(_edgeFlowRest.length() - i) > 0) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public long findAncestor(long sourceIndex, long targetIndex) {
@@ -456,10 +445,31 @@ class SpanningTree extends Iced<SpanningTree> {
             }
         }
     }
+    
+    public long getFlowByEdgeIndex(long edgeIndex){
+        if(edgeIndex < _dataPointSize * _secondLayerSize) {
+            int i = (int)(edgeIndex % _secondLayerSize);
+            long j = Math.round(edgeIndex / _secondLayerSize);
+            return _edgeFlowDataPoints[i].at8(j);
+        } else {
+            return _edgeFlowRest.at8(edgeIndex-_dataPointSize * _secondLayerSize);
+        }
+    }
+
+    public void setFlowByEdgeIndex(long edgeIndex, long value){
+        if(edgeIndex < _dataPointSize * _secondLayerSize) {
+            int i = (int)(edgeIndex % _secondLayerSize);
+            long j = Math.round(edgeIndex / _secondLayerSize);
+            _edgeFlowDataPoints[i].set(j, value);
+        } else {
+             _edgeFlowRest.set(edgeIndex - _dataPointSize * _secondLayerSize, value);
+        }
+    }
+    
 
     public double reduceWeight(long edgeIndex, double weight) {
-        double newWeight = weight - _nodePotentials.at(_sources.at8(edgeIndex)) + _nodePotentials.at(_targets.at8(edgeIndex));
-        return _edgeFlow.at8(edgeIndex) == 0 ? newWeight : -newWeight;
+        double newWeight = weight - _nodePotentials.at(_sourcesReader.at8(edgeIndex)) + _nodePotentials.at(_targetsReader.at8(edgeIndex));
+        return getFlowByEdgeIndex(edgeIndex) == 0 ? newWeight : - newWeight;
     }
 
     public NodesEdgesObject getPath(long node, long ancestor) {
@@ -474,17 +484,19 @@ class SpanningTree extends Iced<SpanningTree> {
     }
 
     public double getResidualCapacity(long edgeIndex, long nodeIndex, double capacity) {
-        return nodeIndex == _sourcesReader.at8(edgeIndex) ? capacity - _edgeFlow.at(edgeIndex) : _edgeFlow.at(edgeIndex);
+        long flow = getFlowByEdgeIndex(edgeIndex);
+        return nodeIndex == _sourcesReader.at8(edgeIndex) ? capacity - flow : flow;
     }
 
     public void augmentFlow(NodesEdgesObject nodesEdges, double flow) {
         for (int i = 0; i < nodesEdges.edgeSize(); i++) {
             long edge = nodesEdges.getEdge(i);
             long node = nodesEdges.getNode(i);
+            long edgeFlow = getFlowByEdgeIndex(edge);
             if (node == _sourcesReader.at8(edge)) {
-                _edgeFlow.set(edge, _edgeFlow.at(edge) + flow);
+                setFlowByEdgeIndex(edge, edgeFlow + (int)flow);
             } else {
-                _edgeFlow.set(edge, _edgeFlow.at(edge) - flow);
+                setFlowByEdgeIndex(edge, edgeFlow - (int)flow);
             }
         }
     }
@@ -646,10 +658,6 @@ class NodesEdgesObject {
         return _nodes;
     }
 
-    public int nodeSize(){
-        return _nodes.size();
-    }
-
     public void addEdge(long edge){
         _edges.add(edge);
     }
@@ -669,20 +677,6 @@ class NodesEdgesObject {
     public int indexOfEdge(long value){
         return _edges.indexOf(value);
     }
-
-
-    public ArrayList<Long> getReversedNodes() {
-        ArrayList<Long> reversed = new ArrayList<>(_nodes);
-        Collections.reverse(reversed);
-        return reversed;
-    }
-
-    public ArrayList<Long> getReversedEdges() {
-        ArrayList<Long> reversed = new ArrayList<>(_edges);
-        Collections.reverse(reversed);
-        return reversed;
-    }
-
     public void reverseNodes(){
         Collections.reverse(_nodes);
     }
@@ -760,3 +754,91 @@ class FindMinimalWeightTask extends MRTask<FindMinimalWeightTask> {
         }
     }
 }
+
+/**
+ * Map Reduce task to assign cluster index based on calculated flow.
+ * If no cluster assigned - assign cluster with minimal distance.
+ * Return number of points in each cluster and changed input frame based on new cluster assignment.
+ */
+class AssignClusterTask extends MRTask<AssignClusterTask> {
+
+    // IN
+    int _constraintsLength;
+    boolean _hasWeightsColumn;
+
+    int _weightIndex;
+    int _distanceIndexStart;
+    int _flowIndexStart;
+    int _oldAssignmentIndex;
+    int _newAssignmentIndex;
+    int _distanceAssignmentIndex;
+    int _dataStopIndex;
+    
+    // OUT
+    int[] _numberOfPointsInCluster;
+    // changed input chunks
+
+    AssignClusterTask(int constraintsLength, boolean hasWeightsColumn, int numCols){
+        _constraintsLength = constraintsLength;
+        _hasWeightsColumn = hasWeightsColumn;
+        _distanceAssignmentIndex = numCols - 3 - constraintsLength;
+        _oldAssignmentIndex = numCols - 2 - constraintsLength;
+        _newAssignmentIndex = numCols - 1 - constraintsLength;
+        _dataStopIndex = numCols - (_hasWeightsColumn ? 1 : 0) - 3 * _constraintsLength - 3;
+        _weightIndex = _dataStopIndex;
+        _distanceIndexStart = _dataStopIndex + (_hasWeightsColumn ? 1 : 0) + 1;
+        _flowIndexStart = numCols - constraintsLength;
+    }
+    
+    public void assignCluster(Chunk[] cs, int row, int clusterIndex, int[] numberOfPointsInClusterLocal){
+        // old assignment
+        cs[_oldAssignmentIndex].set(row, cs[_newAssignmentIndex].at8(row));
+        // new assignment
+        cs[_newAssignmentIndex].set(row, clusterIndex);
+        // distances
+        cs[_distanceAssignmentIndex].set(row, cs[_dataStopIndex + (_hasWeightsColumn ? 1 : 0)  + clusterIndex].at8(row));
+        numberOfPointsInClusterLocal[clusterIndex]++;
+    }
+
+    @Override
+    public void map(Chunk[] cs) {
+        int[] numberOfPointsInClusterLocal = new int[_constraintsLength];
+        for(int i = 0; i < _constraintsLength; i++){
+            numberOfPointsInClusterLocal[i] = 0;
+        }
+        for (int i = 0; i < cs[0].len(); i++) {
+            if (!_hasWeightsColumn || cs[_weightIndex].at8(i) == 1) {
+                boolean assigned = false;
+                for (int j = 0; j < _constraintsLength; j++) {
+                    if (cs[_flowIndexStart + j].at8(i) == 1) {
+                        assignCluster(cs, i, j, numberOfPointsInClusterLocal);
+                        assigned = true;
+                        break;
+                    }
+                }
+                if(!assigned){
+                    double minDistance = Double.MAX_VALUE;
+                    int minIndex = -1;
+                    for (int j = 0; j < _constraintsLength; j++) {
+                        double tmpDistance = cs[_distanceIndexStart + j].atd(i);
+                        if(minDistance > tmpDistance){
+                            minDistance = tmpDistance;
+                            minIndex = j;
+                        }
+                    }
+                    assert minIndex != -1;
+                    assignCluster(cs, i, minIndex, numberOfPointsInClusterLocal);
+                }
+            }
+        }
+        this._numberOfPointsInCluster = numberOfPointsInClusterLocal;
+    }
+
+    @Override
+    public void reduce(AssignClusterTask mrt) {
+        for (int i = 0; i < _constraintsLength; i++){
+            this._numberOfPointsInCluster[i] += mrt._numberOfPointsInCluster[i];
+        }
+    }
+}
+
