@@ -6,7 +6,6 @@ import water.Key;
 import water.fvec.AppendableVec;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.FrameSizeMonitor;
 
 import java.util.Arrays;
 

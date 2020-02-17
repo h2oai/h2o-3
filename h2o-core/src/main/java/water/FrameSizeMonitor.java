@@ -1,10 +1,9 @@
-package water.util;
+package water;
 
-import water.*;
-import water.api.schemas3.KeyV3;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.parser.FVecParseWriter;
+import water.util.Log;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,7 +45,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
             } else if (ENABLED) {
                 FrameSizeMonitor task = new FrameSizeMonitor(jobKey);
                 registry.put(jobKey, task);
-                H2O.submitTask(new LocalMR(task, 1));
+                H2O.submitTask(new LocalMR<>(task, 1));
                 c.accept(task);
             }
         }
@@ -65,7 +64,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
         while (job.isRunning() && nextProgress < 1f) {
             float currentProgress = job.progress();
             if (currentProgress >= nextProgress) {
-                if (isMemoryUsageOverLimit() && isFrameSizeOverLimit(currentProgress, job)) {
+                if (isFrameSizeOverLimit(currentProgress, job)) {
                     job.stop();
                     break;
                 } else if (nextProgress < 0.1f) {
@@ -75,6 +74,16 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
                 }
             } else if (Log.isLoggingFor(LOG_LEVEL)) {
                 Log.log(LOG_LEVEL, "FrameSizeMonitor: waiting for progress " + currentProgress + " to jump over " + nextProgress);
+            }
+            if (isMemoryUsageOverLimit()) {
+                job.stop();
+                break;
+            } else if (!MemoryManager.canAlloc()) {
+                Log.log(LOG_LEVEL, "FrameSizeMonitor: MemoryManager is running low on memory, stopping job " + jobKey + " writing frame " + job._result);
+                job.stop();
+                break;
+            } else {
+                Log.log(LOG_LEVEL, "FrameSizeMonitor: overall memory usage seems good.");
             }
             try {
                 Thread.sleep(SLEEP_MS);
@@ -109,7 +118,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
         }
     }
     
-    private boolean isFrameSizeOverLimit(float progress, Job<Frame> job) {
+    private boolean isFrameSizeOverLimit(float progress, Job job) {
         long currentFrameSize = getUsedMemory();
         long projectedAdditionalFrameSize = (long) ((1 - progress) * (currentFrameSize / progress));
         long availableMemory = getAvailableMemory();

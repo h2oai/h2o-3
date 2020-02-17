@@ -8,7 +8,7 @@ import water.fvec.AppendableVec;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.FrameSizeMonitor;
+import water.FrameSizeMonitor;
 
 import java.util.Arrays;
 import java.util.UUID;
