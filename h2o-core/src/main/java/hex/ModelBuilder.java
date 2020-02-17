@@ -259,6 +259,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     @Override
     public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+      setFinalState();
       if (_modelBuilderListener != null) {
         _modelBuilderListener.onModelFailure(ex, _parms);
       }
