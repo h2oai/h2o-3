@@ -1,6 +1,7 @@
 package hex.grid;
 
 import hex.ScoreKeeper;
+import javafx.scene.paint.Stop;
 import water.Iced;
 import water.fvec.Frame;
 
@@ -29,6 +30,10 @@ public class HyperSpaceSearchCriteria extends Iced {
 
   public HyperSpaceSearchCriteria(Strategy strategy) {
     this._strategy = strategy;
+  }
+
+  public HyperSpaceSearchCriteria deepClone() {
+    return (HyperSpaceSearchCriteria) this.clone();
   }
 
   /**
@@ -98,14 +103,6 @@ public class HyperSpaceSearchCriteria extends Iced {
       return Math.min(0.05, Math.max(0.001, 1/Math.sqrt((1 - frame.naFraction()) * frame.numRows())));
     }
 
-    /**
-     * Allows to set all the stopping criteria at once
-     * @param stopping_criteria
-     */
-    public void set_stopping_criteria(StoppingCriteria stopping_criteria) {
-      _stopping_criteria = stopping_criteria;
-    }
-
     public void set_default_stopping_tolerance_for_frame(Frame frame) {
       _stopping_criteria._stopping_tolerance = default_stopping_tolerance_for_frame(frame);
     }
@@ -132,6 +129,13 @@ public class HyperSpaceSearchCriteria extends Iced {
 
     public void set_stopping_tolerance(double stopping_tolerance) {
       _stopping_criteria._stopping_tolerance = stopping_tolerance;
+    }
+
+    @Override
+    public RandomDiscreteValueSearchCriteria deepClone() {
+      RandomDiscreteValueSearchCriteria clone = (RandomDiscreteValueSearchCriteria) super.deepClone();
+      clone._stopping_criteria = (StoppingCriteria) clone._stopping_criteria.clone();
+      return clone;
     }
   }
 }
