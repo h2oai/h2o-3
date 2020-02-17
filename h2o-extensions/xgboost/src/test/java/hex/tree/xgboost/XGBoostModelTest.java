@@ -8,14 +8,6 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 public class XGBoostModelTest {
-  
-  @Test
-  public void shouldGetCorrectMaxThread() {
-    assertEquals(Runtime.getRuntime().availableProcessors(), XGBoostModel.getMaxNThread());
-    System.setProperty("sys.ai.h2o.xgboost.nthreadMax", "2");
-    assertEquals(2, XGBoostModel.getMaxNThread());
-    System.clearProperty("sys.ai.h2o.xgboost.nthreadMax");
-  }
 
   @Test
   public void testCreateParamsNThreads() {
