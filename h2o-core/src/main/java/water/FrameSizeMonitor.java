@@ -6,14 +6,16 @@ import water.parser.FVecParseWriter;
 import water.util.Log;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
 
     private static final String ENABLED_PROP = "util.frameSizeMonitor.enabled";
     private static final String SAFE_COEF_PROP = "util.frameSizeMonitor.safetyCoefficient";
-    private static final String SAFE_FREE_MEM_DEFAULT_COEF = "0.2";
+    private static final String SAFE_FREE_MEM_DEFAULT_COEF = "0.1";
     private static final int LOG_LEVEL = Log.INFO;
 
     private static final boolean ENABLED;
@@ -29,7 +31,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
     }
 
     private final Key<Job> jobKey;
-    private final Map<FVecParseWriter, Long> writers = new HashMap<>();
+    private final Set<FVecParseWriter> writers = new HashSet<>();
     private final long totalMemory = getTotalMemory();
 
     private long committedMemory = 0;
@@ -43,10 +45,15 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
             if (registry.containsKey(jobKey)) {
                 c.accept(registry.get(jobKey));
             } else if (ENABLED) {
-                FrameSizeMonitor task = new FrameSizeMonitor(jobKey);
-                registry.put(jobKey, task);
-                H2O.submitTask(new LocalMR<>(task, 1));
-                c.accept(task);
+                if (jobKey.get().stop_requested()) {
+                    // throw an exception to stop the parsing
+                    throw new IllegalStateException("Parse job stop requested. Forcefully terminating.");
+                } else {
+                    FrameSizeMonitor task = new FrameSizeMonitor(jobKey);
+                    registry.put(jobKey, task);
+                    H2O.submitTask(new LocalMR<>(task, 1));
+                    c.accept(task);
+                }
             }
         }
     }
@@ -60,8 +67,9 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
     @Override
     protected void map(int id) {
         float nextProgress = 0.02f;
-        Job<Frame> job = DKV.getGet(jobKey);
+        Job<Frame> job = jobKey.get();
         while (job.isRunning() && nextProgress < 1f) {
+            Log.info("FrameSizeMonitor: LOOP " + Thread.currentThread().getName());
             if (!MemoryManager.canAlloc()) {
                 Log.log(LOG_LEVEL, "FrameSizeMonitor: MemoryManager is running low on memory, stopping job " + jobKey + " writing frame " + job._result);
                 job.stop();
@@ -80,10 +88,12 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
             } else if (Log.isLoggingFor(LOG_LEVEL)) {
                 Log.log(LOG_LEVEL, "FrameSizeMonitor: waiting for progress " + currentProgress + " to jump over " + nextProgress);
             }
-            try {
-                Thread.sleep(SLEEP_MS);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+            synchronized (this) {
+                try {
+                    wait(SLEEP_MS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
         }
         if (Log.isLoggingFor(LOG_LEVEL)) {
@@ -114,20 +124,23 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
     }
     
     private boolean isFrameSizeOverLimit(float progress, Job job) {
-        long currentFrameSize = getUsedMemory();
-        long projectedAdditionalFrameSize = (long) ((1 - progress) * (currentFrameSize / progress));
+        long currentCommittedMemory = committedMemory;
+        long currentInProgressMemory = getInProgressMemory();
+        long projectedTotalFrameSize = (long) (currentInProgressMemory + (currentCommittedMemory / progress));
+        long projectedAdditionalFrameSize = projectedTotalFrameSize - currentCommittedMemory - currentInProgressMemory;
         long availableMemory = getAvailableMemory();
         long usableMemory = (long) (availableMemory - (totalMemory * SAFE_FREE_MEM_COEF));
         if (Log.isLoggingFor(LOG_LEVEL)) {
             Log.log(LOG_LEVEL, "FrameSizeMonitor: Frame " + job._result + ": \n" +
-                " used: " + (currentFrameSize / MB) + " MB\n" +
-                " progress: " + (progress) + "\n" +
+                " committed: " + (currentCommittedMemory / MB) + " MB\n" +
+                " loading: " + (currentInProgressMemory / MB) + " MB\n" +
+                " progress: " + progress + "\n" +
                 " projected additional: " + (projectedAdditionalFrameSize / MB) + " MB\n" +
-                " projected total: " + ((currentFrameSize + projectedAdditionalFrameSize) / MB) + " MB\n" +
+                " projected total: " + (projectedTotalFrameSize / MB) + " MB\n" +
                 " availableMemory: " + (availableMemory / MB) + " MB\n" +
                 " totalMemory: " + (totalMemory / MB) + " MB\n" +
                 " usableMemory: " + (usableMemory / MB) + " MB\n" +
-                " enough: " + (projectedAdditionalFrameSize > usableMemory));
+                " enough: " + (projectedAdditionalFrameSize <= usableMemory));
         }
         if (projectedAdditionalFrameSize > usableMemory) {
             Log.err("FrameSizeMonitor: Stopping job " + jobKey + " writing frame " + job._result +
@@ -143,17 +156,14 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
         }
     }
     
-    private long getUsedMemory() {
-        long usedMemory;
+    private long getInProgressMemory() {
+        long usedMemory = 0;
         synchronized (writers) {
-            usedMemory = committedMemory;
-            for (Map.Entry<FVecParseWriter, Long> e : writers.entrySet()) {
-                FVecParseWriter writer = e.getKey();
+            for (FVecParseWriter writer : writers) {
                 NewChunk[] nvs = writer.getNvs();
                 if (nvs != null) {
-                    writers.put(writer, getUsedMemory(nvs));
+                    usedMemory += getUsedMemory(nvs);
                 }
-                usedMemory += e.getValue();
             }
         }
         return usedMemory;
@@ -183,7 +193,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
 
     public void register(FVecParseWriter writer) {
         synchronized (writers) {
-            writers.put(writer, 0L);
+            writers.add(writer);
         }
     }
     
