@@ -180,11 +180,7 @@ Defining a DRF Model
    checkbox. This is suitable for small datasets as there is no network
    overhead but fewer CPUs are used.
 
--  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If
-   the default value of ``-1`` is used, the number of variables is the
-   square root of the number of columns for classification and p/3 for
-   regression (where p is the number of predictors). The range is -1 to
-   >=1.
+-  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of DRF are used. Valid values for this option are -2, -1, and any value >= 1.
 
 -  `sample_rate <algo-params/sample_rate.html>`__: Specify the row sampling rate (x-axis). (Note that this method is sample without replacement.) The range is 0.0 to 1.0, and this value defaults to 0.6320000291. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 

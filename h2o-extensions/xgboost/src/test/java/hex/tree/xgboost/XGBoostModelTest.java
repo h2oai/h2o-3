@@ -8,7 +8,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 public class XGBoostModelTest {
-  
+
   @Test
   public void testCreateParamsNThreads() {
     int maxNThreads = XGBoostModel.getMaxNThread();
