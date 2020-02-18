@@ -31,36 +31,16 @@ public abstract class SharedTreeMojoModelWithContributions extends SharedTreeMoj
         return 0; // Set to zero by default, which is correct for DRF. However, need to override in GBMMojoModel with correct init_f.
     }
     
-    protected abstract ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor);
+    protected abstract PredictContributions getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor);
     
-    protected static class ContributionsPredictor implements PredictContributions {
-        private final int _nfeatures;
-        private final TreeSHAPPredictor<double[]> _treeSHAPPredictor;
+    protected static class SharedTreeContributionsPredictor extends ContributionsPredictor<double[]> {
+        public SharedTreeContributionsPredictor(SharedTreeMojoModel model, TreeSHAPPredictor<double[]> treeSHAPPredictor) {
+            super(model._nfeatures + 1, treeSHAPPredictor);
+        }
 
-        private static ThreadLocal<Object> _workspace = new ThreadLocal<>();
-        
-        public ContributionsPredictor(SharedTreeMojoModel model, TreeSHAPPredictor<double[]> treeSHAPPredictor) {
-            _nfeatures = model._nfeatures;
-            _treeSHAPPredictor = treeSHAPPredictor;
-        }
-        
-        public final float[] calculateContributions(double[] input) {
-            float[] contribs = new float[_nfeatures + 1];
-            _treeSHAPPredictor.calculateContributions(input, contribs, 0, -1, getWorkspace());
-            return getContribs(contribs);
-        }
-        
-        private Object getWorkspace() {
-            Object workspace = _workspace.get();
-            if (workspace == null) {
-                workspace = _treeSHAPPredictor.makeWorkspace();
-                _workspace.set(workspace);
-            }
-            return workspace;
-        }
-        
-        public float[] getContribs(float[] contribs) {
-            return contribs;
+        @Override
+        protected final double[] toInputRow(double[] input) {
+            return input;
         }
     }
 }
