@@ -173,8 +173,8 @@ public class MatrixUtils {
     public void map(Chunk[] cs) {
       for (int row = 0; row < cs[0]._len; row++) {
         double sum = 0.0;
-        for (int j = 0; j < cs.length; ++j) {
-          sum += cs[j].atd(row) * v.at(j);
+        for (int column = 0; column < cs.length; ++column) {
+          sum += cs[column].atd(row) * v.at(column);
         }
         _result.set(cs[0].start() + row, sum);
       }
