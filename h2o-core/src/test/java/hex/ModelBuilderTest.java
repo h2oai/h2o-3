@@ -136,10 +136,7 @@ public class ModelBuilderTest extends TestUtil {
   
   @Test
   public void testMakeByModelParameters() {
-    
-    String registrationAlgoName = "dummymodelbuilder"; // by default it is a lower case of the ModelBuilder's simple name
-    DummyModelParameters params = new DummyModelParameters("dummy_MSG", Key.make( "dummyGBM_key"), registrationAlgoName);
-    new DummyModelBuilder(params, true); // as a side effect DummyModelBuilder will be registered in a static field ModelBuilder.ALGOBASES
+    DummyModelParameters params = new DummyModelParameters();
 
     ModelBuilder modelBuilder = ModelBuilder.make(params);
 
@@ -269,15 +266,26 @@ public class ModelBuilderTest extends TestUtil {
       return true;
     }
   }
+  public static class DummyExtension extends AbstractH2OExtension {
+    @Override
+    public String getExtensionName() {
+      return "dummy";
+    }
+    @Override
+    public void init() {
+      DummyModelParameters params = new DummyModelParameters();
+      new DummyModelBuilder(params, true); // as a side effect DummyModelBuilder will be registered in a static field ModelBuilder.ALGOBASES
+    }
+  }
   public static class DummyModelParameters extends Model.Parameters {
     private String _msg;
     private Key _trgt;
-    private String _registrationAlgoName;
     private boolean _makeModel;
+    public boolean _cancel_job;
+    public DummyModelParameters() { this(null, Key.make()); }
     public DummyModelParameters(String msg, Key trgt) { _msg = msg; _trgt = trgt; }
-    public DummyModelParameters(String msg, Key trgt, String algoRegistrationName) { _msg = msg; _trgt = trgt; _registrationAlgoName = algoRegistrationName; }
-    @Override public String fullName() { return _registrationAlgoName == null ? "dummy": _registrationAlgoName; }
-    @Override public String algoName() { return _registrationAlgoName == null ? "dummy": _registrationAlgoName; }
+    @Override public String fullName() { return algoName(); }
+    @Override public String algoName() { return "dummymodelbuilder"; }
     @Override public String javaName() { return DummyModelBuilder.class.getName(); }
     @Override public long progressUnits() { return 1; }
   }
@@ -311,6 +319,8 @@ public class ModelBuilderTest extends TestUtil {
       return new Driver() {
         @Override
         public void computeImpl() {
+          if (_parms._cancel_job)
+            throw new Job.JobCancelledException();
           DKV.put(_parms._trgt, new BufferedString("Computed " + _parms._msg));
           if (! _parms._makeModel)
             return;

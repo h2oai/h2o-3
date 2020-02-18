@@ -192,6 +192,7 @@ h2o.grid <- function(algorithm,
 #' @param grid_id  ID of existing grid object to fetch
 #' @param sort_by Sort the models in the grid space by a metric. Choices are "logloss", "residual_deviance", "mse", "auc", "accuracy", "precision", "recall", "f1", etc.
 #' @param decreasing Specify whether sort order should be decreasing
+#' @param verbose Controls verbosity of the output, if enabled prints out error messages for failed models (default: FALSE)
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -208,7 +209,7 @@ h2o.grid <- function(algorithm,
 #' models <- lapply(model_ids, function(id) { h2o.getModel(id)})
 #' }
 #' @export
-h2o.getGrid <- function(grid_id, sort_by, decreasing) {
+h2o.getGrid <- function(grid_id, sort_by, decreasing, verbose = FALSE) {
   json <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = 99, .h2o.__GRIDS(grid_id, sort_by, decreasing))
   class <- "H2OGrid"
   grid_id <- json$grid_id$name
@@ -224,16 +225,17 @@ h2o.getGrid <- function(grid_id, sort_by, decreasing) {
 
   # print out the failure/warning messages from Java if it exists
   if (length(failure_details) > 0) {
-    sprintf("Errors/Warnings building gridsearch model!\n")
-    for (index in 1:length(failure_details)) {
-      
-      if (typeof(failed_params[[index]]) == "list") {
-        for (index2 in 1:length(hyper_names)) {
+    warning("Some models were not built due to a failure, for more details run `summary(grid_object, show_stack_traces = TRUE)`")
+    if (verbose) {
+      for (index in 1:length(failure_details)) {
+        if (typeof(failed_params[[index]]) == "list") {
+          for (index2 in 1:length(hyper_names)) {
             cat(sprintf("Hyper-parameter: %s, %s\n", hyper_names[[index2]], failed_params[[index]][[hyper_names[[index2]]]]))
+          }
         }
+        cat(sprintf("[%s] failure_details: %s \n", Sys.time(), failure_details[index]))
+        cat(sprintf("[%s] failure_stack_traces: %s \n", Sys.time(), failure_stack_traces[index]))
       }
-      cat(sprintf("[%s] failure_details: %s \n", Sys.time(), failure_details[index]))
-      cat(sprintf("[%s] failure_stack_traces: %s \n", Sys.time(), failure_stack_traces[index]))
     }
   }
 
