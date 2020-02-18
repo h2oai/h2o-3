@@ -6,6 +6,9 @@ import water.fvec.Frame;
 import water.fvec.FrameCreator;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+import water.util.FrameUtils;
+
+import java.util.Arrays;
 
 public class MatrixUtils {
 
@@ -51,7 +54,9 @@ public class MatrixUtils {
    */
   public static Vec workingProductMtv(Frame m, Vec v) {
     // TODO avalenta better vec creation
-    return Vec.makeVec(new ProductMtvTask2(v).doAll(m)._result, Vec.newKey());
+    Vec result = new ProductMtvTask2(v, m.numRows()).doAll(m)._result;
+    // System.out.println(Arrays.toString(FrameUtils.asDoubles(result)));
+    return result;
   }  
 
   /**
@@ -157,27 +162,22 @@ public class MatrixUtils {
   static class ProductMtvTask2 extends MRTask<ProductMtvTask2> {
     private final Vec v;
 
-    private double[] _result;
+    private Vec _result;
 
-    public ProductMtvTask2(Vec v) {
+    public ProductMtvTask2(Vec v, long length) {
       this.v = v;
+      _result = Vec.makeZero(length);
     }
     
     @Override
     public void map(Chunk[] cs) {
-      _result = new double[cs[0]._len];
-      for (int i = 0; i < cs[0]._len; i++) {
+      for (int row = 0; row < cs[0]._len; row++) {
         double sum = 0.0;
         for (int j = 0; j < cs.length; ++j) {
-          sum += cs[j].atd(i) * v.at(j);
+          sum += cs[j].atd(row) * v.at(j);
         }
-        _result[i] = sum;
+        _result.set(cs[0].start() + row, sum);
       }
-    }
-
-    @Override
-    public void reduce(ProductMtvTask2 mrt) {
-      ArrayUtils.add(_result, mrt._result);
     }
   }
 
