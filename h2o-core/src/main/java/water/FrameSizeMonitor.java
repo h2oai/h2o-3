@@ -15,7 +15,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
 
     private static final String ENABLED_PROP = "util.frameSizeMonitor.enabled";
     private static final String SAFE_COEF_PROP = "util.frameSizeMonitor.safetyCoefficient";
-    private static final String SAFE_FREE_MEM_DEFAULT_COEF = "0.1";
+    private static final String SAFE_FREE_MEM_DEFAULT_COEF = "0.2";
     private static final int LOG_LEVEL = Log.INFO;
 
     private static final boolean ENABLED;
