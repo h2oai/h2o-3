@@ -8,6 +8,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.VecUtils;
 
@@ -62,34 +63,51 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             System.out.println(n.length());
             Frame res = MatrixUtils.subtractionMtv(_train, p);
             Vec mul = MatrixUtils.workingProductMtv(res, n);
+            System.out.println(Arrays.toString(FrameUtils.asDoubles(mul)));
+            SplitFrameMRTask task = new SplitFrameMRTask(mul).doAll(_train);
+            System.out.println("task.left.length = " + task.left.length);
+            for (double [] row : task.left) {
+                System.out.println(Arrays.toString(row));
+            }
+            System.out.println("task.right.length = " + task.right.length);
+            for (double [] row : task.right) {
+                System.out.println(Arrays.toString(row));
+            }
         }
     }
-    
+
     private class SplitFrameMRTask extends MRTask<SplitFrameMRTask> {
-        private Vec p;
-        private Vec n;
-        
-        private Frame left;
-        private Frame right;
-        
-        public SplitFrameMRTask(Vec p, Vec n) {
-            this.p = p;
-            this.n = n;
-        }
-        
-        @Override
-        public void map(Chunk[] cs) {
-            for (int i = 0; i < cs.length; i++) {
-                for (int j = 0; j < cs[i]._len; j++) {
-                    System.out.println(cs[i].atd(j));
-                }
-            }
+        private Vec mul;
+
+        private double [][] left;
+        private double [][] right;
+
+        public SplitFrameMRTask(Vec mul) {
+            super();
+            this.mul = mul;
         }
 
         @Override
-        public void reduce(SplitFrameMRTask mrt) {
-            // nothing to do
+        public void map(Chunk[] cs) {
+            for (int row = 0; row < cs[0]._len; row++) {
+                double num = mul.at(cs[0].start() + row);
+                if (num < 0) {
+                    // left
+                    double [] rowValues = new double[cs.length];
+                    for (int column = 0; column < cs.length; column++) {
+                        rowValues[column] = cs[column].atd(row);
+                    }
+                    left = ArrayUtils.append(left, rowValues);
+                } else {
+                    // right
+                    double [] rowValues = new double[cs.length];
+                    for (int column = 0; column < cs.length; column++) {
+                        rowValues[column] = cs[column].atd(row);
+                    }
+                    right = ArrayUtils.append(right, rowValues);
+                }
+            }
         }
     }
-    
+
 }
