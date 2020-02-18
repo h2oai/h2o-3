@@ -116,7 +116,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     Model model = null;
     HyperSpaceWalker.HyperSpaceIterator<MP> it = _hyperSpaceWalker.iterator();
     long gridWork=0;
-    if (gridSize > 0) {//if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
+    // if total grid space is known, walk it all and count up models to be built (not subject to time-based or converge-based early stopping)
+    // skip it if no model limit it specified as the entire hyperspace can be extremely large.
+    if (gridSize > 0 && maxModels() > 0) {
       while (it.hasNext(model)) {
         try {
           Model.Parameters parms = it.nextModelParameters(model);
@@ -163,6 +165,10 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    */
   public long getModelCount() {
     return _hyperSpaceWalker.getMaxHyperSpaceSize();
+  }
+
+  private long maxModels() {
+    return _hyperSpaceWalker.search_criteria().stopping_criteria() == null ? 0 : _hyperSpaceWalker.search_criteria().stopping_criteria()._max_models;
   }
 
   private double maxRuntimeSecs() {
