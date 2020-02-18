@@ -120,4 +120,37 @@ public class MatrixUtilsTest extends TestUtil {
     }
   }
 
+    @Test
+    public void workingProductMtv2() {
+        try {
+            Scope.enter();
+            Frame m = Scope.track(parse_test_file("smalldata/anomaly/const.csv"));
+            Scope.track(m);
+            Vec v = Vec.makeVec(ard(2.0, 2.0), Vec.newKey());
+
+            Vec resVec = MatrixUtils.workingProductMtv(m, v);
+
+            // check result
+            Assert.assertEquals(m.numRows(), resVec.length());
+            Assert.assertEquals(4, resVec.at(0),0);
+            Assert.assertEquals(4, resVec.at(1),0);
+            Assert.assertEquals(4, resVec.at(2),0);
+            Assert.assertEquals(4, resVec.at(3),0);
+
+            // check given matrix
+            Assert.assertEquals(2, m.vecs().length);
+            for (Vec vec : m.vecs()) {
+                Assert.assertTrue(vec.isConst());
+                Assert.assertEquals(1, vec.min(),0);
+            }
+
+            // check given vector
+            Assert.assertTrue(v.isConst());
+            Assert.assertEquals(2, v.min(),0);
+
+        } finally {
+            Scope.exit();
+        }
+    }  
+
 }
