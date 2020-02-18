@@ -10,6 +10,7 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 import collections
 import copy
 import gc
+import inspect
 import math
 import sys
 import time
@@ -151,9 +152,10 @@ class ExprNode(object):
         exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
         # explicit call to gc.collect as recommended before calling gc.get_referrers to obtain only live referrers;
         # otherwise, this creates subtle bugs for Py < 3.7 as we have logic below based on the ref count.
+        # Also filtering out the frames for the referrers (they appear until 3.6) and change the behaviour depending on the execution path.
         gc.collect()
         referrers = gc.get_referrers(self)
-        gc_ref_cnt = len(referrers)
+        gc_ref_cnt = len([r for r in referrers if not inspect.isframe(r)])
         if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
             self._cache._id = _py_tmp_key(append=h2o.connection().session_id)
             exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
