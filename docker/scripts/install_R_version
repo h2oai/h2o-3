@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 # Script for installing R from source
 # To achieve an optimal build, add the necessary flags to ./configure in this script.
@@ -11,9 +11,6 @@
 # https://stackoverflow.com/questions/24019503/installing-multiple-versions-of-r
 # https://support.rstudio.com/hc/en-us/articles/215488098-Installing-multiple-versions-of-R
 # http://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installation
-
-# exit on error
-set -e
 
 R_VERSION=$1
 R_VERSION_HOME="/usr/local/R/${R_VERSION}"
@@ -60,11 +57,50 @@ chmod a+x /usr/bin/activate_R_${R_VERSION}
 echo "Activating R ${R_VERSION}"
 activate_R_${R_VERSION}
 
+function checkRInstallLog() {
+  log_file=$1
+  if [ grep -E '(packages .* are not available)|(installation of package .* had non-zero exit status)' $log_file ]; then
+    echo "Errors detected in R package installation."
+    exit 1
+  fi
+}
+
 # Install dependencies
 echo "Installing dependencies for R ${R_VERSION}"
-/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);install.packages(c("dplyr", "text2vec", "R.utils", "AUC", "mlbench", "Hmisc", "flexclust", "randomForest", "bit64", "HDtweedie", "RCurl", "jsonlite", "statmod", "devtools", "roxygen2", "testthat", "Rcpp", "fpc", "RUnit", "ade4", "ROCR", "e1071", "ggplot2", "LiblineaR", "slam", "optparse", "uuid", "survival", "usethis", "rgl", "plot3Drgl"))'
-/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);install.packages(c("xgboost", type="source"))' # Latest XGBoost (from source)
-/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);library(devtools);install_version("glmnet", version = "2.0-2");install_version("gbm", version = "2.1.3");install_github("hadley/pkgdown", ref = "9a968e8");install_github("Zelazny7/isofor")'
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); \
+  install.packages(c('dplyr', 'text2vec', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
+    'bit64', 'HDtweedie', 'jsonlite', 'statmod', 'devtools', 'roxygen2', 'testthat', 'Rcpp', 'fpc', 'RUnit', \
+    'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'rgl', 'plot3Drgl'\
+  ))" 2>&1 | tee R.install.1.log
+checkRInstallLog R.install.1.log
+# Latest XGBoost (from source)
+/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);install.packages(c("xgboost", type="source"))' | tee R.install.2.log
+checkRInstallLog R.install.2.log
+# RCUrl 1.95-4.12 is the last to support R 3.3
+# survival 2.44-1.1 is the last to support R 3.3
+# slam 0.1-40 is the last to support R 3.3
+# latticeExtra (dependency of Hmisc) 0.6-28 is the last to support R 3.3
+# caTools (dependency of ROCR) requires R 3.6.0 in latest version
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58);library(devtools); \
+  install_version('RCurl', version = '1.95-4.12'); \
+  install_version('survival', version = '2.44-1.1'); \
+  install_version('slam', version = '0.1-40'); \
+  install_version('latticeExtra', version = '0.6-28'); \
+  install_version('caTools', version = '1.17.1.4');" 2>&1 | tee R.install.3.log
+checkRInstallLog R.install.3.log
+# install packages that need special deps installed above
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); \
+  install.packages(c('ROCR', 'Hmisc'))" 2>&1 | tee R.install.4.log
+checkRInstallLog R.install.4.log
+# dependecies from GitHub
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58);library(devtools); \
+  install_version('glmnet', version = '2.0-2'); \
+  install_version('gbm', version = '2.1.3'); \
+  install_github('hadley/pkgdown', ref = '9a968e8'); \
+  install_github('Zelazny7/isofor')" 2>&1 | tee R.install.5.log
+checkRInstallLog R.install.5.log
+rm R.install.*.log
+# install LiblineaR from S3
 wget -q -O /LiblineaR_1.94-2.tar.gz https://s3.amazonaws.com/h2o-r/linux/LiblineaR_1.94-2.tar.gz
 /usr/local/R/current/bin/R CMD INSTALL /LiblineaR_1.94-2.tar.gz
 rm /LiblineaR_1.94-2.tar.gz

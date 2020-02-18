@@ -2,17 +2,10 @@ package ai.h2o.automl;
 
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
-import hex.glm.GLMModel.GLMParameters;
 import hex.grid.HyperSpaceSearchCriteria;
-import hex.tree.drf.DRFModel.DRFParameters;
-import hex.tree.gbm.GBMModel.GBMParameters;
-import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.H2O;
 import water.Iced;
 import water.Key;
-import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OIllegalValueException;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
@@ -60,15 +53,6 @@ public class AutoMLBuildSpec extends Iced {
 
     public AutoMLBuildControl() {
       stopping_criteria = new AutoMLStoppingCriteria();
-
-      // reasonable defaults:
-      stopping_criteria.set_max_models(0); //no limit
-      stopping_criteria.set_max_runtime_secs(0); //no limit
-      stopping_criteria.set_max_runtime_secs_per_model(0); //no limit
-
-      stopping_criteria.set_stopping_rounds(3);
-      stopping_criteria.set_stopping_tolerance(0.001);
-      stopping_criteria.set_stopping_metric(StoppingMetric.AUTO);
     }
   }
 
@@ -149,12 +133,12 @@ public class AutoMLBuildSpec extends Iced {
 
     public AutoMLStoppingCriteria() {
       // reasonable defaults:
-      set_max_models(0);
-      set_max_runtime_secs(3600);
-      set_max_runtime_secs_per_model(0);
+      set_max_models(0); // no limit
+      set_max_runtime_secs(0); // no limit
+      set_max_runtime_secs_per_model(0); // no limit
 
       set_stopping_rounds(3);
-      set_stopping_tolerance(0.001);
+      set_stopping_tolerance(AUTO_STOPPING_TOLERANCE);
       set_stopping_metric(StoppingMetric.AUTO);
     }
   }
@@ -290,20 +274,15 @@ public class AutoMLBuildSpec extends Iced {
     }
 
     Model.Parameters getCustomizedDefaults(Algo algo) {
-      if (!_algoParameters.containsKey(algo.name())) _algoParameters.put(algo.name(), defaultParameters(algo));
+      if (!_algoParameters.containsKey(algo.name())) {
+        Model.Parameters defaults = defaultParameters(algo);
+        if (defaults != null) _algoParameters.put(algo.name(), defaults);
+      }
       return _algoParameters.get(algo.name());
     }
 
     private Model.Parameters defaultParameters(Algo algo) {
-      switch (algo) {
-        case DeepLearning: return new DeepLearningParameters();
-        case DRF: return new DRFParameters();
-        case GBM: return new GBMParameters();
-        case GLM: return new GLMParameters();
-        case StackedEnsemble: return new StackedEnsembleParameters();
-        case XGBoost: return new XGBoostParameters();
-        default: throw new H2OIllegalArgumentException("Custom parameters are not supported for "+algo.name()+".");
-      }
+      return algo.enabled() ? ModelingStepsRegistry.defaultParameters(algo.name()) : null;
     }
 
     private void addParameterName(Algo algo, String param) {
@@ -328,8 +307,9 @@ public class AutoMLBuildSpec extends Iced {
     private <V> boolean addParameter(Algo algo, String param, V value) {
       Model.Parameters customParams = getCustomizedDefaults(algo);
       try {
-        if (setField(customParams, param, value, FieldNaming.DEST_HAS_UNDERSCORES)
-                || setField(customParams, param, value, FieldNaming.CONSISTENT)) {
+        if (customParams != null
+                && (setField(customParams, param, value, FieldNaming.DEST_HAS_UNDERSCORES)
+                    || setField(customParams, param, value, FieldNaming.CONSISTENT))) {
           addParameterName(algo, param);
           return true;
         } else {

@@ -93,6 +93,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   private static String[] SCHEMAS = new String[0];
   private static ModelBuilder[] BUILDERS = new ModelBuilder[0];
 
+  protected boolean _startUpOnceModelBuilder = false;
+
   /** One-time start-up only ModelBuilder, endlessly cloned by the GUI for the
    *  default settings. */
   protected ModelBuilder(P parms, boolean startup_once) { this(parms,startup_once,"hex.schemas."); }
@@ -100,6 +102,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     String base = getName();
     if (!startup_once)
       throw H2O.fail("Algorithm " + base + " registration issue. It can only be called at startup.");
+    _startUpOnceModelBuilder = true;
     _job = null;
     _result = null;
     _parms = parms;

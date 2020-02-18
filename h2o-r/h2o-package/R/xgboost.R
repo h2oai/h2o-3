@@ -74,6 +74,8 @@
 #' @param nthread Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
 #'        parameter). Defaults to maximum available Defaults to -1.
 #' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
+#' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
+#'        Defaults to FALSE.
 #' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
@@ -145,6 +147,7 @@ h2o.xgboost <- function(x,
                         gamma = 0.0,
                         nthread = -1,
                         save_matrix_directory = NULL,
+                        build_tree_one_node = FALSE,
                         calibrate_model = FALSE,
                         calibration_frame = NULL,
                         max_bins = 256,
@@ -276,6 +279,8 @@ h2o.xgboost <- function(x,
     parms$nthread <- nthread
   if (!missing(save_matrix_directory))
     parms$save_matrix_directory <- save_matrix_directory
+  if (!missing(build_tree_one_node))
+    parms$build_tree_one_node <- build_tree_one_node
   if (!missing(calibrate_model))
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))

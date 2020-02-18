@@ -5,6 +5,7 @@ import hex.KeyValue;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.XGBoostModel;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.RestoreSystemProperties;
@@ -14,13 +15,16 @@ import water.exceptions.H2OIllegalValueException;
 
 import java.util.Arrays;
 
-public class AutoMLBuildSpecTest {
+public class AutoMLBuildSpecTest extends water.TestUtil {
 
     @Rule
     public ExpectedException thrown= ExpectedException.none();
 
     @Rule
     public final TestRule restoreSystemProperties = new RestoreSystemProperties();
+
+    @BeforeClass
+    public static void setup() { stall_till_cloudsize(1); }
 
     private void enableAnyCustomParam() {
         System.setProperty(AutoMLCustomParameters.ALGO_PARAMS_ALL_ENABLED, "true");

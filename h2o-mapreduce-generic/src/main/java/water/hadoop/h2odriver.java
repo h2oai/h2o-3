@@ -149,6 +149,7 @@ public class h2odriver extends Configured implements Tool {
   static String keytabPath = null;
   static boolean reportHostname = false;
   static boolean driverDebug = false;
+  static String hiveJdbcUrlPattern = null; 
   static String hiveHost = null;
   static String hivePrincipal = null;
   static boolean refreshTokens = false;
@@ -1324,6 +1325,9 @@ public class h2odriver extends Configured implements Tool {
         reportHostname = true;
       } else if (s.equals("-driver_debug")) {
         driverDebug = true;
+      } else if (s.equals("-hiveJdbcUrlPattern")) {
+        i++; if (i >= args.length) { usage (); }
+        hiveJdbcUrlPattern = args[i];
       } else if (s.equals("-hiveHost")) {
         i++; if (i >= args.length) { usage (); }
         hiveHost = args[i];
@@ -2129,7 +2133,7 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputKeyClass(Text.class);
     j.setOutputValueClass(Text.class);
 
-    HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveHost, hivePrincipal);
+    HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
     if (refreshTokens && principal != null && keytabPath != null) {
       j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
       byte[] payloadData = readBinaryFile(keytabPath);

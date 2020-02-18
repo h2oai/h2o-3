@@ -19,4 +19,5 @@ dependencies {
     transitive = false
   }
   compile project(":h2o-core")
+  testCompile "junit:junit:${junitVersion}"
 }

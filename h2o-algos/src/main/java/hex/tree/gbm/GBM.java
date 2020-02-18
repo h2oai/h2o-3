@@ -388,6 +388,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
 
       if ((cs != null) && constraintCheckEnabled()) {
+        _job.update(0, "Checking monotonicity constraints on the final model");
         checkConstraints(ktrees, leaves, cs);
       }
 

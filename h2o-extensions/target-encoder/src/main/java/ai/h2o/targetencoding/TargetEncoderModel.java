@@ -54,7 +54,7 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
 
     @Override
     public long progressUnits() {
-      return 0;
+      return 1;
     }
 
     public BlendingParams getBlendingParameters() {

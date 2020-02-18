@@ -111,102 +111,102 @@ New users can follow the steps below to quickly get up and running with H2O dire
 
 At this point, determine whether you want to complete this quick start in either R or Python, and run the corresponding commands below from either the R or Python tab.
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # Download and install R:
-    # 1. Go to http://cran.r-project.org/mirrors.html.
-    # 2. Select your closest local mirror.
-    # 3. Select your operating system (Linux, OS X, or Windows).
-    # 4. Depending on your OS, download the appropriate file, along with any required packages.
-    # 5. When the download is complete, unzip the file and install.
+        # Download and install R:
+        # 1. Go to http://cran.r-project.org/mirrors.html.
+        # 2. Select your closest local mirror.
+        # 3. Select your operating system (Linux, OS X, or Windows).
+        # 4. Depending on your OS, download the appropriate file, along with any required packages.
+        # 5. When the download is complete, unzip the file and install.
 
-    # Start R
-    h2o-3 user$ r
-    ...
-    Type 'demo()' for some demos, 'help()' for on-line help, or
-    'help.start()' for an HTML browser interface to help.
-    Type 'q()' to quit R.
-    >
+        # Start R
+        h2o-3 user$ r
+        ...
+        Type 'demo()' for some demos, 'help()' for on-line help, or
+        'help.start()' for an HTML browser interface to help.
+        Type 'q()' to quit R.
+        >
 
-    # Copy and paste the following commands in R to download dependency packages.
-    > pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
-    > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
+        # Copy and paste the following commands in R to download dependency packages.
+        > pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
+        > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
 
-    # Run the following command to load the H2O:
-    > library(h2o)
+        # Run the following command to load the H2O:
+        > library(h2o)
 
-    # Run the following command to initialize H2O on your local machine (single-node cluster) using all available CPUs.
-    > h2o.init()
- 
-    # Import the Iris (with headers) dataset.
-    > path <- "smalldata/iris/iris_wheader.csv"
-    > iris <- h2o.importFile(path)
+        # Run the following command to initialize H2O on your local machine (single-node cluster) using all available CPUs.
+        > h2o.init()
+     
+        # Import the Iris (with headers) dataset.
+        > path <- "smalldata/iris/iris_wheader.csv"
+        > iris <- h2o.importFile(path)
 
-    # View a summary of the imported dataset.
-    > print(iris)
+        # View a summary of the imported dataset.
+        > print(iris)
 
-      sepal_len    sepal_wid    petal_len    petal_wid        class
-    -----------  -----------  -----------  -----------  -----------
-            5.1          3.5          1.4          0.2  Iris-setosa
-            4.9          3            1.4          0.2  Iris-setosa
-            4.7          3.2          1.3          0.2  Iris-setosa
-            4.6          3.1          1.5          0.2  Iris-setosa
-            5            3.6          1.4          0.2  Iris-setosa
-            5.4          3.9          1.7          0.4  Iris-setosa
-            4.6          3.4          1.4          0.3  Iris-setosa
-            5            3.4          1.5          0.2  Iris-setosa
-            4.4          2.9          1.4          0.2  Iris-setosa
-            4.9          3.1          1.5          0.1  Iris-setosa
-    [150 rows x 5 columns]
-    >
+          sepal_len    sepal_wid    petal_len    petal_wid        class
+        -----------  -----------  -----------  -----------  -----------
+                5.1          3.5          1.4          0.2  Iris-setosa
+                4.9          3            1.4          0.2  Iris-setosa
+                4.7          3.2          1.3          0.2  Iris-setosa
+                4.6          3.1          1.5          0.2  Iris-setosa
+                5            3.6          1.4          0.2  Iris-setosa
+                5.4          3.9          1.7          0.4  Iris-setosa
+                4.6          3.4          1.4          0.3  Iris-setosa
+                5            3.4          1.5          0.2  Iris-setosa
+                4.4          2.9          1.4          0.2  Iris-setosa
+                4.9          3.1          1.5          0.1  Iris-setosa
+        [150 rows x 5 columns]
+        >
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Before starting Python, run the following commands to install dependencies.
-    # Prepend these commands with `sudo` only if necessary.
-    h2o-3 user$ [sudo] pip install -U requests
-    h2o-3 user$ [sudo] pip install -U tabulate
-    h2o-3 user$ [sudo] pip install -U future
-    h2o-3 user$ [sudo] pip install -U colorama
+        # Before starting Python, run the following commands to install dependencies.
+        # Prepend these commands with `sudo` only if necessary.
+        h2o-3 user$ [sudo] pip install -U requests
+        h2o-3 user$ [sudo] pip install -U tabulate
+        h2o-3 user$ [sudo] pip install -U future
+        h2o-3 user$ [sudo] pip install -U colorama
 
-    # Start python
-    h2o-3 user$ python
-    >>>
+        # Start python
+        h2o-3 user$ python
+        >>>
 
-    # Run the following command to import the H2O module:
-    >>> import h2o
+        # Run the following command to import the H2O module:
+        >>> import h2o
 
-    # Run the following command to initialize H2O on your local machine (single-node cluster).
-    >>> h2o.init()
+        # Run the following command to initialize H2O on your local machine (single-node cluster).
+        >>> h2o.init()
 
-    # If desired, run the GLM, GBM, or Deep Learning demo
-    >>> h2o.demo("glm")
-    >>> h2o.demo("gbm")
-    >>> h2o.demo("deeplearning")
+        # If desired, run the GLM, GBM, or Deep Learning demo
+        >>> h2o.demo("glm")
+        >>> h2o.demo("gbm")
+        >>> h2o.demo("deeplearning")
 
-    # Import the Iris (with headers) dataset.
-    >>> path = "smalldata/iris/iris_wheader.csv"
-    >>> iris = h2o.import_file(path=path)
+        # Import the Iris (with headers) dataset.
+        >>> path = "smalldata/iris/iris_wheader.csv"
+        >>> iris = h2o.import_file(path=path)
 
-    # View a summary of the imported dataset.
-    >>> iris.summary
-      sepal_len    sepal_wid    petal_len    petal_wid        class
-    -----------  -----------  -----------  -----------  -----------
-            5.1          3.5          1.4          0.2  Iris-setosa
-            4.9          3            1.4          0.2  Iris-setosa
-            4.7          3.2          1.3          0.2  Iris-setosa
-            4.6          3.1          1.5          0.2  Iris-setosa
-            5            3.6          1.4          0.2  Iris-setosa
-            5.4          3.9          1.7          0.4  Iris-setosa
-            4.6          3.4          1.4          0.3  Iris-setosa
-            5            3.4          1.5          0.2  Iris-setosa
-            4.4          2.9          1.4          0.2  Iris-setosa
-            4.9          3.1          1.5          0.1  Iris-setosa
+        # View a summary of the imported dataset.
+        >>> iris.summary
+          sepal_len    sepal_wid    petal_len    petal_wid        class
+        -----------  -----------  -----------  -----------  -----------
+                5.1          3.5          1.4          0.2  Iris-setosa
+                4.9          3            1.4          0.2  Iris-setosa
+                4.7          3.2          1.3          0.2  Iris-setosa
+                4.6          3.1          1.5          0.2  Iris-setosa
+                5            3.6          1.4          0.2  Iris-setosa
+                5.4          3.9          1.7          0.4  Iris-setosa
+                4.6          3.4          1.4          0.3  Iris-setosa
+                5            3.4          1.5          0.2  Iris-setosa
+                4.4          2.9          1.4          0.2  Iris-setosa
+                4.9          3.1          1.5          0.1  Iris-setosa
 
-    [150 rows x 5 columns]
-    <bound method H2OFrame.summary of >
-    >>>
+        [150 rows x 5 columns]
+        <bound method H2OFrame.summary of >
+        >>>
 
 Experienced Users
 -----------------
@@ -882,15 +882,15 @@ You can also view the IP address (``192.168.99.100`` in the example below) by sc
 After obtaining the IP address, point your browser to the specified ip address and port to open Flow. In R and Python, you can access the instance by installing the latest version of the H2O R or Python package and then initializing H2O:
 
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    # Initialize H2O
-    library(h2o)
-    dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
+        # Initialize H2O
+        library(h2o)
+        dockerH2O <- h2o.init(ip = "192.168.59.103", port = 54321)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    # Initialize H2O 
-    import h2o
-    docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
+        # Initialize H2O 
+        import h2o
+        docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 

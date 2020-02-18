@@ -22,11 +22,8 @@ scikit-learn==0.19.1
 six==1.11.0
 seaborn==0.8.1
 matplotlib==2.1.1
-sphinx==1.6.6
 numpydoc==0.7.0
 mysqlclient==1.3.12
 recommonmark==0.4.0
-sphinx_rtd_theme==0.2.4
-git+https://github.com/svx/sphinxcontrib-osexample@1cc4afcc6089083256aa642d9faa12352ef45d68#egg=sphinxcontrib-osexample
 shap==0.28.3
 boto3>=1.7.50

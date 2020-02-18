@@ -256,6 +256,7 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
       case "tinyint":
       case "smallint":
       case "int":
+      case "bigint":
       case "integer":
       case "float":
       case "double":

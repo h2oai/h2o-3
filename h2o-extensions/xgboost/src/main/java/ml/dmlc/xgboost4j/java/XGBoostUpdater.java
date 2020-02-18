@@ -63,6 +63,7 @@ public class XGBoostUpdater extends Thread {
       } else {
         Log.debug("Updater thread interrupted.", e);
       }
+      Thread.currentThread().interrupt();
     } catch (XGBoostError e) {
       Log.err("XGBoost training iteration failed");
       Log.err(e);
@@ -162,10 +163,6 @@ public class XGBoostUpdater extends Thread {
     public String toString() {
       return "SerializeBooster";
     }
-  }
-
-  Booster getBooster() {
-    return _booster;
   }
 
   byte[] getBoosterBytes() {

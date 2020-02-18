@@ -297,7 +297,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
     @property
     def build_tree_one_node(self):
         """
-        Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
+        Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 
         Type: ``bool``  (default: ``False``).
 

@@ -62,10 +62,26 @@ PARTITIONED BY (year STRING, month INT)
 STORED AS TEXTFILE;
 
 ALTER TABLE test_table_multi_key ADD PARTITION (year=2017, month=01);
-INSERT INTO TABLE test_table_multi_key PARTITION (year=2017, month=1) VALUES (1,  11.12345, "2017-01-1");
-INSERT INTO TABLE test_table_multi_key PARTITION (year=2017, month=1) VALUES (2,  11.12345, "2017-01-2");
+INSERT INTO TABLE test_table_multi_key PARTITION (year=2017, month=1) VALUES
+    (1,  11.12345, "2017-01-1"),
+    (2,  11.12345, "2017-01-2");
 
 ALTER TABLE test_table_multi_key ADD PARTITION (year=2017, month=02);
-INSERT INTO TABLE test_table_multi_key PARTITION (year=2017, month=2) VALUES (1,  22.12345, "2017-02-1");
-INSERT INTO TABLE test_table_multi_key PARTITION (year=2017, month=2) VALUES (2,  22.12345, "2017-02-2");
-INSERT INTO TABLE test_table_multi_key PARTITION (year=2017, month=2) VALUES (3,  22.12345, "2017-02-3");
+INSERT INTO TABLE test_table_multi_key PARTITION (year=2017, month=2) VALUES
+    (1,  22.12345, "2017-02-1"),
+    (2,  22.12345, "2017-02-2"),
+    (3,  22.12345, "2017-02-3");
+
+CREATE TABLE test_table_escaping(
+    code STRING
+)
+PARTITIONED BY (part_key STRING)
+STORED AS TEXTFILE;
+ALTER TABLE test_table_escaping ADD PARTITION (part_key="'single'");
+INSERT INTO TABLE test_table_escaping PARTITION (part_key="'single'") VALUES ("11"), ("12");
+ALTER TABLE test_table_escaping ADD PARTITION (part_key="\"double\"");
+INSERT INTO TABLE test_table_escaping PARTITION (part_key="\"double\"") VALUES ("21"), ("22");
+ALTER TABLE test_table_escaping ADD PARTITION (part_key="both'\"");
+INSERT INTO TABLE test_table_escaping PARTITION (part_key="both'\"") VALUES ("31"), ("32");
+ALTER TABLE test_table_escaping ADD PARTITION (part_key="specials-=-\n");
+INSERT INTO TABLE test_table_escaping PARTITION (part_key="specials-=-\n") VALUES ("41"), ("42");

@@ -49,6 +49,26 @@ def test_invalid_project_name():
         assert "1nvalid" in str(e)
 
 
+def test_early_stopping_defaults():
+    print("Check default early stopping params")
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_aml_early_stopping_defaults", max_models=max_models)
+    aml.train(y=ds['target'], training_frame=ds['train'])
+    stopping_criteria = aml._build_resp['build_control']['stopping_criteria']
+    print(stopping_criteria)
+
+    from math import sqrt
+    auto_stopping_tolerance = (lambda fr: min(0.05, max(0.001, 1/sqrt((1 - sum(fr.nacnt()) / (fr.ncols * fr.nrows)) * fr.nrows))))(ds['train'])
+
+    assert stopping_criteria['stopping_rounds'] == 3
+    assert stopping_criteria['stopping_tolerance'] == auto_stopping_tolerance
+    assert stopping_criteria['stopping_metric'] == 'AUTO'
+    assert stopping_criteria['max_models'] == max_models
+    assert stopping_criteria['max_runtime_secs'] == 0
+    assert stopping_criteria['max_runtime_secs_per_model'] == 0
+
+
+
 def test_early_stopping_args():
     print("Check arguments to H2OAutoML class")
     ds = import_dataset()
@@ -239,14 +259,14 @@ def test_stacked_ensembles_are_trained_after_timeout():
     print("Check that Stacked Ensembles are still trained after timeout")
     max_runtime_secs = 20
     ds = import_dataset()
-    aml = H2OAutoML(project_name="py_aml_SE_after_timeout", seed=1, max_runtime_secs=max_runtime_secs, exclude_algos=['DeepLearning'])
+    aml = H2OAutoML(project_name="py_aml_SE_after_timeout", seed=1, max_runtime_secs=max_runtime_secs, exclude_algos=['XGBoost', 'DeepLearning'])
     start = time.time()
     aml.train(y=ds['target'], training_frame=ds['train'])
     end = time.time()
     assert end-start - max_runtime_secs > 0
 
     _, _, se = get_partitioned_model_names(aml.leaderboard)
-    assert len(se) == 2, "StackedEnsemble should still be trained after timeout"
+    assert len(se) > 0, "StackedEnsemble should still be trained after timeout"  # we don't need to test if all SEs are built, there may be only one if just one model type was built.
 
 
 def test_automl_stops_after_max_models():
@@ -312,8 +332,8 @@ def test_no_time_limit_if_max_models_is_provided():
     aml.train(y=ds['target'], training_frame=ds['train'])
     max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
     max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
-    assert max_runtime == 0
-    assert max_models == 1
+    assert max_models == 1, max_models
+    assert max_runtime == 0, max_runtime
 
 
 def test_max_runtime_secs_alone():
@@ -360,7 +380,6 @@ def test_default_max_runtime_if_no_max_models_provided():
             pass
         max_runtime = aml._build_resp['build_control']['stopping_criteria']['max_runtime_secs']
         max_models = aml._build_resp['build_control']['stopping_criteria']['max_models']
-        print(max_runtime)
         assert max_runtime == 3600
         assert max_models == 0
 
@@ -370,6 +389,7 @@ def test_default_max_runtime_if_no_max_models_provided():
 
 pu.run_tests([
     test_invalid_project_name,
+    test_early_stopping_defaults,
     test_early_stopping_args,
     test_no_x_train_set_only,
     test_no_x_train_and_validation_sets,
