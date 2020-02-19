@@ -2,6 +2,7 @@ package hex.genmodel.algos.drf;
 
 import hex.ModelCategory;
 import hex.genmodel.GenModel;
+import hex.genmodel.PredictContributions;
 import hex.genmodel.algos.tree.*;
 
 
@@ -17,7 +18,7 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
     }
 
     @Override
-    protected ContributionsPredictor getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
+    protected PredictContributions getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor) {
         return new ContributionsPredictorDRF(this, treeSHAPPredictor);
     }
 
@@ -62,7 +63,7 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
         return score0(row, 0.0, preds);
     }
     
-    static class ContributionsPredictorDRF extends ContributionsPredictor {
+    static class ContributionsPredictorDRF extends SharedTreeContributionsPredictor {
 
         private final float _featurePlusBiasRatio;
         private final int _normalizer;
@@ -79,7 +80,7 @@ public final class DrfMojoModel extends SharedTreeMojoModelWithContributions imp
                 throw new UnsupportedOperationException(
                         "Model category " + model._category + " cannot be used to calculate feature contributions.");
         }
-        
+
         @Override
         public float[] getContribs(float[] contribs) {
             for (int i = 0; i < contribs.length; i++) {
