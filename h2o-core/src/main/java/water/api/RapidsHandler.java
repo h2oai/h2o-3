@@ -32,9 +32,15 @@ public class RapidsHandler extends Handler {
       RapidsHandler.SESSIONS.put(rapids.session_id, ses);
     }
 
-    // This call is synchronized on the session instance
-    Val val = Rapids.exec(rapids.ast, ses);
-
+    Val val;
+    try {
+      // This call is synchronized on the session instance
+      val = Rapids.exec(rapids.ast, ses);
+    } catch (IllegalArgumentException e) {
+      throw e;
+    } catch (Throwable t) {
+      throw Log.throwErr(t);
+    }
     switch (val.type()) {
       case Val.NUM:  return new RapidsNumberV3(val.getNum());
       case Val.NUMS: return new RapidsNumbersV3(val.getNums());

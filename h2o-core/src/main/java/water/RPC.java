@@ -175,59 +175,63 @@ public class RPC<V extends DTask> implements Future<V>, Delayed, ForkJoinPool.Ma
 
     // Keep a global record, for awhile
     if( _target != null ) _target.taskPut(_tasknum,this);
-    if( _nack ) return this; // Racing Nack rechecked under lock; no need to send retry
-    // We could be racing timeouts-vs-replies.  Blow off timeout if we have an answer.
-    if( isDone() ) {
-      if( _target != null ) _target.taskRemove(_tasknum);
-      return this;
-    }
-    // Default strategy: (re)fire the packet and (re)start the timeout.  We
-    // "count" exactly 1 failure: just whether or not we shipped via TCP ever
-    // once.  After that we fearlessly (re)send UDP-sized packets until the
-    // server replies.
+    try {
+      if( _nack ) return this; // Racing Nack rechecked under lock; no need to send retry
+      // We could be racing timeouts-vs-replies.  Blow off timeout if we have an answer.
+      if( isDone() ) {
+        if( _target != null ) _target.taskRemove(_tasknum);
+        return this;
+      }
+      // Default strategy: (re)fire the packet and (re)start the timeout.  We
+      // "count" exactly 1 failure: just whether or not we shipped via TCP ever
+      // once.  After that we fearlessly (re)send UDP-sized packets until the
+      // server replies.
 
-    // Pack classloader/class & the instance data into the outgoing
-    // AutoBuffer.  If it fits in a single UDP packet, ship it.  If not,
-    // finish off the current AutoBuffer (which is now going TCP style), and
-    // make a new UDP-sized packet.  On a re-send of a TCP-sized hunk, just
-    // send the basic UDP control packet.
-    if( !_sentTcp ) {
-      while( true ) {         // Retry loop for broken TCP sends
-        AutoBuffer ab = new AutoBuffer(_target,_dt.priority());
-        try {
-          final boolean t;
-          ab.putTask(UDP.udp.exec, _tasknum).put1(CLIENT_UDP_SEND);
-          ab.put(_dt);
-          t = ab.hasTCP();
-          assert sz_check(ab) : "Resend of " + _dt.getClass() + " changes size from " + _size + " to " + ab.size() + " for task#" + _tasknum;
-          ab.close();        // Then close; send final byte
-          _sentTcp = t;  // Set after close (and any other possible fail)
-          break;             // Break out of retry loop
-        } catch( AutoBuffer.AutoBufferException e ) {
-          Log.info("IOException during RPC call: " + e._ioe.getMessage() + ",  AB=" + ab + ", for task#" + _tasknum + ", waiting and retrying...");
-          ab.drainClose();
-          try { Thread.sleep(500); } catch (InterruptedException ignore) {}
-        }
-      } // end of while(true)
-    } else {
-      // Else it was sent via TCP in a prior attempt, and we've timed out.
-      // This means the caller's ACK/answer probably got dropped and we need
-      // him to resend it (or else the caller is still processing our
-      // request).  Send a UDP reminder - but with the CLIENT_TCP_SEND flag
-      // instead of the UDP send, and no DTask (since it previously went via
-      // TCP, no need to resend it).
-      AutoBuffer ab = new AutoBuffer(_target,_dt.priority()).putTask(UDP.udp.exec,_tasknum);
-      ab.put1(CLIENT_TCP_SEND).close();
-    }
-    // Double retry until we exceed existing age.  This is the time to delay
-    // until we try again.  Note that we come here immediately on creation,
-    // so the first doubling happens before anybody does any waiting.  Also
-    // note the generous 5sec cap: ping at least every 5 sec.
-    _retry += (_retry < MAX_TIMEOUT ) ? _retry : MAX_TIMEOUT;
-    // Put self on the "TBD" list of tasks awaiting Timeout.
-    // So: dont really 'forget' but remember me in a little bit.
+      // Pack classloader/class & the instance data into the outgoing
+      // AutoBuffer.  If it fits in a single UDP packet, ship it.  If not,
+      // finish off the current AutoBuffer (which is now going TCP style), and
+      // make a new UDP-sized packet.  On a re-send of a TCP-sized hunk, just
+      // send the basic UDP control packet.
+      if( !_sentTcp ) {
+        while( true ) {         // Retry loop for broken TCP sends
+          AutoBuffer ab = new AutoBuffer(_target,_dt.priority());
+          try {
+            final boolean t;
+            ab.putTask(UDP.udp.exec, _tasknum).put1(CLIENT_UDP_SEND);
+            ab.put(_dt);
+            t = ab.hasTCP();
+            assert sz_check(ab) : "Resend of " + _dt.getClass() + " changes size from " + _size + " to " + ab.size() + " for task#" + _tasknum;
+            ab.close();        // Then close; send final byte
+            _sentTcp = t;  // Set after close (and any other possible fail)
+            break;             // Break out of retry loop
+          } catch( AutoBuffer.AutoBufferException e ) {
+            Log.info("IOException during RPC call: " + e._ioe.getMessage() + ",  AB=" + ab + ", for task#" + _tasknum + ", waiting and retrying...");
+            ab.drainClose();
+            try { Thread.sleep(500); } catch (InterruptedException ignore) {}
+          }
+        } // end of while(true)
+      } else {
+        // Else it was sent via TCP in a prior attempt, and we've timed out.
+        // This means the caller's ACK/answer probably got dropped and we need
+        // him to resend it (or else the caller is still processing our
+        // request).  Send a UDP reminder - but with the CLIENT_TCP_SEND flag
+        // instead of the UDP send, and no DTask (since it previously went via
+        // TCP, no need to resend it).
+        AutoBuffer ab = new AutoBuffer(_target,_dt.priority()).putTask(UDP.udp.exec,_tasknum);
+        ab.put1(CLIENT_TCP_SEND).close();
+      }
+      // Double retry until we exceed existing age.  This is the time to delay
+      // until we try again.  Note that we come here immediately on creation,
+      // so the first doubling happens before anybody does any waiting.  Also
+      // note the generous 5sec cap: ping at least every 5 sec.
+      _retry += (_retry < MAX_TIMEOUT ) ? _retry : MAX_TIMEOUT;
+      // Put self on the "TBD" list of tasks awaiting Timeout.
+      // So: dont really 'forget' but remember me in a little bit.
 //      UDPTimeOutThread.PENDING.put(_tasknum, this);
-    return this;
+      return this;
+    } catch( Throwable t ) {
+      throw Log.throwErr(t);
+    }
   }
 
   private V result() {
