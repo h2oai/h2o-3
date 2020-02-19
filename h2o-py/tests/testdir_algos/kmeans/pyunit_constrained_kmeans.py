@@ -33,7 +33,7 @@ def test_constrained_kmeans():
         [50, 50, 50]
     ]
 
-    for i in list(range(len(constraints))):
+    for i in range(len(constraints)):
         for standardize in [True, False]:
             print("===== Train KMeans model with constraints: ======")
             print(constraints[i])
@@ -43,7 +43,7 @@ def test_constrained_kmeans():
 
             kmm.show()
 
-            for j in list(range(k)):
+            for j in range(k):
                 number_points = kmm._model_json['output']['training_metrics']._metric_json['centroid_stats']._cell_values[j][2]
                 assert number_points >= constraints[i][j], "Number of points ("+str(number_points)+") in cluster "+str(i+1)+" should be >= constraint value ("+str(constraints[i][j])+")"
 
