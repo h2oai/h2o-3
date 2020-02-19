@@ -22,12 +22,14 @@ ext {
 //
 task createVersionFiles() {
     doLast {
-        file("${buildDir}/h2o").mkdirs()
-        File version_file = new File("${buildDir}/h2o", "version.txt")
-        version_file.write(PROJECT_VERSION)
+        ["main", "client"].each {
+            file("${buildDir}/$it/h2o/").mkdirs()
+            File version_file = new File("${buildDir}/$it/h2o", "version.txt")
+            version_file.write(PROJECT_VERSION)
 
-        File build_file = new File("${buildDir}/h2o", "buildinfo.txt")
-        build_file.write(buildVersion.toString())
+            File build_file = new File("${buildDir}/$it/h2o", "buildinfo.txt")
+            build_file.write(buildVersion.toString())
+        }
     }
 }
 
@@ -49,7 +51,14 @@ task verifyTestDependencies(type: Exec) {
 
 task copyH2OJar(type: Copy, dependsOn: [configurations.compile]) {
     from "${rootDir}/build/h2o.jar"
-    into "${buildDir}/h2o/backend/bin/"
+    into "${buildDir}/main/h2o/backend/bin/"
+}
+
+task copyH2OClientJar(type: Copy, dependsOn: [jar]) {
+    from("${buildDir}/libs/h2o-py.jar") {
+        rename("h2o-py.jar", "h2o.jar")
+    }
+    into "${buildDir}/client/h2o/backend/bin/"
 }
 
 task copySrcFiles(type: Copy, dependsOn: [copyH2OJar]) {
@@ -62,16 +71,45 @@ task copySrcFiles(type: Copy, dependsOn: [copyH2OJar]) {
         include "README.md"
         include "requirements.txt"
     }
-    into "${buildDir}"
+    into "${buildDir}/main"
+}
+
+task copyClientSrcFiles(type: Copy, dependsOn: [copyH2OClientJar]) {
+    from ("${projectDir}") {
+        include "setup.py"
+        include "setup.cfg"
+        include "h2o/**"
+        include "DESCRIPTION.rst"
+        include "MANIFEST.in"
+        include "README.md"
+        include "requirements.txt"
+    }
+    into "${buildDir}/client"
 }
 
 task buildDist(type: Exec, dependsOn: [verifyDependencies, createVersionFiles, copySrcFiles]) {
-    workingDir buildDir
+    workingDir new File(buildDir, "main")
     doFirst {
-        file("${buildDir}/tmp").mkdirs()
-        standardOutput = new FileOutputStream(file("${buildDir}/tmp/h2o-py_buildDist.out"))
+        file("${buildDir}/main/tmp").mkdirs()
+        standardOutput = new FileOutputStream(file("${buildDir}/main/tmp/h2o-py_buildDist.out"))
     }
     commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel"])
+}
+
+task copyMainDist(type: Copy, dependsOn: [buildDist]) {
+    from ("${buildDir}/main/") {
+        include "dist/**"
+    }
+    into "${buildDir}"
+}
+
+task buildClientDist(type: Exec, dependsOn: [verifyDependencies, createVersionFiles, copyClientSrcFiles]) {
+    workingDir new File(buildDir, "client")
+    doFirst {
+        file("${buildDir}/client/tmp").mkdirs()
+        standardOutput = new FileOutputStream(file("${buildDir}/client/tmp/h2o-py_buildDist.out"))
+    }
+    commandLine getOsSpecificCommandLine([pythonexe, "setup.py", "bdist_wheel", "--client"])
 }
 
 task smokeTest(type: Exec, dependsOn: [verifyTestDependencies]) {
@@ -112,4 +150,5 @@ task cleanBuild(type: Delete) {
 // Define the dependencies
 //
 clean.dependsOn cleanBuild, cleanUpSmokeTest, cleanCoverageData
-build.dependsOn buildDist
+buildDist.dependsOn buildClientDist // to have a predictable order of these 2 
+build.dependsOn copyMainDist
