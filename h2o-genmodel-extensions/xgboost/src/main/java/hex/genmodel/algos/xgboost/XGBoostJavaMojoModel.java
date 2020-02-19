@@ -170,20 +170,14 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     }
   }
 
-  private final class XGBoostContributionsPredictor implements PredictContributions {
-    private final TreeSHAPPredictor<FVec> _treeSHAPPredictor;
-    private final Object _workspace;
-
-    public XGBoostContributionsPredictor(TreeSHAPPredictor<FVec> treeSHAPPredictor) {
-      _treeSHAPPredictor = treeSHAPPredictor;
-      _workspace = _treeSHAPPredictor.makeWorkspace();
+  private final class XGBoostContributionsPredictor extends ContributionsPredictor<FVec> {
+    private XGBoostContributionsPredictor(TreeSHAPPredictor<FVec> treeSHAPPredictor) {
+      super(_nums + _catOffsets[_cats] + 1, treeSHAPPredictor);
     }
 
     @Override
-    public float[] calculateContributions(double[] input) {
-      FVec row = _1hotFactory.fromArray(input);
-      float[] contribs = new float[_nums + _catOffsets[_cats] + 1];
-      return  _treeSHAPPredictor.calculateContributions(row, contribs, 0, -1, _workspace);
+    protected FVec toInputRow(double[] input) {
+      return _1hotFactory.fromArray(input);
     }
   }
 
