@@ -1,5 +1,7 @@
 from __future__ import print_function
 import sys, os, time
+from itertools import cycle, islice
+from random import uniform
 
 from h2o.exceptions import H2OTypeError, H2OJobCancelled
 
@@ -199,6 +201,53 @@ def test_nfolds_eq_0():
     assert amodel.params['nfolds']['actual'] == 0
 
 
+def test_fold_column():
+    print("Check fold_column param")
+    ds = import_dataset()
+    fold_column = "fold_id"
+    nrows = ds['train'].nrows
+    train = ds['train'].concat(h2o.H2OFrame(list(islice(cycle(range(3)), 0, nrows)), column_names=[fold_column]))
+    aml = H2OAutoML(project_name="py_aml_fold_column", max_models=3, seed=1, keep_cross_validation_models=True)
+    aml.train(y=ds['target'], training_frame=train, fold_column=fold_column)
+    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
+    assert amodel.params['fold_column']['actual']['column_name'] == fold_column
+    ensemble = h2o.get_model(se[0])
+    metalearner = h2o.get_model(ensemble.metalearner()['name'])
+    assert metalearner.params['fold_column']['actual']['column_name'] == fold_column
+    assert len(metalearner.cross_validation_models()) == 3
+
+
+def test_weights_column():
+    print("Check weights_column")
+    ds = import_dataset()
+    nrows = ds['train'].nrows
+    weights_column = "weight"
+    train = ds['train'].concat(h2o.H2OFrame(list(map(lambda _: uniform(0, 5), range(nrows))), column_names=[weights_column]))
+    aml = H2OAutoML(project_name="py_aml_weights_column", max_models=3, seed=1)
+    aml.train(y=ds['target'], training_frame=train, weights_column=weights_column)
+    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
+    assert amodel.params['weights_column']['actual']['column_name'] == weights_column
+
+
+def test_fold_column_with_weights_column():
+    print("Check fold_column and weights_column")
+    ds = import_dataset()
+    fold_column = "fold_id"
+    weights_column = "weight"
+    nrows = ds['train'].nrows
+    train = (ds['train']
+             .concat(h2o.H2OFrame(list(islice(cycle(range(3)), 0, nrows)), column_names=[fold_column]))
+             .concat(h2o.H2OFrame(list(map(lambda _: uniform(0, 5), range(nrows))), column_names=[weights_column])))
+    aml = H2OAutoML(project_name="py_aml_weights_column", max_models=3, seed=1)
+    aml.train(y=ds['target'], training_frame=train, fold_column=fold_column, weights_column=weights_column)
+    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    amodel = h2o.get_model(non_se[0])
+    assert amodel.params['fold_column']['actual']['column_name'] == fold_column
+    assert amodel.params['weights_column']['actual']['column_name'] == weights_column
+
+
 def test_balance_classes():
     print("Check balance_classes & related args work properly")
     ds = import_dataset()
@@ -384,9 +433,6 @@ def test_default_max_runtime_if_no_max_models_provided():
         assert max_models == 0
 
 
-    # TO DO  PUBDEV-5676
-    # Add a test that checks fold_column like in runit
-
 pu.run_tests([
     test_invalid_project_name,
     test_early_stopping_defaults,
@@ -399,6 +445,9 @@ pu.run_tests([
     test_predict_on_train_set,
     test_nfolds_param,
     test_nfolds_eq_0,
+    test_fold_column,
+    test_weights_column,
+    test_fold_column_with_weights_column,
     test_balance_classes,
     test_nfolds_default_and_fold_assignements_skipped_by_default,
     test_keep_cross_validation_fold_assignment_enabled_with_nfolds_neq_0,
