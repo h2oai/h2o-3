@@ -280,6 +280,7 @@ reference:
       - h2o.totss 
       - h2o.toupper
       - h2o.transform
+      - h2o.transform_word2vec
       - h2o.trim
       - h2o.trunc
       - h2o.unique

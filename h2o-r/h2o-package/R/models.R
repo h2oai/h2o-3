@@ -567,10 +567,10 @@ setMethod("h2o.transform", signature("H2OTargetEncoderModel"), function(model, d
 #'
 #' # Transform words to vectors without aggregation
 #' sentences <- as.character(as.h2o(c("b", "c", "a", NA, "b")))
-#' h2o.transform(w2v_model, sentences) # -> 5 rows total, 2 rows NA ("c" is not in the vocabulary)
+#' h2o.transform_word2vec(w2v_model, sentences) # -> 5 rows total, 2 rows NA ("c" is not in the vocabulary)
 #'
 #' # Transform words to vectors and return average vector for each sentence
-#' h2o.transform(w2v_model, sentences, aggregate_method = "AVERAGE") # -> 2 rows
+#' h2o.transform_word2vec(w2v_model, sentences, aggregate_method = "AVERAGE") # -> 2 rows
 #' }
 #' @export
 setMethod("h2o.transform", signature("H2OWordEmbeddingModel"), function(model, words, aggregate_method = c("NONE", "AVERAGE")) {
