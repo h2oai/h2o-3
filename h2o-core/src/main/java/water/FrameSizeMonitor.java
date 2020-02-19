@@ -13,11 +13,12 @@ import java.util.function.Consumer;
 
 public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
 
+    private static final String LOG_LEVEL_PROP = "util.frameSizeMonitor.logLevel";
     private static final String ENABLED_PROP = "util.frameSizeMonitor.enabled";
     private static final String SAFE_COEF_PROP = "util.frameSizeMonitor.safetyCoefficient";
     private static final String SAFE_FREE_MEM_DEFAULT_COEF = "0.2";
-    private static final int LOG_LEVEL = Log.INFO;
 
+    private static final int LOG_LEVEL;
     private static final boolean ENABLED;
     private static final float SAFE_FREE_MEM_COEF;
     private static final int SLEEP_MS = 100;
@@ -26,6 +27,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
     private static final Map<Key<Job>, FrameSizeMonitor> registry = new HashMap<>();
     
     static {
+        LOG_LEVEL = Integer.parseInt(System.getProperty(LOG_LEVEL_PROP, String.valueOf(Log.DEBUG)));
         ENABLED = H2O.getSysBoolProperty(ENABLED_PROP, false);
         SAFE_FREE_MEM_COEF = Float.parseFloat(H2O.getSysProperty(SAFE_COEF_PROP, SAFE_FREE_MEM_DEFAULT_COEF));
     }
@@ -47,12 +49,12 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
             } else if (ENABLED) {
                 if (jobKey.get().stop_requested()) {
                     // throw an exception to stop the parsing
-                    throw new IllegalStateException("Parse job stop requested. Forcefully terminating.");
+                    throw new IllegalStateException("Memory is running low. Forcefully terminating.");
                 } else {
-                    FrameSizeMonitor task = new FrameSizeMonitor(jobKey);
-                    registry.put(jobKey, task);
-                    H2O.submitTask(new LocalMR<>(task, 1));
-                    c.accept(task);
+                    FrameSizeMonitor monitor = new FrameSizeMonitor(jobKey);
+                    registry.put(jobKey, monitor);
+                    H2O.submitTask(new LocalMR<>(monitor, 1));
+                    c.accept(monitor);
                 }
             }
         }
@@ -69,9 +71,8 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
         float nextProgress = 0.02f;
         Job<Frame> job = jobKey.get();
         while (job.isRunning() && nextProgress < 1f) {
-            Log.info("FrameSizeMonitor: LOOP " + Thread.currentThread().getName());
             if (!MemoryManager.canAlloc()) {
-                Log.log(LOG_LEVEL, "FrameSizeMonitor: MemoryManager is running low on memory, stopping job " + jobKey + " writing frame " + job._result);
+                Log.info("FrameSizeMonitor: MemoryManager is running low on memory, stopping job " + jobKey + " writing frame " + job._result);
                 job.stop();
                 break;
             }
