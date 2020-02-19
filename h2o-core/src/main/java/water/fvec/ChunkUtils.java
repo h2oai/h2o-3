@@ -13,6 +13,10 @@ public class ChunkUtils {
         return Frame.createNewChunks(name, vecTypes, chunkId);
     }
 
+    public static NewChunk[] createNewChunks(String name, byte[] vecTypes, int chunkId, boolean[] sparse) {
+        return Frame.createNewChunks(name, vecTypes, chunkId, sparse);
+    }
+    
     public static void closeNewChunks(NewChunk[] nchks){
         Frame.closeNewChunks(nchks);
     }
