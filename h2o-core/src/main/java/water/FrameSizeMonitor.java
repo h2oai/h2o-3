@@ -73,13 +73,13 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
         while (job.isRunning() && nextProgress < 1f) {
             if (!MemoryManager.canAlloc()) {
                 Log.info("FrameSizeMonitor: MemoryManager is running low on memory, stopping job " + jobKey + " writing frame " + job._result);
-                job.stop();
+                job.fail(new RuntimeException("Aborting due to critically low memory."));
                 break;
             }
             float currentProgress = job.progress();
             if (currentProgress >= nextProgress) {
                 if (isMemoryUsageOverLimit() && isFrameSizeOverLimit(currentProgress, job)) {
-                    job.stop();
+                    job.fail(new RuntimeException("Aborting due to projected memory usage too high."));
                     break;
                 } else if (nextProgress < 0.1f) {
                     nextProgress = currentProgress + 0.01f;

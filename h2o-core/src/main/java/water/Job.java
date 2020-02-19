@@ -127,6 +127,17 @@ public final class Job<T extends Keyed> extends Keyed<Job> {
         }
       }.apply(this);
   }
+  public void fail(Throwable ex) {
+    new JAtomic() {
+      @Override boolean abort(Job job) { return job._stop_requested; }
+      @Override void update(Job job) {
+        job._stop_requested = true;
+        job._ex = AutoBuffer.javaSerializeWritePojo(ex);
+        job._msg = ex.getMessage();
+        Log.debug("Job " + job._description + " failed because of " + ex.getMessage());
+      }
+    }.apply(this);
+  }
 
   /** Any exception thrown by this Job, or null if none.  Note that while
    *  setting an exception generally triggers stopping a Job, stopping
