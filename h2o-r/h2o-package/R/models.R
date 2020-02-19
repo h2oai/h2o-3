@@ -2361,7 +2361,6 @@ h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' Retrieve the number of iterations.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @export
 h2o.num_iterations <- function(object) { object@model$model_summary$number_of_iterations }
 
