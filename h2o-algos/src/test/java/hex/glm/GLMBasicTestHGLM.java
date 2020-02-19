@@ -51,6 +51,7 @@ public class GLMBasicTestHGLM extends TestUtil {
       ModelMetricsHGLMGaussianGaussian mmetrics = (ModelMetricsHGLMGaussianGaussian) model._output._training_metrics;
       Scope.track_generic(mmetrics);
       assertEquals(363.6833, mmetrics._hlik, 1e-4);
+      System.out.println("**************** testSemiconductor test completed. ****************");
     } finally {
       Scope.exit();
     }
