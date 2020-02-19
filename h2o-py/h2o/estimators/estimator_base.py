@@ -149,6 +149,9 @@ class H2OEstimator(ModelBase):
         names = training_frame.names if training_frame is not None else []
         ncols = training_frame.ncols if training_frame is not None else 0
         types = training_frame.types if training_frame is not None else {}
+        
+        if "checkpoint" in parms and isinstance(parms["checkpoint"], H2OEstimator):
+            parms["checkpoint"] = parms["checkpoint"].key
 
         if is_supervised:
             if y is None: y = "response"

@@ -558,8 +558,10 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
     Import Hive table to H2OFrame in memory.
 
     Make sure to start H2O with Hive on classpath. Uses hive-site.xml on classpath to connect to Hive.
+    When database is specified as jdbc URL uses Hive JDBC driver to obtain table metadata. then
+    uses direct HDFS access to import data.
 
-    :param database: Name of Hive database (default database will be used by default)
+    :param database: Name of Hive database (default database will be used by default), can be also a JDBC URL.
     :param table: name of Hive table to import
     :param partitions: a list of lists of strings - partition key column values of partitions you want to import.
     :param allow_multi_format: enable import of partitioned tables with different storage formats used. WARNING:
@@ -571,10 +573,12 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
     
     >>> basic_import = h2o.import_hive_table("default",
     ...                                      "table_name")
+    >>> jdbc_import = h2o.import_hive_table("jdbc:hive2://hive-server:10000/default",
+    ...                                      "table_name")
     >>> multi_format_enabled = h2o.import_hive_table("default",
     ...                                              "table_name",
     ...                                              allow_multi_format=True)
-    >>> with_partition_filter = h2o.import_hive_table("default",
+    >>> with_partition_filter = h2o.import_hive_table("jdbc:hive2://hive-server:10000/default",
     ...                                               "table_name",
     ...                                               [["2017", "02"]])
     """
@@ -1403,6 +1407,31 @@ def save_model(model, path="", force=False):
     assert_is_type(force, bool)
     path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
     return api("GET /99/Models.bin/%s" % model.model_id, data={"dir": path, "force": force})["dir"]
+
+
+def download_model(model, path=""):
+    """
+    Download an H2O Model object to disk.
+
+    :param model: The model object to download.
+    :param path: a path to the directory where the model should be saved.
+
+    :returns: the path of the downloaded model
+
+    :examples:
+    
+    >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+    >>> h2o_df = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+    >>> my_model = H2OGeneralizedLinearEstimator(family = "binomial")
+    >>> my_model.train(y = "CAPSULE",
+    ...                x = ["AGE", "RACE", "PSA", "GLEASON"],
+    ...                training_frame = h2o_df)
+    >>> h2o.download_model(my_model, path='', force=True)
+    """
+    assert_is_type(model, ModelBase)
+    assert_is_type(path, str)
+    path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
+    return api("GET /3/Models.fetch.bin/%s" % model.model_id, save_to=path)
 
 
 def load_model(path):

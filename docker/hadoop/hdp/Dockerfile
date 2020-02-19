@@ -1,5 +1,6 @@
 # pull base image
-FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-4.10.1:14
+ARG PARENT_VERSION
+FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-4.10.1:${PARENT_VERSION}
 
 # maintainer details
 MAINTAINER h2oai "h2o.ai"
@@ -67,7 +68,7 @@ RUN rm /usr/hdp/*/hadoop/conf/* && \
     cp /usr/hdp/*/etc/hadoop/conf.pseudo/* /usr/hdp/*/hadoop/conf/
 
 # Copy hadoop configs
-COPY ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}
+COPY ${PATH_PREFIX}/../common/conf/ ${PATH_PREFIX}/conf/ ${HADOOP_CONF_DIR}/
 
 # Generate mapred-site.xml
 RUN chmod 700 /usr/sbin/generate-mapred-site && \
@@ -109,5 +110,8 @@ RUN /usr/sbin/install_ldap.sh
 # H2O, Hadoop UI, Hive, LDAP
 EXPOSE 54321 8088 10000 389
 
-# Remove hadoop pids
-RUN rm -f tmp/*.pid /var/run/hadoop-hdfs/*.pid
+# Remove hadoop pids and fix permissions
+RUN rm -f tmp/*.pid /var/run/hadoop-hdfs/*.pid && \
+    chmod g-w /var/run/hadoop-* && \
+    chown hdfs:hadoop /var/run/hadoop-hdfs && \
+    chown mapred:hadoop /var/run/hadoop-mapreduce

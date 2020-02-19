@@ -1487,7 +1487,7 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 h2o.coef <- function(object) {
   if (is(object, "H2OModel") && object@algorithm %in% c("glm", "coxph")) {
     if (object@algorithm == "glm" && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
-      object@model$coefficients_table
+        grabCoeff(object@model$coefficients_table, "coefs_class", FALSE)
     } else {
       structure(object@model$coefficients_table$coefficients,
                 names = object@model$coefficients_table$names)
@@ -1521,7 +1521,7 @@ h2o.coef <- function(object) {
 h2o.coef_norm <- function(object) {
   if (is(object, "H2OModel") && object@algorithm == "glm") {
     if (object@allparameters$family %in% c("multinomial", "ordinal")) {
-      object@model$coefficients_table
+        grabCoeff(object@model$coefficients_table, "std_coefs_class", TRUE)
     } else {
       structure(object@model$coefficients_table$standardized_coefficients,
                 names = object@model$coefficients_table$names)
@@ -1529,6 +1529,27 @@ h2o.coef_norm <- function(object) {
   } else {
     stop("Can only extract coefficients from GLMs")
   }
+}
+
+grabCoeff <- function(tempTable, nameStart, standardize=FALSE) {
+    coeffNamesPerClass <- tempTable$names # contains coeff names per class
+    totTableLength <- length(tempTable)
+    startIndex <- 2
+    endIndex <- (totTableLength-1)/2+1
+    if (standardize) {
+        startIndex <- (totTableLength-1)/2+2   # starting index for standardized coefficients
+        endIndex <- totTableLength
+    }
+    coeffClassNames <- c("coefficient_names")
+    coeffPerClassAll <- list(coefficients_names=coeffNamesPerClass)
+    cindex <- 0
+    for (index in c(startIndex:endIndex)) {
+        vals <- tempTable[,index]
+        coeffClassNames <- c(coeffClassNames, paste(nameStart, cindex, sep="_"))
+        cindex <- cindex+1
+        coeffPerClassAll[[cindex+1]] <- vals
+    }
+    structure(coeffPerClassAll, names=coeffClassNames)
 }
 
 #' Retrieves Mean Squared Error Value
@@ -3059,7 +3080,7 @@ setMethod("h2o.confusionMatrix", "H2OModel", function(object, newdata, valid=FAL
     fallout='fpr',
     missrate='fnr',
     recall='tpr',
-    sensitivity='fnr',
+    sensitivity='tpr',
     specificity='tnr'
 )
 .h2o.maximizing_metrics <- c('absolute_mcc', 'accuracy', 'precision',

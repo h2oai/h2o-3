@@ -437,3 +437,44 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
   }
   return(paste0(model_id,".zip"))
 }
+
+#'
+#' Download the model in binary format.
+#'
+#' @param model An H2OModel
+#' @param path The path where binary file should be downloaded. Downloaded to current directory by default.
+#'
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h <- h2o.init()
+#' fr <- as.h2o(iris)
+#' my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
+#' h2o.download_model(my_model)  # save to the current working directory
+#' }
+#' @export
+h2o.download_model <- function(model, path=NULL) {
+
+    if(!is.null(path) && !(is.character(path))){
+      stop("The 'path' variable should be of type character")
+    }
+    if(!is.null(path) && !(file.exists(path))){
+      stop(paste0("'path',",path,", to save pojo cannot be found."))
+    }
+    if(is.null(path)){
+      path = getwd()
+    }
+    
+    #Get model id
+    model_id <- model@model_id
+    
+    #prepare suffix to get the right endpoint
+    urlSuffix = paste0(.h2o.__MODELS, ".fetch.bin/", model_id)
+    modelname = gsub("[+\\-* !@#$%^&()={}\\[\\]|;:'\"<>,.?/]","_",model_id,perl=T)
+    
+    #Path to save model, if `path` is provided
+    file_path <- file.path(path, paste0(modelname))
+    writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), file_path, useBytes = TRUE)
+    
+    return(paste0(file_path))
+}

@@ -6,7 +6,7 @@ Introduction
 
 Ensemble machine learning methods use multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms. Many of the popular modern machine learning algorithms are actually ensembles. For example, `Random Forest <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/drf.html>`__ and `Gradient Boosting Machine (GBM) <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html>`__ are both ensemble learners.  Both bagging (e.g. Random Forest) and boosting (e.g. GBM) are methods for ensembling that take a collection of weak learners (e.g. decision tree) and form a single, strong learner.
 
-H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.  Like all supervised models in H2O, Stacked Enemseble supports regression, binary classification and multiclass classification.
+H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.  Like all supervised models in H2O, Stacked Ensemeble supports regression, binary classification and multiclass classification.
 
 Native support for ensembles of H2O algorithms was added into core H2O in version 3.10.3.1.  A separate implementation, the **h2oEnsemble** R package, is also still `available <https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble>`__, however for new projects we recommend using the native H2O version, documented below.
 
@@ -49,7 +49,7 @@ The steps below describe the individual tasks involved in training and testing a
 Training Base Models for the Ensemble
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Before training a stacked ensemble, you will need to train and cross-validate a set of "base models" which will make up the ensemble.  In order to stack these models toegther, a few things are required:
+Before training a stacked ensemble, you will need to train and cross-validate a set of "base models" which will make up the ensemble.  In order to stack these models together, a few things are required:
 
 - The models must be cross-validated using the same number of folds (e.g. ``nfolds = 5`` or use the same ``fold_column`` across base learners).
 
@@ -104,315 +104,315 @@ You can follow the progress of H2O's Stacked Ensemble development `here <https:/
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
+        library(h2o)
+        h2o.init()
 
-    # Import a sample binary outcome train/test set into H2O
-    train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-    test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        # Import a sample binary outcome train/test set into H2O
+        train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
 
-    # Identify predictors and response
-    y <- "response"
-    x <- setdiff(names(train), y)
+        # Identify predictors and response
+        y <- "response"
+        x <- setdiff(names(train), y)
 
-    # For binary classification, response should be a factor
-    train[,y] <- as.factor(train[,y])
-    test[,y] <- as.factor(test[,y])
+        # For binary classification, response should be a factor
+        train[,y] <- as.factor(train[,y])
+        test[,y] <- as.factor(test[,y])
 
-    # Number of CV folds (to generate level-one data for stacking)
-    nfolds <- 5
+        # Number of CV folds (to generate level-one data for stacking)
+        nfolds <- 5
 
-    # There are a few ways to assemble a list of models to stack toegether:
-    # 1. Train individual models and put them in a list
-    # 2. Train a grid of models
-    # 3. Train several grids of models
-    # Note: All base models must have the same cross-validation folds and 
-    # the cross-validated predicted values must be kept.
-
-
-    # 1. Generate a 2-model ensemble (GBM + RF)
-
-    # Train & Cross-validate a GBM
-    my_gbm <- h2o.gbm(x = x, 
-                      y = y, 
-                      training_frame = train, 
-                      distribution = "bernoulli",
-                      ntrees = 10, 
-                      max_depth = 3,
-                      min_rows = 2, 
-                      learn_rate = 0.2, 
-                      nfolds = nfolds, 
-                      fold_assignment = "Modulo",
-                      keep_cross_validation_predictions = TRUE,
-                      seed = 1)
-
-    # Train & Cross-validate a RF
-    my_rf <- h2o.randomForest(x = x,
-                              y = y, 
-                              training_frame = train, 
-                              ntrees = 50, 
-                              nfolds = nfolds, 
-                              fold_assignment = "Modulo",
-                              keep_cross_validation_predictions = TRUE,
-                              seed = 1)
-
-    # Train a stacked ensemble using the GBM and RF above
-    ensemble <- h2o.stackedEnsemble(x = x, 
-                                    y = y, 
-                                    training_frame = train,
-                                    model_id = "my_ensemble_binomial", 
-                                    base_models = list(my_gbm, my_rf))
-
-    # Eval ensemble performance on a test set
-    perf <- h2o.performance(ensemble, newdata = test)
-
-    # Compare to base learner performance on the test set
-    perf_gbm_test <- h2o.performance(my_gbm, newdata = test)
-    perf_rf_test <- h2o.performance(my_rf, newdata = test)
-    baselearner_best_auc_test <- max(h2o.auc(perf_gbm_test), h2o.auc(perf_rf_test))
-    ensemble_auc_test <- h2o.auc(perf)
-    print(sprintf("Best Base-learner Test AUC:  %s", baselearner_best_auc_test))
-    print(sprintf("Ensemble Test AUC:  %s", ensemble_auc_test))
-
-    # Generate predictions on a test set (if neccessary)
-    pred <- h2o.predict(ensemble, newdata = test)
+        # There are a few ways to assemble a list of models to stack toegether:
+        # 1. Train individual models and put them in a list
+        # 2. Train a grid of models
+        # 3. Train several grids of models
+        # Note: All base models must have the same cross-validation folds and 
+        # the cross-validated predicted values must be kept.
 
 
-    # 2. Generate a random grid of models and stack them together
+        # 1. Generate a 2-model ensemble (GBM + RF)
 
-    # GBM Hyperparamters
-    learn_rate_opt <- c(0.01, 0.03) 
-    max_depth_opt <- c(3, 4, 5, 6, 9)
-    sample_rate_opt <- c(0.7, 0.8, 0.9, 1.0)
-    col_sample_rate_opt <- c(0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
-    hyper_params <- list(learn_rate = learn_rate_opt,
-                         max_depth = max_depth_opt, 
-                         sample_rate = sample_rate_opt,
-                         col_sample_rate = col_sample_rate_opt)
+        # Train & Cross-validate a GBM
+        my_gbm <- h2o.gbm(x = x, 
+                          y = y, 
+                          training_frame = train, 
+                          distribution = "bernoulli",
+                          ntrees = 10, 
+                          max_depth = 3,
+                          min_rows = 2, 
+                          learn_rate = 0.2, 
+                          nfolds = nfolds, 
+                          fold_assignment = "Modulo",
+                          keep_cross_validation_predictions = TRUE,
+                          seed = 1)
 
-    search_criteria <- list(strategy = "RandomDiscrete", 
-                            max_models = 3,
-                            seed = 1)
+        # Train & Cross-validate a RF
+        my_rf <- h2o.randomForest(x = x,
+                                  y = y, 
+                                  training_frame = train, 
+                                  ntrees = 50, 
+                                  nfolds = nfolds, 
+                                  fold_assignment = "Modulo",
+                                  keep_cross_validation_predictions = TRUE,
+                                  seed = 1)
 
-    gbm_grid <- h2o.grid(algorithm = "gbm", 
-                         grid_id = "gbm_grid_binomial",
-                         x = x, 
-                         y = y,
-                         training_frame = train,
-                         ntrees = 10,
-                         seed = 1,
-                         nfolds = nfolds,
-                         fold_assignment = "Modulo",
-                         keep_cross_validation_predictions = TRUE,
-                         hyper_params = hyper_params,
-                         search_criteria = search_criteria)
+        # Train a stacked ensemble using the GBM and RF above
+        ensemble <- h2o.stackedEnsemble(x = x, 
+                                        y = y, 
+                                        training_frame = train,
+                                        model_id = "my_ensemble_binomial", 
+                                        base_models = list(my_gbm, my_rf))
 
-    # Train a stacked ensemble using the GBM grid
-    ensemble <- h2o.stackedEnsemble(x = x, 
-                                    y = y, 
-                                    training_frame = train,
-                                    model_id = "ensemble_gbm_grid_binomial",
-                                    base_models = gbm_grid@model_ids)
+        # Eval ensemble performance on a test set
+        perf <- h2o.performance(ensemble, newdata = test)
 
-    # Eval ensemble performance on a test set
-    perf <- h2o.performance(ensemble, newdata = test)
+        # Compare to base learner performance on the test set
+        perf_gbm_test <- h2o.performance(my_gbm, newdata = test)
+        perf_rf_test <- h2o.performance(my_rf, newdata = test)
+        baselearner_best_auc_test <- max(h2o.auc(perf_gbm_test), h2o.auc(perf_rf_test))
+        ensemble_auc_test <- h2o.auc(perf)
+        print(sprintf("Best Base-learner Test AUC:  %s", baselearner_best_auc_test))
+        print(sprintf("Ensemble Test AUC:  %s", ensemble_auc_test))
 
-    # Compare to base learner performance on the test set
-    .getauc <- function(mm) h2o.auc(h2o.performance(h2o.getModel(mm), newdata = test))
-    baselearner_aucs <- sapply(gbm_grid@model_ids, .getauc)
-    baselearner_best_auc_test <- max(baselearner_aucs)
-    ensemble_auc_test <- h2o.auc(perf)
-    print(sprintf("Best Base-learner Test AUC:  %s", baselearner_best_auc_test))
-    print(sprintf("Ensemble Test AUC:  %s", ensemble_auc_test))
-
-    # Generate predictions on a test set (if neccessary)
-    pred <- h2o.predict(ensemble, newdata = test)
+        # Generate predictions on a test set (if neccessary)
+        pred <- h2o.predict(ensemble, newdata = test)
 
 
-   .. code-block:: python
+        # 2. Generate a random grid of models and stack them together
 
-    import h2o
-    from h2o.estimators.random_forest import H2ORandomForestEstimator
-    from h2o.estimators.gbm import H2OGradientBoostingEstimator
-    from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
-    from h2o.grid.grid_search import H2OGridSearch
-    from __future__ import print_function
-    h2o.init()
+        # GBM Hyperparamters
+        learn_rate_opt <- c(0.01, 0.03) 
+        max_depth_opt <- c(3, 4, 5, 6, 9)
+        sample_rate_opt <- c(0.7, 0.8, 0.9, 1.0)
+        col_sample_rate_opt <- c(0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8)
+        hyper_params <- list(learn_rate = learn_rate_opt,
+                             max_depth = max_depth_opt, 
+                             sample_rate = sample_rate_opt,
+                             col_sample_rate = col_sample_rate_opt)
 
-    # Import a sample binary outcome train/test set into H2O
-    train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-    test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        search_criteria <- list(strategy = "RandomDiscrete", 
+                                max_models = 3,
+                                seed = 1)
 
-    # Identify predictors and response
-    x = train.columns
-    y = "response"
-    x.remove(y)
+        gbm_grid <- h2o.grid(algorithm = "gbm", 
+                             grid_id = "gbm_grid_binomial",
+                             x = x, 
+                             y = y,
+                             training_frame = train,
+                             ntrees = 10,
+                             seed = 1,
+                             nfolds = nfolds,
+                             fold_assignment = "Modulo",
+                             keep_cross_validation_predictions = TRUE,
+                             hyper_params = hyper_params,
+                             search_criteria = search_criteria)
 
-    # For binary classification, response should be a factor
-    train[y] = train[y].asfactor()
-    test[y] = test[y].asfactor()
+        # Train a stacked ensemble using the GBM grid
+        ensemble <- h2o.stackedEnsemble(x = x, 
+                                        y = y, 
+                                        training_frame = train,
+                                        model_id = "ensemble_gbm_grid_binomial",
+                                        base_models = gbm_grid@model_ids)
 
-    # Number of CV folds (to generate level-one data for stacking)
-    nfolds = 5 
+        # Eval ensemble performance on a test set
+        perf <- h2o.performance(ensemble, newdata = test)
 
-    # There are a few ways to assemble a list of models to stack together:
-    # 1. Train individual models and put them in a list
-    # 2. Train a grid of models
-    # 3. Train several grids of models
-    # Note: All base models must have the same cross-validation folds and 
-    # the cross-validated predicted values must be kept.
+        # Compare to base learner performance on the test set
+        .getauc <- function(mm) h2o.auc(h2o.performance(h2o.getModel(mm), newdata = test))
+        baselearner_aucs <- sapply(gbm_grid@model_ids, .getauc)
+        baselearner_best_auc_test <- max(baselearner_aucs)
+        ensemble_auc_test <- h2o.auc(perf)
+        print(sprintf("Best Base-learner Test AUC:  %s", baselearner_best_auc_test))
+        print(sprintf("Ensemble Test AUC:  %s", ensemble_auc_test))
 
-
-    # 1. Generate a 2-model ensemble (GBM + RF)
-
-    # Train and cross-validate a GBM
-    my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", 
-                                          ntrees=10,
-                                          max_depth=3, 
-                                          min_rows=2, 
-                                          learn_rate=0.2,
-                                          nfolds=nfolds, 
-                                          fold_assignment="Modulo",
-                                          keep_cross_validation_predictions=True,
-                                          seed=1)
-    my_gbm.train(x=x, y=y, training_frame=train)
-
-
-    # Train and cross-validate a RF
-    my_rf = H2ORandomForestEstimator(ntrees=50, 
-                                     nfolds=nfolds, 
-                                     fold_assignment="Modulo",
-                                     keep_cross_validation_predictions=True, 
-                                     seed=1)
-    my_rf.train(x=x, y=y, training_frame=train)
+        # Generate predictions on a test set (if neccessary)
+        pred <- h2o.predict(ensemble, newdata = test)
 
 
-    # Train a stacked ensemble using the GBM and GLM above
-    ensemble = H2OStackedEnsembleEstimator(model_id="my_ensemble_binomial",
-                                           base_models=[my_gbm, my_rf])
-    ensemble.train(x=x, y=y, training_frame=train)  
+   .. code-tab:: python
 
-    # Eval ensemble performance on the test data
-    perf_stack_test = ensemble.model_performance(test)
-    
-    # Compare to base learner performance on the test set
-    perf_gbm_test = my_gbm.model_performance(test)
-    perf_rf_test = my_rf.model_performance(test)
-    baselearner_best_auc_test = max(perf_gbm_test.auc(), perf_rf_test.auc())
-    stack_auc_test = perf_stack_test.auc()
-    print("Best Base-learner Test AUC:  {0}".format(baselearner_best_auc_test))
-    print("Ensemble Test AUC:  {0}".format(stack_auc_test))
+        import h2o
+        from h2o.estimators.random_forest import H2ORandomForestEstimator
+        from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
+        from h2o.grid.grid_search import H2OGridSearch
+        from __future__ import print_function
+        h2o.init()
 
-    # Generate predictions on a test set (if neccessary)
-    pred = ensemble.predict(test)
-    
-    
-    # 2. Generate a random grid of models and stack them together
+        # Import a sample binary outcome train/test set into H2O
+        train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
 
-    # Specify GBM hyperparameters for the grid
-    hyper_params = {"learn_rate": [0.01, 0.03],
-                    "max_depth": [3, 4, 5, 6, 9],
-                    "sample_rate": [0.7, 0.8, 0.9, 1.0],
-                    "col_sample_rate": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]}
-    search_criteria = {"strategy": "RandomDiscrete", "max_models": 3, "seed": 1}
+        # Identify predictors and response
+        x = train.columns
+        y = "response"
+        x.remove(y)
 
-    # Train the grid
-    grid = H2OGridSearch(model=H2OGradientBoostingEstimator(ntrees=10, 
-                                                            seed=1,
-                                                            nfolds=nfolds, 
-                                                            fold_assignment="Modulo",
-                                                            keep_cross_validation_predictions=True),
-                         hyper_params=hyper_params,
-                         search_criteria=search_criteria,
-                         grid_id="gbm_grid_binomial")
-    grid.train(x=x, y=y, training_frame=train)
+        # For binary classification, response should be a factor
+        train[y] = train[y].asfactor()
+        test[y] = test[y].asfactor()
 
-    # Train a stacked ensemble using the GBM grid
-    ensemble = H2OStackedEnsembleEstimator(model_id="my_ensemble_gbm_grid_binomial", 
-                                           base_models=grid.model_ids)
-    ensemble.train(x=x, y=y, training_frame=train)
+        # Number of CV folds (to generate level-one data for stacking)
+        nfolds = 5 
 
-    # Eval ensemble performance on the test data
-    perf_stack_test = ensemble.model_performance(test)
+        # There are a few ways to assemble a list of models to stack together:
+        # 1. Train individual models and put them in a list
+        # 2. Train a grid of models
+        # 3. Train several grids of models
+        # Note: All base models must have the same cross-validation folds and 
+        # the cross-validated predicted values must be kept.
 
-    # Compare to base learner performance on the test set
-    baselearner_best_auc_test = max([h2o.get_model(model).model_performance(test_data=test).auc() for model in grid.model_ids])
-    stack_auc_test = perf_stack_test.auc()
-    print("Best Base-learner Test AUC:  {0}".format(baselearner_best_auc_test))
-    print("Ensemble Test AUC:  {0}".format(stack_auc_test))
 
-    # Generate predictions on a test set (if neccessary)
-    pred = ensemble.predict(test)
+        # 1. Generate a 2-model ensemble (GBM + RF)
 
-   .. code-block:: Scala
+        # Train and cross-validate a GBM
+        my_gbm = H2OGradientBoostingEstimator(distribution="bernoulli", 
+                                              ntrees=10,
+                                              max_depth=3, 
+                                              min_rows=2, 
+                                              learn_rate=0.2,
+                                              nfolds=nfolds, 
+                                              fold_assignment="Modulo",
+                                              keep_cross_validation_predictions=True,
+                                              seed=1)
+        my_gbm.train(x=x, y=y, training_frame=train)
 
-    import org.apache.spark.h2o._
-    import water.Key
-    import java.io.File
 
-    val h2oContext = H2OContext.getOrCreate(sc)
-    import h2oContext._
-    import h2oContext.implicits._
+        # Train and cross-validate a RF
+        my_rf = H2ORandomForestEstimator(ntrees=50, 
+                                         nfolds=nfolds, 
+                                         fold_assignment="Modulo",
+                                         keep_cross_validation_predictions=True, 
+                                         seed=1)
+        my_rf.train(x=x, y=y, training_frame=train)
 
-    // Import data from the local file system as an H2O DataFrame
-    val prostateData = new H2OFrame(new File("/Users/jsmith/src/github.com/h2oai/sparkling-water/examples/smalldata/prostate.csv"))
 
-    // Build a Deep Learning model
-    import _root_.hex.deeplearning.DeepLearning
-    import _root_.hex.deeplearning.DeepLearningModel.DeepLearningParameters
-    val dlParams = new DeepLearningParameters()
-    dlParams._epochs = 100
-    dlParams._train = prostateData
-    dlParams._response_column = 'CAPSULE
-    dlParams._variable_importances = true
-    dlParams._nfolds = 5
-    dlParams._seed = 1111
-    dlParams._keep_cross_validation_predictions = true;
-    val dl = new DeepLearning(dlParams, Key.make("dlProstateModel.hex"))
-    val dlModel = dl.trainModel.get
+        # Train a stacked ensemble using the GBM and GLM above
+        ensemble = H2OStackedEnsembleEstimator(model_id="my_ensemble_binomial",
+                                               base_models=[my_gbm, my_rf])
+        ensemble.train(x=x, y=y, training_frame=train)  
 
-    // Build a GBM model
-    import _root_.hex.tree.gbm.GBM
-    import _root_.hex.tree.gbm.GBMModel.GBMParameters
-    val gbmParams = new GBMParameters()
-    gbmParams._train = prostateData
-    gbmParams._response_column = 'CAPSULE
-    gbmParams._nfolds = 5
-    gbmParams._seed = 1111
-    gbmParams._keep_cross_validation_predictions = true;
-    val gbm = new GBM(gbmParams,Key.make("gbmRegModel.hex"))
-    val gbmModel = gbm.trainModel().get()
+        # Eval ensemble performance on the test data
+        perf_stack_test = ensemble.model_performance(test)
+        
+        # Compare to base learner performance on the test set
+        perf_gbm_test = my_gbm.model_performance(test)
+        perf_rf_test = my_rf.model_performance(test)
+        baselearner_best_auc_test = max(perf_gbm_test.auc(), perf_rf_test.auc())
+        stack_auc_test = perf_stack_test.auc()
+        print("Best Base-learner Test AUC:  {0}".format(baselearner_best_auc_test))
+        print("Ensemble Test AUC:  {0}".format(stack_auc_test))
 
-    // Import required classes for Stacked Ensembles
-    import _root_.hex.Model
-    import _root_.hex.ensemble.StackedEnsembleModel
-    import _root_.hex.ensemble.StackedEnsemble
+        # Generate predictions on a test set (if neccessary)
+        pred = ensemble.predict(test)
+        
+        
+        # 2. Generate a random grid of models and stack them together
 
-    // Define Stacked Ensemble parameters
-    val stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters()
-    stackedEnsembleParameters._train = prostateData._key
-    stackedEnsembleParameters._response_column = 'CAPSULE
+        # Specify GBM hyperparameters for the grid
+        hyper_params = {"learn_rate": [0.01, 0.03],
+                        "max_depth": [3, 4, 5, 6, 9],
+                        "sample_rate": [0.7, 0.8, 0.9, 1.0],
+                        "col_sample_rate": [0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8]}
+        search_criteria = {"strategy": "RandomDiscrete", "max_models": 3, "seed": 1}
 
-    // Pass in the keys for the GBM and Deep Learning using one of the following options
-    // Option 1
-    stackedEnsembleParameters._base_models = Array(gbmRegModel._key.asInstanceOf[T_MODEL_KEY], dlModel._key.asInstanceOf[T_MODEL_KEY])
-    // Option 2
-    stackedEnsembleParameters._base_models = Array(gbmRegModel, dlModel).map(model => model._key.asInstanceOf[T_MODEL_KEY])
+        # Train the grid
+        grid = H2OGridSearch(model=H2OGradientBoostingEstimator(ntrees=10, 
+                                                                seed=1,
+                                                                nfolds=nfolds, 
+                                                                fold_assignment="Modulo",
+                                                                keep_cross_validation_predictions=True),
+                             hyper_params=hyper_params,
+                             search_criteria=search_criteria,
+                             grid_id="gbm_grid_binomial")
+        grid.train(x=x, y=y, training_frame=train)
 
-    // Define the Stacked Ensemble job
-    val stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters)
+        # Train a stacked ensemble using the GBM grid
+        ensemble = H2OStackedEnsembleEstimator(model_id="my_ensemble_gbm_grid_binomial", 
+                                               base_models=grid.model_ids)
+        ensemble.train(x=x, y=y, training_frame=train)
 
-    // Build the Stacked Ensemble model
-    val stackedEnsembleModel = stackedEnsembleJob.trainModel().get();
+        # Eval ensemble performance on the test data
+        perf_stack_test = ensemble.model_performance(test)
 
-    // Review the Stacked Ensemble model
-    stackedEnsembleModel
+        # Compare to base learner performance on the test set
+        baselearner_best_auc_test = max([h2o.get_model(model).model_performance(test_data=test).auc() for model in grid.model_ids])
+        stack_auc_test = perf_stack_test.auc()
+        print("Best Base-learner Test AUC:  {0}".format(baselearner_best_auc_test))
+        print("Ensemble Test AUC:  {0}".format(stack_auc_test))
 
-    // Review the parameters (meta learner) from the Stacked Ensemble model
-    stackedEnsembleModel._output._metalearner
+        # Generate predictions on a test set (if neccessary)
+        pred = ensemble.predict(test)
+
+   .. code-tab:: scala
+
+        import org.apache.spark.h2o._
+        import water.Key
+        import java.io.File
+
+        val h2oContext = H2OContext.getOrCreate(sc)
+        import h2oContext._
+        import h2oContext.implicits._
+
+        // Import data from the local file system as an H2O DataFrame
+        val prostateData = new H2OFrame(new File("/Users/jsmith/src/github.com/h2oai/sparkling-water/examples/smalldata/prostate.csv"))
+
+        // Build a Deep Learning model
+        import _root_.hex.deeplearning.DeepLearning
+        import _root_.hex.deeplearning.DeepLearningModel.DeepLearningParameters
+        val dlParams = new DeepLearningParameters()
+        dlParams._epochs = 100
+        dlParams._train = prostateData
+        dlParams._response_column = 'CAPSULE
+        dlParams._variable_importances = true
+        dlParams._nfolds = 5
+        dlParams._seed = 1111
+        dlParams._keep_cross_validation_predictions = true;
+        val dl = new DeepLearning(dlParams, Key.make("dlProstateModel.hex"))
+        val dlModel = dl.trainModel.get
+
+        // Build a GBM model
+        import _root_.hex.tree.gbm.GBM
+        import _root_.hex.tree.gbm.GBMModel.GBMParameters
+        val gbmParams = new GBMParameters()
+        gbmParams._train = prostateData
+        gbmParams._response_column = 'CAPSULE
+        gbmParams._nfolds = 5
+        gbmParams._seed = 1111
+        gbmParams._keep_cross_validation_predictions = true;
+        val gbm = new GBM(gbmParams,Key.make("gbmRegModel.hex"))
+        val gbmModel = gbm.trainModel().get()
+
+        // Import required classes for Stacked Ensembles
+        import _root_.hex.Model
+        import _root_.hex.ensemble.StackedEnsembleModel
+        import _root_.hex.ensemble.StackedEnsemble
+
+        // Define Stacked Ensemble parameters
+        val stackedEnsembleParameters = new StackedEnsembleModel.StackedEnsembleParameters()
+        stackedEnsembleParameters._train = prostateData._key
+        stackedEnsembleParameters._response_column = 'CAPSULE
+
+        // Pass in the keys for the GBM and Deep Learning using one of the following options
+        // Option 1
+        stackedEnsembleParameters._base_models = Array(gbmRegModel._key.asInstanceOf[T_MODEL_KEY], dlModel._key.asInstanceOf[T_MODEL_KEY])
+        // Option 2
+        stackedEnsembleParameters._base_models = Array(gbmRegModel, dlModel).map(model => model._key.asInstanceOf[T_MODEL_KEY])
+
+        // Define the Stacked Ensemble job
+        val stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters)
+
+        // Build the Stacked Ensemble model
+        val stackedEnsembleModel = stackedEnsembleJob.trainModel().get();
+
+        // Review the Stacked Ensemble model
+        stackedEnsembleModel
+
+        // Review the parameters (meta learner) from the Stacked Ensemble model
+        stackedEnsembleModel._output._metalearner
 
 FAQ
 ~~~
@@ -427,7 +427,7 @@ FAQ
 
 -  **How do I improve the performance of an ensemble?**
   
-  If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First make sure to try the default metalearner ("AUTO") and then try the other options for ``metalearner_algorithm``.  Once fully customized `metalearner support <https://0xdata.atlassian.net/browse/PUBDEV-5086>`__ is added, you can try out different hyperparamters for the metalearner algorithm as well.  
+  If you find that your ensemble is not performing better than the best base learner, then you can try a few different things.  First make sure to try the default metalearner ("AUTO") and then try the other options for ``metalearner_algorithm``.  Additionally, the custom parameters could be passed to ``metalearner_params`` (e.g., a GBM with ``ntrees=1000``, ``max_depth=10``, etc.)   
 
   Second, look to see if there are base learners that are performing much worse than the other base learners (for example, a GLM).  If so, remove them from the ensemble and try again.  
 

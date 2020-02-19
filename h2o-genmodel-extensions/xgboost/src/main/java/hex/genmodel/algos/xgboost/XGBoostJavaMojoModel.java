@@ -29,10 +29,6 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   private TreeSHAPPredictor<FVec> _treeSHAPPredictor;
   private OneHotEncoderFactory _1hotFactory;
 
-  static {
-    XGBoostJavaObjFunRegistration.register();
-  }
-
   public XGBoostJavaMojoModel(byte[] boosterBytes, String[] columns, String[][] domains, String responseColumn) {
     this(boosterBytes, columns, domains, responseColumn, false);
   }
@@ -49,14 +45,13 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     _1hotFactory = new OneHotEncoderFactory();
   }
 
-  private static Predictor makePredictor(byte[] boosterBytes) {
+  public static Predictor makePredictor(byte[] boosterBytes) {
     try (InputStream is = new ByteArrayInputStream(boosterBytes)) {
       return new Predictor(is);
     } catch (IOException e) {
-      throw new IllegalStateException(e);
+      throw new IllegalStateException("Failed to load predictor.", e);
     }
   }
-
   private static TreeSHAPPredictor<FVec> makeTreeSHAPPredictor(Predictor predictor) {
     if (predictor.getNumClass() > 2) {
       throw new UnsupportedOperationException("Calculating contributions is currently not supported for multinomial models.");
@@ -72,11 +67,15 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   }
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {
-    if (offset != 0) throw new UnsupportedOperationException("Unsupported: offset != 0");
-
     FVec row = _1hotFactory.fromArray(doubles);
-    float[] out = _predictor.predict(row);
-
+    float[] out;
+    if (_hasOffset) {
+      out = _predictor.predict(row, (float) offset);
+    } else if (offset != 0) {
+      throw new UnsupportedOperationException("Unsupported: offset != 0");
+    } else {
+      out = _predictor.predict(row);
+    }
     return toPreds(doubles, out, preds, _nclasses, _priorClassDistrib, _defaultThreshold);
   }
 

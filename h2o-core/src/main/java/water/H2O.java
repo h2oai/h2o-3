@@ -690,6 +690,14 @@ final public class H2O {
         trgt.clientDisconnectTimeout = clientDisconnectTimeout;
       } else if (s.matches("useUDP")) {
         Log.warn("Support for UDP communication was removed from H2O, using TCP.");
+      } else if (s.matches("watchdog_client_retry_timeout")) {
+        warnWatchdogRemoved("watchdog_client_retry_timeout");
+      } else if (s.matches("watchdog_client")) {
+        warnWatchdogRemoved("watchdog_client");
+      } else if (s.matches("watchdog_client_connect_timeout")) {
+        warnWatchdogRemoved("watchdog_client_connect_timeout");
+      } else if (s.matches("watchdog_stop_without_client")) {
+        warnWatchdogRemoved("watchdog_stop_without_client");
       } else if (s.matches("features")) {
         i = s.incrementAndCheck(i, args);
         trgt.features_level = ModelBuilder.BuilderVisibility.valueOfIgnoreCase(args[i]);
@@ -709,6 +717,11 @@ final public class H2O {
     return trgt;
   }
 
+  private static void warnWatchdogRemoved(String param) {
+    Log.warn("Support for watchdog client communication was removed and '" + param + "' argument has no longer any effect. " +
+            "It will be removed in the next major release 3.30.");
+  }
+  
   private static void validateArguments() {
     if (ARGS.jks != null) {
       if (! new File(ARGS.jks).exists()) {
@@ -2211,6 +2224,12 @@ final public class H2O {
       new ClientDisconnectCheckThread().start();
     }
 
+    if (isGCLoggingEnabled()) {
+      Log.info(H2O.technote(16,
+              "GC logging is enabled, you might see messages containing \"GC (Allocation Failure)\". " +
+                      "Please note that this is a normal part of GC operations and occurrence of such messages doesn't directly indicate an issue."));
+    }
+    
     long time12 = System.currentTimeMillis();
     Log.debug("Timing within H2O.main():");
     Log.debug("    Args parsing & validation: " + (time1 - time0) + "ms");
@@ -2224,6 +2243,18 @@ final public class H2O {
     Log.debug("    Start network services: " + (time10 - time9) + "ms");
     Log.debug("    Cloud up: " + (time11 - time10) + "ms");
     Log.debug("    Start GA: " + (time12 - time11) + "ms");
+  }
+
+  private static boolean isGCLoggingEnabled() {
+    RuntimeMXBean runtimeMXBean = ManagementFactory.getRuntimeMXBean();
+    List<String> jvmArgs = runtimeMXBean.getInputArguments();
+    for (String arg : jvmArgs) {
+      if (arg.startsWith("-XX:+PrintGC") || 
+              arg.equals("-verbose:gc") || 
+              (arg.startsWith("-Xlog:") && arg.contains("gc")))
+        return true;
+    }
+    return false;
   }
   
   /** Find PID of the current process, use -1 if we can't find the value. */

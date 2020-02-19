@@ -1,8 +1,8 @@
 Clusters
 --------
 
-**When trying to launch H2O, I received the following error message:
-``ERROR: Too many retries starting cloud.`` What should I do?**
+When trying to launch H2O, I received the following error message: ``ERROR: Too many retries starting cloud.`` What should I do?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you are trying to start a multi-node cluster where the nodes use
 multiple network interfaces, by default H2O will resort to using the
@@ -38,8 +38,8 @@ troubleshooting tips:
 
 --------------
 
-**What should I do if I tried to start a cluster but the nodes started
-independent clouds that are not connected?**
+What should I do if I tried to start a cluster but the nodes started independent clouds that are not connected?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Because the default cloud name is the user name of the node, if the
 nodes are on different operating systems (for example, one node is using
@@ -50,14 +50,16 @@ name for all nodes.
 
 --------------
 
-**One of the nodes in my cluster is unavailable — what do I do?**
+One of the nodes in my cluster is unavailable. What do I do?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 H2O does not support high availability (HA). If a node in the cluster is
 unavailable, bring the cluster down and create a new healthy cluster.
 
 --------------
 
-**How do I add new nodes to an existing cluster?**
+How do I add new nodes to an existing cluster?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 New nodes can only be added if H2O has not started any jobs. Once H2O
 starts a task, it locks the cluster to prevent new nodes from joining.
@@ -66,15 +68,16 @@ additional nodes.
 
 --------------
 
-**How do I check if all the nodes in the cluster are healthy and
-communicating?**
+How do I check if all the nodes in the cluster are healthy and communicating?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the Flow web UI, click the **Admin** menu and select **Cluster
 Status**.
 
 --------------
 
-**How do I create a cluster behind a firewall?**
+How do I create a cluster behind a firewall?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 H2O uses two ports:
 
@@ -89,7 +92,8 @@ make a tunnel to reach the ``REST_API`` port. To use the cluster, the
 
 --------------
 
-**How can I create a multi-node H2O cluster on a SLURM system?**
+How can I create a multi-node H2O cluster on a SLURM system?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The syntax below comes from `https://github.com/ck37/savio-notes/blob/master/h2o-slurm-multinode.Rmd <https://github.com/ck37/savio-notes/blob/master/h2o-slurm-multinode.Rmd>`__ and describes how to create a multi-node H2O cluster on a Simple Linux Utility for Resource Management (SLURM) system using R. 
 
@@ -170,7 +174,8 @@ The syntax below comes from `https://github.com/ck37/savio-notes/blob/master/h2o
 
 --------------
 
-**I launched H2O instances on my nodes - why won't they form a cloud?**
+I launched H2O instances on my nodes. Why won't they form a cloud?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If you launch without specifying the IP address by adding argument -ip:
 
@@ -199,7 +204,8 @@ specified IP:
 
 --------------
 
-**How does the timeline tool work?**
+How does the timeline tool work?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The timeline is a debugging tool that provides information on the
 current communication between H2O nodes. It shows a snapshot of the most
@@ -228,3 +234,13 @@ The following information displays for each message:
    retrieves the ID of a previously unseen type
 -  ``bytes``: Information extracted from the message, including the type
    of the task and the unique task number
+
+--------------
+
+Why do I receive GC (Allocation Failure)?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The G1 collector copies live data out of one region (evacuation) and into another. You will receive a "[GC (Allocation Failure)]" when there is no more space left to allocate live objects from the region being evacuated. Note that this is a normal part of GC operations, and the occurrence of these messages doesn't directly indicate an issue.
+
+More information is available here:
+`https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/g1_gc.html <https://docs.oracle.com/javase/8/docs/technotes/guides/vm/gctuning/g1_gc.html>`__

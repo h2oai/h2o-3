@@ -6,6 +6,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.algos.tree.ConvertTreeOptions;
 import hex.genmodel.algos.gbm.GbmMojoModel;
 import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeGraphConverter;
 import hex.genmodel.algos.tree.TreeBackedMojoModel;
 
 import java.io.File;
@@ -13,34 +14,46 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.*;
+import java.util.List;
+
+import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 /**
  * Print dot (graphviz) representation of one or more trees in a DRF or GBM model.
  */
-public class PrintMojo {
+public class PrintMojo implements MojoPrinter {
   
-  enum Format {
-    dot, json, raw
-  }
-  
-  private MojoModel genModel;
-  private Format format = Format.dot;
-  private int treeToPrint = -1;
-  private int maxLevelsToPrintPerEdge = 10;
-  private boolean detail = false;
-  private String outputFileName = null;
-  private String optionalTitle = null;
-  private PrintTreeOptions pTreeOptions;
-  private boolean internal;
+  protected MojoModel genModel;
+  protected Format format = Format.dot;
+  protected int treeToPrint = -1;
+  protected int maxLevelsToPrintPerEdge = 10;
+  protected boolean detail = false;
+  protected String outputFileName = null;
+  protected String optionalTitle = null;
+  protected PrintTreeOptions pTreeOptions;
+  protected boolean internal;
+  protected final String tmpOutputFileName = "tmpOutputFileName.gv";
 
   public static void main(String[] args) {
+    MojoPrinter mojoPrinter = null;
+    
+    if (JAVA_VERSION.isKnown() && JAVA_VERSION.getMajor() > 7) {
+      ServiceLoader<MojoPrinter> mojoPrinters = ServiceLoader.load(MojoPrinter.class);
+      for (MojoPrinter printer : mojoPrinters) {
+        if (printer.supportsFormat(getFormat(args))) {
+          mojoPrinter = printer;
+        }
+      }
+    } else {
+      mojoPrinter = new PrintMojo();
+    }
+    
     // Parse command line arguments
-    PrintMojo main = new PrintMojo();
-    main.parseArgs(args);
+    mojoPrinter.parseArgs(args);
 
     // Run the main program
     try {
-      main.run();
+      mojoPrinter.run();
     } catch (Exception e) {
       e.printStackTrace();
       System.exit(2);
@@ -50,18 +63,42 @@ public class PrintMojo {
     System.exit(0);
   }
 
+  @Override
+  public boolean supportsFormat(Format format) {
+    if (Format.png.equals(format)){
+      return false;
+    } else {
+      return true;
+    }
+  }
+  
+  static Format getFormat(String[] args) {
+    for (int i = 0; i < args.length; i++) {
+      if (args[i].equals("--format")) {
+        try {
+          return Format.valueOf(args[++i]);
+        }
+        catch (Exception e) {
+          // invalid format will be handled in parseArgs()
+          return null;
+        }
+      }
+    }
+    return null;
+  }
+
   private void loadMojo(String modelName) throws IOException {
     genModel = MojoModel.load(modelName);
   }
 
-  private static void usage() {
+  protected static void usage() {
     System.out.println("Emit a human-consumable graph of a model for use with dot (graphviz).");
     System.out.println("The currently supported model types are DRF, GBM and XGBoost.");
     System.out.println();
     System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PrintMojo [--tree n] [--levels n] [--title sss] [-o outputFileName]");
     System.out.println();
-    System.out.println("    --format        Output format.");
-    System.out.println("                    dot|json|raw [default dot]");
+    System.out.println("    --format        Output format. For .png output at least Java 8 is required.");
+    System.out.println("                    dot|json|raw|png [default dot]");
     System.out.println();
     System.out.println("    --tree          Tree number to print.");
     System.out.println("                    [default all]");
@@ -75,7 +112,7 @@ public class PrintMojo {
     System.out.println();
     System.out.println("    --input | -i    Input mojo file.");
     System.out.println();
-    System.out.println("    --output | -o   Output dot filename.");
+    System.out.println("    --output | -o   Output filename. Taken as a directory name in case of .png format and multiple trees to visualize.");
     System.out.println("                    [default stdout]");
     System.out.println("    --decimalplaces | -d    Set decimal places of all numerical values.");
     System.out.println();
@@ -94,7 +131,7 @@ public class PrintMojo {
     System.exit(1);
   }
 
-  private void parseArgs(String[] args) {
+  public void parseArgs(String[] args) {
     int nPlaces = -1;
     int fontSize = 14; // default size is 14
     boolean setDecimalPlaces = false;
@@ -204,14 +241,14 @@ public class PrintMojo {
     }
   }
 
-  private void validateArgs() {
+  protected void validateArgs() {
     if (genModel == null) {
       System.out.println("ERROR: Must specify -i");
       usage();
     }
   }
 
-  private void run() throws Exception {
+  public void run() throws Exception {
     validateArgs();
     PrintStream os;
     if (outputFileName != null) {
@@ -220,8 +257,8 @@ public class PrintMojo {
     else {
       os = System.out;
     }
-    if (genModel instanceof TreeBackedMojoModel){
-      TreeBackedMojoModel treeBackedModel = (TreeBackedMojoModel) genModel;
+    if (genModel instanceof SharedTreeGraphConverter) {
+      SharedTreeGraphConverter treeBackedModel = (SharedTreeGraphConverter) genModel;
       ConvertTreeOptions options = new ConvertTreeOptions().withTreeConsistencyCheckEnabled();
       final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null, options);
       switch (format) {
@@ -232,12 +269,16 @@ public class PrintMojo {
           g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
           break;
         case json:
-          printJson(treeBackedModel, g, os);
+          if (!(treeBackedModel instanceof TreeBackedMojoModel)) {
+            System.out.println("ERROR: Printing XGBoost MOJO as JSON not supported");
+            System.exit(1);
+          }
+          printJson((TreeBackedMojoModel) treeBackedModel, g, os);
           break;
       }
     }
     else {
-      System.out.println("ERROR: Unknown MOJO type");
+      System.out.println("ERROR: Unsupported MOJO type");
       System.exit(1);
     }
   }

@@ -6,6 +6,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -13,6 +14,38 @@ public class AutoBufferTest extends TestUtil {
 
   @BeforeClass()
   public static void setup() { stall_till_cloudsize(1); }
+
+  @Test
+  public void testPutA8ArrayWithJustZeros() {
+    long[] arr = new long[AutoBuffer.BBP_SML._size * 2];
+    AutoBuffer ab = new AutoBuffer(H2O.SELF, (byte) 1);
+    ab.putA8(arr);
+    assertTrue(ab._bb.hasArray());
+    assertFalse(ab._bb.isDirect());
+    assertEquals(ab._bb.array().length, 16);
+
+  }
+
+  @Test
+  public void testPutA8SmallBufferAfterTrimmed() {
+    long[] arr = new long[AutoBuffer.BBP_SML._size * 2];
+    arr[1000] = 42;
+    AutoBuffer ab = new AutoBuffer(H2O.SELF, (byte) 1);
+    ab.putA8(arr);
+    assertTrue(ab._bb.hasArray());
+    assertFalse(ab._bb.isDirect());
+    assertEquals(ab._bb.array().length, 16);
+  }
+
+  @Test
+  public void testPutA8BigBufferAfterTrimmed() {
+    long[] arr = new long[AutoBuffer.BBP_SML._size * 2];
+    Arrays.fill(arr, Long.MAX_VALUE);
+    AutoBuffer ab = new AutoBuffer(H2O.SELF, (byte) 1);
+    ab.putA8(arr);
+    assertFalse(ab._bb.hasArray());
+    assertTrue(ab._bb.isDirect());
+  }
 
   @Test
   public void testOutputStreamBigDataBigChunks() {

@@ -17,33 +17,33 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the iris dataset: 
-	train.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
-	train.hex$constantCol <- 1
+		# import the iris dataset: 
+		train.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+		train.hex$constantCol <- 1
 
-	# Build a GBM model. This should run successfully when 
-	# check_constant_response is set to false.
-	iris.gbm.initial <- h2o.gbm(y = 6, x = 1:5, training_frame = train.hex)
+		# Build a GBM model. This should run successfully when 
+		# check_constant_response is set to false.
+		iris.gbm.initial <- h2o.gbm(y = 6, x = 1:5, training_frame = train.hex)
 
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.gbm import H2OGradientBoostingEstimator
-	h2o.init()
+		import h2o
+		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		h2o.init()
 
-	# import the iris dataset: 
-	train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
-	train["constantCol"] = 1
+		# import the iris dataset: 
+		train = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+		train["constantCol"] = 1
 
-	# Build a GBM model. This should run successfully when 
-	# check_constant_response is set to false.
-	my_gbm = H2OGradientBoostingEstimator(check_constant_response=False)
-	my_gbm.train(x=list(range(1,5)), y="constantCol", training_frame=train)
+		# Build a GBM model. This should run successfully when 
+		# check_constant_response is set to false.
+		my_gbm = H2OGradientBoostingEstimator(check_constant_response=False)
+		my_gbm.train(x=list(range(1,5)), y="constantCol", training_frame=train)
 

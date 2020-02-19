@@ -43,7 +43,7 @@ try {
               // for rel- branches at 21:XX
               def scheduleString
               if (env.BRANCH_NAME == 'master') {
-                scheduleString = 'H 22,0,2,4,6 * * *'
+                scheduleString = 'H 0,6 * * *'
               } else if (env.BRANCH_NAME.startsWith('rel-')) {
                 scheduleString = 'H 21 * * *'
               }
@@ -71,7 +71,7 @@ try {
   }
 } finally {
   if (pipelineContext != null) {
-//    pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this))
+    pipelineContext.getEmailer().sendEmail(this, result, pipelineContext.getBuildSummary().getSummaryHTML(this))
     if (!pipelineContext.getHealthChecker().getHealthProblems().isEmpty()) {
       pipelineContext.getEmailer().sendEmail(this, 'WARNING', pipelineContext.getHealthChecker().toEmail(this, pipelineContext), ['michalr@h2o.ai'])
     }

@@ -1,13 +1,15 @@
 General
 -------
 
-**I updated my H2O to the newest version. Why can I no longer load a pre-trained model?**
+I updated my H2O to the newest version. Why can I no longer load a pre-trained model?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When saving an H2O binary model with ``h2o.saveModel`` (R), ``h2o.save_model`` (Python), or in Flow, you will only be able to load and use that saved binary model with the same version of H2O that you used to train your model. H2O binary models are not compatible across H2O versions. If you update your H2O version, then you will need to retrain your model. For production, you can save your model as a :ref:`POJO/MOJO <about-pojo-mojo>`. These artifacts are not tied to a particular version of H2O because they are just plain Java code and do not require an H2O cluster to be running.
 
 --------------
 
-**How do I score using an exported JSON model?**
+How do I score using an exported JSON model?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Since JSON is just a representation format, it cannot be directly
 executed, so a JSON export can't be used for scoring. However, you can
@@ -23,7 +25,8 @@ or
 
 --------------
 
-**How do I score using an exported POJO?**
+How do I score using an exported POJO?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The generated POJO can be used indepedently of a H2O cluster. First use
 ``curl`` to send the h2o-genmodel.jar file and the java code for model
@@ -63,14 +66,16 @@ to read the hex strings as numerics.
 
 --------------
 
-**How do I predict using multiple response variables?**
+How do I predict using multiple response variables?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Currently, H2O does not support multiple response variables. To predict
 different response variables, build multiple models.
 
 --------------
 
-**How do I kill any running instances of H2O?**
+How do I kill any running instances of H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In Terminal, enter ``ps -efww | grep h2o``, then kill any running PIDs.
 You can also find the running instance in Terminal and press **Ctrl +
@@ -80,7 +85,8 @@ display.
 
 --------------
 
-**Why is H2O not launching from the command line?**
+Why is H2O not launching from the command line?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -103,7 +109,8 @@ We recommend Oracle's `Java
 
 --------------
 
-**Why did I receive the following error when I tried to launch H2O?**
+Why did I receive the following error when I tried to launch H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ::
 
@@ -176,7 +183,8 @@ launch parameters than you have available.
 
 --------------
 
-**How does the architecture of H2O work?**
+How does the architecture of H2O work?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This
 `PDF <https://github.com/h2oai/h2o-meetups/blob/master/2014_11_18_H2O_in_Big_Data_Environments/H2OinBigDataEnvironments.pdf>`__
@@ -185,7 +193,8 @@ environments.
 
 --------------
 
-**How does ``importFiles()`` work in H2O?**
+How does ``importFiles()`` work in H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ``importFiles()`` gets the basic information for the file and then
 returns a key representing that file. This key is used during parsing to
@@ -196,7 +205,8 @@ vec that loads the file when necessary, and returns a key.
 
 --------------
 
-**Does H2O support GPUs?**
+Does H2O support GPUs?
+~~~~~~~~~~~~~~~~~~~~~~
 
 GPU support is available in H2O's XGBoost if the following requirements are met:
 
@@ -209,7 +219,8 @@ In addition to XGBoost H2O also supports GPUs as part of our H2O4GPU offering. R
 
 --------------
 
-**Can we make use of GPUs with AutoML?** 
+Can we make use of GPUs with AutoML?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 XGBoost models in AutoML can make use of GPUs. Keep in mind that the following requirements must be met:
 
@@ -220,7 +231,8 @@ And again, you can monitor your GPU utilization via the ``nvidia-smi`` command. 
 
 --------------
 
-**How can I continue working on a model in H2O after restarting?**
+How can I continue working on a model in H2O after restarting?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 There are a number of ways you can save your model in H2O:
 
@@ -237,8 +249,8 @@ There are a number of ways you can save your model in H2O:
 
 --------------
 
-**How can I find out more about H2O's real-time, nano-fast scoring
-engine?**
+How can I find out more about H2O's real-time, nano-fast scoring engine?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 H2O's scoring engine uses a Plain Old Java Object (POJO). The POJO code
 runs quickly but is single-threaded. It is intended for embedding into
@@ -259,8 +271,8 @@ Frame and can be written out using ``h2o.exportFile()``, for example.
 
 --------------
 
-**I am writing an academic research paper and I would like to cite H2O
-in my bibliography - how should I do that?**
+I am writing an academic research paper and I would like to cite H2O in my bibliography. How should I do that?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 To cite our software:
 
@@ -358,8 +370,8 @@ If you are using Bibtex:
 
 --------------
 
-**What are these RTMP and py\_ temporary Frames? Why are they the same
-size as my original data?**
+What are these RTMP and py\_ temporary Frames? Why are they the same size as my original data?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 No data is copied. H2O does a classic copy-on-write optimization. That
 Frame you see - it's nothing more than a thin wrapper over an internal

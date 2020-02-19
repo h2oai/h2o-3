@@ -263,7 +263,7 @@ class H2OCloudNode(object):
 
     def __init__(self, is_client, allow_clients,
                  cloud_num, nodes_per_cloud, node_num, cloud_name, h2o_jar, ip, base_port,
-                 xmx, cp, output_dir, test_ssl, ldap_config_path, jvm_opts, flatfile):
+                 xmx, cp, output_dir, test_ssl, ldap_config_path, jvm_opts, flatfile, strict_port=True):
         """
         Create a node in a cloud.
 
@@ -281,6 +281,7 @@ class H2OCloudNode(object):
         :param ldap_config_path: path to LDAP config, if none, no LDAP will be used.
         :param jvm_opts: str with additional JVM options.
         :param flatfile: path to flatfile (optional) 
+        :param strict_port: interpret port as exact specification, otherwise as a base port (optional, default is strict)
         :return The node object.
         """
         self.is_client = is_client
@@ -292,6 +293,7 @@ class H2OCloudNode(object):
         self.h2o_jar = h2o_jar
         self.ip = ip
         self.base_port = base_port
+        self.strict_port = strict_port
         self.xmx = xmx
         self.cp = cp
         self.output_dir = output_dir
@@ -346,10 +348,11 @@ class H2OCloudNode(object):
                "-ea"]
         if self.jvm_opts is not None:
             cmd += [self.jvm_opts]
+        port_spec = "-port" if self.strict_port else "-baseport"
         cmd += ["-cp", classpath,
                main_class,
                "-name", self.cloud_name,
-               "-port", str(self.port),
+               port_spec, str(self.port),
                "-ip", self.ip]
         if self.flatfile is not None:
             cmd += ["-flatfile", self.flatfile]
@@ -535,7 +538,7 @@ class H2OCloud(object):
     """
 
     def __init__(self, cloud_num, use_client, nodes_per_cloud, h2o_jar, base_port, xmx, cp, output_dir, test_ssl,
-                 ldap_config_path, jvm_opts=None):
+                 ldap_config_path, jvm_opts=None, strict_port=True):
         """
         Create a cluster.
         See node definition above for argument descriptions.
@@ -553,6 +556,7 @@ class H2OCloud(object):
         self.test_ssl = test_ssl
         self.ldap_config_path = ldap_config_path
         self.jvm_opts = jvm_opts
+        self.strict_port = strict_port
 
         # Randomly choose a seven digit cluster number.
         n = random.randint(1000000, 9999999)
@@ -588,7 +592,7 @@ class H2OCloud(object):
                                 "127.0.0.1", self.base_port,
                                 self.xmx, self.cp, self.output_dir,
                                 self.test_ssl, self.ldap_config_path, self.jvm_opts,
-                                self.flatfile)
+                                self.flatfile, strict_port=self.strict_port)
             if is_client:
                 self.client_nodes.append(node)
             else:

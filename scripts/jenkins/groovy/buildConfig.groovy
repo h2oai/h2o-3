@@ -14,12 +14,12 @@ class BuildConfig {
   private static final String DEFAULT_HADOOP_IMAGE_NAME_PREFIX = 'dev-build-hadoop-gradle'
   private static final String DEFAULT_RELEASE_IMAGE_NAME_PREFIX = 'dev-release-gradle'
 
-  public static final int DEFAULT_IMAGE_VERSION_TAG = 17
+  public static final int DEFAULT_IMAGE_VERSION_TAG = 21
   public static final String AWSCLI_IMAGE = DOCKER_REGISTRY + '/opsh2oai/awscli'
   public static final String S3CMD_IMAGE = DOCKER_REGISTRY + '/opsh2oai/s3cmd'
 
   private static final String HADOOP_IMAGE_NAME_PREFIX = 'h2o-3-hadoop'
-  private static final String HADOOP_IMAGE_VERSION_TAG = '72'
+  private static final String HADOOP_IMAGE_VERSION_TAG = '77'
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'
@@ -309,11 +309,23 @@ class BuildConfig {
   }
 
   String getSmokeHadoopImage(final distribution, final version, final useKRB) {
-      def krbSuffix = ''
-      if (useKRB) {
-          krbSuffix = '-krb'
-      }
-      return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${krbSuffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
+    def krbSuffix = ''
+    if (useKRB) {
+        krbSuffix = '-krb'
+    }
+    return getSmokeHadoopImageImpl(distribution, version, krbSuffix)
+  }
+  
+  String getHadoopEdgeNodeImage(final distribution, final version, final useKrb) {
+    def suffix = "-0xd-edge"
+    if (useKrb) {
+      suffix = '-krb' + suffix
+    }
+    return getSmokeHadoopImageImpl(distribution, version, suffix)
+  }
+  
+  String getSmokeHadoopImageImpl(final distribution, final version, final suffix) {
+    return "${DOCKER_REGISTRY}/opsh2oai/${HADOOP_IMAGE_NAME_PREFIX}-${distribution}-${version}${suffix}:${HADOOP_IMAGE_VERSION_TAG}".toString()
   }
 
   static enum JenkinsMaster {

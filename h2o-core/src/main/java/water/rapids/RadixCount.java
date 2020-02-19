@@ -5,6 +5,8 @@ import water.fvec.Chunk;
 import water.util.MathUtils;
 
 import java.math.BigInteger;
+import static java.math.BigInteger.ONE;
+import static java.math.BigInteger.ZERO;
 
 class RadixCount extends MRTask<RadixCount> {
   static class Long2DArray extends Iced {
@@ -53,8 +55,8 @@ class RadixCount extends MRTask<RadixCount> {
         // common case as should never really have NA in join columns.
         for (int r = 0; r < chk._len; r++) {    // note that 0th bucket here is for rows to exclude from merge result
           long ctrVal = isIntVal ?
-                  BigInteger.valueOf(chk.at8(r)*_ascending).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
-                  MathUtils.convertDouble2BigInteger(_ascending*chk.atd(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
+                  BigInteger.valueOf(chk.at8(r)*_ascending).subtract(_base).add(ONE).shiftRight(_shift).longValue():
+                  MathUtils.convertDouble2BigInteger(_ascending*chk.atd(r)).subtract(_base).add(ONE).shiftRight(_shift).longValue();
           tmp[(int) ctrVal]++;
         }
       } else {    // contains NAs in column
@@ -64,8 +66,8 @@ class RadixCount extends MRTask<RadixCount> {
           if (chk.isNA(r)) tmp[0]++;
           else {
             long ctrVal = isIntVal ?
-                    BigInteger.valueOf(_ascending*chk.at8(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue():
-                    MathUtils.convertDouble2BigInteger(_ascending*chk.atd(r)).subtract(_base).add(BigInteger.ONE).shiftRight(_shift).longValue();
+                    BigInteger.valueOf(_ascending*chk.at8(r)).subtract(_base).add(ONE).shiftRight(_shift).longValue():
+                    MathUtils.convertDouble2BigInteger(_ascending*chk.atd(r)).subtract(_base).add(ONE).shiftRight(_shift).longValue();
             tmp[(int) ctrVal]++;
           }
 
@@ -79,7 +81,7 @@ class RadixCount extends MRTask<RadixCount> {
       // first column (for MSB split) in an Enum
       // map left categorical to right levels using _id_maps
       assert _id_maps[0].length > 0;
-      assert _base.compareTo(BigInteger.ZERO)==0;
+      assert _base.compareTo(ZERO)==0;
       if (chk.vec().naCnt() == 0) {
         for (int r=0; r<chk._len; r++) {
           tmp[BigInteger.valueOf(_id_maps[0][(int)chk.at8(r)]+1).shiftRight(_shift).intValue()]++;

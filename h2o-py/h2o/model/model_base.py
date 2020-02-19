@@ -599,11 +599,13 @@ class ModelBase(h2o_meta(Keyed)):
 
         Note: standardize = True by default, if set to False then coef() return the coefficients which are fit directly.
         """
-        tbl = self._model_json["output"]["coefficients_table"]
-        if tbl is None:
-            return None
-        return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
-
+        if self._model_json["output"]['model_category']=="Multinomial":
+            return self._fillMultinomialDict(False)
+        else:
+            tbl = self._model_json["output"]["coefficients_table"]
+            if tbl is None:
+                return None
+            return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
 
     def coef_norm(self):
         """
@@ -612,16 +614,30 @@ class ModelBase(h2o_meta(Keyed)):
         These coefficients can be used to evaluate variable importance.
         """
         if self._model_json["output"]["model_category"]=="Multinomial":
-            tbl = self._model_json["output"]["standardized_coefficient_magnitudes"]
-            if tbl is None:
-                return None
-            return {name: coef for name, coef in zip(tbl["names"], tbl["coefficients"])}
+            return self._fillMultinomialDict(True)
         else:
             tbl = self._model_json["output"]["coefficients_table"]
             if tbl is None:
                 return None
             return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
 
+    def _fillMultinomialDict(self, standardize=False):
+        tbl = self._model_json["output"]["coefficients_table_multinomials_with_class_names"]
+        if tbl is None:
+            return None
+        coeff_dict = {} # contains coefficient names
+        coeffNames = tbl["names"]
+        all_col_header = tbl.col_header
+        startIndex = 1
+        endIndex = int((len(all_col_header)-1)/2+1)
+        if standardize:
+            startIndex = int((len(all_col_header)-1)/2+1) # start index for standardized coefficients
+            endIndex = len(all_col_header)
+        for nameIndex in list(range(startIndex, endIndex)):
+            coeffList = tbl[all_col_header[nameIndex]]
+            t1Dict = {name: coef for name, coef in zip(coeffNames, coeffList)}
+            coeff_dict[all_col_header[nameIndex]]=t1Dict
+        return coeff_dict
 
     def r2(self, train=False, valid=False, xval=False):
         """
@@ -858,6 +874,19 @@ class ModelBase(h2o_meta(Keyed)):
     @deprecated(replaced_by=aucpr)
     def pr_auc(self, train=False, valid=False, xval=False):
         pass
+
+    def download_model(self, path=""):
+        """
+        Download an H2O Model object to disk.
+    
+        :param model: The model object to download.
+        :param path: a path to the directory where the model should be saved.
+    
+        :returns: the path of the downloaded model
+        """
+        assert_is_type(path, str)
+        return h2o.download_model(self, path)
+
 
     def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
         """

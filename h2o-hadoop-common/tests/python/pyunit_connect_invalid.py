@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 # -*- encoding: utf-8 -*-
-import sys, os
-sys.path.insert(1, os.path.join("..", "..", "..", "h2o-py"))
+import sys
+import os
+sys.path.insert(1, os.path.join("../../../h2o-py"))
 import h2o
 from h2o.exceptions import H2OServerError
 from tests import pyunit_utils

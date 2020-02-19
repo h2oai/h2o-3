@@ -4,7 +4,7 @@
 description = "H2O Parquet Parser"
 
 def parquetHadoopVersion = binding.variables.get("hadoopVersion") ?
-  binding.variables.get("hadoopVersion") : defaultHadoopClientVersion
+  binding.variables.get("hadoopVersion") : defaultHadoopVersion
 
 configurations{
     // Configuration used to get all transitive dependencies for org.apache.hadoop:hadoop-common

@@ -853,11 +853,11 @@ public class EasyPredictModelWrapper implements Serializable {
   protected double[] predict(RowData data, double offset, double[] preds) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    if (offset == 0) {
-      preds = m.score0(rawData, preds);
+    if (m.requiresOffset() || offset != 0) {
+      preds = m.score0(rawData, offset, preds);
     }
     else {
-      preds = m.score0(rawData, offset, preds);
+      preds = m.score0(rawData, preds);
     }
     return preds;
   }

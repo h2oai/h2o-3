@@ -775,29 +775,13 @@ class H2OBinomialModel(ModelBase):
 
         :examples:
 
-        >>> airlines = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-        >>> airlines["Year"] = airlines["Year"].asfactor()
-        >>> airlines["Month"] = airlines["Month"].asfactor()
-        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
-        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
-        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
-        >>> myX = ["Origin", "Dest", "Distance", "UniqueCarrier",
-        ...        "Month", "DayofMonth", "DayOfWeek"]
-        >>> myY = "IsDepDelayed"
-        >>> train, valid = airlines.split_frame(ratios=[.8], seed=1234)
-        >>> air_gbm = H2OGradientBoostingEstimator(distribution="bernoulli",
-        ...                                        ntrees=100,
-        ...                                        max_depth=3,
-        ...                                        learn_rate=0.01)
-        >>> air_gbm.train(x=myX,
-        ...               y=myY,
-        ...               training_frame=train,
-        ...               validation_frame=valid)
-        >>> air_gbm.plot(type="roc", train=True, server=True)
-        >>> air_gbm.plot(type="roc", valid=True, server=True)
-        >>> perf = air_gbm.model_performance(valid)
-        >>> perf.plot(type="roc", server=True)
-        >>> perf.plot
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> benign = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
+        >>> response = 3
+        >>> predictors = [0, 1, 2, 4, 5, 6, 7, 8, 9, 10]
+        >>> model = H2OGeneralizedLinearEstimator(family="binomial")
+        >>> model.train(x=predictors, y=response, training_frame=benign)
+        >>> model.plot(timestep="AUTO", metric="objective", server=False)
         """
         assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse", "objective", 
                        "negative_log_likelihood")

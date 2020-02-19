@@ -1,6 +1,7 @@
 ext {
   hadoopVersion = 'hdp2.6'
-  hadoopMavenArtifactVersion = '2.7.3.2.6.1.0-129'
+  hadoopMavenArtifactVersion = '2.7.3.2.6.5.196-1'
+  hdfsDependency = "hadoop-hdfs" // override the default hdfs dependency (Hadoops < 2.8 don't have hadoop-hdfs-client)
   orcSupported = true
   orcHiveExecVersion = "1.2.1000.2.6.1.0-129"
 }

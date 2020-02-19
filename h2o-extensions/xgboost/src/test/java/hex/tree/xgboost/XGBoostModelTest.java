@@ -5,29 +5,30 @@ import water.H2O;
 
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class XGBoostModelTest {
 
   @Test
-  public void testCreateParamsNThreads() throws Exception {
+  public void testCreateParamsNThreads() {
+    int maxNThreads = XGBoostModel.getMaxNThread();
     // default
     XGBoostModel.XGBoostParameters pDefault = new XGBoostModel.XGBoostParameters();
     pDefault._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check
     BoosterParms bpDefault = XGBoostModel.createParams(pDefault, 2, null);
-    assertEquals((int) H2O.ARGS.nthreads, bpDefault.get().get("nthread"));
+    assertEquals(maxNThreads, bpDefault.get().get("nthread"));
     // user specified
     XGBoostModel.XGBoostParameters pUser = new XGBoostModel.XGBoostParameters();
     pUser._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check
-    pUser._nthread = H2O.ARGS.nthreads - 1;
+    pUser._nthread = maxNThreads - 1;
     BoosterParms bpUser = XGBoostModel.createParams(pUser, 2, null);
-    assertEquals((int) H2O.ARGS.nthreads - 1, bpUser.get().get("nthread"));
+    assertEquals(maxNThreads - 1, bpUser.get().get("nthread"));
     // user specified (over the limit)
     XGBoostModel.XGBoostParameters pOver = new XGBoostModel.XGBoostParameters();
     pOver._backend = XGBoostModel.XGBoostParameters.Backend.cpu; // to disable the GPU check
     pOver._nthread = H2O.ARGS.nthreads + 1;
     BoosterParms bpOver = XGBoostModel.createParams(pOver, 2, null);
-    assertEquals((int) H2O.ARGS.nthreads, bpOver.get().get("nthread"));
+    assertEquals(maxNThreads, bpOver.get().get("nthread"));
   }
 
   @Test

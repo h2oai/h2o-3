@@ -23,7 +23,7 @@ import static org.junit.Assert.assertTrue;
 @RunWith(Parameterized.class)
 public class ParseTestMultiFileOrc extends TestUtil {
 
-    private static final String CSV_DIR = "smalldata/smalldata/synthetic_perfect_separation/";
+    private static final String CSV_FILE = "smalldata/synthetic_perfect_separation/combined.csv";
     private static final String ORC_DIR = "smalldata/parser/orc/synthetic_perfect_separation/";
 
     @Parameterized.Parameters
@@ -50,7 +50,7 @@ public class ParseTestMultiFileOrc extends TestUtil {
         };
         Scope.enter();
         try {
-            Frame csv_frame = Scope.track(parse_test_folder(CSV_DIR, "\\N", 0, null, pst));
+            Frame csv_frame = Scope.track(parse_test_file(CSV_FILE, "\\N", 0, null, pst));
             byte[] types = csv_frame.types();
             for (int index = 0; index < types.length; index++) {
                 if (types[index] == 0)

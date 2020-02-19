@@ -137,10 +137,10 @@ def test_params_are_correctly_passed_to_underlying_transformer():
     pca = H2OPCA(seed=seed)
     pca.set_params(transform='DEMEAN', k=3)
     pca.model_id = "dummy"
-    assert pca._estimator is None
+    assert pca.estimator is None
     pca._make_estimator()  # normally done when calling `fit`
-    assert pca._estimator
-    parms = pca._estimator._parms
+    assert pca.estimator
+    parms = pca.estimator._parms
     assert parms['seed'] == seed
     assert parms['transform'] == 'DEMEAN'
     assert parms['k'] == 3
@@ -152,9 +152,9 @@ def test_params_are_correctly_passed_to_underlying_estimator():
     estimator = H2OGradientBoostingEstimator(seed=seed)
     estimator.set_params(max_depth=10, learn_rate=0.5)
     estimator.model_id = "dummy"
-    assert estimator._estimator is None
+    assert estimator.estimator is None
     estimator._make_estimator()  # normally done when calling `fit`
-    real_estimator = estimator._estimator
+    real_estimator = estimator.estimator
     assert real_estimator
     parms = real_estimator._parms
     assert real_estimator.seed == parms['seed'] == seed
@@ -169,9 +169,9 @@ def test_params_are_correctly_passed_to_underlying_automl():
     estimator = H2OAutoMLEstimator(seed=seed)
     estimator.set_params(max_models=5, nfolds=0)
     estimator.project_name = "dummy"
-    assert estimator._estimator is None
+    assert estimator.estimator is None
     estimator._make_estimator()  # normally done when calling `fit`
-    aml = estimator._estimator
+    aml = estimator.estimator
     assert aml
     assert aml.build_control["stopping_criteria"]["seed"] == seed
     assert aml.build_control["stopping_criteria"]["max_models"] == 5

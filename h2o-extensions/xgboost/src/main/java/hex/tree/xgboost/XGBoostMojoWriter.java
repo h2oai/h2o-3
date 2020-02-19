@@ -19,7 +19,7 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
   }
 
   @Override public String mojoVersion() {
-    return "1.00";
+    return "1.10";
   }
 
   @Override
@@ -41,6 +41,6 @@ public class XGBoostMojoWriter extends ModelMojoWriter<XGBoostModel, XGBoostMode
       writekv("calib_method", "platt");
       writekv("calib_glm_beta", beta);
     }
-
+    writekv("has_offset", model._output.hasOffset());
   }
 }

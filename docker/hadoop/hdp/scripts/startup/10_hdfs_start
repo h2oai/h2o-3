@@ -11,4 +11,4 @@ fi
 
 sudo -E -u hdfs /usr/hdp/current/hadoop-client/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start namenode
 sudo -E -u hdfs /usr/hdp/current/hadoop-client/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start secondarynamenode
-sudo -E ${STARTUP_DATANODE_USER_OVERRIDE} /usr/hdp/current/hadoop-client/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start datanode
+sudo -E /usr/hdp/current/hadoop-client/sbin/hadoop-daemon.sh --config $HADOOP_CONF_DIR start datanode

@@ -204,7 +204,7 @@ class H2OFrame(Keyed):
         :param int cols: number of columns to fetch (all by default)
         :param full_cols: number of columns to fetch together with backed data
         :param int cols_offset: offset to fetch rows from (0 by default)
-        :param bool light: wether to use light frame endpoint or not
+        :param bool light: whether to use light frame endpoint or not
         :returns: an existing H2OFrame with the id provided; or None if such frame doesn't exist.
 
         :examples:
@@ -2633,8 +2633,16 @@ class H2OFrame(Keyed):
             if frame.ncol != self.ncol:
                 raise H2OValueError("Cannot row-bind a dataframe with %d columns to a data frame with %d columns: "
                                     "the columns must match" % (frame.ncol, self.ncol))
-            if frame.columns != self.columns or frame.types != self.types:
-                raise H2OValueError("Column names and types must match for rbind() to work")
+            if frame.columns != self.columns:
+                raise H2OValueError("Column names must match for rbind() to work")
+            if frame.types != self.types: # compare the whole list here
+                validTypes = [u'float', u'real', u'double', u'int', u'long', u'numeric']
+                for eachKey in frame.types.keys(): 
+                    sametypes = frame.types[eachKey]==self.types[eachKey]
+                    bothNumericTypes = (frame.types[eachKey] in validTypes) and (self.types[eachKey] in validTypes)
+                    if not(sametypes) and not(bothNumericTypes):
+                        raise H2OValueError("Column types must match for rbind() to work.  First column type {0}.  "
+                                            "Second column type {1})".format(self.types[eachKey], frame.types[eachKey]))
         fr = H2OFrame._expr(expr=ExprNode("rbind", self, *frames), cache=self._ex._cache)
         fr._ex._cache.nrows = self.nrow + sum(frame.nrow for frame in frames)
         return fr
@@ -3247,7 +3255,7 @@ class H2OFrame(Keyed):
         return ExprNode("sd", self, na_rm)._eager_scalar()
 
 
-    def cor(self, y=None, na_rm=False, use=None):
+    def cor(self, y=None, na_rm=False, use=None, method="Pearson"):
         """
         Compute the correlation matrix of one or two H2OFrames.
 
@@ -3263,6 +3271,7 @@ class H2OFrame(Keyed):
         :param bool na_rm: an alternative to ``use``: when this is True then default value for ``use`` is
             ``"everything"``; and if False then default ``use`` is ``"complete.obs"``. This parameter has no effect
             if ``use`` is given explicitly.
+        :param str method: Which method to use - value must be in ["Pearson", "Spearman"]. Defaults to "Pearson".
 
         :returns: An H2OFrame of the correlation matrix of the columns of this frame (if ``y`` is not given),
             or with the columns of ``y`` (if ``y`` is given). However when this frame and ``y`` are both single rows
@@ -3284,8 +3293,8 @@ class H2OFrame(Keyed):
         if y is None:
             y = self
         if use is None: use = "complete.obs" if na_rm else "everything"
-        if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use)._eager_scalar()
-        return H2OFrame._expr(expr=ExprNode("cor", self, y, use))._frame()
+        if self.nrow == 1 or (self.ncol == 1 and y.ncol == 1): return ExprNode("cor", self, y, use, method)._eager_scalar()
+        return H2OFrame._expr(expr=ExprNode("cor", self, y, use, method))._frame()
 
 
     def distance(self, y, measure=None):

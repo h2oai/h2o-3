@@ -8,6 +8,7 @@ dependencies {
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
 
     testCompile "junit:junit:${junitVersion}"
+    testCompile "com.github.stefanbirkner:system-rules:1.18.0"
     testCompile 'com.esotericsoftware.kryo:kryo:2.21'
     testCompile project(path: ":h2o-core", configuration: "testArchives")
     testCompile project(path: ":h2o-algos", configuration: "testArchives")

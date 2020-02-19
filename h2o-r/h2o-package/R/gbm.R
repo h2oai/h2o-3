@@ -67,7 +67,7 @@
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
-#' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used.  Suitable for small datasets.
+#' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
 #'        Defaults to FALSE.
 #' @param learn_rate Learning rate (from 0.0 to 1.0) Defaults to 0.1.
 #' @param learn_rate_annealing Scale the learning rate by this factor after each tree (e.g., 0.99 or 0.999)  Defaults to 1.

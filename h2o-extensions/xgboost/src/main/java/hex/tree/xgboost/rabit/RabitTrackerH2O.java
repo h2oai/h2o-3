@@ -213,6 +213,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                 this.trackerThread.join(timeout);
             } catch (InterruptedException e) {
                 Log.debug("Rabit tracker thread got suddenly interrupted.", e);
+                Thread.currentThread().interrupt();
             }
         }
         return 0;
@@ -220,6 +221,8 @@ public class RabitTrackerH2O implements IRabitTracker {
 
     @Override
     public void uncaughtException(Thread t, Throwable e) {
+        Log.err("Uncaught exception occurred on Rabit tracker thread " + t.getName(), e);
+        Log.err(e);
         stop();
     }
 }

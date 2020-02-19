@@ -8,12 +8,13 @@ targetCompatibility = 1.7
 
 ext {
     xgboost4jVersion = "0.90.6"
+    xgboostPredictorVersion = "0.3.13"
 }
 
 dependencies {
     compile project(":h2o-genmodel")
 
-    compile('ai.h2o:xgboost-predictor:0.3.9') {
+    compile("ai.h2o:xgboost-predictor:${xgboostPredictorVersion}") {
         exclude group: 'net.jafama', 'module': 'jafama'
     }
 

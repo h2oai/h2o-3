@@ -20,67 +20,67 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-	library(h2o)
-	h2o.init()
+		library(h2o)
+		h2o.init()
 
-	# import the cars dataset: 
-	# this dataset is used to classify whether or not a car is economical based on 
-	# the car's displacement, power, weight, and acceleration, and the year it was made 
-	cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+		# import the cars dataset: 
+		# this dataset is used to classify whether or not a car is economical based on 
+		# the car's displacement, power, weight, and acceleration, and the year it was made 
+		cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# convert response column to a factor
-	cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+		# convert response column to a factor
+		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
-	# set the predictor names and the response column name
-	predictors <- c("displacement","power","weight","acceleration","year")
-	response <- "economy_20mpg"
+		# set the predictor names and the response column name
+		predictors <- c("displacement","power","weight","acceleration","year")
+		response <- "economy_20mpg"
 
-	# split into train and validation sets
-	cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-	train <- cars.split[[1]]
-	valid <- cars.split[[2]]
+		# split into train and validation sets
+		cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+		train <- cars.split[[1]]
+		valid <- cars.split[[2]]
 
-	# try using the `y` parameter:
-	# train your model, where you specify your 'x' predictors, your 'y' the response column
-	# training_frame and validation_frame
-	cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-	                    validation_frame = valid, seed = 1234)
+		# try using the `y` parameter:
+		# train your model, where you specify your 'x' predictors, your 'y' the response column
+		# training_frame and validation_frame
+		cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
+		                    validation_frame = valid, seed = 1234)
 
-	# print the auc for your model
-	print(h2o.auc(cars_gbm, valid = TRUE))
+		# print the auc for your model
+		print(h2o.auc(cars_gbm, valid = TRUE))
 
-   .. code-block:: python
+   .. code-tab:: python
 
-	import h2o
-	from h2o.estimators.gbm import H2OGradientBoostingEstimator
-	h2o.init()
-	h2o.cluster().show_status()
+		import h2o
+		from h2o.estimators.gbm import H2OGradientBoostingEstimator
+		h2o.init()
+		h2o.cluster().show_status()
 
-	# import the cars dataset:
-	# this dataset is used to classify whether or not a car is economical based on
-	# the car's displacement, power, weight, and acceleration, and the year it was made
-	cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+		# import the cars dataset:
+		# this dataset is used to classify whether or not a car is economical based on
+		# the car's displacement, power, weight, and acceleration, and the year it was made
+		cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
-	# convert response column to a factor
-	cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+		# convert response column to a factor
+		cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
 
-	# set the predictor names and the response column name
-	predictors = ["displacement","power","weight","acceleration","year"]
-	response = "economy_20mpg"
+		# set the predictor names and the response column name
+		predictors = ["displacement","power","weight","acceleration","year"]
+		response = "economy_20mpg"
 
-	# split into train and validation sets
-	train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+		# split into train and validation sets
+		train, valid = cars.split_frame(ratios = [.8], seed = 1234)
 
-	# try using the `y` parameter:
-	# first initialize your estimator
-	cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+		# try using the `y` parameter:
+		# first initialize your estimator
+		cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
 
-	# then train your model, where you specify your 'x' predictors, your 'y' the response column
-	# training_frame and validation_frame
-	cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+		# then train your model, where you specify your 'x' predictors, your 'y' the response column
+		# training_frame and validation_frame
+		cars_gbm.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
 
-	# print the auc for the validation data
-	cars_gbm.auc(valid=True)
+		# print the auc for the validation data
+		cars_gbm.auc(valid=True)

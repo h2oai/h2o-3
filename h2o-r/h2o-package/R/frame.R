@@ -2112,8 +2112,9 @@ h2o.setLevels <- function(x, levels, in.place = TRUE) .newExpr("setDomain", chk.
 #' @name h2o.head
 #' @param x An H2OFrame object.
 #' @param n (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
+#' @param m (Optional) A single integer. If positive, number of columns in x to return. If negative, all but the m first/last number of columns in x.
 #' @param ... Ignored.
-#' @return An H2OFrame containing the first or last n rows of an H2OFrame object.
+#' @return An H2OFrame containing the first or last n rows and m columns of an H2OFrame object.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -2124,14 +2125,17 @@ h2o.setLevels <- function(x, levels, in.place = TRUE) .newExpr("setDomain", chk.
 #' tail(australia, 10)
 #' }
 #' @export
-h2o.head <- function(x,n=6L,...) {
+h2o.head <- function(x,n=6L,m=200L,...) {
   stopifnot(length(n) == 1L)
+  stopifnot(length(m) == 1L)  
   n <- if (n < 0L) max(nrow(x) + n, 0L)
        else        min(n, nrow(x))
-  if( n >= 0L && n <= 1000L ) # Short version, just report the cached internal DF
-    head(.fetch.data(x,n),n)
+  m <- if (m < 0L) max(ncol(x) + m, 0L)
+       else        min(m, ncol(x))  
+  if( n >= 0L && n <= 1000L && m >= 0L && m <= 1000L) # Short version, just report the cached internal DF
+    head(.fetch.data(x,n,m),n)[0:m]
   else # Long version, fetch all asked for "the hard way"
-    as.data.frame(.newExpr("rows",x,paste0("[0:",n,"]")))
+    as.data.frame(.newExpr("cols",.newExpr("rows",x,paste0("[0:",n,"]")),paste0("[0:",m,"]")))
 }
 
 #' @rdname h2o.head
@@ -2140,13 +2144,17 @@ head.H2OFrame <- h2o.head
 
 #' @rdname h2o.head
 #' @export
-h2o.tail <- function(x,n=6L,...) {
+h2o.tail <- function(x,n=6L,m=200L,...) {
   endidx <- nrow(x)
+  endidy <- ncol(x)  
   n <- ifelse(n < 0L, max(endidx + n, 0L), min(n, endidx))
-  if( n==0L ) head(x,n=0L)
+  m <- ifelse(m < 0L, max(endidy + m, 0L), min(m, endidy))
+  if (n == 0L || m == 0L)
+    tail(.fetch.data(x,n,m),n)[0:m]
   else {
     startidx <- max(1L, endidx - n + 1)
-    .fetch.data(.newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx+1),"]")),n)
+    startidy <- max(1L, endidy - m + 1)
+    .fetch.data(.newExpr("cols",.newExpr("rows",x,paste0("[",startidx-1,":",(endidx-startidx+1),"]")),paste0("[",startidy-1,":",(endidy-startidy+1),"]")),n,m)
   }
 }
 
@@ -2209,6 +2217,7 @@ is.character <- function(x) {
 #' @param x An H2OFrame object
 #' @param n An (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
 #'          Anything bigger than 20 rows will require asking the server (first 20 rows are cached on the client).
+#' @param m An (Optional) A single integer. If positive, number of columns in x to return. If negative, all but the m first/last number of columns in x.
 #' @param ... Further arguments to be passed from or to other methods.
 #' @examples 
 #' \dontrun{
@@ -2217,8 +2226,8 @@ is.character <- function(x) {
 #' print(cars, n = 8)
 #' }
 #' @export
-print.H2OFrame <- function(x,n=6L, ...) {
-  print(head(x,n))
+print.H2OFrame <- function(x,n=6L,m=200L, ...) {
+  print(head(x,n,m))
   rowString = if (nrow(x) > 1) " rows x " else " row x "
   colString = if (ncol(x) > 1) " columns]" else " column]"
   cat(paste0("\n[", nrow(x), rowString, ncol(x), colString), "\n")
@@ -2745,6 +2754,10 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #'   "everything"            - outputs NaNs whenever one of its contributing observations is missing
 #'   "all.obs"               - presence of missing observations will throw an error
 #'   "complete.obs"          - discards missing values along with all observations in their rows so that only complete observations are used
+#' @param method \code{str} Method of correlation computation. Allowed values are:
+#' "Pearson" - Pearson's correlation coefficient
+#' "Spearman" - Spearman's correlation coefficient (Spearman's Rho)
+#' Defaults to "Pearson"
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -2753,7 +2766,7 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' cor(prostate$AGE)
 #' }
 #' @export
-h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
+h2o.cor <- function(x, y=NULL,na.rm = FALSE, use, method="Pearson"){
   # Eager, mostly to match prior semantics but no real reason it need to be
   if( is.null(y) ){
     y <- x
@@ -2761,8 +2774,13 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use){
   if(missing(use)) {
     if (na.rm) use <- "complete.obs" else use <- "everything"
   }
+  
+  if (is.null(method) || is.na(method)) {
+    stop("Correlation method must be specified.")
+  }
+  
   # Eager, mostly to match prior semantics but no real reason it need to be
-  expr <- .newExpr("cor",x,y,.quote(use))
+  expr <- .newExpr("cor",x,y,.quote(use), .quote(method))
   if( (nrow(x)==1L || (ncol(x)==1L && ncol(y)==1L)) ) .eval.scalar(expr)
   else .fetch.data(expr,ncol(x))
 }

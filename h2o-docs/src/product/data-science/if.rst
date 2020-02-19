@@ -47,7 +47,7 @@ Defining an Isolation Forest Model
 
 -  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
--  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). The range is -1 to >=1.
+-  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of IF are used. Valid values for this option are -2, -1, and any value >= 1.
 
 -  `sample_size <algo-params/sample_size.html>`__: The number of randomly sampled observations used to train each Isolation Forest tree. Only one of ``sample_size`` or ``sample_rate`` should be defined. If ``sample_rate`` is defined, ``sample_size`` will be ignored. This value defaults to 256.
 
@@ -120,62 +120,62 @@ Simple Example
 
 Below is a simple example showing Isolation Forest from model training through prediction and predicted leaf node assignment. 
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
-    library(h2o)
-    h2o.init()
+        library(h2o)
+        h2o.init()
 
-    # Import the prostate dataset
-    prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
-                                   destination_frame = "prostate.hex")
+        # Import the prostate dataset
+        prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
+                                       destination_frame = "prostate.hex")
 
-    # Split dataset giving the training dataset 75% of the data
-    prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
+        # Split dataset giving the training dataset 75% of the data
+        prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
 
-    # Create a training set from the 1st dataset in the split
-    train <- prostate.split[[1]]
+        # Create a training set from the 1st dataset in the split
+        train <- prostate.split[[1]]
 
-    # Create a testing set from the 2nd dataset in the split
-    test <- prostate.split[[2]]
+        # Create a testing set from the 2nd dataset in the split
+        test <- prostate.split[[2]]
 
-    # Build an Isolation forest model
-    model <- h2o.isolationForest(training_frame=train, 
-                                 sample_rate = 0.1, 
-                                 max_depth = 20, 
-                                 ntrees = 50)
+        # Build an Isolation forest model
+        model <- h2o.isolationForest(training_frame=train, 
+                                     sample_rate = 0.1, 
+                                     max_depth = 20, 
+                                     ntrees = 50)
 
-    # Calculate score
-    score <- h2o.predict(model, test)
-    result_pred <- score$predict
+        # Calculate score
+        score <- h2o.predict(model, test)
+        result_pred <- score$predict
 
-    # Predict the leaf node assignment
-    ln_pred <- h2o.predict_leaf_node_assignment(model, test)
+        # Predict the leaf node assignment
+        ln_pred <- h2o.predict_leaf_node_assignment(model, test)
 
-   .. code-block:: python
+   .. code-tab:: python
 
-    import h2o
-    from h2o.estimators import H2OIsolationForestEstimator
-    h2o.init()
-    
-    # Import the prostate dataset
-    h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
-    
-    # Split the data giving the training dataset 75% of the data
-    train,test = h2o_df.split_frame(ratios=[0.75])
+        import h2o
+        from h2o.estimators import H2OIsolationForestEstimator
+        h2o.init()
+        
+        # Import the prostate dataset
+        h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
+        
+        # Split the data giving the training dataset 75% of the data
+        train,test = h2o_df.split_frame(ratios=[0.75])
 
-    # Build an Isolation forest model
-    model = H2OIsolationForestEstimator(sample_rate = 0.1, 
-                                        max_depth = 20, 
-                                        ntrees = 50)
-    model.train(training_frame=train)
+        # Build an Isolation forest model
+        model = H2OIsolationForestEstimator(sample_rate = 0.1, 
+                                            max_depth = 20, 
+                                            ntrees = 50)
+        model.train(training_frame=train)
 
-    # Calculate score
-    score = model.predict(test)
-    result_pred = score["predict"]
+        # Calculate score
+        score = model.predict(test)
+        result_pred = score["predict"]
 
-    # Predict the leaf node assignment
-    ln_pred = model.predict_leaf_node_assignment(test, "Path")
+        # Predict the leaf node assignment
+        ln_pred = model.predict_leaf_node_assignment(test, "Path")
 
 
 References

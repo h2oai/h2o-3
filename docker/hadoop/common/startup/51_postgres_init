@@ -5,6 +5,9 @@ service postgresql start
 
 sudo -u postgres createuser root -s
 sudo -u postgres psql -c "ALTER ROLE root WITH PASSWORD 'root';"
+sudo -u postgres psql -c "ALTER SYSTEM SET max_connections = '1000';"
+
+service postgresql restart
 
 createdb metastore
 

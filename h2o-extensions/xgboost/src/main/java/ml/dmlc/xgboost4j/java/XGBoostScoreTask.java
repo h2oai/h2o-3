@@ -164,7 +164,9 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                     dataInfo,
                     cs,
                     fr.find(parms._response_column),
-                    output._sparse);
+                    output._sparse, 
+                    fr.find(parms._offset_column)
+            );
 
             // No local chunks for this frame
             if (data.rowNum() == 0) {

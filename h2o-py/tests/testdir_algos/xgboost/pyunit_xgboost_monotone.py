@@ -1,5 +1,7 @@
-from h2o.estimators.xgboost import *
+import sys
+sys.path.insert(1,"../../../")
 from tests import pyunit_utils
+from h2o.estimators.xgboost import *
 
 def get_native_parameters_test():
     assert H2OXGBoostEstimator.available() is True

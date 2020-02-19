@@ -69,6 +69,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         return aml().leaderboard().getModels();
     }
 
+    protected Key<Model>[] getTrainedModelsKeys() {
+        return aml().leaderboard().getModelKeys();
+    }
+
     protected boolean isCVEnabled() {
         return aml().isCVEnabled();
     }

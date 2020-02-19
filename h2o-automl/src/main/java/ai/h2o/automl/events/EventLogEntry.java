@@ -20,6 +20,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
   }
 
   public enum Stage {
+    Validation,
     Workflow,
     DataImport,
     FeatureAnalysis,

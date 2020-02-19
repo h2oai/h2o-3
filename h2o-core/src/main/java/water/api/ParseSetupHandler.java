@@ -23,7 +23,7 @@ import static water.parser.DefaultParserProviders.GUESS_INFO;
 public class ParseSetupHandler extends Handler {
 
   public ParseSetupV3 guessSetup(int version, ParseSetupV3 p) {
-    if (p.source_frames == null)
+    if (p.source_frames == null || p.source_frames.length == 0)
       throw new H2OIllegalArgumentException("No file names given for parsing.");
     Key[] fkeys = new Key[p.source_frames.length];
     for(int i=0; i < p.source_frames.length; i++) {

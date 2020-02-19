@@ -287,11 +287,14 @@ h2o.import_sql_select<- function(connection_url, select_query, username, passwor
 #'
 #' Import Hive table to H2OFrame in memory.
 #' Make sure to start H2O with Hive on classpath. Uses hive-site.xml on classpath to connect to Hive.
-#'
+#' When database is specified as jdbc URL uses Hive JDBC driver to obtain table metadata. then 
+#' uses direct HDFS access to import data.
+#' 
 #' For example, 
 #'     my_citibike_data = h2o.import_hive_table("default", "citibike20k", partitions = list(c("2017", "01"), c("2017", "02")))
+#'     my_citibike_data = h2o.import_hive_table("jdbc:hive2://hive-server:10000/default", "citibike20k", allow_multi_format = TRUE)
 #'
-#' @param database Name of Hive database (default database will be used by default)
+#' @param database Name of Hive database (default database will be used by default), can be also a JDBC URL
 #' @param table name of Hive table to import
 #' @param partitions a list of lists of strings - partition key column values of partitions you want to import.
 #' @param allow_multi_format enable import of partitioned tables with different storage formats used. WARNING:

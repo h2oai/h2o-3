@@ -805,7 +805,7 @@ public final class AutoBuffer {
     return put1(254).put4(x);
   }
   // Get a (compressed) integer.  See above for the compression strategy and reasoning.
-  int getInt( ) {
+  public int getInt( ) {
     int x = get1U();
     if( x <= 253 ) return x-1;
     if( x==255 ) return (short)get2();
@@ -992,6 +992,8 @@ public final class AutoBuffer {
   // This ensures getPort will still have the same side-effect except we skip also the timestamp which is desired
   short getTimestamp() { return getSz(1+2).getShort(1);}
   // Get the port in next 2 bytes
+  // Same port extraction is done in portPack method in TimelineSnapshot. If 'getPort' method is changed,
+  // there is a big chance that 'portPack' method needs to be changed as well to be consistent.
   int getPort( ) { return getSz(1+2+2).getChar(1+2); }
   // Get the task# in the next 4 bytes
   int  getTask( ) { return getSz(1+2+2+4).getInt(1+2+2); }
@@ -1359,7 +1361,7 @@ public final class AutoBuffer {
 
     put1(8);                    // Ship as full longs
     int sofar = x;
-    if ((y-sofar)*8 > _bb.remaining()) expandByteBuffer(ary.length*8);
+    if ((y-sofar)*8 > _bb.remaining()) expandByteBuffer(nzlen*8);
     while( sofar < y ) {
       LongBuffer lb = _bb.asLongBuffer();
       int len = Math.min(y - sofar, lb.remaining());

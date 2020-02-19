@@ -520,12 +520,13 @@ public class PojoUtils {
             valuesCast[i] = ((Number) valuesTyped[i]).floatValue();
           f.set(o, valuesCast);
         } else if(f.getType().getComponentType().isEnum()) {
-          Object[] valuesTyped = ((Object[]) value);
+          final Object[] valuesTyped = ((Object[]) value);
           Enum[] valuesCast = (Enum[]) Array.newInstance(f.getType().getComponentType(), valuesTyped.length);
           for (int i = 0; i < valuesTyped.length; i++) {
             String v = (String) valuesTyped[i];
-            Enum enu = EnumUtils.valueOfIgnoreCase((Class<Enum>)f.getType().getComponentType(), v);
-            if (enu == null) throw new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + value);
+            Enum enu = EnumUtils.valueOfIgnoreCase((Class<Enum>)f.getType().getComponentType(), v)
+                    .orElseThrow(() -> new IllegalArgumentException("Field = " + fieldName + " element cannot be set to value = " + Arrays.toString(valuesTyped)));
+
             valuesCast[i] = enu;
           }
           f.set(o, valuesCast);
@@ -545,8 +546,9 @@ public class PojoUtils {
           throw new IllegalArgumentException("setField can't yet convert an array of: " + value.getClass().getComponentType() + " to an array of: " + f.getType().getComponentType());
         }
       } else if (f.getType().isEnum() && value instanceof String){
-        Enum enu = EnumUtils.valueOfIgnoreCase((Class<Enum>)f.getType(), (String) value);
-        if (enu == null) throw new IllegalArgumentException("Field = " + fieldName + " cannot be set to value = " + value);
+        final IllegalArgumentException fieldNotSettablException = new IllegalArgumentException("Field = " + fieldName + " cannot be set to value = " + value);
+        Enum enu = EnumUtils.valueOfIgnoreCase((Class<Enum>)f.getType(), (String) value)
+                .orElseThrow(() -> fieldNotSettablException);
         f.set(o, enu);
       }
       else if (! f.getType().isPrimitive() && ! f.getType().isAssignableFrom(value.getClass())) {

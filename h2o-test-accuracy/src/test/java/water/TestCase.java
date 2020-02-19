@@ -210,7 +210,7 @@ public class TestCase {
         startTime = System.currentTimeMillis();
         // TODO: ModelParametersBuilderFactory parameter must be instantiated properly
         Job<Grid> gs = GridSearch.startGridSearch(null,params,hyperParms,
-                new GridSearch.SimpleParametersBuilderFactory<>(),searchCriteria);
+                new GridSearch.SimpleParametersBuilderFactory<>(),searchCriteria, 0);
         grid = gs.get();
         stopTime = System.currentTimeMillis();
 

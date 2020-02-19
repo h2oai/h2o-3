@@ -25,7 +25,8 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
     REG_GAMMA("reg:gamma"),
     REG_TWEEDIE("reg:tweedie"),
     COUNT_POISSON("count:poisson"),
-    REG_LINEAR("reg:linear"),
+    REG_SQUAREDERROR("reg:squarederror"),
+    @Deprecated REG_LINEAR("reg:linear"), // deprectated in favour of REG_SQUAREDERROR
     MULTI_SOFTPROB("multi:softprob"),
     RANK_PAIRWISE("rank:pairwise");
 
@@ -55,6 +56,7 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
   public boolean _useAllFactorLevels;
   public boolean _sparse;
   public String _featureMap;
+  public boolean _hasOffset;
 
   /**
    * GLM's beta used for calibrating output probabilities using Platt Scaling.
@@ -69,7 +71,15 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
   public void postReadInit() {}
 
   @Override
+  public boolean requiresOffset() {
+    return _hasOffset;
+  }
+
+  @Override
   public final double[] score0(double[] row, double[] preds) {
+    if (_hasOffset) {
+      throw new IllegalStateException("Model was trained with offset, use score0 with offset");
+    }
     return score0(row, 0.0, preds);
   }
 

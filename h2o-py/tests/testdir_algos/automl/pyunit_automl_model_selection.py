@@ -10,7 +10,7 @@ from h2o.automl import H2OAutoML
 
 """This test suite checks the AutoML parameters influencing the model selection pipeline"""
 
-max_models = 2
+max_models = 5
 
 
 def import_dataset(seed=0, larger=False):

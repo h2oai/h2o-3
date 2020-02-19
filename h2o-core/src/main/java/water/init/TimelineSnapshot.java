@@ -135,10 +135,11 @@ public final class TimelineSnapshot implements
     public H2ONode packH2O() { return _packh2o; } // H2O in packet
     public H2ONode recoH2O() { return _cloud.members()[_nodeId]; } // H2O recording packet
     public final int portPack() {
-      int i = (int) dataLo();
+      long i = dataLo();
       // 1st byte is UDP type, so shift right by 8.
+      // Next 2 bytes are timestamp, shift by another 16
       // Next 2 bytes are UDP port #, so mask by 0xFFFF.
-      return ((0xFFFF) & (i >> 8));
+      return (int)((0xFFFF) & (i >> 24));
     }
     public final String addrString() { return _packh2o==null ? "multicast" : _packh2o.toString(); }
     public final String ioflavor() {

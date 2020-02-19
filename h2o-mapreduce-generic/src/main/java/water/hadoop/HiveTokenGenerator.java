@@ -1,7 +1,6 @@
 package water.hadoop;
 
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Job;
 import org.apache.hadoop.mapreduce.security.token.delegation.DelegationTokenIdentifier;
@@ -24,60 +23,75 @@ public class HiveTokenGenerator {
 
   public static class HiveOptions {
     
-    final String _host;
+    final String _jdbcUrl;
     final String _principal;
 
-    public HiveOptions(String hiveHost, String hivePrincipal) {
-      _host = hiveHost;
+    public HiveOptions(String hiveJdbcUrl, String hivePrincipal) {
+      _jdbcUrl = hiveJdbcUrl;
       _principal = hivePrincipal;
     }
 
-    private static boolean isPresent(String value) {
-      return value != null && !value.isEmpty();
-    }
-    
-    public static HiveOptions make(String hiveHost, String hivePrincipal) {
-      if (isPresent(hiveHost) && isPresent(hivePrincipal)) {
-        return new HiveOptions(hiveHost, hivePrincipal);
+    public static HiveOptions make(String hiveJdbcUrl, String hivePrincipal) {
+      if (isPresent(hiveJdbcUrl) && isPresent(hivePrincipal)) {
+        return new HiveOptions(hiveJdbcUrl, hivePrincipal);
       } else {
         return null;
       }
     }
     
     public static HiveOptions make(Configuration conf) {
-      String hiveHost = conf.get(H2O_HIVE_HOST);
+      String hiveJdbcUrl = conf.get(H2O_HIVE_JDBC_URL);
       String hivePrincipal = conf.get(H2O_HIVE_PRINCIPAL);
-      return make(hiveHost, hivePrincipal);
+      return make(hiveJdbcUrl, hivePrincipal);
     }
     
   }
+
+  private static boolean isPresent(String value) {
+    return value != null && !value.isEmpty();
+  }
+
+  static String makeHiveJdbcUrl(String hiveJdbcUrlPattern, String hiveHost, String hivePrincipal) {
+    if (hiveJdbcUrlPattern != null) {
+      String result = hiveJdbcUrlPattern;
+      if (hiveHost != null)
+        result = result.replace("{{host}}", hiveHost);
+      if (hivePrincipal != null)
+        result = result.replace("{{principal}}", hivePrincipal);
+      return result;
+    } else if (isPresent(hiveHost) && isPresent(hivePrincipal)) {
+      return "jdbc:hive2://" + hiveHost + "/" + ";principal=" + hivePrincipal;
+    } else
+      return null;
+  }
   
   public static void addHiveDelegationTokenIfHivePresent(
-      Job job, String hiveHost, String hivePrincipal
+      Job job, String hiveJdbcUrlPattern, String hiveHost, String hivePrincipal
   ) throws IOException, InterruptedException {
+    final String hiveJdbcUrl = makeHiveJdbcUrl(hiveJdbcUrlPattern, hiveHost, hivePrincipal); 
     if (isHiveDriverPresent()) {
-      new HiveTokenGenerator().addHiveDelegationToken(job, hiveHost, hivePrincipal);
+      new HiveTokenGenerator().addHiveDelegationToken(job, hiveJdbcUrl, hivePrincipal);
     } else {
       log("Hive driver not present, not generating token.", null);
       Configuration conf = job.getConfiguration();
       // pass configured values if any to mapper
-      if (hiveHost != null) conf.set(H2O_HIVE_HOST, hiveHost);
+      if (hiveJdbcUrl != null) conf.set(H2O_HIVE_JDBC_URL, hiveJdbcUrl);
       if (hivePrincipal != null) conf.set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     }
   }
 
   public void addHiveDelegationToken(
       Job job,
-      String hiveHost,
+      String hiveJdbcUrl,
       String hivePrincipal
   ) throws IOException, InterruptedException {
-    HiveOptions options = HiveOptions.make(hiveHost, hivePrincipal);
+    HiveOptions options = HiveOptions.make(hiveJdbcUrl, hivePrincipal);
     if (options == null) {
-      log("Hive host or principal not set, no token generated.", null);
+      log("Hive JDBC URL or principal not set, no token generated.", null);
       return;
     }
     Configuration conf = job.getConfiguration();
-    conf.set(H2O_HIVE_HOST, options._host);
+    conf.set(H2O_HIVE_JDBC_URL, options._jdbcUrl);
     conf.set(H2O_HIVE_PRINCIPAL, options._principal);
     UserGroupInformation realUser = UserGroupInformation.getCurrentUser();
     if (realUser.getRealUser() != null) {
@@ -110,7 +124,10 @@ public class HiveTokenGenerator {
   }
 
   private String getDelegationTokenFromConnection(String url, String principal, String userName) {
-    try (Connection connection = DriverManager.getConnection(url + ";principal=" + principal)) {
+    if (!isHiveDriverPresent()) {
+      throw new IllegalStateException("Hive Driver not found");
+    }
+    try (Connection connection = DriverManager.getConnection(url)) {
       return ((HiveConnection) connection).getDelegationToken(userName, principal);
     } catch (SQLException e) {
       log("Failed to get connection.", e);
@@ -124,10 +141,9 @@ public class HiveTokenGenerator {
     }
 
     String currentUser = UserGroupInformation.getCurrentUser().getShortUserName();
-    String hiveJdbcUrl = "jdbc:hive2://" + options._host + "/";
-    log("Getting delegation token from " + hiveJdbcUrl + " with " + options._principal + ", " + currentUser, null);
+    log("Getting delegation token from " + options._jdbcUrl + ", " + currentUser, null);
 
-    String tokenStr = getDelegationTokenFromConnection(hiveJdbcUrl, options._principal, currentUser);
+    String tokenStr = getDelegationTokenFromConnection(options._jdbcUrl, options._principal, currentUser);
     if (tokenStr != null) {
       Token<DelegationTokenIdentifier> hive2Token = new Token<>();
       hive2Token.decodeFromUrlString(tokenStr);

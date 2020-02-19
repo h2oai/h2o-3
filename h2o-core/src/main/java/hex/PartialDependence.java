@@ -116,7 +116,9 @@ public class PartialDependence extends Lockable<PartialDependence> {
       // convert one dimension info into two dimensionl
       _user_split_per_col = new double[numUserSplits][];
       int[] user_splits_start = new int[numUserSplits];
-      System.arraycopy(_num_user_splits, 0, user_splits_start, 1, numUserSplits-1);
+      for (int cindex = 1; cindex < numUserSplits; cindex++) {  // fixed bug in user_splits_start
+        user_splits_start[cindex] = _num_user_splits[cindex-1]+user_splits_start[cindex-1];
+      }
       for (int cindex=0; cindex < numUserSplits; cindex++) {
         int splitNum = _num_user_splits[cindex];
         _user_split_per_col[cindex] = new double[splitNum];

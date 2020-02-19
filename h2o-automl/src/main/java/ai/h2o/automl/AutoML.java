@@ -263,7 +263,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       }};
       for (Map.Entry<String, String> entry: doNotIgnore.entrySet()) {
         if (entry.getValue() != null && ignoredColumns.contains(entry.getValue())) {
-          eventLog().info(Stage.DataImport,
+          eventLog().info(Stage.Validation,
                   "Removing "+entry.getKey()+" '"+entry.getValue()+"' from list of ignored columns.");
           ignoredColumns.remove(entry.getValue());
         }
@@ -274,11 +274,17 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
 
   private void validateModelValidation(AutoMLBuildSpec buildSpec) {
     if (buildSpec.input_spec.fold_column != null) {
-      eventLog().warn(Stage.Workflow, "Fold column "+buildSpec.input_spec.fold_column+" will be used for cross validation. nfolds parameter will be ignored.");
+      eventLog().warn(Stage.Validation, "Fold column "+buildSpec.input_spec.fold_column+" will be used for cross-validation. nfolds parameter will be ignored.");
       buildSpec.build_control.nfolds = 0;
     } else if (buildSpec.build_control.nfolds <= 1) {
-      eventLog().info(Stage.Workflow, "Cross validation disabled by user: no fold column nor nfolds > 1.");
+      eventLog().info(Stage.Validation, "Cross-validation disabled by user: no fold column nor nfolds > 1.");
       buildSpec.build_control.nfolds = 0;
+    }
+    if ((buildSpec.build_control.nfolds > 0 || buildSpec.input_spec.fold_column != null)
+            && DKV.getGet(buildSpec.input_spec.validation_frame) != null) {
+      eventLog().warn(Stage.Validation, "User specified a validation frame with cross-validation still enabled."
+              + " Please note that the models will still be validated using cross-validation only,"
+              + " the validation frame will be used to provide purely informative validation metrics on the trained models.");
     }
   }
 
@@ -294,24 +300,24 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void validateEarlyStopping(AutoMLStoppingCriteria stoppingCriteria, AutoMLInput input) {
     if (stoppingCriteria.max_models() <= 0 && stoppingCriteria.max_runtime_secs() <= 0) {
       stoppingCriteria.set_max_runtime_secs(3600);
-      eventLog().info(Stage.Workflow, "User didn't set any runtime constraints (max runtime or max models), using default 1h time limit");
+      eventLog().info(Stage.Validation, "User didn't set any runtime constraints (max runtime or max models), using default 1h time limit");
     }
     Frame refFrame = DKV.getGet(input.training_frame);
     if (stoppingCriteria.stopping_tolerance() == AUTO_STOPPING_TOLERANCE) {
       stoppingCriteria.set_default_stopping_tolerance_for_frame(refFrame);
-      eventLog().info(Stage.Workflow, "Setting stopping tolerance adaptively based on the training frame: "+stoppingCriteria.stopping_tolerance());
+      eventLog().info(Stage.Validation, "Setting stopping tolerance adaptively based on the training frame: "+stoppingCriteria.stopping_tolerance());
     } else {
-      eventLog().info(Stage.Workflow, "Stopping tolerance set by the user: "+stoppingCriteria.stopping_tolerance());
+      eventLog().info(Stage.Validation, "Stopping tolerance set by the user: "+stoppingCriteria.stopping_tolerance());
       double defaultTolerance = AutoMLStoppingCriteria.default_stopping_tolerance_for_frame(refFrame);
       if (stoppingCriteria.stopping_tolerance() < 0.7 * defaultTolerance){
-        eventLog().warn(Stage.Workflow, "Stopping tolerance set by the user is < 70% of the recommended default of "+defaultTolerance+", so models may take a long time to converge or may not converge at all.");
+        eventLog().warn(Stage.Validation, "Stopping tolerance set by the user is < 70% of the recommended default of "+defaultTolerance+", so models may take a long time to converge or may not converge at all.");
       }
     }
   }
 
 
   private void validateReproducibility(AutoMLBuildSpec buildSpec) {
-    eventLog().info(Stage.Workflow, "Build control seed: " + buildSpec.build_control.stopping_criteria.seed() +
+    eventLog().info(Stage.Validation, "Build control seed: " + buildSpec.build_control.stopping_criteria.seed() +
             (buildSpec.build_control.stopping_criteria.seed() == -1 ? " (random)" : ""));
   }
 

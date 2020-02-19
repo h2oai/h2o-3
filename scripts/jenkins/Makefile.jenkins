@@ -49,11 +49,6 @@ lookup-automl-tests: init-lookup
 	find h2o-r/tests -name '*automl*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
 	find h2o-py/tests -name '*automl*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
 
-lookup-hdfs-tests: init-lookup
-	mkdir -p h2o-{r,py}/tests/testdir_hdfs
-	find h2o-r/tests/testdir_hdfs -name '*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
-	find h2o-py/tests/testdir_hdfs -name '*.py' -exec basename {} \; >>h2o-py/tests/.lookup.txt
-
 lookup-demos-tests: init-lookup
 	mkdir -p h2o-{r,py}/tests/testdir_demos
 	find h2o-r/tests/testdir_demos -name '*.R' -exec basename {} \; >>h2o-r/tests/.lookup.txt
@@ -73,7 +68,7 @@ test-py-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.gbm.vignette.py
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
 
-test-pyunit-small: lookup-hdfs-tests lookup-automl-tests
+test-pyunit-small: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist .lookup.txt
 
 test-pyunit-single-node:
@@ -88,8 +83,8 @@ test-pyunit-small-automl: lookup-automl-tests
 test-py-demos:
 	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
 
-test-pyunit-medium-large: lookup-hdfs-tests
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g --excludelist .lookup.txt
+test-pyunit-medium-large:
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
 
 test-py-single-test:
 	@echo "test=$$SINGLE_TEST_PATH"
@@ -103,13 +98,13 @@ test-r-smoke:
 test-r-init:
 	cd h2o-r/tests/testdir_jira && ADDITIONAL_TEST_JVM_OPTS="-Dsys.ai.h2o.debug.allowJavaVersions=7" R -f h2o.init_test_HOQE-16.R
 
-test-r-small: lookup-automl-tests lookup-hdfs-tests lookup-demos-tests
+test-r-small: lookup-automl-tests lookup-demos-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
 
-test-r-small-client-mode: lookup-automl-tests lookup-hdfs-tests
+test-r-small-client-mode: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --excludelist .lookup.txt
 
-test-r-small-client-mode-attack: lookup-automl-tests lookup-hdfs-tests
+test-r-small-client-mode-attack: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.opts '-Dsys.ai.h2o.debug.clientDisconnectAttack=true' --jvm.xmx 4g --excludelist .lookup.txt
 
 test-r-small-automl: lookup-automl-tests
@@ -118,8 +113,8 @@ test-r-small-automl: lookup-automl-tests
 test-r-small-client-mode-automl: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
 
-test-r-medium-large: lookup-hdfs-tests
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g --excludelist .lookup.txt
+test-r-medium-large:
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g
 
 test-r-datatable:
 	export NO_GCE_CHECK=True && cd h2o-r/tests/testdir_perf && ../../../scripts/run.py --wipeall --test runit_repeating_merge.R  --numclouds 1 --numnodes 2 --jvm.xmx 20g
@@ -240,6 +235,8 @@ test-package-java:
 		h2o-extensions/xgboost/build/libs/h2o-ext-xgboost*.jar \
 		h2o-genmodel-extensions/xgboost/src/ \
 		h2o-genmodel-extensions/xgboost/build/libs/h2o-genmodel-ext-xgboost*.jar \
+		h2o-genmodel-extensions/jgrapht/src/ \
+		h2o-genmodel-extensions/jgrapht/build/libs/jgrapht*.jar \
 		h2o-jaas-pam/build/libs/h2o-jaas-pam-*.jar \
 		h2o-scala/src/ \
 		h2o-scala/build/h2o-scala_2.*/libs/h2o-scala_2.*.jar \
@@ -444,6 +441,10 @@ test-kerberos-hadoop-3-standalone: test-kerberos-common-spnego
 test-kerberos-hadoop-3-hdp: test-hadoop-3-smoke-standalone test-hadoop-common-smoke-hive-basic
 
 test-kerberos-hadoop-3-spnego: test-kerberos-hadoop-3-standalone test-hadoop-common-smoke-hive-spnego
+
+test-hadoop-multinode:
+	cd h2o-hadoop-common/tests_multinode/python && ../../../scripts/run.py --wipeall --nointernal --usecloud "$$CLOUD_IP:$$CLOUD_PORT"
+	cd h2o-hadoop-common/tests_multinode/R && ../../../scripts/run.py --wipeall --nointernal --usecloud "$$CLOUD_IP:$$CLOUD_PORT"
 
 coverage-junit-algos-jenkins:
 	$(call sed_test_scripts)
