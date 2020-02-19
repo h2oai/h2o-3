@@ -2,12 +2,10 @@ package hex.deeplearning;
 
 
 import hex.*;
+import hex.genmodel.MojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.*;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
@@ -19,11 +17,16 @@ import water.parser.ParseDataset;
 import water.util.*;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import static hex.genmodel.utils.DistributionFamily.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class DeepLearningTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -2531,6 +2534,96 @@ public class DeepLearningTest extends TestUtil {
       if (valid != null) valid.delete();
     }
   }
+
+  @Test
+  public void testMojoConcurrentScoring() throws Exception  { // PUBDEV-6615: DeepLearning MOJOs should be thread-safe
+    try {
+      Scope.enter();
+      Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+      tfr.remove("ID").remove();
+      tfr.add("AGE", tfr.remove("AGE")); // make AGE the last column (for convenience)
+
+      DeepLearningParameters parms = new DeepLearningParameters();
+      parms._train = tfr._key;
+      parms._epochs = 3;
+      parms._response_column = "AGE";
+      parms._reproducible = true;
+      parms._hidden = new int[]{50,50};
+      parms._seed = 0xdecaf;
+
+      DeepLearningModel model = new DeepLearning(parms).trainModel().get();
+      Scope.track_generic(model);
+      
+      Frame preds = Scope.track(model.score(tfr));
+      MojoModel m = model.toMojo();
+
+      // 1. find rows that generate max prediction and min prediction
+      double minPred = preds.vec(0).min();
+      double maxPred = preds.vec(0).max();
+      Vec.Reader vr = preds.vec(0).new Reader();
+      long minPredIdx = -1;
+      long maxPredIdx = -1;
+      for (long i = 0; i < vr.length(); i++) {
+        if (minPred == vr.at(i)) {
+          minPredIdx = i;
+        }
+        if (maxPred == vr.at(i)) {
+          maxPredIdx = i;
+        }
+      }
+      double[] minRow = new double[tfr.numCols() - 1];
+      double[] maxRow = new double[tfr.numCols() - 1];
+      for (int i = 0; i < tfr.numCols() - 1; i++) {
+        minRow[i] = tfr.vec(i).at(minPredIdx);
+        maxRow[i] = tfr.vec(i).at(maxPredIdx);
+      }
+      
+      // 2. sanity check - make sure MOJO scores on these rows correctl
+      assertEquals(minPred, m.score0(minRow.clone(), new double[1])[0], 0);
+      assertEquals(maxPred, m.score0(maxRow.clone(), new double[1])[0], 0);
+
+      // 3. Run 2 threads to predict on min-row and 2 threads to predict on max-row in parallel
+      ExecutorService executor = Executors.newFixedThreadPool(4);
+      List<Callable<Long>> runnables = new ArrayList<>();
+      for (int i = 0; i < 2; i++) {
+        runnables.add(new MojoRowScorer(m, minPred, minRow));
+        runnables.add(new MojoRowScorer(m, maxPred, maxRow));
+      }
+      for (Future<Long> future : executor.invokeAll(runnables)) {
+        assertNotEquals(0L, (long) future.get()); // we ran at least once
+      }
+
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  private static class MojoRowScorer implements Callable<Long> {
+
+    private final MojoModel _mojo;
+    private final double _expected;
+    private final double[] _input;
+
+    public MojoRowScorer(MojoModel mojo, double expected, double[] input) {
+      _mojo = mojo;
+      _expected = expected;
+      _input = input;
+    }
+
+    public Long call() {
+      long cnt = 0;
+      long start = System.currentTimeMillis();
+      while (System.currentTimeMillis() < start + 1e4) {
+        for (int i = 0; i < 100; i++) {
+          double actual = _mojo.score0(_input.clone(), new double[1])[0];
+          assertEquals(_expected, actual, 0);
+          cnt++;
+        }
+      }
+      return cnt;
+    }
+  }
+
 
 }
 
