@@ -2,6 +2,7 @@
 from setuptools import setup, find_packages
 from codecs import open
 import os
+import sys
 import shutil
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -15,12 +16,15 @@ version = "0.0.local"
 with open(os.path.join(here, 'h2o/version.txt'), encoding='utf-8') as f:
     version = f.read()
 
+client = "--client" in sys.argv
+if client:
+    sys.argv.remove("--client")
 
 packages = find_packages(exclude=["tests*"])
 print("Found packages: %r" % packages)
 
 setup(
-    name='h2o',
+    name='h2o_client' if client else 'h2o',
 
     # Versions should comply with PEP440.  For a discussion on single-sourcing
     # the version across setup.py and the project code, see
