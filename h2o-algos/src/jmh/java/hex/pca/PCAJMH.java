@@ -53,7 +53,6 @@ public class PCAJMH {
       if (trainingFrame != null) {
         trainingFrame.delete();
       }
-      e.printStackTrace();
       throw e;
     }
   }

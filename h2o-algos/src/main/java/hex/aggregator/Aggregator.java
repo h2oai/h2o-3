@@ -231,9 +231,6 @@ public class Aggregator extends ModelBuilder<AggregatorModel,AggregatorModel.Agg
         }
         _job.update(1, "Done.");
         model.update(_job);
-      } catch (Throwable t){
-        t.printStackTrace();
-        throw t;
       } finally {
         if (model != null) {
           model.unlock(_job);

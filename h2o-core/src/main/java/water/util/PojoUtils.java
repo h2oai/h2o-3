@@ -411,7 +411,7 @@ public class PojoUtils {
       Object vb = fb.get(b);
       return va == null ? vb == null : va.equals(vb);
     } catch (IllegalAccessException e) {
-      e.printStackTrace();
+      Log.err(e);
       return false;
     }
   }

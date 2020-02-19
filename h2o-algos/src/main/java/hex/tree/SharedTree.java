@@ -791,7 +791,7 @@ public abstract class SharedTree<
           writer.println(dtree.root().toString2(new StringBuilder(), 0));
           writer.close();
         } catch (FileNotFoundException|UnsupportedEncodingException e) {
-          e.printStackTrace();
+          throw new RuntimeException(e);
         }
         System.out.println(dtree.root().toString2(new StringBuilder(), 0));
       }

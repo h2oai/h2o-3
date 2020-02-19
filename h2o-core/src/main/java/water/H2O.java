@@ -820,8 +820,9 @@ final public class H2O {
         output.write(':');
         output.write(Integer.toString(API_PORT));
         output.flush();
-      } catch ( IOException e ) {
-        e.printStackTrace();
+      } catch (IOException e) {
+        Log.err("Unable to write notify file.");
+        H2O.exit(-1);
       }
     }
     if (embeddedH2OConfig == null) { return; }

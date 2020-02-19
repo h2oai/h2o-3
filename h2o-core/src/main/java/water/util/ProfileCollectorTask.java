@@ -83,7 +83,7 @@ public class ProfileCollectorTask extends MRTask<ProfileCollectorTask> {
       try {
         Thread.sleep(1);
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        Thread.currentThread().interrupt();
       }
     }
 

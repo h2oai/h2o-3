@@ -78,7 +78,6 @@ public class PCAImputeMissingScoringBench {
       if (trainingFrame != null) {
         trainingFrame.delete();
       }
-      e.printStackTrace();
       throw e;
     }
   }

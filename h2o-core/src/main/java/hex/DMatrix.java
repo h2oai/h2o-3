@@ -253,7 +253,6 @@ public class DMatrix  {
         final Chunk xChunk = chks[i];
         for (int k = xChunk.nextNZ(-1); k < res.length; k = xChunk.nextNZ(k))
           try { res[k] += yVal * xChunk.atd(k);} catch(Throwable t) {
-            t.printStackTrace();
             throw new RuntimeException(t);
           }
       }

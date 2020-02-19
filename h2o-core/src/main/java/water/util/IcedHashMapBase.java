@@ -150,10 +150,8 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
         default:
           return ab.put(null);
       }
-    } catch(Throwable t){
-      System.err.println("Iced hash map serialization failed! " + t.toString() + ", msg = " + t.getMessage());
-      t.printStackTrace();
-      throw H2O.fail("Iced hash map serialization failed!" + t.toString() + ", msg = " + t.getMessage());
+    } catch (Throwable t) {
+      throw H2O.fail("Iced hash map serialization failed!" + t.toString() + ", msg = " + t.getMessage(), t);
     } finally {
       _write_lock = false;
     }
@@ -287,10 +285,8 @@ public abstract class IcedHashMapBase<K, V> extends Iced implements Map<K, V>, C
       }
       return this;
     } catch(Throwable t) {
-      t.printStackTrace();
-
       if (null == t.getCause()) {
-        throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage() + ", cause: null");
+        throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage() + ", cause: null", t);
       } else {
         throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage() +
                 ", cause: " + t.getCause().toString() +

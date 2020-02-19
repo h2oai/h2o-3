@@ -362,10 +362,8 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
             }
           } catch (RuntimeException e) { // Catch everything
             if (!Job.isCancelledException(e)) {
-              StringWriter sw = new StringWriter();
-              PrintWriter pw = new PrintWriter(sw);
-              e.printStackTrace(pw);
-              Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e, sw.toString());
+              Log.warn("Grid search: model builder for parameters " + params + " failed! Exception: ", e);
+              Log.err(e);
             }
 
             grid.appendFailedModelParameters(model != null ? model._key : null, params, e);
