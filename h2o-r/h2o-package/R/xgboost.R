@@ -100,6 +100,30 @@
 #'        auto.
 #' @param gpu_id Which GPU to use.  Defaults to 0.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' # Import the titanic dataset
+#' titanic <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+#' 
+#' # Set predictors and response; set response as a factor
+#' titanic['survived'] <- as.factor(titanic['survived'])
+#' predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
+#' response <- "survived"
+#' 
+#' # Split the dataset into train and valid
+#' titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
+#' train <- titanic.splits[[1]]
+#' valid <- titanic.splits[[2]]
+#' 
+#' # Train the XGB model
+#' titanic_xgb <- h2o.xgboost(x = predictors, y = response,
+#'                            training_frame = train, validation_frame = valid,
+#'                            booster = "dart", normalize_type = "tree",
+#'                            seed = 1234)
+#' }
 #' @export
 h2o.xgboost <- function(x,
                         y,

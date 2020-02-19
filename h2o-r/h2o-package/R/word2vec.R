@@ -19,6 +19,22 @@
 #' @param pre_trained Id of a data frame that contains a pre-trained (external) word2vec model
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' # Import the CraigslistJobTitles dataset
+#' job.titles.path = "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/craigslistJobTitles.csv"
+#' job.titles <- h2o.importFile(job.titles.path, destination_frame = "jobtitles",
+#'                              col.names = c("category", "jobtitle"),
+#'                              col.types = c("String", "String"), header = TRUE)
+#' 
+#' # Build and train the Word2Vec model
+#' words <- h2o.tokenize(job.titles, " ")
+#' vec <- h2o.word2vec(training_frame = words)
+#' h2o.findSynonyms(vec, "teacher", count = 20)
+#' }
 #' @export
 h2o.word2vec <- function(training_frame = NULL,
                          model_id = NULL,

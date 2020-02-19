@@ -30,6 +30,23 @@
 #' @param use_all_factor_levels \code{Logical}. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
 #'        FALSE.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' # Import the heart dataset
+#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' 
+#' # Set the predictor and response
+#' predictor <- "age"
+#' response <- "event"
+#' 
+#' # Train a Cox Proportional Hazards model 
+#' heart_coxph <- h2o.coxph(start_column = "start", stop_column = "stop",
+#'                          event_column = "event", x = predictor,
+#'                          training_frame = heart)
+#' }
 #' @export
 h2o.coxph <- function(x,
                       event_column,
