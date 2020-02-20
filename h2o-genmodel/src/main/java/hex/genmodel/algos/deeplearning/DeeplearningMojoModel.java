@@ -25,8 +25,6 @@ public class DeeplearningMojoModel extends MojoModel {
   public int[] _catNAFill; // if mean imputation is true, mode imputation for categorical columns
   public int _numLayers;    // number of neural network layers.
   public DistributionFamily _family;
-  public double[] _numsA = new double[_nums];
-  public int[] _catsA = new int[_cats];
 
   /***
    * Should set up the neuron network frame work here
@@ -45,8 +43,6 @@ public class DeeplearningMojoModel extends MojoModel {
       _allActivations[index]=_activation;
 
     _allActivations[inputLayers] = this.isAutoEncoder()?_activation:(this.isClassifier()?"Softmax":"Linear");
-    _numsA = new double[_nums]; // allocate once and keep being written over, our small effort in speeding things up.
-    _catsA = new int[_cats];
   }
 
   /***
@@ -62,6 +58,8 @@ public class DeeplearningMojoModel extends MojoModel {
     assert(dataRow != null) : "doubles are null"; // check to make sure data is not null
     double[] neuronsInput = new double[_units[0]]; // store inputs into the neural network
     double[] neuronsOutput;  // save output from a neural network layer
+    double[] _numsA = new double[_nums];
+    int[] _catsA = new int[_cats];
 
     // transform inputs: NAs in categoricals are always set to new extra level.
     setInput(dataRow, neuronsInput, _numsA, _catsA, _nums, _cats, _catoffsets, _normmul, _normsub, _use_all_factor_levels, true);
