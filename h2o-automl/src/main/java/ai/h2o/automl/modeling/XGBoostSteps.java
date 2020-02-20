@@ -4,12 +4,22 @@ import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.ModelingStep;
 import ai.h2o.automl.ModelingSteps;
+import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
+import hex.grid.GridSearch;
+import hex.grid.HyperSpaceSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.ProgressiveSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
+import hex.grid.ProgressiveWalker;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
+import water.DKV;
+import water.H2O;
 import water.Job;
+import water.Key;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -219,7 +229,50 @@ public class XGBoostSteps extends ModelingSteps {
 
                 @Override
                 protected Job<XGBoostModel> startJob() {
-                    return null;
+                    Leaderboard amlLeaderboard = aml().leaderboard();
+                    Leaderboard tmpLeaderboard = new Leaderboard(
+                            "my cool lb", //TODO
+                            new EventLog(Key.make("my cool el")), //TODO
+                            amlLeaderboard.leaderboardFrame(),
+                            amlLeaderboard.getSortMetric()
+                            );
+                    XGBoostModel bestXGB = getBestXGB();
+                    tmpLeaderboard.addModel(bestXGB._key);
+
+                    XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
+                    Object[][] hyperParams = new Object[][] {
+                            new Object[] {"_learn_rate", "_stopping_rounds"},
+                            new Object[] {        0.2  ,                 5 },
+                            new Object[] {        0.1  ,                 5 },
+                            new Object[] {        0.05 ,                10 },
+                            new Object[] {        0.02 ,                10 },
+                            new Object[] {        0.01 ,                10 },
+                            new Object[] {        0.005,                20 },
+                            new Object[] {        0.002,                20 },
+                            new Object[] {        0.001,                20 },
+                    };
+                    Key<XGBoostModel> key = makeKey(_algo.name(), true);
+                    int work = 10; //TODO
+                    int maxRuntimeSecs = 1000; //TODO
+                    Job<XGBoostModel> job = new Job<>(key, XGBoostModel.class.getName(), "a super tuned XGB"); //TODO
+                    return job.start(new H2O.H2OCountedCompleter() {
+                        @Override
+                        public void compute2() {
+                            Grid tuningGrid = GridSearch.startGridSearch(
+                                    Key.make("something cool"),  //TODO
+                                    new ProgressiveWalker<>(
+                                            xgBoostParameters,
+                                            hyperParams,
+                                            new GridSearch.SimpleParametersBuilderFactory<>(),
+                                            new ProgressiveSearchCriteria(StoppingCriteria.create().maxRuntimeSecs(maxRuntimeSecs).build())
+                                    ),
+                                    GridSearch.SEQUENTIAL_MODEL_BUILDING
+                            ).get();
+                            tmpLeaderboard.addModels(tuningGrid.getModelKeys());
+                            DKV.put(job._result, tmpLeaderboard.getLeader());
+                            //TODO handle exceptions, check if tmp leaderboard needs to be stored in DKV, in which case cleanup at the end...
+                        }
+                    }, work, maxRuntimeSecs);
                 }
             }
     };
