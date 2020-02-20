@@ -2542,6 +2542,7 @@ public class DeepLearningTest extends TestUtil {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
       tfr.remove("ID").remove();
       tfr.add("AGE", tfr.remove("AGE")); // make AGE the last column (for convenience)
+      DKV.put(tfr);
 
       DeepLearningParameters parms = new DeepLearningParameters();
       parms._train = tfr._key;
@@ -2578,7 +2579,7 @@ public class DeepLearningTest extends TestUtil {
         maxRow[i] = tfr.vec(i).at(maxPredIdx);
       }
       
-      // 2. sanity check - make sure MOJO scores on these rows correctl
+      // 2. sanity check - make sure MOJO scores on these rows correct
       assertEquals(minPred, m.score0(minRow.clone(), new double[1])[0], 0);
       assertEquals(maxPred, m.score0(maxRow.clone(), new double[1])[0], 0);
 
@@ -2604,7 +2605,7 @@ public class DeepLearningTest extends TestUtil {
     private final double _expected;
     private final double[] _input;
 
-    public MojoRowScorer(MojoModel mojo, double expected, double[] input) {
+    private MojoRowScorer(MojoModel mojo, double expected, double[] input) {
       _mojo = mojo;
       _expected = expected;
       _input = input;
