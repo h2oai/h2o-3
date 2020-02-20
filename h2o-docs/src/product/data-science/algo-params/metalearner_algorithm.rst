@@ -9,11 +9,14 @@ Description
 
 H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking (or Super Learning). The algorithm that learns the optimal combination of the base learners is called the metalearning algorithm or metalearner.  By default, the Stacked Ensemble metalearner is a default H2O GLM with non-negative weights. The ``metalearner_algorithm`` option allows you to specify a different metalearner algorithm.  Options include:
 
- - ``"AUTO"`` (GLM with non negative weights, and if ``validation_frame`` is present, ``lambda_search`` is set to True; may change over time). This is the default.
- - ``"glm"`` (Generalized Linear Model, aka GLM)
- - ``"gbm"`` (Gradient Boosting Machine, aka GBM) 
- - ``"drf"`` (Distributed Random Forest)
- - ``"deeplearning"`` (Deep Learning)
+ - ``"AUTO"`` (GLM with non negative weights & standardization turned off, and if ``validation_frame`` is present, then ``lambda_search`` is set to True; may change over time). This is the default.
+ - ``"glm"`` (GLM with default parameters)
+ - ``"gbm"`` (GBM with default parameters) 
+ - ``"drf"`` (Random Forest with default parameters)
+ - ``"deeplearning"`` (Deep Learning with default parameters)
+ - ``"naivebayes"`` (NaiveBayes with default parameters)
+ - ``"psvm"`` (PSVM with default parameters)
+ - ``"xgboost"`` (if available, XGBoost with default parameters)
 
 The metalearner will use default hyperparameter values for the specified algorithm, unless you also specify `metalearner_params <metalearner_params.html>`__ to customize the hyperparameters values.
 
