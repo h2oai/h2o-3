@@ -1,7 +1,6 @@
 package hex.grid;
 
 import hex.ScoreKeeper;
-import javafx.scene.paint.Stop;
 import water.Iced;
 import water.fvec.Frame;
 
@@ -13,27 +12,44 @@ public class HyperSpaceSearchCriteria extends Iced {
   public enum Strategy { Unknown, Cartesian, RandomDiscrete } // search strategy
 
   public static class StoppingCriteria extends Iced {
-    public int _max_models = 0;  // no limit
-    public double _max_runtime_secs = 0;  // no time limit
-    public int _stopping_rounds = 0;
-    public ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
-    public double _stopping_tolerance = 1e-3;  // = Model.Parameters.defaultStoppingTolerance()
+    // keeping those private fields in snake-case so that they can be set from Schema through reflection
+    private int _max_models = 0;  // no limit
+    private double _max_runtime_secs = 0;  // no time limit
+    private int _stopping_rounds = 0;
+    private ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
+    private double _stopping_tolerance = 1e-3;  // = Model.Parameters.defaultStoppingTolerance()
+
+    public int getMaxModels() {
+      return _max_models;
+    }
+
+    public double getMaxRuntimeSecs() {
+      return _max_runtime_secs;
+    }
+
+    public int getStoppingRounds() {
+      return _stopping_rounds;
+    }
+
+    public ScoreKeeper.StoppingMetric getStoppingMetric() {
+      return _stopping_metric;
+    }
+
+    public double getStoppingTolerance() {
+      return _stopping_tolerance;
+    }
   }
 
   public final Strategy _strategy;
   public final Strategy strategy() { return _strategy; }
 
-  public StoppingCriteria stopping_criteria() { return null; }
+  public StoppingCriteria stoppingCriteria() { return null; }
 
 
 // TODO: add a factory which accepts a Strategy and calls the right constructor
 
   public HyperSpaceSearchCriteria(Strategy strategy) {
     this._strategy = strategy;
-  }
-
-  public HyperSpaceSearchCriteria deepClone() {
-    return (HyperSpaceSearchCriteria) this.clone();
   }
 
   /**
@@ -53,23 +69,23 @@ public class HyperSpaceSearchCriteria extends Iced {
    */
   public static final class RandomDiscreteValueSearchCriteria extends HyperSpaceSearchCriteria {
     private long _seed = -1; // -1 means true random
-    private StoppingCriteria _stopping_criteria;
+    private StoppingCriteria _stoppingCriteria;
 
     public RandomDiscreteValueSearchCriteria() {
       super(Strategy.RandomDiscrete);
-      _stopping_criteria = new StoppingCriteria();
+      _stoppingCriteria = new StoppingCriteria();
     }
 
     @Override
-    public StoppingCriteria stopping_criteria() {
-      return _stopping_criteria;
+    public StoppingCriteria stoppingCriteria() {
+      return _stoppingCriteria;
     }
 
     /** Seed for the random choices of hyperparameter values.  Set to a value other than -1 to get a repeatable pseudorandom sequence. */
     public long seed() { return _seed; }
 
     /** Max number of models to build. */
-    public int max_models() { return _stopping_criteria._max_models; }
+    public int max_models() { return _stoppingCriteria._max_models; }
 
     /**
      * Max runtime for the entire grid, in seconds. Set to 0 to disable. Can be combined with <i>max_runtime_secs</i> in the model parameters. If
@@ -77,7 +93,7 @@ public class HyperSpaceSearchCriteria extends Iced {
      * the remainder of the grid time.  If <i>max_runtime_secs</i> <b>is</b> set in the mode parameters each build is launched
      * with a limit equal to the minimum of the model time limit and the remaining time for the grid.
      */
-    public double max_runtime_secs() { return _stopping_criteria._max_runtime_secs; }
+    public double max_runtime_secs() { return _stoppingCriteria._max_runtime_secs; }
 
     /**
      * Early stopping based on convergence of stopping_metric.
@@ -85,13 +101,13 @@ public class HyperSpaceSearchCriteria extends Iced {
      * k scoring events.
      * Can only trigger after at least 2k scoring events. Use 0 to disable.
      */
-    public int stopping_rounds() { return _stopping_criteria._stopping_rounds; }
+    public int stopping_rounds() { return _stoppingCriteria._stopping_rounds; }
 
     /** Metric to use for convergence checking; only for _stopping_rounds > 0 */
-    public ScoreKeeper.StoppingMetric stopping_metric() { return _stopping_criteria._stopping_metric; }
+    public ScoreKeeper.StoppingMetric stopping_metric() { return _stoppingCriteria._stopping_metric; }
 
     /** Relative tolerance for metric-based stopping criterion: stop if relative improvement is not at least this much. */
-    public double stopping_tolerance() { return _stopping_criteria._stopping_tolerance; }
+    public double stopping_tolerance() { return _stoppingCriteria._stopping_tolerance; }
 
     /** Calculate a reasonable stopping tolerance for the Frame.
      * Currently uses only the NA percentage and nrows, but later
@@ -104,7 +120,7 @@ public class HyperSpaceSearchCriteria extends Iced {
     }
 
     public void set_default_stopping_tolerance_for_frame(Frame frame) {
-      _stopping_criteria._stopping_tolerance = default_stopping_tolerance_for_frame(frame);
+      set_stopping_tolerance(default_stopping_tolerance_for_frame(frame));
     }
 
     public void set_seed(long seed) {
@@ -112,30 +128,28 @@ public class HyperSpaceSearchCriteria extends Iced {
     }
 
     public void set_max_models(int max_models) {
-      _stopping_criteria._max_models = max_models;
+      cloneStoppingCriteria()._max_models = max_models;
     }
 
     public void set_max_runtime_secs(double max_runtime_secs) {
-      _stopping_criteria._max_runtime_secs = max_runtime_secs;
+      cloneStoppingCriteria()._max_runtime_secs = max_runtime_secs;
     }
 
     public void set_stopping_rounds(int stopping_rounds) {
-      _stopping_criteria._stopping_rounds = stopping_rounds;
+      cloneStoppingCriteria()._stopping_rounds = stopping_rounds;
     }
 
     public void set_stopping_metric(ScoreKeeper.StoppingMetric stopping_metric) {
-      _stopping_criteria._stopping_metric = stopping_metric;
+      cloneStoppingCriteria()._stopping_metric = stopping_metric;
     }
 
     public void set_stopping_tolerance(double stopping_tolerance) {
-      _stopping_criteria._stopping_tolerance = stopping_tolerance;
+      cloneStoppingCriteria()._stopping_tolerance = stopping_tolerance;
     }
 
-    @Override
-    public RandomDiscreteValueSearchCriteria deepClone() {
-      RandomDiscreteValueSearchCriteria clone = (RandomDiscreteValueSearchCriteria) super.deepClone();
-      clone._stopping_criteria = (StoppingCriteria) clone._stopping_criteria.clone();
-      return clone;
+    private StoppingCriteria cloneStoppingCriteria() {
+      _stoppingCriteria = (StoppingCriteria) _stoppingCriteria.clone();
+      return _stoppingCriteria;
     }
   }
 }

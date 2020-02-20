@@ -322,7 +322,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             setCustomParams(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
-            RandomDiscreteValueSearchCriteria searchCriteria = buildSpec.build_control.stopping_criteria.getSearchCriteria().deepClone();
+            RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
 
             Work work = getAllocatedWork();
             double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;

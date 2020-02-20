@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * By default, the grid search invokes cartesian grid search, but it can be
  * modified by passing explicit hyper space walk strategy via the
- * {@link #startGridSearch(Key, HyperSpaceWalker)} method.
+ * {@link #startGridSearch(Key, HyperSpaceWalker, int)} method.
  *
  * If any of forked jobs fails then the failure is ignored, and grid search
  * normally continue in traversing the hyper space.
@@ -64,7 +64,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * }</pre>
  *
  * @see HyperSpaceWalker
- * @see #startGridSearch(Key, HyperSpaceWalker)
+ * @see #startGridSearch(Key, HyperSpaceWalker, int)
  */
 public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSearch> {
   public final Key<Grid> _result;
@@ -168,11 +168,11 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   }
 
   private long maxModels() {
-    return _hyperSpaceWalker.search_criteria().stopping_criteria() == null ? 0 : _hyperSpaceWalker.search_criteria().stopping_criteria()._max_models;
+    return _hyperSpaceWalker.search_criteria().stoppingCriteria() == null ? 0 : _hyperSpaceWalker.search_criteria().stoppingCriteria().getMaxModels();
   }
 
   private double maxRuntimeSecs() {
-    return  _hyperSpaceWalker.search_criteria().stopping_criteria() == null ? 0 : _hyperSpaceWalker.search_criteria().stopping_criteria()._max_runtime_secs;
+    return  _hyperSpaceWalker.search_criteria().stoppingCriteria() == null ? 0 : _hyperSpaceWalker.search_criteria().stoppingCriteria().getMaxRuntimeSecs();
   }
 
   private double remainingTimeSecs() {
@@ -182,9 +182,9 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
   }
 
   private ScoreKeeper.StoppingMetric sortingMetric() {
-    return _hyperSpaceWalker.search_criteria().stopping_criteria() == null
+    return _hyperSpaceWalker.search_criteria().stoppingCriteria() == null
             ? ScoreKeeper.StoppingMetric.AUTO
-            : _hyperSpaceWalker.search_criteria().stopping_criteria()._stopping_metric;
+            : _hyperSpaceWalker.search_criteria().stoppingCriteria().getStoppingMetric();
   }
 
   private class ModelFeeder<MP extends Model.Parameters, D extends ModelFeeder> extends ParallelModelBuilder.ParallelModelBuilderCallback<D>{
@@ -604,7 +604,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * @return GridSearch Job, with models run with these parameters, built as needed - expected to be
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
-   * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria)
+   * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria, int)
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
           final Key<Grid> destKey,
@@ -636,7 +636,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    * an expensive operation.  If the models in question are "in progress", a 2nd build will NOT be
    * kicked off.  This is a non-blocking call.
    *
-   * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria)
+   * @see #startGridSearch(Key, Model.Parameters, Map, ModelParametersBuilderFactory, HyperSpaceSearchCriteria, int)
    */
   public static <MP extends Model.Parameters> Job<Grid> startGridSearch(
           final Key<Grid> destKey,

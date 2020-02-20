@@ -15,9 +15,6 @@ import water.api.schemas3.*;
 import water.util.*;
 
 import java.util.Arrays;
-import java.util.Map;
-
-import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
 // TODO: this is about to change from SchemaV3 to RequestSchemaV3:
 public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpecV99> {
@@ -167,7 +164,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     public AutoMLStoppingCriteria fillImpl(AutoMLStoppingCriteria impl) {
       AutoMLStoppingCriteria filled = super.fillImpl(impl, new String[] {"_searchCriteria"});
       PojoUtils.copyProperties(filled.getSearchCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
-      PojoUtils.copyProperties(filled.getSearchCriteria().stopping_criteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
+      PojoUtils.copyProperties(filled.getSearchCriteria().stoppingCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
       return filled;
     }
 
@@ -175,7 +172,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     public AutoMLStoppingCriteriaV99 fillFromImpl(AutoMLStoppingCriteria impl) {
       AutoMLStoppingCriteriaV99 schema = super.fillFromImpl(impl, new String[]{"_searchCriteria"});
       PojoUtils.copyProperties(schema, impl.getSearchCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
-      PojoUtils.copyProperties(schema, impl.getSearchCriteria().stopping_criteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
+      PojoUtils.copyProperties(schema, impl.getSearchCriteria().stoppingCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
       return schema;
     }
   }

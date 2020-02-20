@@ -9,8 +9,6 @@ import water.api.schemas3.SchemaV3;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
-import java.util.Properties;
-
 /**
  * Search criteria for a hyperparameter search including directives for how to search and
  * when to stop the search.
@@ -73,14 +71,14 @@ public class HyperSpaceSearchCriteriaV99<I extends HyperSpaceSearchCriteria, S e
     @Override
     public RandomDiscreteValueSearchCriteria fillImpl(RandomDiscreteValueSearchCriteria impl) {
       RandomDiscreteValueSearchCriteria filledImpl = super.fillImpl(impl);
-      PojoUtils.copyProperties(filledImpl.stopping_criteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(filledImpl.stoppingCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES);
       return filledImpl;
     }
 
     @Override
     public RandomDiscreteValueSearchCriteriaV99 fillFromImpl(RandomDiscreteValueSearchCriteria impl) {
       RandomDiscreteValueSearchCriteriaV99 schema = super.fillFromImpl(impl);
-      PojoUtils.copyProperties(this, impl.stopping_criteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
+      PojoUtils.copyProperties(this, impl.stoppingCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES);
       return schema;
     }
   }
