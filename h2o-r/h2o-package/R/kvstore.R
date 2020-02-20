@@ -101,6 +101,7 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
 #' @seealso \code{\link{h2o.assign}}, \code{\link{h2o.ls}}
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' iris_hex <- as.h2o(iris)
 #' model <- h2o.glm(1:4,5,training = iris_hex, family = "multinomial")

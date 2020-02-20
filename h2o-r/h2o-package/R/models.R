@@ -467,6 +467,9 @@ h2o.getFutureModel <- function(object, verbose=FALSE) {
 #'          generation in h2o.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' insurance <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
 #' predictors <- colnames(insurance)[1:4]
 #' response <- 'Claims'
@@ -505,18 +508,6 @@ h2o.predict <- function(object, newdata, ...){
 #' @param model A trained model representing the transformation strategy
 #' @param ... Transformation model-specific parameters
 #' @return Returns an H2OFrame object with data transformed.
-#' @examples 
-#' \dontrun{
-#' h2o.init()
-#' frame <- as.h2o(data.frame(C1 = c("a","b"), 
-#'                            C2 = c(0, 1), 
-#'                            C3 = c(1, 0), 
-#'                            C4 = c(0.2, 0.8), 
-#'                            stringsAsFactors = FALSE)
-#' w2v <- h2o.word2vec(pre_trained = frame, vec_size = 3)
-#' words <- as.character(as.h2o(c("b", "a", "c", NA, "a")))
-#' h2o.transform_word2vec(w2v, words = words)
-#' }
 #' @export
 setGeneric("h2o.transform", function(model, ...) {
   if(!is(model, "H2OModel")) {
@@ -1469,6 +1460,9 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param object an \linkS4class{H2OModel} object.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "cylinders"
@@ -1503,6 +1497,9 @@ h2o.coef <- function(object) {
 #' @param object an \linkS4class{H2OModel} object.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "cylinders"
@@ -1893,7 +1890,9 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param object An \linkS4class{H2OModel} object.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' pros <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
 #' response <- "GLEASON"
 #' predictors <- c("ID","AGE","CAPSULE","DCAPS","PSA","VOL","DPROS")
@@ -1960,7 +1959,9 @@ h2o.varsplits <- function(object) {
 #' @param object An \linkS4class{H2OModel} object.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
@@ -2016,7 +2017,9 @@ h2o.get_ntrees_actual <- function(object) {
 #' @param matrix_id An integer, ranging from 1 to number of layers + 1, that specifies the weight matrix to return.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' census <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv")
 #' census[,1] <- as.factor(census[,1])
 #' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
@@ -2335,6 +2338,7 @@ h2o.specificity <- function(object, thresholds){
 #' @param metric "F1," for example
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' 
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
@@ -2365,6 +2369,7 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 #' @param threshold number between 0 and 1
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' 
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
@@ -2447,7 +2452,9 @@ h2o.withinss <- function(object) { h2o.mse(object) }
 #' @param xval Retrieve the cross-validation total within cluster sum of squares
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
@@ -2542,7 +2549,9 @@ h2o.betweenss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param xval Retrieve the cross-validation total sum of squares
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' km <- h2o.kmeans(x = predictors, training_frame = fr, k = 3, nfolds = 3)
@@ -2582,7 +2591,9 @@ h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param object An \linkS4class{H2OClusteringModel} object.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
 #' prostate[,2] <- as.factor(prostate[,2])
@@ -2707,7 +2718,9 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param xval Retrieve the cross-validation null deviance
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
 #' prostate[,2] <- as.factor(prostate[,2])
@@ -2767,7 +2780,9 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param xval Retrieve the cross-validation residual deviance
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
 #' prostate[,2] <- as.factor(prostate[,2])
@@ -2827,7 +2842,9 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) 
 #' @param xval Retrieve the cross-validation residual degrees of freedom
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
 #' prostate[,2] <- as.factor(prostate[,2])
@@ -2887,7 +2904,9 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' @param xval Retrieve the cross-validation null degrees of freedom
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
 #' prostate[,2] <- as.factor(prostate[,2])
@@ -3518,7 +3537,9 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 #' @param object An \linkS4class{H2ODimReductionModel} object.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' cars_pca <- h2o.prcomp(cars, transform = "STANDARDIZE", 
@@ -3786,7 +3807,7 @@ h2o.cross_validation_holdout_predictions <- function(object) {
 #' @param object An \linkS4class{H2OModel} object.
 #' @return Returns a list of H2OFrame objects
 #' @examples 
-#' \dontrun
+#' \dontrun{
 #' library(h2o)
 #' h2o.init()
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
@@ -3799,6 +3820,7 @@ h2o.cross_validation_holdout_predictions <- function(object) {
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
 #'                     nfolds = 5,  keep_cross_validation_predictions = TRUE, seed = 1234)
 #' h2o.cross_validation_predictions(cars_gbm)
+#' }
 #' @export
 h2o.cross_validation_predictions <- function(object) {
   if(!is(object, "H2OModel"))

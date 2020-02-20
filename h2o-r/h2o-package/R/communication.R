@@ -527,6 +527,7 @@
 #' @return The original x object
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' print(cars, header = TRUE)
@@ -859,6 +860,7 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 #' 
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' h2o.no_progress()
 #' 
@@ -882,7 +884,8 @@ h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
 #'
 #' @examples 
 #' \dontrun{
-#' #' h2o.init()
+#' library(h2o)
+#' h2o.init()
 #' h2o.no_progress()
 #' 
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")

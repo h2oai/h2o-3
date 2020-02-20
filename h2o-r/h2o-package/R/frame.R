@@ -567,6 +567,7 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
 #' @return Creates an H2OFrame of the same type as x
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.rep_len(iris, length.out = 3)
@@ -775,6 +776,7 @@ table.H2OFrame <- h2o.table
 #' @return Returns an H2OFrame object.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
 #' h2o.unique(iris["class"])
@@ -869,6 +871,9 @@ match.H2OFrame <- h2o.match
 #' @return Returns an H2OFrame object containing non-NA rows.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
 #' h2o.na_omit(frame)
 #' }
@@ -1214,7 +1219,9 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
 #' @param na.rm ignore missing values
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
 #'                         rows = 6, cols = 2, seed = 123)
 #' range(frame, na.rm = TRUE)
@@ -1235,7 +1242,9 @@ range.H2OFrame <- function(...,na.rm = TRUE) c(min(...,na.rm=na.rm), max(...,na.
 #' @return An H2OFrame with columns from the columns arg, aligned on the index arg, with values from values arg
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' df = h2o.createFrame(rows = 1000, cols=3, factors=10, integer_fraction=1.0/3, 
 #'                      categorical_fraction=1.0/3, missing_fraction=0.0, seed=123)
 #' df$C3 = h2o.abs(df$C3)
@@ -1311,7 +1320,9 @@ h2o.topBottomN <- function(x, column, nPercent, grabTopN){
 #' @return An H2OFrame with 2 columns.  The first column is the original row indices, second column contains the topN values
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' dataset <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip")
 #' frameNames <- names(dataset)
 #' nPercent <- c(1, 2, 3, 4)
@@ -1364,7 +1375,9 @@ h2o.bottomN <- function(x, column, nPercent) {
 #' @seealso \code{\link{h2o.month}}
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
 #' h2o.year(hdf["ds9"])
 #' }
@@ -1383,6 +1396,9 @@ h2o.year <- function(x) .newExpr("year", chk.H2OFrame(x))
 #' @seealso \code{\link{h2o.year}}
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
 #' h2o.month(hdf["ds9"])
 #' }
@@ -1402,6 +1418,7 @@ h2o.month <- function(x) .newExpr("month", chk.H2OFrame(x))
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
+#' 
 #' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
 #' h2o.week(hdf["ds9"])
 #' }
@@ -1421,6 +1438,7 @@ h2o.week <- function(x) .newExpr("week", chk.H2OFrame(x))
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
+#' 
 #' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
 #' h2o.day(hdf["ds9"])
 #' }
@@ -1440,6 +1458,7 @@ h2o.day <- function(x) .newExpr("day", chk.H2OFrame(x))
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
+#' 
 #' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
 #' h2o.dayOfWeek(hdf["ds9"])
 #' }
@@ -1458,6 +1477,7 @@ h2o.dayOfWeek <- function(x) .newExpr("dayOfWeek", chk.H2OFrame(x))
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
+#' 
 #' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
 #' h2o.hour(hdf["ds9"])
 #' }
@@ -1518,6 +1538,9 @@ hour.H2OFrame <- h2o.hour
 #' @param msec msec
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' x = as.h2o(c(2018, 3, 2, 6, 32, 0, 0))
 #' h2o.mktime(x)
 #' }
@@ -1556,6 +1579,7 @@ as.Date.H2OFrame <- h2o.as_date
 #' @param tz The desired timezone.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' 
 #' h2o.setTimezone("America/Juneau")
@@ -1856,7 +1880,9 @@ trunc <- function(x, ...) {
 #' @seealso \code{\link[base]{which}} for the base R method.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' iris_hf <- as.h2o(iris)
 #' h2o.which(iris_hf[, 1] == 4.4)
 #' }
@@ -1877,7 +1903,9 @@ h2o.which <- function(x) {
 #' @seealso \code{\link[base]{which.max}} for the base R method.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' census <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv")
 #' census[,1] <- as.factor(census[,1])
 #' dlmodel<-h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
@@ -1909,7 +1937,9 @@ which.max.H2OFrame <- h2o.which_max
 #' @seealso \code{\link[base]{which.min}} for the base R method.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' census <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv")
 #' dlmodel<-h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
 #'                           epochs = 1, training_frame = census, 
@@ -1935,7 +1965,9 @@ which.min.H2OFrame <- h2o.which_min
 #' @return Returns a list containing the count of NAs per column
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' iris_hf <- as.h2o(iris)
 #' h2o.nacnt(iris_hf)  # should return all 0s
 #' h2o.insertMissingValues(iris_hf)
@@ -1953,7 +1985,9 @@ h2o.nacnt <- function(x)
 #' @seealso \code{\link[base]{dim}} for the base R method.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' iris_hf <- as.h2o(iris)
 #' dim(iris_hf)
 #' }
@@ -1974,7 +2008,9 @@ ncol.H2OFrame <- function(x) { .fetch.data(x,10L); attr(.eval.frame(x), "ncol") 
 #' @param x An H2OFrame
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' n <- 2000
 #' #  Generate variables V1, ... V10
 #' X <- matrix(rnorm(10 * n), n, 10)
@@ -1991,7 +2027,9 @@ dimnames.H2OFrame <- function(x) .Primitive("dimnames")(.fetch.data(x,1L))
 #' @param x An H2OFrame
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
 #'                         rows = 6, cols = 2, seed = 123)
 #' names(frame)
@@ -2006,7 +2044,9 @@ names.H2OFrame <- function(x) .Primitive("names")(.fetch.data(x,1L))
 #' @param prefix for created names.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' iris_hf <- as.h2o(iris)
 #' colnames(iris_hf)  # Returns "Sepal.Length" "Sepal.Width"  "Petal.Length" "Petal.Width"  "Species"
 #' }
@@ -2043,6 +2083,7 @@ h2o.length <- length.H2OFrame
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
+#' 
 #' iris_hf <- as.h2o(iris)
 #' h2o.levels(iris_hf, 5)  # returns "setosa"     "versicolor" "virginica"
 #' }
@@ -2095,7 +2136,9 @@ h2o.nlevels <- function(x) {
 #' @export
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' iris_hf <- as.h2o(iris)
 #' new.levels <- c("setosa", "versicolor", "caroliniana")
 #' iris_hf$Species <- h2o.setLevels(iris_hf$Species, new.levels, in.place = FALSE)
@@ -2168,6 +2211,7 @@ tail.H2OFrame <- h2o.tail
 #' @param x An H2OFrame object
 #' @example 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' 
@@ -2200,6 +2244,7 @@ is.numeric <- function(x) {
 #' @param x An H2OFrame object
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 #' 
@@ -2221,7 +2266,9 @@ is.character <- function(x) {
 #' @param ... Further arguments to be passed from or to other methods.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' print(cars, n = 8)
 #' }
@@ -2589,7 +2636,9 @@ summary.H2OFrame <- h2o.summary
 #' @return Returns a list containing the median for each column (NaN for non-numeric columns)
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' h2o.median(prostate)
@@ -2616,7 +2665,9 @@ median.H2OFrame <- h2o.median
 #'         If return_frame is set to TRUE, then it will return an H2O frame with means per column or row (depends on axis argument).
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' # Default behavior. Will return list of means per column.
@@ -2650,7 +2701,9 @@ mean.H2OFrame <- h2o.mean
 #' @return Returns a list containing the skewness for each column (NaN for non-numeric columns).
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' h2o.skewness(prostate$AGE)
@@ -2674,6 +2727,7 @@ skewness.H2OFrame <- h2o.skewness
 #' @return Returns a list containing the kurtosis for each column (NaN for non-numeric columns).
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
@@ -2714,7 +2768,9 @@ kurtosis.H2OFrame <- h2o.kurtosis
 #' @seealso \code{\link[stats]{var}} for the base R implementation. \code{\link{h2o.sd}} for standard deviation.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' var(prostate$AGE)
@@ -2760,7 +2816,9 @@ var <- function(x, y = NULL, na.rm = FALSE, use)  {
 #' Defaults to "Pearson"
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' cor(prostate$AGE)
@@ -2797,7 +2855,9 @@ h2o.cor <- function(x, y=NULL,na.rm = FALSE, use, method="Pearson"){
 #'   "cosine_sq"            - Squared Cosine similarity (0...1)
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' h2o.distance(prostate[11:30,], prostate[1:10,], "cosine")
@@ -2831,7 +2891,9 @@ cor <- function (x, ...)
 #' @seealso \code{\link{h2o.var}} for variance, and \code{\link[stats]{sd}} for the base R implementation.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' sd(prostate$AGE)
@@ -2858,7 +2920,9 @@ sd <- function(x, na.rm=FALSE) {
 #' @seealso \code{\link[base]{signif}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 #' h2o.signif(heart["age"], digits = 3)
 #' }
@@ -2883,7 +2947,9 @@ signif <- function(x, digits=6) {
 #' @seealso \code{\link[base]{round}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 #' h2o.round(heart["age"], digits = 3)
 #' }
@@ -2970,6 +3036,9 @@ scale.H2OFrame <- function(x, center = TRUE, scale = TRUE) {
 #' @seealso \code{\link[base]{log10}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
 #'                         rows = 6, cols = 2, seed = 123)
 #' h2o.log10(frame)
@@ -2987,6 +3056,9 @@ h2o.log10 <- function(x) {
 #' @seealso \code{\link[base]{log2}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
 #'                         rows = 6, cols = 2, seed = 123)
 #' h2o.log2(frame)
@@ -3004,6 +3076,8 @@ h2o.log2 <- function(x) {
 #' @seealso \code{\link[base]{log1p}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
 #'                         rows = 6, cols = 2, seed = 123)
 #' h2o.log1p(frame)
@@ -3023,7 +3097,9 @@ h2o.log1p <- function(x) {
 #' @seealso \code{\link[base]{trunc}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
+#' 
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
 #'                         rows = 6, cols = 2, seed = 123)
 #' h2o.trunc(frame["C1"])
@@ -3077,6 +3153,9 @@ h2o.dimnames <- function(x) {
 #' @seealso \code{\link[base]{names}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.names(iris)
 #' }
@@ -3111,6 +3190,9 @@ h2o.colnames <- function(x) {
 #' @seealso \code{\link[base]{is.factor}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' h2o.isfactor(cars["economy_20mpg"])
@@ -3162,12 +3244,12 @@ h2o.ischaracter <- function(x) {
 #'
 #' @name h2o.asfactor
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{as.factor}} for the base R implementation.
+#' @seealso \code{\link[base]{as.numeric}} for the base R implementation.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' > h2o <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' h2o <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' h2o.asfactor(h2o["cylinders"])
 #' }
 #' @export
@@ -3180,7 +3262,7 @@ h2o.asfactor <- function(x) {
 #'
 #' @name h2o.asnumeric
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{as.numeric}} for the base R implementation.
+#' @seealso \code{\link[base]{as.factor}} for the base R implementation.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3198,7 +3280,6 @@ h2o.asnumeric <- function(x) {
 #'
 #' @name h2o.ascharacter
 #' @param x An H2OFrame object.
-#' @seealso \code{\link[base]{as.character}} for the base R implementation.
 #' @examples 
 #' \dontrun{
 #' library(h2o)
@@ -3218,6 +3299,7 @@ h2o.ascharacter <- function(x) {
 #'          Anything bigger than 20 rows will require asking the server (first 20 rows are cached on the client).
 #' @examples 
 #' \dontrun{
+#' library()
 #' h2o.init()
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.print(iris["species"], n = 15)
@@ -3235,6 +3317,8 @@ h2o.print <- function(x, n=6L) {
 #' @param cols Print the per-column str for the H2OFrame
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
 #' h2o.str(frame, cols = FALSE)
 #' }
@@ -3271,6 +3355,8 @@ h2o.cos <- function(x) {
 #' @seealso \code{\link[base]{sin}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
 #' h2o.sin(frame)
 #' }
@@ -3325,6 +3411,7 @@ h2o.cosh <- function(x) {
 #' @seealso \code{\link[base]{tan}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
 #'                         rows = 6, cols = 2, seed = 123)
@@ -3343,6 +3430,7 @@ h2o.tan <- function(x) {
 #' @seealso \code{\link[base]{tanh}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
 #'                         rows = 6, cols = 2, seed = 123)
@@ -3399,6 +3487,8 @@ h2o.log <- function(x) {
 #' @seealso \code{\link[base]{sqrt}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
 #' h2o.sqrt(frame)
 #' }
@@ -3415,6 +3505,7 @@ h2o.sqrt <- function(x) {
 #' @seealso \code{\link[base]{abs}} for the base R implementation.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' url <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/smtrees.csv"
 #' smtrees_hf <- h2o.importFile(url)
@@ -3487,6 +3578,7 @@ h2o.floor <- function(x) {
 #' @seealso \code{\link[base]{sum}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
 #'                         rows = 6, cols = 2, seed = 123)
@@ -3509,6 +3601,7 @@ h2o.sum <- function(x, na.rm = FALSE, axis = 0, return_frame = FALSE) {
 #' @seealso \code{\link[base]{prod}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.prod(iris["petal_len"])
@@ -3635,6 +3728,8 @@ h2o.any <- function(x) {
 #' @seealso \code{\link[base]{min}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.min(iris["sepal_len"], na.rm = TRUE)
 #' }
@@ -3652,6 +3747,8 @@ h2o.min <- function(x,na.rm = FALSE) {
 #' @seealso \code{\link[base]{max}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.max(iris["petal_len"], na.rm = TRUE)
 #' }
@@ -3668,6 +3765,7 @@ h2o.max <- function(x,na.rm = FALSE) {
 #' @seealso \code{\link[base]{nrow}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' h2o.nrow(cars)
@@ -3685,6 +3783,8 @@ h2o.nrow <- function(x) {
 #' @seealso \code{\link[base]{ncol}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.ncol(iris)
 #' }
@@ -3703,6 +3803,7 @@ h2o.ncol <- function(x) {
 #' @seealso \code{\link[base]{range}} for the base R implementation.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.range(iris["petal_len"], na.rm = TRUE, finite = TRUE)
@@ -3724,6 +3825,7 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 #' @param x An \code{R} object.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' 
 #' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
@@ -3803,6 +3905,7 @@ use.package <- function(package,
 #' @export
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
 #' euro_hf <- as.h2o(euro)
@@ -3990,6 +4093,7 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
 #' @seealso \code{\link{use.package}}
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
@@ -4089,6 +4193,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
 #' @param ... Further arguments to be passed down from other methods.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
 #' describe <- h2o.describe(iris_hf)
@@ -4115,6 +4220,7 @@ as.matrix.H2OFrame <- function(x, ...) {
 #' @method as.vector H2OFrame
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
 #' cor_R <- cor(as.matrix(iris[, 1]))
@@ -4158,6 +4264,7 @@ as.logical.H2OFrame <- function(x, ...) as.vector.H2OFrame(x, "logical")
 #' @seealso \code{\link{as.factor}}.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
@@ -4176,6 +4283,7 @@ as.factor <- function(x) {
 #' @param ... Further arguments to be passed from or to other methods.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' pretrained <- as.h2o(data.frame(
 #'        C1 = c("a", "b"), C2 = c(0, 1), C3 = c(1, 0), C4 = c(0.2, 0.8),
@@ -4196,6 +4304,7 @@ as.character.H2OFrame <- function(x, ...) {
 #' @param x a column from an H2OFrame data set.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
@@ -4240,6 +4349,7 @@ h2o.removeVecs <- function(data, cols) {
 #' @return Returns a vector of new values matching the conditions stated in the ifelse call.
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' australia_path <- system.file("extdata", "australia.csv", package = "h2o")
 #' australia <- h2o.importFile(path = australia_path)
@@ -4366,6 +4476,7 @@ checkMatch = function(x,y) {
 #' @param method auto(default), radix, hash
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'),
 #' color <- c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
@@ -4400,6 +4511,8 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 #' @param \dots The column names to sort by.
 #' @examples 
 #' \dontrun{
+#' library(h2o)
+#' h2o.init()
 #' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.arrange(fr, "species","petal_len","petal_wid")
 #' }
@@ -4549,6 +4662,7 @@ generate_col_ind <-function(data, by) {
 #'
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' air <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.csv")
 #' groupCols <- c("Distance")
@@ -4657,6 +4771,7 @@ h2o.relevel <- function(x,y) {
 #'         groups created
 #' @examples 
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 #' h2o.group_by(data = df, by = "RACE", nrow("VOL"))
@@ -4891,6 +5006,7 @@ h2o.ddply <- function (X, .variables, FUN, ..., .progress = 'none') {
 #' @seealso \link[base]{apply} for the base generic
 #' @examples
 #' \dontrun{
+#' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
 #' summary(apply(iris_hf, 2, sum))
