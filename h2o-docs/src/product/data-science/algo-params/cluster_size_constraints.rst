@@ -21,6 +21,8 @@ Expected time with various sized data (OS debian 10.0 (x86-64), processor IntelÂ
 * 40 000 rows, 5 features  ~ 2h 13m 31s
 * 50 000 rows, 5 features  ~ 4h  4m 18s
 
+**The sum of constraints is smaller the time is faster - it uses MCF calculation until all constraints are satisfied then use standard K-means.**
+
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 

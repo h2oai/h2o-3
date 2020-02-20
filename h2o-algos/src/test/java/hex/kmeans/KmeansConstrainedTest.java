@@ -4,10 +4,8 @@ import hex.ModelMetricsClustering;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import org.junit.Assume;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
@@ -70,7 +68,8 @@ public class KmeansConstrainedTest extends TestUtil {
                     ard(6.9,3.1,5.4,2.1,2)
             ));
 
-            tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+            //tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+            tfr = parse_test_file("/home/mori/Documents/h2o/code/h2o-3/smalldata/iris/iris_wheader.csv");
             DKV.put(tfr);
             KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
             parms._train = tfr._key;
@@ -213,13 +212,14 @@ public class KmeansConstrainedTest extends TestUtil {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void testWeatherChicagoConstrained() {
+        Assume.assumeTrue(H2O.getCloudSize() == 1); // don't test in multi-node, not worth it - this tests already takes a long time
         KMeansModel kmm = null, kmm2 = null;
         Frame fr = null, points = null;
         try {
             Scope.enter();
-            fr = Scope.track(parse_test_file("smalldata/chicago/chicagoAllWeather.csv"));
+            fr = Scope.track(parse_test_file("/home/mori/Documents/h2o/code/h2o-3/smalldata/chicago/chicagoAllWeather.csv"));
             points = ArrayUtils.frame(ard(
                     ard(0.9223065747871615,1.016292569726567,1.737905586557139,-0.2732881352142627,0.8408705963844509,-0.2664469441473223,-0.2881728818872508),
                     ard(-1.4846149848792978,-1.5780763628717547,-1.330641758390853,-1.3664503532612082,-1.0180638458160431,-1.1194221247071547,-1.2345088149586547),

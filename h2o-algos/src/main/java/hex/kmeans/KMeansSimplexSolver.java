@@ -175,9 +175,9 @@ class KMeansSimplexSolver {
         if(!tree.areConstraintsSatisfied()) {
             long minimalIndex = findMinimalReducedWeight();
             if (tree.getFlowByEdgeIndex(minimalIndex) == 0) {
-                return new Edge(minimalIndex, tree._sourcesReader.at8(minimalIndex), tree._targetsReader.at8(minimalIndex));
+                return new Edge(minimalIndex, tree._sources.at8(minimalIndex), tree._targets.at8(minimalIndex));
             } else {
-                return new Edge(minimalIndex, tree._targetsReader.at8(minimalIndex), tree._sourcesReader.at8(minimalIndex));
+                return new Edge(minimalIndex, tree._targets.at8(minimalIndex), tree._sources.at8(minimalIndex));
             }
         }
         // if all constraints are satisfied, return null
@@ -227,7 +227,7 @@ class KMeansSimplexSolver {
         assert minIndex != -1;
         long nodeIndex = cycle.getNode(minIndex);
         long edgeIndex = cycle.getEdge(minIndex);
-        return new Edge(edgeIndex, nodeIndex, nodeIndex == tree._sourcesReader.at8(edgeIndex) ? tree._targetsReader.at8(edgeIndex) : tree._sourcesReader.at8(edgeIndex));
+        return new Edge(edgeIndex, nodeIndex, nodeIndex == tree._sources.at8(edgeIndex) ? tree._targets.at8(edgeIndex) : tree._sources.at8(edgeIndex));
     }
 
     /**
@@ -329,8 +329,8 @@ class SpanningTree extends Iced<SpanningTree> {
     public Vec _previousNodes;         //     node size + 1, integer
     public Vec _lastDescendants;       //     node size + 1, integer
     
-    public Vec.Reader _sourcesReader;  //     edge size + node size
-    public Vec.Reader _targetsReader;  //     edge size + node size
+    public Vec _sources;               //     edge size + node size
+    public Vec _targets;               //     edge size + node size
 
     SpanningTree(long nodeSize, long edgeSize, int secondLayerSize){
         this._nodeSize = nodeSize;
@@ -354,18 +354,18 @@ class SpanningTree extends Iced<SpanningTree> {
     }
 
     public void init(long numberOfPoints, double maxCapacity, Vec demands){
-        Vec sources = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
-        Vec targets = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
+        _sources = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
+        _targets = Vec.makeCon(0, _edgeSize + _nodeSize, Vec.T_NUM);
         for (long i = 0; i < _nodeSize; i++) {
             if (i < numberOfPoints) {
                 for (int j = 0; j < _secondLayerSize; j++) {
-                    sources.set(i * _secondLayerSize + j, i);
-                    targets.set(i * _secondLayerSize + j, numberOfPoints + j);
+                    _sources.set(i * _secondLayerSize + j, i);
+                    _targets.set(i * _secondLayerSize + j, numberOfPoints + j);
                 }
             } else {
                 if (i < _nodeSize - 1) {
-                    sources.set(numberOfPoints* _secondLayerSize +i-numberOfPoints, i);
-                    targets.set(numberOfPoints* _secondLayerSize +i-numberOfPoints, _nodeSize - 1);
+                    _sources.set(numberOfPoints* _secondLayerSize +i-numberOfPoints, i);
+                    _targets.set(numberOfPoints* _secondLayerSize +i-numberOfPoints, _nodeSize - 1);
                 }
             }
         }
@@ -373,11 +373,11 @@ class SpanningTree extends Iced<SpanningTree> {
         for (long i = 0; i < _nodeSize; i++) {
             long demand = demands.at8(i);
             if (demand >= 0) {
-                sources.set(_edgeSize + i, _nodeSize);
-                targets.set(_edgeSize + i, i);
+                _sources.set(_edgeSize + i, _nodeSize);
+                _targets.set(_edgeSize + i, i);
             } else {
-                sources.set(_edgeSize + i, i);
-                targets.set(_edgeSize + i, _nodeSize);
+                _sources.set(_edgeSize + i, i);
+                _targets.set(_edgeSize + i, _nodeSize);
             }
             if (i < _nodeSize - 1) {
                 _nextDepthFirst.set(i, i + 1);
@@ -398,9 +398,6 @@ class SpanningTree extends Iced<SpanningTree> {
         _previousNodes.set(0, _nodeSize);
         _previousNodes.set(_nodeSize, _nodeSize - 1);
         _lastDescendants.set(_nodeSize, _nodeSize - 1);
-        
-        _sourcesReader = sources.new Reader();
-        _targetsReader = targets.new Reader();
     }
 
     /**
@@ -466,7 +463,7 @@ class SpanningTree extends Iced<SpanningTree> {
     
 
     public double reduceWeight(long edgeIndex, double weight) {
-        double newWeight = weight - _nodePotentials.at(_sourcesReader.at8(edgeIndex)) + _nodePotentials.at(_targetsReader.at8(edgeIndex));
+        double newWeight = weight - _nodePotentials.at(_sources.at8(edgeIndex)) + _nodePotentials.at(_targets.at8(edgeIndex));
         return getFlowByEdgeIndex(edgeIndex) == 0 ? newWeight : - newWeight;
     }
 
@@ -483,7 +480,7 @@ class SpanningTree extends Iced<SpanningTree> {
 
     public double getResidualCapacity(long edgeIndex, long nodeIndex, double capacity) {
         long flow = getFlowByEdgeIndex(edgeIndex);
-        return nodeIndex == _sourcesReader.at8(edgeIndex) ? capacity - flow : flow;
+        return nodeIndex == _sources.at8(edgeIndex) ? capacity - flow : flow;
     }
 
     public void augmentFlow(NodesEdgesObject nodesEdges, double flow) {
@@ -491,7 +488,7 @@ class SpanningTree extends Iced<SpanningTree> {
             long edge = nodesEdges.getEdge(i);
             long node = nodesEdges.getNode(i);
             long edgeFlow = getFlowByEdgeIndex(edge);
-            if (node == _sourcesReader.at8(edge)) {
+            if (node == _sources.at8(edge)) {
                 setFlowByEdgeIndex(edge, edgeFlow + (int)flow);
             } else {
                 setFlowByEdgeIndex(edge, edgeFlow - (int)flow);
@@ -586,7 +583,7 @@ class SpanningTree extends Iced<SpanningTree> {
 
     public void updatePotentials(long edgeIndex, long sourceIndex, long targetIndex, double weight) {
         double potential;
-        if (targetIndex == _targetsReader.at8(edgeIndex)) {
+        if (targetIndex == _targets.at8(edgeIndex)) {
             potential = _nodePotentials.at(sourceIndex) - weight - _nodePotentials.at(targetIndex);
         } else {
             potential = _nodePotentials.at(sourceIndex) + weight - _nodePotentials.at(targetIndex);

@@ -146,14 +146,6 @@ Expected time with various sized data (OS debian 10.0 (x86-64), processor IntelÂ
 
 **The sum of constraints is smaller the time is faster - it uses MCF calculation until all constraints are satisfied then use standard K-means.**
 
-Expected time with various sized data when sum of constraints is only 2/3 of data size:
-
-* 10 000 rows, 5 features  ~ 0h  1m 54s
-* 20 000 rows, 5 features  ~ 0h  7m 46s
-* 30 000 rows, 5 features  ~ 0h  m s
-* 40 000 rows, 5 features  ~ 1h m s
-* 50 000 rows, 5 features  ~ 1h m s
-
 
 Constrained K-Means with the Aggregator Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
