@@ -7,12 +7,13 @@ Rapids expressions. These are helper classes for H2OFrame.
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 
-import collections
+from collections import Iterable, OrderedDict
 import copy
 import gc
+import inspect
 import math
-import sys
 import time
+import traceback
 import numbers
 
 import tabulate
@@ -72,10 +73,6 @@ class ExprNode(object):
         There are more details available under the H2OCache class declaration.
     """
 
-    # Magical count-of-5:   (get 2 more when looking at it in debug mode)
-    #  2 for _get_ast_str frame, 2 for _get_ast_str local dictionary list, 1 for parent
-    MAGIC_REF_COUNT = 5 if sys.gettrace() is None else 7  # M = debug ? 7 : 5
-
     # Flag to control application of local expression tree optimizations
     __ENABLE_EXPR_OPTIMIZATIONS__ = True
 
@@ -134,12 +131,11 @@ class ExprNode(object):
             else:
                 break
 
-    # Recursively build a rapids execution string.  Any object with more than
-    # MAGIC_REF_COUNT referrers will be cached as a temp until the next client GC
-    # cycle - consuming memory.  Do Not Call This except when you need to do some
-    # other cluster operation on the evaluated object.  Examples might be: lazy
-    # dataset time parse vs changing the global timezone.  Global timezone change
-    # is eager, so the time parse as to occur in the correct order relative to
+    # Recursively build a rapids execution string.
+    # Any object with more than 1 referrer node will be cached as a temp until the next client GC cycle - consuming memory.
+    # Do Not Call This except when you need to do some other cluster operation on the evaluated object.
+    # Examples might be: lazy dataset time parse vs changing the global timezone.
+    # Global timezone change is eager, so the time parse as to occur in the correct order relative to
     # the timezone change, so cannot be lazy.
     #
     def _get_ast_str(self, top):
@@ -149,8 +145,19 @@ class ExprNode(object):
             return self._cache._id  # Data already computed under ID, but not cached
         assert isinstance(self._children,tuple)
         exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
-        gc_ref_cnt = len(gc.get_referrers(self))
-        if top or gc_ref_cnt >= ExprNode.MAGIC_REF_COUNT:
+
+        def is_ast_expr(ref):
+            return isinstance(ref, list) and any(map(lambda r: isinstance(r, ASTId), ref))
+
+        referrers = gc.get_referrers(self)
+        # removing frames from the referrers to get a consistent behaviour accross Py versions
+        #  as stack frames don't appear in the referrers from Py 3.7.
+        # also removing the AST expressions built in astfun.py
+        #  as they keep a reference to self if the lambda itself is using a free variable.
+        proper_ref = [r for r in referrers if not (inspect.isframe(r) or is_ast_expr(r))]
+        ref_cnt = len(proper_ref)
+        # if this self node is referenced by at least one other node (nested expr), then create a tmp frame
+        if top or ref_cnt > 1:
             self._cache._id = _py_tmp_key(append=h2o.connection().session_id)
             exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
         return exec_str
@@ -359,7 +366,7 @@ class H2OCache(object):
         self._fill_data(res)
 
     def _fill_data(self, json):
-        self._data = collections.OrderedDict()
+        self._data = OrderedDict()
         for c in json["columns"]:
             c.pop('__meta')  # Redundant description ColV3
             c.pop('domain_cardinality')  # Same as len(c['domain'])
@@ -383,7 +390,7 @@ class H2OCache(object):
         """Pretty tabulated string of all the cached data, and column names"""
         if not self.is_valid(): self.fill(rows=rows)
         # Pretty print cached data
-        d = collections.OrderedDict()
+        d = OrderedDict()
         # If also printing the rollup stats, build a full row-header
         if rollups:
             col = next(iter(viewvalues(self._data)))  # Get a sample column
