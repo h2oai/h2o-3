@@ -35,7 +35,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6447'>PUBDEV-6447</a>] - Added support for Constrained K-Means clustering. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6917'>PUBDEV-6917</a>] -         Support Azure Data Lake Storage Gen2 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6917'>PUBDEV-6917</a>] -         Support Azure Data Lake Storage Gen2 (STILL OPEN. MIGHT JUST BE "ADDED SUPPORT FOR HDP 3.2.")
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6965'>PUBDEV-6965</a>] -         Add XGBoost, PSVM and Naive Bayes to metalearner_algorithm options in Stacked Ensemble
 </li>
