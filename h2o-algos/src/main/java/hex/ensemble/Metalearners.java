@@ -29,13 +29,13 @@ public class Metalearners {
 
     static {
         LocalProvider[] localProviders = new LocalProvider[] {
-                new LocalProvider<>(Algorithm.AUTO, GLMParameters::new, AUTOMetalearner::new),
-                new LocalProvider<>(Algorithm.deeplearning, DeepLearningParameters::new, DLMetalearner::new),
-                new LocalProvider<>(Algorithm.drf, DRFParameters::new, DRFMetalearner::new),
-                new LocalProvider<>(Algorithm.gbm, GBMParameters::new, GBMMetalearner::new),
-                new LocalProvider<>(Algorithm.glm, GLMParameters::new, GLMMetalearner::new),
-                new LocalProvider<>(Algorithm.naivebayes, NaiveBayesParameters::new, NaiveBayesMetalearner::new),
-                new LocalProvider<>(Algorithm.psvm, PSVMParameters::new, PSVMMetalearner::new),
+                new LocalProvider<>(Algorithm.AUTO, AUTOMetalearner::new),
+                new LocalProvider<>(Algorithm.deeplearning, DLMetalearner::new),
+                new LocalProvider<>(Algorithm.drf, DRFMetalearner::new),
+                new LocalProvider<>(Algorithm.gbm, GBMMetalearner::new),
+                new LocalProvider<>(Algorithm.glm, GLMMetalearner::new),
+                new LocalProvider<>(Algorithm.naivebayes, NaiveBayesMetalearner::new),
+                new LocalProvider<>(Algorithm.psvm, PSVMMetalearner::new),
         };
         for (MetalearnerProvider provider : localProviders) {
             providersByName.put(provider.getName(), provider);
@@ -54,7 +54,7 @@ public class Metalearners {
 
     static Model.Parameters createParameters(String name) {
         assertAvailable(name);
-        return providersByName.get(name).newParameters();
+        return createInstance(name).createBuilder()._parms;
     }
 
     static Metalearner createInstance(String name) {
@@ -70,28 +70,20 @@ public class Metalearners {
     /**
      * A local implementation of {@link MetalearnerProvider} to expose the {@link Metalearner}s defined in this class.
      */
-    static class LocalProvider<M extends Metalearner, P extends Model.Parameters> implements MetalearnerProvider<M, P> {
+    static class LocalProvider<M extends Metalearner> implements MetalearnerProvider<M> {
 
         private Algorithm _algorithm;
-        private Supplier<P> _parametersFactory;
         private Supplier<M> _instanceFactory;
 
         public LocalProvider(Algorithm algorithm,
-                             Supplier<P> parametersFactory,
                              Supplier<M> instanceFactory) {
             _algorithm = algorithm;
-            _parametersFactory = parametersFactory;
             _instanceFactory = instanceFactory;
         }
 
         @Override
         public String getName() {
             return _algorithm.name();
-        }
-
-        @Override
-        public P newParameters() {
-            return _parametersFactory.get();
         }
 
         @Override
