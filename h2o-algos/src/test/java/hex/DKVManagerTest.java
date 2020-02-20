@@ -8,25 +8,23 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.*;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import java.util.ArrayList;
 import java.util.List;
 
 import static hex.genmodel.utils.DistributionFamily.AUTO;
 import static org.junit.Assert.*;
-import static water.TestUtil.ar;
-import static water.TestUtil.parse_test_file;
 import static water.fvec.VecHelper.*;
 
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class DKVManagerTest {
+public class DKVManagerTest extends TestUtil {
+
+    @BeforeClass()
+    public static void setup() {
+        stall_till_cloudsize(1);
+    }
 
     @Rule
     public ExpectedException expectedException = ExpectedException.none(); 
