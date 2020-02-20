@@ -12,7 +12,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6615'>PUBDEV-6615</a>] - DeepLearning MOJOs are now thread-safe. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7227'>PUBDEV-7227</a>] - Added support for Python 3.7. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7227'>PUBDEV-7227</a>] - Fixed an issue that caused h2oframe.apply to fail when run in Python 3.7. Note that Python 3.7 is still not officially supported, but support is a WIP.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7260'>PUBDEV-7260</a>] - XGBoost now correctly respects monotonicity constraints for all tree_methods.
 </li>
@@ -21,8 +21,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7271'>PUBDEV-7271</a>] - Improved the DKVManager sequential removal mechanism. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7279'>PUBDEV-7279</a>] - In XGBoost, added a message indicating that the `exact` tree method is not supported in multinode. 
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7305'>PUBDEV-7305</a>] - Fixed an issue that could cause model `end_time` and `run_time` properties to return a value of 0 in client mode. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7308'>PUBDEV-7308</a>] - XGBoost ContributionsPredictor is now serializable.
 </li>
@@ -34,8 +32,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6447'>PUBDEV-6447</a>] - Added support for Constrained K-Means clustering. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6917'>PUBDEV-6917</a>] -         Support Azure Data Lake Storage Gen2 (STILL OPEN. MIGHT JUST BE "ADDED SUPPORT FOR HDP 3.2.")
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6965'>PUBDEV-6965</a>] - In Stacked Ensembles, added support for "xgboost", "psvm", and "naivebayes" in the `metalearner_algorithm` parameter. (STILL OPEN)
 </li>
