@@ -131,12 +131,13 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
      */
     final MP _params;
 
+    final MP _defaultParams;
+
     /**
      * Hyper space description - in this case only dimension and possible values.
      */
     final protected Map<String, Object[]> _hyperParams;
 
-    protected boolean _set_model_seed_from_search_seed = false;  // true if model parameter seed is set to default value and false otherwise
     long model_number = 0l;   // denote model number
     /**
      * Cached names of used hyper parameters.
@@ -190,65 +191,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       _search_criteria = search_criteria;
 
       // Sanity check the hyperParams map, and check it against the params object
-      MP defaults = null;
       try {
-        defaults = (MP) params.getClass().newInstance();
-      }
-      catch (Exception e) {
+        _defaultParams = (MP) params.getClass().newInstance();
+      } catch (Exception e) {
         throw new H2OIllegalArgumentException("Failed to instantiate a new Model.Parameters object to get the default values.");
       }
-
-      // if a parameter is specified in both model parameter and hyper-parameter, this is only allowed if the
-      // parameter value is set to be default.  Otherwise, an exception will be thrown.
-      for (String key : hyperParams.keySet()) {
-        // Throw if the user passed an empty value list:
-        Object[] values = hyperParams.get(key);
-        if (0 == values.length)
-          throw new H2OIllegalArgumentException("Grid search hyperparameter value list is empty for hyperparameter: " + key);
-
-        if ("seed".equals(key) || "_seed".equals(key)) continue;  // initialized to the wall clock
-
-        // Ugh.  Java callers, like the JUnits or Sparkling Water users, use a leading _.  REST users don't.
-        String prefix = (key.startsWith("_") ? "" : "_");
-
-        // Throw if params has a non-default value which is not in the hyperParams map
-        Object defaultVal = PojoUtils.getFieldValue(defaults, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
-        Object actualVal = PojoUtils.getFieldValue(params, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
-
-        if (defaultVal != null && actualVal != null) {
-          // both are not set to null
-          if (defaultVal.getClass().isArray() &&
-                  // array
-                  !PojoUtils.arraysEquals(defaultVal, actualVal)) {
-            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
-          } // array
-          if (!defaultVal.getClass().isArray() &&
-                  // ! array
-                  !defaultVal.equals(actualVal)) {
-            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
-          } // ! array
-        } // both are set: defaultVal != null && actualVal != null
-
-        // defaultVal is null but actualVal is not, raise exception
-        if (defaultVal == null && !(actualVal == null)) {
-          // only actual is set
-          throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
-        }
-      } // for all keys
-
-      // check model parameter seed value and determine if it is set to default value for random gridsearch
-      if ((search_criteria != null) &&
-              (search_criteria.strategy() == HyperSpaceSearchCriteria.Strategy.RandomDiscrete)) {
-        Object defaultSeedVal = PojoUtils.getFieldValue(defaults, "_seed", PojoUtils.FieldNaming.CONSISTENT);
-        Object actualSeedVal = PojoUtils.getFieldValue(params, "_seed", PojoUtils.FieldNaming.CONSISTENT);
-        long gridSeed = ((HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) search_criteria).seed();
-
-        if ((defaultSeedVal != null) && (actualSeedVal != null)) {
-          if (defaultSeedVal.equals(actualSeedVal) && !defaultSeedVal.equals(gridSeed)) { // param seed = default, gridSeed != default
-            _set_model_seed_from_search_seed = true;
-          }
-        }
-      }
+      validateParams();
     } // BaseWalker()
 
     @Override
@@ -312,12 +260,52 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         hashMe[i] = ar[i] * _hyperParams.get(_hyperParamNames[i]).length;
       return Arrays.deepHashCode(hashMe);
     }
+
+    private void validateParams() {
+      // if a parameter is specified in both model parameter and hyper-parameter, this is only allowed if the
+      // parameter value is set to be default.  Otherwise, an exception will be thrown.
+      for (String key : _hyperParams.keySet()) {
+        // Throw if the user passed an empty value list:
+        Object[] values = _hyperParams.get(key);
+        if (0 == values.length)
+          throw new H2OIllegalArgumentException("Grid search hyperparameter value list is empty for hyperparameter: " + key);
+
+        if ("seed".equals(key) || "_seed".equals(key)) continue;  // initialized to the wall clock
+
+        // Ugh.  Java callers, like the JUnits or Sparkling Water users, use a leading _.  REST users don't.
+        String prefix = (key.startsWith("_") ? "" : "_");
+
+        // Throw if params has a non-default value which is not in the hyperParams map
+        Object defaultVal = PojoUtils.getFieldValue(_defaultParams, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
+        Object actualVal = PojoUtils.getFieldValue(_params, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
+
+        if (defaultVal != null && actualVal != null) {
+          // both are not set to null
+          if (defaultVal.getClass().isArray() &&
+                  // array
+                  !PojoUtils.arraysEquals(defaultVal, actualVal)) {
+            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+          } // array
+          if (!defaultVal.getClass().isArray() &&
+                  // ! array
+                  !defaultVal.equals(actualVal)) {
+            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+          } // ! array
+        } // both are set: defaultVal != null && actualVal != null
+
+        // defaultVal is null but actualVal is not, raise exception
+        if (defaultVal == null && !(actualVal == null)) {
+          // only actual is set
+          throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+        }
+      } // for all keys
+    }
   }
 
   /**
    * Hyperparameter space walker which visits each combination of hyperparameters in order.
    */
-  public static class CartesianWalker<MP extends Model.Parameters>
+  class CartesianWalker<MP extends Model.Parameters>
           extends BaseWalker<MP, HyperSpaceSearchCriteria.CartesianSearchCriteria> {
 
     public CartesianWalker(MP params,
@@ -404,9 +392,11 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    * Hyperparameter space walker which visits random combinations of hyperparameters whose possible values are
    * given in explicit lists as they are with CartesianWalker.
    */
-  public static class RandomDiscreteValueWalker<MP extends Model.Parameters>
+  class RandomDiscreteValueWalker<MP extends Model.Parameters>
           extends BaseWalker<MP, HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria> {
-    Random random;
+
+    private Random _random;
+    private boolean _set_model_seed_from_search_seed;  // true if model parameter seed is set to default value and false otherwise
 
     public RandomDiscreteValueWalker(MP params,
                                      Map<String, Object[]> hyperParams,
@@ -414,10 +404,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                                      HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria search_criteria) {
       super(params, hyperParams, paramsBuilderFactory, search_criteria);
 
-      if (-1 == search_criteria.seed())
-        random = new Random();                       // true random
-      else
-        random = new Random(search_criteria.seed()); // seeded repeatable pseudorandom
+      // seed the models using the search seed if it is the only one specified
+      long defaultSeed = _defaultParams._seed;
+      long actualSeed = _params._seed;
+      long gridSeed = search_criteria.seed();
+      _set_model_seed_from_search_seed = defaultSeed == actualSeed && defaultSeed != gridSeed;
+      _random = gridSeed == defaultSeed ? new Random() : new Random(gridSeed);
     }
 
     /** Based on the last model, the given array of ScoringInfo, and our stopping criteria should we stop early? */
@@ -507,7 +499,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           do {
             // generate random indices
             for (int i = 0; i < _hyperParamNames.length; i++) {
-              hyperparamIndices[i] = random.nextInt(_hyperParams.get(_hyperParamNames[i]).length);
+              hyperparamIndices[i] = _random.nextInt(_hyperParams.get(_hyperParamNames[i]).length);
             }
             // check for aliases and loop if we've visited this combo before
           } while (_visitedPermutationHashes.contains(integerHash(hyperparamIndices)));
