@@ -3,6 +3,7 @@ package hex.grid;
 import hex.*;
 import water.*;
 import water.api.schemas3.KeyV3;
+import water.exceptions.H2OConcurrentModificationException;
 import water.fvec.Frame;
 import water.persist.Persist;
 import water.util.*;
@@ -265,8 +266,9 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @params stackTrace  stringify stacktrace
    */
   private void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final String[] rawParams,
-                                           final String failureDetails, final String stackTrace) {
-      
+                                           final Throwable t) {
+      final String failureDetails = isJobCanceled(t) ? "Job Canceled" : t.getMessage();
+      final String stackTrace = StringUtils.toString(t);
       final Key<Model> searchedKey = modelKey != null ? modelKey : NO_MODEL_FAILURES_KEY;
       SearchFailure searchFailure = _failures.get(searchedKey);
       if ((searchFailure == null)) {
@@ -274,6 +276,15 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
           _failures.put(searchedKey, searchFailure);
       }
       searchFailure.appendFailedModelParameters(params, rawParams, failureDetails, stackTrace);
+  }
+
+  private static boolean isJobCanceled(final Throwable t) {
+    for (Throwable ex = t; ex != null; ex = ex.getCause()) {
+      if (ex instanceof Job.JobCancelledException) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -290,7 +301,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   void appendFailedModelParameters(final Key<Model> modelKey, final MP params, final Throwable t) {
     assert params != null : "Model parameters should be always != null !";
     String[] rawParams = ArrayUtils.toString(getHyperValues(params));
-      appendFailedModelParameters(modelKey, params, rawParams, t.getMessage(), StringUtils.toString(t));
+    appendFailedModelParameters(modelKey, params, rawParams, t);
   }
 
   /**
@@ -304,11 +315,9 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    * @param rawParams list of "raw" hyper values which caused a failure to prepare model parameters
    * @params e exception causing a failure
    */
-  /* package */ void appendFailedModelParameters(final Key<Model> modelKey, final Object[] rawParams,
-                                                 final Exception e) {
+  void appendFailedModelParameters(final Key<Model> modelKey, final Object[] rawParams, final Exception e) {
     assert rawParams != null : "Raw parameters should be always != null !";
-      appendFailedModelParameters(modelKey, null, ArrayUtils.toString(rawParams), e.getMessage(),
-              StringUtils.toString(e));
+    appendFailedModelParameters(modelKey, null, ArrayUtils.toString(rawParams), e);
   }
 
   /**

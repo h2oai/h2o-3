@@ -2580,7 +2580,6 @@ h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' Retrieve the number of iterations.
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.
-#' @param \dots further arguments to be passed on (currently unimplemented)
 #' @examples 
 #' \dontrun{
 #' h2o.init()
@@ -2592,6 +2591,7 @@ h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' h2o.num_iterations(prostate_glm)
 #' }
+
 #' @export
 h2o.num_iterations <- function(object) { object@model$model_summary$number_of_iterations }
 

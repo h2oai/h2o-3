@@ -85,27 +85,27 @@ New users can follow the steps below to quickly get up and running with H2O dire
 
 1. In a terminal window, create a folder for the H2O repository. The example below creates a folder called "repos" on the desktop.
 
- ::
+ .. code-block:: bash
 
    user$ mkdir ~/Desktop/repos
 
 2. Change directories to that new folder, and then clone the repository. Notice that the prompt changes when you change directories.
 
- ::
+ .. code-block:: bash
 
     user$ cd ~/Desktop/repos
     repos user$ git clone https://github.com/h2oai/h2o-3.git
 
 3. After the repo is cloned, change directories to the **h2o** folder.
 
- ::
+ .. code-block:: bash
 
     repos user$ cd h2o-3
     h2o-3 user$
 
 4. Run the following command to retrieve sample datasets. These datasets are used throughout this User Guide and within the `Booklets <http://www.h2o.ai/resources/>`_.
 
- ::
+ .. code-block:: bash
 
    h2o-3 user$ ./gradlew syncSmalldata
 
@@ -163,50 +163,49 @@ At this point, determine whether you want to complete this quick start in either
 
    .. code-tab:: python
 
-        # Before starting Python, run the following commands to install dependencies.
-        # Prepend these commands with `sudo` only if necessary.
-        h2o-3 user$ [sudo] pip install -U requests
-        h2o-3 user$ [sudo] pip install -U tabulate
-        h2o-3 user$ [sudo] pip install -U future
-        h2o-3 user$ [sudo] pip install -U colorama
+    # Before starting Python, run the following commands to install dependencies.
+    # Prepend these commands with `sudo` only if necessary.
+    h2o-3 user$ [sudo] pip install -U requests
+    h2o-3 user$ [sudo] pip install -U tabulate
+    h2o-3 user$ [sudo] pip install -U future
+    h2o-3 user$ [sudo] pip install -U colorama
 
-        # Start python
-        h2o-3 user$ python
-        >>>
+    # Start python
+    h2o-3 user$ python
 
-        # Run the following command to import the H2O module:
-        >>> import h2o
+    # Run the following command to import the H2O module:
+    >>> import h2o
 
-        # Run the following command to initialize H2O on your local machine (single-node cluster).
-        >>> h2o.init()
+    # Run the following command to initialize H2O on your local machine (single-node cluster).
+    >>> h2o.init()
 
-        # If desired, run the GLM, GBM, or Deep Learning demo
-        >>> h2o.demo("glm")
-        >>> h2o.demo("gbm")
-        >>> h2o.demo("deeplearning")
+    # If desired, run the GLM, GBM, or Deep Learning demo
+    >>> h2o.demo("glm")
+    >>> h2o.demo("gbm")
+    >>> h2o.demo("deeplearning")
 
-        # Import the Iris (with headers) dataset.
-        >>> path = "smalldata/iris/iris_wheader.csv"
-        >>> iris = h2o.import_file(path=path)
+    # Import the Iris (with headers) dataset.
+    >>> path = "smalldata/iris/iris_wheader.csv"
+    >>> iris = h2o.import_file(path=path)
 
-        # View a summary of the imported dataset.
-        >>> iris.summary
-          sepal_len    sepal_wid    petal_len    petal_wid        class
-        -----------  -----------  -----------  -----------  -----------
-                5.1          3.5          1.4          0.2  Iris-setosa
-                4.9          3            1.4          0.2  Iris-setosa
-                4.7          3.2          1.3          0.2  Iris-setosa
-                4.6          3.1          1.5          0.2  Iris-setosa
-                5            3.6          1.4          0.2  Iris-setosa
-                5.4          3.9          1.7          0.4  Iris-setosa
-                4.6          3.4          1.4          0.3  Iris-setosa
-                5            3.4          1.5          0.2  Iris-setosa
-                4.4          2.9          1.4          0.2  Iris-setosa
-                4.9          3.1          1.5          0.1  Iris-setosa
+    # View a summary of the imported dataset.
+    >>> iris.summary
+      sepal_len    sepal_wid    petal_len    petal_wid        class
+    -----------  -----------  -----------  -----------  -----------
+            5.1          3.5          1.4          0.2  Iris-setosa
+            4.9          3            1.4          0.2  Iris-setosa
+            4.7          3.2          1.3          0.2  Iris-setosa
+            4.6          3.1          1.5          0.2  Iris-setosa
+            5            3.6          1.4          0.2  Iris-setosa
+            5.4          3.9          1.7          0.4  Iris-setosa
+            4.6          3.4          1.4          0.3  Iris-setosa
+            5            3.4          1.5          0.2  Iris-setosa
+            4.4          2.9          1.4          0.2  Iris-setosa
+            4.9          3.1          1.5          0.1  Iris-setosa
 
-        [150 rows x 5 columns]
-        <bound method H2OFrame.summary of >
-        >>>
+    [150 rows x 5 columns]
+    <bound method H2OFrame.summary of >
+
 
 Experienced Users
 -----------------
@@ -488,14 +487,14 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 
 2. Prepare the job input on the Hadoop Node by unzipping the build file and changing to the directory with the Hadoop and H2O's driver jar files.
 
-   ::
+  .. code-block:: bash
 
        unzip h2o-{{project_version}}-*.zip
        cd h2o-{{project_version}}-*
 
 3. To launch H2O nodes and form a cluster on the Hadoop cluster, run:
 
-   ::
+  .. code-block:: bash
 
      hadoop jar h2odriver.jar -nodes 1 -mapperXmx 6g
 
@@ -509,7 +508,7 @@ The following steps show you how to download or build H2O with Hadoop and the pa
 
 4. To monitor your job, direct your web browser to your standard job tracker Web UI. To access H2O's Web UI, direct your web browser to one of the launched instances. If you are unsure where your JVM is launched, review the output from your command after the nodes have clouded up and formed a cluster. Any of the nodes' IP addresses will work as there is no master node.
 
-   ::
+  .. code-block:: bash
 
        Determining driver host interface for mapper->driver callback...
        [Possible callback IP address: 172.16.2.181]
@@ -569,9 +568,9 @@ Edit Hadoop's ``core-site.xml``, then set the ``HADOOP_CONF_DIR`` environment pr
 
 You can also pass the S3 credentials when launching H2O with the Hadoop jar command. Use the ``-D`` flag to pass the credentials:
 
-::
+.. code-block:: bash
 
-        hadoop jar h2odriver.jar -Dfs.s3.awsAccessKeyId="${AWS_ACCESS_KEY}" -Dfs.s3n.awsSecretAccessKey="${AWS_SECRET_KEY}" -n 3 -mapperXmx 10g  -output outputDirectory
+  hadoop jar h2odriver.jar -Dfs.s3.awsAccessKeyId="${AWS_ACCESS_KEY}" -Dfs.s3n.awsSecretAccessKey="${AWS_SECRET_KEY}" -n 3 -mapperXmx 10g  -output outputDirectory
 
 where ``AWS_ACCESS_KEY`` represents your user name and ``AWS_SECRET_KEY`` represents your password.
 
@@ -579,19 +578,19 @@ Then import the data with the S3 URL path:
 
 -  To import the data from the Flow API:
 
-   ::
+  .. code-block:: bash
 
        importFiles [ "s3:/path/to/bucket/file/file.tab.gz" ]
 
 -  To import the data from the R API:
 
-   ::
+  .. code-block:: bash
 
        h2o.importFile(path = "s3://bucket/path/to/file.csv")
 
 -  To import the data from the Python API:
 
-   ::
+  .. code-block:: bash
 
        h2o.import_frame(path = "s3://bucket/path/to/file.csv")
 
@@ -667,7 +666,7 @@ Configuring YARN
 
 To verify the values were changed, check the values for the following properties:
 
-::
+.. code-block:: bash
 
      - <name>yarn.nodemanager.resource.memory-mb</name>
      - <name>yarn.scheduler.maximum-allocation-mb</name>
@@ -690,7 +689,7 @@ To specify a queue with Hadoop, enter ``-Dmapreduce.job.queuename=<my-h2o-queue>
 
 For example,
 
-::
+.. code-block:: bash
 
   hadoop jar h2odriver.jar -Dmapreduce.job.queuename=<my-h2o-queue> -nodes <num-nodes> -mapperXmx 6g -output hdfsOutputDirName
 
@@ -799,15 +798,15 @@ Depending on your OS, select the appropriate installation method:
 
 .. todo:: figure out if branch_name is getting replaced with the actual branch_name or how to set that up
 
-  ::
+ .. code-block:: bash
 
       mkdir -p /data/h2o-{{branch_name}}
 
 2. Next, either download or create a Dockerfile, which is a build recipe that builds the container.
 
-  Download and use our `Dockerfile template <https://github.com/h2oai/h2o-3/blob/master/Dockerfile>`__ by running:
+ Download and use our `Dockerfile template <https://github.com/h2oai/h2o-3/blob/master/Dockerfile>`__ by running:
 
-  ::
+  .. code-block:: bash
 
       cd /data/h2o-{{branch_name}}
       wget https://raw.githubusercontent.com/h2oai/h2o-3/master/Dockerfile
@@ -823,7 +822,7 @@ Depending on your OS, select the appropriate installation method:
 
 From the **/data/h2o-{{branch\_name}}** directory, run the following. Note below that ``v5`` represents the current version number.
 
-::
+ .. code-block:: bash
 
     docker build -t "h2o.ai/{{branch_name}}:v5" .
 
@@ -833,7 +832,7 @@ Because it assembles all the necessary parts for the image, this process can tak
 
 On a Mac, use the argument ``-p 54321:54321`` to expressly map the port 54321. This is not necessary on Linux. Note below that ``v5`` represents the version number.
 
-::
+ .. code-block:: bash
 
     docker run -ti -p 54321:54321 h2o.ai/{{branch_name}}:v5 /bin/bash
 
@@ -841,7 +840,7 @@ On a Mac, use the argument ``-p 54321:54321`` to expressly map the port 54321. T
 
 Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` to the amount of memory you want to allocate to the H2O instance. By default, H2O launches on port 54321. 
 
-::
+ .. code-block:: bash
 
     cd /opt
     java -Xmx1g -jar h2o.jar
@@ -850,13 +849,13 @@ Navigate to the ``/opt`` directory and launch H2O. Change the value of ``-Xmx`` 
 
 -  **On Linux**: After H2O launches, copy and paste the IP address and port of the H2O instance into the address bar of your browser. In the following example, the IP is ``172.17.0.5:54321``.
 
-  ::
+   .. code-block:: bash
 
      03:58:25.963 main      INFO WATER: Cloud of size 1 formed [/172.17.0.5:54321 (00:00:00.000)]
 
 -  **On OSX**: Locate the IP address of the Docker's network (``192.168.59.103`` in the following examples) that bridges to your Host OS by opening a new Terminal window (not a bash for your container) and running ``boot2docker ip``.
 
-  ::
+   .. code-block:: bash
 
      $ boot2docker ip
      192.168.59.103

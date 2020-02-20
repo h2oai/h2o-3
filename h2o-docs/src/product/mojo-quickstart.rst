@@ -393,7 +393,7 @@ Step 2: Compile and Run the MOJO
 
 1. Open a *new* terminal window and change directories to the **experiment** folder:
  
-   ::
+   .. code:: java
 
        $ cd experiment
 
@@ -566,7 +566,7 @@ Step 2: Compile and Run the MOJO
 
  For the GLRM MOJO, after running the Java code, you will see the following:
 
- .. code:: bash
+ .. code:: java
 
   X coefficients for input row:
   Arch 0 coefficient: -0.5930494611027051,
@@ -597,29 +597,34 @@ The following code snippet shows how to download a MOJO from R and run the Print
 - ``--decimalplaces`` (or ``-d``) allows you to control the  number of decimal points shown for numbers. 
 - ``--fontsize`` (or ``-f``) controls the font size.  The default font size is 14. When using this option, be careful not to choose a font size that  is so large that you cannot see your whole tree. We recommend using a font size no larger than  20.
 
-::
+.. tabs::
+   .. code-tab:: r R
 
-  library(h2o)
-  h2o.init()
-  df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-  model <- h2o.gbm(model_id = "model",
-                  training_frame = df,
-                  x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
-                  y = "IsDepDelayed",
-                  max_depth = 3,
-                  ntrees = 5)
-  h2o.download_mojo(model, getwd(), FALSE)
+    library(h2o)
+    h2o.init()
+    df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    model <- h2o.gbm(model_id = "model",
+                    training_frame = df,
+                    x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
+                    y = "IsDepDelayed",
+                    max_depth = 3,
+                    ntrees = 5)
+    h2o.download_mojo(model, getwd(), FALSE)
 
-  # Now download the latest stable h2o release from http://www.h2o.ai/download/
-  # and run the PrintMojo tool from the command line.
-  #
-  # (For MacOS: brew install graphviz)
-  java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
-  dot -Tpng model.gv -o model.png
-  open model.png
+    # Now download the latest stable h2o release from http://www.h2o.ai/download/
+    # and run the PrintMojo tool from the command line.
+    #
+    # (For MacOS: brew install graphviz)
+    java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
+    dot -Tpng model.gv -o model.png
+    open model.png
 
 FAQ
 ~~~
+
+-  **Are MOJOs thread safe?**
+
+  Yes, all of H2O-3 MOJOs are thread safe.
 
 -  **How can I use an XGBoost MOJO with Maven?**
 

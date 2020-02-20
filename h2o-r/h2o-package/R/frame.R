@@ -3216,16 +3216,16 @@ h2o.ascharacter <- function(x) {
 #' @param x An H2OFrame object
 #' @param n An (Optional) A single integer. If positive, number of rows in x to return. If negative, all but the n first/last number of rows in x.
 #'          Anything bigger than 20 rows will require asking the server (first 20 rows are cached on the client).
-#' @param ... Further arguments to be passed from or to other methods.
 #' @examples 
 #' \dontrun{
 #' h2o.init()
 #' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
 #' h2o.print(iris["species"], n = 15)
 #' }
+
 #' @export
-h2o.print <- function(x,n=6L) {
-  print(x,n = n)
+h2o.print <- function(x, n=6L) {
+  print(x, n = n)
 }
 
 #' Display the structure of an H2OFrame object
@@ -4194,7 +4194,6 @@ as.character.H2OFrame <- function(x, ...) {
 #'
 #' Converts an H2O column into a numeric value column.
 #' @param x a column from an H2OFrame data set.
-#' @param ... Further arguments to be passed from or to other methods.
 #' @examples
 #' \dontrun{
 #' h2o.init()

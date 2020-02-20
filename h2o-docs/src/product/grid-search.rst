@@ -23,42 +23,74 @@ Quick Links
 - `Additional Documentation <#additional-documentation>`__
 
 
-Grid Search in R
-----------------
+Grid Search in R and Python
+---------------------------
 
-Grid search in R provides the following capabilities:
+.. tabs::
+   .. group-tab:: R
 
--  ``H2OGrid class``: Represents the results of the grid search
--  ``h2o.getGrid(<grid_id>, sort_by, decreasing)``: Displays the
-   specified grid
--  ``h2o.grid()``: Starts a new grid search parameterized by
+    Grid search in R provides the following capabilities:
 
-   -  model builder name (e.g., ``gbm``)
-   -  model parameters (e.g., ``ntrees = 100``)
-   -  ``hyper_parameters`` attribute for passing a list of hyper
-      parameters (e.g., ``list(ntrees = c(1,100), learn_rate = c(0.1, 0.001))``)
-   -  ``search_criteria`` optional attribute for specifying a more
-      advanced search strategy  
+    -  ``H2OGrid class``: Represents the results of the grid search
+    -  ``h2o.getGrid(<grid_id>, sort_by, decreasing)``: Displays the
+       specified grid
+    -  ``h2o.grid()``: Starts a new grid search parameterized by
 
-More about ``search_criteria``:  
+       -  model builder name (e.g., ``gbm``)
+       -  model parameters (e.g., ``ntrees = 100``)
+       -  ``hyper_parameters`` attribute for passing a list of hyper
+          parameters (e.g., ``list(ntrees = c(1,100), learn_rate = c(0.1, 0.001))``)
+       -  ``search_criteria`` optional attribute for specifying a more
+          advanced search strategy  
 
-This is a named list of control parameters for smarter hyperparameter search.  The list can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
+    More about ``search_criteria``:  
 
-.. code:: r
+    This is a named list of control parameters for smarter hyperparameter search.  The list can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
 
-    list(strategy = "RandomDiscrete", max_models = 10, seed = 1)
-    list(strategy = "RandomDiscrete", max_runtime_secs = 3600)
-    list(strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800)
-    list(strategy = "RandomDiscrete", stopping_tolerance = 0.001, stopping_rounds = 10)
-    list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.0005, stopping_rounds = 5)
+    .. code-block:: r 
+
+        list(strategy = "RandomDiscrete", max_models = 10, seed = 1)
+        list(strategy = "RandomDiscrete", max_runtime_secs = 3600)
+        list(strategy = "RandomDiscrete", max_models = 42, max_runtime_secs = 28800)
+        list(strategy = "RandomDiscrete", stopping_tolerance = 0.001, stopping_rounds = 10)
+        list(strategy = "RandomDiscrete", stopping_metric = "misclassification", stopping_tolerance = 0.0005, stopping_rounds = 5)
+
+   .. group-tab:: Python
+
+    -  Class is ``H2OGridSearch``
+    -  ``<grid_name>.show()``: Display a list of models (including model
+       IDs, hyperparameters, and MSE) explored by grid search (where
+       ``<grid_name>`` is an instance of an ``H2OGridSearch`` class)
+    -  ``grid_search = H2OGridSearch(<model_type), hyper_params=hyper_parameters)``:
+       Start a new grid search parameterized by:
+
+       -  ``model_type`` is the type of H2O estimator model with its
+          unchanged parameters
+       -  ``hyper_params`` in Python is a dictionary of string parameters
+          (keys) and a list of values to be explored by grid search (values)
+          (e.g., ``{'ntrees':[1,100], 'learn_rate':[0.1, 0.001]}``
+       -  ``search_criteria`` is the optional dictionary for specifying more a
+          advanced search strategy
 
 
+    More about ``search_criteria``:  
+
+    This is a dictionary of control parameters for smarter hyperparameter search.  The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
+
+    .. code-block:: python
+
+        {'strategy': "RandomDiscrete", 'max_models': 10, 'seed': 1}
+        {'strategy': "RandomDiscrete", 'max_runtime_secs': 3600}
+        {'strategy': "RandomDiscrete", 'max_models': 42, 'max_runtime_secs': 28800}
+        {'strategy': "RandomDiscrete", 'stopping_tolerance': 0.001, 'stopping_rounds': 10}
+        {'strategy': "RandomDiscrete", 'stopping_metric': "misclassification", 'stopping_tolerance': 0.0005, 'stopping_rounds': 5}
 
 
-Grid Search Example in R
-~~~~~~~~~~~~~~~~~~~~~~~~
+Grid Search Examples
+~~~~~~~~~~~~~~~~~~~~
 
-.. code:: r
+.. tabs::
+   .. code-tab:: r R
 
     library(h2o)
 
@@ -115,92 +147,7 @@ Grid Search Example in R
     # Look at the hyperparameters for the best model
     print(best_gbm1@model[["model_summary"]])
 
-
-
-
-Random Grid Search Example in R
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: r
-
-    # Use same data as above
-
-    # GBM hyperparameters (bigger grid than above)
-    gbm_params2 <- list(learn_rate = seq(0.01, 0.1, 0.01),
-                        max_depth = seq(2, 10, 1),
-                        sample_rate = seq(0.5, 1.0, 0.1),
-                        col_sample_rate = seq(0.1, 1.0, 0.1))
-    search_criteria <- list(strategy = "RandomDiscrete", max_models = 36, seed = 1)
-
-    # Train and validate a random grid of GBMs
-    gbm_grid2 <- h2o.grid("gbm", x = x, y = y,
-                          grid_id = "gbm_grid2",
-                          training_frame = train,
-                          validation_frame = valid,
-                          ntrees = 100,
-                          seed = 1,
-                          hyper_params = gbm_params2,
-                          search_criteria = search_criteria)
-
-    gbm_gridperf2 <- h2o.getGrid(grid_id = "gbm_grid2", 
-                                 sort_by = "auc", 
-                                 decreasing = TRUE)
-    print(gbm_gridperf2)
-
-    # Grab the top GBM model, chosen by validation AUC
-    best_gbm2 <- h2o.getModel(gbm_gridperf2@model_ids[[1]])
-
-    # Now let's evaluate the model performance on a test set
-    # so we get an honest estimate of top model performance
-    best_gbm_perf2 <- h2o.performance(model = best_gbm2, 
-                                      newdata = test)
-    h2o.auc(best_gbm_perf2)
-    # 0.7810757
-
-    # Look at the hyperparameters for the best model
-    print(best_gbm2@model[["model_summary"]])
-
-
-
-For more information, refer to the `R grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.R>`__, `R grid search code <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R>`__, and `runit\_GBMGrid\_airlines.R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R>`__.
-
-
-Grid Search in Python
----------------------
-
--  Class is ``H2OGridSearch``
--  ``<grid_name>.show()``: Display a list of models (including model
-   IDs, hyperparameters, and MSE) explored by grid search (where
-   ``<grid_name>`` is an instance of an ``H2OGridSearch`` class)
--  ``grid_search = H2OGridSearch(<model_type), hyper_params=hyper_parameters)``:
-   Start a new grid search parameterized by:
-
-   -  ``model_type`` is the type of H2O estimator model with its
-      unchanged parameters
-   -  ``hyper_params`` in Python is a dictionary of string parameters
-      (keys) and a list of values to be explored by grid search (values)
-      (e.g., ``{'ntrees':[1,100], 'learn_rate':[0.1, 0.001]}``
-   -  ``search_criteria`` is the optional dictionary for specifying more a
-      advanced search strategy
-
-
-More about ``search_criteria``:  
-
-This is a dictionary of control parameters for smarter hyperparameter search.  The dictionary can include values for: ``strategy``, ``max_models``, ``max_runtime_secs``, ``stopping_metric``, ``stopping_tolerance``, ``stopping_rounds`` and ``seed``. The default value for ``strategy``, "Cartesian", covers the entire space of hyperparameter combinations.  If you want to use cartesian grid search, you can leave the ``search_criteria`` argument unspecified.  Specify the "RandomDiscrete" strategy to perform a random search of all the combinations of your hyperparameters. RandomDiscrete should be usually combined with at least one early stopping criterion, ``max_models`` and/or ``max_runtime_secs``.  Some examples below:
-
-.. code:: python
-
-    {'strategy': "RandomDiscrete", 'max_models': 10, 'seed': 1}
-    {'strategy': "RandomDiscrete", 'max_runtime_secs': 3600}
-    {'strategy': "RandomDiscrete", 'max_models': 42, 'max_runtime_secs': 28800}
-    {'strategy': "RandomDiscrete", 'stopping_tolerance': 0.001, 'stopping_rounds': 10}
-    {'strategy': "RandomDiscrete", 'stopping_metric': "misclassification", 'stopping_tolerance': 0.0005, 'stopping_rounds': 5}
-
-
-Grid Search Example in Python
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. code:: python
+   .. code-tab:: python
 
     import h2o
     from h2o.estimators.gbm import H2OGradientBoostingEstimator
@@ -258,12 +205,57 @@ Grid Search Example in Python
 
 
 
-Random Grid Search Example in Python
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Random Grid Search Examples
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. code:: python
+.. tabs::
+   .. code-tab:: r R
 
-    # Use same data as above
+    # Use same data as previous example
+
+    # GBM hyperparameters (bigger grid than above)
+    gbm_params2 <- list(learn_rate = seq(0.01, 0.1, 0.01),
+                        max_depth = seq(2, 10, 1),
+                        sample_rate = seq(0.5, 1.0, 0.1),
+                        col_sample_rate = seq(0.1, 1.0, 0.1))
+    search_criteria <- list(strategy = "RandomDiscrete", max_models = 36, seed = 1)
+
+    # Train and validate a random grid of GBMs
+    gbm_grid2 <- h2o.grid("gbm", x = x, y = y,
+                          grid_id = "gbm_grid2",
+                          training_frame = train,
+                          validation_frame = valid,
+                          ntrees = 100,
+                          seed = 1,
+                          hyper_params = gbm_params2,
+                          search_criteria = search_criteria)
+
+    gbm_gridperf2 <- h2o.getGrid(grid_id = "gbm_grid2", 
+                                 sort_by = "auc", 
+                                 decreasing = TRUE)
+    print(gbm_gridperf2)
+
+    # Grab the top GBM model, chosen by validation AUC
+    best_gbm2 <- h2o.getModel(gbm_gridperf2@model_ids[[1]])
+
+    # Now let's evaluate the model performance on a test set
+    # so we get an honest estimate of top model performance
+    best_gbm_perf2 <- h2o.performance(model = best_gbm2, 
+                                      newdata = test)
+    h2o.auc(best_gbm_perf2)
+    # 0.7810757
+
+    # Look at the hyperparameters for the best model
+    print(best_gbm2@model[["model_summary"]])
+
+
+    For more information, refer to the `R grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.R>`__, `R grid search code <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/grid.R>`__, and `runit\_GBMGrid\_airlines.R <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/gbm/runit_GBMGrid_airlines.R>`__.
+
+
+   .. code-tab:: python
+
+
+    # Use same data as previous example
 
     # GBM hyperparameters
     gbm_params2 = {'learn_rate': [i * 0.01 for i in range(1, 11)],  
@@ -300,8 +292,7 @@ Random Grid Search Example in Python
     # 0.7810757307013204
 
 
-
-For more information, refer to the `Python grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.ipynb>`__, `Python grid search code <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py>`__, and `pyunit\_benign\_glm\_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`__.
+    For more information, refer to the `Python grid search tutorial <https://github.com/h2oai/h2o-tutorials/blob/master/h2o-open-tour-2016/chicago/grid-search-model-selection.ipynb>`__, `Python grid search code <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/grid/grid_search.py>`__, and `pyunit\_benign\_glm\_grid.py <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_benign_glm_grid.py>`__.
 
 Grid Search Java API
 --------------------
@@ -491,7 +482,7 @@ dictionary of the hyperparameters that will be searched. In this
 dictionary, an array of values is specified for each searched
 hyperparameter.
 
-.. code:: json
+.. code:: java
 
     {
       "ntrees":[1,5],
@@ -506,7 +497,7 @@ stop the search: max number of models, max time, and metric-based early
 stopping (e.g., stop if MSE hasn't improved by 0.0001 over the 5 best
 models). An example is:
 
-.. code:: json
+.. code:: java
 
     {
       "strategy": "RandomDiscrete",
@@ -527,7 +518,7 @@ Example
 Invoke a new GBM model grid search by POSTing the following request to
 ``/99/Grid/gbm``:
 
-.. code:: json
+:: 
 
     parms:{hyper_parameters={"ntrees":[1,5],"learn_rate":[0.1,0.01]}, training_frame="filefd41fe7ac0b_csv_1.hex_2", grid_id="gbm_grid_search", response_column="Species"", ignored_columns=[""]}
 
