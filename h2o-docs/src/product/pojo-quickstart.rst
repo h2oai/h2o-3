@@ -186,6 +186,10 @@ The following use cases are demonstrated with code examples:
 FAQ
 ~~~
 
+-  **Are POJOs thread safe?**
+
+  Yes, all of H2O-3 POJOs are thread safe. 
+
 -  **How do I score new cases in real-time in a production environment?**
 
   If you're using the UI, click the **Preview POJO** button for your model. This produces a Java class with methods that you can reference and use in your production app.
