@@ -611,7 +611,7 @@ FAQ
 
 -  **Are MOJOs thread safe?**
 
-  All of H2O-3 MOJOs are thread safe except for Deep Learning MOJOs. 
+  Yes, all of H2O-3 MOJOs are thread safe.
 
 -  **How can I use an XGBoost MOJO with Maven?**
 
