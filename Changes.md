@@ -4,36 +4,36 @@
 
 ### Yu (3.28.0.4) - 2/20/2020
 
-Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html</a>
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.html</a>
 
 
-<h2>        Bug
-</h2>
+<h4>Bug</h4>
+
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6615'>PUBDEV-6615</a>] -         DeepLearning MOJOs should be thread-safe
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6615'>PUBDEV-6615</a>] - DeepLearning MOJOs are now thread-safe. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7227'>PUBDEV-7227</a>] -         h2oframe.apply fails in Python 3.7
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7227'>PUBDEV-7227</a>] - Added support for Python 3.7. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7260'>PUBDEV-7260</a>] -         XGBoost does not respect monotonicity constraints for certain tree_methods
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7260'>PUBDEV-7260</a>] - XGBoost now correctly respects monotonicity constraints for all tree_methods.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7270'>PUBDEV-7270</a>] -         import_hive_table fails with jdbc source and partitioned table
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7270'>PUBDEV-7270</a>] - Fixed an issue that caused `import_hive_table` to fail with a JDBC source and a partitioned table. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7271'>PUBDEV-7271</a>] -         DKVManager sequential deletion
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7271'>PUBDEV-7271</a>] - Improved the DKVManager sequential removal mechanism. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7279'>PUBDEV-7279</a>] -         xgboost logloss gets worse for tree_method = &quot;exact&quot; in multinode
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7279'>PUBDEV-7279</a>] - In XGBoost, added a message indicating that the `exact` tree method is not supported in multinode. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7305'>PUBDEV-7305</a>] -         model end_time and run_time properties return value 0 in client mode
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7305'>PUBDEV-7305</a>] - Fixed an issue that could cause model `end_time` and `run_time` properties to return a value of 0 in client mode. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7308'>PUBDEV-7308</a>] -         XGBoost ContributionsPredictor is not Serializable
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7308'>PUBDEV-7308</a>] - XGBoost ContributionsPredictor is now serializable.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7309'>PUBDEV-7309</a>] -         Fix CRAN warning related to ellipsis arguments in the R package
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7309'>PUBDEV-7309</a>] - Fixed a CRAN warning related to ellipsis within arguments in the R package.
 </li>
 </ul>
             
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6447'>PUBDEV-6447</a>] -         Allow for Constrained K-Means Clustering
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6447'>PUBDEV-6447</a>] - Added support for Constrained K-Means clustering. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6917'>PUBDEV-6917</a>] -         Support Azure Data Lake Storage Gen2 
 </li>
@@ -67,6 +67,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.htm
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6759'>PUBDEV-6759</a>] -         Create examples for the Metric Methods section in the Python documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6964'>PUBDEV-6964</a>] - Added FAQ to MOJO and POJO quick start noting that MOJOs and POJOs are thread safe for all supported algorithms.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7077'>PUBDEV-7077</a>] -         Python docs: add examples for Shared Utilities
 </li>
