@@ -83,7 +83,10 @@ Defining a Stacked Ensemble Model
  - ``"glm"`` (GLM with default parameters)
  - ``"gbm"`` (GBM with default parameters) 
  - ``"drf"`` (Random Forest with default parameters)
- - ``"deeplearning"`` (Deep Learning with default parameters).
+ - ``"deeplearning"`` (Deep Learning with default parameters)
+ - ``"naivebayes"`` (NaiveBayes with default parameters)
+ - ``"psvm"`` (PSVM with default parameters)
+ - ``"xgboost"`` (if available, XGBoost with default parameters)
 
 -  `metalearner_params <algo-params/metalearner_params.html>`__: (Optional) If a ``metalearner_algorithm`` is specified, then you can also specify a list of customized parameters for that algorithm (for example, a GBM with ``ntrees=100``, ``max_depth=10``, etc.)
 
