@@ -2,6 +2,81 @@
 
 ## H2O
 
+### Yu (3.28.0.4) - 2/20/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html</a>
+
+
+<h2>        Bug
+</h2>
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6615'>PUBDEV-6615</a>] -         DeepLearning MOJOs should be thread-safe
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7227'>PUBDEV-7227</a>] -         h2oframe.apply fails in Python 3.7
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7260'>PUBDEV-7260</a>] -         XGBoost does not respect monotonicity constraints for certain tree_methods
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7270'>PUBDEV-7270</a>] -         import_hive_table fails with jdbc source and partitioned table
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7271'>PUBDEV-7271</a>] -         DKVManager sequential deletion
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7279'>PUBDEV-7279</a>] -         xgboost logloss gets worse for tree_method = &quot;exact&quot; in multinode
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7305'>PUBDEV-7305</a>] -         model end_time and run_time properties return value 0 in client mode
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7308'>PUBDEV-7308</a>] -         XGBoost ContributionsPredictor is not Serializable
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7309'>PUBDEV-7309</a>] -         Fix CRAN warning related to ellipsis arguments in the R package
+</li>
+</ul>
+            
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6447'>PUBDEV-6447</a>] -         Allow for Constrained K-Means Clustering
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6917'>PUBDEV-6917</a>] -         Support Azure Data Lake Storage Gen2 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6965'>PUBDEV-6965</a>] -         Add XGBoost, PSVM and Naive Bayes to metalearner_algorithm options in Stacked Ensemble
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7303'>PUBDEV-7303</a>] -         Add  build_tree_one_node to XGBoost
+</li>
+</ul>
+    
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7230'>PUBDEV-7230</a>] -         Force connections to FlowUI on port 54321 to TLS1.2
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7136'>PUBDEV-7136</a>] -         R client: Add option to display more columns in h2o frame for head/tail
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7189'>PUBDEV-7189</a>] -         AutoML: make XGBoost fully optional
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7253'>PUBDEV-7253</a>] -         Add ability to Sort grid search results with  failed model
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7310'>PUBDEV-7310</a>] -         Missing sparse parameter on createNewChunks in ChunkUtils
+</li>
+</ul>
+                                                                                                                                                                                                                                
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6759'>PUBDEV-6759</a>] -         Create examples for the Metric Methods section in the Python documentation
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7077'>PUBDEV-7077</a>] -         Python docs: add examples for Shared Utilities
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7213'>PUBDEV-7213</a>] -         Add new `cluster_size_constraints` parameter to KMeans chapter
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7286'>PUBDEV-7286</a>] -         Update docs to specify that mtries=-2 gives all features
+</li>
+</ul>
+
+
 ### Yu (3.28.0.3) - 2/5/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html</a>
