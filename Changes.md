@@ -2,10 +2,9 @@
 
 ## H2O
 
-### Yu (3.28.0.4) - 2/20/2020
+### Yu (3.28.0.4) - 2/21/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.html</a>
-
 
 <h4>Bug</h4>
 
@@ -15,6 +14,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7227'>PUBDEV-7227</a>] - Fixed an issue that caused h2oframe.apply to fail when run in Python 3.7. Note that Python 3.7 is still not officially supported, but support is a WIP.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7260'>PUBDEV-7260</a>] - XGBoost now correctly respects monotonicity constraints for all tree_methods.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7262'>PUBDEV-7262</a>] - Decision Tree descriptions no longer include more descriptions than `max_depth` splits.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7270'>PUBDEV-7270</a>] - Fixed an issue that caused `import_hive_table` to fail with a JDBC source and a partitioned table. 
 </li>
