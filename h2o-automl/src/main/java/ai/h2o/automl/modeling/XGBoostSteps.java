@@ -4,6 +4,7 @@ import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoML;
 import ai.h2o.automl.ModelingStep;
 import ai.h2o.automl.ModelingSteps;
+import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import hex.tree.xgboost.XGBoostModel;
@@ -172,6 +173,57 @@ public class XGBoostSteps extends ModelingSteps {
             },
     };
 
+    private ModelingStep[] exploitation = new XGBoostModelStep[] {
+            new XGBoostModelStep("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, aml(), false) {
+
+                private XGBoostModel getBestXGB() {
+                    for (Model model : getTrainedModels()) {
+                        if (model instanceof XGBoostModel) {
+                            return (XGBoostModel) model;
+                        }
+                    }
+                    return null;
+                }
+
+                @Override
+                protected boolean canRun() {
+                    // TODO: add event log message here?
+                    return getBestXGB() != null;
+                }
+
+                @Override
+                protected Job<XGBoostModel> startJob() {
+                    XGBoostModel bestXGB = getBestXGB();
+                    XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
+                    xgBoostParameters._learn_rate = 0.5;
+                    xgBoostParameters._learn_rate_annealing = 0.9;
+                    return trainModel(xgBoostParameters);
+                }
+            },
+
+            new XGBoostModelStep("lr_search", DEFAULT_GRID_TRAINING_WEIGHT, aml(), false) {
+                private XGBoostModel getBestXGB() {
+                    for (Model model : getTrainedModels()) {
+                        if (model instanceof XGBoostModel) {
+                            return (XGBoostModel) model;
+                        }
+                    }
+                    return null;
+                }
+
+                @Override
+                protected boolean canRun() {
+                    // TODO: add event log message here?
+                    return getBestXGB() != null;
+                }
+
+                @Override
+                protected Job<XGBoostModel> startJob() {
+                    return null;
+                }
+            }
+    };
+
     public XGBoostSteps(AutoML autoML) {
         super(autoML);
     }
@@ -184,5 +236,10 @@ public class XGBoostSteps extends ModelingSteps {
     @Override
     protected ModelingStep[] getGrids() {
         return grids;
+    }
+
+    @Override
+    protected ModelingStep[] getExploitation() {
+        return exploitation;
     }
 }
