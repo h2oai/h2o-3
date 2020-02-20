@@ -621,6 +621,10 @@ The following code snippet shows how to download a MOJO from R and run the Print
 FAQ
 ~~~
 
+-  **Are MOJOs thread safe?**
+
+  Yes, all of H2O-3 MOJOs are thread safe.
+
 -  **How can I use an XGBoost MOJO with Maven?**
 
   If you declare a dependency on h2o-genmodel, then you also have to include the h2o-genmodel-ext-xgboost dependency if you are planning to use XGBoost models. For example:
