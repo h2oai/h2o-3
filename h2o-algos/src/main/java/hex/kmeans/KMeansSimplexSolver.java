@@ -115,7 +115,7 @@ class KMeansSimplexSolver {
 
     /**
      * Get weight base on edge index from weights data or from additive weights.
-     * @param edgeIndex edge index
+     * @param edgeIndex
      * @return weight by edge index
      */
     public double getWeight(long edgeIndex) {
@@ -130,7 +130,7 @@ class KMeansSimplexSolver {
 
     /**
      * Get weight base on edge index from weights data or from additive weights.
-     * @param edgeIndex edge index
+     * @param edgeIndex
      * @return true if the weight at edge index is not zero
      */
     public boolean isNonZeroWeight(long edgeIndex) {
@@ -186,7 +186,7 @@ class KMeansSimplexSolver {
 
     /**
      * Find cycle from the edge defined by source and target nodes to leader node and back.
-     * @param edgeIndex edge index
+     * @param edgeIndex
      * @param sourceIndex source node index
      * @param targetIndex target node index
      * @return cycle in spanning tree
@@ -231,9 +231,12 @@ class KMeansSimplexSolver {
     }
 
     /**
-     * Loop over all entering edges to find minimal cost flow in spanning tree.
+     * Calculation minimal cost flow using pivot loop and spanning tree:
+     * - Loop over all entering edges to find minimal cost flow in spanning tree.
+     * - When edge is find edit spanning tree.
+     * - If constraints are satisfied or no edge is found, stop.
      */
-    public void pivotLoop() {
+    public void calculateMinimalCostFlow() {
         Edge edge = findNextEnteringEdge();
         while (edge != null) {
             long enteringEdgeIndex = edge.getEdgeIndex();
@@ -268,21 +271,10 @@ class KMeansSimplexSolver {
         }
     }
     
-    /**
-     * Check if constraints are satisfied
-     * @param numberOfPointsInCluster number of assigned points to each cluster
-     */
     public void checkConstraintsCondition(int[] numberOfPointsInCluster){
         for(int i = 0; i<_constraintsLength; i++){
             assert numberOfPointsInCluster[i] >= _demandsReader.at8(_numberOfPoints+i) : String.format("Cluster %d has %d assigned points however should has assigned at least %d points.", i+1, numberOfPointsInCluster[i], _demandsReader.at8(_numberOfPoints+i));
         }
-    }
-
-    /**
-     * calculate minimal cost flow using pivot loop over the edges in the net
-     */
-    private void calculateMinimalCostFlow() {
-        pivotLoop();
     }
 
     /**
@@ -808,23 +800,23 @@ class AssignClusterTask extends MRTask<AssignClusterTask> {
         _newAssignmentIndex = numCols - 1 - constraintsLength;
         _dataStopIndex = numCols - (_hasWeightsColumn ? 1 : 0) - 3 * _constraintsLength - 3;
         _weightIndex = _dataStopIndex;
-        _distanceIndexStart = _dataStopIndex + (_hasWeightsColumn ? 1 : 0) + 1;
+        _distanceIndexStart = _dataStopIndex + (_hasWeightsColumn ? 1 : 0);
         _flowIndexStart = numCols - constraintsLength;
     }
     
-    public void assignCluster(Chunk[] cs, int row, int clusterIndex, int[] numberOfPointsInClusterLocal){
+    public void assignCluster(Chunk[] cs, int row, int clusterIndex){
         // old assignment
         cs[_oldAssignmentIndex].set(row, cs[_newAssignmentIndex].at8(row));
         // new assignment
         cs[_newAssignmentIndex].set(row, clusterIndex);
         // distances
-        cs[_distanceAssignmentIndex].set(row, cs[_dataStopIndex + (_hasWeightsColumn ? 1 : 0)  + clusterIndex].at8(row));
-        numberOfPointsInClusterLocal[clusterIndex]++;
+        cs[_distanceAssignmentIndex].set(row, cs[_dataStopIndex + (_hasWeightsColumn ? 1 : 0)  + clusterIndex].atd(row));
+        _numberOfPointsInCluster[clusterIndex]++;
     }
 
     @Override
     public void map(Chunk[] cs) {
-        int[] numberOfPointsInClusterLocal = new int[_constraintsLength];
+        _numberOfPointsInCluster = new int[_constraintsLength];
         for (int i = 0; i < cs[0].len(); i++) {
             if (!_hasWeightsColumn || cs[_weightIndex].at8(i) == 1) {
                 // CV is not enabled or weight is 1
@@ -832,7 +824,7 @@ class AssignClusterTask extends MRTask<AssignClusterTask> {
                 for (int j = 0; j < _constraintsLength; j++) {
                     if (cs[_flowIndexStart + j].at8(i) == 1) {
                         // data point has assignment from MCF algorithm
-                        assignCluster(cs, i, j, numberOfPointsInClusterLocal);
+                        assignCluster(cs, i, j);
                         assigned = true;
                         break;
                     }
@@ -848,16 +840,15 @@ class AssignClusterTask extends MRTask<AssignClusterTask> {
                             minIndex = j;
                         }
                     }
-                    assignCluster(cs, i, minIndex, numberOfPointsInClusterLocal);
+                    assignCluster(cs, i, minIndex);
                 }
             }
         }
-        this._numberOfPointsInCluster = numberOfPointsInClusterLocal;
     }
 
     @Override
     public void reduce(AssignClusterTask mrt) {
-        this._numberOfPointsInCluster = ArrayUtils.add(this._numberOfPointsInCluster, mrt._numberOfPointsInCluster);
+        ArrayUtils.add(this._numberOfPointsInCluster, mrt._numberOfPointsInCluster);
     }
 }
 

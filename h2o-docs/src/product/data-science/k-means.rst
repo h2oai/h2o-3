@@ -134,7 +134,7 @@ The result cluster size is guaranteed only on **training data** and only **durin
 
 If the ``nfolds`` and ``cluster_size_constraints`` parameters are set simultaneously, the sum of constraints has to be less than the number of data points in one fold.
 
-**Minimum-cost flow problems can be efficiently solved in polynomial time (or in the worst case, in exponential time). The performance of this implementation of the Constrained K-means algorithm is slow due to many repeatable calculations that cannot be parallelized and more optimized at the H2O backend. For large dataset, the calculation can last hours. For example, a dataset with 100000 rows and five features can run several hours.**
+**Minimum-cost flow problems can be efficiently solved in polynomial time (or in the worst case, in exponential time). The performance of this implementation of the Constrained K-means algorithm is slow due to many repeatable calculations that cannot be parallelized and more optimized at the H2O backend. For large dataset with large sum of constraints, the calculation can last hours. For example, a dataset with 100000 rows and five features can run several hours.**
 
 Expected time with various sized data (OS debian 10.0 (x86-64), processor Intel© Core™ i7-7700HQ CPU @ 2.80GHz × 4, RAM 23.1 GiB):
 
@@ -144,6 +144,15 @@ Expected time with various sized data (OS debian 10.0 (x86-64), processor Intel�
 * 40 000 rows, 5 features  ~ 2h 13m 31s
 * 50 000 rows, 5 features  ~ 4h  4m 18s
 
+**The sum of constraints is smaller the time is faster - it uses MCF calculation until all constraints are satisfied then use standard K-means.**
+
+Expected time with various sized data when sum of constraints is only 2/3 of data size:
+
+* 10 000 rows, 5 features  ~ 0h  1m 54s
+* 20 000 rows, 5 features  ~ 0h  7m 46s
+* 30 000 rows, 5 features  ~ 0h  m s
+* 40 000 rows, 5 features  ~ 1h m s
+* 50 000 rows, 5 features  ~ 1h m s
 
 
 Constrained K-Means with the Aggregator Model
