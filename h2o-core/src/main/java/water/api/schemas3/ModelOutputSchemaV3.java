@@ -19,6 +19,9 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Column names", direction=API.Direction.OUTPUT)
   public String[] names;
 
+  @API(help="Original column names", direction=API.Direction.OUTPUT)
+  public String[] original_names;
+
   @API(help="Column types", direction=API.Direction.OUTPUT)
   public String[] column_types; // column type mappings can be found in Vec.java, around line 198.
 
@@ -80,6 +83,7 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   public S fillFromImpl( O impl ) {
     super.fillFromImpl(impl);
     this.model_category = impl.getModelCategory();
+    this.original_names = impl._origNames;
     fillHelp();
     return (S)this;
   }
