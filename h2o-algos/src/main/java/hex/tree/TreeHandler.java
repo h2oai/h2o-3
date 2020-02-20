@@ -182,7 +182,7 @@ public class TreeHandler extends Handler {
         int[] nodeLevels = node.getParent().isBitset() ? extractNodeLevels(node) : null;
         nodeDescriptionBuilder.append("Node has id ");
         nodeDescriptionBuilder.append(node.getNodeNumber());
-        if (node.getColName() != null && node.getRightChild() == null && node.getLeftChild() == null) {
+        if (node.getColName() != null && node.isLeaf()) {
             nodeDescriptionBuilder.append(" and splits on column '");
             nodeDescriptionBuilder.append(node.getColName());
             nodeDescriptionBuilder.append("'. ");
