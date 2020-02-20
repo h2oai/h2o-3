@@ -37,44 +37,33 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6917'>PUBDEV-6917</a>] -         Support Azure Data Lake Storage Gen2 (STILL OPEN. MIGHT JUST BE "ADDED SUPPORT FOR HDP 3.2.")
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6965'>PUBDEV-6965</a>] -         Add XGBoost, PSVM and Naive Bayes to metalearner_algorithm options in Stacked Ensemble
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6965'>PUBDEV-6965</a>] - In Stacked Ensembles, added support for "xgboost", "psvm", and "naivebayes" in the `metalearner_algorithm` parameter. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7303'>PUBDEV-7303</a>] -         Add  build_tree_one_node to XGBoost
-</li>
-</ul>
-    
-<h4>Task</h4>
-
-<ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7230'>PUBDEV-7230</a>] -         Force connections to FlowUI on port 54321 to TLS1.2
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7303'>PUBDEV-7303</a>] - Added support for `build_tree_one_node` in XGBoost.
 </li>
 </ul>
     
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7136'>PUBDEV-7136</a>] -         R client: Add option to display more columns in h2o frame for head/tail
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7136'>PUBDEV-7136</a>] - In the R client, users can now optionally specify the number of columns to display in `h2o.frame`, `h2o.head`, and `h2o.tail`. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7189'>PUBDEV-7189</a>] -         AutoML: make XGBoost fully optional
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7189'>PUBDEV-7189</a>] - Fixed an issue that caused AutoML to fail to run if XGBoost was disabled.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7253'>PUBDEV-7253</a>] -         Add ability to Sort grid search results with  failed model
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7253'>PUBDEV-7253</a>] - Stacktraces are no longer returned in  `h2o.getGrid` when failed models are present.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7310'>PUBDEV-7310</a>] -         Missing sparse parameter on createNewChunks in ChunkUtils
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7310'>PUBDEV-7310</a>] - Added `createNewChunks` with a "sparse" parameter in ChunkUtils. 
 </li>
 </ul>
                                                                                                                                                                                                                                 
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6759'>PUBDEV-6759</a>] -         Create examples for the Metric Methods section in the Python documentation
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6964'>PUBDEV-6964</a>] - Added an FAQ to the MOJO and POJO quick starts noting that MOJOs and POJOs are thread safe for all supported algorithms.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6964'>PUBDEV-6964</a>] - Added FAQ to MOJO and POJO quick start noting that MOJOs and POJOs are thread safe for all supported algorithms.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7213'>PUBDEV-7213</a>] - Added the new `cluster_size_constraints` parameter to the KMeans chapter. (STILL OPEN IN PUBDEV-6447)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7077'>PUBDEV-7077</a>] -         Python docs: add examples for Shared Utilities
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7213'>PUBDEV-7213</a>] -         Add new `cluster_size_constraints` parameter to KMeans chapter
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7286'>PUBDEV-7286</a>] -         Update docs to specify that mtries=-2 gives all features
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7286'>PUBDEV-7286</a>] - Updated docs to specify that `mtries=-2` gives all features.
 </li>
 </ul>
 
