@@ -68,7 +68,7 @@ public class DKVManagerTest {
 
 
     @Test
-    public void testGBM() {
+    public void testCrossValidationModelsNotRetained() {
         GBMModel model = null;
         Frame trainingFrame = null, preds = null;
         try {
@@ -88,6 +88,7 @@ public class DKVManagerTest {
             parms._nbins = 20;
             parms._learn_rate = 1.0f;
             parms._score_each_iteration = true;
+            parms._nfolds = 5;
 
             GBM job = new GBM(parms);
             model = job.trainModel().get();
@@ -98,6 +99,10 @@ public class DKVManagerTest {
 
             // Test model retainment
             testRetainModel(model);
+            for (Key xValModel : model._output._cross_validation_models) {
+                final Value value = DKV.get(xValModel);
+                assertNull(value); // Internal models are not retained, unless specified explicitly
+            }
             testModelDeletion(model);
         } finally {
             if (trainingFrame != null) trainingFrame.remove();
@@ -155,8 +160,8 @@ public class DKVManagerTest {
     }
 
     /**
-     * Train a model by using a single input data frame. Retain the model. The frame should be retained (remain in DKV),
-     * as the model links to it as a training frame.
+     * Train a model by using a single input data frame. Retain the model. The frame should NOT be retained (remain in DKV),
+     * unless specified.
      */
     @Test
     public void testRetainModels_sharedFrames() {
@@ -180,69 +185,13 @@ public class DKVManagerTest {
 
             // Training frame of the model should be retained as well
             final Value value = DKV.get(trainingFrame._key);
-            assertNotNull(value);
-            assertTrue(value.isFrame());
-            assertFalse(value.isDeleted());
-
-            assertNotNull(value.get()); // The training frame should be there
+            assertNull(value);
 
         } finally {
             Scope.exit();
         }
         
     }
-
-
-  /**
-   * If a model has been trained using a Frame with shared vecs and the model is retained, the training frame should stay
-   * intact.
-   */
-  @Test
-  public void testRetainModels_sharedVecs() {
-    try {
-      Scope.enter();
-      Frame trainingFrame = parse_test_file("./smalldata/iris/iris_wheader.csv");
-      Scope.track(trainingFrame);
-
-      Frame sharedFrame = new Frame(Key.<Frame>make("sharedFrame"));
-      sharedFrame.add("borrowedCol", trainingFrame.vec(0));
-      DKV.put(sharedFrame);
-      Scope.track(sharedFrame);
-
-      NaiveBayesModel.NaiveBayesParameters parms = new NaiveBayesModel.NaiveBayesParameters();
-      parms._train = trainingFrame._key;
-      parms._valid = trainingFrame._key;
-      parms._laplace = 0;
-      parms._response_column = trainingFrame._names[4];
-      parms._compute_metrics = false;
-
-      final Model model = new NaiveBayes(parms).trainModel().get();
-      Scope.track_generic(model);
-
-      DKVManager.retain(new Key[]{model._key});
-
-      // The very frame with shared vecs should not exist
-      final Value sharedFrameVal = DKV.get(sharedFrame._key);
-      assertNull(sharedFrameVal);
-
-      // Training frame of the model should be retained as well
-      final Value trainVal = DKV.get(trainingFrame._key);
-      assertNotNull(trainVal);
-      assertTrue(trainVal.isFrame());
-      assertFalse(trainVal.isDeleted());
-      assertNotNull(trainVal.get()); // The training frame should be there
-
-      // No shared vecs were deleted from the training frame as the sharedFrame was deleted.
-      for (Key k : trainingFrame.keys()) {
-        assertNotNull(DKV.get(k));
-      }
-
-
-    } finally {
-      Scope.exit();
-    }
-
-  }
 
     /**
      * Train a model from a frame. Retain the frame only and let the model be deleted. The frame should remain in DKV.

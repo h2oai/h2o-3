@@ -31,37 +31,6 @@ public class DKVManager {
   }
 
   /**
-   * Exctracts keys a {@link Model} points to.
-   *
-   * @param retainedKeys A set of retained keys to insert the extracted {@link Model} keys to.
-   * @param model        An instance of {@link Model} to extract the keys from
-   */
-  private static void extractModelKeys(final Set<Key> retainedKeys, final Model model) {
-    Objects.requireNonNull(model);
-    if (model._parms._train != null) {
-      retainedKeys.add(model._parms._train);
-      extractFrameKeys(retainedKeys, model._parms._train.get());
-    }
-    if (model._parms._valid != null) {
-      retainedKeys.add(model._parms._valid);
-      extractFrameKeys(retainedKeys, model._parms._valid.get());
-    }
-
-    if (model._output != null && model._output.getModelMetrics() != null) {
-      for (final Key<ModelMetrics> modelMetric : model._output.getModelMetrics()) {
-        retainedKeys.add(modelMetric);
-      }
-    }
-
-    if (model._output != null && model._output._cross_validation_models != null) {
-      for (final Key xValModel : model._output._cross_validation_models) {
-        retainedKeys.add(xValModel);
-      }
-    }
-
-  }
-
-  /**
    * Iterates through the keys provided by the user, dropping any keys that are not a Model key or a Frame key.
    * Afterwards, extracts
    *
@@ -84,8 +53,6 @@ public class DKVManager {
         throw new IllegalArgumentException(String.format("Given key %s is of type %d. Please provide only Model and Frame keys.", key.toString(), value.type()));
       } else if (value.isFrame()) {
         extractFrameKeys(newKeys, value.get());
-      } else if (value.isModel()) {
-        extractModelKeys(newKeys, value.get());
       }
     }
     retainedKeys.addAll(newKeys); // Add the newly found keys to the original retainedKeys set after the iteration to avoid concurrent modification
@@ -115,7 +82,7 @@ public class DKVManager {
 
     @Override
     public void run() {
-      final Set<Key> values = H2O.localKeySet();
+      final Set<Key> keys = H2O.localKeySet();
       final Set<Key> ignoredSet = new HashSet<>();
       final Futures futures = new Futures();
 
@@ -123,16 +90,14 @@ public class DKVManager {
         ignoredSet.add(ignoredKey);
       }
 
-      for (final Key key : values) {
+      for (final Key key : keys) {
         if (ignoredSet.contains(key)) continue; // Do not perform DKV.get at all if the key is to be ignored
-        if (key.isChunkKey()) continue; // Chunks are deleted with vectors & are not Keyed
 
         final Value value = DKV.get(key);
         if (value == null || value.isNull()) continue;
         if (value.isModel()) {
-          Keyed.remove(key, futures, true);
-        }
-        if (value.isFrame()) {
+          Keyed.remove(key, futures, false);
+        } else if (value.isFrame()) {
           final Frame frame = value.get();
           frame.retain(futures, ignoredSet);
         }
