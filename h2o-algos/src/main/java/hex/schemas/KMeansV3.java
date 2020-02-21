@@ -31,7 +31,8 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
         "init",
         "max_runtime_secs",
         "categorical_encoding",
-        "export_checkpoints_dir"
+        "export_checkpoints_dir", 
+        "cluster_size_constraints"
     };
 
     // Input fields
@@ -54,5 +55,8 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
 
     @API(help = "Whether to estimate the number of clusters (<=k) iteratively and deterministically.", level = API.Level.critical, gridable = true)
     public boolean estimate_k = false;
+
+    @API(help = "An array specifying the minimum number of points that should be in each cluster. The length of the constraints array has to be the same as the number of clusters.", level = API.Level.expert)
+    public int[] cluster_size_constraints = null;
   }
 }

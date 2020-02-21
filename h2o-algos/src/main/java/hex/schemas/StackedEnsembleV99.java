@@ -2,6 +2,7 @@ package hex.schemas;
 
 import com.google.gson.reflect.TypeToken;
 import hex.ensemble.Metalearner;
+import hex.ensemble.Metalearner.Algorithm;
 import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleModel;
 import hex.tree.gbm.GBMModel;
@@ -14,6 +15,7 @@ import water.DKV;
 import water.Key;
 import water.Value;
 import water.api.API;
+import water.api.EnumValuesProvider;
 import water.api.schemas3.KeyV3;
 import water.api.schemas3.ModelParametersSchemaV3;
 import water.api.schemas3.FrameV3;
@@ -47,6 +49,11 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "export_checkpoints_dir"
     };
 
+    public static class AlgorithmValuesProvider extends EnumValuesProvider<Algorithm> {
+      public AlgorithmValuesProvider() {
+        super(Algorithm.class);
+      }
+    }
 
     // Base models
     @API(level = API.Level.critical, direction = API.Direction.INOUT,
@@ -56,11 +63,17 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
     
     // Metalearner algorithm
     @API(level = API.Level.critical, direction = API.Direction.INOUT, 
-            values = {"AUTO", "glm", "gbm", "drf", "deeplearning"},
-            help = "Type of algorithm to use as the metalearner. " +
-                    "Options include 'AUTO' (GLM with non negative weights; if validation_frame is present, a lambda search is performed), 'glm' (GLM with default parameters), 'gbm' (GBM with default parameters), " +
-                    "'drf' (Random Forest with default parameters), or 'deeplearning' (Deep Learning with default parameters).")
-    public Metalearner.Algorithm metalearner_algorithm;
+            valuesProvider = AlgorithmValuesProvider.class,
+            help = "Type of algorithm to use as the metalearner. Options include "
+                    + "'AUTO' (GLM with non negative weights; if validation_frame is present, a lambda search is performed), "
+                    + "'deeplearning' (Deep Learning with default parameters), "
+                    + "'drf' (Random Forest with default parameters), "
+                    + "'gbm' (GBM with default parameters), "
+                    + "'glm' (GLM with default parameters), "
+                    + "'naivebayes' (NaiveBayes with default parameters), "
+                    + "or 'xgboost' (if available, XGBoost with default parameters)."
+    )
+    public Algorithm metalearner_algorithm;
 
     // For ensemble metalearner cross-validation
     @API(level = API.Level.critical, direction = API.Direction.INOUT, 

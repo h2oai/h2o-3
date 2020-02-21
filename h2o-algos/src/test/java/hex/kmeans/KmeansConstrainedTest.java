@@ -4,13 +4,12 @@ import hex.ModelMetricsClustering;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.DKV;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import org.junit.Assume;
+import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
+
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -69,7 +68,7 @@ public class KmeansConstrainedTest extends TestUtil {
                     ard(6.9,3.1,5.4,2.1,2)
             ));
 
-            tfr = parse_test_file("smalldata/iris/iris_wheader.csv");
+            tfr = parse_test_file("./smalldata/iris/iris_wheader.csv");
             DKV.put(tfr);
             KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
             parms._train = tfr._key;
@@ -101,7 +100,7 @@ public class KmeansConstrainedTest extends TestUtil {
         Frame fr = null, points=null, predict1=null, predict2=null, predict3=null, predict4=null;
         try {
             Scope.enter();
-            fr = Scope.track(parse_test_file("smalldata/iris/iris_wheader.csv"));
+            fr = Scope.track(parse_test_file("./smalldata/iris/iris_wheader.csv"));
 
             points = ArrayUtils.frame(ard(
                     ard(4.9, 3.0, 1.4, 0.2),
@@ -182,7 +181,7 @@ public class KmeansConstrainedTest extends TestUtil {
             System.out.println("\nPredictions:");
             System.out.println("  | CKT | FKT | CKF | FKF |");
             for (int i=0; i<fr.numRows(); i++){
-                System.out.println(i+ " |  "+predict1.vec(0).at8(i)+"  |  "+predict3.vec(0).at8(i)+"  |  "+predict2.vec(0).at8(i)+"  |  "+predict4.vec(0).at8(i)+"  |");
+                System.out.println(i + " |  " + predict1.vec(0).at8(i) + "  |  " + predict3.vec(0).at8(i) + "  |  " + predict2.vec(0).at8(i) + "  |  " + predict4.vec(0).at8(i) + "  |");
                 assert predict1.vec(0).at8(i) == predict3.vec(0).at8(i): "Predictions should be the same for Loyd Kmenas and Constrained Kmeans.";
                 assert predict2.vec(0).at8(i) == predict4.vec(0).at8(i): "Predictions should be the same for Loyd Kmenas and Constrained Kmeans.";
             }
@@ -212,13 +211,14 @@ public class KmeansConstrainedTest extends TestUtil {
         }
     }
 
-    @Test @Ignore
+    @Test
     public void testWeatherChicagoConstrained() {
+        Assume.assumeTrue(H2O.getCloudSize() == 1); // don't test in multi-node, not worth it - this tests already takes a long time
         KMeansModel kmm = null, kmm2 = null;
         Frame fr = null, points = null;
         try {
             Scope.enter();
-            fr = Scope.track(parse_test_file("smalldata/chicago/chicagoAllWeather.csv"));
+            fr = Scope.track(parse_test_file("./smalldata/chicago/chicagoAllWeather.csv"));
             points = ArrayUtils.frame(ard(
                     ard(0.9223065747871615,1.016292569726567,1.737905586557139,-0.2732881352142627,0.8408705963844509,-0.2664469441473223,-0.2881728818872508),
                     ard(-1.4846149848792978,-1.5780763628717547,-1.330641758390853,-1.3664503532612082,-1.0180638458160431,-1.1194221247071547,-1.2345088149586547),
@@ -259,4 +259,34 @@ public class KmeansConstrainedTest extends TestUtil {
         }
     }
 
+    @Test @Ignore
+    public void testMnistConstrained() {
+        KMeansModel kmm = null, kmm2 = null;
+        Frame fr = null, points = null;
+        try {
+            Scope.enter();
+            fr = Scope.track(parse_test_file("bigdata/laptop/mnist/train.csv.gz"));
+
+            KMeansModel.KMeansParameters parms = new KMeansModel.KMeansParameters();
+            parms._train = fr._key;
+            parms._seed = 0xcaf;
+            parms._k = 3;
+            parms._cluster_size_constraints = new int[]{10000, 30000, 10000};
+            parms._init = KMeans.Initialization.Furthest;
+            parms._standardize = true;
+            parms._max_iterations = 3;
+            parms._ignored_columns = new String[]{"1023"};
+
+
+            KMeans job = new KMeans(parms);
+            kmm = (KMeansModel) Scope.track_generic(job.trainModel().get());
+
+        } finally {
+            if( fr  != null ) fr.delete();
+            if( points != null ) points.delete();
+            if( kmm != null ) kmm.delete();
+            if( kmm2 != null ) kmm2.delete();
+            Scope.exit();
+        }
+    }
 }

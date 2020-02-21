@@ -313,7 +313,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
           for(int i = 0; i<_parms._cluster_size_constraints.length; i++){
             assert _parms._cluster_size_constraints[i] > 0: "The value of constraint should be higher then zero.";
             csum += _parms._cluster_size_constraints[i];
-            assert csum <= vecs[0].length(): "The sum of constraints is higher than the number of data rows.";
+            assert csum <= vecs[0].length(): "The sum of constraints ("+csum+") is higher than the number of data rows ("+vecs[0].length()+").";
           }
         }
         
@@ -343,6 +343,7 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
               
               // Calculate center assignments
               // Experimental code. Polynomial implementation - slow performance. Need to be parallelize!
+              
               KMeansSimplexSolver solver = new KMeansSimplexSolver(_parms._cluster_size_constraints, new Frame(vecs2), countDistancesTask._sum, hasWeightCol(), countDistancesTask._non_zero_weights);
               
               // Get cluster assignments

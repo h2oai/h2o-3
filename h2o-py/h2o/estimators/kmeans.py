@@ -24,7 +24,7 @@ class H2OKMeansEstimator(H2OEstimator):
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                    "fold_column", "ignored_columns", "ignore_const_cols", "score_each_iteration", "k", "estimate_k",
                    "user_points", "max_iterations", "standardize", "seed", "init", "max_runtime_secs",
-                   "categorical_encoding", "export_checkpoints_dir"}
+                   "categorical_encoding", "export_checkpoints_dir", "cluster_size_constraints"}
 
     def __init__(self, **kwargs):
         super(H2OKMeansEstimator, self).__init__()
@@ -618,5 +618,37 @@ class H2OKMeansEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def cluster_size_constraints(self):
+        """
+        An array specifying the minimum number of points that should be in each cluster. The length of the constraints
+        array has to be the same as the number of clusters.
+
+        Type: ``List[int]``.
+
+        :examples:
+
+        >>> iris_h2o = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> k=3
+        >>> start_points = h2o.H2OFrame(
+        ...         [[4.9, 3.0, 1.4, 0.2],
+        ...          [5.6, 2.5, 3.9, 1.1],
+        ...          [6.5, 3.0, 5.2, 2.0]])
+        >>> kmm = H2OKMeansEstimator(k=k,
+        ...                          user_points=start_points,
+        ...                          standardize=True,
+        ...                          cluster_size_constraints=[2, 5, 8],
+        ...                          score_each_iteration=True)
+        >>> kmm.train(x=list(range(7)), training_frame=iris_h2o)
+        >>> kmm.scoring_history()
+        """
+        return self._parms.get("cluster_size_constraints")
+
+    @cluster_size_constraints.setter
+    def cluster_size_constraints(self, cluster_size_constraints):
+        assert_is_type(cluster_size_constraints, None, [int])
+        self._parms["cluster_size_constraints"] = cluster_size_constraints
 
 

@@ -54,60 +54,27 @@ def stackedensemble_metalearner_test():
                                      seed=1)
     my_rf.train(x=x, y=y, training_frame=train)
 
-    
-    # Check that not setting metalearner_algorithm still produces correct results
-    # should be glm with non-negative weights
-    stack0 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf])
-    stack0.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm default is GLM w/ non-negative
-    assert(stack0.params['metalearner_algorithm']['actual'] == "AUTO")
-    # Check that the metalearner is GLM w/ non-negative
-    meta0 = h2o.get_model(stack0.metalearner()['name'])
-    assert(meta0.algo == "glm")
-    assert(meta0.params['non_negative']['actual'] is True)
 
+    def train_ensemble_using_metalearner(algo, expected_algo):
+        print("Training ensemble using {} metalearner.".format(algo))
 
-    # Train a stacked ensemble & check that metalearner_algorithm works
-    stack1 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="gbm")
-    stack1.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm is a default GBM
-    assert(stack1.params['metalearner_algorithm']['actual'] == "gbm")
-    # Check that the metalearner is default GBM
-    meta1 = h2o.get_model(stack1.metalearner()['name'])
-    assert(meta1.algo == "gbm")
-    # TO DO: Add a check that no other hyperparams have been set
+        meta_params = dict(metalearner_nfolds=3)
 
- 
-    # Train a stacked ensemble & metalearner_algorithm "drf"; check that metalearner_algorithm works with CV
-    stack2 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="drf", metalearner_nfolds=3)
-    stack2.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm is a default RF
-    assert(stack2.params['metalearner_algorithm']['actual'] == "drf")
-    # Check that CV was performed
-    assert(stack2.params['metalearner_nfolds']['actual'] == 3)
-    meta2 = h2o.get_model(stack2.metalearner()['name'])
-    assert(meta2.algo == "drf")
-    assert(meta2.params['nfolds']['actual'] == 3)
+        se = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm=algo, **meta_params)
+        se.train(x=x, y=y, training_frame=train)
+        assert(se.params['metalearner_algorithm']['actual'] == algo)
+        if meta_params:
+            assert(se.params['metalearner_nfolds']['actual'] == 3)
 
+        meta = h2o.get_model(se.metalearner()['name'])
+        assert(meta.algo == expected_algo), "Expected that the metalearner would use {}, but actually used {}.".format(expected_algo, meta.algo)
+        if meta_params:
+            assert(meta.params['nfolds']['actual'] == 3)
 
-    # Train a stacked ensemble & check that metalearner_algorithm "glm" works
-    stack3 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="glm")
-    stack3.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm is a default GLM
-    assert(stack3.params['metalearner_algorithm']['actual'] == "glm")
-    # Check that the metalearner is default GLM
-    meta3 = h2o.get_model(stack3.metalearner()['name'])
-    assert(meta3.algo == "glm")
-
-
-    # Train a stacked ensemble & check that metalearner_algorithm "deeplearning" works
-    stack4 = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm="deeplearning")
-    stack4.train(x=x, y=y, training_frame=train)
-    # Check that metalearner_algorithm is a default DNN
-    assert(stack4.params['metalearner_algorithm']['actual'] == "deeplearning")
-    # Check that the metalearner is default DNN
-    meta4 = h2o.get_model(stack4.metalearner()['name'])
-    assert(meta4.algo == "deeplearning")
+    metalearner_algos = ['AUTO', 'deeplearning', 'drf', 'gbm', 'glm', 'naivebayes', 'xgboost']
+    for algo in metalearner_algos:
+        expected_algo = 'glm' if algo == 'AUTO' else algo
+        train_ensemble_using_metalearner(algo, expected_algo)
 
 
 
