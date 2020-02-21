@@ -17,9 +17,6 @@ For security reasons, we recommend writing a script to read the access credentia
 AWS Standalone Instance
 '''''''''''''''''''''''
 
-H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SECRET ACCESS KEY) and temporary authentication using Session token
-(a triplet consisting of AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN).
-
 When running H2O in standalone mode using the simple Java launch command, we can pass in the S3 credentials in three ways.
 H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SECRET ACCESS KEY) and temporary authentication using Session token
 (a triplet consisting of AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN).
@@ -224,37 +221,7 @@ Minio Cloud Storage is an alternative to Amazon AWS S3. When using a Minio serve
 Core-site.xml Example
 '''''''''''''''''''''
 
-Below are two examples of ``core-site.xml`` to be found. The very first example represents standard AWS credentials, the second one uses a temporary session token.
-
-The following is an example core-site.xml file with standard AWS credentials :
-
-::
-
-    <?xml version="1.0"?>
-    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-
-    <!-- Put site-specific property overrides in this file. -->
-
-    <configuration>
-
-        <!--
-        <property>
-        <name>fs.default.name</name>
-        <value>s3://<your s3 bucket></value>
-        </property>
-        -->
-
-        <property>
-            <name>fs.s3.awsAccessKeyId</name>
-            <value>insert access key here</value>
-        </property>
-
-        <property>
-            <name>fs.s3.awsSecretAccessKey</name>
-            <value>insert secret key here</value>
-        </property>
-
-The following is an example core-site.xml file with temporary AWS credentials with a session token :
+The following is an example core-site.xml file:
 
 ::
 
@@ -287,6 +254,7 @@ The following is an example core-site.xml file with temporary AWS credentials wi
             <value>insert session token here</value>
         </property>
         </configuration>
+
 
 Launching H2O
 '''''''''''''
