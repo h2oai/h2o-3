@@ -21,7 +21,7 @@ When running H2O in standalone mode using the simple Java launch command, we can
 
 -  You can pass in credentials in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_.
 
-   1. Edit the properties in the core-site.xml file to include your Access Key ID and Access Key as shown in the following example:
+   1. Edit the properties in the core-site.xml file to include your Access Key ID, Access Key, and Session Token as shown in the following example:
 
      ::
 
@@ -34,6 +34,11 @@ When running H2O in standalone mode using the simple Java launch command, we can
          <name>fs.s3.awsSecretAccessKey</name>
          <value>[AWS SECRET ACCESS KEY]</value>
        </property>
+
+       <property>
+         <name>fs.s3.awsSessionToken</name>
+         <value>[AWS SESSION TOKEN]<value>
+       <property>
 
 
    2. Launch with the configuration file ``core-site.xml`` by entering the following in the command line:
@@ -48,7 +53,7 @@ When running H2O in standalone mode using the simple Java launch command, we can
 
       ::
 
-        h2o.set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY")
+        h2o.set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY", "AWS_SESSION_TOKEN")
         h2o.importFile(path = "s3://bucket/path/to/file.csv")
 
     -  To set the credentials dynamically using the Python API:
@@ -56,10 +61,10 @@ When running H2O in standalone mode using the simple Java launch command, we can
       ::
 
         from h2o.persist import set_s3_credentials
-        set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY")
+        set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY", "AWS_SESSION_TOKEN")
         h2o.import_file(path = "s3://bucket/path/to/file.csv")
 
-**Note**: Passing credentials in the URL, e.g. ``h2o.importFile(path = "s3://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>@bucket/path/to/file.csv")``, is considered a security risk and is deprecated. 
+**Note**: Passing credentials in the URL, e.g. ``h2o.importFile(path = "s3://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>:<AWS_SESSION_TOKEN>@bucket/path/to/file.csv")``, is considered a security risk and is deprecated. 
 
 AWS Multi-Node Instance
 '''''''''''''''''''''''
@@ -90,7 +95,7 @@ Build a cluster of EC2 instances by running the following commands on the host t
 
   **Note**: If you are running H2O using an IAM role, it is not necessary to distribute the AWS credentials to all the nodes in the cluster. The latest version of H2O can access the temporary access key.
 
-  **Caution**: Distributing the AWS credentials copies the Amazon `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` to the instances to enable S3 and S3N access. Use caution when adding your security keys to the cloud.
+  **Caution**: Distributing the AWS credentials copies the Amazon AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN to the instances to enable S3 and S3N access. Use caution when adding your security keys to the cloud.
 
 3. Start H2O by launching one H2O node per EC2 instance:
 
@@ -200,6 +205,11 @@ The following is an example core-site.xml file:
             <name>fs.s3.awsSecretAccessKey</name>
             <value>insert secret key here</value>
         </property>
+
+        <property>
+            <name>fs.s3.awsSessionToken</name>
+            <value>insert session token here</value>
+        </property>
         </configuration>
 
 
@@ -238,7 +248,7 @@ For Windows users who do not have the ability to use ``ssh`` from the terminal, 
 
   ::
 
-    ssh -i amy_account.pem ec2-user@54.165.25.98``
+    ssh -i amy_account.pem ec2-user@54.165.25.98
 
 Otherwise, download PuTTY and follow these instructions:
 
