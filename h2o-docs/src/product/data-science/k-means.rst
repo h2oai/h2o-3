@@ -77,6 +77,8 @@ Defining a K-Means Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+-  `cluster_size_constraints <algo-params/cluster_size_constraints.html>`__: An array specifying the minimum number of points that should be in each cluster. The length of the constraints array has to be the same as the number of clusters.
+
 Interpreting a K-Means Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -117,6 +119,47 @@ H2O stops splitting when :math:`PRE` falls below a :math:`threshold`, which is a
   or
 
  :math:`\big[0.02 + \frac{10}{number\_of\_training\_rows} + \frac{2.5}{number\_of\_model\_features^{2}}\big]`
+
+
+Constrained K-Means 
+~~~~~~~~~~~~~~~~~~~
+
+The ``cluster_size_constraints`` parameter allows the user to define an array that specifies the minimum size of each cluster during the training. The size of the array must be equal to the ``k`` parameter.
+
+To satisfy the custom minimal cluster size, the calculation of clusters is converted to the Minimal Cost Flow problem. Instead of using the Lloyd iteration algorithm, a graph is constructed based on the distances and constraints. The goal is to go iteratively through the input edges and create an optimal spanning tree that satisfies the constraints.
+
+More information about how to convert the standard K-means algorithm to the Minimal Cost Flow problem is described in this paper: https://pdfs.semanticscholar.org/ecad/eb93378d7911c2f7b9bd83a8af55d7fa9e06.pdf.
+
+The result cluster size is guaranteed only on **training data** and only **during training**. Depending on the cluster assignment at the end of the training, the result centers are calculated. However, the result cluster assignment could be different when you score on the same data that was used for training because of during scoring, the resulting cluster is assigned based on the final centers and the distances from them. **No constraints are taken into account during scoring.**
+
+If the ``nfolds`` and ``cluster_size_constraints`` parameters are set simultaneously, the sum of constraints has to be less than the number of data points in one fold.
+
+**Minimum-cost flow problems can be efficiently solved in polynomial time (or in the worst case, in exponential time). The performance of this implementation of the Constrained K-means algorithm is slow due to many repeatable calculations that cannot be parallelized and more optimized at the H2O backend. For large dataset with large sum of constraints, the calculation can last hours. For example, a dataset with 100000 rows and five features can run several hours.**
+
+Expected time with various sized data (OS debian 10.0 (x86-64), processor Intel© Core™ i7-7700HQ CPU @ 2.80GHz × 4, RAM 23.1 GiB):
+
+* 10 000 rows, 5 features  ~ 0h  9m 21s
+* 20 000 rows, 5 features  ~ 0h 39m 27s
+* 30 000 rows, 5 features  ~ 1h 26m 43s
+* 40 000 rows, 5 features  ~ 2h 13m 31s
+* 50 000 rows, 5 features  ~ 4h  4m 18s
+
+**The sum of constraints is smaller the time is faster - it uses MCF calculation until all constraints are satisfied then use standard K-means.**
+
+
+Constrained K-Means with the Aggregator Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+To solve Constrained K-means in a shorter time, you can use the `H2O Aggregator algorithm <aggregator.html>`__ to aggregate data to smaller sizes first and then pass this data to the Constrained K-means algorithm to calculate the final centroids to be used with scoring. The results won't be as accurate as the results of a model with the whole dataset; however, it should help solve the problem of huge datasets.
+
+However, there are some assumptions:
+
+* The large dataset has to consist of many similar data points. If not, the insensitive aggregation can break the structure of the dataset.
+* The resulting clustering may not meet the initial constraints exactly when scoring. (This also applies to Constrained K-means models; scoring uses resulting centroids to score - no constraints defined before.)
+
+The H2O Aggregator method is a clustering-based method for reducing a numerical/categorical dataset into a dataset with fewer rows. Aggregator maintains outliers as outliers but lumps together dense clusters into exemplars with an attached count column showing the member points.
+
+A demo for the Constrained K-means with Aggregator model is available here: https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo.ipynb
 
 FAQ
 ~~~

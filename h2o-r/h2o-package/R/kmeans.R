@@ -36,6 +36,8 @@
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param cluster_size_constraints An array specifying the minimum number of points that should be in each cluster. The length of the constraints
+#'        array has to be the same as the number of clusters.
 #' @return an object of class \linkS4class{H2OClusteringModel}.
 #' @seealso \code{\link{h2o.cluster_sizes}}, \code{\link{h2o.totss}}, \code{\link{h2o.num_iterations}}, \code{\link{h2o.betweenss}}, \code{\link{h2o.tot_withinss}}, \code{\link{h2o.withinss}}, \code{\link{h2o.centersSTD}}, \code{\link{h2o.centers}}
 #' @examples
@@ -68,7 +70,8 @@ h2o.kmeans <- function(training_frame,
                        init = c("Random", "PlusPlus", "Furthest", "User"),
                        max_runtime_secs = 0,
                        categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                       export_checkpoints_dir = NULL)
+                       export_checkpoints_dir = NULL,
+                       cluster_size_constraints = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -124,6 +127,8 @@ h2o.kmeans <- function(training_frame,
     parms$categorical_encoding <- categorical_encoding
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(cluster_size_constraints))
+    parms$cluster_size_constraints <- cluster_size_constraints
 
   # Check if user_points is an acceptable set of user-specified starting points
   if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) || is.H2OFrame(user_points) ) {

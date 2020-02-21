@@ -246,5 +246,20 @@ examples = dict(
 ...               training_frame=train,
 ...               validation_frame=valid)
 >>> pros_km.scoring_history()
+""",
+    cluster_size_constraints="""
+>>> iris_h2o = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+>>> k=3
+>>> start_points = h2o.H2OFrame(
+...         [[4.9, 3.0, 1.4, 0.2],
+...          [5.6, 2.5, 3.9, 1.1],
+...          [6.5, 3.0, 5.2, 2.0]])
+>>> kmm = H2OKMeansEstimator(k=k,
+...                          user_points=start_points,
+...                          standardize=True,
+...                          cluster_size_constraints=[2, 5, 8],
+...                          score_each_iteration=True)
+>>> kmm.train(x=list(range(7)), training_frame=iris_h2o)
+>>> kmm.scoring_history()
 """
 )
