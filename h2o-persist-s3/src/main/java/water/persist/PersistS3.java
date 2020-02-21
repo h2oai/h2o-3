@@ -95,9 +95,9 @@ public final class PersistS3 extends Persist {
     public AWSCredentials getCredentials() {
       final IcedS3Credentials s3Credentials = DKV.getGet(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
 
-      if (s3Credentials.isAWSCredentialsAuth()) {
+      if (s3Credentials != null && s3Credentials.isAWSCredentialsAuth()) {
         return new BasicAWSCredentials(s3Credentials._secretKeyId, s3Credentials._secretAccessKey);
-      } else if (s3Credentials.isAWSSessionTokenAuth()) {
+      } else if (s3Credentials != null && s3Credentials.isAWSSessionTokenAuth()) {
         return new BasicSessionCredentials(s3Credentials._secretKeyId, s3Credentials._secretAccessKey,
                 s3Credentials._sessionToken);
       } else {
