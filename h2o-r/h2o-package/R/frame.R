@@ -1559,7 +1559,7 @@ NULL
   }
 
   if( is1by1 ) .fetch.data(data,1L)[[1]]
-  else         data
+  else data
 }
 
 #' @rdname H2OFrame-Extract
@@ -3420,21 +3420,17 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   }
   .key.validate(destination_frame)
 
+  tmpf <- tempfile(fileext = ".svm")
   if (use.package("data.table") && use.package("slam", version="0.1.40", TRUE)) {
     drs <- slam::as.simple_triplet_matrix(x)# need to convert sparse matrix x to a simple triplet matrix format
-    thefile <- tempfile()
-    .h2o.write_stm_svm(drs, file = thefile)
-    h2f <<- h2o.uploadFile(thefile, parse_type = "SVMLight", destination_frame=destination_frame)
-    unlink(thefile)
-    h2f[, -1]   # remove the first column
+    .h2o.write_stm_svm(drs, file = tmpf)
   } else {
-    warning("as.h2o can be slow for large sparse matrices.  Install packages data.table and slam to speed up as.h2o.")
-    tmpf <- tempfile(fileext = ".svm")
+    warning("as.h2o can be slow for large sparse matrices. Install packages data.table and slam to speed up as.h2o.")
     .h2o.write.matrix.svmlight(x, file = tmpf)
-    h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
-    file.remove(tmpf)
-    h2f
   }
+  h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
+  file.remove(tmpf)
+  h2f # remove the first column
 }
 
 .h2o.write.matrix.svmlight <- function(matrix, file) {
@@ -3451,21 +3447,13 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   })
 }
 
-.h2o.calc_stm_svm <- function(stm, y){
+.h2o.calc_stm_svm <- function(stm) {
   # Convert a simple triplet matrix to svm format
-  # author Peter Ellis
-  # return a character vector of length n
-  # fixed bug to return rows of zeros instead of repeating other rows
-  # returns a character vector of length y ready for writing in svm format
+  # returns a character vector of length n ready for writing in svm format
   if(!"simple_triplet_matrix" %in% class(stm)){
     stop("stm must be a simple triple matrix")
   }
-  if(!is.vector(y) | nrow(stm) != length(y)){
-    stop("y should be a vector of length equal to number of rows of stm")
-  }
-  n <- length(y)
-
-  # data table solution thanks to roland
+  n <- nrow(stm)
   rowLeft <- setdiff(c(1:n), unique(stm$i))
   nrowLeft <- length(rowLeft)
   i=NULL  # serves no purpose except to pass the R cmd cran check
@@ -3473,19 +3461,17 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   v=NULL
   jv=NULL
   stm2 <- data.table::data.table(i = c(stm$i,rowLeft), j = c(stm$j,rep(1,nrowLeft)), v = c(stm$v,rep(0,nrowLeft)))
-  res <- stm2[, list(i, jv = paste(j, v, sep = ":"))][order(i), list(res = paste(jv, collapse = " ")), by = i][["res"]]
-
-  out <- paste(y, res)
-
-  return(out)
+  res <- stm2[, list(i, jv = ifelse(j==1,v,paste(j-1, v, sep = ":")))
+             ][order(i), list(res = paste(jv, collapse = " ")), by = i
+             ][["res"]]
+  return(res)
 }
 
-.h2o.write_stm_svm <- function(stm, y = rep(1, nrow(stm)), file){
+.h2o.write_stm_svm <- function(stm, file) {
   # param stm a simple triplet matrix (class exported slam) of features (ie explanatory variables)
-  # param y a vector of labels.  If not provided, a dummy of 1s is provided
   # param file file to write to.
   # author Peter Ellis
-  out <- .h2o.calc_stm_svm(stm, y)
+  out <- .h2o.calc_stm_svm(stm)
   writeLines(out, con = file)
 }
 
