@@ -3,15 +3,10 @@ package hex.ensemble;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.ensemble.Metalearner.Algorithm;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
-import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
-import hex.psvm.PSVMModel.PSVMParameters;
-import hex.tree.drf.DRFModel.DRFParameters;
-import hex.tree.gbm.GBMModel.GBMParameters;
 import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
 
@@ -35,7 +30,6 @@ public class Metalearners {
                 new LocalProvider<>(Algorithm.gbm, GBMMetalearner::new),
                 new LocalProvider<>(Algorithm.glm, GLMMetalearner::new),
                 new LocalProvider<>(Algorithm.naivebayes, NaiveBayesMetalearner::new),
-                new LocalProvider<>(Algorithm.psvm, PSVMMetalearner::new),
         };
         for (MetalearnerProvider provider : localProviders) {
             providersByName.put(provider.getName(), provider);
@@ -149,12 +143,6 @@ public class Metalearners {
     static class NaiveBayesMetalearner extends SimpleMetalearner {
         public NaiveBayesMetalearner() {
             super(Algorithm.naivebayes.name());
-        }
-    }
-
-    static class PSVMMetalearner extends SimpleMetalearner {
-        public PSVMMetalearner() {
-            super(Algorithm.psvm.name());
         }
     }
 

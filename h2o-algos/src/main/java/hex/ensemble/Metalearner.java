@@ -24,7 +24,6 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     gbm,
     glm,
     naivebayes,
-    psvm,
     xgboost,
   }
 

@@ -71,7 +71,6 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
                     + "'gbm' (GBM with default parameters), "
                     + "'glm' (GLM with default parameters), "
                     + "'naivebayes' (NaiveBayes with default parameters), "
-                    + "'psvm' (PSVM with default parameters), "
                     + "or 'xgboost' (if available, XGBoost with default parameters)."
     )
     public Algorithm metalearner_algorithm;

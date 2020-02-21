@@ -58,7 +58,7 @@ def stackedensemble_metalearner_test():
     def train_ensemble_using_metalearner(algo, expected_algo):
         print("Training ensemble using {} metalearner.".format(algo))
 
-        meta_params = dict(metalearner_nfolds=3) if algo is not 'psvm' else {}
+        meta_params = dict(metalearner_nfolds=3)
 
         se = H2OStackedEnsembleEstimator(base_models=[my_gbm, my_rf], metalearner_algorithm=algo, **meta_params)
         se.train(x=x, y=y, training_frame=train)
@@ -71,8 +71,7 @@ def stackedensemble_metalearner_test():
         if meta_params:
             assert(meta.params['nfolds']['actual'] == 3)
 
-
-    metalearner_algos = ['AUTO', 'deeplearning', 'drf', 'gbm', 'glm', 'naivebayes', 'psvm', 'xgboost']
+    metalearner_algos = ['AUTO', 'deeplearning', 'drf', 'gbm', 'glm', 'naivebayes', 'xgboost']
     for algo in metalearner_algos:
         expected_algo = 'glm' if algo == 'AUTO' else algo
         train_ensemble_using_metalearner(algo, expected_algo)
