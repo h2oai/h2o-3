@@ -11,4 +11,7 @@ public class PersistS3CredentialsV3 extends SchemaV3<Iced, PersistS3CredentialsV
     
     @API(required = true, direction = API.Direction.INPUT, level = API.Level.secondary, help = "S3 Secret Key")
     public  String secret_access_key;
+    
+    @API(required = true, direction = API.Direction.INPUT, level = API.Level.secondary, help = "S3 Session token")
+    public String session_token;
 }

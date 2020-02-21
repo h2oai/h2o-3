@@ -7,11 +7,14 @@ import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.FileVec;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.FileUtils;
 
 import java.lang.reflect.Field;
@@ -27,6 +30,8 @@ import static org.junit.Assume.assumeTrue;
 /**
  * Created by tomas on 6/27/16.
  */
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class PersistS3Test extends TestUtil {
 
   private static final String AWS_ACCESS_KEY_PROPERTY_NAME = "AWS_ACCESS_KEY_ID";
@@ -38,10 +43,7 @@ public class PersistS3Test extends TestUtil {
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
 
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(5);
-  }
+
 
   @After
   public void tearDown() throws Exception {
@@ -103,7 +105,7 @@ public class PersistS3Test extends TestUtil {
       assumeTrue(accessKey != null);
       assumeTrue(secretKey != null);
 
-      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKey, secretKey);
+      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKey, secretKey, null);
       DKV.put(credentialsKey, s3Credentials);
       k = H2O.getPM().anyURIToKey(new URI(IRIS_H2O_AWS));
       fr = DKV.getGet(k);
@@ -151,7 +153,7 @@ public class PersistS3Test extends TestUtil {
       assumeTrue(accessKeyId != null);
       assumeTrue(secretKey != null);
 
-      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKeyId, secretKey);
+      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKeyId, secretKey, null);
       DKV.put(credentialsKey, s3Credentials);
 
       persistS3.importFiles(IRIS_H2O_AWS, null, files, keys, fails, deletions);
@@ -163,7 +165,7 @@ public class PersistS3Test extends TestUtil {
       expectedException.expect(AmazonS3Exception.class);
       expectedException.expectMessage("The AWS Access Key Id you provided does not exist in our records. (Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId; Request ID:");
       final String unexistingAmazonCredential = UUID.randomUUID().toString();
-      final IcedS3Credentials unexistingCredentials = new IcedS3Credentials(unexistingAmazonCredential, unexistingAmazonCredential);
+      final IcedS3Credentials unexistingCredentials = new IcedS3Credentials(unexistingAmazonCredential, unexistingAmazonCredential, null);
       DKV.put(credentialsKey, unexistingCredentials);
       deprecateBucketContentCaches(persistS3);
       persistS3.importFiles(IRIS_H2O_AWS, null, files, keys, fails, deletions);
@@ -233,7 +235,7 @@ public class PersistS3Test extends TestUtil {
       final AmazonS3 defaultClient = PersistS3.getClient(); // Create a default client
       assertNotNull(defaultClient);
 
-      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKey, secretKey);
+      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKey, secretKey, null);
       DKV.put(credentialsKey, s3Credentials);
 
       PersistS3 persistS3 = new PersistS3();
@@ -248,7 +250,7 @@ public class PersistS3Test extends TestUtil {
       expectedException.expectMessage("The AWS Access Key Id you provided does not exist in our records. (Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId; Request ID:");
       final String unexistingAmazonCredential = UUID.randomUUID().toString();
       // Also tests cache erasure during client credentials chage. The list of files in the bucket is still in the caches unless erased
-      final IcedS3Credentials unexistingCredentials = new IcedS3Credentials(unexistingAmazonCredential, unexistingAmazonCredential);
+      final IcedS3Credentials unexistingCredentials = new IcedS3Credentials(unexistingAmazonCredential, unexistingAmazonCredential, null);
       DKV.put(credentialsKey, unexistingCredentials);
       deprecateBucketContentCaches(persistS3);
       final List<String> failed = persistS3.calcTypeaheadMatches(IRIS_H2O_AWS, 10);
@@ -271,7 +273,7 @@ public class PersistS3Test extends TestUtil {
       assumeTrue(accessKey != null);
       assumeTrue(secretKey != null);
 
-      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKey, secretKey);
+      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKey, secretKey, null);
       DKV.put(credentialsKey, s3Credentials);
 
       PersistS3 persistS3 = new PersistS3();
@@ -283,7 +285,7 @@ public class PersistS3Test extends TestUtil {
       expectedException.expect(AmazonS3Exception.class);
       expectedException.expectMessage("The AWS Access Key Id you provided does not exist in our records. (Service: Amazon S3; Status Code: 403; Error Code: InvalidAccessKeyId; Request ID:");
       final String unexistingAmazonCredential = UUID.randomUUID().toString();
-      final IcedS3Credentials unexistingCredentials = new IcedS3Credentials(unexistingAmazonCredential, unexistingAmazonCredential);
+      final IcedS3Credentials unexistingCredentials = new IcedS3Credentials(unexistingAmazonCredential, unexistingAmazonCredential, null);
       DKV.put(credentialsKey, unexistingCredentials);
       deprecateBucketContentCaches(persistS3);
       deprecatedBucketCache(persistS3);
@@ -313,7 +315,7 @@ public class PersistS3Test extends TestUtil {
       assumeTrue(accessKeyId != null);
       assumeTrue(secretKey != null);
 
-      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKeyId, secretKey);
+      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKeyId, secretKey, null);
       DKV.put(credentialsKey, s3Credentials);
 
       persistS3.importFiles("s3://test.0xdata.com/h2o-unit-tests", null, files, keys, fails, deletions);
@@ -362,7 +364,7 @@ public class PersistS3Test extends TestUtil {
       assumeTrue(accessKeyId != null);
       assumeTrue(secretKey != null);
 
-      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKeyId, secretKey);
+      final IcedS3Credentials s3Credentials = new IcedS3Credentials(accessKeyId, secretKey, null);
       DKV.put(credentialsKey, s3Credentials);
 
       persistS3.importFiles("s3://test.0xdata.com/h2o-unit-tests", ".*iris.*.csv", files, keys, fails, deletions);
@@ -427,5 +429,31 @@ public class PersistS3Test extends TestUtil {
       if(lastUpdated != null) lastUpdated.setAccessible(false);
     }
   }
-  
+
+  @Test
+  public void setS3SessionTokenVariablePropagationTest() {
+    try {
+      Scope.enter();
+      final PersistS3CredentialsV3 persistS3CredentialsV3 = new PersistS3CredentialsV3();
+      persistS3CredentialsV3.secret_key_id = "SECRET_KEY_ID";
+      persistS3CredentialsV3.secret_access_key = "SECRET_ACCESS_KEY";
+      persistS3CredentialsV3.session_token = "SESSION_TOKEN";
+
+
+      final PersistS3Handler persistS3Handler = new PersistS3Handler();
+      persistS3Handler.setS3Credentials(3, persistS3CredentialsV3);
+      
+      final Value credentialsValueFromDkv = DKV.get(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY);
+      assertNotNull(credentialsValueFromDkv);
+
+      final IcedS3Credentials icedS3Credentials = credentialsValueFromDkv.get(IcedS3Credentials.class);
+      assertNotNull(icedS3Credentials);
+
+      assertEquals(persistS3CredentialsV3.secret_access_key, icedS3Credentials._secretAccessKey);
+      assertEquals(persistS3CredentialsV3.secret_key_id, icedS3Credentials._secretKeyId);
+      assertEquals(persistS3CredentialsV3.session_token, icedS3Credentials._sessionToken);
+    } finally {
+      DKV.remove(Key.make(IcedS3Credentials.S3_CREDENTIALS_DKV_KEY));
+    }
+  }
 }

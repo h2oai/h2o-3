@@ -54,10 +54,6 @@ def s3_access_test():
     except Exception as e:
         assert type(e) is H2OValueError
         assert e.args[0].find("Secret access key must be specified") != -1
-        
-        
-        
-        
 
 
 if __name__ == "__main__":
