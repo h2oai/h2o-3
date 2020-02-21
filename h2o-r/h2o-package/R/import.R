@@ -358,6 +358,7 @@ h2o.loadModel <- function(path) {
 #'
 #' @param secretKeyId Amazon S3 Secret Key ID (provided by Amazon)
 #' @param secretAccessKey Amazon S3 Secret Access Key (provided by Amazon)
+#' @param sessionToken Amazon Session Token (optional, only when using AWS Temporary Credentials)
 #' 
 #' @export
 h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = NULL){
