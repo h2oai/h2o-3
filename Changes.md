@@ -19,7 +19,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7270'>PUBDEV-7270</a>] - Fixed an issue that caused `import_hive_table` to fail with a JDBC source and a partitioned table. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7271'>PUBDEV-7271</a>] - Improved the DKVManager sequential removal mechanism. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7271'>PUBDEV-7271</a>] - Improved the DKVManager sequential removal mechanism.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7279'>PUBDEV-7279</a>] - In XGBoost, added a message indicating that the `exact` tree method is not supported in multinode. 
 </li>
@@ -32,7 +32,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6447'>PUBDEV-6447</a>] - Added support for Constrained K-Means clustering. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6447'>PUBDEV-6447</a>] - Added support for Constrained K-Means clustering. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6965'>PUBDEV-6965</a>] - In Stacked Ensembles, added support for "xgboost" and "naivebayes" in the `metalearner_algorithm` parameter.
 </li>
@@ -58,7 +58,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6964'>PUBDEV-6964</a>] - Added an FAQ to the MOJO and POJO quick starts noting that MOJOs and POJOs are thread safe for all supported algorithms.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7213'>PUBDEV-7213</a>] - Added the new `cluster_size_constraints` parameter to the KMeans chapter. (STILL OPEN IN PUBDEV-6447)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7213'>PUBDEV-7213</a>] - Added the new `cluster_size_constraints` parameter to the KMeans chapter. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7286'>PUBDEV-7286</a>] - Updated docs to specify that `mtries=-2` gives all features.
 </li>
