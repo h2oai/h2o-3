@@ -17,9 +17,53 @@ For security reasons, we recommend writing a script to read the access credentia
 AWS Standalone Instance
 '''''''''''''''''''''''
 
+H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SECRET ACCESS KEY) and temporary authentication using Session token
+(a triplet consisting of AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN).
+
 When running H2O in standalone mode using the simple Java launch command, we can pass in the S3 credentials in three ways.
 
--  You can pass in credentials in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_.
+-  You can pass in AWS Credentials in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_.
+
+   1. Edit the properties in the core-site.xml file to include your Access Key ID, Access Key, and Session Token as shown in the following example:
+
+     ::
+
+       <property>
+         <name>fs.s3.awsAccessKeyId</name>
+         <value>[AWS SECRET KEY]</value>
+       </property>
+
+       <property>
+         <name>fs.s3.awsSecretAccessKey</name>
+         <value>[AWS SECRET ACCESS KEY]</value>
+       </property>
+
+
+   2. Launch with the configuration file ``core-site.xml`` by entering the following in the command line:
+
+     ::
+
+       java -jar h2o.jar -hdfs_config core-site.xml
+
+   3. Set the credentials dynamically before accessing the bucket (where ``AWS_ACCESS_KEY`` represents your user name, and ``AWS_SECRET_KEY`` represents your password).
+
+    -  To set the credentials dynamically using the R API:
+
+      ::
+
+        h2o.set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY")
+        h2o.importFile(path = "s3://bucket/path/to/file.csv")
+
+    -  To set the credentials dynamically using the Python API:
+
+      ::
+
+        from h2o.persist import set_s3_credentials
+        set_s3_credentials("AWS_ACCESS_KEY", "AWS_SECRET_KEY")
+        h2o.import_file(path = "s3://bucket/path/to/file.csv")
+
+        
+-  Just like regular AWS credentials, temporary credentials using AWS SESSION TOKEN can be passed in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_. The only difference lies specifying a triplet of (AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN)
 
    1. Edit the properties in the core-site.xml file to include your Access Key ID, Access Key, and Session Token as shown in the following example:
 
@@ -47,7 +91,7 @@ When running H2O in standalone mode using the simple Java launch command, we can
 
        java -jar h2o.jar -hdfs_config core-site.xml
 
-   3. Set the credentials dynamically before accessing the bucket (where ``AWS_ACCESS_KEY`` represents your user name, and ``AWS_SECRET_KEY`` represents your password).
+   3. Set the credentials dynamically before accessing the bucket (where ``AWS_ACCESS_KEY`` represents your user name, ``AWS_SECRET_KEY`` represents your password and ``AWS_SESSION_TOKEN`` represents temporary session token).
 
     -  To set the credentials dynamically using the R API:
 
@@ -95,7 +139,7 @@ Build a cluster of EC2 instances by running the following commands on the host t
 
   **Note**: If you are running H2O using an IAM role, it is not necessary to distribute the AWS credentials to all the nodes in the cluster. The latest version of H2O can access the temporary access key.
 
-  **Caution**: Distributing the AWS credentials copies the Amazon AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and AWS_SESSION_TOKEN to the instances to enable S3 and S3N access. Use caution when adding your security keys to the cloud.
+  **Caution**: Distributing both regular AWS credentials and temporary AWS credentials using session token copies the Amazon AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, and optionally (if temporary credentials are used) AWS_SESSION_TOKEN to the instances to enable S3 and S3N access. Use caution when adding your security keys to the cloud.
 
 3. Start H2O by launching one H2O node per EC2 instance:
 
@@ -178,7 +222,37 @@ Minio Cloud Storage is an alternative to Amazon AWS S3. When using a Minio serve
 Core-site.xml Example
 '''''''''''''''''''''
 
-The following is an example core-site.xml file:
+Below are two examples of ``core-site.xml`` to be found. The very first example represents standard AWS credentials, the second one uses a temporary session token.
+
+The following is an example core-site.xml file with standard AWS credentials :
+
+::
+
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+    <!-- Put site-specific property overrides in this file. -->
+
+    <configuration>
+
+        <!--
+        <property>
+        <name>fs.default.name</name>
+        <value>s3://<your s3 bucket></value>
+        </property>
+        -->
+
+        <property>
+            <name>fs.s3.awsAccessKeyId</name>
+            <value>insert access key here</value>
+        </property>
+
+        <property>
+            <name>fs.s3.awsSecretAccessKey</name>
+            <value>insert secret key here</value>
+        </property>
+
+The following is an example core-site.xml file with temporary AWS credentials with a session token :
 
 ::
 
@@ -211,7 +285,6 @@ The following is an example core-site.xml file:
             <value>insert session token here</value>
         </property>
         </configuration>
-
 
 Launching H2O
 '''''''''''''
