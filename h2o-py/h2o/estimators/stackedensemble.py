@@ -281,11 +281,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non negative weights; if
         validation_frame is present, a lambda search is performed), 'deeplearning' (Deep Learning with default
         parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm' (GLM with
-        default parameters), 'naivebayes' (NaiveBayes with default parameters), 'psvm' (PSVM with default parameters),
-        or 'xgboost' (if available, XGBoost with default parameters).
+        default parameters), 'naivebayes' (NaiveBayes with default parameters), or 'xgboost' (if available, XGBoost with
+        default parameters).
 
-        One of: ``"auto"``, ``"deeplearning"``, ``"drf"``, ``"gbm"``, ``"glm"``, ``"naivebayes"``, ``"psvm"``,
-        ``"xgboost"``  (default: ``"auto"``).
+        One of: ``"auto"``, ``"deeplearning"``, ``"drf"``, ``"gbm"``, ``"glm"``, ``"naivebayes"``, ``"xgboost"``
+        (default: ``"auto"``).
 
         :examples:
 
@@ -323,7 +323,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @metalearner_algorithm.setter
     def metalearner_algorithm(self, metalearner_algorithm):
-        assert_is_type(metalearner_algorithm, None, Enum("auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "psvm", "xgboost"))
+        assert_is_type(metalearner_algorithm, None, Enum("auto", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"))
         self._parms["metalearner_algorithm"] = metalearner_algorithm
 
 

@@ -23,9 +23,9 @@
 #' @param metalearner_algorithm Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non negative weights; if
 #'        validation_frame is present, a lambda search is performed), 'deeplearning' (Deep Learning with default
 #'        parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm' (GLM
-#'        with default parameters), 'naivebayes' (NaiveBayes with default parameters), 'psvm' (PSVM with default
-#'        parameters), or 'xgboost' (if available, XGBoost with default parameters). Must be one of: "AUTO",
-#'        "deeplearning", "drf", "gbm", "glm", "naivebayes", "psvm", "xgboost". Defaults to AUTO.
+#'        with default parameters), 'naivebayes' (NaiveBayes with default parameters), or 'xgboost' (if available,
+#'        XGBoost with default parameters). Must be one of: "AUTO", "deeplearning", "drf", "gbm", "glm", "naivebayes",
+#'        "xgboost". Defaults to AUTO.
 #' @param metalearner_nfolds Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2). Defaults to
 #'        0.
 #' @param metalearner_fold_assignment Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is
@@ -49,7 +49,7 @@ h2o.stackedEnsemble <- function(x,
                                 validation_frame = NULL,
                                 blending_frame = NULL,
                                 base_models = list(),
-                                metalearner_algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "naivebayes", "psvm", "xgboost"),
+                                metalearner_algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"),
                                 metalearner_nfolds = 0,
                                 metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
                                 metalearner_fold_column = NULL,
