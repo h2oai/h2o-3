@@ -27,6 +27,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7309'>PUBDEV-7309</a>] - Fixed a CRAN warning related to ellipsis within arguments in the R package.
 </li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7312'>PUBDEV-7312</a>] - Added support for specifying AWS session tokens.
+</li>
 </ul>
             
 <h4>New Feature</h4>
@@ -61,6 +63,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.htm
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7213'>PUBDEV-7213</a>] - Added the new `cluster_size_constraints` parameter to the KMeans chapter. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7286'>PUBDEV-7286</a>] - Updated docs to specify that `mtries=-2` gives all features.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7314'>PUBDEV-7314</a>] - Updated EC2 and S3 Storage topic to include the new, optional AWS session token.
 </li>
 </ul>
 
