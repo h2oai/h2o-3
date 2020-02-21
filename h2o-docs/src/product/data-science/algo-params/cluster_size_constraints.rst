@@ -32,8 +32,8 @@ Related Parameters
 Example
 ~~~~~~~
 
-.. example-code::
-   .. code-block:: r
+.. tabs::
+   .. code-tab:: r R
 
 	library(h2o)
 	h2o.init()
@@ -62,7 +62,7 @@ Example
 	summary(iris_kmeans)
 
 
-   .. code-block:: python
+   .. code-tab:: python
    
 	import h2o
 	from h2o.estimators.gbm import H2OGradientBoostingEstimator
