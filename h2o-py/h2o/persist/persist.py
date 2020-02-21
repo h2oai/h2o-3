@@ -2,7 +2,7 @@ import h2o
 from h2o.exceptions import H2OValueError
 
 
-def set_s3_credentials(secret_key_id, secret_access_key):
+def set_s3_credentials(secret_key_id, secret_access_key, session_token = None):
     """Creates a new Amazon S3 client internally with specified credentials.
     There are no validations done to the credentials. Incorrect credentials are thus revealed with first S3 import call.
     
@@ -23,7 +23,8 @@ def set_s3_credentials(secret_key_id, secret_access_key):
     
     
     params = {"secret_key_id": secret_key_id,
-              "secret_access_key": secret_access_key
+              "secret_access_key": secret_access_key,
+              "session_token": session_token
               }
     
     h2o.api(endpoint="POST /3/PersistS3", data=params)
