@@ -843,7 +843,7 @@ public class Frame extends Lockable<Frame> {
   /**
    * Removes this {@link Frame} object and all directly linked {@link Keyed} objects and POJOs, while retaining
    * the keys defined by the retainedKeys parameter. Aimed to be used for removal of {@link Frame} objects pointing
-   * to shared resources (Vectors, Chuinks etc.) internally.
+   * to shared resources (Vectors, Chunks etc.) internally.
    * <p>
    * WARNING: UNSTABLE API, might be removed/replaced at any time.
    *

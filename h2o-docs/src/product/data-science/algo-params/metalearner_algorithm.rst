@@ -15,7 +15,6 @@ H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm 
  - ``"drf"`` (Random Forest with default parameters)
  - ``"deeplearning"`` (Deep Learning with default parameters)
  - ``"naivebayes"`` (NaiveBayes with default parameters)
- - ``"psvm"`` (PSVM with default parameters)
  - ``"xgboost"`` (if available, XGBoost with default parameters)
 
 The metalearner will use default hyperparameter values for the specified algorithm, unless you also specify `metalearner_params <metalearner_params.html>`__ to customize the hyperparameters values.
