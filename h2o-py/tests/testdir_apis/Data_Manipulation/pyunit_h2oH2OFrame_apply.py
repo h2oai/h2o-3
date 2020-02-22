@@ -21,6 +21,6 @@ def h2o_H2OFrame_apply():
            (colMean[0,3]==h2oframe[0,3]), "h2o.H2OFrame.apply() command is not working."
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(h2o_H2OFrame_apply)
+    pyunit_utils.standalone_test(h2o_H2OFrame_apply())
 else:
     h2o_H2OFrame_apply()
