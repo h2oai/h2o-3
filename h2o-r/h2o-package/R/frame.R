@@ -3434,7 +3434,7 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   }
   h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
   file.remove(tmpf)
-  h2f # remove the first column
+  h2f[,-1] # remove the first column
 }
 
 .h2o.write.matrix.svmlight <- function(matrix, file) {
@@ -3465,10 +3465,10 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   v=NULL
   jv=NULL
   stm2 <- data.table::data.table(i = c(stm$i,rowLeft), j = c(stm$j,rep(1,nrowLeft)), v = c(stm$v,rep(0,nrowLeft)))
-  res <- stm2[, list(i, jv = ifelse(j==1,v,paste(j-1, v, sep = ":")))
-             ][order(i), list(res = paste(jv, collapse = " ")), by = i
-             ][["res"]]
-  return(res)
+  res <- stm2[, list(i, #jv = ifelse(j==1,v,paste(j-1, v, sep = ":")))
+                         jv = paste(j, v, sep = ":"))
+             ][order(i), list(res = paste(jv, collapse = " ")), by = i]
+  return(paste(res[["i"]], res[["res"]]))
 }
 
 .h2o.write_stm_svm <- function(stm, file) {
