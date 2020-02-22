@@ -358,16 +358,20 @@ h2o.loadModel <- function(path) {
 #'
 #' @param secretKeyId Amazon S3 Secret Key ID (provided by Amazon)
 #' @param secretAccessKey Amazon S3 Secret Access Key (provided by Amazon)
+#' @param sessionToken Amazon Session Token (optional, only when using AWS Temporary Credentials)
 #' 
 #' @export
-h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey){
+h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = NULL){
   if(is.null(secretKeyId)) stop("Secret key ID must not be null.")
   if(is.null(secretAccessKey)) stop("Secret acces key must not be null.")
   if(!is.character(secretKeyId) || nchar(secretKeyId) == 0) stop("Secret key ID must be a non-empty character string.")
   if(!is.character(secretAccessKey) || nchar(secretAccessKey) == 0) stop("Secret access key must a non-empty character string.")
   parms <- list()
   parms$secret_key_id <- secretKeyId
-  parms$secret_access_key = secretAccessKey
+  parms$secret_access_key <- secretAccessKey
+  if(!is.null(sessionToken)){
+    parms$session_token <- sessionToken
+  }
   
   res <- .h2o.__remoteSend("PersistS3", method = "POST", .params = parms, h2oRestApiVersion = 3)
   print("Credentials successfully set.")
