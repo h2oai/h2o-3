@@ -67,7 +67,7 @@ public class SecurityUtils {
                 "Please use Oracle/OpenJDK/IBM JDK version 6/7/8 or later");
     }
 
-    public static SSLCredentials generateSSLPair(String passwd, String name, String location) throws Exception {
+    static SSLCredentials generateSSLPair(String passwd, String name, String location) throws Exception {
         StoreCredentials jks = generateKeystore(passwd, name, location);
         return new SSLCredentials(jks, jks);
     }
