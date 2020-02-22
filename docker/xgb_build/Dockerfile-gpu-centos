@@ -1,4 +1,4 @@
-FROM nvidia/cuda:8.0-devel-centos7
+FROM nvidia/cuda:9.0-devel-centos7
 MAINTAINER h2oai "h2o.ai"
 
 ARG JENKINS_UID='2117'
