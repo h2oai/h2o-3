@@ -10,6 +10,6 @@ apt-get install -y software-properties-common
 add-apt-repository -y ppa:deadsnakes/ppa
 apt-get update
 apt-get install -y \
-    wget gcc python3.5-dev git python-pip python-virtualenv \
-    libmysqlclient-dev unzip tar \
+    wget gcc unzip tar \
+    python3.5-dev git python-pip python-virtualenv \
     nodejs npm libkrb5-dev
