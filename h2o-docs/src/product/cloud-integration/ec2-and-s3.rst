@@ -62,24 +62,29 @@ H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SEC
         h2o.import_file(path = "s3://bucket/path/to/file.csv")
 
         
--  Just like regular AWS credentials, temporary credentials using AWS SESSION TOKEN can be passed in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_. The only difference lies in specifying a triplet of (AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN)
+-  Just like regular AWS credentials, temporary credentials using AWS SESSION TOKEN can be passed in standalone mode by creating a ``core-site.xml`` file and passing it in with the flag ``-hdfs_config``. For an example ``core-site.xml`` file, refer to `Core-site.xml`_. The only difference lies in specifying a triplet of (AWS SECRET KEY, AWS SECRET ACCESS KEY and AWS SESSION TOKEN) and defining a credentials provider capable of resolving temporary credentials.
 
    1. Edit the properties in the core-site.xml file to include your Access Key ID, Access Key, and Session Token as shown in the following example:
 
      ::
 
        <property>
-         <name>fs.s3.awsAccessKeyId</name>
+         <name>fs.s3a.aws.credentials.provider</name>
+         <value>org.apache.hadoop.fs.s3a.TemporaryAWSCredentialsProvider</value>
+       </property>
+
+       <property>
+         <name>fs.s3a.access.key</name>
          <value>[AWS SECRET KEY]</value>
        </property>
 
        <property>
-         <name>fs.s3.awsSecretAccessKey</name>
+         <name>fs.s3a.secret.key</name>
          <value>[AWS SECRET ACCESS KEY]</value>
        </property>
 
        <property>
-         <name>fs.s3.awsSessionToken</name>
+         <name>fs.s3a.session.token</name>
          <value>[AWS SESSION TOKEN]<value>
        <property>
 
