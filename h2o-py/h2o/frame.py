@@ -2706,6 +2706,7 @@ class H2OFrame(Keyed):
 
         splits = []
         tmp_runif = self.runif(seed)
+        tmp_runif.frame_id = "%s_splitter" % _py_tmp_key(h2o.connection().session_id)
 
         i = 0
         while i < num_slices:

@@ -156,7 +156,6 @@ class ExprNode(object):
         #  as they keep a reference to self if the lambda itself is using a free variable.
         proper_ref = [r for r in referrers if not (inspect.isframe(r) or is_ast_expr(r))]
         ref_cnt = len(proper_ref)
-        del referrers, proper_ref
         # if this self node is referenced by at least one other node (nested expr), then create a tmp frame
         if top or ref_cnt > 1:
             self._cache._id = _py_tmp_key(append=h2o.connection().session_id)
