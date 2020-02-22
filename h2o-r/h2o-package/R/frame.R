@@ -3426,7 +3426,7 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
 
   tmpf <- tempfile(fileext = ".svm")
   if (use.package("data.table") && use.package("slam", version="0.1.40", TRUE)) {
-    drs <- slam::as.simple_triplet_matrix(x)# need to convert sparse matrix x to a simple triplet matrix format
+    drs <- slam::as.simple_triplet_matrix(x)
     .h2o.write_stm_svm(drs, file = tmpf)
   } else {
     warning("as.h2o can be slow for large sparse matrices. Install packages data.table and slam to speed up as.h2o.")
@@ -3465,6 +3465,11 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   v=NULL
   jv=NULL
   stm2 <- data.table::data.table(i = c(stm$i,rowLeft), j = c(stm$j,rep(1,nrowLeft)), v = c(stm$v,rep(0,nrowLeft)))
+  all.rows <- 1:max(stm2$i)
+  rows.having.first.col <- stm2$i[which(stm2$j == 1)]
+  rows.missing.first.col <- setdiff(all.rows, rows.having.first.col)
+  stm2.fill <- data.table::data.table(i = rows.missing.first.col, j = 1, v = 0)
+  stm2 <- rbind(stm2.fill, stm2)
   res <- stm2[, list(i, jv = ifelse(j==1,v,paste(j-1, v, sep = ":")))
              ][order(i), list(res = paste(jv, collapse = " ")), by = i
              ][["res"]]
