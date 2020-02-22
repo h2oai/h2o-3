@@ -840,26 +840,24 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean isAutoencoder() { return false; } // Override in DeepLearning and so on.
 
     public synchronized Key<ModelMetrics>[] clearModelMetrics(boolean keepModelTrainingMetrics) {
-      final List<Key<ModelMetrics>> removed;
+      Key<ModelMetrics>[] removed;
       if (keepModelTrainingMetrics) {
-        final Set<Key> kept = new HashSet(0);
-        if (_training_metrics != null) kept.add(_training_metrics._key);
-        if (_validation_metrics != null) kept.add(_validation_metrics._key);
-        if (_cross_validation_metrics != null) kept.add(_cross_validation_metrics._key);
+        Key<ModelMetrics>[] kept = new Key[0];
+        if (_training_metrics != null) kept = ArrayUtils.append(kept, _training_metrics._key);
+        if (_validation_metrics != null) kept = ArrayUtils.append(kept, _validation_metrics._key);
+        if (_cross_validation_metrics != null) kept = ArrayUtils.append(kept, _cross_validation_metrics._key);
 
-        removed = new ArrayList<>(_model_metrics.length - kept.size());
+        removed = new Key[0];
         for (Key<ModelMetrics> k : _model_metrics) {
-          if (!kept.contains(k)) {
-            removed.add(k);
-          }
+          if (!ArrayUtils.contains(kept, k))
+            removed = ArrayUtils.append(removed, k);
         }
-        _model_metrics = kept.toArray(new Key[kept.size()]);
-        return removed.toArray(new Key[removed.size()]);
+        _model_metrics = kept;
       } else {
-        final Key[] removedArr = Arrays.copyOf(_model_metrics, _model_metrics.length);
+        removed = Arrays.copyOf(_model_metrics, _model_metrics.length);
         _model_metrics = new Key[0];
-        return removedArr;
       }
+      return removed;
     }
 
     public synchronized Key<ModelMetrics>[] getModelMetrics() { return Arrays.copyOf(_model_metrics, _model_metrics.length); }
