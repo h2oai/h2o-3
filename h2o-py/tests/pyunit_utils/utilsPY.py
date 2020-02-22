@@ -539,7 +539,7 @@ def hadoop_namenode():
 def pyunit_exec(test_name):
     with open(test_name, "r") as t: pyunit = t.read()
     pyunit_c = compile(pyunit, os.path.abspath(test_name), 'exec')
-    exec(pyunit_c, {})
+    exec(pyunit_c, dict(__name__='main'))  # forcing module name to ensure that the test behaves the same way as when executed using `python my_test.py`
 
 def standalone_test(test):
     if not h2o.connection() or not h2o.connection().connected:
