@@ -3530,10 +3530,11 @@ as.data.frame.H2OFrame <- function(x, ...) {
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   useHexString <- getRversion() >= "3.1"
-
+  useDataTable <- getOption("h2o.fread", FALSE) && use.package("data.table")
   urlSuffix <- paste0('DownloadDataset',
-                      '?frame_id=', URLencode( h2o.getId(x)),
-                      '&hex_string=', as.numeric(useHexString))
+                      '?frame_id=', URLencode(h2o.getId(x)),
+                      '&hex_string=', ifelse(useHexString, "true", "false"),
+                      '&escape_quotes=', ifelse(useDataTable, "false", "true"))
   
   verbose <- getOption("h2o.verbose", FALSE)
     
@@ -3565,9 +3566,8 @@ as.data.frame.H2OFrame <- function(x, ...) {
     ttt <- .writeBinToTmpFile(payload)
   }
   if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
-  
   if (verbose) pt <- proc.time()[[3]]
-  if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
+  if (useDataTable) {
     if (identical(colClasses, NA_character_) || identical(colClasses, "")) colClasses <- NULL  # workaround for data.table length-1 bug #4237 fixed in v1.12.9
     df <- data.table::fread(ttt, sep = ",", blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
     if (sum(dates))
@@ -3575,7 +3575,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
     fun <- "fread"
   } else {
     # Substitute NAs for blank cells rather than skipping
-    if(useCon){
+    if (useCon) {
       df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
       close(tcon)
     } else {
