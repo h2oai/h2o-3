@@ -3530,6 +3530,8 @@ as.data.frame.H2OFrame <- function(x, ...) {
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   useHexString <- getRversion() >= "3.1"
+  # We cannot use data.table by default since its handling of escaping inside quoted csv values is not very good
+  # in some edge cases its simply impossible to load data in correct format without additional post processing
   useDataTable <- getOption("h2o.fread", FALSE) && use.package("data.table")
   urlSuffix <- paste0('DownloadDataset',
                       '?frame_id=', URLencode(h2o.getId(x)),
