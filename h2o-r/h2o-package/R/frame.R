@@ -3468,8 +3468,10 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   all.rows <- 1:max(stm2$i)
   rows.having.first.col <- stm2$i[which(stm2$j == 1)]
   rows.missing.first.col <- setdiff(all.rows, rows.having.first.col)
-  stm2.fill <- data.table::data.table(i = rows.missing.first.col, j = 1, v = 0)
-  stm2 <- rbind(stm2.fill, stm2)
+  if (length(rows.missing.first.col) > 0) {
+    stm2.fill <- data.table::data.table(i = rows.missing.first.col, j = 1, v = 0)
+    stm2 <- rbind(stm2.fill, stm2)
+  }
   res <- stm2[, list(i, jv = ifelse(j==1,v,paste(j-1, v, sep = ":")))
              ][order(i), list(res = paste(jv, collapse = " ")), by = i
              ][["res"]]
