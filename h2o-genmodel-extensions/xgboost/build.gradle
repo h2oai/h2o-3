@@ -7,7 +7,7 @@ sourceCompatibility = 1.7
 targetCompatibility = 1.7
 
 ext {
-    xgboost4jVersion = "0.90.6"
+    xgboost4jVersion = "1.0.0.8-honza-1.0.0-SNAPSHOT"
     xgboostPredictorVersion = "0.3.13"
 }
 
