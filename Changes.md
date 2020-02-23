@@ -2,6 +2,73 @@
 
 ## H2O
 
+### Yu (3.28.0.4) - 2/23/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6615'>PUBDEV-6615</a>] - DeepLearning MOJOs are now thread-safe. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7227'>PUBDEV-7227</a>] - Fixed an issue that caused h2oframe.apply to fail when run in Python 3.7. Note that Python 3.7 is still not officially supported, but support is a WIP.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7260'>PUBDEV-7260</a>] - XGBoost now correctly respects monotonicity constraints for all tree_methods.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7262'>PUBDEV-7262</a>] - Decision Tree descriptions no longer include more descriptions than `max_depth` splits.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7270'>PUBDEV-7270</a>] - Fixed an issue that caused `import_hive_table` to fail with a JDBC source and a partitioned table. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7271'>PUBDEV-7271</a>] - Improved the DKVManager sequential removal mechanism.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7279'>PUBDEV-7279</a>] - In XGBoost, added a message indicating that the `exact` tree method is not supported in multinode. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7308'>PUBDEV-7308</a>] - XGBoost ContributionsPredictor is now serializable.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7309'>PUBDEV-7309</a>] - Fixed a CRAN warning related to ellipsis within arguments in the R package.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7312'>PUBDEV-7312</a>] - Added support for specifying AWS session tokens.
+</li>
+</ul>
+            
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6447'>PUBDEV-6447</a>] - Added support for Constrained K-Means clustering. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6965'>PUBDEV-6965</a>] - In Stacked Ensembles, added support for "xgboost" and "naivebayes" in the `metalearner_algorithm` parameter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7303'>PUBDEV-7303</a>] - Added support for `build_tree_one_node` in XGBoost.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7136'>PUBDEV-7136</a>] - In the R client, users can now optionally specify the number of columns to display in `h2o.frame`, `h2o.head`, and `h2o.tail`. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7189'>PUBDEV-7189</a>] - Fixed an issue that caused AutoML to fail to run if XGBoost was disabled.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7253'>PUBDEV-7253</a>] - Stacktraces are no longer returned in  `h2o.getGrid` when failed models are present.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7310'>PUBDEV-7310</a>] - Added `createNewChunks` with a "sparse" parameter in ChunkUtils. 
+</li>
+</ul>
+                                                                                                                                                                                                                                
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6964'>PUBDEV-6964</a>] - Added an FAQ to the MOJO and POJO quick starts noting that MOJOs and POJOs are thread safe for all supported algorithms.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7213'>PUBDEV-7213</a>] - Added the new `cluster_size_constraints` parameter to the KMeans chapter. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7286'>PUBDEV-7286</a>] - Updated docs to specify that `mtries=-2` gives all features.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7314'>PUBDEV-7314</a>] - Updated EC2 and S3 Storage topic to include the new, optional AWS session token.
+</li>
+</ul>
+
+
 ### Yu (3.28.0.3) - 2/5/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/3/index.html</a>
