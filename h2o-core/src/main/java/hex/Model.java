@@ -224,6 +224,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Eigen(false),
       LabelEncoder(false),
       SortByResponse(true),
+      TargetEncoder(true),
       EnumLimited(false)
       ;
 
@@ -1193,6 +1194,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             computeMetrics,
             _output.interactionBuilder(),
             getToEigenVec(),
+            _output._te_model_key,
             _toDelete,
             false
     );
@@ -1214,6 +1216,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                                            String[] names, String[][] domains, final Parameters parms,
                                            final boolean expensive, final boolean computeMetrics,
                                            final InteractionBuilder interactionBldr, final ToEigenVec tev,
+                                           final Key<Model> teModelKey,
                                            final IcedHashMap<Key, String> toDelete, final boolean catEncoded)
           throws IllegalArgumentException {
     String[] msg = new String[0];
@@ -1238,6 +1241,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final boolean checkCategoricals = !catEncoded && Arrays.asList(
             Parameters.CategoricalEncodingScheme.Binary,
             Parameters.CategoricalEncodingScheme.LabelEncoder,
+            Parameters.CategoricalEncodingScheme.TargetEncoder,
             Parameters.CategoricalEncodingScheme.Eigen,
             Parameters.CategoricalEncodingScheme.EnumLimited,
             Parameters.CategoricalEncodingScheme.OneHotExplicit
@@ -1353,10 +1357,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
       // check if we first need to expand categoricals before calling this method again
       if (hasCategoricalPredictors) {
-        Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels);
+        Model teModel = DKV.getGet(teModelKey);
+        Frame updated = categoricalEncoder(test, new String[]{weights, offset, fold, response}, parms._categorical_encoding, tev, parms._max_categorical_levels, teModel);
         toDelete.put(updated._key, "categorically encoded frame");
         test.restructure(updated.names(), updated.vecs()); //updated in place
-        String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, toDelete, true /*catEncoded*/);
+        String[] msg2 = adaptTestForTrain(test, origNames, origDomains, backupNames, backupDomains, parms, expensive, computeMetrics, interactionBldr, tev, teModelKey, toDelete, true /*catEncoded*/);
         msgs.addAll(Arrays.asList(msg2));
         return msgs.toArray(new String[msgs.size()]);
       }
@@ -1467,8 +1472,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    Frame newFr = new Frame(fr);
-    Frame adaptFr = _output._te_model_key != null ? FrameUtils.applyTargetEncoder(DKV.getGet(_output._te_model_key), newFr): newFr;
+    Frame adaptFr = new Frame(fr);
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     // clean up the previous score warning messages

@@ -544,7 +544,7 @@ public class TargetEncoder extends Iced<TargetEncoder>{
      * @param data dataset that will be used as a base for creation of encodings .
      * @param targetColumnName name of the column with respect to which we were computing encodings.
      * @param columnToEncodingMap map of the prepared encodings with the keys being the names of the columns.
-     * @param dataLeakageHandlingStrategy see TargetEncoding.DataLeakageHandlingStrategy //TODO use common interface for stronger type safety.
+     * @param dataLeakageHandlingStrategy see TargetEncoder.DataLeakageHandlingStrategy //TODO use common interface for stronger type safety.
      * @param foldColumnName column's name that contains fold number the row is belong to.
      * @param useBlending whether to apply blending or not.
      * @param noiseLevel amount of noise to add to the final encodings.
