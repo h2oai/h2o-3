@@ -3,15 +3,10 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLM;
-import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
-<<<<<<< HEAD
 import hex.util.CheckpointUtils;
-=======
 import hex.tree.gbm.GBMModel;
->>>>>>> PUBDEV-6697 count quasibinomial domain
 import hex.util.LinearAlgebraUtils;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
