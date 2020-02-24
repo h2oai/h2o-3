@@ -89,7 +89,7 @@ public class FrameUtils {
     return ParseSetup.guessSetup(inKeys, userParserSetup);
   }
 
-  public static Frame categoricalEncoder(Frame dataset, String[] skipCols, Model.Parameters.CategoricalEncodingScheme scheme, ToEigenVec tev, int maxLevels) {
+  public static Frame categoricalEncoder(Frame dataset, String[] skipCols, Model.Parameters.CategoricalEncodingScheme scheme, ToEigenVec tev, int maxLevels, Model teModel) {
     switch (scheme) {
       case AUTO:
       case Enum:
@@ -106,18 +106,21 @@ public class FrameUtils {
         return new CategoricalEigenEncoder(tev, dataset, skipCols).exec().get();
       case LabelEncoder:
         return new CategoricalLabelEncoder(dataset, skipCols).exec().get();
+      case TargetEncoder:
+        return applyTargetEncoder(teModel, dataset, skipCols);
       default:
         throw H2O.unimpl();
     }
   }
 
-  // Discuss: this could probably be incorporated into `categoricalEncoder` but we would need yet another parameter which is specific only to on of the scheme
-  public static Frame applyTargetEncoder(Model teModel, Frame inputFrame) {
-    // All the following manipulations with columns is a responsibility of a pipeline concept. We also need support for input output columns for the models.
-    String[] originalNames = ArrayUtils.difference(teModel._parms.train().names(), teModel._parms._ignored_columns);
-    final String[] encodedColumns = ArrayUtils.remove(originalNames, teModel._parms._response_column); // TODO take into account fold column
-    Frame transformed = teModel.score(inputFrame);
-    return transformed.remove(encodedColumns);
+  private static Frame applyTargetEncoder(Model teModel, Frame inputFrame, String[] skipCols) {
+    // following manipulations with columns is a responsibility of a future pipeline concept. Support for input output columns for the models would be helpful as well.
+    String[] predictorColumns = ArrayUtils.difference(teModel._parms.train().names(), skipCols);
+    final String[] encodedColumns = ArrayUtils.difference(predictorColumns, teModel._parms._ignored_columns);
+
+    Frame encoded = teModel.score(inputFrame).remove(encodedColumns);
+    Scope.untrack(encoded.keys());
+    return encoded;
   }
 
   public static void printTopCategoricalLevels(Frame fr, boolean warn, int topK) {
