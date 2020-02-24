@@ -11,5 +11,10 @@ add-apt-repository -y ppa:deadsnakes/ppa
 apt-get update
 apt-get install -y \
     wget gcc python3.5-dev git python-pip python-virtualenv \
-    mariadb-client libmariadbclient-dev \
+    mariadb-client \
     unzip tar nodejs npm libkrb5-dev
+if [ "$1" == *"16.04"* ]; then
+  apt-get isntall -y libmariadb-client-lgpl-dev
+else
+  apt-get isntall -y libmariadbclient-dev
+fi

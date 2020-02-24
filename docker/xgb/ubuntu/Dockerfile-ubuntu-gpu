@@ -12,7 +12,7 @@ COPY xgb/ubuntu/common/sbin xgb/common/sbin xgb/ubuntu/omp/sbin /usr/sbin/
 RUN \
     chmod +x /usr/sbin/install_packages /usr/sbin/install_omp_packages && \
     sync && \
-    /usr/sbin/install_packages && \
+    /usr/sbin/install_packages $FROM_IMAGE && \
     /usr/sbin/install_omp_packages
 
 COPY jdk1.8.0_171.zip /usr/local/lib/
