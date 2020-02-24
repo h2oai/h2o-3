@@ -115,7 +115,8 @@ reference:
       - h2o.flow
       - h2o.gainsLift
       - h2o.gbm
-      - h2o.getAutoML
+      - h2o.get_automl
+      - h2o.get_leadeboard
       - h2o.getConnection
       - h2o.getFrame
       - h2o.getFutureModel
