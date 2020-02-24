@@ -3,7 +3,7 @@ Data Manipulation
 
 :mod:`H2OFrame`
 ----------------
-.. autoclass:: h2o.frame.H2OFrame
+.. autoclass:: h2o.H2OFrame
     :members:
     :undoc-members:
 
