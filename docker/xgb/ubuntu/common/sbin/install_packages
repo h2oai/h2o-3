@@ -14,7 +14,7 @@ apt-get install -y \
     mariadb-client \
     unzip tar nodejs npm libkrb5-dev
 if [ "$1" == *"16.04"* ]; then
-  apt-get isntall -y libmariadb-client-lgpl-dev
+  apt-get install -y libmariadb-client-lgpl-dev
 else
-  apt-get isntall -y libmariadbclient-dev
+  apt-get install -y libmariadbclient-dev
 fi
