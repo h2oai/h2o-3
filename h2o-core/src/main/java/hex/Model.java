@@ -679,6 +679,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_predictions[];
     public Key<Frame> _cross_validation_holdout_predictions_frame_id;
     public Key<Frame> _cross_validation_fold_assignment_frame_id;
+
+    // Key to a TE model
+    public Key<Model> _te_model_key;
     
     // Model-specific start/end/run times
     // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
@@ -722,6 +725,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasFold = b.hasFoldCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
+      _te_model_key = b.getTEModelKey();
       assert(_job==null);  // only set after job completion
     }
 
@@ -1463,7 +1467,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return score(fr, destination_key, j, computeMetrics, CFuncRef.NOP);
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    Frame adaptFr = new Frame(fr);
+    Frame newFr = new Frame(fr);
+    Frame adaptFr = _output._te_model_key != null ? FrameUtils.applyTargetEncoder(DKV.getGet(_output._te_model_key), newFr): newFr;
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     // clean up the previous score warning messages
@@ -1852,6 +1857,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       deleteCrossValidationFoldAssignment();
       deleteCrossValidationPreds();
       deleteCrossValidationModels();
+      deleteTEModel();
     }
     cleanUp(_toDelete);
     return super.remove_impl(fs, cascade);
@@ -2509,6 +2515,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       Log.info("Cleaning up CV Models for " + _key);
       int count = deleteAll(_output._cross_validation_models);
       Log.info(count+" CV models were removed");
+    }
+  }
+
+  /**
+   * delete from the output TE model stored in DKV.
+   */
+  public void deleteTEModel() {
+    if (_output._te_model_key != null) {
+      Log.info("Cleaning up TE Model for " + _key);
+      int count = deleteAll(new Key[]{_output._te_model_key});
+      Log.info(count+" TE model was removed");
     }
   }
 
