@@ -18,7 +18,8 @@ __all__ = ("TargetEncoder", )
 class TargetEncoder(object):
 
     """
-    Deprecated API. Please use H2OTargetencoderEstimator instead.
+    :deprecated:
+    Use :func:`h2o.estimators.targetencoder.H2OTargetEncoderEstimator` instead.
 
     This is a main class that provides Python's API to the Java implementation of the target encoding.
 
@@ -46,6 +47,7 @@ class TargetEncoder(object):
     >>> encodedTrain = targetEncoder.transform(frame=trainFrame, holdout_type="kfold", seed=1234, is_train_or_valid=True)
     >>> encodedValid = targetEncoder.transform(frame=validFrame, holdout_type="none", noise=0.0, is_train_or_valid=True)
     >>> encodedTest = targetEncoder.transform(frame=testFrame, holdout_type="none", noise=0.0, is_train_or_valid=False)
+
     """
 
     #-------------------------------------------------------------------------------------------------------------------
