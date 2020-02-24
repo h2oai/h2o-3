@@ -50,5 +50,4 @@ def pybooklet_exec(test_name):
     pyunit = "import h2o\nfrom tests import pybooklet_utils\n"
     with open(test_name, "r") as t: pyunit = pyunit + t.read()
     pyunit_c = compile(pyunit, '<string>', 'exec')
-    p = {}
-    exec(pyunit_c, p)
+    exec(pyunit_c, dict(__name__='main'))
