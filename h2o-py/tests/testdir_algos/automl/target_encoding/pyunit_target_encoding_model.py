@@ -77,11 +77,26 @@ def test_target_encoding_fit_method():
     gbm_with_te.train(x=myX, y=targetColumnName, training_frame=transformed)
 
 
+def test_target_encoder_model_output_has_te_model_field():
+    print("Check that Target Encoder model's output has `te_model` field")
+    targetColumnName = "survived"
+    foldColumnName = "kfold_column"
+
+    teColumns = ["cabin", "embarked"]
+    trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+
+    trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
+    trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
+
+    te = H2OTargetEncoderEstimator(k = 0.7, f = 0.3, data_leakage_handling = "KFold", fold_column=foldColumnName)
+    te.train(training_frame=trainingFrame, x=teColumns, y=targetColumnName)
+
+    assert te._model_json['output']['te_model'] is None
+
+
 testList = [
-    test_target_encoding_fit_method
+    test_target_encoding_fit_method,
+    test_target_encoder_model_output_has_te_model_field
 ]
 
-if __name__ == "__main__":
-    for test in testList: pyunit_utils.standalone_test(test)
-else:
-    for test in testList: test()
+pyunit_utils.run_tests(testList)

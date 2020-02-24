@@ -128,6 +128,23 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** gbm -> "hex.schemas." ; custAlgo -> "org.myOrg.schemas." */
   public static String schemaDirectory(String urlName) { return SCHEMAS[ArrayUtils.find(ALGOBASES,urlName)]; }
 
+  /**
+   * Helper method that enables preprocessing with TE model. It's user's responsibility to make sure TE is trained in an appropriate way to avoid data leakage.
+   * E.g. TE without KFold strategy being applied for cv main model leads to a data leakage.
+   * @param model key to the trained TE model
+   */
+  public void addTEModelKey(Key<Model> model) {
+    _parms._te_model = model;
+  }
+
+  /**
+   *
+   * @return TE model's key if one was assigned to a model builder, null otherwise
+   */
+  public Key<Model> internal_getTEModelKey() {
+    return _parms._te_model;
+  }
+
   @SuppressWarnings("unchecked")
   static <B extends ModelBuilder> Optional<B> getRegisteredBuilder(String urlName) {
     final String formattedName = urlName.toLowerCase();
@@ -141,7 +158,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
   public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
     return getRegisteredBuilder(algo)
-            .map(prototype -> { 
+            .map(prototype -> {
               @SuppressWarnings("unchecked")
               B mb = (B) prototype.clone();
               mb._job = job;
@@ -193,6 +210,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
   public final Frame valid() { return _valid; }
   protected transient Frame _valid;
+
+  public void setValid(Frame valid) {
+    _valid = valid;
+  }
 
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
@@ -600,7 +621,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cvValid.write_lock(_job);
       cvValid.add(weightName, weights[2*i+1]);
       cvValid.update(_job);
-      
+
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
       cv_mb.setTrain(cvTrain);
@@ -881,7 +902,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient double[] _orig_projection_array; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
-  
+
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
   public boolean hasFoldCol(){return _parms._fold_column != null;} // don't look at transient Vec
@@ -1035,7 +1056,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected boolean canLearnFromNAs() {
     return false;
   }
-  
+
   /**
    * Checks response variable attributes and adds errors if response variable is unusable.
    */
@@ -1328,16 +1349,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap categoricals
-    Frame va = _parms.valid();  // User-given validation set
-    if (va != null) {
-      _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
-      _vresponse = _valid.vec(_parms._response_column);
-    } else {
-      _valid = null;
-      _vresponse = null;
+    setValid(_parms.valid());  // User-given validation set
+    _vresponse = valid() != null ? valid().vec(_parms._response_column) : null;
+    if (valid() != null && (!expensive || _parms._is_cv_model)) {
+        setValid(adaptFrameToTrain(valid(), "Validation Frame", "_validation_frame", expensive, false));
     }
 
     if (expensive) {
+      Model teModel = DKV.getGet(internal_getTEModelKey());
+      setTrain(encodeCategoricalsWithTE(teModel, train()));
+
       Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
       if (newtrain != _train) {
         _origTrain = _train;
@@ -1349,7 +1370,9 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _origTrain = null;
       }
       if (_valid != null) {
-        _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
+        setValid(encodeCategoricalsWithTE(teModel, _valid));
+        setValid(encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */));
+        setValid(adaptFrameToTrain(_valid, "Validation Frame", "_validation_frame", expensive, true));
         _vresponse = _valid.vec(_parms._response_column);
       }
       boolean restructured = false;
@@ -1387,7 +1410,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _train.restructure(_train.names(), vecs);
     }
     boolean names_may_differ = _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary;
-    boolean names_differ = _valid !=null && !Arrays.equals(_train._names, _valid._names);
+    boolean names_differ = _valid !=null && ArrayUtils.difference(_train._names, _valid._names).length != 0;
     assert (!expensive || names_may_differ || !names_differ);
     if (names_differ && names_may_differ) {
       for (String name : _train._names)
@@ -1445,6 +1468,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
   }
 
+  private Frame encodeCategoricalsWithTE(Model teModel, Frame fr) {
+    if (teModel != null && fr != null) {
+      Frame encodedWithTE = FrameUtils.internal_applyTargetEncoder(teModel, fr, _parms._is_cv_model);
+      _workspace.getToDelete(true).put(encodedWithTE._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+      return encodedWithTE;
+    } else
+      return fr;
+  }
+
   /**
    * Adapts a given frame to the same schema as the training frame.
    * This includes encoding of categorical variables (if expensive is enabled).
@@ -1458,17 +1490,29 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return adapted frame
    */
   public Frame init_adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
-    Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive);
+    Frame adapted = adaptFrameToTrain(fr, frDesc, field, expensive, false);
     if (expensive)
       adapted = encodeFrameCategoricals(adapted, true);
     return adapted;
   }
 
-  private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive) {
+  private Frame adaptFrameToTrain(Frame fr, String frDesc, String field, boolean expensive, boolean catEncoded) {
     if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
     Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _workspace.getToDelete(expensive), false);
+      String[] msgs = Model.adaptTestForTrain(
+              adapted,
+              catEncoded ? _train._names : null,
+              null,
+              _train._names,
+              _train.domains(),
+              _parms, expensive,
+              true,
+              null,
+              getToEigenVec(),
+              _workspace.getToDelete(expensive),
+              catEncoded
+      );
       Vec response = adapted.vec(_parms._response_column);
       if (response == null && _parms._response_column != null)
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
@@ -1771,7 +1815,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _workspace.cleanUp();
   }
 
-  @SuppressWarnings("WeakerAccess") // optionally allow users create workspace directly (instead of relying on init) 
+  @SuppressWarnings("WeakerAccess") // optionally allow users create workspace directly (instead of relying on init)
   protected final void initWorkspace(boolean expensive) {
     if (expensive)
       _workspace = new Workspace(true);
