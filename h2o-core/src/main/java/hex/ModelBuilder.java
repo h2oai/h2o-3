@@ -49,6 +49,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Key<M> _result;  // Built Model key
   public final Key<M> dest() { return _result; }
 
+  private Key<Model> _te_model_key;
+
   private Countdown _build_model_countdown;
   private Countdown _build_step_countdown;
   private void startClock() {
@@ -147,6 +149,24 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /**
+   * Enables preprocessing with TE model. It's user's responsibility to make sure TE is trained in an appropriate way to avoid data leakage.
+   * E.g. TE without KFold strategy being applied for cv main model leads to a data leakage.
+   * @param model key to the trained TE model
+   */
+  public void addTEModelKey(Key<Model> model) {
+    // todo do we need to check if model is TE model? we could have passed TargetEncoderModel itself as a parameter but probably it will restrict us from being generic
+    _te_model_key = model;
+  }
+
+  /**
+   *
+   * @return TE model's key if one was assigned to a model builder, null otherwise
+   */
+  public Key<Model> getTEModelKey() {
+    return _te_model_key;
+  }
+
+  /**
    * Returns <strong>valid</strong> index of given url name in {@link #ALGOBASES} or throws an exception.
    * @param urlName url name to return the index for
    * @return valid index, if url name is not present in {@link #ALGOBASES} throws an exception
@@ -212,6 +232,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *  response column to a Categorical, etc.  Is null if no validation key is set.  */
   protected final Frame valid() { return _valid; }
   protected transient Frame _valid;
+
+  public void setValid(Frame valid) {
+    _valid = valid;
+  }
 
   // TODO: tighten up the type
   // Map the algo name (e.g., "deeplearning") to the builder class (e.g., DeepLearning.class) :
@@ -349,6 +373,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
+
+    Model teModel = DKV.getGet(getTEModelKey());
+    if(teModel != null) {
+      Frame trainEncoded = FrameUtils.applyTargetEncoder(teModel, train());
+      setTrain(trainEncoded);
+      _toDelete.put(trainEncoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+      if( valid() != null) {
+        setValid(FrameUtils.applyTargetEncoder(teModel, valid()));
+        _toDelete.put(valid()._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+      }
+
+    }
+
     if( !nFoldCV() )
       return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
 
@@ -1390,7 +1427,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         _train.restructure(_train.names(), vecs);
     }
     boolean names_may_differ = _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary;
-    boolean names_differ = _valid !=null && !Arrays.equals(_train._names, _valid._names);
+    boolean names_differ = _valid !=null && ArrayUtils.difference(_train._names, _valid._names).length != 0;
     assert (!expensive || names_may_differ || !names_differ);
     if (names_differ && names_may_differ) {
       for (String name : _train._names)

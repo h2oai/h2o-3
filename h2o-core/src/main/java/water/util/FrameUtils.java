@@ -111,6 +111,15 @@ public class FrameUtils {
     }
   }
 
+  // Discuss: this could probably be incorporated into `categoricalEncoder` but we would need yet another parameter which is specific only to on of the scheme
+  public static Frame applyTargetEncoder(Model teModel, Frame inputFrame) {
+    // All the following manipulations with columns is a responsibility of a pipeline concept. We also need support for input output columns for the models.
+    String[] originalNames = ArrayUtils.difference(teModel._parms.train().names(), teModel._parms._ignored_columns);
+    final String[] encodedColumns = ArrayUtils.remove(originalNames, teModel._parms._response_column); // TODO take into account fold column
+    Frame transformed = teModel.score(inputFrame);
+    return transformed.remove(encodedColumns);
+  }
+
   public static void printTopCategoricalLevels(Frame fr, boolean warn, int topK) {
     String[][] domains = fr.domains();
     String[] names = fr.names();
