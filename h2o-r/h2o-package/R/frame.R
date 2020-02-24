@@ -3273,7 +3273,7 @@ destination_frame.guess <- function(x) {
 #' @param use logical scalar, extra escape option, to be used as global option.
 #' @details
 #' We use this function to control csv read/write with optional \link[data.table]{data.table} package.
-#' Currently data.table is disabled by default, to enable it set \code{options("h2o.use.data.table"=TRUE)}.
+#' Currently data.table is enabled by default for some operations, to disable it set \code{options("h2o.use.data.table"=FALSE)}.
 #' It is possible to control just \code{\link[data.table]{fread}} or \code{\link[data.table]{fwrite}} with \code{options("h2o.fread"=FALSE, "h2o.fwrite"=FALSE)}.
 #' \code{h2o.fread} and \code{h2o.fwrite} options are not handled in this function but next to \emph{fread} and \emph{fwrite} calls.
 #' @export

@@ -5,7 +5,9 @@ test.pubdev_2844 <- function() {
   
   df1 <- iris
   h2o.no_progress()
-  
+  # enable using of data.table for as.data.frame
+  options(h2o.fread=TRUE)
+
   # as.h2o
   op <- options("datatable.verbose"=TRUE, "h2o.use.data.table"=TRUE)
   co <- capture.output(
