@@ -1266,11 +1266,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           error("_response_column", "Response column parameter not set.");
           return;
         }
-        String[] quasiDomains = null;
+        String[] quasiDomains;
         if(_response != null && computePriorClassDistribution()) {
           if (isClassifier() && isSupervised()) {
             if(_parms._distribution == DistributionFamily.quasibinomial){
               quasiDomains = new VecUtils.CollectIntegerDomainKnownSize(2).doAll(_response).stringDomain();
+              assert quasiDomains.length == 2: "Wrong domain size. Size should be 2 but is "+quasiDomains.length+".";
               MRUtils.ClassDistQuasibinomial cdmt =
                       _weights != null ? new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response);
               _distribution = cdmt.dist();
