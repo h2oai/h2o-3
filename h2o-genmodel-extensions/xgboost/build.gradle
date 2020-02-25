@@ -8,7 +8,7 @@ targetCompatibility = 1.7
 
 ext {
     xgboost4jVersion = "1.0.0.7"
-    xgboostPredictorVersion = "0.3.13"
+    xgboostPredictorVersion = "0.3.14-SNAPSHOT"
 }
 
 dependencies {

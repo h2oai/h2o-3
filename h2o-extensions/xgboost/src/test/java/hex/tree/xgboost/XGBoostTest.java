@@ -47,8 +47,7 @@ public class XGBoostTest extends TestUtil {
   @Parameterized.Parameters(name = "XGBoost(javaMojoScoring={0},javaPredict={1}")
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
-        {"true", "true"}
-            //{"false", "false"}, {"true", "true"}, {"true", "false"}, {"false", "true"}
+            {"false", "false"}, {"true", "true"}, {"true", "false"}, {"false", "true"}
     });
   }
 
