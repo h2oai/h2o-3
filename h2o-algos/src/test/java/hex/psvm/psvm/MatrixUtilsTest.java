@@ -84,7 +84,7 @@ public class MatrixUtilsTest extends TestUtil {
   }  
   
   @Test
-  public void workingProductMtv() {
+  public void productMtv2() {
     try {
       Scope.enter();
       Frame m = new TestFrameBuilder()
@@ -95,7 +95,7 @@ public class MatrixUtilsTest extends TestUtil {
       Scope.track(m);
       Vec v = Vec.makeVec(ard(2.0, 2.0), Vec.newKey());
 
-      Vec resVec = MatrixUtils.workingProductMtv(m, v);
+      Vec resVec = MatrixUtils.productMtv2(m, v);
 
       // check result
       Assert.assertEquals(m.numRows(), resVec.length());
@@ -121,14 +121,14 @@ public class MatrixUtilsTest extends TestUtil {
   }
 
     @Test
-    public void workingProductMtv2() {
+    public void productMtv22() {
         try {
             Scope.enter();
             Frame m = Scope.track(parse_test_file("smalldata/anomaly/const.csv"));
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, 2.0), Vec.newKey());
 
-            Vec resVec = MatrixUtils.workingProductMtv(m, v);
+            Vec resVec = MatrixUtils.productMtv2(m, v);
 
             // check result
             Assert.assertEquals(m.numRows(), resVec.length());

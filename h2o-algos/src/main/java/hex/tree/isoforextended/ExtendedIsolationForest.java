@@ -62,7 +62,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             System.out.println(Arrays.toString(FrameUtils.asDoubles(n)));
             System.out.println(n.length());
             Frame res = MatrixUtils.subtractionMtv(_train, p);
-            Vec mul = MatrixUtils.workingProductMtv(res, n);
+            Vec mul = MatrixUtils.productMtv2(res, n);
             System.out.println(Arrays.toString(FrameUtils.asDoubles(mul)));
             SplitFrameMRTask task = new SplitFrameMRTask(mul).doAll(_train);
             System.out.println("task.left.length = " + task.left.length);
