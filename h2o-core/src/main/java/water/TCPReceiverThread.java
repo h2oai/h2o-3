@@ -36,12 +36,7 @@ public class TCPReceiverThread extends Thread {
    * Byte representing TCP communication for big data
    */
   static final byte TCP_BIG = 2;
-
-  /**
-   * Byte representing TCP communication for communicating with H2O backend from non-H2O environment
-   */
-  static final byte TCP_EXTERNAL = 3;
-
+  
   public TCPReceiverThread(
           ServerSocketChannel sock) {
     super("TCP-Accept");
@@ -104,11 +99,6 @@ public class TCPReceiverThread extends Thread {
                           "Missing EOM sentinel when opening new " + channelType + " channel.");
         }
         // todo compare against current cloud, refuse the con if no match
-
-
-        // Do H2O.Intern in corresponding case branch, we can't do H2O.intern here since it wouldn't work
-        // with ExternalFrameHandling ( we don't send the same information there as with the other communication)
-        // Pass off the TCP connection to a separate reader thread
         switch( chanType ) {
         case TCP_SMALL:
           new SmallMessagesReaderThread(H2ONode.intern(inetAddress, port, timestamp), wrappedSocket).start();
@@ -116,12 +106,9 @@ public class TCPReceiverThread extends Thread {
         case TCP_BIG:
           new TCPReaderThread(wrappedSocket, new AutoBuffer(wrappedSocket, inetAddress, timestamp), inetAddress, timestamp).start();
           break;
-        case TCP_EXTERNAL:
-          new ExternalFrameHandlerThread(wrappedSocket, new AutoBuffer(wrappedSocket)).start();
-          break;
         default:
           ListenerService.getInstance().report("protocol-failure", "channel-type", chanType);
-          throw new IOException("Communication protocol failure: Unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big and 3 - ExternalFrameHandling");
+          throw new IOException("Communication protocol failure: Unexpected channel type " + chanType + ", only know 1 - Small, 2 - Big");
         }
       } catch( java.nio.channels.AsynchronousCloseException ex ) {
         break;                  // Socket closed for shutdown

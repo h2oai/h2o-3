@@ -2,12 +2,15 @@ package hex.tree.xgboost.rabit;
 
 import hex.tree.xgboost.rabit.communication.XGBoostAutoBuffer;
 import hex.tree.xgboost.rabit.util.LinkMap;
-import water.ExternalFrameUtils;
+import water.AutoBuffer;
 import water.util.Log;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class RabitWorker implements Comparable<RabitWorker> {
 
@@ -40,7 +43,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
 
         writerAB = new XGBoostAutoBuffer();
         writerAB.put4(RabitTrackerH2O.MAGIC);
-        ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+        AutoBuffer.writeToChannel(writerAB.buffer(), socket);
 
         this.rank = ab.get4();
         this.worldSize = ab.get4();
@@ -97,7 +100,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
         } else {
             writerAB.put4(-1);
         }
-        ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+        AutoBuffer.writeToChannel(writerAB.buffer(), socket);
 
         while (true) {
             int ngood = ab.get4();
@@ -117,15 +120,15 @@ public class RabitWorker implements Comparable<RabitWorker> {
             }
 
             writerAB.put4(conset.size());
-            ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+            AutoBuffer.writeToChannel(writerAB.buffer(), socket);
             writerAB.put4(badSet.size() - conset.size());
-            ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+            AutoBuffer.writeToChannel(writerAB.buffer(), socket);
 
             for (Integer r : conset) {
                 writerAB.putStr(waitConn.get(r).host);
                 writerAB.put4(waitConn.get(r).port);
                 writerAB.put4(r);
-                ExternalFrameUtils.writeToChannel(writerAB.buffer(), socket);
+                AutoBuffer.writeToChannel(writerAB.buffer(), socket);
             }
 
             int nerr = ab.get4();
