@@ -45,7 +45,7 @@ public class MatrixUtils {
   }
 
   /**
-   * Previous Mtv method is not working.
+   * Previous Mtv method is for v of dimension (m x 1) here it is for (n x 1)
    * 
    * Calculates matrix-vector product M'v
    * 
@@ -53,9 +53,8 @@ public class MatrixUtils {
    * @param v Vec representing vector v (n x 1)
    * @return m-element array representing the result of the product
    */
-  public static Vec workingProductMtv(Frame m, Vec v) {
-    // TODO avalenta better vec creation
-    Vec result = new ProductMtvTask2(v, m.numRows()).doAll(m)._result;
+  public static Vec productMtv2(Frame m, Vec v) {
+    Vec result = new ProductMtvTask2(v, m.numRows()).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
     // System.out.println(Arrays.toString(FrameUtils.asDoubles(result)));
     return result;
   }  
@@ -163,21 +162,18 @@ public class MatrixUtils {
   static class ProductMtvTask2 extends MRTask<ProductMtvTask2> {
     private final Vec v;
 
-    private Vec _result;
-
     public ProductMtvTask2(Vec v, long length) {
       this.v = v;
-      _result = Vec.makeZero(length);
     }
     
     @Override
-    public void map(Chunk[] cs) {
+    public void map(Chunk[] cs, NewChunk nc) {
       for (int row = 0; row < cs[0]._len; row++) {
         double sum = 0.0;
         for (int column = 0; column < cs.length; ++column) {
           sum += cs[column].atd(row) * v.at(column);
         }
-        _result.set(cs[0].start() + row, sum);
+        nc.addNum(sum);
       }
     }
   }
