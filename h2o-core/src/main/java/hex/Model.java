@@ -879,7 +879,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             f.setAccessible(true);
             if (t != null) sb.append(t.toString(1,false /*don't print the full table if too long*/));
           } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
+            Log.err(e);
+            sb.append("Failed to print table ").append(f.getName()).append("\n");
           }
         }
       }

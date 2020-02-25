@@ -780,23 +780,6 @@ public abstract class SharedTree<
     // nothing by default - can be overridden in subclasses
   }
 
-  static int counter = 0;
-  // helper for debugging
-  @SuppressWarnings("unused")
-  static protected void printGenerateTrees(DTree[] trees) {
-    for( DTree dtree : trees )
-      if( dtree != null ) {
-        try {
-          PrintWriter writer = new PrintWriter("/tmp/h2o-3.tree" + ++counter + ".txt", "UTF-8");
-          writer.println(dtree.root().toString2(new StringBuilder(), 0));
-          writer.close();
-        } catch (FileNotFoundException|UnsupportedEncodingException e) {
-          throw new RuntimeException(e);
-        }
-        System.out.println(dtree.root().toString2(new StringBuilder(), 0));
-      }
-  }
-
   protected TwoDimTable createScoringHistoryTable() {
     O out = _model._output;
     return createScoringHistoryTable(out, out._scored_train, out._scored_valid, _job,
