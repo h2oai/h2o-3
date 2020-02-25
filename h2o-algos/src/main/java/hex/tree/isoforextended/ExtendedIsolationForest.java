@@ -58,7 +58,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         @Override
         public void computeImpl() {
             Vec p = VecUtils.uniformDistrFromFrameMR(_train, _parms._seed);
-            Vec n = VecUtils.makeGaussianVec(_train.numCols(), _train.numCols() - _parms._extension_level - 1, _parms._seed);
+            Vec n = VecUtils.makeGaussianVec(_train.numCols(), _train.numCols() - _parms.extensionLevel - 1, _parms._seed);
             System.out.println(Arrays.toString(FrameUtils.asDoubles(n)));
             System.out.println(n.length());
             Frame res = MatrixUtils.subtractionMtv(_train, p);

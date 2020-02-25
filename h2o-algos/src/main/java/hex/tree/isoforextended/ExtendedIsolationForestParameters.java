@@ -19,5 +19,6 @@ public class ExtendedIsolationForestParameters extends SharedTreeModel.SharedTre
         return ExtendedIsolationForestModel.class.getName();
     }
     
-    public int _extension_level;
+    // Maximum is N - 1 (N = numCols). Minimum is 0. EIF with extension_level = 0 behaves like Isolation Forest.
+    public int extensionLevel;
 }
