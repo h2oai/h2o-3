@@ -81,7 +81,7 @@ public class MatrixUtils {
     if (v.length() != m.numCols()) {
       throw new UnsupportedOperationException("Vector elements number must be the same as matrix column number");
     }
-    Frame result = new SubMtvTask(v).doAll(m.deepCopy("newKey"))._fr;
+    Frame result = new SubMtvTask(v).doAll(m.types(), m).outputFrame();
     return result;
   }  
 
@@ -150,10 +150,10 @@ public class MatrixUtils {
     }
 
     @Override
-    public void map(Chunk[] cs) {
+    public void map(Chunk[] cs, NewChunk[] ncs) {
       for (int column = 0; column < cs.length; column++) {
         for (int row = 0; row < cs[0]._len; row++) {
-          cs[column].set(row, cs[column].atd(row) - v.at(column));
+          ncs[column].addNum(cs[column].atd(row) - v.at(column));
         }
       }
     }
