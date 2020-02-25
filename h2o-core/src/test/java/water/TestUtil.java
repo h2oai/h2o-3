@@ -2,6 +2,7 @@ package water;
 
 import hex.CreateFrame;
 import hex.genmodel.easy.RowData;
+import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -122,6 +123,11 @@ public class TestUtil extends Iced {
     // Bulk brainless key removal.  Completely wipes all Keys without regard.
     new DKVCleaner().doAllNodes();
     _initial_keycnt = H2O.store_size();
+  }
+
+  @After
+  public void checkLeaks() {
+    TestUtil.checkLeakedKeys();
   }
 
   public static void checkArrays(double[] expected, double[] actual, double threshold) {
