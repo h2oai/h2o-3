@@ -129,6 +129,11 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
                         Log.err(String.format("       Chunk id %d, key '%s'", i, chunkKey));
                         leakedKeysSet.remove(chunkKey);
                     }
+                    
+                    if (leakedKeysSet.contains(vec.rollupStatsKey())) {
+                        Log.err(String.format("       Rollup stats '%s'", vec.rollupStatsKey().toString()));
+                        leakedKeysSet.remove(vec.rollupStatsKey());
+                    }
 
                     leakedKeysSet.remove(vecKey);
                 }
@@ -137,11 +142,11 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         }
 
         if (!leakedKeysSet.isEmpty()) {
-            Log.err(String.format("%nThere are also %d more leaked keys:", leakedKeysSet.size()));
+            Log.err(String.format("%nThere are %d uncategorized leaked keys detected:", leakedKeysSet.size()));
         }
 
         for (Key key : leakedKeysSet) {
-            Log.err(String.format("Key '%s'", key.toString()));
+            Log.err(String.format("Key '%s' of type %s.", key.toString(), key.valueClass()));
         }
     }
 
