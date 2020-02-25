@@ -111,6 +111,54 @@ public class ModelBuilderWithTETest {
       }
 
     }
+
+    @Test
+    public void te_is_applied_to_specified_columns_and_rest_categorical_columns_are_encoded_with_accordance_to__categorical_encoding() {
+
+      try {
+        Scope.enter();
+        Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
+        Scope.track(trainingFrame);
+        Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
+        Scope.track(testFrame);
+
+        TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
+        parameters._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
+        parameters._k = 0.3;
+        parameters._f = 0.7;
+        parameters._blending = true;
+        parameters._response_column = "IsDepDelayed";
+        parameters._ignored_columns = ignoredColumns(trainingFrame, "Origin", parameters._response_column);
+        parameters._train = trainingFrame._key;
+        parameters._seed = 0XFEED;
+
+
+        TargetEncoderBuilder temb = new TargetEncoderBuilder(parameters);
+        final Model targetEncoderModel = temb.trainModel().get();
+
+        ModelBuilder modelBuilderForMainModel = modelBuilderGBMWithCVFixture(trainingFrame, parameters._response_column, parameters._seed);
+        modelBuilderForMainModel._parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.EnumLimited;
+
+        modelBuilderForMainModel.addTEModelKey(targetEncoderModel._key);
+        modelBuilderForMainModel.init(false);
+
+        Model gbmModel = (GBMModel) modelBuilderForMainModel.trainModel().get();
+
+        Frame scoredTest = gbmModel.score(testFrame);
+        Scope.track(scoredTest);
+
+        hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(gbmModel, testFrame);
+        assertTrue(mmb.auc() > 0);
+
+        TwoDimTable model_summary = gbmModel._output._model_summary;
+        System.out.println(model_summary);
+
+        Scope.track_generic(gbmModel);
+      } finally {
+        Scope.exit();
+      }
+
+    }
   }
 
 }
