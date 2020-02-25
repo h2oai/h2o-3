@@ -1,15 +1,16 @@
 package hex.psvm.psvm;
 
 import water.MRTask;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.FrameCreator;
-import water.fvec.Vec;
+import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
 
 import java.util.Arrays;
 
+/**
+ * Utils class for matrix operations. See also {code DMatrix.java}
+ * 
+ */
 public class MatrixUtils {
 
   /**
@@ -35,7 +36,7 @@ public class MatrixUtils {
   /**
    * Calculates matrix-vector product M'v
    * @param m Frame representing matrix M (m x n)
-   * @param v Vec representing vector v (n x 1) - TODO avalenta NOT WORKING, dimension must be m x 1
+   * @param v Vec representing vector v (m x 1)
    * @return m-element array representing the result of the product
    */
   public static double[] productMtv(Frame m, Vec v) {
