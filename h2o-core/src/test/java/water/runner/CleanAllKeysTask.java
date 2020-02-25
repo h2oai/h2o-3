@@ -9,7 +9,7 @@ public class CleanAllKeysTask extends MRTask<CleanAllKeysTask> {
 
     @Override
     protected void setupLocal() {
-        LocalTestRuntime.initKeys.clear();
+        LocalTestRuntime.beforeTestKeys.clear();
         H2O.raw_clear();
         water.fvec.Vec.ESPC.clear();
     }

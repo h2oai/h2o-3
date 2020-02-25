@@ -1,6 +1,7 @@
 package water.runner;
 
 import org.junit.AfterClass;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.internal.AssumptionViolatedException;
@@ -41,16 +42,11 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
     }
 
 
-    /**
-     * Returns a {@link Statement}: run all non-overridden {@code @BeforeClass} methods on this class
-     * and superclasses before executing {@code statement}; if any throws an
-     * Exception, stop execution and pass the exception on.
-     */
-    protected Statement withBeforeClasses(Statement statement) {
-        List<FrameworkMethod> befores = getTestClass()
-                .getAnnotatedMethods(BeforeClass.class);
-        return befores.isEmpty() ? statement :
-                new H2ORunnerBefores(statement, befores, null);
+    @Override
+    protected Statement withBefores(FrameworkMethod method, Object target, Statement statement) {
+        List<FrameworkMethod> befores = getTestClass().getAnnotatedMethods(
+                Before.class);
+        return new H2ORunnerBefores(statement, befores, null);
     }
 
     @Override

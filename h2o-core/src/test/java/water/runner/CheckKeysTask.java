@@ -33,7 +33,7 @@ public class CheckKeysTask extends MRTask<CheckKeysTask> {
     @Override
     protected void setupLocal() {
 
-        final Set<Key> initKeys = LocalTestRuntime.initKeys;
+        final Set<Key> initKeys = LocalTestRuntime.beforeTestKeys;
         final Set<Key> keysAfterTest = H2O.localKeySet();
 
         final int numLeakedKeys = keysAfterTest.size() - initKeys.size();
