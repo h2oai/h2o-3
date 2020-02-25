@@ -4,6 +4,7 @@ import water.H2O;
 import water.MRTask;
 import water.api.schemas3.KillMinus3V3;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.Log;
 
 public class KillMinus3Handler extends Handler {
   @SuppressWarnings("unused") // called through reflection by RequestServer
@@ -33,8 +34,8 @@ public class KillMinus3Handler extends Handler {
           } catch( java.io.IOException ioe ) {
             // Silently ignore if, e.g. /bin/kill does not exist on windows
           } catch (Exception xe) {
-            xe.printStackTrace();
-            throw new H2OIllegalArgumentException("");
+            Log.err(xe);
+            throw new H2OIllegalArgumentException(xe.getMessage());
           }
         }
       }.doAllNodes();

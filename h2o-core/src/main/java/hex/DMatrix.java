@@ -252,10 +252,7 @@ public class DMatrix  {
         final double yVal = _y[i];
         final Chunk xChunk = chks[i];
         for (int k = xChunk.nextNZ(-1); k < res.length; k = xChunk.nextNZ(k))
-          try { res[k] += yVal * xChunk.atd(k);} catch(Throwable t) {
-            t.printStackTrace();
-            throw new RuntimeException(t);
-          }
+          res[k] += yVal * xChunk.atd(k);
       }
       Chunk modChunk = new NewChunk(res).setSparseRatio(2).compress();
       if(_progressKey != null)

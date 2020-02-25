@@ -155,8 +155,8 @@ public class ServletUtils {
       @SuppressWarnings("unchecked")
       final String s = new H2OErrorV3().fillFromImpl(error).toJsonString();
       response.getWriter().write(s);
-    } catch (Exception e) {
-      e.printStackTrace();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 

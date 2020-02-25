@@ -704,9 +704,8 @@ public abstract class SharedTreeModel<
                 out.p(sb);
               }
             }
-          } catch (Throwable t) {
-            t.printStackTrace();
-            throw new IllegalArgumentException("Internal error creating the POJO.", t);
+          } catch (Exception e) {
+            throw new RuntimeException("Internal error creating the POJO.", e);
           }
         }
       });

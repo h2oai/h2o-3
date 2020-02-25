@@ -47,7 +47,7 @@ public class AstCountSubstringsWords extends AstPrimitive {
     try {
       words = new HashSet<>(FileUtils.readLines(new File(wordsPath)));
     } catch (IOException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
     //Transform each vec
     Vec nvs[] = new Vec[fr.numCols()];

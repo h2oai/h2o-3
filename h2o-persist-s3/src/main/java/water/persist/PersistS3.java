@@ -53,7 +53,7 @@ public final class PersistS3 extends Persist {
             StringBuilder msg = new StringBuilder();
             msg.append(e.getMessage() + "\n");
             msg.append("Unable to load S3 credentials.");
-            throw new RuntimeException(msg.toString());
+            throw new RuntimeException(msg.toString(), e);
           }
         }
       }
