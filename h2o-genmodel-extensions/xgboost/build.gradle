@@ -30,6 +30,7 @@ dependencies {
     compile "ai.h2o:xgboost4j-linux-gpuv4:${xgboost4jVersion}"
     compile "ai.h2o:xgboost4j-linux-minimal:${xgboost4jVersion}"
     compile "ai.h2o:xgboost4j-osx-minimal:${xgboost4jVersion}"
+    compile "commons-logging:commons-logging:1.2"
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
 
     testCompile 'com.esotericsoftware.kryo:kryo:2.21'
