@@ -1368,9 +1368,21 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive) {
-      if(getTEModelKey() != null) _parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.TargetEncoder;
+      Model.Parameters.CategoricalEncodingScheme originalSchema = _parms._categorical_encoding;
 
-      Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
+      Frame newtrain = _train;
+      Frame newvalid = _valid;
+      if(getTEModelKey() != null) {
+        _parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.TargetEncoder;
+        newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
+        if (_valid != null) {
+          newvalid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model);
+        }
+      }
+
+      _parms._categorical_encoding = originalSchema;
+
+      newtrain = encodeFrameCategoricals(newtrain, ! _parms._is_cv_model);
       if (newtrain != _train) {
         _origNames = _train.names();
         _origDomains = _train.domains();
@@ -1379,7 +1391,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         printOutFrameAsTable(newtrain, false, 20);
       }
       if (_valid != null) {
-        _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
+        newvalid = encodeFrameCategoricals(newvalid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
+        setValid(newvalid);
         _vresponse = _valid.vec(_parms._response_column);
         printOutFrameAsTable(_valid, false, 20);
       }
@@ -1418,6 +1431,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (restructured)
         _train.restructure(_train.names(), vecs);
     }
+
     boolean names_may_differ = _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary;
     boolean names_differ = _valid !=null && ArrayUtils.difference(_train._names, _valid._names).length != 0;
     assert (!expensive || names_may_differ || !names_differ);
