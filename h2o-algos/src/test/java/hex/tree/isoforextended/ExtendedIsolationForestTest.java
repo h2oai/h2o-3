@@ -23,7 +23,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 7;
-            p._extension_level = train.numCols() - 1;
+            p.extensionLevel = train.numCols() - 1;
             p._min_rows = 1;
 //            p._sample_size = 5;
 
