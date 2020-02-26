@@ -81,7 +81,7 @@ abstract class ZipUtil {
         return isDir;
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      Log.err(e);
     }
 
     return false;
@@ -106,7 +106,7 @@ abstract class ZipUtil {
         }
         zipFile.close();
       } catch (IOException e) {
-        e.printStackTrace();
+        Log.err(e);
       }
     }
     return fileList;
@@ -140,7 +140,7 @@ abstract class ZipUtil {
         }
         zipFile.close();
       } catch (IOException e) {
-        e.printStackTrace();
+        Log.err(e);
       }
     }
 
@@ -180,7 +180,7 @@ abstract class ZipUtil {
           return bits.length / zips.length;
         }
       } catch (IOException e) {
-        e.printStackTrace();
+        Log.err(e);
       }
     } else {
       byte[] bits = ZipUtil.unzipBytes(zips, cpr, FileVec.DFLT_CHUNK_SIZE);
@@ -245,20 +245,14 @@ abstract class ZipUtil {
    * @return
    */
   static byte[] unzipForHeader( byte[] bs, int chkSize ) {
-
     ByteArrayInputStream bais = new ByteArrayInputStream(bs);
     ZipInputStream zis = new ZipInputStream(bais);
-
     InputStream is = zis;
-
-    // Now read from the compressed stream
-    int off = 0;
-
     try {
+      int off = 0;
       while( off < bs.length ) {
-        int len = 0;
-        len = is.read(bs, off, bs.length - off);
-        if( len < 0 )
+        int len = is.read(bs, off, bs.length - off);
+        if (len < 0)
           break;
         off += len;
         if( off == bs.length ) { // Dataset is uncompressing alot! Need more space...
@@ -268,15 +262,13 @@ abstract class ZipUtil {
         }
       }
     } catch (IOException e) {
-      e.printStackTrace();
+      Log.err(e);
     }
-
     try {
       is.close();
     } catch (IOException e) {
-      e.printStackTrace();
+      Log.err(e);
     }
-
     return bs;
   }
 }

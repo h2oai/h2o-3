@@ -75,7 +75,7 @@ public abstract class ModelMojoWriter<M extends Model<M, P, O>, P extends Model.
       writeTo(zos);
       zos.close();
     } catch (IOException e) {
-      e.printStackTrace();
+      throw new RuntimeException(e);
     }
   }
 

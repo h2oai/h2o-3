@@ -152,9 +152,7 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
       }
       ab.put1(-1);
     } catch(Throwable t){
-      System.err.println("Iced hash map serialization failed! " + t.toString() + ", msg = " + t.getMessage());
-      t.printStackTrace();
-      throw H2O.fail("Iced hash map serialization failed!" + t.toString() + ", msg = " + t.getMessage());
+      throw H2O.fail("Iced hash map serialization failed!" + t.toString() + ", msg = " + t.getMessage(), t);
     } finally {
       _write_lock = false;
     }
@@ -202,16 +200,7 @@ public  class IcedHashMapGeneric<K, V> extends Iced implements Map<K, V>, Clonea
       }
       return this;
     } catch(Throwable t) {
-      t.printStackTrace();
-
-      if (null == t.getCause()) {
-        throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage() + ", cause: null");
-      } else {
-        throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage() +
-                ", cause: " + t.getCause().toString() +
-                ", cause msg: " + t.getCause().getMessage() +
-                ", cause stacktrace: " + java.util.Arrays.toString(t.getCause().getStackTrace()));
-      }
+      throw H2O.fail("IcedHashMap deserialization failed! + " + t.toString() + ", msg = " + t.getMessage(), t);
     }
   }
   public final IcedHashMapGeneric readJSON_impl(AutoBuffer ab ) {throw H2O.unimpl();}

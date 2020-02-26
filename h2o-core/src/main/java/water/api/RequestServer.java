@@ -330,7 +330,6 @@ public class RequestServer extends HttpServlet {
         Log.err(e);
       }
     } catch (IOException e) {
-      e.printStackTrace();
       ServletUtils.setResponseStatus(response, 500);
       Log.err(e);
       // Trying to send an error message or stack trace will produce another IOException...

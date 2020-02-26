@@ -390,7 +390,7 @@ public class h2odriver extends Configured implements Tool {
     }
   }
 
-  private void reportClientReady(String ip, int port) throws Exception {
+  private void reportClientReady(String ip, int port)  {
     assert client;
     if (clusterReadyFileName != null) {
       createClusterReadyFile(ip, port);
@@ -431,7 +431,7 @@ public class h2odriver extends Configured implements Tool {
     }
   }
 
-  private static void createFlatFile(String flatFileContent) throws Exception {
+  private static void createFlatFile(String flatFileContent) {
     String fileName = clusterFlatfileName + ".tmp";
     try {
       File file = new File(fileName);
@@ -443,14 +443,14 @@ public class h2odriver extends Configured implements Tool {
       File file2 = new File(clusterFlatfileName);
       boolean success = file.renameTo(file2);
       if (! success) {
-        throw new Exception ("Failed to create file " + clusterReadyFileName);
+        throw new RuntimeException("Failed to create file " + clusterReadyFileName);
       }
-    } catch ( IOException e ) {
-      e.printStackTrace();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
-  private static void createClusterReadyFile(String ip, int port) throws Exception {
+  private static void createClusterReadyFile(String ip, int port) {
     String fileName = clusterReadyFileName + ".tmp";
     String text1 = ip + ":" + port + "\n";
     String text2 = hadoopJobId + "\n";
@@ -465,10 +465,10 @@ public class h2odriver extends Configured implements Tool {
       File file2 = new File(clusterReadyFileName);
       boolean success = file.renameTo(file2);
       if (! success) {
-        throw new Exception ("Failed to create file " + clusterReadyFileName);
+        throw new RuntimeException("Failed to create file " + clusterReadyFileName);
       }
-    } catch ( IOException e ) {
-      e.printStackTrace();
+    } catch (IOException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -528,9 +528,6 @@ public class h2odriver extends Configured implements Tool {
       catch (Exception e) {
         System.out.println("Exception occurred in CallbackHandlerThread");
         System.out.println(e.toString());
-        if (e.getMessage() != null) {
-          System.out.println(e.getMessage());
-        }
         e.printStackTrace();
       }
     }
@@ -686,7 +683,7 @@ public class h2odriver extends Configured implements Tool {
         case NODE_FAILED:
           int exitCode = 42;
           try {
-            exitCode = Integer.valueOf(event.readPayload());
+            exitCode = Integer.parseInt(event.readPayload());
           } catch (Exception e) {
             e.printStackTrace();
           }
@@ -2034,17 +2031,12 @@ public class h2odriver extends Configured implements Tool {
       final File flatfile = File.createTempFile("h2o", "txt");
       flatfile.deleteOnExit();
 
-      boolean flatfileCreated = false;
       try (Writer w = new BufferedWriter(new FileWriter(flatfile))) {
         w.write(flatfileContent);
         w.close();
-        flatfileCreated = true;
       } catch (IOException e) {
-        e.printStackTrace();
-      }
-
-      if (!flatfileCreated) {
         System.out.println("ERROR: Failed to write flatfile.");
+        e.printStackTrace();
         System.exit(1);
       }
 

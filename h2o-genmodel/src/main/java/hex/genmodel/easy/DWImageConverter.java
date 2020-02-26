@@ -54,8 +54,7 @@ public class DWImageConverter extends RowToRawDataConverter {
       try {
         GenModel.img2pixels(img, W, H, C, _destData, 0, _dwm._meanImageData);
       } catch (IOException e) {
-        e.printStackTrace();
-        throw new PredictException("Couldn't vectorize image.");
+        throw new PredictException("Couldn't vectorize image.", e);
       }
       rawData = new double[_destData.length];
       for (int i = 0; i < rawData.length; ++i)

@@ -802,11 +802,7 @@ public class SVD extends ModelBuilder<SVDModel,SVDModel.SVDParameters,SVDModel.S
         }
         model._output._model_summary = createModelSummaryTable(model._output);
         model.update(_job);
-      } catch (Throwable t) {
-        t.printStackTrace();
-        throw t;
-      }
-      finally {
+      } finally {
         if( model != null ) model.unlock(_job);
         if( dinfo != null ) dinfo.remove();
         if (tinfo != null) tinfo.remove();

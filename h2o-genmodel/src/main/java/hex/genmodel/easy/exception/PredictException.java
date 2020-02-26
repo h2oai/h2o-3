@@ -7,4 +7,12 @@ public class PredictException extends Exception {
   public PredictException(String message) {
     super(message);
   }
+
+  public PredictException(Throwable cause) {
+    super(cause);
+  }
+
+  public PredictException(String message, Throwable cause) {
+    super(message, cause);
+  }
 }

@@ -70,8 +70,8 @@ public class AvroParser extends Parser {
           cnt++;
         }
       } // else first chunk does not contain synchronization block, so give up and let another reader to use it
-    } catch (Throwable e) {
-      e.printStackTrace();
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to read AVRO.", e);
     }
 
     Log.trace(String.format("Avro: ChunkIdx: %d read %d records, start at %d off, block count: %d, block size: %d", cidx, cnt, din.getChunkDataStart(cidx), dataFileReader.getBlockCount(), dataFileReader.getBlockSize()));

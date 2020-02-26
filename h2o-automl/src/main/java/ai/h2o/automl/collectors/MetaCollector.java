@@ -78,15 +78,9 @@ public class MetaCollector {
     private class Callback extends H2O.H2OCallback{
       public Callback(){super(ParallelTasks.this);}
       @Override public void callback(H2O.H2OCountedCompleter cc) {
-          int i = _ctr.incrementAndGet();
-          if (i < _tasks.length)
-            asyncVecTask(i);
-      }
-
-      @Override
-      public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
-        ex.printStackTrace();
-        return super.onExceptionalCompletion(ex, caller);
+        int i = _ctr.incrementAndGet();
+        if (i < _tasks.length)
+          asyncVecTask(i);
       }
     }
   }

@@ -72,7 +72,7 @@ public class Linpack {
       try {
         threads[t].join();
       } catch (InterruptedException e) {
-        e.printStackTrace();
+        Thread.currentThread().interrupt();
       }
     }
     return ArrayUtils.sum(gflops);
