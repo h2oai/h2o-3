@@ -123,8 +123,7 @@ public class XgbPredictContribsTest {
   }
 
   private static float baseMargin(Predictor predictor) {
-    Object mparam = ReflectionUtils.getFieldValue(predictor, "mparam");
-    return ReflectionUtils.getFieldValue(mparam, "base_score");
+    return ReflectionUtils.getFieldValue(predictor, "base_score");
   }
   
   private static class MapBackedFVec implements FVec {
