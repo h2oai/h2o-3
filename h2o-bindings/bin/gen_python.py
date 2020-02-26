@@ -333,11 +333,13 @@ def gen_init(modules):
     yield "import sys"
     yield ""
     module_strs = []
-    for module, clz, category in sorted(modules):
-        if clz in ["H2OGridSearch", "H2OAutoML"]:
+    # imports estimators
+    for full_module, module, clz, category in sorted(modules):
+        if module in ["grid", "automl"]:
             continue
         module_strs.append('"%s"' % clz)
         yield "from .%s import %s" % (module, clz)
+    # global methods for h2o.estimators module
     yield """
 
 module = sys.modules[__name__]
@@ -357,6 +359,7 @@ def create_estimator(algo, **params):
     return _estimator_cls_by_algo_[algo](**params)
 
 """
+    # auto-exports
     yield "__all__ = ("
     yield bi.wrap('"create_estimator",', indent=" "*4)
     yield bi.wrap(", ".join(module_strs), indent=" "*4)
@@ -369,21 +372,27 @@ def gen_models_docs(modules):
     yield ""
     yield "Modeling In H2O"
     yield "==============="
+    modules_with_globals = ['automl']
     for cat in ["Supervised", "Unsupervised", "Miscellaneous"]:
         yield ""
         yield cat
         yield "+" * len(cat)
         yield ""
-        for module, clz, category in sorted(modules):
+        for full_module, module, clz, category in sorted(modules):
             if category != cat: continue
-            fullmodule = "h2o.estimators.%s.%s" % (module, clz)
-            if clz == "H2OGridSearch":
-                fullmodule = "h2o.grid.grid_search.H2OGridSearch"
-            if clz == "H2OAutoML":
-                fullmodule = "h2o.automl.autoh2o.H2OAutoML"
+            # doc for module
+            if module in modules_with_globals:
+                yield ":mod:`%s`" % module
+                yield "-" * (7 + len(module))
+                yield ".. automodule:: %s" % full_module
+                yield "    :members:"
+                yield "    :exclude-members: %s" % clz
+                yield ""
+            # doc for class
+            full_clz = '.'.join([full_module, clz])
             yield ":mod:`%s`" % clz
             yield "-" * (7 + len(clz))
-            yield ".. autoclass:: %s" % fullmodule
+            yield ".. autoclass:: %s" % full_clz
             yield "    :show-inheritance:"
             yield "    :members:"
             yield ""
@@ -395,22 +404,31 @@ def gen_models_docs(modules):
 def main():
     bi.init("Python", "../../../h2o-py/h2o/estimators", clear_dir=False)
 
-    modules = [("deeplearning", "H2OAutoEncoderEstimator", "Unsupervised"),
-               ("estimator_base", "H2OEstimator", "Miscellaneous"),
-               ("grid_search", "H2OGridSearch", "Miscellaneous"),
-               ("automl", "H2OAutoML", "Miscellaneous")]
+    modules = [("h2o.estimators.deeplearning", "deeplearning", "H2OAutoEncoderEstimator", "Unsupervised"),
+               ("h2o.estimators.estimator_base", "estimator_base", "H2OEstimator", "Miscellaneous"),
+               ("h2o.grid", "grid", "H2OGridSearch", "Miscellaneous"),
+               ("h2o.automl", "automl", "H2OAutoML", "Miscellaneous")]
     builders = bi.model_builders().items()
+    algo_to_module = dict(
+        drf="random_forest",
+        naivebayes="naive_bayes",
+        isolationforest="isolation_forest"
+    )
+    algo_to_category = dict(
+        svd="Miscellaneous",
+        word2vec="Miscellaneous"
+    )
     for name, mb in builders:
         module = name
-        if name == "drf": module = "random_forest"
-        if name == "naivebayes": module = "naive_bayes"
-        if name == "isolationforest": module = "isolation_forest"
+        if name in algo_to_module:
+            module = algo_to_module[name]
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
-        category = "Supervised" if mb["supervised"] else "Unsupervised"
-        if name in {"svd", "word2vec"}:
-            category = "Miscellaneous"
-        modules.append((module, algo_to_classname(name), category))
+        category = algo_to_category[name] if name in algo_to_category \
+            else "Supervised" if mb["supervised"] \
+            else "Unsupervised"
+        full_module = '.'.join(["h2o.estimators", module])
+        modules.append((full_module, module, algo_to_classname(name), category))
 
     bi.write_to_file("__init__.py", gen_init(modules))
     bi.write_to_file("../../docs/modeling.rst", gen_models_docs(modules))
