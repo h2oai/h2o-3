@@ -114,7 +114,7 @@ public class FrameUtilsTest extends TestUtil {
               .withChunkLayout(2, 2, 2, 1)
               .build();
       Frame result = FrameUtils.categoricalEncoder(f, new String[]{"CatCol1"},
-              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, null, -1, null);
+              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit, null, -1);
       Scope.track(result);
       assertArrayEquals(
               new String[]{"NumCol", "CatCol2.A", "CatCol2.B", "CatCol2.C", "CatCol2.missing(NA)", "CatCol1"},
@@ -196,7 +196,7 @@ public class FrameUtilsTest extends TestUtil {
       fr.toCategoricalCol("AGE");
       
       Frame enc = FrameUtils.categoricalEncoder(
-              fr, new String[]{}, Model.Parameters.CategoricalEncodingScheme.EnumLimited, null, 5, null);
+              fr, new String[]{}, Model.Parameters.CategoricalEncodingScheme.EnumLimited, null, 5);
       Scope.track(enc);
       
       System.out.println(enc.toTwoDimTable());
@@ -218,7 +218,7 @@ public class FrameUtilsTest extends TestUtil {
               .build();
 
       Frame enc = FrameUtils.categoricalEncoder(
-              fr, new String[]{}, Model.Parameters.CategoricalEncodingScheme.EnumLimited, null, 2, null);
+              fr, new String[]{}, Model.Parameters.CategoricalEncodingScheme.EnumLimited, null, 2);
       Scope.track(enc);
 
       System.out.println(enc.toTwoDimTable());

@@ -13,6 +13,8 @@ import water.*;
 import water.fvec.Frame;
 import water.util.TwoDimTable;
 
+import java.util.Arrays;
+
 import static org.junit.Assert.assertTrue;
 
 @RunWith(Enclosed.class)
@@ -150,8 +152,12 @@ public class ModelBuilderWithTETest {
         hex.ModelMetricsBinomial mmb = hex.ModelMetricsBinomial.getFromDKV(gbmModel, testFrame);
         assertTrue(mmb.auc() > 0);
 
-        TwoDimTable model_summary = gbmModel._output._model_summary;
-        System.out.println(model_summary);
+        String variableImportancesTableAsString = ((GBMModel) gbmModel)._output._variable_importances.toString(0, true);
+
+        String[] enumLimitedEncodedColumns = {"fYear.top_10_levels", "fDayofMonth.top_10_levels", "Dest.top_10_levels"};
+        assertTrue(Arrays.stream(enumLimitedEncodedColumns).allMatch(variableImportancesTableAsString::contains));
+        System.out.println(variableImportancesTableAsString);
+
 
         Scope.track_generic(gbmModel);
       } finally {

@@ -373,6 +373,19 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
+
+    Model teModel = DKV.getGet(getTEModelKey());
+    if(teModel != null) {
+      Frame trainEncoded = FrameUtils.applyTargetEncoder(teModel, train());
+      setTrain(trainEncoded);
+      _toDelete.put(trainEncoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+      if( valid() != null) {
+        setValid(FrameUtils.applyTargetEncoder(teModel, valid()));
+        _toDelete.put(valid()._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+      }
+
+    }
+
     if( !nFoldCV() )
       return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
 
@@ -1368,35 +1381,17 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive) {
-      Model.Parameters.CategoricalEncodingScheme originalSchema = _parms._categorical_encoding;
-
-      Frame newtrain = _train;
-      Frame newvalid = _valid;
-      if(getTEModelKey() != null) {
-        _parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.TargetEncoder;
-        newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
-        if (_valid != null) {
-          newvalid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model);
-        }
-      }
-
-      _parms._categorical_encoding = originalSchema;
-
-      newtrain = encodeFrameCategoricals(newtrain, ! _parms._is_cv_model);
+      Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
       if (newtrain != _train) {
         _origNames = _train.names();
         _origDomains = _train.domains();
         setTrain(newtrain);
         separateFeatureVecs(); //fix up the pointers to the special vecs
-        printOutFrameAsTable(newtrain, false, 20);
       }
       if (_valid != null) {
-        newvalid = encodeFrameCategoricals(newvalid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
-        setValid(newvalid);
+        _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
         _vresponse = _valid.vec(_parms._response_column);
-        printOutFrameAsTable(_valid, false, 20);
       }
-
       boolean restructured = false;
       Vec[] vecs = _train.vecs();
       for (int j = 0; j < vecs.length; ++j) {
@@ -1431,7 +1426,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (restructured)
         _train.restructure(_train.names(), vecs);
     }
-
     boolean names_may_differ = _parms._categorical_encoding == Model.Parameters.CategoricalEncodingScheme.Binary;
     boolean names_differ = _valid !=null && ArrayUtils.difference(_train._names, _valid._names).length != 0;
     assert (!expensive || names_may_differ || !names_differ);
@@ -1491,12 +1485,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
   }
 
-  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
-    assert limit <= Integer.MAX_VALUE;
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
-    System.out.println(twoDimTable.toString(2, true));
-  }
-
   /**
    * Adapts a given frame to the same schema as the training frame.
    * This includes encoding of categorical variables (if expensive is enabled).
@@ -1520,7 +1508,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
     Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), getTEModelKey(), _toDelete, false);
+      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
       Vec response = adapted.vec(_parms._response_column);
       if (response == null && _parms._response_column != null)
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
@@ -1538,8 +1526,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   private Frame encodeFrameCategoricals(Frame fr, boolean scopeTrack) {
     String[] skipCols = new String[]{_parms._weights_column, _parms._offset_column, _parms._fold_column, _parms._response_column};
-    Model teModel = DKV.getGet(getTEModelKey());
-    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels, teModel);
+    Frame encoded = FrameUtils.categoricalEncoder(fr, skipCols, _parms._categorical_encoding, getToEigenVec(), _parms._max_categorical_levels);
     if (encoded != fr) {
       assert encoded._key != null;
       if (scopeTrack)
