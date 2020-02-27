@@ -10,6 +10,7 @@ import water.rapids.ast.prims.assign.*;
 import water.rapids.ast.prims.math.*;
 import water.rapids.ast.prims.matrix.*;
 import water.rapids.ast.prims.misc.*;
+import water.rapids.ast.prims.models.AstSegmentModelsAsFrame;
 import water.rapids.ast.prims.mungers.*;
 import water.rapids.ast.prims.operators.*;
 import water.rapids.ast.prims.reducers.*;
@@ -20,6 +21,7 @@ import water.rapids.ast.prims.time.*;
 import water.rapids.ast.prims.timeseries.*;
 import water.rapids.vals.ValFrame;
 import water.rapids.vals.ValFun;
+import water.rapids.vals.ValKeyed;
 import water.rapids.vals.ValModel;
 
 import java.io.Closeable;
@@ -298,6 +300,9 @@ public class Env extends Iced {
     init(new AstSeq());
     init(new AstSeqLen());
 
+    // Segment Models
+    init(new AstSegmentModelsAsFrame());
+    
     // Custom (eg. algo-specific)
     for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())
       init(prim);
@@ -392,11 +397,14 @@ public class Env extends Iced {
     Value value = DKV.get(Key.make(expand(id)));
     if (value != null) {
       if (value.isFrame())
-        return addGlobals((Frame) value.get());
+        return addGlobals(value.get());
       if (value.isModel())
-        return new ValModel((Model) value.get());
-      // Only understand Frames right now
-      throw new IllegalArgumentException("DKV name lookup of " + id + " yielded an instance of type " + value.className() + ", but only Frame & Model are supported");
+        return new ValModel(value.get());
+      Object other = value.get();
+      if (other instanceof Keyed)
+        return new ValKeyed((Keyed) other);
+      // Only understand Frames/Models/Keyed right now
+      throw new IllegalArgumentException("DKV name lookup of " + id + " yielded an instance of type " + value.className() + ", but only Frame, Model & Keyed are supported");
     }
 
     // Now the built-ins
