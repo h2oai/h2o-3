@@ -9,7 +9,10 @@ import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import water.*;
+import water.Job;
+import water.Key;
+import water.Scope;
+import water.TestUtil;
 import water.fvec.Frame;
 import water.util.TwoDimTable;
 
@@ -68,6 +71,16 @@ public class ModelBuilderWithTETest {
     public String taskType;
 
     @Test
+    public void te_model_with_multiple_columns_to_encode() {
+
+    }
+
+    @Test
+    public void te_model_when_main_model_has_fold_column_provided() {
+      // folds, weights column etc
+    }
+
+    @Test
     public void te_model_is_being_applied_once_added_to_main_model_builder() {
 
       try {
@@ -94,7 +107,6 @@ public class ModelBuilderWithTETest {
         ModelBuilder modelBuilderForMainModel = modelBuilderGBMWithCVFixture(trainingFrame, parameters._response_column, parameters._seed);
 
         modelBuilderForMainModel.addTEModelKey(targetEncoderModel._key);
-        modelBuilderForMainModel.init(false);
 
         Model gbmModel = (GBMModel) modelBuilderForMainModel.trainModel().get();
 
