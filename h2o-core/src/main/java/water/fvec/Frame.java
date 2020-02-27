@@ -1571,6 +1571,7 @@ public class Frame extends Lockable<Frame> {
 
     boolean _headers = true;
     boolean _hex_string = false;
+    boolean _escape_quotes = false;
     char _separator = DEFAULT_SEPARATOR;
 
     public CSVStreamParams setHeaders(boolean headers) {
@@ -1585,6 +1586,11 @@ public class Frame extends Lockable<Frame> {
 
     public CSVStreamParams setSeparator(byte separator) {
       _separator = (char) separator;
+      return this;
+    }
+
+    public CSVStreamParams setEscapeQuotes(boolean backslash_escape) {
+      _escape_quotes = backslash_escape;
       return this;
     }
   }
@@ -1719,13 +1725,14 @@ public class Frame extends Lockable<Frame> {
      * @param unescapedString An unescaped {@link String} to escape
      * @return String with escaped double-quotes, if found.
      */
-    private static String escapeQuotesForCsv(final String unescapedString) {
+    private String escapeQuotesForCsv(final String unescapedString) {
+      if (!_parms._escape_quotes) return unescapedString;
       final Matcher matcher = DOUBLE_QUOTE_PATTERN.matcher(unescapedString);
       return matcher.replaceAll("\"\"");
     }
 
     @Override
-    public int available() throws IOException {
+    public int available() {
       // Case 1:  There is more data left to read from the current line.
       if (_position != _line.length) {
         return _line.length - _position;

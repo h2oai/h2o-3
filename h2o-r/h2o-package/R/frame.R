@@ -35,6 +35,10 @@
 #` E$nrow   <- the row count (total size, generally much larger than the local cached rows)
 #` E$types  <- the H2O column types
 
+# since we only import data.table via requireNamespace this is required for data.table calls to
+# stop pretending to being data.frame and start behaving as data.table
+.datatable.aware = TRUE
+
 #-----------------------------------------------------------------------------------------------------------------------
 # Private/Internal Functions
 #-----------------------------------------------------------------------------------------------------------------------
@@ -1559,7 +1563,7 @@ NULL
   }
 
   if( is1by1 ) .fetch.data(data,1L)[[1]]
-  else         data
+  else data
 }
 
 #' @rdname H2OFrame-Extract
@@ -3269,10 +3273,11 @@ destination_frame.guess <- function(x) {
 #' @param use logical scalar, extra escape option, to be used as global option.
 #' @details
 #' We use this function to control csv read/write with optional \link[data.table]{data.table} package.
-#' Currently data.table is disabled by default, to enable it set \code{options("h2o.use.data.table"=TRUE)}.
+#' Currently data.table is enabled by default for some operations, to disable it set \code{options("h2o.use.data.table"=FALSE)}.
 #' It is possible to control just \code{\link[data.table]{fread}} or \code{\link[data.table]{fwrite}} with \code{options("h2o.fread"=FALSE, "h2o.fwrite"=FALSE)}.
 #' \code{h2o.fread} and \code{h2o.fwrite} options are not handled in this function but next to \emph{fread} and \emph{fwrite} calls.
 #' @export
+#' @importFrom utils installed.packages
 #' @seealso \code{\link{as.h2o.data.frame}}, \code{\link{as.data.frame.H2OFrame}}
 #' @examples
 #' op <- options("h2o.use.data.table" = TRUE)
@@ -3284,7 +3289,7 @@ destination_frame.guess <- function(x) {
 #' options(op)
 use.package <- function(package, 
                         version="1.9.8"[package=="data.table"], 
-                        use=getOption("h2o.use.data.table", FALSE)[package=="data.table"]) {
+                        use=getOption("h2o.use.data.table", TRUE)[package=="data.table"]) {
   ## methods that depends on use.package default arguments (to have control in single place):
   # as.h2o.data.frame
   # as.data.frame.H2OFrame
@@ -3292,13 +3297,13 @@ use.package <- function(package,
             is.character(version), length(version)==1L,
             is.logical(use), length(use)==1L)
 
-  # if (package=="data.table" && use) { # not sure if this is needed.  Keeping it for now.
-  #   if (!("bit64" %in% rownames(installed.packages())) || (packageVersion("bit64") < as.package_version("0.9.7"))) {
-  #      # print out warning to install bit64 in order to use data.table
-  #     warning("data.table cannot be used without R package bit64 version 0.9.7 or higher.  Please upgrade to take advangage of data.table speedups.")
-  #     return(FALSE)
-  #   }
-  # }
+   if (package=="data.table" && use) { # not sure if this is needed.  Keeping it for now.
+     if (!("bit64" %in% rownames(installed.packages())) || (packageVersion("bit64") < as.package_version("0.9.7"))) {
+        # print out warning to install bit64 in order to use data.table
+       warning("data.table cannot be used without R package bit64 version 0.9.7 or higher.  Please upgrade to take advangage of data.table speedups.")
+       return(FALSE)
+     }
+   }
   use && requireNamespace(package, quietly=TRUE) && (packageVersion(package) >= as.package_version(version))
 }
 
@@ -3419,21 +3424,17 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   }
   .key.validate(destination_frame)
 
+  tmpf <- tempfile(fileext = ".svm")
   if (use.package("data.table") && use.package("slam", version="0.1.40", TRUE)) {
-    drs <- slam::as.simple_triplet_matrix(x)# need to convert sparse matrix x to a simple triplet matrix format
-    thefile <- tempfile()
-    .h2o.write_stm_svm(drs, file = thefile)
-    h2f <<- h2o.uploadFile(thefile, parse_type = "SVMLight", destination_frame=destination_frame)
-    unlink(thefile)
-    h2f[, -1]   # remove the first column
+    drs <- slam::as.simple_triplet_matrix(x)
+    .h2o.write_stm_svm(drs, file = tmpf)
   } else {
-    warning("as.h2o can be slow for large sparse matrices.  Install packages data.table and slam to speed up as.h2o.")
-    tmpf <- tempfile(fileext = ".svm")
+    warning("as.h2o can be slow for large sparse matrices. Install packages data.table and slam to speed up as.h2o.")
     .h2o.write.matrix.svmlight(x, file = tmpf)
-    h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
-    file.remove(tmpf)
-    h2f
   }
+  h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
+  file.remove(tmpf)
+  h2f # remove the first column
 }
 
 .h2o.write.matrix.svmlight <- function(matrix, file) {
@@ -3450,21 +3451,13 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   })
 }
 
-.h2o.calc_stm_svm <- function(stm, y){
+.h2o.calc_stm_svm <- function(stm) {
   # Convert a simple triplet matrix to svm format
-  # author Peter Ellis
-  # return a character vector of length n
-  # fixed bug to return rows of zeros instead of repeating other rows
-  # returns a character vector of length y ready for writing in svm format
+  # returns a character vector of length n ready for writing in svm format
   if(!"simple_triplet_matrix" %in% class(stm)){
     stop("stm must be a simple triple matrix")
   }
-  if(!is.vector(y) | nrow(stm) != length(y)){
-    stop("y should be a vector of length equal to number of rows of stm")
-  }
-  n <- length(y)
-
-  # data table solution thanks to roland
+  n <- nrow(stm)
   rowLeft <- setdiff(c(1:n), unique(stm$i))
   nrowLeft <- length(rowLeft)
   i=NULL  # serves no purpose except to pass the R cmd cran check
@@ -3472,19 +3465,24 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   v=NULL
   jv=NULL
   stm2 <- data.table::data.table(i = c(stm$i,rowLeft), j = c(stm$j,rep(1,nrowLeft)), v = c(stm$v,rep(0,nrowLeft)))
-  res <- stm2[, list(i, jv = paste(j, v, sep = ":"))][order(i), list(res = paste(jv, collapse = " ")), by = i][["res"]]
-
-  out <- paste(y, res)
-
-  return(out)
+  all.rows <- 1:max(stm2$i)
+  rows.having.first.col <- stm2$i[which(stm2$j == 1)]
+  rows.missing.first.col <- setdiff(all.rows, rows.having.first.col)
+  if (length(rows.missing.first.col) > 0) {
+    stm2.fill <- data.table::data.table(i = rows.missing.first.col, j = 1, v = 0)
+    stm2 <- rbind(stm2.fill, stm2)
+  }
+  res <- stm2[, list(i, jv = ifelse(j==1,v,paste(j-1, v, sep = ":")))
+             ][order(i), list(res = paste(jv, collapse = " ")), by = i
+             ][["res"]]
+  return(res)
 }
 
-.h2o.write_stm_svm <- function(stm, y = rep(1, nrow(stm)), file){
+.h2o.write_stm_svm <- function(stm, file) {
   # param stm a simple triplet matrix (class exported slam) of features (ie explanatory variables)
-  # param y a vector of labels.  If not provided, a dummy of 1s is provided
   # param file file to write to.
   # author Peter Ellis
-  out <- .h2o.calc_stm_svm(stm, y)
+  out <- .h2o.calc_stm_svm(stm)
   writeLines(out, con = file)
 }
 
@@ -3534,10 +3532,13 @@ as.data.frame.H2OFrame <- function(x, ...) {
   # Versions of R prior to 3.1 should not use hex string.
   # Versions of R including 3.1 and later should use hex string.
   useHexString <- getRversion() >= "3.1"
-
+  # We cannot use data.table by default since its handling of escaping inside quoted csv values is not very good
+  # in some edge cases its simply impossible to load data in correct format without additional post processing
+  useDataTable <- getOption("h2o.fread", FALSE) && use.package("data.table")
   urlSuffix <- paste0('DownloadDataset',
-                      '?frame_id=', URLencode( h2o.getId(x)),
-                      '&hex_string=', as.numeric(useHexString))
+                      '?frame_id=', URLencode(h2o.getId(x)),
+                      '&hex_string=', ifelse(useHexString, "true", "false"),
+                      '&escape_quotes=', ifelse(useDataTable, "false", "true"))
   
   verbose <- getOption("h2o.verbose", FALSE)
     
@@ -3569,16 +3570,16 @@ as.data.frame.H2OFrame <- function(x, ...) {
     ttt <- .writeBinToTmpFile(payload)
   }
   if (verbose) cat(sprintf("fetching from h2o frame to R using '.h2o.doSafeGET' took %.2fs\n", proc.time()[[3]]-pt))
-  
   if (verbose) pt <- proc.time()[[3]]
-  if (getOption("h2o.fread", TRUE) && use.package("data.table")) {
-    df <- data.table::fread(ttt, blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
+  if (useDataTable) {
+    if (identical(colClasses, NA_character_) || identical(colClasses, "")) colClasses <- NULL  # workaround for data.table length-1 bug #4237 fixed in v1.12.9
+    df <- data.table::fread(ttt, sep = ",", blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, showProgress=FALSE, data.table=FALSE, ...)
     if (sum(dates))
       for (i in which(dates)) data.table::setattr(df[[i]], "class", "POSIXct")
     fun <- "fread"
   } else {
     # Substitute NAs for blank cells rather than skipping
-    if(useCon){
+    if (useCon) {
       df <- read.csv((tcon <- textConnection(ttt)), blank.lines.skip = FALSE, na.strings = "", colClasses = colClasses, ...)
       close(tcon)
     } else {

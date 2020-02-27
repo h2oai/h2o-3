@@ -45,7 +45,6 @@ test.as.h2o.destination_frame <- function() {
   #no dest 
   converted <- as.h2o(dummy_matrix)
   expect_match(attr(converted, 'id'), "^dummy_matrix_\\w+$")
-  
 }
 
 doTest("Test as.h2o methods with/without destination frame", test.as.h2o.destination_frame)
