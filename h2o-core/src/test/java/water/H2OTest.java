@@ -2,6 +2,8 @@ package water;
 
 import org.junit.Test;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import static org.junit.Assert.*;
 
 public class H2OTest {
@@ -20,4 +22,16 @@ public class H2OTest {
     assertTrue(H2O.getSysBoolProperty("test.testGetSysBoolProperty", false));
   }
 
+  @Test
+  public void testCalcNextUniqueObjectId() {
+    AtomicLong seq = new AtomicLong(41);
+    checkObjectId(H2O.calcNextUniqueObjectId("test-type", seq, "test-desc"), 42);
+    checkObjectId(H2O.calcNextUniqueObjectId("test-type", seq, "test-desc"), 43);
+  }
+
+  private void checkObjectId(String id, int seq) {
+    assertTrue(id.startsWith("test-desc_test-type"));
+    assertTrue(id.endsWith("_" + seq));
+  }
+  
 }

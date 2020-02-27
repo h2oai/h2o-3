@@ -231,10 +231,22 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * @param parms  parameters - set of tuples (parameter name, parameter value)
    * @return this schema
    *
-   * @see #fillFromParms(Properties, boolean)
+   * @see #fillFromParms(Properties, Properties, boolean)
    */
   public S fillFromParms(Properties parms) {
     return fillFromParms(parms, true);
+  }
+  /**
+   * Fill this Schema object from a set of parameters.
+   *
+   * @param parms  parameters - set of tuples (parameter name, parameter value)
+   * @param checkRequiredFields  perform check for missing required fields
+   * @return this schema
+   *
+   * @see #fillFromParms(Properties, Properties, boolean)
+   */
+  public S fillFromParms(Properties parms, boolean checkRequiredFields) {
+    return fillFromParms(parms, null, checkRequiredFields);
   }
   /**
    * Fill this Schema from a set of (generally HTTP) parameters.
@@ -250,11 +262,13 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
    * It also does various sanity checks for broken Schemas, for example fields must
    * not be private, and since input fields get filled here they must not be final.
    * @param parms Properties map of parameter values
+   * @param unknownParms if not null, bad parameters won't cause an exception, 
+   *                     they will be collected in this Properties object instead
    * @param checkRequiredFields  perform check for missing required fields
    * @return this schema
    * @throws H2OIllegalArgumentException for bad/missing parameters
    */
-  public S fillFromParms(Properties parms, boolean checkRequiredFields) {
+  public S fillFromParms(Properties parms, Properties unknownParms, boolean checkRequiredFields) {
     // Get passed-in fields, assign into Schema
     Class thisSchemaClass = this.getClass();
 
@@ -283,7 +297,11 @@ public abstract class Schema<I extends Iced, S extends Schema<I,S>> extends Iced
         Field f = fields.get(key); // No such field error, if parm is junk
 
         if (null == f) {
-          throw new H2OIllegalArgumentException("Unknown parameter: " + key, "Unknown parameter in fillFromParms: " + key + " for class: " + this.getClass().toString());
+          if (unknownParms != null) {
+            unknownParms.put(key, parms.getProperty(key));
+            continue;
+          } else
+            throw new H2OIllegalArgumentException("Unknown parameter: " + key, "Unknown parameter in fillFromParms: " + key + " for class: " + this.getClass().toString());
         }
 
         int mods = f.getModifiers();

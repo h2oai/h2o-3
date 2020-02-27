@@ -2936,7 +2936,8 @@ def write_hyper_parameters_json(dir1, dir2, json_filename, hyper_parameters):
         json.dump(hyper_parameters, test_file)
 
 
-def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, strict=False, compare_NA=True):
+def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, strict=False, compare_NA=True,
+                   custom_comparators=None):
     """
     This function will compare two H2O frames to make sure their dimension, and values in all cells are the same.
     It will not compare the column names though.
@@ -2952,6 +2953,7 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
     :param compare_NA: optional parameter to compare NA or not.  For csv file generated from orc file, the
         NAs are represented as some other symbol but our CSV will not be able to parse it correctly as NA.
         In this case, do not compare the number of NAs.
+    :param custom_comparators: dictionary specifying custom comparators for some columns. 
     :return: boolean: True, the two frames are equal and False otherwise.
     """
 
@@ -2986,8 +2988,10 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
             if str(c2_type) == 'enum':  # orc files do not have enum column type.  We convert it here
                 frame1[col_ind].asfactor()
 
-        # compare string
-        if (str(c1_type) == 'string') or (str(c1_type) == 'enum'):
+        if custom_comparators and c1_key in custom_comparators:        
+            custom_comparators[c1_key](frame1, frame2, col_ind, rows1, numElements)
+        elif (str(c1_type) == 'string') or (str(c1_type) == 'enum'):
+            # compare string
             compareOneStringColumn(frame1, frame2, col_ind, rows1, numElements)
         else:
             if str(c2_type) == 'time':  # compare time columns

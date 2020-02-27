@@ -445,6 +445,9 @@ def generate_main_class(endpoints):
         required_fields = [field for field in input_fields if field["required"]]
         input_fields_wo_excluded = [field for field in input_fields if field["name"] != "_exclude_fields"]
 
+        if class_name == "BulkModelBuilders":
+            continue
+
         yield "  /**"
         yield bi.wrap(route["summary"], indent="   * ")
         yield "   */"
@@ -767,8 +770,9 @@ def main():
         bi.write_to_file("water/bindings/pojos/%s.java" % name, generate_enum(name, sorted(values)))
 
     for name, endpoints in bi.endpoint_groups().items():
-        bi.vprint("Generating proxy: " + name)
-        bi.write_to_file("water/bindings/proxies/retrofit/%s.java" % name, generate_proxy(name, endpoints))
+        if name != "BulkModelBuilders":
+            bi.vprint("Generating proxy: " + name)
+            bi.write_to_file("water/bindings/proxies/retrofit/%s.java" % name, generate_proxy(name, endpoints))
 
     bi.vprint("Generating H2oApi.java")
     bi.write_to_file("water/bindings/H2oApi.java", generate_main_class(bi.endpoints()))

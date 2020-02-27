@@ -97,22 +97,23 @@ def class_extensions():
         print("No stacking strategy for this model")
 
     # Override train method to support blending
-    def train(self, x=None, y=None, training_frame=None, blending_frame=None, **kwargs):
+    def train(self, x=None, y=None, training_frame=None, blending_frame=None, verbose=False, **kwargs):
         has_training_frame = training_frame is not None or self.training_frame is not None
         blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=not has_training_frame)
 
         if not has_training_frame:
             training_frame = blending_frame  # used to bypass default checks in super class and backend and to guarantee default metrics
 
+        sup = super(self.__class__, self)
+
         def extend_parms(parms):
             if blending_frame is not None:
                 parms['blending_frame'] = blending_frame
             if self.metalearner_fold_column is not None:
                 parms['ignored_columns'].remove(quoted(self.metalearner_fold_column))
+        parms = sup._make_parms(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
 
-        super(self.__class__, self)._train(x, y, training_frame,
-                                           extend_parms_fn=extend_parms,
-                                           **kwargs)
+        sup._train(parms, verbose=verbose)
 
 
 extensions = dict(
