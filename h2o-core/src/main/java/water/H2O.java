@@ -43,6 +43,7 @@ import static water.util.JavaVersionUtils.JAVA_VERSION;
 */
 final public class H2O {
   public static final String DEFAULT_JKS_PASS = "h2oh2o";
+  public static final int H2O_DEFAULT_PORT = 54321;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Command-line argument parsing and help
@@ -268,7 +269,7 @@ final public class H2O {
     public int port;
 
     /** -baseport=####; Port to start upward searching from. */
-    public int baseport = 54321;
+    public int baseport = H2O_DEFAULT_PORT;
 
     /** -port_offset=####; Offset between the API(=web) port and the internal communication port; api_port + port_offset = h2o_port */
     public int port_offset = 1;
