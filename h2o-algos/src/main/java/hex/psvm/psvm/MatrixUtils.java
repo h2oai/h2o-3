@@ -55,7 +55,6 @@ public class MatrixUtils {
    */
   public static Vec productMtv2(Frame m, Vec v) {
     Vec result = new ProductMtvTask2(v, m.numRows()).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
-    // System.out.println(Arrays.toString(FrameUtils.asDoubles(result)));
     return result;
   }  
 
