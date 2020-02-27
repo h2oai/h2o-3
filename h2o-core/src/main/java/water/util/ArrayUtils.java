@@ -67,6 +67,34 @@ public class ArrayUtils {
     return a;
   }
 
+  public static double[] reduceMin(double[] a, double[] b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    if (a.length <= b.length) {
+      for (int i=0; i<a.length; ++i)
+        a[i] = Math.min(a[i], b[i]);
+      return a;
+    } else {
+      for (int i=0; i<b.length; ++i)
+        b[i] = Math.min(b[i], a[i]);
+      return b;
+    }
+  }
+  
+  public static double[] reduceMax(double[] a, double[] b) {
+    if (a == null) return b;
+    if (b == null) return a;
+    if (a.length >= b.length) {
+      for (int i=0; i<a.length; ++i)
+        a[i] = Math.max(a[i], b[i]);
+      return a;
+    } else {
+      for (int i=0; i<b.length; ++i)
+        b[i] = Math.max(b[i], a[i]);
+      return b;
+    }
+  }
+
   public static Vec reduceMin(Vec a, Vec b) {
     return new MRTask() {
 
