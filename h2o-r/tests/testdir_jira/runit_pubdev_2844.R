@@ -6,7 +6,7 @@ test.pubdev_2844 <- function() {
   df1 <- iris
   h2o.no_progress()
   # enable using of data.table for as.data.frame
-  options(h2o.fread=TRUE)
+  op.original <- options(h2o.fread=TRUE)
 
   # as.h2o
   op <- options("datatable.verbose"=TRUE, "h2o.use.data.table"=TRUE)
@@ -80,7 +80,7 @@ test.pubdev_2844 <- function() {
   } else {
     expect_true(length(co) && sum(grepl("read.csv", co)), label="as.data.frame.H2OFrame should produce 'read.csv' in timing message when h2o.verbose=TRUE and data.table not used.")
   }
-  options(op)
+  options(op.original)
 }
 
 doTest("PUBDEV-2844", test.pubdev_2844)
