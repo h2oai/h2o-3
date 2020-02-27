@@ -1,7 +1,7 @@
 description = "H2O XGBoost support"
 
 ext {
-    xgboost4jVersion = "1.0.0.8"
+    xgboost4jVersion = "1.0.0.9"
 }
 
 dependencies {
