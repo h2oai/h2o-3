@@ -131,6 +131,7 @@ h2o.downloadCSV <- function(data, filename) {
 #'
 #' Save an \linkS4class{H2OModel} to disk. (Note that ensemble binary models 
 #' can be saved.)
+#' The user by which H2O server was executed is the owner of saved file.
 #'
 #' In the case of existing files \code{force = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.

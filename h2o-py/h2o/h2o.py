@@ -1355,6 +1355,7 @@ def download_all_logs(dirname=".", filename=None, container=None):
 def save_model(model, path="", force=False):
     """
     Save an H2O Model object to disk. (Note that ensemble binary models can now be saved using this method.)
+    The user by which H2O server was executed is the owner of saved file.
 
     :param model: The model object to save.
     :param path: a path to save the model at (hdfs, s3, local)
@@ -1382,6 +1383,7 @@ def save_model(model, path="", force=False):
 def download_model(model, path=""):
     """
     Download an H2O Model object to disk.
+    The user by which Python client was executed is the owner of saved file.
 
     :param model: The model object to download.
     :param path: a path to the directory where the model should be saved.
