@@ -116,7 +116,26 @@ public class FrameUtils {
     String[] predictorColumns = ArrayUtils.difference(teModel._parms.train().names(), teModel._parms._ignored_columns);
     final String[] encodedColumns = ArrayUtils.remove(predictorColumns, teModel._parms._response_column); // TODO take into account fold column
     Frame transformed = teModel.score(inputFrame);
-    return transformed.remove(encodedColumns);
+    Scope.untrack(transformed.keys());
+
+    // We need to rearrange columns ( as some logic relies on response being a last column etc)
+    final String TE_ENCODED_COLUMN_POSTFIX = "_te";
+    Arrays.stream(encodedColumns).forEach(ec -> {
+      transformed
+        .swap(transformed.find(ec), transformed.find(ec + TE_ENCODED_COLUMN_POSTFIX));
+      DKV.put(transformed);
+      transformed.remove(ec).remove();
+    });
+
+    printOutFrameAsTable(transformed, false, 20);
+    return transformed;
+  }
+
+  //TODO remove at the end of PR
+  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
+    assert limit <= Integer.MAX_VALUE;
+    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
+    System.out.println(twoDimTable.toString(2, true));
   }
 
   public static void printTopCategoricalLevels(Frame fr, boolean warn, int topK) {

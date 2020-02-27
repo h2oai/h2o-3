@@ -1468,7 +1468,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame newFr = new Frame(fr);
-    Frame adaptFr = _output._te_model_key != null ? FrameUtils.applyTargetEncoder(DKV.getGet(_output._te_model_key), newFr): newFr;
+    Frame adaptFr = applyTEIfModelAvailable(newFr);
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     // clean up the previous score warning messages
@@ -1512,6 +1512,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
     return output;
+  }
+
+  private Frame applyTEIfModelAvailable(Frame newFr) {
+    if(_output._te_model_key != null ) {
+      Frame encodedFrame = FrameUtils.applyTargetEncoder(DKV.getGet(_output._te_model_key), newFr);
+      Arrays.stream(encodedFrame.keys()).forEach(key -> {
+        _toDelete.put(key, "track encoded by TE frame");
+      });
+      return encodedFrame;
+    } else {
+      return newFr;
+    }
   }
 
   /**
