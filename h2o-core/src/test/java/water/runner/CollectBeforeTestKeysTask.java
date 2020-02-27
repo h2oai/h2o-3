@@ -5,10 +5,10 @@ import water.H2O;
 import water.MRTask;
 
 @Ignore
-public class CollectInitKeysTask extends MRTask<CollectInitKeysTask>  {
+public class CollectBeforeTestKeysTask extends MRTask<CollectBeforeTestKeysTask>  {
 
     @Override
     protected void setupLocal() {
-        LocalTestRuntime.initKeys.addAll(H2O.localKeySet());
+        LocalTestRuntime.beforeTestKeys.addAll(H2O.localKeySet());
     }
 }
