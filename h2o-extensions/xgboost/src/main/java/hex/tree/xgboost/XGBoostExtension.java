@@ -2,8 +2,8 @@ package hex.tree.xgboost;
 
 import ml.dmlc.xgboost4j.java.INativeLibLoader;
 import ml.dmlc.xgboost4j.java.NativeLibLoader;
-import ml.dmlc.xgboost4j.java.NativeLibrary;
-import ml.dmlc.xgboost4j.java.NativeLibraryLoaderChain;
+import hex.tree.xgboost.util.NativeLibrary;
+import hex.tree.xgboost.util.NativeLibraryLoaderChain;
 import water.AbstractH2OExtension;
 import water.util.Log;
 

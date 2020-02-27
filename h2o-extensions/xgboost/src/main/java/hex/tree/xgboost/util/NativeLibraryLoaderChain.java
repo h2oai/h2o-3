@@ -13,18 +13,19 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.util;
 
 import java.io.IOException;
 import java.util.LinkedList;
 
+import ml.dmlc.xgboost4j.java.INativeLibLoader;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import static ml.dmlc.xgboost4j.java.NativeLibrary.CompilationFlags.WITH_GPU;
-import static ml.dmlc.xgboost4j.java.NativeLibrary.CompilationFlags.WITH_OMP;
-import static ml.dmlc.xgboost4j.java.NativeLibrary.EMPTY_COMPILATION_FLAGS;
-import static ml.dmlc.xgboost4j.java.NativeLibrary.nativeLibrary;
+import static hex.tree.xgboost.util.NativeLibrary.CompilationFlags.WITH_GPU;
+import static hex.tree.xgboost.util.NativeLibrary.CompilationFlags.WITH_OMP;
+import static hex.tree.xgboost.util.NativeLibrary.EMPTY_COMPILATION_FLAGS;
+import static hex.tree.xgboost.util.NativeLibrary.nativeLibrary;
 
 /**
  * A simple loader which tries to load all

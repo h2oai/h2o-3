@@ -2,6 +2,7 @@ package ml.dmlc.xgboost4j.java;
 
 import hex.*;
 import hex.tree.xgboost.*;
+import hex.tree.xgboost.util.BoosterHelper;
 import water.*;
 import water.fvec.*;
 

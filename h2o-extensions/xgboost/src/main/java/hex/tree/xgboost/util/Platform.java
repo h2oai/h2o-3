@@ -1,4 +1,4 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.util;
 
 /**
  * A simple OS type wrapper.

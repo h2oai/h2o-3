@@ -1,4 +1,6 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.util;
+
+import ml.dmlc.xgboost4j.java.*;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,7 +13,7 @@ import java.util.Map;
 public class BoosterHelper {
 
   public static Booster loadModel(InputStream in) throws XGBoostError, IOException {
-    return Booster.loadModel(in);
+    return XGBoost.loadModel(in);
   }
 
   /**

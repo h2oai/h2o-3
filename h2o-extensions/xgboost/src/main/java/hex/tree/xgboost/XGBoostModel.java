@@ -8,10 +8,10 @@ import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
 import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
-import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
+import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.PredictConfiguration;
 import ml.dmlc.xgboost4j.java.*;
 import water.*;
@@ -544,7 +544,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     Booster booster = null;
     try {
       booster = model_info.deserializeBooster();
-      return XGBoostNativeMojoModel.score0(data, offset, preds, _parms._booster.toString(), _parms._ntrees,
+      return XGBoostNativePredict.score0(data, offset, preds, _parms._booster.toString(), _parms._ntrees,
               model_info.deserializeBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
               _output.nclasses(), _output._priorClassDist, threshold, _output._sparse, _output.hasOffset());
     } finally {

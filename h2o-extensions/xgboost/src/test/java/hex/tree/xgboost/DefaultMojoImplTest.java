@@ -4,10 +4,7 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
-import hex.genmodel.algos.xgboost.XGBoostMojoReader;
-import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters.Booster;
-import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
@@ -16,23 +13,16 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.util.Log;
 
-import java.io.*;
-import java.nio.charset.Charset;
+import java.io.IOException;
+import java.io.InputStream;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class DefaultMojoImplTest extends TestUtil {
 
   @BeforeClass
   public static void setup() {
     stall_till_cloudsize(1);
-  }
-
-  @Before
-  public void setupMojoJavaScoring() {
-    System.clearProperty(XGBoostMojoReader.SCORE_JAVA_PROP); // force default behavior
-    assertTrue(XGBoostMojoReader.useJavaScoring(true, null)); // check default value for MOJO scoring impl
   }
 
   @Test
@@ -80,7 +70,7 @@ public class DefaultMojoImplTest extends TestUtil {
           oldMojo, MojoReaderBackendFactory.CachingStrategy.MEMORY
       );
       MojoModel mojo = MojoModel.load(mojoReaderBackend);
-      assertEquals(XGBoostNativeMojoModel.class.getName(), mojo.getClass().getName());
+      assertEquals(XGBoostJavaMojoModel.class.getName(), mojo.getClass().getName());
     } finally {
       Scope.exit();
     }

@@ -13,7 +13,7 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  */
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.util;
 
 import java.io.File;
 import java.io.FileNotFoundException;
