@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: example
+  namespace: h2o-statefulset
+spec:
+  serviceName: h2o-service
+  replicas: 3
+  selector:
+    matchLabels:
+      app: k8s-env
+  template:
+    metadata:
+      labels:
+        app: k8s-env
+    spec:
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: k8s-env
+          image: 'pscheidl/h2o-k8s'
+          ports:
+            - containerPort: 54321
+              protocol: TCP
+            - containerPort: 54322
+              protocol: TCP
+          env:
+          - name: H2O_KUBERNETES_SERVICE_DNS
+            value: h2o-service.h2o-statefulset.svc.cluster.local
+          - name: H2O_NODE_LOOKUP_TIMEOUT
+            value: '120'
+          - name: H2O_NODE_EXPECTED_COUNT
+            value: '3'

@@ -3,8 +3,8 @@ package water.k8s;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import water.H2O;
-import water.H2OApp;
 import water.H2OStarter;
+import water.k8s.lookup.LookupConstraintBuilder;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -13,7 +13,7 @@ import java.util.Set;
 public class H2OKubernetesStarter {
 
     private static final String K8S_NODE_LOOKUP_TIMEOUT_KEY = "H2O_NODE_LOOKUP_TIMEOUT";
-    private static final int DEFAULT_NODE_LOOKUP_TIMEOUT_SECONDS = 60;
+    private static final String K8S_DESIRED_CLUSTER_SIZE_KEY = "H2O_NODE_EXPECTED_COUNT";
     private static final Logger LOGGER = LoggerFactory.getLogger(H2OKubernetesStarter.class);
 
     public static void main(final String[] args) {
@@ -30,16 +30,24 @@ public class H2OKubernetesStarter {
     }
 
     private static final Optional<Set<String>> resolveNodeIPsFromDNS() {
-        int timeoutSeconds;
+        final LookupConstraintBuilder lookupConstraintBuilder = new LookupConstraintBuilder();
+
         try {
-            timeoutSeconds = Integer.parseInt(System.getenv(K8S_NODE_LOOKUP_TIMEOUT_KEY));
+            final Integer timeoutSeconds = Integer.parseInt(System.getenv(K8S_NODE_LOOKUP_TIMEOUT_KEY));
+            lookupConstraintBuilder.withTimeoutSeconds(timeoutSeconds);
         } catch (NumberFormatException e) {
-            LOGGER.info(String.format("Using default timeout of %d seconds.", DEFAULT_NODE_LOOKUP_TIMEOUT_SECONDS));
-            timeoutSeconds = DEFAULT_NODE_LOOKUP_TIMEOUT_SECONDS;
+            LOGGER.info(String.format("'%s' environment variable not set.", K8S_NODE_LOOKUP_TIMEOUT_KEY));
+        }
+
+        try {
+            final Integer desiredClusterSize = Integer.parseInt(System.getenv(K8S_DESIRED_CLUSTER_SIZE_KEY));
+            lookupConstraintBuilder.withDesiredClusterSize(desiredClusterSize);
+        } catch (NumberFormatException e) {
+            LOGGER.info(String.format("'%s' environment variable not set.", K8S_DESIRED_CLUSTER_SIZE_KEY));
         }
 
         final KubernetesDnsDiscovery kubernetesDnsDiscovery = KubernetesDnsDiscovery.fromH2ODefaults();
-        return kubernetesDnsDiscovery.lookupNodes(3, timeoutSeconds);
+        return kubernetesDnsDiscovery.lookupNodes(lookupConstraintBuilder.build());
     }
 
 }

@@ -3,6 +3,7 @@ package water.k8s;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import water.k8s.lookup.LookupConstraint;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -13,12 +14,7 @@ import javax.naming.directory.DirContext;
 import javax.naming.directory.InitialDirContext;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.HashSet;
-import java.util.Hashtable;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 
 public class KubernetesDnsDiscovery {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesEmbeddedConfig.class);
@@ -54,18 +50,13 @@ public class KubernetesDnsDiscovery {
         return host.replaceAll("\\\\.$", "");
     }
 
-    public Optional<Set<String>> lookupNodes(final int expectedNumberOfNodes, final int timeoutSeconds) {
-        final Instant beginning = Instant.now();
-        final Set<String> lookedUpNodes = new HashSet<>(expectedNumberOfNodes);
+    public Optional<Set<String>> lookupNodes(final Collection<LookupConstraint> lookupStrategies) {
+        final Set<String> lookedUpNodes = new HashSet<>();
 
-        while (Duration.between(beginning, Instant.now()).getSeconds() < timeoutSeconds) {
+        while (lookupStrategies.stream().allMatch(lookupStrategy -> !lookupStrategy.isLookupEnded(lookedUpNodes))) {
             try {
                 lookup(lookedUpNodes);
-                if (lookedUpNodes.size() < expectedNumberOfNodes) {
-                    Thread.sleep(ONE_SECOND);
-                } else {
-                    return Optional.of(lookedUpNodes);
-                }
+                Thread.sleep(ONE_SECOND);
             } catch (NamingException e) {
                 continue;
             } catch (InterruptedException e) {
@@ -73,7 +64,7 @@ public class KubernetesDnsDiscovery {
             }
         }
 
-        return Optional.empty();
+        return Optional.of(lookedUpNodes);
     }
 
     private void lookup(final Set<String> nodeIPs) throws NamingException {
