@@ -894,3 +894,21 @@ setClass("H2OAutoML", slots = c(project_name = "character",
                       contains = "Keyed")
 #' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OAutoML"), function(object) attr(object, "id"))
+
+setMethod("show", signature("H2OAutoML"), function(object) {
+    cat("Project: ", object@project_name, "\n")
+    cat("===================================\n\n")
+    cat("H2O AutoML Leader Model Details:\n")
+    cat("Model ID:", object@leader@model_id, "\n")
+    cat("Algorithm:", object@leader@algorithm, "\n\n")
+    
+    # summary
+    print(object@leader@model$model_summary)
+    cat("\n")
+    
+    # cross validation metrics summary
+    print(g@leader@model$cross_validation_metrics_summary)
+    
+    cat("\nTop models on leaderboard:\n") 
+    print(head(object@leaderboard, n = 10))
+})
