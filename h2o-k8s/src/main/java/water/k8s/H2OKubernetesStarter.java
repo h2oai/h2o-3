@@ -21,7 +21,7 @@ public class H2OKubernetesStarter {
         final Collection<String> nodeIPs = resolveNodeIPsFromDNS()
                 .orElseThrow(() -> new IllegalStateException("Unable to resolve Node IPs from DNS service."));
 
-        LOGGER.info(String.format("Discovered the following pods on K8s cluster: [%s]", 
+        LOGGER.info(String.format("Using the following pods to form H2O cluster: [%s]", 
                 String.join(",", nodeIPs)) );
 
         final KubernetesEmbeddedConfig kubernetesEmbeddedConfig = new KubernetesEmbeddedConfig(nodeIPs);

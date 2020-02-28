@@ -39,9 +39,11 @@ public class LookupConstraintBuilder {
         }
 
         if (timeoutSeconds != null) {
+            LOGGER.info(String.format("Timeout for node discovery is set to %d seconds.", timeoutSeconds));
             lookupConstraintList.add(new TimeoutConstraint(timeoutSeconds));
         }
         if (desiredClusterSize != null) {
+            LOGGER.info(String.format(String.format("Desired cluster size is set to %d nodes.", desiredClusterSize)));
             lookupConstraintList.add(new ClusterSizeConstraint(desiredClusterSize));
         }
         return lookupConstraintList;
