@@ -794,7 +794,24 @@ final public class H2O {
    * Register embedded H2O configuration object with H2O instance.
    */
   public static void setEmbeddedH2OConfig(AbstractEmbeddedH2OConfig c) { embeddedH2OConfig = c; }
-  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() { return embeddedH2OConfig; }
+  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() {
+    if (embeddedH2OConfig != null)
+      return embeddedH2OConfig;
+    ServiceLoader<AbstractEmbeddedConfigH2OProvider> configProviders = ServiceLoader.load(AbstractEmbeddedConfigH2OProvider.class);
+    AbstractEmbeddedConfigH2OProvider provider = null;
+    for (AbstractEmbeddedConfigH2OProvider candidateProvider : configProviders) {
+      candidateProvider.init();
+      if (! candidateProvider.isActive())
+        continue;
+      if (provider != null) {
+        throw new IllegalStateException("Multiple active EmbeddedH2OConfig providers: " + provider.getName() + 
+                " and " + candidateProvider.getName() + " (possibly other as well).");
+      }
+      provider = candidateProvider;
+    }
+    embeddedH2OConfig = provider.getConfig();
+    return embeddedH2OConfig;
+  }
 
   /**
    * Tell the embedding software that this H2O instance belongs to
