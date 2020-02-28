@@ -18,7 +18,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 @RunWith(H2ORunner.class)
-@CloudSize(2)
+@CloudSize(1)
 public class XGBoostMultiNodeTest extends TestUtil  {
 
     private Frame[] loadData() {
