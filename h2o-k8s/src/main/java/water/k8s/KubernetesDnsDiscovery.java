@@ -15,6 +15,7 @@ import javax.naming.directory.InitialDirContext;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class KubernetesDnsDiscovery {
     private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesEmbeddedConfig.class);
@@ -45,9 +46,9 @@ public class KubernetesDnsDiscovery {
         return new KubernetesDnsDiscovery(dnsServiceName);
     }
 
-    private static String extractHost(String server) {
+    private static String extractHost(final String server, final Pattern extractHostPattern) {
         String host = server.split(" ")[3];
-        return host.replaceAll("\\\\.$", "");
+        return extractHostPattern.matcher(host).replaceAll("");
     }
 
     public Optional<Set<String>> lookupNodes(final Collection<LookupConstraint> lookupStrategies) {
@@ -70,11 +71,12 @@ public class KubernetesDnsDiscovery {
     private void lookup(final Set<String> nodeIPs) throws NamingException {
         final Attributes attributes = dirContext.getAttributes(serviceDns, new String[]{"SRV"});
         final Attribute srvAttribute = attributes.get("srv");
+        final Pattern extractHostPattern = Pattern.compile("\\\\.$");
         if (srvAttribute != null) {
             final NamingEnumeration<?> servers = srvAttribute.getAll();
             while (servers.hasMore()) {
                 final String server = (String) servers.next();
-                final String serverHost = extractHost(server);
+                final String serverHost = extractHost(server, extractHostPattern);
                 final InetAddress nodeIP;
                 try {
                     nodeIP = InetAddress.getByName(serverHost);
