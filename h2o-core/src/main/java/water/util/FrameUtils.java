@@ -112,11 +112,12 @@ public class FrameUtils {
   }
 
   public static Frame applyTargetEncoder(Model teModel, Frame inputFrame) {
-    // following manipulations with columns is a responsibility of a future pipeline concept. Support for input output columns for the models would be helpful as well.
-    String[] predictorColumns = ArrayUtils.difference(teModel._parms.train().names(), teModel._parms._ignored_columns);
-    final String[] encodedColumns = ArrayUtils.remove(predictorColumns, teModel._parms._response_column); // TODO take into account fold column
     Frame transformed = teModel.score(inputFrame);
     Scope.untrack(transformed.keys());
+
+    // following manipulations with columns is a responsibility of a future pipeline concept. Support for input output columns for the models would be helpful as well.
+    String[] predictorColumns = ArrayUtils.difference(teModel._parms.train().names(), teModel._parms._ignored_columns);
+    final String[] encodedColumns = ArrayUtils.remove(ArrayUtils.remove(predictorColumns, teModel._parms._fold_column), teModel._parms._response_column);
 
     // We need to rearrange columns ( as some logic relies on response being a last column etc)
     final String TE_ENCODED_COLUMN_POSTFIX = "_te";
@@ -126,8 +127,6 @@ public class FrameUtils {
       DKV.put(transformed);
       transformed.remove(ec).remove();
     });
-
-    printOutFrameAsTable(transformed, false, 20);
     return transformed;
   }
 
