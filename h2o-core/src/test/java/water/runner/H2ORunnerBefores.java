@@ -26,7 +26,7 @@ public class H2ORunnerBefores extends RunBefores {
         for (FrameworkMethod before : befores) {
             before.invokeExplosively(target);
         }
-        new CollectInitKeysTask().doAllNodes();
+        new CollectBeforeTestKeysTask().doAllNodes();
         next.evaluate();
     }
 }
