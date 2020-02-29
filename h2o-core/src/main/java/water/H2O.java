@@ -794,15 +794,68 @@ final public class H2O {
   /**
    * Register embedded H2O configuration object with H2O instance.
    */
-  public static void setEmbeddedH2OConfig(AbstractEmbeddedH2OConfig c) { embeddedH2OConfig = c; }
-  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() { return embeddedH2OConfig; }
+  public static void setEmbeddedH2OConfig(AbstractEmbeddedH2OConfig c) {
+    embeddedH2OConfig = c;
+  }
+
+  /**
+   * Returns an inststance of {@link AbstractEmbeddedH2OConfig}. The origin of the embedded config might be either
+   * from directly setting the embeddedH2OConfig field via setEmbeddedH2OConfig setter, or dynamically provided via
+   * service loader. Directly set {@link AbstractEmbeddedH2OConfig} is always prioritized. ServiceLoader lookup is only
+   * performed if no config is previously set.
+   * <p>
+   * Result of first ServiceLoader lookup is also considered final - once a service is found, dynamic lookup is not
+   * performed any further.
+   *
+   * @return An instance of {@link AbstractEmbeddedH2OConfig}, if set or dynamically provided. Otherwise null
+   * @author Michal Kurka
+   */
+  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() {
+    if (embeddedH2OConfig != null) {
+      return embeddedH2OConfig;
+    }
+
+    final Optional<EmbeddedConfigProvider> optionalEmbeddedConfigProvider = discoverEmbeddedConfigProvider();
+
+    if (optionalEmbeddedConfigProvider.isPresent()) {
+      final EmbeddedConfigProvider embeddedConfigProvider = optionalEmbeddedConfigProvider.get();
+      Log.info(String.format("Dynamically loaded '%s' as AbstractEmbeddedH2OConfigProvider.", embeddedConfigProvider.getName()));
+      embeddedH2OConfig = embeddedConfigProvider.getConfig();
+    }
+    return embeddedH2OConfig;
+  }
+
+  /**
+   * Uses {@link ServiceLoader} to discover active instances of {@link EmbeddedConfigProvider}. Only one provider
+   * may be active at a time. If more providers are detected, {@link IllegalStateException is thrown.}
+   *
+   * @return An {@link Optional} of {@link EmbeddedConfigProvider}, if a single active provider is found. Otherwise
+   * an empty optional.
+   * @throws IllegalStateException When there are multiple active instances {@link EmbeddedConfigProvider} discovered.
+   */
+  private static Optional<EmbeddedConfigProvider> discoverEmbeddedConfigProvider() throws IllegalStateException {
+    final ServiceLoader<EmbeddedConfigProvider> configProviders = ServiceLoader.load(EmbeddedConfigProvider.class);
+    EmbeddedConfigProvider provider = null;
+    for (final EmbeddedConfigProvider candidateProvider : configProviders) {
+      candidateProvider.init();
+      if (!candidateProvider.isActive())
+        continue;
+      if (provider != null) {
+        throw new IllegalStateException("Multiple active EmbeddedH2OConfig providers: " + provider.getName() +
+                " and " + candidateProvider.getName() + " (possibly other as well).");
+      }
+      provider = candidateProvider;
+    }
+
+    return Optional.ofNullable(provider);
+  }
 
   /**
    * Tell the embedding software that this H2O instance belongs to
    * a cloud of a certain size.
    * This may be non-blocking.
    *
-   * @param ip IP address this H2O can be reached at.
+   * @param ip   IP address this H2O can be reached at.
    * @param port Port this H2O can be reached at (for REST API and browser).
    * @param size Number of H2O instances in the cloud.
    */
@@ -1866,17 +1919,26 @@ final public class H2O {
 
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
+    if (!cloudIsReady(x))
+      Log.info("Waiting for clouding to finish. Current number of nodes " + CLOUD.size() + ". Target number of nodes: " + x);
     while (System.currentTimeMillis() - start < ms) {
-      if (CLOUD.size() >= x && Paxos._commonKnowledge)
+      if (cloudIsReady(x))
         break;
-      try { Thread.sleep(100); } catch (InterruptedException ignore) {}
+      try {
+        Thread.sleep(100);
+      } catch (InterruptedException ignore) {
+      }
     }
     if (CLOUD.size() < x)
-      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x);
+      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x + ". Consider to increase `DEFAULT_TIME_FOR_CLOUDING`.");
+  }
+
+  private static boolean cloudIsReady(int x) {
+    return CLOUD.size() >= x && Paxos._commonKnowledge;
   }
 
   public static int getCloudSize() {
-    if (! Paxos._commonKnowledge) return -1;
+    if (!Paxos._commonKnowledge) return -1;
     return CLOUD.size();
   }
 
