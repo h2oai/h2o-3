@@ -4,6 +4,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Set;
 
+/**
+ * Constraints triggered once the lookup takes a certain amount of time.
+ */
 public class TimeoutConstraint implements LookupConstraint {
 
     private final int timeoutSeconds;

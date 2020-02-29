@@ -43,7 +43,7 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
     }
 
     @Override
-    public String fetchFlatfile() throws Exception {
+    public String fetchFlatfile() {
         return flatfile;
     }
 

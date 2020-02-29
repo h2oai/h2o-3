@@ -1,7 +1,6 @@
-package water.k8s;
+package water.k8s.lookup;
 
 
-import water.k8s.lookup.LookupConstraint;
 import water.util.Log;
 
 import javax.naming.Context;
@@ -16,15 +15,54 @@ import java.net.UnknownHostException;
 import java.util.*;
 import java.util.regex.Pattern;
 
-public class KubernetesDnsDiscovery {
+/**
+ * Discovery strategy on a DNS cluster leveraging the DNS record of a Kubernetes headless service present in the cluster.
+ * Kubernetes headless services, instead of load-balancing the requests onto one of the underlying pods, return the
+ * addresses of all the pods covered by the headless service.
+ * <p>
+ * Such pods can then be discovered via the above-mentioned DNS record. In order for H2O to know which service to query,
+ * it is mandatory for the K8S user to pass the name of the headless service to the H2O container, as follows:
+ *
+ * <pre>
+ * apiVersion: apps/v1
+ * kind: StatefulSet
+ * metadata:
+ *   name: example
+ *   namespace: h2o-statefulset
+ * spec:
+ *   serviceName: h2o-service
+ *   replicas: 3
+ *   selector:
+ *     matchLabels:
+ *       app: k8s-env
+ *   template:
+ *     metadata:
+ *       labels:
+ *         app: k8s-env
+ *     spec:
+ *       terminationGracePeriodSeconds: 10
+ *       containers:
+ *         - name: k8s-env
+ *           image: 'pscheidl/h2o-k8s'
+ *           ports:
+ *             - containerPort: 54321
+ *               protocol: TCP
+ *             - containerPort: 54322
+ *               protocol: TCP
+ *           env:
+ *           - name: H2O_KUBERNETES_SERVICE_DNS
+ *             value: h2o-service.h2o-statefulset.svc.cluster.local
+ * </pre>
+ */
+public class KubernetesDnsLookup implements KubernetesLookup {
 
-    private static final String H2O_K8S_SERVICE_DNS_DEFAULT_NAME = "H2O_KUBERNETES_SERVICE_DNS";
+    private static final String H2O_K8S_SERVICE_DNS_KEY = "H2O_KUBERNETES_SERVICE_DNS";
     private static final String DNS_TIMEOUT_DEFAULT = "30000"; // 30 seconds
     private static final int ONE_SECOND = 1000;
     private final String serviceDns;
     private final DirContext dirContext;
 
-    public KubernetesDnsDiscovery(final String serviceDns) {
+    public KubernetesDnsLookup(final String serviceDns) {
         this.serviceDns = serviceDns;
         this.dirContext = initDirContext();
     }
@@ -33,15 +71,15 @@ public class KubernetesDnsDiscovery {
      * @return
      * @throws IllegalStateException When the H2O-related kubernetes DNS service is not found
      */
-    public static KubernetesDnsDiscovery fromH2ODefaults() throws IllegalStateException {
-        final String dnsServiceName = System.getenv(H2O_K8S_SERVICE_DNS_DEFAULT_NAME);
+    public static KubernetesDnsLookup fromH2ODefaults() throws IllegalStateException {
+        final String dnsServiceName = System.getenv(H2O_K8S_SERVICE_DNS_KEY);
         if (dnsServiceName == null) {
             throw new IllegalStateException(String.format("DNS of H2O service not set. Please set the '%s' variable.",
-                    H2O_K8S_SERVICE_DNS_DEFAULT_NAME));
+                    H2O_K8S_SERVICE_DNS_KEY));
         } else if (dnsServiceName.trim().isEmpty()) {
             throw new IllegalStateException(String.format("DNS Service '%s' name is invalid.", dnsServiceName));
         }
-        return new KubernetesDnsDiscovery(dnsServiceName);
+        return new KubernetesDnsLookup(dnsServiceName);
     }
 
     private static String extractHost(final String server, final Pattern extractHostPattern) {
@@ -49,12 +87,22 @@ public class KubernetesDnsDiscovery {
         return extractHostPattern.matcher(host).replaceAll("");
     }
 
-    public Optional<Set<String>> lookupNodes(final Collection<LookupConstraint> lookupStrategies) {
+    /**
+     * Looks up H2O pods via configured K8S Stateless service DNS. Environment variable with key defined in
+     * H2O_K8S_SERVICE_DNS_KEY constant is used to obtain address of the DNS. The DNS is then queried for pods
+     * in the underlying service. It is the responsibility of the K8S cluster owner to set-up the service correctly to
+     * only provide correct adresses of pods with H2O active. If pods with no H2O running are supplied, the resulting
+     * flatfile may contain pod IPs with no H2O running as well.
+     *
+     * @param lookupConstraints Constraints to obey during lookup
+     * @return A {@link Set} of adresses of looked up nodes represented as String. The resulting set is never empty.
+     */
+    public Optional<Set<String>> lookupNodes(final Collection<LookupConstraint> lookupConstraints) {
         final Set<String> lookedUpNodes = new HashSet<>();
 
-        while (lookupStrategies.stream().allMatch(lookupStrategy -> !lookupStrategy.isLookupEnded(lookedUpNodes))) {
+        while (lookupConstraints.stream().allMatch(lookupStrategy -> !lookupStrategy.isLookupEnded(lookedUpNodes))) {
             try {
-                lookup(lookedUpNodes);
+                dnsLookup(lookedUpNodes);
                 Thread.sleep(ONE_SECOND);
             } catch (NamingException e) {
                 continue;
@@ -66,7 +114,14 @@ public class KubernetesDnsDiscovery {
         return Optional.of(lookedUpNodes);
     }
 
-    private void lookup(final Set<String> nodeIPs) throws NamingException {
+    /**
+     * Performs a single DNS lookup. Discovered nodes (their IPs respectively) are addded to the existing
+     * set of nodeIPs.
+     *
+     * @param nodeIPs A {@link Set} of nodes already discovered during previous lookups.
+     * @throws NamingException If the DNS under given name is unreachable / does not exist.
+     */
+    private void dnsLookup(final Set<String> nodeIPs) throws NamingException {
         final Attributes attributes = dirContext.getAttributes(serviceDns, new String[]{"SRV"});
         final Attribute srvAttribute = attributes.get("srv");
         final Pattern extractHostPattern = Pattern.compile("\\\\.$");
@@ -86,6 +141,7 @@ public class KubernetesDnsDiscovery {
                     Log.info(String.format("New H2O pod with DNS record '%s' discovered.", nodeIP));
                 }
             }
+            servers.close();
         }
     }
 

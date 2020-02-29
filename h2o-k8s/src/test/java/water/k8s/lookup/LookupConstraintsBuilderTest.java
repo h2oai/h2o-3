@@ -9,20 +9,20 @@ import java.util.Set;
 
 import static org.junit.Assert.*;
 
-public class LookupConstraintBuilderTest {
+public class LookupConstraintsBuilderTest {
 
-    private LookupConstraintBuilder lookupConstraintBuilder;
+    private LookupConstraintsBuilder lookupConstraintsBuilder;
     private Set<String> lookedUpNodes;
 
     @Before
     public void beforeTest() {
-        lookupConstraintBuilder = new LookupConstraintBuilder();
+        lookupConstraintsBuilder = new LookupConstraintsBuilder();
         lookedUpNodes = new HashSet<>();
     }
 
     @Test
     public void testTimeoutOnly() {
-        final Collection<LookupConstraint> lookupStrategies = lookupConstraintBuilder.withTimeoutSeconds(0)
+        final Collection<LookupConstraint> lookupStrategies = lookupConstraintsBuilder.withTimeoutSeconds(0)
                 .build();
 
         assertEquals(1, lookupStrategies.size());
@@ -32,7 +32,7 @@ public class LookupConstraintBuilderTest {
 
     @Test
     public void testTimeoutOnlyRunning() {
-        final Collection<LookupConstraint> lookupStrategies = lookupConstraintBuilder.withTimeoutSeconds(Integer.MAX_VALUE)
+        final Collection<LookupConstraint> lookupStrategies = lookupConstraintsBuilder.withTimeoutSeconds(Integer.MAX_VALUE)
                 .build();
 
         assertEquals(1, lookupStrategies.size());
@@ -42,7 +42,7 @@ public class LookupConstraintBuilderTest {
 
     @Test
     public void testClusterSize() {
-        final Collection<LookupConstraint> lookupStrategies = this.lookupConstraintBuilder.withDesiredClusterSize(2)
+        final Collection<LookupConstraint> lookupStrategies = this.lookupConstraintsBuilder.withDesiredClusterSize(2)
                 .build();
         assertEquals(1, lookupStrategies.size());
         assertTrue(lookupStrategies.stream().allMatch(lookupStrategy -> lookupStrategy instanceof ClusterSizeConstraint));
@@ -55,7 +55,7 @@ public class LookupConstraintBuilderTest {
 
     @Test
     public void testTimeoutAndClusterSize() {
-        final Collection<LookupConstraint> lookupStrategies = this.lookupConstraintBuilder.withDesiredClusterSize(1)
+        final Collection<LookupConstraint> lookupStrategies = this.lookupConstraintsBuilder.withDesiredClusterSize(1)
                 .withTimeoutSeconds(1)
                 .build();
         assertEquals(2, lookupStrategies.size());
@@ -65,7 +65,7 @@ public class LookupConstraintBuilderTest {
 
     @Test
     public void testNoConstraints() {
-        final Collection<LookupConstraint> lookupStrategies = lookupConstraintBuilder.build();
+        final Collection<LookupConstraint> lookupStrategies = lookupConstraintsBuilder.build();
 
         assertEquals(1, lookupStrategies.size());
         assertTrue(lookupStrategies.stream().allMatch(lookupStrategy -> lookupStrategy instanceof TimeoutConstraint));

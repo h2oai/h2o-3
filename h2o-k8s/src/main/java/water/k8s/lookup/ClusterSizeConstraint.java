@@ -2,6 +2,9 @@ package water.k8s.lookup;
 
 import java.util.Set;
 
+/**
+ * Constraint triggered when a pre-defined amount of pods is discovered.
+ */
 public class ClusterSizeConstraint implements LookupConstraint {
 
     private final int desiredClusterSize;
