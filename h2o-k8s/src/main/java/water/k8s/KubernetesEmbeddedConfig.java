@@ -1,7 +1,5 @@
 package water.k8s;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import water.H2O;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.util.Log;
