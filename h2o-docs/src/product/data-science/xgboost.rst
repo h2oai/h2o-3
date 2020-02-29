@@ -160,8 +160,8 @@ Defining an XGBoost Model
    defaults to ``gbtree``. Together with ``tree_method`` this will also determine the ``updater`` XGBoost parameter:
 
     - for ``gblinear`` the ``coord_descent`` updater will be configured (``gpu_coord_descent`` for GPU backend)
-    - for ``gbtree`` and ``dart`` with GPU backend selected ``grow_gpu`` is used when ``tree_method`` is ``exact``
-      and ``grow_gpu_hist`` otherwise
+    - for ``gbtree`` and ``dart`` with GPU backend only ``grow_gpu_hist`` is supported, 
+      ``tree_method`` other than ``auto`` or ``hist`` will force CPU backend
     - for other cases the ``updater`` is set automatically by XGBoost, visit the 
       `XGBoost Documentation <https://xgboost.readthedocs.io/en/latest/parameter.html#parameters-for-tree-booster>`__
       to learn more about updaters

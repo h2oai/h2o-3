@@ -151,6 +151,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
      */
     Map<String, Object> gpuIncompatibleParams() {
       Map<String, Object> incompat = new HashMap<>();
+      if (!(TreeMethod.auto == _tree_method || TreeMethod.hist == _tree_method) && Booster.gblinear != _booster) {
+        incompat.put("tree_method", "Only auto and hist are supported tree_method on GPU backend.");
+      } 
       if (_max_depth > 15 || _max_depth < 1) {
         incompat.put("max_depth",  _max_depth + " . Max depth must be greater than 0 and lower than 16 for GPU backend.");
       }
@@ -350,9 +353,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       if (p._booster == XGBoostParameters.Booster.gblinear) {
         Log.info("Using gpu_coord_descent updater."); 
         params.put("updater", "gpu_coord_descent");
-      } else if (p._tree_method == XGBoostParameters.TreeMethod.exact) {
-        Log.info("Using gpu_exact tree method.");
-        params.put("updater", "grow_gpu,prune");
       } else {
         Log.info("Using gpu_hist tree method.");
         params.put("max_bin", p._max_bins);
