@@ -2,9 +2,13 @@ package hex.tfidf;
 
 import water.MRTask;
 import water.fvec.Chunk;
+import water.fvec.NewChunk;
 import water.parser.BufferedString;
 import water.util.IcedHashMap;
+import water.util.IcedInt;
 import water.util.IcedLong;
+
+import java.util.HashMap;
 
 public class TfIdfTrainer extends MRTask<TfIdfTrainer> {
 
@@ -12,45 +16,55 @@ public class TfIdfTrainer extends MRTask<TfIdfTrainer> {
      * Words delimiter in documents.
      */
     // TODO
-    private static String WORDS_DELIMITER = " ";
+    private static final String WORDS_DELIMITER = " ";
+
+    // IN
+    /**
+     * Defines indices of words in the output Dataframe.
+     */
+    private IcedHashMap<BufferedString, IcedInt> _wordsIndices;
 
     // OUT
     /**
-     * Mapping assigning each word its number of occurrences in all documents.
-     */
-    public IcedHashMap<BufferedString, IcedLong[]> _wordsCounts;
-    /**
      * Total words count for each document.
      */
+    // TODO: Total words counts computation
     public IcedLong[] _totalWordsCounts;
 
-    public TfIdfTrainer() {}
+
+    public TfIdfTrainer(IcedHashMap<BufferedString, IcedInt> wordsIndices) {
+        _wordsIndices = wordsIndices;
+    }
 
     @Override
-    public void map(Chunk c) {
-        _wordsCounts = new IcedHashMap<>();
-        _totalWordsCounts = new IcedLong[c._len];
-        for (int row = 0; row < c._len; row++) {
-            if (c.isNA(row))
+    public void map(Chunk[] cs, NewChunk[] ncs) {
+        Chunk inputChunk = cs[0];
+
+        for (int row = 0; row < inputChunk._len; row++) {
+            if (inputChunk.isNA(row))
                 continue; // Ignore NAs
 
-            String[] words = c.atStr(new BufferedString(), row).toString().split(WORDS_DELIMITER);
-            _totalWordsCounts[row] = new IcedLong(words.length);
+            String[] words = inputChunk.atStr(new BufferedString(), row).toString().split(WORDS_DELIMITER);
+
+            HashMap<BufferedString, IcedLong> wordsCount = new HashMap<>();
 
             for (String word : words) {
                 BufferedString buffWord = new BufferedString(word);
-                IcedLong[] counts = _wordsCounts.get(buffWord);
-                if (counts != null)
-                    counts[row]._val++;
-                else {
-                    IcedLong[] wordCounts = new IcedLong[c._len];
-                    for (int wordIdx = 0; wordIdx < c._len; wordIdx++)
-                        wordCounts[wordIdx] = new IcedLong(0);
 
-                    wordCounts[row]._val++;
-                    _wordsCounts.put(buffWord, wordCounts);
-                }
+                IcedLong count = wordsCount.get(buffWord);
+                if (count != null)
+                    wordsCount.put(buffWord, new IcedLong(count._val + 1));
+                else
+                    wordsCount.put(buffWord, new IcedLong(1));
             }
+
+            _wordsIndices.forEach((buffWord, index) -> {
+                IcedLong count = wordsCount.get(buffWord);
+                if (count != null)
+                    ncs[index._val].addNum(count._val);
+                else
+                    ncs[index._val].addNum(0);
+            });
         }
     }
 }

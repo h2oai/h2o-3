@@ -7,7 +7,8 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.util.IcedLong;
+import water.util.IcedHashMap;
+import water.util.IcedInt;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -20,26 +21,18 @@ public class TfIdfTrainerTest extends TestUtil {
     public static void setup() { stall_till_cloudsize(1); }
 
     @Test
-    public void testTotalWordsCounts() {
-        Frame fr = getSimpleTestFrame();
-
-        try {
-            TfIdfTrainer trainer = new TfIdfTrainer().doAll(fr.vec(0));
-
-            int[] expTotalWordsCounts = new int[] { 3, 4, 4 };
-            for (int i = 0; i < expTotalWordsCounts.length; i++)
-                assertEquals(expTotalWordsCounts[i], trainer._totalWordsCounts[i]._val);
-        } finally {
-            fr.remove();
-        }
-    }
-
-    @Test
     public void testWordsCounts() {
         Frame fr = getSimpleTestFrame();
 
+        IcedHashMap<BufferedString, IcedInt> wordsIndices = new IcedHashMap<>();
+        wordsIndices.put(new BufferedString("A"), new IcedInt(0));
+        wordsIndices.put(new BufferedString("B"), new IcedInt(1));
+        wordsIndices.put(new BufferedString("C"), new IcedInt(2));
+        wordsIndices.put(new BufferedString("Z"), new IcedInt(3));
+
         try {
-            TfIdfTrainer trainer = new TfIdfTrainer().doAll(fr.vec(0));
+            TfIdfTrainer trainer = new TfIdfTrainer(wordsIndices).doAll(wordsIndices.size(), Vec.T_NUM, fr);
+            Frame outputFrame = trainer.outputFrame();
 
             Map<String, int[]> expWordsCounts = new HashMap<String, int[]>() {{
                 put("A", new int[]{1,3,0});
@@ -47,11 +40,14 @@ public class TfIdfTrainerTest extends TestUtil {
                 put("C", new int[]{1,0,3});
                 put("Z", new int[]{0,1,0});
             }};
+
             expWordsCounts.forEach((word, expCounts) -> {
-                IcedLong[] actualCounts = trainer._wordsCounts.get(new BufferedString(word));
+                Vec actualCounts = outputFrame.vec(wordsIndices.get(new BufferedString(word))._val);
                 for (int i = 0; i < expCounts.length; i++)
-                    assertEquals(expCounts[i], actualCounts[i]._val);
+                    assertEquals(expCounts[i], actualCounts.at8(i));
             });
+
+            outputFrame.remove();
         } finally {
             fr.remove();
         }
@@ -69,6 +65,7 @@ public class TfIdfTrainerTest extends TestUtil {
                 .withColNames("Str")
                 .withVecTypes(Vec.T_STR)
                 .withDataForCol(0, strData)
+                .withChunkLayout(2, 1)
                 .build();
     }
 }
