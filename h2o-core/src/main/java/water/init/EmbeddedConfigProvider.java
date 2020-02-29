@@ -3,7 +3,7 @@ package water.init;
 public interface EmbeddedConfigProvider {
 
     default String getName() {
-        return getClass().getSimpleName();
+        return getClass().getName();
     }
 
     /**
