@@ -855,7 +855,7 @@ final public class H2O {
    * a cloud of a certain size.
    * This may be non-blocking.
    *
-   * @param ip   IP address this H2O can be reached at.
+   * @param ip IP address this H2O can be reached at.
    * @param port Port this H2O can be reached at (for REST API and browser).
    * @param size Number of H2O instances in the cloud.
    */
@@ -1919,26 +1919,17 @@ final public class H2O {
 
   public static void waitForCloudSize(int x, long ms) {
     long start = System.currentTimeMillis();
-    if (!cloudIsReady(x))
-      Log.info("Waiting for clouding to finish. Current number of nodes " + CLOUD.size() + ". Target number of nodes: " + x);
     while (System.currentTimeMillis() - start < ms) {
-      if (cloudIsReady(x))
+      if (CLOUD.size() >= x && Paxos._commonKnowledge)
         break;
-      try {
-        Thread.sleep(100);
-      } catch (InterruptedException ignore) {
-      }
+      try { Thread.sleep(100); } catch (InterruptedException ignore) {}
     }
     if (CLOUD.size() < x)
-      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x + ". Consider to increase `DEFAULT_TIME_FOR_CLOUDING`.");
-  }
-
-  private static boolean cloudIsReady(int x) {
-    return CLOUD.size() >= x && Paxos._commonKnowledge;
+      throw new RuntimeException("Cloud size " + CLOUD.size() + " under " + x);
   }
 
   public static int getCloudSize() {
-    if (!Paxos._commonKnowledge) return -1;
+    if (! Paxos._commonKnowledge) return -1;
     return CLOUD.size();
   }
 
