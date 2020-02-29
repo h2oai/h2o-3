@@ -1,10 +1,9 @@
 package water.k8s;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.EmbeddedConfigProvider;
 import water.k8s.lookup.LookupConstraintBuilder;
+import water.util.Log;
 
 import java.util.Collection;
 import java.util.Optional;
@@ -15,7 +14,6 @@ public class H2OKubernetesEmbeddedConfigProvider implements EmbeddedConfigProvid
 
     private static final String K8S_NODE_LOOKUP_TIMEOUT_KEY = "H2O_NODE_LOOKUP_TIMEOUT";
     private static final String K8S_DESIRED_CLUSTER_SIZE_KEY = "H2O_NODE_EXPECTED_COUNT";
-    private static final Logger LOGGER = LoggerFactory.getLogger(H2OKubernetesEmbeddedConfigProvider.class);
 
     private boolean runningOnKubernetes = false;
     private KubernetesEmbeddedConfig kubernetesEmbeddedConfig;
@@ -27,14 +25,14 @@ public class H2OKubernetesEmbeddedConfigProvider implements EmbeddedConfigProvid
             final Integer timeoutSeconds = Integer.parseInt(System.getenv(K8S_NODE_LOOKUP_TIMEOUT_KEY));
             lookupConstraintBuilder.withTimeoutSeconds(timeoutSeconds);
         } catch (NumberFormatException e) {
-            LOGGER.info(String.format("'%s' environment variable not set.", K8S_NODE_LOOKUP_TIMEOUT_KEY));
+            Log.info(String.format("'%s' environment variable not set.", K8S_NODE_LOOKUP_TIMEOUT_KEY));
         }
 
         try {
             final Integer desiredClusterSize = Integer.parseInt(System.getenv(K8S_DESIRED_CLUSTER_SIZE_KEY));
             lookupConstraintBuilder.withDesiredClusterSize(desiredClusterSize);
         } catch (NumberFormatException e) {
-            LOGGER.info(String.format("'%s' environment variable not set.", K8S_DESIRED_CLUSTER_SIZE_KEY));
+            Log.info(String.format("'%s' environment variable not set.", K8S_DESIRED_CLUSTER_SIZE_KEY));
         }
 
         final KubernetesDnsDiscovery kubernetesDnsDiscovery = KubernetesDnsDiscovery.fromH2ODefaults();
@@ -49,11 +47,11 @@ public class H2OKubernetesEmbeddedConfigProvider implements EmbeddedConfigProvid
             return; // Do not initialize any configuration if H2O is not running in K8S-spawned container.
         }
 
-        LOGGER.info("Initializing H2O Kubernetes cluster");
+        Log.info("Initializing H2O Kubernetes cluster");
         final Collection<String> nodeIPs = resolveNodeIPsFromDNS()
                 .orElseThrow(() -> new IllegalStateException("Unable to resolve Node IPs from DNS service."));
 
-        LOGGER.info(String.format("Using the following pods to form H2O cluster: [%s]",
+        Log.info(String.format("Using the following pods to form H2O cluster: [%s]",
                 String.join(",", nodeIPs)));
 
         kubernetesEmbeddedConfig = new KubernetesEmbeddedConfig(nodeIPs);

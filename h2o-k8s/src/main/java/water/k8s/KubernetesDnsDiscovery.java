@@ -1,9 +1,8 @@
 package water.k8s;
 
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import water.k8s.lookup.LookupConstraint;
+import water.util.Log;
 
 import javax.naming.Context;
 import javax.naming.NamingEnumeration;
@@ -18,7 +17,6 @@ import java.util.*;
 import java.util.regex.Pattern;
 
 public class KubernetesDnsDiscovery {
-    private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesEmbeddedConfig.class);
 
     private static final String H2O_K8S_SERVICE_DNS_DEFAULT_NAME = "H2O_KUBERNETES_SERVICE_DNS";
     private static final String DNS_TIMEOUT_DEFAULT = "30000"; // 30 seconds
@@ -81,11 +79,11 @@ public class KubernetesDnsDiscovery {
                 try {
                     nodeIP = InetAddress.getByName(serverHost);
                 } catch (UnknownHostException e) {
-                    LOGGER.error("Unknown host for IP Address: " + serverHost);
+                    Log.err("Unknown host for IP Address: " + serverHost);
                     continue;
                 }
                 if (nodeIPs.add(nodeIP.getHostAddress())) {
-                    LOGGER.info(String.format("New H2O pod with DNS record '%s' discovered.", nodeIP));
+                    Log.info(String.format("New H2O pod with DNS record '%s' discovered.", nodeIP));
                 }
             }
         }

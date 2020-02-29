@@ -4,12 +4,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import water.H2O;
 import water.init.AbstractEmbeddedH2OConfig;
+import water.util.Log;
 
 import java.net.InetAddress;
 import java.util.Collection;
 
 public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
-    private static final Logger LOGGER = LoggerFactory.getLogger(KubernetesEmbeddedConfig.class);
 
     private final String flatfile;
 
@@ -36,7 +36,7 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
 
     @Override
     public void notifyAboutCloudSize(InetAddress ip, int port, InetAddress leaderIp, int leaderPort, int size) {
-        LOGGER.info(String.format("Created cluster of size %d, leader node IP is '%s'", size, leaderIp.toString()));
+        Log.info(String.format("Created cluster of size %d, leader node IP is '%s'", size, leaderIp.toString()));
     }
 
     @Override
