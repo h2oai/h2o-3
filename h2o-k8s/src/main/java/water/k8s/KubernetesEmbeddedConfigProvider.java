@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * A configuration provider for H2O running in Kubernetes cluster. It is able to detected it's ran in K8S
+ * A configuration provider for H2O running in Kubernetes cluster. It is able to detected H2O is being ran in K8S
  * environment, otherwise remains inactive.
  * <p>
  * Uses potentially multiple strategies to discover H2O Pods on a Kubernetes cluster.

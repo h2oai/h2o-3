@@ -2,11 +2,11 @@
 
 The integration of Kubernetes and H2O is possible via `water.k8s.KubernetesEmbeddedConfigProvider` - to be found
 in this module. This implementation of `EmbeddedConfigProvider` is dynamically loaded on H2O start and remains inactive
-unless H2O running in a Docker container managed by Kubernetes is detected.  
+unless H2O is running in a Docker container managed by Kubernetes is detected.  
 
 ## Running H2O in K8s - user's guide
 
-H2O Pods deployed on  Kubernetes cluster require a 
+H2O Pods deployed on Kubernetes cluster require a 
 [headless service](https://kubernetes.io/docs/concepts/services-networking/service/#headless-services) 
 for H2O Node discovery. The headless service, instead of load-balancing incoming requests to the underlying
 H2O pods, returns a set of adresses of all the underlying pods. It is therefore the responsibility of the K8S
@@ -93,7 +93,7 @@ Environment variables:
 1. `H2O_NODE_EXPECTED_COUNT` - **[OPTIONAL]** Node lookup constraint. Expected number of H2O pods to be discovered.
 
 If none of the optional lookup constraints is specified, a sensible default node lookup timeout will be set - currently
-defaults to 3 minutes. If any of the lookup constraints is defined, the H2O node lookup is terminated on whichever 
+defaults to 3 minutes. If any of the lookup constraints are defined, the H2O node lookup is terminated on whichever 
 condition is met first.
 
 ### Exposing H2O cluster

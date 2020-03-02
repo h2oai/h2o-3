@@ -799,7 +799,7 @@ final public class H2O {
   }
 
   /**
-   * Returns an inststance of {@link AbstractEmbeddedH2OConfig}. The origin of the embedded config might be either
+   * Returns an instance of {@link AbstractEmbeddedH2OConfig}. The origin of the embedded config might be either
    * from directly setting the embeddedH2OConfig field via setEmbeddedH2OConfig setter, or dynamically provided via
    * service loader. Directly set {@link AbstractEmbeddedH2OConfig} is always prioritized. ServiceLoader lookup is only
    * performed if no config is previously set.
@@ -827,7 +827,7 @@ final public class H2O {
 
   /**
    * Uses {@link ServiceLoader} to discover active instances of {@link EmbeddedConfigProvider}. Only one provider
-   * may be active at a time. If more providers are detected, {@link IllegalStateException is thrown.}
+   * may be active at a time. If more providers are detected, {@link IllegalStateException} is thrown.
    *
    * @return An {@link Optional} of {@link EmbeddedConfigProvider}, if a single active provider is found. Otherwise
    * an empty optional.
