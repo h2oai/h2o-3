@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class UnknownHeartbeatTest extends TestUtil{
   @BeforeClass() public static void setup() {
@@ -35,7 +36,8 @@ public class UnknownHeartbeatTest extends TestUtil{
     }
 
     // Verify that we don't have a new client
-    assertEquals(clientsCountBefore, H2O.getClients().length);
+    assertTrue("Expected max "+clientsCountBefore+" clients, but got "+H2O.getClients().length,
+            clientsCountBefore >= H2O.getClients().length);
   }
 
   @Test
