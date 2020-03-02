@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
+import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
@@ -8,21 +9,23 @@ import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
+import hex.ModelContainer;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
-import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
-import water.Iced;
-import water.Job;
-import water.Key;
+import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.util.ArrayUtils;
 import water.util.EnumUtils;
 import water.util.Log;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
@@ -354,4 +357,214 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             );
         }
     }
+
+    public static abstract class SelectionStep<M extends Model> extends ModelingStep<M> {
+
+        public SelectionStep(Algo algo, String id, int weight, AutoML autoML) {
+            super(algo, id, weight, autoML);
+        }
+
+        @Override
+        protected Work makeWork() {
+            return new Work(_id, _algo, JobType.Selection, _weight);
+        }
+
+        @Override
+        protected Work getAllocatedWork() {
+            return getWorkAllocations().getAllocation(_id, _algo);
+        }
+
+        @Override
+        protected Key<Models> makeKey(String name, boolean withCounter) {
+            return (Key)aml().modelKey(name, withCounter); //TODO: key dedicated to Models collection
+        }
+
+        protected Leaderboard makeTmpLeaderboard() {
+            Leaderboard amlLeaderboard = aml().leaderboard();
+            Leaderboard tmpLeaderboard = new Leaderboard(
+                    "tmp_leaderboard_"+_algo+"_"+_id,
+                    new EventLog(Key.make("tmp_eventlog_"+_algo+"_"+_id)),
+                    amlLeaderboard.leaderboardFrame(),
+                    amlLeaderboard.getSortMetric()
+            );
+            return tmpLeaderboard;
+        }
+
+        @Override
+        protected Job<Models> startJob() {
+            Key<Model>[] trainedModelKeys = getTrainedModelsKeys();
+            Key<Models> key = makeKey(_id, false);
+            Job<Models> job = new Job<>(key, Models.class.getName(), _description);
+            int work = 17; //TODO
+            int maxRuntimeSecs = 42; //TODO
+            return job.start(new H2O.H2OCountedCompleter() {
+                @Override
+                public void compute2() {
+                    Models tmpModels = startTraining(key).get();
+                    // monitor?
+                    ModelSelectionStrategy.Selection selection = getSelectionStrategy().select(trainedModelKeys, tmpModels._modelKeys);
+                    Leaderboard lb = aml().leaderboard();
+                    lb.addModels(selection._add);
+                    lb.removeModels(selection._remove);
+                    Models result = new Models(key, Model.class);
+                    result.addModels(selection._add);
+                    DKV.put(result);
+                }
+            }, work, maxRuntimeSecs);
+        }
+
+        protected abstract Job<Models> startTraining(Key<Models> result);
+
+        protected abstract ModelSelectionStrategy getSelectionStrategy();
+
+        protected Job<Models> asModelsJob(Job j ){
+            Job<Models> jModels = new Job<>(j._result, Models.class.getName(), j._description); // can use the same result key as original job, as it is dropped once its result is read
+            return jModels.start(new H2O.H2OCountedCompleter() {
+                @Override
+                public void compute2() {
+                    Object res = j.get();
+                    Models models = new Models(j._result, Model.class, jModels);
+                    if (res instanceof Model) {
+                        models.addModel(((Model)res)._key);
+                    } else if (res instanceof ModelContainer) {
+                        models.addModels(((ModelContainer)res).getModelKeys());
+                    } else {
+                        throw new H2OIllegalArgumentException("Can only convert jobs producing a single Model or ModelContainer.");
+                    }
+                }
+            }, j._work, j._max_runtime_msecs);
+        }
+    }
+
+    public static class Models<M extends Model> extends Lockable<Models<M>> implements ModelContainer<M> {
+
+        private final Class<M> _clz;
+        private final Job _job;
+        private Key<M>[] _modelKeys;
+
+        public Models(Key<Models<M>> key, Class<M> clz) {
+            this(key, clz, null);
+        }
+
+        public Models(Key<Models<M>> key, Class<M> clz, Job job) {
+            super(key);
+            _clz = clz;
+            _job = job;
+        }
+
+        @Override
+        public Key<M>[] getModelKeys() {
+            return _modelKeys.clone();
+        }
+
+        @Override
+        public M[] getModels() {
+            M[] models = (M[]) Array.newInstance(_clz, _modelKeys.length);
+            for (int i=0; i < _modelKeys.length; i++) {
+                Key<M> key = _modelKeys[i];
+                models[i] = key == null ? null : key.get() ;
+            }
+            return models;
+        }
+
+        @Override
+        public int getModelCount() {
+            return _modelKeys.length;
+        }
+
+        public void addModel(Key<M> key) {
+            addModels(new Key[]{key});
+        }
+
+        public void addModels(Key<M>[] keys) {
+           write_lock(_job);
+           _modelKeys = ArrayUtils.append(_modelKeys, keys);
+           update(_job);
+           unlock(_job);
+        }
+    }
+
+    @FunctionalInterface
+    public interface ModelSelectionStrategy<M extends Model>{
+
+        class Selection<M extends Model> {
+            final Key<M>[] _add;  //models that should be added to the original population
+            final Key<M>[] _remove; //models that should be removed from the original population
+
+            public Selection(Key<M>[] add, Key<M>[] remove) {
+                _add = add;
+                _remove = remove;
+            }
+        }
+
+        Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels);
+    }
+
+    public abstract class LeaderboardBasedSelectionStrategy<M extends Model> implements ModelSelectionStrategy<M> {
+
+        final Supplier<Leaderboard> _leaderboardSupplier;
+
+        public LeaderboardBasedSelectionStrategy(Supplier<Leaderboard> leaderboardSupplier) {
+            _leaderboardSupplier = leaderboardSupplier;
+        }
+
+        Leaderboard makeTmpLeaderboard() {
+            return _leaderboardSupplier.get();
+        }
+    }
+
+    public class KeepBestN<M extends Model> extends LeaderboardBasedSelectionStrategy<M>{
+
+        private final int _N;
+
+        public KeepBestN(int N, Supplier<Leaderboard> leaderboardSupplier) {
+            super(leaderboardSupplier);
+            _N = N;
+        }
+
+        @Override
+        @SuppressWarnings("unchecked")
+        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
+            Leaderboard tmpLeaderboard = makeTmpLeaderboard();
+            tmpLeaderboard.addModels((Key<Model>[]) originalModels);
+            tmpLeaderboard.addModels((Key<Model>[]) newModels);
+            Key<Model>[] sortedKeys = tmpLeaderboard.getModelKeys();
+            Key<Model>[] bestN = ArrayUtils.subarray(sortedKeys, 0, _N);
+            Key<M>[] toAdd = Arrays.stream(bestN).filter(k -> !ArrayUtils.contains(originalModels, k)).toArray(Key[]::new);
+            Key<M>[] toRemove = Arrays.stream(originalModels).filter(k -> !ArrayUtils.contains(bestN, k)).toArray(Key[]::new);
+            return new Selection<>(toAdd, toRemove);
+        }
+    }
+
+    public class KeepBestConstantSize<M extends Model> extends LeaderboardBasedSelectionStrategy<M> {
+
+        public KeepBestConstantSize(Supplier<Leaderboard> leaderboardSupplier) {
+            super(leaderboardSupplier);
+        }
+
+        @Override
+        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
+            return new KeepBestN<M>(originalModels.length, _leaderboardSupplier).select(originalModels, newModels);
+        }
+    }
+
+    public class KeepBestNFromSubgroup<M extends Model> extends LeaderboardBasedSelectionStrategy<M> {
+
+        private final Predicate<Key<M>> _criterion;
+        private final int _N;
+
+        public KeepBestNFromSubgroup(int N, Predicate<Key<M>> criterion, Supplier<Leaderboard> leaderboardSupplier) {
+            super(leaderboardSupplier);
+            _criterion = criterion;
+            _N = N;
+        }
+
+        @Override
+        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
+            Key<M>[] originalModelsSubgroup = Arrays.stream(originalModels).filter(_criterion).toArray(Key[]::new);
+            Key<M>[] newModelsSubGroup = Arrays.stream(newModels).filter(_criterion).toArray(Key[]::new);
+            return new KeepBestN<M>(_N, _leaderboardSupplier).select(originalModelsSubgroup, newModelsSubGroup);
+        }
+    }
+
 }

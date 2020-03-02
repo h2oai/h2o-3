@@ -13,7 +13,8 @@ public class WorkAllocations extends Iced<WorkAllocations> {
   public enum JobType {
     Unknown,
     ModelBuild,
-    HyperparamSearch
+    HyperparamSearch,
+    Selection,
   }
 
   public static class Work extends Iced<Work> {

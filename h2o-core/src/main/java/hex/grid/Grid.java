@@ -24,7 +24,7 @@ import java.util.Objects;
  *
  * @param <MP> type of model build parameters
  */
-public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
+public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implements ModelContainer<Model> {
 
   /**
    * Publicly available Grid prototype - used by REST API.

@@ -6,6 +6,7 @@ import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
+import hex.ModelContainer;
 import hex.grid.Grid;
 import water.Iced;
 import water.Job;
@@ -84,7 +85,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _jobs.add(job);
 
         long lastWorkedSoFar = 0;
-        long lastTotalGridModelsBuilt = 0;
+        long lastTotalModelsBuilt = 0;
 
         while (job.isRunning()) {
             if (null != parentJob) {
@@ -103,13 +104,13 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), jobDescription);
             }
 
-            if (JobType.HyperparamSearch == work._type) {
-                Grid<?> grid = (Grid)job._result.get();
-                int totalGridModelsBuilt = grid.getModelCount();
-                if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-                    eventLog.debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
-                    this.addModels(grid);
-                    lastTotalGridModelsBuilt = totalGridModelsBuilt;
+            if (JobType.HyperparamSearch == work._type || JobType.Selection == work._type) {
+                ModelContainer<?> container = (ModelContainer)job._result.get();
+                int totalModelsBuilt = container.getModelCount();
+                if (totalModelsBuilt > lastTotalModelsBuilt) {
+                    eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
+                    this.addModels(container);
+                    lastTotalModelsBuilt = totalModelsBuilt;
                 }
             }
 
@@ -123,17 +124,17 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         }
 
         // pick up any stragglers:
-        if (JobType.HyperparamSearch == work._type) {
+        if (JobType.HyperparamSearch == work._type || JobType.Selection == work._type) {
             if (job.isCrashed()) {
                 eventLog.warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
             } else if (job.get() == null) {
                 eventLog.info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
-                Grid<?> grid = (Grid) job.get();
-                int totalGridModelsBuilt = grid.getModelCount();
-                if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-                    eventLog.debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
-                    this.addModels(grid);
+                ModelContainer<?> container = (ModelContainer) job.get();
+                int totalModelsBuilt = container.getModelCount();
+                if (totalModelsBuilt > lastTotalModelsBuilt) {
+                    eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
+                    this.addModels(container);
                 }
                 eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
             }
@@ -156,10 +157,10 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _jobs.remove(job);
     }
 
-    private void addModels(final Grid grid) {
+    private void addModels(final ModelContainer container) {
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModels(grid.getModelKeys());
+        leaderboard.addModels(container.getModelKeys());
         int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }

@@ -55,7 +55,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           new StepDefinition(Algo.XGBoost.name(), Alias.grids),
           new StepDefinition(Algo.GBM.name(), Alias.grids),
           new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
-          new StepDefinition(Algo.GBM.name(), new String[] { "exploit_1" }),
+//          new StepDefinition(Algo.GBM.name(), new String[]{ "lr_annealing" }),
+//          new StepDefinition(Algo.XGBoost.name(), new String[]{ "lr_search" }),
           new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
   };
 

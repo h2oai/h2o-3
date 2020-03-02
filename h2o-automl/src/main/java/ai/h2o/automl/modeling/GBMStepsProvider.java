@@ -131,7 +131,7 @@ public class GBMStepsProvider
         };
 
         private ModelingStep[] exploitation = new GBMModelStep[] {
-               new GBMModelStep("exploit_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+               new GBMModelStep("lr_anealing", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
 
                    private GBMModel getBestGBM() {
                      for (Model model : getTrainedModels()) {
