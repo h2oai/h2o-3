@@ -225,7 +225,6 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public boolean _HGLM = false; // true to enable HGLM
     public int _nlambdas = -1;
     public boolean _non_negative = false;
-    public boolean _exactLambdas = false;
     public double _lambda_min_ratio = -1; // special
     public boolean _use_all_factor_levels = false;
     public int _max_iterations = -1;
