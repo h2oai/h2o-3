@@ -1389,7 +1389,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       if (_valid != null) {
         Frame encodedVa = FrameUtils.applyTargetEncoder(teModel, va);
-        printOutFrameAsTable(encodedVa, false, 20);
         _toDelete.put(encodedVa._key, Arrays.toString(Thread.currentThread().getStackTrace()));
 
         _valid = encodeFrameCategoricals(encodedVa, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
@@ -1486,13 +1485,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
     }
-  }
-
-
-  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
-    assert limit <= Integer.MAX_VALUE;
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
-    System.out.println(twoDimTable.toString(2, true));
   }
 
   /**
