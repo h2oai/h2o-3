@@ -208,8 +208,8 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
   }
 
   /** Returns the expected size of preds array which is passed to `predict(double[], double[])` function. */
-  @Override public int getPredsSize() {
-    return isClassifier()? 1 + getNumResponseClasses() : 2;
+  @Override public int getPredsSize() { // fractional binomial has numerical response
+    return isClassifier()?(1 + getNumResponseClasses()): 2;
   }
 
   public int getPredsSize(ModelCategory mc) {

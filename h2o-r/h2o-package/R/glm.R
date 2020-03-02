@@ -36,8 +36,8 @@
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-#'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie",
-#'        "negativebinomial". Defaults to gaussian.
+#'        one of: "gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson",
+#'        "gamma", "tweedie", "negativebinomial". Defaults to gaussian.
 #' @param rand_family Random Component Family array.  One for each random component. Only support gaussian for now. Must be one of:
 #'        "[gaussian]".
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
@@ -168,7 +168,7 @@ h2o.glm <- function(x,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                    family = c("gaussian", "binomial", "fractionalbinomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
                     rand_family = c("[gaussian]"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 1,

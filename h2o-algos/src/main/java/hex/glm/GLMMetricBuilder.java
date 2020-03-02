@@ -53,6 +53,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
         switch (_glmf._family) {
           case binomial:
           case quasibinomial:
+          case fractionalbinomial:
             _metricBuilder = new MetricBuilderBinomial(domain);
             break;
           case multinomial:
@@ -87,7 +88,8 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
     if(!ArrayUtils.hasNaNsOrInfs(ds) && !ArrayUtils.hasNaNsOrInfs(yact)) {
       if(_glmf._family == Family.multinomial || _glmf._family == Family.ordinal)
         add2(yact[0], ds, weight, offset);
-      else if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial)
+      else if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial ||
+              _glmf._family.equals(Family.fractionalbinomial))
         add2(yact[0], ds[2], weight, offset);
       else
         add2(yact[0], ds[0], weight, offset);
@@ -186,6 +188,7 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
         break;
       case quasibinomial:
       case binomial:
+      case fractionalbinomial:
         _aic = residual_deviance;
         break;
       case poisson:
@@ -223,13 +226,14 @@ public class GLMMetricBuilder extends MetricBuilderSupervised<GLMMetricBuilder> 
               metricsBDHGLM._bad, metricsBDHGLM._sumetadiffsquare, metricsBDHGLM._convergence, metricsBDHGLM._randc, 
               metricsBDHGLM._fixef, metricsBDHGLM._ranef, metricsBDHGLM._iterations);
     } else {
-      if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial) {
+      if (_glmf._family == Family.binomial || _glmf._family == Family.quasibinomial || 
+              _glmf._family == Family.fractionalbinomial) {
         ModelMetricsBinomial metricsBinommial = (ModelMetricsBinomial) metrics;
         GainsLift gl = null;
         if (preds != null) {
           Vec resp = f.vec(m._parms._response_column);
           Vec weights = f.vec(m._parms._weights_column);
-          if (resp != null) {
+          if (resp != null && !_glmf._family.equals(Family.fractionalbinomial)) { // don't calculate for frac binomial
             gl = new GainsLift(preds.lastVec(), resp, weights);
             gl.exec(m._output._job);
           }
