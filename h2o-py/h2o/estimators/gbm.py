@@ -35,7 +35,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                    "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                    "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
                    "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
-                   "export_checkpoints_dir", "monotone_constraints", "check_constant_response"}
+                   "export_checkpoints_dir", "monotone_constraints", "check_constant_response", "te_model_key"}
 
     def __init__(self, **kwargs):
         super(H2OGradientBoostingEstimator, self).__init__()
@@ -47,8 +47,6 @@ class H2OGradientBoostingEstimator(H2OEstimator):
             elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
-            elif pname == 'te_model_key': # we need to do this for all estimators. Move it to H2OEstimator
-                self._parms["te_model_key"] = pvalue
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 

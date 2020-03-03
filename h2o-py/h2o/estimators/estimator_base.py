@@ -346,6 +346,20 @@ class H2OEstimator(ModelBase):
     def _get_rest_version(self, parms):
         return parms.pop("_rest_version") if "_rest_version" in parms else 3
 
+    @property
+    def te_model_key(self):
+        """
+        Key of TargetEncoder model that will be used as an encoder if one was added before.
+
+        Type: ``str``  (default: ``None``).
+
+        """
+        return self._parms.get("te_model_key")
+
+    @te_model_key.setter
+    def te_model_key(self, te_model_key):
+        assert_is_type(te_model_key, None, str)
+        self._parms["te_model_key"] = te_model_key
 
     def _print_model_scoring_history(self, job, bar_progress=0):
         """
