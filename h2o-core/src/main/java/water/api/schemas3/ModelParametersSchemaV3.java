@@ -122,6 +122,9 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
           help = "Encoding scheme for categorical features")
   public Model.Parameters.CategoricalEncodingScheme categorical_encoding;
 
+  @API(help="Key of TargetEncoderModel", direction=API.Direction.INOUT)
+  public ModelKeyV3 te_model_key;
+
   @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
       help = "For every categorical feature, only use this many most frequent categorical levels for model training. Only used for categorical_encoding == EnumLimited.")
   public int max_categorical_levels;

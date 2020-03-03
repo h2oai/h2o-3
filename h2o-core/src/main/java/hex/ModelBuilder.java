@@ -49,8 +49,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected Key<M> _result;  // Built Model key
   public final Key<M> dest() { return _result; }
 
-  private Key<Model> _te_model_key;
-
   private Countdown _build_model_countdown;
   private Countdown _build_step_countdown;
   private void startClock() {
@@ -149,13 +147,12 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   /**
-   * Enables preprocessing with TE model. It's user's responsibility to make sure TE is trained in an appropriate way to avoid data leakage.
+   * Helper method that enables preprocessing with TE model. It's user's responsibility to make sure TE is trained in an appropriate way to avoid data leakage.
    * E.g. TE without KFold strategy being applied for cv main model leads to a data leakage.
    * @param model key to the trained TE model
    */
   public void addTEModelKey(Key<Model> model) {
-    // todo do we need to check if model is TE model? we could have passed TargetEncoderModel itself as a parameter but probably it will restrict us from being generic
-    _te_model_key = model;
+    _parms._te_model_key = model;
   }
 
   /**
@@ -163,7 +160,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return TE model's key if one was assigned to a model builder, null otherwise
    */
   public Key<Model> getTEModelKey() {
-    return _te_model_key;
+    return _parms._te_model_key;
   }
 
   /**

@@ -231,6 +231,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
     }
+
+    public Key<Model> _te_model_key;
+
     public long _seed = -1;
     public long getOrMakeRealSeed(){
       while (_seed==-1) {
