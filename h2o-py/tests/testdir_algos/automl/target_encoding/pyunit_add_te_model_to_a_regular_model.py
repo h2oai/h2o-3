@@ -34,6 +34,9 @@ def test_target_encoder_attached_as_preprocessor():
                                              categorical_encoding="enum_limited",
                                              te_model_key = te.key,
                                              seed=1234)
+
+    assert titanic_gbm_model.te_model_key is not None
+
     titanic_gbm_model.train(x=myX, y=targetColumnName,
                     training_frame=trainingFrame)
 
@@ -58,6 +61,9 @@ def test_target_encoder_attached_as_preprocessor():
                                                      distribution="multinomial",
                                                      categorical_encoding="enum_limited",
                                                      seed=1234)
+
+    assert titanic_gbm_model_without_te.te_model_key is None
+
     titanic_gbm_model_without_te.train(x=myX, y=targetColumnName,
                             training_frame=trainingFrame)
 
