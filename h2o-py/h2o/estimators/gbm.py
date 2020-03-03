@@ -47,6 +47,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
             elif pname in self.param_names:
                 # Using setattr(...) will invoke type-checking of the arguments
                 setattr(self, pname, pvalue)
+            elif pname == 'te_model_key': # we need to do this for all estimators. Move it to H2OEstimator
+                self._parms["te_model_key"] = pvalue
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
 
