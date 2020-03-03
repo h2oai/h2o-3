@@ -61,7 +61,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
 
             assertNotNull(genericModel._output._training_metrics);
@@ -111,7 +111,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());
@@ -158,7 +158,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());
@@ -205,7 +205,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());
@@ -252,7 +252,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());
@@ -299,7 +299,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());
@@ -345,7 +345,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());
@@ -393,7 +393,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
             assertNotNull(genericModel._output._model_summary);
             assertNotNull(genericModel._output._variable_importances);
 
@@ -442,7 +442,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());
@@ -489,7 +489,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             predictions = genericModel.score(testFrame);
             assertEquals(2691, predictions.numRows());
@@ -538,7 +538,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             // Compare the two MOJOs byte-wise
             final File genericModelMojoFile = File.createTempFile("mojo", "zip");
@@ -585,7 +585,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             // Compare the two MOJOs byte-wise
             final File genericModelMojoFile = File.createTempFile("mojo", "zip");
@@ -632,7 +632,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             // Compare the two MOJOs byte-wise
             final File genericModelMojoFile = File.createTempFile("mojo", "zip");
@@ -677,7 +677,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             // Compare the two MOJOs byte-wise
             final File genericModelMojoFile = File.createTempFile("mojo", "zip");
@@ -717,7 +717,7 @@ public class GenericModelTest extends TestUtil {
             final GenericModelParameters genericModelParameters = new GenericModelParameters();
             genericModelParameters._model_key = mojo;
             final Generic generic = new Generic(genericModelParameters);
-            genericModel = generic.trainModel().get();
+            genericModel = trainAndCheck(generic);
 
             // Compare the two MOJOs byte-wise
             final File genericModelMojoFile = File.createTempFile("mojo", "zip");
@@ -732,10 +732,17 @@ public class GenericModelTest extends TestUtil {
         }
     }
 
+    private GenericModel trainAndCheck(Generic builder) {
+        GenericModel model = builder.trainModel().get();
+        assertNotNull(model);
+        assertFalse(model.needsPostProcess());
+        return model;
+    } 
+    
     private Key<Frame> importMojo(final String mojoAbsolutePath) {
         final ArrayList<String> keys = new ArrayList<>(1);
-        H2O.getPM().importFiles(mojoAbsolutePath, "", new ArrayList<String>(), keys, new ArrayList<String>(),
-                new ArrayList<String>());
+        H2O.getPM().importFiles(mojoAbsolutePath, "", new ArrayList<>(), keys, new ArrayList<>(),
+                new ArrayList<>());
         assertEquals(1, keys.size());
         return DKV.get(keys.get(0))._key;
     }

@@ -16,6 +16,7 @@ public class GenericModelOutput extends Model.Output {
 
     final ModelCategory _modelCategory;
     final int _nfeatures;
+    final double _defaultThreshold;
     TwoDimTable _variable_importances;
 
 
@@ -31,6 +32,8 @@ public class GenericModelOutput extends Model.Output {
         _names = modelDescriptor.columnNames();
         _modelCategory = modelDescriptor.getModelCategory();
         _nfeatures = modelDescriptor.nfeatures();
+        _defaultThreshold = modelDescriptor.defaultThreshold();
+
         if (modelAttributes != null) {
             _model_summary = convertTable(modelAttributes.getModelSummary());
             _cross_validation_metrics_summary = convertTable(modelAttributes.getCrossValidationMetricsSummary());
@@ -180,12 +183,16 @@ public class GenericModelOutput extends Model.Output {
         }
     }
 
+    @Override
+    public double defaultThreshold() {
+        return _defaultThreshold;
+    }
 
     @Override
     public ModelCategory getModelCategory() {
         return _modelCategory; // Might be calculated as well, but the information in MOJO is the one to display.
     }
-
+    
     @Override
     public int nfeatures() {
         return _nfeatures;

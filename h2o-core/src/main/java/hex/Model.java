@@ -119,17 +119,15 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * @return threshold in 0...1
    */
   public double defaultThreshold() {
-    return defaultThreshold(_output);
+    return _output.defaultThreshold();
   }
 
+  /**
+   * @deprecated use {@link Output#defaultThreshold()} instead.
+   */
+  @Deprecated
   public static <O extends Model.Output> double defaultThreshold(O output) {
-    if (output.nclasses() != 2 || output._training_metrics == null)
-      return 0.5;
-    if (output._validation_metrics != null && ((ModelMetricsBinomial)output._validation_metrics)._auc != null)
-      return ((ModelMetricsBinomial)output._validation_metrics)._auc.defaultThreshold();
-    if (((ModelMetricsBinomial)output._training_metrics)._auc != null)
-      return ((ModelMetricsBinomial)output._training_metrics)._auc.defaultThreshold();
-    return 0.5;
+    return output.defaultThreshold();
   }
 
   public final boolean isSupervised() { return _output.isSupervised(); }
@@ -870,6 +868,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
               getModelCategory().ordinal();
     }
 
+    public double defaultThreshold() {
+      if (nclasses() != 2 || _training_metrics == null)
+        return 0.5;
+      if (_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null)
+        return ((ModelMetricsBinomial) _validation_metrics)._auc.defaultThreshold();
+      if (((ModelMetricsBinomial) _training_metrics)._auc != null)
+        return ((ModelMetricsBinomial) _training_metrics)._auc.defaultThreshold();
+      return 0.5;
+    }
+    
     public void printTwoDimTables(StringBuilder sb, Object o) {
       for (Field f : Weaver.getWovenFields(o.getClass())) {
         Class<?> c = f.getType();
