@@ -27,9 +27,10 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
     private KubernetesEmbeddedConfig kubernetesEmbeddedConfig;
 
     /**
-     * @return A Set
+     * 
+     * @return A Set of node addresses. The adresses are internal adresses/IPs to the Kubernetes cluster.
      */
-    private static final Optional<Set<String>> resolveNodeIPs() {
+    private static final Optional<Set<String>> resolveInternalNodeIPs() {
         final LookupConstraintsBuilder lookupConstraintsBuilder = new LookupConstraintsBuilder();
 
         try {
@@ -59,7 +60,7 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
         }
 
         Log.info("Initializing H2O Kubernetes cluster");
-        final Collection<String> nodeIPs = resolveNodeIPs()
+        final Collection<String> nodeIPs = resolveInternalNodeIPs()
                 .orElseThrow(() -> new IllegalStateException("Unable to resolve Node IPs from DNS service."));
 
         Log.info(String.format("Using the following pods to form H2O cluster: [%s]",

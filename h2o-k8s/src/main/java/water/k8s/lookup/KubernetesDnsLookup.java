@@ -27,31 +27,36 @@ import java.util.regex.Pattern;
  * apiVersion: apps/v1
  * kind: StatefulSet
  * metadata:
- *   name: example
+ *   name: h2o-stateful-set
  *   namespace: h2o-statefulset
  * spec:
  *   serviceName: h2o-service
  *   replicas: 3
  *   selector:
  *     matchLabels:
- *       app: k8s-env
+ *       app: h2o-k8s
  *   template:
  *     metadata:
  *       labels:
- *         app: k8s-env
+ *         app: h2o-k8s
  *     spec:
  *       terminationGracePeriodSeconds: 10
  *       containers:
- *         - name: k8s-env
+ *         - name: h2o-k8s
  *           image: 'pscheidl/h2o-k8s'
+ *           resources:
+ *             limits:
+ *               memory: "300Mi"
  *           ports:
  *             - containerPort: 54321
- *               protocol: TCP
- *             - containerPort: 54322
  *               protocol: TCP
  *           env:
  *           - name: H2O_KUBERNETES_SERVICE_DNS
  *             value: h2o-service.h2o-statefulset.svc.cluster.local
+ *           - name: H2O_NODE_LOOKUP_TIMEOUT
+ *             value: '180'
+ *           - name: H2O_NODE_EXPECTED_COUNT
+ *             value: '3'
  * </pre>
  */
 public class KubernetesDnsLookup implements KubernetesLookup {

@@ -65,6 +65,9 @@ spec:
       containers:
         - name: h2o-k8s
           image: 'pscheidl/h2o-k8s'
+          resources:
+            limits:
+              memory: "300Mi"
           ports:
             - containerPort: 54321
               protocol: TCP
