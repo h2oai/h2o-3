@@ -495,28 +495,30 @@ public class VecUtils {
       return dom;
     }
   }
-
+  
   /** Collect numeric domain of given {@link Vec}
-   *  A map-reduce task to collect up the unique values of an integer {@link Vec} 
+   *  A map-reduce task to collect up the unique values of an numeric {@link Vec}
    *  and returned as the domain for the {@link Vec}.
    *  If he size of domain is known this approach is faster because it stops when it finds all domains.
+   *  Used in GBM quasibinomial.
    * */
-  public static class CollectIntegerDomainKnownSize extends MRTask<CollectIntegerDomainKnownSize> {
-    
-    NonBlockingHashMapLong<String> _uniques;
+  public static class CollectNumericDomainKnownSize extends MRTask<CollectNumericDomainKnownSize> {
+
+    NonBlockingHashMapLong<Double> _uniques;
     int _size;
-    
-    public CollectIntegerDomainKnownSize(int size){
+
+    public CollectNumericDomainKnownSize(int size){
       this._size = size;
     }
-    
+
     @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
-    
+
     @Override public void map(Chunk ys) {
       if(_uniques.size() < _size) {
         for (int row = 0; row < ys._len; row++) {
-          if (!ys.isNA(row)) {
-            _uniques.put(ys.at8(row), "");
+          double value = ys.atd(row);
+          if (!ys.isNA(row) && !_uniques.containsValue(value)) {
+            _uniques.put(_uniques.size(), value);
             if(_uniques.size() == _size){
               break;
             }
@@ -525,19 +527,34 @@ public class VecUtils {
       }
     }
 
-    @Override public void reduce(CollectIntegerDomainKnownSize mrt) {
-      if( _uniques.equals(mrt._uniques)) _uniques.putAll(mrt._uniques);
+    @Override public void reduce(CollectNumericDomainKnownSize mrt) {
+      if( !_uniques.equals(mrt._uniques)) _uniques.putAll(mrt._uniques);
     }
 
-    /** Returns exact numeric domain of given {@link Vec} computed by this task.
+    /** Returns exact double domain of given {@link Vec} computed by this task.
      * The domain is always sorted. Hence:
      *    domain()[0] - minimal domain value
      *    domain()[domain().length-1] - maximal domain value
      */
-    public long[] domain() {
-      long[] dom = _uniques.keySetLong();
+    public Double[] doubleDomain() {
+      Double[] dom = _uniques.values().toArray(new Double[_uniques.size()]);
       Arrays.sort(dom);
       return dom;
+    }
+
+    /** Returns integer domain of given {@link Vec} computed by this task.
+     * The domain is always sorted. Hence:
+     *    domain()[0] - minimal domain value
+     *    domain()[domain().length-1] - maximal domain value
+     */
+    public Integer[] integerDomain() {
+      Double[] dom = _uniques.values().toArray(new Double[_uniques.size()]);
+      Arrays.sort(dom);
+      Integer[] domInteger = new Integer[_uniques.size()];
+      for(int i = 0; i<_uniques.size(); i++){
+        domInteger[i] = dom[i].intValue();
+      }
+      return domInteger;
     }
 
     /**
@@ -547,11 +564,16 @@ public class VecUtils {
      *      domain()[domain().length-1] - maximal domain value
      * @return string domain
      */
-    public String[] stringDomain(){
-      long[] dom = domain();
+    public String[] stringDomain(boolean integer){
+      Object[] dom;
+      if(integer){
+        dom = integerDomain();
+      } else {
+        dom = doubleDomain();
+      }
       String[] stringDom = new String[dom.length];
-      for (int i = 0; i<dom.length; i++){
-        stringDom[i] = String.valueOf(dom[i]);
+      for (int i = 0; i < dom.length; i++){
+          stringDom[i] = String.valueOf(dom[i]);
       }
       return stringDom;
     }

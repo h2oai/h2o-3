@@ -214,7 +214,7 @@ public abstract class SharedTree<
         boolean isQuasibinomial = false;
         if(_parms._distribution == DistributionFamily.quasibinomial){
           isQuasibinomial = true;
-          domain = new VecUtils.CollectIntegerDomainKnownSize(2).doAll(_response).stringDomain();
+          domain = new VecUtils.CollectNumericDomainKnownSize(2).doAll(_response).stringDomain(_response.isInt());
           ((GBMModel)_model)._output._quasibinomialDomains = domain;
         }
 

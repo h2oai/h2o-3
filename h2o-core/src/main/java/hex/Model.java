@@ -1567,7 +1567,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[][] domains = new String[names.length][];
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length - 1] : adaptFrm.lastVec().domain();
     if (_parms._distribution == DistributionFamily.quasibinomial) {
-      domains[0] = new VecUtils.CollectIntegerDomainKnownSize(2).doAll(adaptFrm.lastVec()).stringDomain();
+        domains[0] = new VecUtils.CollectNumericDomainKnownSize(2).doAll(adaptFrm.lastVec()).stringDomain(adaptFrm.lastVec().isInt());
     }
     return domains;
   }
@@ -1656,7 +1656,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[][] domains = new String[1][];
     domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
     if (domains[0] == null && _parms._distribution == DistributionFamily.quasibinomial) {
-      domains[0] = new VecUtils.CollectIntegerDomainKnownSize(2).doAll(adaptFrm.lastVec()).stringDomain();
+        domains[0] = new VecUtils.CollectNumericDomainKnownSize(2).doAll(adaptFrm.lastVec()).stringDomain(adaptFrm.lastVec().isInt());
     }
 
     // Score the dataset, building the class distribution & predictions
