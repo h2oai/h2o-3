@@ -480,20 +480,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
 
   /**
    * Returns a new connection of type {@code tcpType}, the type can be either
-   *   TCPReceiverThread.TCP_SMALL, TCPReceiverThread.TCP_BIG or
-   *   TCPReceiverThread.TCP_EXTERNAL.
-   *
-   * In case of TCPReceiverThread.TCP_EXTERNAL, we need to keep in mind that this method is executed in environment
-   * where H2O is not running, but it is just on the classpath so users can establish connection with the external H2O
-   * cluster.
+   *   TCPReceiverThread.TCP_SMALL or TCPReceiverThread.TCP_BIG.
    *
    * If socket channel factory is set, the communication will considered to be secured - this depends on the
    * configuration of the {@link SocketChannelFactory}. In case of the factory is null, the communication won't be secured.
    * @return new socket channel
    */
   public static ByteChannel openChan(byte tcpType, SocketChannelFactory socketFactory, InetAddress originAddr, int originPort, short nodeTimeStamp) throws IOException {
-    // This method can't internally use static fields which depends on initialized H2O cluster in case of
-    //communication to the external H2O cluster
     // Must make a fresh socket
     SocketChannel sock = SocketChannel.open();
     sock.socket().setReuseAddress(true);
@@ -505,9 +498,6 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     assert !sock.isConnectionPending() && sock.isBlocking() && sock.isConnected() && sock.isOpen();
     sock.socket().setTcpNoDelay(true);
     ByteBuffer bb = ByteBuffer.allocate(6).order(ByteOrder.nativeOrder());
-    // In Case of tcpType == TCPReceiverThread.TCP_EXTERNAL, H2O.H2O_PORT is 0 as it is undefined, because
-    // H2O cluster is not running in this case. However,
-    // it is fine as the receiver of the external backend does not use this value.
     bb.put(tcpType).putShort(nodeTimeStamp).putChar((char)H2O.H2O_PORT).put((byte) 0xef).flip();
 
     ByteChannel wrappedSocket = socketFactory.clientChannel(sock, isa.getHostName(), isa.getPort());
