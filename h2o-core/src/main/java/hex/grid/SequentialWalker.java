@@ -4,25 +4,25 @@ import hex.Model;
 import hex.ModelParametersBuilderFactory;
 import hex.ScoreKeeper;
 import hex.ScoringInfo;
-import hex.grid.HyperSpaceSearchCriteria.ProgressiveSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 
 import java.util.Arrays;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
-public class ProgressiveWalker<MP extends Model.Parameters> implements  HyperSpaceWalker<MP, ProgressiveSearchCriteria> {
+public class SequentialWalker<MP extends Model.Parameters> implements  HyperSpaceWalker<MP, SequentialSearchCriteria> {
 
     private final MP _params;
     private final Object[][] _hyperParams;
     private final String[] _hyperParamNames;
     private final ModelParametersBuilderFactory _paramsBuilderFactory;
-    private final ProgressiveSearchCriteria _searchCriteria;
+    private final SequentialSearchCriteria _searchCriteria;
 
-    public ProgressiveWalker(MP params,
-                             Object[][] hyperParams,
-                             ModelParametersBuilderFactory paramsBuilderFactory,
-                             ProgressiveSearchCriteria searchCriteria) {
+    public SequentialWalker(MP params,
+                            Object[][] hyperParams,
+                            ModelParametersBuilderFactory paramsBuilderFactory,
+                            SequentialSearchCriteria searchCriteria) {
         assert hyperParams.length > 1;
         assert Stream.of(hyperParams[0]).allMatch(c -> c instanceof String) : "first row of hyperParams must contains hyper-parameter names";
 
@@ -34,7 +34,7 @@ public class ProgressiveWalker<MP extends Model.Parameters> implements  HyperSpa
     }
 
     @Override
-    public ProgressiveSearchCriteria search_criteria() {
+    public SequentialSearchCriteria search_criteria() {
         return _searchCriteria;
     }
 
@@ -101,7 +101,7 @@ public class ProgressiveWalker<MP extends Model.Parameters> implements  HyperSpa
 
             @Override
             public void onModelFailure(Model failedModel, Consumer<Object[]> withFailedModelHyperParams) {
-                withFailedModelHyperParams.accept(_hyperParams[_index]);
+                withFailedModelHyperParams.accept(_hyperParams[_index]); //TODO: identify index of failedModel
             }
         };
     }

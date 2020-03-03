@@ -10,9 +10,9 @@ import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
-import hex.grid.HyperSpaceSearchCriteria.ProgressiveSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
-import hex.grid.ProgressiveWalker;
+import hex.grid.SequentialWalker;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.DKV;
@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Supplier;
 
 import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
@@ -291,11 +290,11 @@ public class XGBoostSteps extends ModelingSteps {
                         public void compute2() {
                             Grid tuningGrid = GridSearch.startGridSearch(
                                     Key.make("something cool"),  //TODO
-                                    new ProgressiveWalker<>(
+                                    new SequentialWalker<>(
                                             xgBoostParameters,
                                             hyperParams,
                                             new GridSearch.SimpleParametersBuilderFactory<>(),
-                                            new ProgressiveSearchCriteria(StoppingCriteria.create().maxRuntimeSecs(maxRuntimeSecs).build())
+                                            new SequentialSearchCriteria(StoppingCriteria.create().maxRuntimeSecs(maxRuntimeSecs).build())
                                     ),
                                     GridSearch.SEQUENTIAL_MODEL_BUILDING
                             ).get();
@@ -337,11 +336,11 @@ public class XGBoostSteps extends ModelingSteps {
                     int maxRuntimeSecs = 42; //TODO
                     return asModelsJob(GridSearch.startGridSearch(
                             resKey,
-                            new ProgressiveWalker<>(
+                            new SequentialWalker<>(
                                     xgBoostParameters,
                                     hyperParams,
                                     new GridSearch.SimpleParametersBuilderFactory<>(),
-                                    new ProgressiveSearchCriteria(StoppingCriteria.create().maxRuntimeSecs(maxRuntimeSecs).build())
+                                    new SequentialSearchCriteria(StoppingCriteria.create().maxRuntimeSecs(maxRuntimeSecs).build())
                             ),
                             GridSearch.SEQUENTIAL_MODEL_BUILDING
                     ));

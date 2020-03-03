@@ -1,8 +1,6 @@
 package hex.grid;
 
-import hex.ScoreKeeper;
 import hex.ScoreKeeper.StoppingMetric;
-import javafx.scene.paint.Stop;
 import water.Iced;
 import water.fvec.Frame;
 
@@ -171,15 +169,15 @@ public class HyperSpaceSearchCriteria extends Iced {
     }
   }
 
-  public static final class ProgressiveSearchCriteria extends HyperSpaceSearchCriteria {
+  public static final class SequentialSearchCriteria extends HyperSpaceSearchCriteria {
 
     private StoppingCriteria _stoppingCriteria;
 
-    public ProgressiveSearchCriteria() {
+    public SequentialSearchCriteria() {
       this(new StoppingCriteria());
     }
 
-    public ProgressiveSearchCriteria(StoppingCriteria stoppingCriteria) {
+    public SequentialSearchCriteria(StoppingCriteria stoppingCriteria) {
       super(Strategy.Progressive);
       _stoppingCriteria = stoppingCriteria;
     }
