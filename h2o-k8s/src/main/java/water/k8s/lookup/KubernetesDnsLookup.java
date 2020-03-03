@@ -61,7 +61,7 @@ import java.util.regex.Pattern;
  */
 public class KubernetesDnsLookup implements KubernetesLookup {
 
-    private static final String H2O_K8S_SERVICE_DNS_KEY = "H2O_KUBERNETES_SERVICE_DNS";
+    private static final String K8S_SERVICE_DNS_ENV_VAR_KEY = "H2O_KUBERNETES_SERVICE_DNS";
     private static final String DNS_TIMEOUT_DEFAULT = "30000"; // 30 seconds
     private static final int ONE_SECOND = 1000;
     private final String serviceDns;
@@ -77,10 +77,10 @@ public class KubernetesDnsLookup implements KubernetesLookup {
      * @throws IllegalStateException When the H2O-related kubernetes DNS service is not found
      */
     public static KubernetesDnsLookup fromH2ODefaults() throws IllegalStateException {
-        final String dnsServiceName = System.getenv(H2O_K8S_SERVICE_DNS_KEY);
+        final String dnsServiceName = System.getenv(K8S_SERVICE_DNS_ENV_VAR_KEY);
         if (dnsServiceName == null) {
             throw new IllegalStateException(String.format("DNS of H2O service not set. Please set the '%s' variable.",
-                    H2O_K8S_SERVICE_DNS_KEY));
+                    K8S_SERVICE_DNS_ENV_VAR_KEY));
         } else if (dnsServiceName.trim().isEmpty()) {
             throw new IllegalStateException(String.format("DNS Service '%s' name is invalid.", dnsServiceName));
         }
