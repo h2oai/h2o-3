@@ -2,6 +2,29 @@
 
 ## H2O
 
+### Yule (3.28.1.1) - 3/5/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yule/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yule/1/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7323'>PUBDEV-7323</a>] - Added missing AutoML global functions to the Python and R documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7325'>PUBDEV-7325</a>] - In the Python client, improved the H2OFrame documentation and properly labeled deprecated functions.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7334'>PUBDEV-7334</a>] - Fixed an issue that caused imported MOJOs to produce different predictions than the original model. (STILL OPEN)
+</li>
+</ul>
+                                                                                                                                                                                                                                
+<h4>Engineering Story</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7327'>PUBDEV-7327</a>] - Removed Sparling Water external backend code from H2O.
+</li>
+</ul>
+
+
 ### Yu (3.28.0.4) - 2/23/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yu/4/index.html</a>
