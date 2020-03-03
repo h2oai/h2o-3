@@ -94,6 +94,11 @@ public class GenericModel extends Model<GenericModel, GenericModelParameters, Ge
     }
 
     @Override
+    protected boolean needsPostProcess() {
+        return false; // MOJO scoring includes post-processing 
+    }
+
+    @Override
     public GenericModelMojoWriter getMojo() {
         return new GenericModelMojoWriter(_mojoModelSource.mojoByteVec());
     }
