@@ -67,6 +67,19 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   }
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {
+    // backwards compatibility
+    if (_mojo_version == 1.0) {
+      // throw an exception for unexpectedly long input vector
+      if (doubles.length > _cats + _nums) {
+        throw new ArrayIndexOutOfBoundsException("Too many input values.");
+      }
+      // for unexpectedly short input vector handle the situation gracefully
+      if (doubles.length < _cats + _nums) {
+        double[] tmp = new double[_cats + _nums];
+        System.arraycopy(doubles, 0,tmp, 0, doubles.length);
+        doubles = tmp;
+      }
+    }
     FVec row = _1hotFactory.fromArray(doubles);
     float[] out;
     if (_hasOffset) {
