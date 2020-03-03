@@ -192,7 +192,6 @@ public class GenericModelOutput extends Model.Output {
     public ModelCategory getModelCategory() {
         return _modelCategory; // Might be calculated as well, but the information in MOJO is the one to display.
     }
-    
     @Override
     public int nfeatures() {
         return _nfeatures;
