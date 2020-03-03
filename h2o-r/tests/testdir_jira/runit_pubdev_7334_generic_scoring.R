@@ -4,7 +4,7 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 test.pubdev_7334 <- function() {
-    cc_h2o <- h2o.importFile('http://h2o-public-test-data.s3.amazonaws.com/smalldata/jira/pubdev_7334.csv')
+    cc_h2o <- h2o.importFile(locate('smalldata/jira/pubdev_7334.csv'))
     cc_h2o['DEFAULT_PAYMENT_NEXT_MONTH'] <- h2o.asfactor(cc_h2o['DEFAULT_PAYMENT_NEXT_MONTH'])
 
     drf <- h2o.randomForest(y = 'DEFAULT_PAYMENT_NEXT_MONTH', training_frame = cc_h2o)
