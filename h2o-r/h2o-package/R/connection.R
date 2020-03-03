@@ -668,12 +668,14 @@ h2o.clusterStatus <- function() {
     usr <- gsub("[^A-Za-z0-9]", "_", Sys.getenv("USER", unset="UnknownUser"))
   }
 
+  temp_dir_path <- tempfile()
+  dir.create(temp_dir_path)
   if(type == "stdout")
-    file.path(tempdir(), paste("h2o", usr, "started_from_r.out", sep="_"))
+    file.path(temp_dir_path, paste("h2o", usr, "started_from_r.out", sep="_"))
   else if(type == "stderr")
-    file.path(tempdir(), paste("h2o", usr, "started_from_r.err", sep="_"))
+    file.path(temp_dir_path, paste("h2o", usr, "started_from_r.err", sep="_"))
   else
-    file.path(tempdir(), paste("h2o", usr, "started_from_r.pid", sep="_"))
+    file.path(temp_dir_path, paste("h2o", usr, "started_from_r.pid", sep="_"))
 }
 
 .h2o.startedH2O <- function() {
