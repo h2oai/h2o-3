@@ -2,6 +2,7 @@
 import functools as ft
 
 import h2o
+from h2o.automl._h2o_automl_output import H2OAutoMLOutput
 from h2o.base import Keyed
 from h2o.exceptions import H2OResponseError, H2OValueError
 from h2o.frame import H2OFrame
@@ -665,7 +666,8 @@ def get_automl(project_name):
     :param str project_name:  A string indicating the project_name of the automl instance to retrieve.
     :returns: A dictionary containing the project_name, leader model, leaderboard, event_log.
     """
-    return H2OAutoML._fetch_state(project_name)
+    state = H2OAutoML._fetch_state(project_name)
+    return H2OAutoMLOutput(state)
 
 
 def get_leaderboard(aml, extra_columns=None):
