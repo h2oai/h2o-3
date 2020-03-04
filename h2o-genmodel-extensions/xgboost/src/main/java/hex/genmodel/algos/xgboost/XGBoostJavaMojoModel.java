@@ -68,7 +68,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {
     // backwards compatibility
-    if (_mojo_version == 1.0) {
+    if (_mojo_version == 1.0 && !"gbtree".equals(_boosterType)) {
       // throw an exception for unexpectedly long input vector
       if (doubles.length > _cats + _nums) {
         throw new ArrayIndexOutOfBoundsException("Too many input values.");
