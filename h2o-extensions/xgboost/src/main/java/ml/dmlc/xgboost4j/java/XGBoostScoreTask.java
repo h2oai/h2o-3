@@ -121,7 +121,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         _computeMetrics = computeMetrics;
         _weightsChunkId = weightsChunkId;
         _model = model;
-        _threshold = Model.defaultThreshold(_output);
+        _threshold = model.defaultThreshold();
     }
 
     /**
