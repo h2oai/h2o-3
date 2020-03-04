@@ -13,7 +13,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yule/1/index.h
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7325'>PUBDEV-7325</a>] - In the Python client, improved the H2OFrame documentation and properly labeled deprecated functions.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7334'>PUBDEV-7334</a>] - Fixed an issue that caused imported MOJOs to produce different predictions than the original model. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7334'>PUBDEV-7334</a>] - Fixed an issue that caused imported MOJOs to produce different predictions than the original model.
 </li>
 </ul>
                                                                                                                                                                                                                                 
@@ -24,6 +24,13 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yule/1/index.h
 </li>
 </ul>
 
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7328'>PUBDEV-7328</a>] - In the R client docs for h2o.head() and h2o.tail(), added an example showing how to control the number of columns to display in dataframe when using a Jupyter notebook with the R kernel.
+</li>
+</ul>
 
 ### Yu (3.28.0.4) - 2/23/2020
 
