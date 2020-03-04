@@ -511,12 +511,11 @@ public class VecUtils {
       this._size = size;
     }
 
-    @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
-
     @Override public void map(Chunk ys) {
+      _uniques = new NonBlockingHashMapLong<>();
       if(_uniques.size() < _size) {
         for (int row = 0; row < ys._len; row++) {
-          double value = ys.atd(row);
+          Double value = ys.atd(row);
           if (!ys.isNA(row) && !_uniques.containsValue(value)) {
             _uniques.put(_uniques.size(), value);
             if(_uniques.size() == _size){
@@ -528,7 +527,14 @@ public class VecUtils {
     }
 
     @Override public void reduce(CollectNumericDomainKnownSize mrt) {
-      if( !_uniques.equals(mrt._uniques)) _uniques.putAll(mrt._uniques);
+      if(_uniques.size() != _size) {
+        for (int i = 0; i < mrt._uniques.size(); i++) {
+          Double value = mrt._uniques.get(i);
+          if(!_uniques.containsValue(value)){
+            _uniques.put(_uniques.size(), value);
+          }
+        }
+      }
     }
 
     /** Returns exact double domain of given {@link Vec} computed by this task.
@@ -537,7 +543,7 @@ public class VecUtils {
      *    domain()[domain().length-1] - maximal domain value
      */
     public Double[] doubleDomain() {
-      Double[] dom = _uniques.values().toArray(new Double[_uniques.size()]);
+      Double[] dom = _uniques.values().toArray(new Double[0]);
       Arrays.sort(dom);
       return dom;
     }
@@ -548,10 +554,10 @@ public class VecUtils {
      *    domain()[domain().length-1] - maximal domain value
      */
     public Integer[] integerDomain() {
-      Double[] dom = _uniques.values().toArray(new Double[_uniques.size()]);
+      Double[] dom = _uniques.values().toArray(new Double[0]);
       Arrays.sort(dom);
       Integer[] domInteger = new Integer[_uniques.size()];
-      for(int i = 0; i<_uniques.size(); i++){
+      for(int i = 0; i < _uniques.size(); i++){
         domInteger[i] = dom[i].intValue();
       }
       return domInteger;

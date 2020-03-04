@@ -3439,10 +3439,10 @@ public class GBMTest extends TestUtil {
   @Test public void testQuasibinomial(){
     Scope.enter();
     // test it behaves like binomial on binary data
-    GBMModel model=null, model2=null, model3=null, model4=null;
+    GBMModel model=null, model2=null, model3=null, model4=null, model5=null;
     Frame fr = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
     // turn numeric response 0/1 into a categorical factor
-    Frame preds=null, preds2=null, preds3=null, preds4=null;
+    Frame preds=null, preds2=null, preds3=null, preds4=null, preds5=null;
     Vec r = fr.vec("CAPSULE").toCategoricalVec();
     fr.remove("CAPSULE").remove();
     fr.add("CAPSULE", r);
@@ -3462,6 +3462,7 @@ public class GBMTest extends TestUtil {
       }
     }.doAll(fr3);
 
+    // same dataset, but make numeric response -1/2, can only be handled by quasibinomial
     Frame fr4 = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
     new MRTask() {
       @Override
@@ -3471,6 +3472,17 @@ public class GBMTest extends TestUtil {
         }
       }
     }.doAll(fr4);
+
+    // same dataset, but make numeric response 0/2.2, can only be handled by quasibinomial
+    Frame fr5 = parse_test_file("smalldata/glm_test/prostate_cat_replaced.csv");
+    new MRTask() {
+      @Override
+      public void map(Chunk[] cs) {
+        for (int i=0;i<cs[0]._len;++i) {
+          cs[1].set(i, cs[1].at8(i) == 1 ? 2.2 : 0);
+        }
+      }
+    }.doAll(fr5);
 
     try {
       GBMModel.GBMParameters params = new GBMModel.GBMParameters();
@@ -3507,12 +3519,19 @@ public class GBMTest extends TestUtil {
       model3 = gbm3.trainModel().get();
       preds3 = model3.score(fr3);
 
-      // quasibinomial - numeric response -1/1, minimize deviance (negative log-likelihood)
+      // quasibinomial - numeric response -1/2, minimize deviance (negative log-likelihood)
       params._distribution = DistributionFamily.quasibinomial;
       params._train = fr4._key;
       GBM gbm4 = new GBM(params);
       model4 = gbm4.trainModel().get();
       preds4 = model4.score(fr4);
+
+      // quasibinomial - numeric response 0/2.2, minimize deviance (negative log-likelihood)
+      params._distribution = DistributionFamily.quasibinomial;
+      params._train = fr5._key;
+      GBM gbm5 = new GBM(params);
+      model5 = gbm5.trainModel().get();
+      preds5 = model5.score(fr5);
 
       // Done building model; produce a score column with predictions
       if (preds!=null)
@@ -3521,6 +3540,10 @@ public class GBMTest extends TestUtil {
         Log.info(preds2.toTwoDimTable());
       if (preds3!=null)
         Log.info(preds3.toTwoDimTable());
+      if (preds4!=null)
+        Log.info(preds4.toTwoDimTable());
+      if (preds5!=null)
+        Log.info(preds5.toTwoDimTable());
       
       if (model!=null && model2!=null) {
         System.out.println("Compare training metrics of both distributions.");
@@ -3546,6 +3569,10 @@ public class GBMTest extends TestUtil {
         System.out.println("Build a POJO/MOJO, validate same results - model4");
         Assert.assertTrue(model4.testJavaScoring(fr4,preds4,1e-15));
 
+      if (model5!=null)
+        System.out.println("Build a POJO/MOJO, validate same results - model5");
+      Assert.assertTrue(model5.testJavaScoring(fr5,preds5,1e-15));
+
       // compare training predictions of both models (just compare probs)
       if (preds!=null && preds2!=null) {
         preds.remove(0);
@@ -3558,10 +3585,12 @@ public class GBMTest extends TestUtil {
       if (preds2!=null) preds2.delete();
       if (preds3!=null) preds3.delete();
       if (preds4!=null) preds4.delete();
+      if (preds5!=null) preds5.delete();
       if (fr!=null) fr.delete();
       if (fr2!=null) fr2.delete();
       if (fr3!=null) fr3.delete();
       if (fr4!=null) fr4.delete();
+      if (fr5!=null) fr5.delete();
       if(model != null){
         model.deleteCrossValidationModels();
         model.delete();
@@ -3577,6 +3606,10 @@ public class GBMTest extends TestUtil {
       if(model4 != null){
         model4.deleteCrossValidationModels();
         model4.delete();
+      }
+      if(model5 != null){
+        model5.deleteCrossValidationModels();
+        model5.delete();
       }
       Scope.exit();
     }
