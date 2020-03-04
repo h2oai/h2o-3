@@ -186,7 +186,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       DistributionFamily distr = _parms._distribution;
       _initialPrediction = _nclass > 2 || distr == DistributionFamily.laplace || distr == DistributionFamily.huber || distr == DistributionFamily.quantile ? 0 : getInitialValue();
       if(distr == DistributionFamily.quasibinomial){
-        _model._output._quasibinomialDomains = new VecUtils.CollectNumericDomainKnownSize(2).doAll(_response).stringDomain(_response.isInt());
+        _model._output._quasibinomialDomains = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
       }
       if (distr == DistributionFamily.bernoulli || distr == DistributionFamily.quasibinomial) {
         if (hasOffsetCol())

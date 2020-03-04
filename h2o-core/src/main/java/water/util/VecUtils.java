@@ -435,6 +435,20 @@ public class VecUtils {
       Arrays.sort(res);
       return res;
     }
+    
+    public String[] stringDomain(boolean integer){
+      double[] domain = domain();
+      String[] stringDomain = new String[domain.length];
+      for(int i=0; i < domain.length; i++){
+        if(integer) {
+          stringDomain[i] = String.valueOf((int) domain[i]);
+        } else {
+          stringDomain[i] = String.valueOf(domain[i]);
+        }
+      }
+      return stringDomain;
+    }
+    
     private IcedDouble addValue(IcedDouble val){
       if(Double.isNaN(val._val)) return val;
       if(_sortedKnownDomain != null && Arrays.binarySearch(_sortedKnownDomain,val._val) >= 0)
@@ -481,7 +495,7 @@ public class VecUtils {
     }
 
     @Override public void reduce(CollectIntegerDomain mrt) {
-      if( _uniques.equals(mrt._uniques)) _uniques.putAll(mrt._uniques);
+      if(_uniques != mrt._uniques) _uniques.putAll(mrt._uniques);
     }
     
     /** Returns exact numeric domain of given {@link Vec} computed by this task.
@@ -496,95 +510,6 @@ public class VecUtils {
     }
   }
   
-  /** Collect numeric domain of given {@link Vec}
-   *  A map-reduce task to collect up the unique values of an numeric {@link Vec}
-   *  and returned as the domain for the {@link Vec}.
-   *  If he size of domain is known this approach is faster because it stops when it finds all domains.
-   *  Used in GBM quasibinomial.
-   * */
-  public static class CollectNumericDomainKnownSize extends MRTask<CollectNumericDomainKnownSize> {
-
-    NonBlockingHashMapLong<Double> _uniques;
-    int _size;
-
-    public CollectNumericDomainKnownSize(int size){
-      this._size = size;
-    }
-
-    @Override public void map(Chunk ys) {
-      _uniques = new NonBlockingHashMapLong<>();
-      if(_uniques.size() < _size) {
-        for (int row = 0; row < ys._len; row++) {
-          Double value = ys.atd(row);
-          if (!ys.isNA(row) && !_uniques.containsValue(value)) {
-            _uniques.put(_uniques.size(), value);
-            if(_uniques.size() == _size){
-              break;
-            }
-          }
-        }
-      }
-    }
-
-    @Override public void reduce(CollectNumericDomainKnownSize mrt) {
-      if(_uniques.size() != _size) {
-        for (int i = 0; i < mrt._uniques.size(); i++) {
-          Double value = mrt._uniques.get(i);
-          if(!_uniques.containsValue(value)){
-            _uniques.put(_uniques.size(), value);
-          }
-        }
-      }
-    }
-
-    /** Returns exact double domain of given {@link Vec} computed by this task.
-     * The domain is always sorted. Hence:
-     *    domain()[0] - minimal domain value
-     *    domain()[domain().length-1] - maximal domain value
-     */
-    public Double[] doubleDomain() {
-      Double[] dom = _uniques.values().toArray(new Double[0]);
-      Arrays.sort(dom);
-      return dom;
-    }
-
-    /** Returns integer domain of given {@link Vec} computed by this task.
-     * The domain is always sorted. Hence:
-     *    domain()[0] - minimal domain value
-     *    domain()[domain().length-1] - maximal domain value
-     */
-    public Integer[] integerDomain() {
-      Double[] dom = _uniques.values().toArray(new Double[0]);
-      Arrays.sort(dom);
-      Integer[] domInteger = new Integer[_uniques.size()];
-      for(int i = 0; i < _uniques.size(); i++){
-        domInteger[i] = dom[i].intValue();
-      }
-      return domInteger;
-    }
-
-    /**
-     * Convert exact numeric domain to string domain of given {@link Vec} computed by this task.
-     * The domain is always sorted. Hence:
-     *      domain()[0] - minimal domain value
-     *      domain()[domain().length-1] - maximal domain value
-     * @return string domain
-     */
-    public String[] stringDomain(boolean integer){
-      Object[] dom;
-      if(integer){
-        dom = integerDomain();
-      } else {
-        dom = doubleDomain();
-      }
-      String[] stringDom = new String[dom.length];
-      for (int i = 0; i < dom.length; i++){
-          stringDom[i] = String.valueOf(dom[i]);
-      }
-      return stringDom;
-    }
-  }
-
   /**
    * Create a new categorical {@link Vec} with deduplicated domains from a categorical {@link Vec}.
    * 

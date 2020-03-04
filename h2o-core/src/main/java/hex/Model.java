@@ -1565,9 +1565,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
     String[][] domains = new String[names.length][];
-    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length - 1] : adaptFrm.lastVec().domain();
+    Vec response = adaptFrm.lastVec();
+    domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length - 1] : response.domain();
     if (_parms._distribution == DistributionFamily.quasibinomial) {
-        domains[0] = new VecUtils.CollectNumericDomainKnownSize(2).doAll(adaptFrm.lastVec()).stringDomain(adaptFrm.lastVec().isInt());
+      domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
     }
     return domains;
   }
@@ -1654,9 +1655,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     // Build up the names & domains.
     //String[] names = makeScoringNames();
     String[][] domains = new String[1][];
-    domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : adaptFrm.lastVec().domain();
+    Vec response = adaptFrm.lastVec();
+    domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : response.domain();
     if (domains[0] == null && _parms._distribution == DistributionFamily.quasibinomial) {
-        domains[0] = new VecUtils.CollectNumericDomainKnownSize(2).doAll(adaptFrm.lastVec()).stringDomain(adaptFrm.lastVec().isInt());
+      domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
     }
 
     // Score the dataset, building the class distribution & predictions
