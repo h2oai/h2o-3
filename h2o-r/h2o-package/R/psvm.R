@@ -31,6 +31,19 @@
 #' @param max_iterations Maximum number of iteration of the algorithm Defaults to 200.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' # Import the splice dataset
+#' splice <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/splice/splice.svm")
+#' 
+#' # Train the Support Vector Machine model
+#' svm_model <- h2o.psvm(gamma = 0.01, rank_ratio = 0.1,
+#'                       y = "C1", training_frame = splice,
+#'                       disable_training_metrics = FALSE)
+#' }
 #' @export
 h2o.psvm <- function(x,
                      y,
