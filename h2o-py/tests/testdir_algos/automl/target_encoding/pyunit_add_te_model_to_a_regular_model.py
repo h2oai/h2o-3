@@ -76,7 +76,4 @@ testList = [
     test_target_encoder_attached_as_preprocessor
 ]
 
-if __name__ == "__main__":
-    for test in testList: pyunit_utils.standalone_test(test)
-else:
-    for test in testList: test()
+pyunit_utils.run_tests(testList)

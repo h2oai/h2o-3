@@ -1358,9 +1358,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
-      //  TODO    we are using in `adaptFrameToTrain`   _train._names which was not yet encoded
-      Frame adaptedValid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
-      setValid(adaptedValid);
+      setValid(adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive));
       _vresponse = _valid.vec(_parms._response_column);
     } else {
       _valid = null;
