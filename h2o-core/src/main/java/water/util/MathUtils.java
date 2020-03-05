@@ -773,4 +773,12 @@ public class MathUtils {
     }
     return transposed;
   }
+
+  /**
+   * Compute harmonic number estimated by natural logarithm
+   * Constant here: Euler–Mascheroni constant (also called Euler's constant)
+   */
+  public static double harmonicNumberEstimation(long value) {
+    return Math.log(value) + 0.5772156649;
+  }
 }
