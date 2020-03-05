@@ -23,5 +23,19 @@ def test_get_automl():
     assert aml.leader.model_id == get_aml["leader"].model_id
     assert aml.leaderboard.get_frame_data() == get_aml["leaderboard"].get_frame_data()
     assert aml.event_log.get_frame_data() == get_aml["event_log"].get_frame_data()
+    assert aml.training_info == get_aml['training_info']
+
+    # PUBDEV-6599
+    assert aml.project_name == get_aml.project_name
+    assert aml.leader.model_id == get_aml.leader.model_id
+    assert aml.leaderboard.frame_id == get_aml.leaderboard.frame_id
+    assert aml.event_log.frame_id == get_aml.event_log.frame_id
+    assert aml.training_info == get_aml.training_info
+
+    # Test predictions
+    predictions = aml.predict(train)
+    predictions_from_output = get_aml.predict(train)
+    assert (predictions == predictions_from_output).all()
+
 
 pyunit_utils.run_tests([test_get_automl])

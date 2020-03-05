@@ -165,7 +165,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
 
         assert_is_type(project_name, None, str)
         check_id(project_name, "H2OAutoML")
-        self.project_name = self.build_control["project_name"] = project_name
+        self._project_name = self.build_control["project_name"] = project_name
 
         assert_is_type(nfolds, int)
         assert nfolds >= 0, "nfolds set to " + str(nfolds) + "; nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
@@ -297,67 +297,35 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         assert_is_type(sort_metric, None, str)
         self.sort_metric = self.input_spec['sort_metric'] = sort_metric
 
-
-
     #---------------------------------------------------------------------------
     # Basic properties
     #---------------------------------------------------------------------------
+    @property
+    def project_name(self):
+        return self._project_name
+
+    @project_name.setter
+    def project_name(self, value):
+        self._project_name = value
+
     @property
     def key(self):
         return self._job.dest_key if self._job else self.project_name
 
     @property
     def leader(self):
-        """
-        Retrieve the top model from an H2OAutoML object
-
-        :return: an H2O model
-
-        :examples:
-        >>> # Set up an H2OAutoML object
-        >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch an AutoML run
-        >>> aml.train(y=y, training_frame=train)
-        >>> # Get the best model in the AutoML Leaderboard
-        >>> aml.leader
-        """
         return None if self._leader_id is None else h2o.get_model(self._leader_id)
 
     @property
     def leaderboard(self):
-        """
-        Retrieve the leaderboard from an H2OAutoML object
-
-        :return: an H2OFrame with model ids in the first column and evaluation metric in the second column sorted
-                 by the evaluation metric
-
-        :examples:
-        >>> # Set up an H2OAutoML object
-        >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch an AutoML run
-        >>> aml.train(y=y, training_frame=train)
-        >>> # Get the AutoML Leaderboard
-        >>> aml.leaderboard
-        """
         return H2OFrame([]) if self._leaderboard is None else self._leaderboard
 
     @property
     def event_log(self):
-        """
-        retrieve the backend event log from an H2OAutoML object
-
-        :return: an H2OFrame with detailed events occurred during the AutoML training.
-        """
         return H2OFrame([]) if self._event_log is None else self._event_log
 
     @property
     def training_info(self):
-        """
-        expose the name/value columns of `event_log` as a simple dictionary, for example `start_epoch`, `stop_epoch`, ...
-        See :func:`event_log` to obtain a description of those key/value pairs.
-
-        :return: a dictionary with event_log['name'] column as keys and event_log['value'] column as values.
-        """
         return dict() if self._training_info is None else self._training_info
 
     @property
@@ -465,6 +433,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             if ignored_columns is not None:
                 self.input_spec['ignored_columns'] = list(ignored_columns)
 
+
         def clean_params(params):
             return {k: clean_params(v) for k, v in params.items() if v is not None} if isinstance(params, dict) else params
 
@@ -494,22 +463,6 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     # Predict with AutoML
     #---------------------------------------------------------------------------
     def predict(self, test_data):
-        """
-        Predict on a dataset.
-
-        :param H2OFrame test_data: Data on which to make predictions.
-
-        :returns: A new H2OFrame of predictions.
-
-        :examples:
-        >>> # Set up an H2OAutoML object
-        >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch an H2OAutoML run
-        >>> aml.train(y=y, training_frame=train)
-        >>> # Predict with top model from AutoML Leaderboard on a H2OFrame called 'test'
-        >>> aml.predict(test)
-
-        """
         leader = self.leader
         if leader is None:
             self._fetch()
@@ -610,12 +563,12 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
 
         leaderboard = None
         if should_fetch('leaderboard'):
-            leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name + "_leaderboard", progress_bar=False)
+            leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)
             leaderboard = h2o.assign(leaderboard[1:], project_name+"_leaderboard")  # removing index and reassign id to ensure persistence on backend
 
         event_log = None
         if should_fetch('event_log'):
-            event_log = H2OAutoML._fetch_table(state_json['event_log_table'], key=project_name + "_eventlog", progress_bar=False)
+            event_log = H2OAutoML._fetch_table(state_json['event_log_table'], key=project_name+"_eventlog", progress_bar=False)
             event_log = h2o.assign(event_log[1:], project_name+"_eventlog")  # removing index and reassign id to ensure persistence on backend
 
         return dict(
