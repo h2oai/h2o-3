@@ -87,10 +87,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             ITree iTree = new ITree(subSample, 0, heightLimit);
         }
     }
-
-    private static double customLog(double base, double logNumber) {
-        return Math.log(logNumber) / Math.log(base);
-    }
     
     private class ITree {
         private Frame frame;
@@ -196,4 +192,16 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         }
     }
 
+
+    /**
+     * Gives the average path length of unsuccessful search in BST
+     * @param n number of elements
+     */
+    private double avgPathLengthUnsucSearch(long n) {
+        return 2 * MathUtils.harmonicNumberEstimation(n - 1) - (2 * (n - 1.0))/n;
+    }
+    
+    private double anomalyScore(double pathLength) {
+        return Math.pow(2, -1 * pathLength/MathUtils.harmonicNumberEstimation(_train.numRows()));
+    }
 }
