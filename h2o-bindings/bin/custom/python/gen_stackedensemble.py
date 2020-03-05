@@ -43,11 +43,24 @@ def class_extensions():
         ...                                           seed=1,
         ...                                           keep_levelone_frame=True)
         >>> stack_blend.train(x=x, y=y, training_frame=train, blending_frame=blend)
-        >>> stack_blend.metalearner
+        >>> stack_blend.metalearner()
         """
+        def _get_item(self, key):
+            warnings.warn(
+                "The usage of stacked_ensemble.metalearner()['name'] will be deprecated. "
+                "Metalearner now returns the metalearner object. If you need to get the "
+                "'name' please use stacked_ensemble.metalearner().model_id",
+                DeprecationWarning
+            )
+            if key == "name":
+                return self.model_id
+            raise NotImplementedError
+
         model = self._model_json["output"]
         if "metalearner" in model and model["metalearner"] is not None:
-            return model["metalearner"]
+            metalearner = h2o.get_model(model["metalearner"]["name"])
+            metalearner.__class__.__getitem__ = _get_item
+            return metalearner
         print("No metalearner for this model")
 
     def levelone_frame_id(self):
@@ -117,12 +130,15 @@ def class_extensions():
 
 extensions = dict(
     __imports__="""
+import ast
+import json
+import warnings
+
+import h2o
+from h2o.base import Keyed
+from h2o.grid import H2OGridSearch
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
-from h2o.grid import H2OGridSearch
-from h2o.base import Keyed
-import json
-import ast
 """,
     __class__=class_extensions
 )
