@@ -2,20 +2,19 @@ package hex.tree.isoforextended;
 
 import hex.ModelBuilder;
 import hex.ModelCategory;
-import hex.SplitFrame;
 import hex.psvm.psvm.MatrixUtils;
 import hex.tree.SharedTree;
-import water.DKV;
-import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.FrameUtils;
+import water.util.MathUtils;
+import water.util.RandomUtils;
 import water.util.VecUtils;
 
-import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Extended isolation forest implementation by https://arxiv.org/pdf/1811.02141.pdf paper.
@@ -25,9 +24,9 @@ import java.util.Arrays;
 public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestModel,
         ExtendedIsolationForestParameters,
         ExtendedIsolationForestOutput> {
-
-
-    public static final double SUB_SAMPLING_SIZE = 256.0;
+    
+    public static final int SUB_SAMPLING_SIZE = 256;
+    public ITree [] iTrees;
 
     public ExtendedIsolationForest(ExtendedIsolationForestParameters parms) {
         super(parms);
@@ -75,21 +74,34 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
         @Override
         public void computeImpl() {
+            int heightLimit = (int) Math.ceil(MathUtils.log2(SUB_SAMPLING_SIZE));
             
-            // create subsamble viz. EIF/IF paper algorithm 1
-            double ratio = SUB_SAMPLING_SIZE /_train.numRows();
-            SplitFrame sf = new SplitFrame(_train, new double[]{ratio, 1 - ratio}, new Key[] {Key.make("train.hex"), Key.make("test.hex")});
-            sf.exec().get();
-            Key[] ksplits = sf._destination_frames;
-            Frame subSample = DKV.get(ksplits[0]).get();
+            // build Isolation Forest
+            iTrees = new ITree[_parms._ntrees];
+            for (int i = 0; i < _parms._ntrees; i++) {
+                // create subsamble see EIF/IF paper algorithm 1 TODO avalenta make subsampling randomized and guarantee given size for small datasets
+                Frame subSample = new SubSampleTask(SUB_SAMPLING_SIZE, _parms._seed + i).doAll(_train.types(), _train).outputFrame();
+                System.out.println("subSample size: " + subSample.numRows());
+                ITree iTree = new ITree(subSample, 0, heightLimit);
+                iTrees[i] = iTree;
+            }
             
-            int heightLimit = (int) Math.ceil(customLog(2, SUB_SAMPLING_SIZE));
-            ITree iTree = new ITree(subSample, 0, heightLimit);
+            // compute score for given point
+            double pathLength = 0;
+            for (int i = 0; i < iTrees.length; i++) {
+                double iTreeScore = iTrees[i].computePathLength(Vec.makeVec(new double[]{0, 0}, Vec.newKey()), 0);
+                pathLength += iTreeScore;
+                System.out.println("iTree " + i + " pathLength = " + iTreeScore);
+            }
+            pathLength = pathLength / iTrees.length;
+            System.out.println("pathLength " + pathLength);
+            double anomalyScore = anomalyScore(pathLength);
+            System.out.println("Anomaly score " + anomalyScore);
         }
     }
     
     private class ITree {
-        private Frame frame;
+        private Frame frame; // TODO avalenta not necessaty to save
         private Vec n;
         private Vec p;
         private ITree leftNode;
@@ -139,8 +151,18 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             return rightNode;
         }
         
-        private void growTree() {
-            
+        public double computePathLength(Vec x, double score) {
+            if (external) {
+                return currentHeight; //+ avgPathLengthUnsucSearch(size);
+            } else {
+                Vec sub = MatrixUtils.subtractionVtv(x, p);
+                double mul = MatrixUtils.productVtV(sub,n);
+                if (mul <= 0) {
+                    return leftNode.computePathLength(x, score);
+                } else {
+                    return rightNode.computePathLength(x, score);
+                }
+            }
         }
     }
 
@@ -192,6 +214,30 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         }
     }
 
+    private class SubSampleTask extends MRTask<SubSampleTask> {
+
+        private int subSampleSize;
+        private Random random;
+        
+        private AtomicInteger currentSubSampleSize = new AtomicInteger(0);
+
+        public SubSampleTask(int subSampleSize, long seed) {
+            this.subSampleSize = subSampleSize;
+            this.random = RandomUtils.getRNG(seed);
+        }
+
+        @Override
+        public void map(Chunk[] cs, NewChunk[] ncs) {
+            for (int row = 0; row < cs[0]._len; row++) {
+                if (random.nextBoolean() && (currentSubSampleSize.get() <  subSampleSize)) {
+                    currentSubSampleSize.incrementAndGet();
+                    for (int column = 0; column < cs.length; column++) {
+                        ncs[column].addNum(cs[column].atd(row));
+                    }
+                }
+            }
+        }
+    }
 
     /**
      * Gives the average path length of unsuccessful search in BST
