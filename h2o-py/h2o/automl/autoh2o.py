@@ -2,17 +2,17 @@
 import functools as ft
 
 import h2o
+from h2o.automl._base import H2OAutoMLBaseMixin
 from h2o.automl._h2o_automl_output import H2OAutoMLOutput
 from h2o.base import Keyed
 from h2o.exceptions import H2OResponseError, H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
-from h2o.model.model_base import ModelBase
 from h2o.utils.shared_utils import check_id
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 
-class H2OAutoML(Keyed):
+class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     """
     Automatic Machine Learning
 
@@ -465,7 +465,6 @@ class H2OAutoML(Keyed):
             if ignored_columns is not None:
                 self.input_spec['ignored_columns'] = list(ignored_columns)
 
-
         def clean_params(params):
             return {k: clean_params(v) for k, v in params.items() if v is not None} if isinstance(params, dict) else params
 
@@ -518,36 +517,6 @@ class H2OAutoML(Keyed):
         if leader is not None:
             return leader.predict(test_data)
         print("No model built yet...")
-
-    #---------------------------------------------------------------------------
-    # Download POJO/MOJO with AutoML
-    #---------------------------------------------------------------------------
-
-    def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
-        """
-        Download the POJO for the leader model in AutoML to the directory specified by path.
-
-        If path is an empty string, then dump the output to screen.
-
-        :param path:  An absolute path to the directory where POJO should be saved.
-        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name: Custom name of genmodel jar
-        :returns: name of the POJO file written.
-        """
-
-        return h2o.download_pojo(self.leader, path, get_jar=get_genmodel_jar, jar_name=genmodel_name)
-
-    def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name=""):
-        """
-        Download the leader model in AutoML in MOJO format.
-
-        :param path: the path where MOJO file should be saved.
-        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name: Custom name of genmodel jar
-        :returns: name of the MOJO file written.
-        """
-
-        return ModelBase.download_mojo(self.leader, path, get_genmodel_jar, genmodel_name)
 
     #-------------------------------------------------------------------------------------------------------------------
     # Overrides
@@ -641,12 +610,12 @@ class H2OAutoML(Keyed):
 
         leaderboard = None
         if should_fetch('leaderboard'):
-            leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name+"_leaderboard", progress_bar=False)
+            leaderboard = H2OAutoML._fetch_table(state_json['leaderboard_table'], key=project_name + "_leaderboard", progress_bar=False)
             leaderboard = h2o.assign(leaderboard[1:], project_name+"_leaderboard")  # removing index and reassign id to ensure persistence on backend
 
         event_log = None
         if should_fetch('event_log'):
-            event_log = H2OAutoML._fetch_table(state_json['event_log_table'], key=project_name+"_eventlog", progress_bar=False)
+            event_log = H2OAutoML._fetch_table(state_json['event_log_table'], key=project_name + "_eventlog", progress_bar=False)
             event_log = h2o.assign(event_log[1:], project_name+"_eventlog")  # removing index and reassign id to ensure persistence on backend
 
         return dict(
