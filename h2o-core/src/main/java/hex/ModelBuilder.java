@@ -1385,8 +1385,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         separateFeatureVecs(); //fix up the pointers to the special vecs
       }
       if (_valid != null) {
-        Frame encodedVa = FrameUtils.applyTargetEncoder(teModel, va);
-        _toDelete.put(encodedVa._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+        Frame encodedVa = null;
+        if (teModel != null) {
+          encodedVa = FrameUtils.applyTargetEncoder(teModel, va);
+          _toDelete.put(encodedVa._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+        } else {
+          encodedVa = va;
+        }
 
         _valid = encodeFrameCategoricals(encodedVa, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
         _vresponse = _valid.vec(_parms._response_column);

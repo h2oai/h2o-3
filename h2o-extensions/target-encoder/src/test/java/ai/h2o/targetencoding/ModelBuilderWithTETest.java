@@ -172,11 +172,13 @@ public class ModelBuilderWithTETest {
       stall_till_cloudsize(1);
     }
 
-    @Parameterized.Parameters(name = "CV mode = {0}, task type = {1}")
+    @Parameterized.Parameters(name = "CV mode = {0}, te_is_provided = {1}")
     public static Object[][] testParams() {
       return new Object[][]{
-              {false, "regression"},
-              {true, "classification"}
+              {false, false},
+              {false, true},
+              {true, false},
+              {true, true}
       };
     }
 
@@ -184,7 +186,7 @@ public class ModelBuilderWithTETest {
     public boolean isCVMode;
 
     @Parameterized.Parameter (value = 1)
-    public String taskType;
+    public Boolean teIsProvided;
 
 
     @Test
@@ -227,6 +229,8 @@ public class ModelBuilderWithTETest {
         TargetEncoderBuilder temb = new TargetEncoderBuilder(parameters);
         final Model targetEncoderModel = temb.trainModel().get();
 
+        if(!teIsProvided) Scope.track_generic(targetEncoderModel);
+
         GBMModel.GBMParameters gbmParameters = new GBMModel.GBMParameters();
         gbmParameters._nfolds = 0;
         if (!isCVMode) {
@@ -235,7 +239,9 @@ public class ModelBuilderWithTETest {
         ModelBuilder modelBuilderForMainModel = modelBuilderGBMWithCVFixture(gbmParameters, trainingFrame, parameters._response_column, parameters._seed);
         modelBuilderForMainModel._parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.EnumLimited;
 
-        modelBuilderForMainModel.addTEModelKey(targetEncoderModel._key);
+        if(teIsProvided)
+          modelBuilderForMainModel.addTEModelKey(targetEncoderModel._key);
+
         modelBuilderForMainModel.init(false);
 
         Model gbmModel = (GBMModel) modelBuilderForMainModel.trainModel().get();
@@ -253,10 +259,15 @@ public class ModelBuilderWithTETest {
 
         String variableImportancesTableAsString = ((GBMModel) gbmModel)._output._variable_importances.toString(0, true);
 
-        String[] enumLimitedEncodedColumns = {"fYear.top_10_levels"};
-        assertTrue(Arrays.stream(enumLimitedEncodedColumns).allMatch(variableImportancesTableAsString::contains));
-        String[] teEncodedColumns = {"Origin_te",  "fDayofMonth_te", "Dest_te"};
-        assertTrue(Arrays.stream(teEncodedColumns).allMatch(variableImportancesTableAsString::contains));
+        if(teIsProvided) {
+          String[] enumLimitedEncodedColumns = {"fYear.top_10_levels"};
+          assertTrue(Arrays.stream(enumLimitedEncodedColumns).allMatch(variableImportancesTableAsString::contains));
+          String[] teEncodedColumns = {"Origin_te", "fDayofMonth_te", "Dest_te"};
+          assertTrue(Arrays.stream(teEncodedColumns).allMatch(variableImportancesTableAsString::contains));
+        } else {
+          String[] enumLimitedEncodedColumns = {"fYear.top_10_levels", "fDayofMonth.top_10_levels", "Origin.top_10_levels"};
+          assertTrue(Arrays.stream(enumLimitedEncodedColumns).allMatch(variableImportancesTableAsString::contains));
+        }
 
         System.out.println(variableImportancesTableAsString);
 
