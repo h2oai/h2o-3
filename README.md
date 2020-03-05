@@ -718,17 +718,20 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 
 * Generalized Additive Models: [PUBDEV-6807](https://0xdata.atlassian.net/browse/PUBDEV-6807)
 * Constrained k-means Clustering: [PUBDEV-6447](https://0xdata.atlassian.net/browse/PUBDEV-6447)
+* CBOW for word2vec: [PUBDEV-7229](https://0xdata.atlassian.net/browse/PUBDEV-7229)
+* Fractional Binomial in GLM: [PUBDEV-6037](https://0xdata.atlassian.net/browse/PUBDEV-6037)
+* Bulk Model Building: [PUBDEV-6976](https://0xdata.atlassian.net/browse/PUBDEV-6976)
 * Kubernetes Support: [PUBDEV-6852](https://0xdata.atlassian.net/browse/PUBDEV-6852)
-* Automatic cluster sizing: [PUBDEV-6045](https://0xdata.atlassian.net/browse/PUBDEV-6045)
 * Out-of-memory error protection: [PUBDEV-6614](https://0xdata.atlassian.net/browse/PUBDEV-6614)
-* Target Encoding Improvements (regression, multinomial)
 
 ### H2O 3.32 - Spring 2020 (Q2/2020)
 
-* Add RuleFit algorithm
-* NLP Improvements: CBOW for word2vec, TF-IDF, plot embeddings
+* RuleFit algorithm
 * Grid Search for Unsupervised algos (Isolation Forest, Autoencoder)
+* NLP Improvements: TF-IDF, plot embeddings
+* Hive Data Export
 * XGBoost Stability/Resource utilization: Scaling cluster up for XGBoost
+* Automatic cluster sizing: [PUBDEV-6045](https://0xdata.atlassian.net/browse/PUBDEV-6045)
 * PSVM Improvements (linear kernel, MOJO)
 
 <a name="Community"></a>
