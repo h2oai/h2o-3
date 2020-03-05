@@ -715,10 +715,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Capture the data "shape" the model is valid on
       setNames(train != null ? train.names() : new String[0], train!=null?train.typesStr():new String[0]);
       _domains = train != null ? train.domains() : new String[0][];
-      if(b._parms._distribution == DistributionFamily.quasibinomial){
-        _domains[0] = new VecUtils.CollectDoubleDomain(null, 2).doAll(b._response).stringDomain(b._response.isInt());
-        Log.info("ModelBuilder.Output() Calculated quasibinomial domain has size: "+_domains[0].length);
-      }
       _origNames = b._origNames;
       _origDomains = b._origDomains;
       _hasOffset = b.hasOffsetCol();
