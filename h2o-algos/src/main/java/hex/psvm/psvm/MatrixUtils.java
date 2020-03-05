@@ -3,9 +3,6 @@ package hex.psvm.psvm;
 import water.MRTask;
 import water.fvec.*;
 import water.util.ArrayUtils;
-import water.util.FrameUtils;
-
-import java.util.Arrays;
 
 /**
  * Utils class for matrix operations. See also {code DMatrix.java}
@@ -74,13 +71,13 @@ public class MatrixUtils {
    * 
    * @param m Frame representing matrix M (m x n)
    * @param v Vec representing vector v (n x 1)
-   * @return m-element array representing the result of the subtraction
+   * @return (m x n)-element array representing the result of the subtraction
    */
   public static Frame subtractionMtv(Frame m, Vec v) {
     if (v.length() != m.numCols()) {
       throw new UnsupportedOperationException("Vector elements number must be the same as matrix column number");
     }
-    Frame result = new SubMtvTask(v).doAll(m.types(), m).outputFrame();
+    Frame result = new SubtractionMtvTask(v).doAll(m.types(), m).outputFrame();
     return result;
   }  
 
@@ -140,11 +137,11 @@ public class MatrixUtils {
     }
   }
 
-  static class SubMtvTask extends MRTask<SubMtvTask> {
+  static class SubtractionMtvTask extends MRTask<SubtractionMtvTask> {
 
     private Vec v;
 
-    public SubMtvTask(Vec v) {
+    public SubtractionMtvTask(Vec v) {
       this.v = v;
     }
 
