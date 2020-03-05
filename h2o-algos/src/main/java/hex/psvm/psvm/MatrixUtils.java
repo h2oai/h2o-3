@@ -79,7 +79,22 @@ public class MatrixUtils {
     }
     Frame result = new SubtractionMtvTask(v).doAll(m.types(), m).outputFrame();
     return result;
-  }  
+  }
+
+  /**
+   * Calculates vector-vector subtraction v'v
+   *
+   * @param v1 Vec representing vector v (n x 1)
+   * @param v2 Vec representing vector v (n x 1)
+   * @return n-element vec representing the result of the subtraction
+   */
+  public static Vec subtractionVtv(Vec v1, Vec v2) {
+    if (v2.length() != v1.length()) {
+      throw new UnsupportedOperationException("Vector elements number must be the same");
+    }
+    Vec result = new SubtractionVtvTask().doAll(Vec.T_NUM, v1, v2).outputFrame().vec(0);
+    return result;
+  }
 
   private static class ProductMMTask extends MRTask<ProductMMTask> {
     // OUT
@@ -154,6 +169,16 @@ public class MatrixUtils {
       }
     }
   }
+
+  static class SubtractionVtvTask extends MRTask<SubtractionVtvTask> {
+
+    @Override
+    public void map(Chunk[] cs, NewChunk nc) {
+      for (int row = 0; row < cs[0]._len; row++) {
+        nc.addNum(cs[0].atd(row) - cs[1].atd(row));
+      }
+    }
+  }  
 
   static class ProductMtvTask2 extends MRTask<ProductMtvTask2> {
     private final Vec v;
