@@ -4,7 +4,7 @@ import org.apache.tools.ant.taskdefs.condition.Os
 // classpath
 buildscript {
     repositories {
-        maven { url 'https://plugins.gradle.org/m2/' }
+        maven {url "${localNexusLocation}/public" }
         mavenCentral()
         jcenter()
     }
