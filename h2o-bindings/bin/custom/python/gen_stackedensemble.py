@@ -134,6 +134,13 @@ if is_type(base_models, {ptype}):
 else:
     assert_is_type({pname}, None, [str])
     self._parms["{sname}"] = {pname}
+""",
+        getter="""
+base_models = self.actual_params.get("base_models", [])
+base_models = [base_model["name"] for base_model in base_models]
+if len(base_models) == 0:
+    base_models = self._parms.get("base_models")
+return base_models
 """
     ),
 
