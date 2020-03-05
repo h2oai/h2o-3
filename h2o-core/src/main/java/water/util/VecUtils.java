@@ -908,7 +908,7 @@ public class VecUtils {
   public static Vec uniformDistrFromFrame(Frame frame, long seed) {
     double[] p = new double[frame.numCols()];
     Vec[] vecs = frame.vecs();
-    Random random = new Random(seed);
+    Random random = RandomUtils.getRNG(seed);
     for (int i = 0; i < vecs.length; i++) {
       Vec vec = vecs[i];
       double min = vec.min();
@@ -934,7 +934,7 @@ public class VecUtils {
     private Long seed;
     
     public UniformDistrFromFrameTask(long seed) {
-      random = new Random(seed);
+      random = RandomUtils.getRNG(seed);
       this.seed = seed;
     }
 
@@ -961,7 +961,7 @@ public class VecUtils {
     public void reduce(UniformDistrFromFrameTask mrt) {
       mins = ArrayUtils.reduceMin(mrt.mins, mins);
       maxs = ArrayUtils.reduceMax(mrt.maxs, maxs);
-      random = new Random(seed);
+      random = RandomUtils.getRNG(seed);
       uniformDistribution = new MRTask() {
 
         @Override
