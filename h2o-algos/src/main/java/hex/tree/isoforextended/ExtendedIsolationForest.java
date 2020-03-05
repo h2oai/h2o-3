@@ -60,17 +60,12 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
         @Override
         public void map(Chunk[] cs) {
-            System.out.println(this);
-            for (int i = 0; i < cs.length; i++) {
-                for (int j = 0; j < cs[i]._len; j++) {
-                    System.out.println(cs[i].atd(j));
-                }
+            for (int row = 0; row < cs[0]._len; row++) {
+                for (int column = 0; column < cs.length; column++) {
+                    System.out.print(cs[column].atd(row) + " ");
             }
-        }
-
-        @Override
-        public void reduce(PrintRowsMRTask mrt) {
-            // nothing to do
+            System.out.println("");
+            }
         }
     }
 
