@@ -187,6 +187,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       _initialPrediction = _nclass > 2 || distr == DistributionFamily.laplace || distr == DistributionFamily.huber || distr == DistributionFamily.quantile ? 0 : getInitialValue();
       if(distr == DistributionFamily.quasibinomial){
         _model._output._quasibinomialDomains = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
+        Log.info("GBM.initializeModelSpecifics() Calculated quasibinomial domain has size: "+ _model._output._quasibinomialDomains.length);
       }
       if (distr == DistributionFamily.bernoulli || distr == DistributionFamily.quasibinomial) {
         if (hasOffsetCol())

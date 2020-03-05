@@ -715,6 +715,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       // Capture the data "shape" the model is valid on
       setNames(train != null ? train.names() : new String[0], train!=null?train.typesStr():new String[0]);
       _domains = train != null ? train.domains() : new String[0][];
+      if(b._parms._distribution == DistributionFamily.quasibinomial){
+        _domains[0] = new VecUtils.CollectDoubleDomain(null, 2).doAll(b._response).stringDomain(b._response.isInt());
+        Log.info("ModelBuilder.Output() Calculated quasibinomial domain has size: "+_domains[0].length);
+      }
       _origNames = b._origNames;
       _origDomains = b._origDomains;
       _hasOffset = b.hasOffsetCol();
@@ -1569,6 +1573,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length - 1] : response.domain();
     if (_parms._distribution == DistributionFamily.quasibinomial) {
       domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
+      Log.info("Model.makeScoringDomains() Calculated quasibinomial domain has size: "+ domains[0].length);
     }
     return domains;
   }
@@ -1657,8 +1662,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     String[][] domains = new String[1][];
     Vec response = adaptFrm.lastVec();
     domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : response.domain();
-    if (domains[0] == null && _parms._distribution == DistributionFamily.quasibinomial) {
+    if (_parms._distribution == DistributionFamily.quasibinomial) {
       domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
+      Log.info("Model.scoreMetrics() Calculated quasibinomial domain has size: "+domains[0].length);
     }
 
     // Score the dataset, building the class distribution & predictions

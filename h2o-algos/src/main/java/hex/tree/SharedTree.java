@@ -216,6 +216,7 @@ public abstract class SharedTree<
           isQuasibinomial = true;
           domain = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
           ((GBMModel)_model)._output._quasibinomialDomains = domain;
+          Log.info("SharedTree.computeImpl() Calculated quasibinomial domain has size: "+domain.length);
         }
 
         // Compute the response domain; makes for nicer printouts
