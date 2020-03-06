@@ -75,23 +75,29 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         @Override
         public void computeImpl() {
             int heightLimit = (int) Math.ceil(MathUtils.log2(SUB_SAMPLING_SIZE));
+
+            _parms._ntrees = 100;
             
             // build Isolation Forest
             iTrees = new ITree[_parms._ntrees];
             for (int i = 0; i < _parms._ntrees; i++) {
-                // create subsamble see EIF/IF paper algorithm 1 TODO avalenta make subsampling randomized and guarantee given size for small datasets
-                Frame subSample = new SubSampleTask(SUB_SAMPLING_SIZE, _parms._seed + i).doAll(_train.types(), _train).outputFrame();
-                System.out.println("subSample size: " + subSample.numRows());
-                ITree iTree = new ITree(subSample, 0, heightLimit);
+                // create subsamble see EIF/IF paper algorithm 1 
+                // TODO avalenta make subsampling randomized and guarantee given size for small datasets
+                Frame subSample = new SubSampleTask(SUB_SAMPLING_SIZE, _parms._seed + i)
+                        .doAll(_train.types(), _train).outputFrame();
+//                System.out.println("subSample size: " + subSample.numRows());
+                ITree iTree = new ITree(subSample, 0, heightLimit, i);
                 iTrees[i] = iTree;
             }
+
+//            iTrees[0].print2DUtil(iTrees[0], 0);
             
             // compute score for given point
             double pathLength = 0;
             for (int i = 0; i < iTrees.length; i++) {
                 double iTreeScore = iTrees[i].computePathLength(Vec.makeVec(new double[]{0, 0}, Vec.newKey()), 0);
                 pathLength += iTreeScore;
-                System.out.println("iTree " + i + " pathLength = " + iTreeScore);
+//                System.out.println("iTree " + i + " pathLength = " + iTreeScore);
             }
             pathLength = pathLength / iTrees.length;
             System.out.println("pathLength " + pathLength);
@@ -111,7 +117,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         private boolean external = false;
         private long size;
 
-        public ITree(Frame frame, int currentHeight, int heightLimit) {
+        public ITree(Frame frame, int currentHeight, int heightLimit, int treeNum) {
             this.frame = frame;
             this.currentHeight = currentHeight;
             
@@ -119,16 +125,40 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
                 external = true;
                 size = frame.numRows();
             } else {
-                p = VecUtils.uniformDistrFromFrameMR(frame, _parms._seed);
-                n = VecUtils.makeGaussianVec(frame.numCols(), frame.numCols() - _parms.extensionLevel - 1, _parms._seed);
+                p = VecUtils.uniformDistrFromFrameMR(frame, _parms._seed + currentHeight + treeNum);
+                n = VecUtils.makeGaussianVec(frame.numCols(), frame.numCols() - _parms.extensionLevel - 1, _parms._seed + currentHeight + treeNum);
                 Frame sub = MatrixUtils.subtractionMtv(frame, p);
                 Vec mul = MatrixUtils.productMtv2(sub, n);
                 Frame left = new FilterLteTask(mul, 0).doAll(frame.types(), frame).outputFrame();
                 Frame right = new FilterGtRightTask(mul, 0).doAll(frame.types(), frame).outputFrame();
-
-                leftNode = new ITree(left, currentHeight + 1, heightLimit);
-                rightNode = new ITree(right, currentHeight + 1, heightLimit);
+                
+                leftNode = new ITree(left, currentHeight + 1, heightLimit, treeNum);
+                rightNode = new ITree(right, currentHeight + 1, heightLimit, treeNum);
             }
+        }
+        
+        public void print2DUtil(ITree root, int space)
+        {
+            int COUNT = 10;
+            // Base case  
+            if (root == null)
+                return;
+
+            // Increase distance between levels  
+            space += COUNT;
+
+            // Process right child first  
+            print2DUtil(root.rightNode, space);
+
+            // Print current node after space  
+            // count  
+            System.out.print("\n");
+            for (int i = COUNT; i < space; i++)
+                System.out.print(" ");
+            System.out.print(root.frame.numRows() + "\n");
+
+            // Process left child  
+            print2DUtil(root.leftNode, space);
         }
 
         public Frame getFrame() {
@@ -153,7 +183,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         
         public double computePathLength(Vec x, double score) {
             if (external) {
-                return currentHeight; //+ avgPathLengthUnsucSearch(size);
+                return currentHeight + avgPathLengthUnsucSearch(size);
             } else {
                 Vec sub = MatrixUtils.subtractionVtv(x, p);
                 double mul = MatrixUtils.productVtV(sub,n);
@@ -181,7 +211,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             for (int row = 0; row < cs[0]._len; row++) {
                 double num = mul.at(cs[0].start() + row);
                 if (num <= value) {
-                    // left
                     for (int column = 0; column < cs.length; column++) {
                         ncs[column].addNum(cs[column].atd(row));
                     }
@@ -205,7 +234,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             for (int row = 0; row < cs[0]._len; row++) {
                 double num = mul.at(cs[0].start() + row);
                 if (num > value) {
-                    // right
                     for (int column = 0; column < cs.length; column++) {
                         ncs[column].addNum(cs[column].atd(row));
                     }
@@ -244,7 +272,9 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
      * @param n number of elements
      */
     private double avgPathLengthUnsucSearch(long n) {
-        return 2 * MathUtils.harmonicNumberEstimation(n - 1) - (2 * (n - 1.0))/n;
+        if (n <= 0)
+            return 0;
+        return 2 * MathUtils.harmonicNumberEstimation(n - 1) - (2.0 * (n - 1.0))/n;
     }
     
     private double anomalyScore(double pathLength) {

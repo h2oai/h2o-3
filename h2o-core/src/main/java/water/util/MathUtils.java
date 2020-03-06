@@ -779,6 +779,8 @@ public class MathUtils {
    * Constant here: Euler–Mascheroni constant (also called Euler's constant)
    */
   public static double harmonicNumberEstimation(long value) {
+    if (value <= 0)
+      return 0;
     return Math.log(value) + 0.5772156649;
   }
 }
