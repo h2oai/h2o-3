@@ -9,6 +9,7 @@ import water.Job;
 import water.Key;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
+import water.util.ArrayUtils;
 import water.util.IcedHashMapGeneric;
 import water.util.TwoDimTable;
 
@@ -92,13 +93,14 @@ public class TargetEncoderModel extends Model<TargetEncoderModel, TargetEncoderM
     }
     
     private TwoDimTable constructSummary(){
-      TwoDimTable summary = new TwoDimTable("Target Encoder model summary.", "Summary for target encoder model", new String[_names.length],
+
+      String[] columnsForSummary = ArrayUtils.difference(_names, new String[]{responseName(), foldName()});
+      TwoDimTable summary = new TwoDimTable("Target Encoder model summary.", "Summary for target encoder model", new String[columnsForSummary.length],
               new String[]{"Original name", "Encoded column name"}, new String[]{"string", "string"}, null, null);
 
-      for (int i = 0; i < _names.length; i++) {
-        final String originalColName = _names[i];
-        if(originalColName.equals(responseName())) continue;
-        
+      for (int i = 0; i < columnsForSummary.length; i++) {
+        final String originalColName = columnsForSummary[i];
+
         summary.set(i, 0, originalColName);
         summary.set(i, 1, originalColName + TargetEncoder.ENCODED_COLUMN_POSTFIX);
       }
