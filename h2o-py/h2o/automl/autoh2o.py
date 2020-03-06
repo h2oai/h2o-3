@@ -2,16 +2,17 @@
 import functools as ft
 
 import h2o
+from h2o.automl._base import H2OAutoMLBaseMixin
+from h2o.automl._h2o_automl_output import H2OAutoMLOutput
 from h2o.base import Keyed
 from h2o.exceptions import H2OResponseError, H2OValueError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
-from h2o.model.model_base import ModelBase
 from h2o.utils.shared_utils import check_id
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 
-class H2OAutoML(Keyed):
+class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
     """
     Automatic Machine Learning
 
@@ -164,7 +165,7 @@ class H2OAutoML(Keyed):
 
         assert_is_type(project_name, None, str)
         check_id(project_name, "H2OAutoML")
-        self.project_name = self.build_control["project_name"] = project_name
+        self._project_name = self.build_control["project_name"] = project_name
 
         assert_is_type(nfolds, int)
         assert nfolds >= 0, "nfolds set to " + str(nfolds) + "; nfolds cannot be negative. Use nfolds >=2 if you want cross-valiated metrics and Stacked Ensembles or use nfolds = 0 to disable."
@@ -296,67 +297,35 @@ class H2OAutoML(Keyed):
         assert_is_type(sort_metric, None, str)
         self.sort_metric = self.input_spec['sort_metric'] = sort_metric
 
-
-
     #---------------------------------------------------------------------------
     # Basic properties
     #---------------------------------------------------------------------------
+    @property
+    def project_name(self):
+        return self._project_name
+
+    @project_name.setter
+    def project_name(self, value):
+        self._project_name = value
+
     @property
     def key(self):
         return self._job.dest_key if self._job else self.project_name
 
     @property
     def leader(self):
-        """
-        Retrieve the top model from an H2OAutoML object
-
-        :return: an H2O model
-
-        :examples:
-        >>> # Set up an H2OAutoML object
-        >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch an AutoML run
-        >>> aml.train(y=y, training_frame=train)
-        >>> # Get the best model in the AutoML Leaderboard
-        >>> aml.leader
-        """
         return None if self._leader_id is None else h2o.get_model(self._leader_id)
 
     @property
     def leaderboard(self):
-        """
-        Retrieve the leaderboard from an H2OAutoML object
-
-        :return: an H2OFrame with model ids in the first column and evaluation metric in the second column sorted
-                 by the evaluation metric
-
-        :examples:
-        >>> # Set up an H2OAutoML object
-        >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch an AutoML run
-        >>> aml.train(y=y, training_frame=train)
-        >>> # Get the AutoML Leaderboard
-        >>> aml.leaderboard
-        """
         return H2OFrame([]) if self._leaderboard is None else self._leaderboard
 
     @property
     def event_log(self):
-        """
-        retrieve the backend event log from an H2OAutoML object
-
-        :return: an H2OFrame with detailed events occurred during the AutoML training.
-        """
         return H2OFrame([]) if self._event_log is None else self._event_log
 
     @property
     def training_info(self):
-        """
-        expose the name/value columns of `event_log` as a simple dictionary, for example `start_epoch`, `stop_epoch`, ...
-        See :func:`event_log` to obtain a description of those key/value pairs.
-
-        :return: a dictionary with event_log['name'] column as keys and event_log['value'] column as values.
-        """
         return dict() if self._training_info is None else self._training_info
 
     @property
@@ -494,22 +463,6 @@ class H2OAutoML(Keyed):
     # Predict with AutoML
     #---------------------------------------------------------------------------
     def predict(self, test_data):
-        """
-        Predict on a dataset.
-
-        :param H2OFrame test_data: Data on which to make predictions.
-
-        :returns: A new H2OFrame of predictions.
-
-        :examples:
-        >>> # Set up an H2OAutoML object
-        >>> aml = H2OAutoML(max_runtime_secs=30)
-        >>> # Launch an H2OAutoML run
-        >>> aml.train(y=y, training_frame=train)
-        >>> # Predict with top model from AutoML Leaderboard on a H2OFrame called 'test'
-        >>> aml.predict(test)
-
-        """
         leader = self.leader
         if leader is None:
             self._fetch()
@@ -517,36 +470,6 @@ class H2OAutoML(Keyed):
         if leader is not None:
             return leader.predict(test_data)
         print("No model built yet...")
-
-    #---------------------------------------------------------------------------
-    # Download POJO/MOJO with AutoML
-    #---------------------------------------------------------------------------
-
-    def download_pojo(self, path="", get_genmodel_jar=False, genmodel_name=""):
-        """
-        Download the POJO for the leader model in AutoML to the directory specified by path.
-
-        If path is an empty string, then dump the output to screen.
-
-        :param path:  An absolute path to the directory where POJO should be saved.
-        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name: Custom name of genmodel jar
-        :returns: name of the POJO file written.
-        """
-
-        return h2o.download_pojo(self.leader, path, get_jar=get_genmodel_jar, jar_name=genmodel_name)
-
-    def download_mojo(self, path=".", get_genmodel_jar=False, genmodel_name=""):
-        """
-        Download the leader model in AutoML in MOJO format.
-
-        :param path: the path where MOJO file should be saved.
-        :param get_genmodel_jar: if True, then also download h2o-genmodel.jar and store it in folder ``path``.
-        :param genmodel_name: Custom name of genmodel jar
-        :returns: name of the MOJO file written.
-        """
-
-        return ModelBase.download_mojo(self.leader, path, get_genmodel_jar, genmodel_name)
 
     #-------------------------------------------------------------------------------------------------------------------
     # Overrides
@@ -665,7 +588,8 @@ def get_automl(project_name):
     :param str project_name:  A string indicating the project_name of the automl instance to retrieve.
     :returns: A dictionary containing the project_name, leader model, leaderboard, event_log.
     """
-    return H2OAutoML._fetch_state(project_name)
+    state = H2OAutoML._fetch_state(project_name)
+    return H2OAutoMLOutput(state)
 
 
 def get_leaderboard(aml, extra_columns=None):
