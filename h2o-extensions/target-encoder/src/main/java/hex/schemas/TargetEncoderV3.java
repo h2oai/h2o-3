@@ -5,6 +5,7 @@ import ai.h2o.targetencoding.TargetEncoderModel;
 import water.api.API;
 import water.api.schemas3.ModelParametersSchemaV3;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, TargetEncoderV3, TargetEncoderV3.TargetEncoderParametersV3> {
@@ -30,13 +31,14 @@ public class TargetEncoderV3 extends ModelBuilderSchema<TargetEncoderBuilder, Ta
   
     @Override
     public String[] fields() {
-      final List<String> params = extractDeclaredApiParameters(getClass());
+      final List<String> params = new ArrayList<>();
       params.add("model_id");
-      params.add("ignored_columns");
       params.add("training_frame");
       params.add("fold_column");
       params.add("response_column");
-  
+      params.add("ignored_columns");
+      params.addAll(extractDeclaredApiParameters(getClass()));
+
       return params.toArray(new String[0]);
     }
 
