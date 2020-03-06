@@ -10,9 +10,13 @@ buildscript {
     }
 
     repositories {
-        maven { url isCi ? "${localNexusLocation}/public" : 'https://plugins.gradle.org/m2/' }
-        mavenCentral()
-        jcenter()
+        if (isCi) {
+            maven { url "${localNexusLocation}/public" }
+        } else {
+            maven { url 'https://plugins.gradle.org/m2/' }
+            mavenCentral()
+            jcenter()
+        }
     }
 
     //noinspection GroovyAssignabilityCheck
