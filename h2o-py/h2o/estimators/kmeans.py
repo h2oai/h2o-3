@@ -24,7 +24,7 @@ class H2OKMeansEstimator(H2OEstimator):
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                    "fold_column", "ignored_columns", "ignore_const_cols", "score_each_iteration", "k", "estimate_k",
                    "user_points", "max_iterations", "standardize", "seed", "init", "max_runtime_secs",
-                   "categorical_encoding", "export_checkpoints_dir", "cluster_size_constraints"}
+                   "categorical_encoding", "export_checkpoints_dir", "cluster_size_constraints", "te_model_id"}
 
     def __init__(self, **kwargs):
         super(H2OKMeansEstimator, self).__init__()
@@ -650,5 +650,20 @@ class H2OKMeansEstimator(H2OEstimator):
     def cluster_size_constraints(self, cluster_size_constraints):
         assert_is_type(cluster_size_constraints, None, [int])
         self._parms["cluster_size_constraints"] = cluster_size_constraints
+
+
+    @property
+    def te_model_id(self):
+        """
+        Key of TargetEncoderModel
+
+        Type: ``str``.
+        """
+        return self._parms.get("te_model_id")
+
+    @te_model_id.setter
+    def te_model_id(self, te_model_id):
+        assert_is_type(te_model_id, None, str, H2OEstimator)
+        self._parms["te_model_id"] = te_model_id
 
 

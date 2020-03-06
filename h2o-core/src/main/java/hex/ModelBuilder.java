@@ -152,7 +152,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @param model key to the trained TE model
    */
   public void addTEModelKey(Key<Model> model) {
-    _parms._te_model_key = model;
+    _parms._te_model_id = model;
   }
 
   /**
@@ -160,7 +160,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    * @return TE model's key if one was assigned to a model builder, null otherwise
    */
   public Key<Model> getTEModelKey() {
-    return _parms._te_model_key;
+    return _parms._te_model_id;
   }
 
   /**

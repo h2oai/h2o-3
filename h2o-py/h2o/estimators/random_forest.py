@@ -31,7 +31,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                    "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                    "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                    "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution",
-                   "custom_metric_func", "export_checkpoints_dir", "check_constant_response"}
+                   "custom_metric_func", "export_checkpoints_dir", "check_constant_response", "te_model_id"}
 
     def __init__(self, **kwargs):
         super(H2ORandomForestEstimator, self).__init__()
@@ -1595,5 +1595,20 @@ class H2ORandomForestEstimator(H2OEstimator):
     def check_constant_response(self, check_constant_response):
         assert_is_type(check_constant_response, None, bool)
         self._parms["check_constant_response"] = check_constant_response
+
+
+    @property
+    def te_model_id(self):
+        """
+        Key of TargetEncoderModel
+
+        Type: ``str``.
+        """
+        return self._parms.get("te_model_id")
+
+    @te_model_id.setter
+    def te_model_id(self, te_model_id):
+        assert_is_type(te_model_id, None, str, H2OEstimator)
+        self._parms["te_model_id"] = te_model_id
 
 

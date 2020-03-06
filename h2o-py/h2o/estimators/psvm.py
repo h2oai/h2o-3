@@ -22,7 +22,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     param_names = {"model_id", "training_frame", "validation_frame", "response_column", "ignored_columns",
                    "ignore_const_cols", "hyper_param", "kernel_type", "gamma", "rank_ratio", "positive_weight",
                    "negative_weight", "disable_training_metrics", "sv_threshold", "fact_threshold",
-                   "feasible_threshold", "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed"}
+                   "feasible_threshold", "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed", "te_model_id"}
 
     def __init__(self, **kwargs):
         super(H2OSupportVectorMachineEstimator, self).__init__()
@@ -479,5 +479,20 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     def seed(self, seed):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
+
+
+    @property
+    def te_model_id(self):
+        """
+        Key of TargetEncoderModel
+
+        Type: ``str``.
+        """
+        return self._parms.get("te_model_id")
+
+    @te_model_id.setter
+    def te_model_id(self, te_model_id):
+        assert_is_type(te_model_id, None, str, H2OEstimator)
+        self._parms["te_model_id"] = te_model_id
 
 

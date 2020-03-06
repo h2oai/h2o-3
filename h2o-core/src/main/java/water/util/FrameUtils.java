@@ -116,7 +116,12 @@ public class FrameUtils {
     Scope.untrack(transformed.keys());
 
     // following manipulations with columns is a responsibility of a future pipeline concept. Support for input output columns for the models would be helpful as well.
-    String[] predictorColumns = ArrayUtils.difference(teModel._parms.train().names(), teModel._parms._ignored_columns);
+    Frame train = teModel._parms.train();
+    List<String> catColumnNames = new ArrayList<>();
+    for(String name : train.names() ) {
+      if(train.vec(name).isCategorical()) catColumnNames.add(name);
+    }
+    String[] predictorColumns = ArrayUtils.difference(catColumnNames.toArray(new String[0]), teModel._parms._ignored_columns);
     final String[] encodedColumns = ArrayUtils.remove(ArrayUtils.remove(predictorColumns, teModel._parms._fold_column), teModel._parms._response_column);
 
     // We need to rearrange columns ( as some logic relies on response being a last column etc)

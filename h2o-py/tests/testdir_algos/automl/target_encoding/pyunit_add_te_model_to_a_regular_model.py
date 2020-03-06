@@ -32,17 +32,18 @@ def test_target_encoder_attached_as_preprocessor():
                                              stopping_tolerance=0.001,
                                              distribution="multinomial",
                                              categorical_encoding="enum_limited",
-                                             te_model_key = te.key,
+                                             te_model_id = te.model_id,
                                              seed=1234)
 
-    assert titanic_gbm_model.te_model_key is not None
+    assert titanic_gbm_model.te_model_id is not None
 
     titanic_gbm_model.train(x=myX, y=targetColumnName,
                     training_frame=trainingFrame)
 
     variable_importance = titanic_gbm_model._model_json['output']['variable_importances'].as_data_frame()
 
-    # Checking that model used te encoded columns during trining
+    print(variable_importance)
+    # Checking that model used te encoded columns during training
     var_imp_for_te_encoded_columns = variable_importance[variable_importance['variable'].str.contains('_te', regex=True)]
     print(var_imp_for_te_encoded_columns)
     assert len(var_imp_for_te_encoded_columns) == 2
@@ -62,7 +63,7 @@ def test_target_encoder_attached_as_preprocessor():
                                                      categorical_encoding="enum_limited",
                                                      seed=1234)
 
-    assert titanic_gbm_model_without_te.te_model_key is None
+    assert titanic_gbm_model_without_te.te_model_id is None
 
     titanic_gbm_model_without_te.train(x=myX, y=targetColumnName,
                             training_frame=trainingFrame)

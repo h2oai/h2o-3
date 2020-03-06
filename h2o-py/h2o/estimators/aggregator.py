@@ -21,7 +21,7 @@ class H2OAggregatorEstimator(H2OEstimator):
     algo = "aggregator"
     param_names = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
                    "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding",
-                   "save_mapping_frame", "num_iteration_without_new_exemplar", "export_checkpoints_dir"}
+                   "save_mapping_frame", "num_iteration_without_new_exemplar", "export_checkpoints_dir", "te_model_id"}
 
     def __init__(self, **kwargs):
         super(H2OAggregatorEstimator, self).__init__()
@@ -364,6 +364,21 @@ class H2OAggregatorEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def te_model_id(self):
+        """
+        Key of TargetEncoderModel
+
+        Type: ``str``.
+        """
+        return self._parms.get("te_model_id")
+
+    @te_model_id.setter
+    def te_model_id(self, te_model_id):
+        assert_is_type(te_model_id, None, str, H2OEstimator)
+        self._parms["te_model_id"] = te_model_id
 
 
     @property
