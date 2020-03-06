@@ -25,7 +25,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                    "multi_loss", "period", "regularization_x", "regularization_y", "gamma_x", "gamma_y",
                    "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed", "init", "svd_method",
                    "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd", "max_runtime_secs",
-                   "export_checkpoints_dir"}
+                   "export_checkpoints_dir", "te_model_id"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLowRankEstimator, self).__init__()
@@ -892,5 +892,20 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def te_model_id(self):
+        """
+        Key of TargetEncoderModel
+
+        Type: ``str``.
+        """
+        return self._parms.get("te_model_id")
+
+    @te_model_id.setter
+    def te_model_id(self, te_model_id):
+        assert_is_type(te_model_id, None, str, H2OEstimator)
+        self._parms["te_model_id"] = te_model_id
 
 

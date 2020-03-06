@@ -30,7 +30,8 @@ public class AggregatorV99 extends ModelBuilderSchema<Aggregator,AggregatorV99,A
 //            "seed",
 //            "use_all_factor_levels",
 //            "max_runtime_secs"
-            "export_checkpoints_dir"
+            "export_checkpoints_dir",
+            "te_model_id"
     };
 //    @API(help = "Radius scaling", gridable = true)
 //    public double radius_scale;

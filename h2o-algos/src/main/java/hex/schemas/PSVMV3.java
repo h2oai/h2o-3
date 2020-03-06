@@ -30,6 +30,7 @@ public class PSVMV3 extends ModelBuilderSchema<PSVM, PSVMV3, PSVMV3.PSVMParamete
             "mu_factor",
             "max_iterations",
             "seed",
+            "te_model_id"
     };
 
     @API(help = "Penalty parameter C of the error term", gridable = true)

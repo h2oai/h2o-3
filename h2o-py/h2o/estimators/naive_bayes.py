@@ -30,7 +30,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                    "validation_frame", "response_column", "ignored_columns", "ignore_const_cols",
                    "score_each_iteration", "balance_classes", "class_sampling_factors", "max_after_balance_size",
                    "max_confusion_matrix_size", "max_hit_ratio_k", "laplace", "min_sdev", "eps_sdev", "min_prob",
-                   "eps_prob", "compute_metrics", "max_runtime_secs", "export_checkpoints_dir"}
+                   "eps_prob", "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "te_model_id"}
 
     def __init__(self, **kwargs):
         super(H2ONaiveBayesEstimator, self).__init__()
@@ -786,5 +786,20 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def te_model_id(self):
+        """
+        Key of TargetEncoderModel
+
+        Type: ``str``.
+        """
+        return self._parms.get("te_model_id")
+
+    @te_model_id.setter
+    def te_model_id(self, te_model_id):
+        assert_is_type(te_model_id, None, str, H2OEstimator)
+        self._parms["te_model_id"] = te_model_id
 
 

@@ -40,7 +40,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
                    "startval", "calc_like", "HGLM", "prior", "lambda_min_ratio", "beta_constraints",
                    "max_active_predictors", "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir",
                    "balance_classes", "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size",
-                   "max_hit_ratio_k", "max_runtime_secs", "custom_metric_func"}
+                   "max_hit_ratio_k", "max_runtime_secs", "custom_metric_func", "te_model_id"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLinearEstimator, self).__init__()
@@ -1717,6 +1717,21 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
     def custom_metric_func(self, custom_metric_func):
         assert_is_type(custom_metric_func, None, str)
         self._parms["custom_metric_func"] = custom_metric_func
+
+
+    @property
+    def te_model_id(self):
+        """
+        Key of TargetEncoderModel
+
+        Type: ``str``.
+        """
+        return self._parms.get("te_model_id")
+
+    @te_model_id.setter
+    def te_model_id(self, te_model_id):
+        assert_is_type(te_model_id, None, str, H2OEstimator)
+        self._parms["te_model_id"] = te_model_id
 
 
     @property
