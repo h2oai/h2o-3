@@ -110,6 +110,7 @@ public class KubernetesDnsLookup implements KubernetesLookup {
                 dnsLookup(lookedUpNodes);
                 Thread.sleep(ONE_SECOND);
             } catch (NamingException e) {
+                Log.warn(e.getMessage());
                 continue;
             } catch (InterruptedException e) {
                 return Optional.empty();
