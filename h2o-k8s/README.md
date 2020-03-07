@@ -64,10 +64,10 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: h2o-k8s
-          image: 'pscheidl/h2o-k8s'
+          image: '<someDockerImageWithH2OInside>'
           resources:
-            limits:
-              memory: "300Mi"
+            requests:
+              memory: "4Gi"
           ports:
             - containerPort: 54321
               protocol: TCP
