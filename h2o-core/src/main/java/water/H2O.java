@@ -815,13 +815,12 @@ final public class H2O {
       return embeddedH2OConfig;
     }
 
-    final Optional<EmbeddedConfigProvider> optionalEmbeddedConfigProvider = discoverEmbeddedConfigProvider();
+    embeddedH2OConfig = discoverEmbeddedConfigProvider()
+            .map(embeddedConfigProvider -> {
+              Log.info(String.format("Dynamically loaded '%s' as AbstractEmbeddedH2OConfigProvider.", embeddedConfigProvider.getName()));
+              return embeddedConfigProvider.getConfig();
+            }).orElse(null);
 
-    if (optionalEmbeddedConfigProvider.isPresent()) {
-      final EmbeddedConfigProvider embeddedConfigProvider = optionalEmbeddedConfigProvider.get();
-      Log.info(String.format("Dynamically loaded '%s' as AbstractEmbeddedH2OConfigProvider.", embeddedConfigProvider.getName()));
-      embeddedH2OConfig = embeddedConfigProvider.getConfig();
-    }
     return embeddedH2OConfig;
   }
 
