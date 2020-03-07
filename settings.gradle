@@ -101,5 +101,3 @@ if (System.getProperty("user.name").equals("jenkins")
     }
   }
 }
-include 'h2o-k8s'
-
