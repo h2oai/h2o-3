@@ -3,10 +3,20 @@ import org.apache.tools.ant.taskdefs.condition.Os
 // The build script settings to fetch plugins and put them on
 // classpath
 buildscript {
+    ext {
+        isCi = (System.getProperty("user.name").equals("jenkins")
+                    || System.getenv("CI") != null
+                    || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
+    }
+
     repositories {
-        maven { url 'https://plugins.gradle.org/m2/' }
-        mavenCentral()
-        jcenter()
+        if (isCi) {
+            maven { url "${localNexusLocation}/public" }
+        } else {
+            maven { url 'https://plugins.gradle.org/m2/' }
+            mavenCentral()
+            jcenter()
+        }
     }
 
     //noinspection GroovyAssignabilityCheck
@@ -197,9 +207,7 @@ allprojects {
 
     ext {
         isRelease = rootProject.hasProperty("doRelease")
-        isCi = (System.getProperty("user.name").equals("jenkins")
-                || System.getenv("CI") != null
-                || (rootProject.hasProperty("doCI") && rootProject.doCI == "true"))
+        isCi = isCi
     }
 }
 
@@ -219,7 +227,7 @@ subprojects {
         if (project.hasProperty("enableMavenLocal")) { // useful for development
             mavenLocal()
         }
-        if (project.ext.isCi) {
+        if (isCi) {
             maven {
                 url "${localNexusLocation}/public"
             }
@@ -270,8 +278,8 @@ subprojects {
         }
         if (testNeedsCiProject.contains(project)) {
             logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
-            project.testSingleNode.enabled = project.ext.isCi
-            project.testMultiNode.enabled = project.ext.isCi
+            project.testSingleNode.enabled = isCi
+            project.testMultiNode.enabled = isCi
         }
         // Analyze dependencies 
         //apply plugin: 'ca.cutterslade.analyze'
@@ -284,7 +292,7 @@ subprojects {
         apply from: "$rootDir/gradle/cp.gradle"
         if (testNeedsCiProject.contains(project)) {
             logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
-            project.testMultiNode.enabled = project.ext.isCi
+            project.testMultiNode.enabled = isCi
         }
     }
 
