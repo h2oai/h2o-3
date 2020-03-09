@@ -129,9 +129,9 @@ public class FrameUtils {
     Arrays.stream(encodedColumns).forEach(ec -> {
       transformed
         .swap(transformed.find(ec), transformed.find(ec + TE_ENCODED_COLUMN_POSTFIX));
-      DKV.put(transformed);
       transformed.remove(ec).remove();
     });
+    DKV.put(transformed);
     return transformed;
   }
 
