@@ -52,7 +52,6 @@ import java.util.Random;
  * Generalized linear model implementation.
  */
 public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
-  protected boolean _cv; // flag signalling this is MB for one of the fold-models during cross-validation
   static NumberFormat lambdaFormatter = new DecimalFormat(".##E0");
   static NumberFormat devFormatter = new DecimalFormat(".##");
 
@@ -103,7 +102,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public void computeCrossValidation() {
     // init computes global list of lambdas
     init(true);
-    _cv = true;
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GLM.this);
     super.computeCrossValidation();
@@ -177,7 +175,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (int i = 0; i < cvModelBuilders.length; ++i) {
         GLM g = (GLM) cvModelBuilders[i];
         g._model._output.setSubmodelIdx(bestId);
-        g._model.update(_job);
       }
       double bestDev = _xval_test_deviances[bestId];
       double bestDev1se = bestDev + _xval_test_sd[bestId];
@@ -190,10 +187,12 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     }
     for (int i = 0; i < cvModelBuilders.length; ++i) {
       GLM g = (GLM) cvModelBuilders[i];
-      g._model.unlock(_job);
+      GLMModel gm = g._model;
+      gm.write_lock(_job);
+      gm.update(_job);
+      gm.unlock(_job);
     }
     _doInit = false;
-    _cv = false;
   }
 
   protected void checkMemoryFootPrint(DataInfo activeData) {
@@ -820,7 +819,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             tempVec.remove();
           }
         }
-        if(!_cv && _model!=null)
+        if(_model!=null)
           _model.unlock(_job);
       } catch(Throwable t){
         // nada
@@ -2031,7 +2030,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
             _model.updateSubmodel(sm = new Submodel(lambda, _state.beta(), _state._iter, -1, -1));
         }
       }
-      _model.update(_job);
       return sm;
     }
 
@@ -2160,7 +2158,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           sm.beta[sm.beta.length-1] += _iceptAdjust;
         _model.update(_job._key);
       }
-      doCleanup();
     }
 
     /***
@@ -2189,9 +2186,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       }
     }
 
-    @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller){
-      super.onExceptionalCompletion(t, caller);
+    @Override
+    public void onCompletion(CountedCompleter caller) {
       doCleanup();
+      super.onCompletion(caller);
+    }
+
+    @Override public boolean onExceptionalCompletion(Throwable t, CountedCompleter caller){
+      doCleanup();
+      super.onExceptionalCompletion(t, caller);
       return true;
     }
 
