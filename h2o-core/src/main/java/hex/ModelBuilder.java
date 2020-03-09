@@ -1271,7 +1271,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
           if (isClassifier() && isSupervised()) {
             if(_parms._distribution == DistributionFamily.quasibinomial){
               String[] quasiDomains = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
-              Log.info("ModelBuilder.init() Calculated quasibinomial domain has size: "+ quasiDomains.length);
               MRUtils.ClassDistQuasibinomial cdmt =
                       _weights != null ? new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(quasiDomains).doAll(_response);
               _distribution = cdmt.dist();

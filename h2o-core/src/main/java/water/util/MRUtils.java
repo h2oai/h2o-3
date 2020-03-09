@@ -121,8 +121,7 @@ public class MRUtils {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
         if (!ys.isNA(i)) {
-          int index = ys.at8(i) >= _ys.length ? 1 : (int) ys.at8(i);
-          _ys[index]++;
+          _ys[(int) ys.at8(i)]++;
         }
     }
     

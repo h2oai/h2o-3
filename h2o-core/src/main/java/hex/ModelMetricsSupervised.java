@@ -35,6 +35,5 @@ public class ModelMetricsSupervised extends ModelMetrics {
       _domain = domain;
       _work = new double[_nclasses+1];
     }
-
   }
 }

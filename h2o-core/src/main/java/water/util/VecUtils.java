@@ -483,19 +483,33 @@ public class VecUtils {
    *  and returned as the domain for the {@link Vec}.
    * */
   public static class CollectIntegerDomain extends MRTask<CollectIntegerDomain> {
-    
-    NonBlockingHashMapLong<String> _uniques;
-    
+    transient NonBlockingHashMapLong<String> _uniques;
     @Override protected void setupLocal() { _uniques = new NonBlockingHashMapLong<>(); }
-    
     @Override public void map(Chunk ys) {
       for( int row=0; row< ys._len; row++ )
         if( !ys.isNA(row) )
           _uniques.put(ys.at8(row), "");
     }
-
+    
     @Override public void reduce(CollectIntegerDomain mrt) {
-      if(_uniques != mrt._uniques) _uniques.putAll(mrt._uniques);
+        if( _uniques != mrt._uniques ) _uniques.putAll(mrt._uniques);
+        if(_uniques != mrt._uniques) _uniques.putAll(mrt._uniques);
+      }
+
+      public final AutoBuffer write_impl( AutoBuffer ab ) {
+        return ab.putA8(_uniques==null ? null : _uniques.keySetLong());
+      }
+
+      public final CollectIntegerDomain read_impl(AutoBuffer ab ) {
+        long ls[] = ab.getA8();
+        assert _uniques == null || _uniques.size()==0; // Only receiving into an empty (shared) NBHM
+        _uniques = new NonBlockingHashMapLong<>();
+        if( ls != null ) for( long l : ls ) _uniques.put(l, "");
+        return this;
+      }
+    
+    @Override public final void copyOver(CollectIntegerDomain that) {
+      _uniques = that._uniques;
     }
     
     /** Returns exact numeric domain of given {@link Vec} computed by this task.

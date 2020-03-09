@@ -1569,7 +1569,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     domains[0] = names.length == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length - 1] : response.domain();
     if (_parms._distribution == DistributionFamily.quasibinomial) {
       domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
-      Log.info("Model.makeScoringDomains() Calculated quasibinomial domain has size: "+ domains[0].length);
     }
     return domains;
   }
@@ -1660,7 +1659,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     domains[0] = _output.nclasses() == 1 ? null : !computeMetrics ? _output._domains[_output._domains.length-1] : response.domain();
     if (_parms._distribution == DistributionFamily.quasibinomial) {
       domains[0] = new VecUtils.CollectDoubleDomain(null,2).doAll(response).stringDomain(response.isInt());
-      Log.info("Model.scoreMetrics() Calculated quasibinomial domain has size: "+domains[0].length);
     }
 
     // Score the dataset, building the class distribution & predictions
