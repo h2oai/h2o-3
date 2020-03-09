@@ -96,9 +96,9 @@ class H2OWord2vecEstimator(H2OEstimator):
     @property
     def word_model(self):
         """
-        Use the Skip-Gram model
+        The word model to use (SkipGram or CBOW)
 
-        One of: ``"skip_gram"``  (default: ``"skip_gram"``).
+        One of: ``"skip_gram"``, ``"cbow"``  (default: ``"skip_gram"``).
 
         :examples:
 
@@ -116,7 +116,7 @@ class H2OWord2vecEstimator(H2OEstimator):
 
     @word_model.setter
     def word_model(self, word_model):
-        assert_is_type(word_model, None, Enum("skip_gram"))
+        assert_is_type(word_model, None, Enum("skip_gram", "cbow"))
         self._parms["word_model"] = word_model
 
 

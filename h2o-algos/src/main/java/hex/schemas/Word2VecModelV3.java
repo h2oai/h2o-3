@@ -11,11 +11,9 @@ public class Word2VecModelV3 extends ModelSchemaV3<Word2VecModel, Word2VecModelV
   public static final class Word2VecModelOutputV3 extends ModelOutputSchemaV3<Word2VecModel.Word2VecOutput, Word2VecModelOutputV3> {
     @API(help = "Number of epochs executed")
     public int epochs;
-  } // Word2VecModelOutputV2
+  }
 
 
-  //==========================
-  // Custom adapters go here
   public Word2VecV3.Word2VecParametersV3 createParametersSchema() { return new Word2VecV3.Word2VecParametersV3(); }
   public Word2VecModelOutputV3 createOutputSchema() { return new Word2VecModelOutputV3(); }
 
