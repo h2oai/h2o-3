@@ -4,6 +4,10 @@ import hex.Model;
 import hex.ModelParametersBuilderFactory;
 import hex.ScoreKeeper;
 import hex.ScoringInfo;
+import hex.grid.HyperSpaceSearchCriteria.CartesianSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
+import hex.grid.HyperSpaceSearchCriteria.Strategy;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.PojoUtils;
 
@@ -162,14 +166,14 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
                                                                       Map<String, Object[]> hyperParams,
                                                                       ModelParametersBuilderFactory<MP> paramsBuilderFactory,
                                                                       C search_criteria) {
-        HyperSpaceSearchCriteria.Strategy strategy = search_criteria.strategy();
-
-        if (strategy == HyperSpaceSearchCriteria.Strategy.Cartesian) {
-          return new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.CartesianSearchCriteria) search_criteria);
-        } else if (strategy == HyperSpaceSearchCriteria.Strategy.RandomDiscrete ) {
-          return new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory, (HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria) search_criteria);
-        } else {
-          throw new H2OIllegalArgumentException("strategy", "GridSearch", strategy);
+        Strategy strategy = search_criteria.strategy();
+        switch (strategy) {
+          case Cartesian:
+            return new HyperSpaceWalker.CartesianWalker<>(params, hyperParams, paramsBuilderFactory, (CartesianSearchCriteria) search_criteria);
+          case RandomDiscrete:
+            return new HyperSpaceWalker.RandomDiscreteValueWalker<>(params, hyperParams, paramsBuilderFactory, (RandomDiscreteValueSearchCriteria) search_criteria);
+          default:
+            throw new H2OIllegalArgumentException("strategy", "GridSearch", strategy);
         }
       }
     }
@@ -306,12 +310,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    * Hyperparameter space walker which visits each combination of hyperparameters in order.
    */
   class CartesianWalker<MP extends Model.Parameters>
-          extends BaseWalker<MP, HyperSpaceSearchCriteria.CartesianSearchCriteria> {
+          extends BaseWalker<MP, CartesianSearchCriteria> {
 
     public CartesianWalker(MP params,
                            Map<String, Object[]> hyperParams,
                            ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                           HyperSpaceSearchCriteria.CartesianSearchCriteria search_criteria) {
+                           CartesianSearchCriteria search_criteria) {
       super(params, hyperParams, paramsBuilderFactory, search_criteria);
     }
 
@@ -393,7 +397,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
    * given in explicit lists as they are with CartesianWalker.
    */
   class RandomDiscreteValueWalker<MP extends Model.Parameters>
-          extends BaseWalker<MP, HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria> {
+          extends BaseWalker<MP, RandomDiscreteValueSearchCriteria> {
 
     private Random _random;
     private boolean _set_model_seed_from_search_seed;  // true if model parameter seed is set to default value and false otherwise
@@ -401,7 +405,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     public RandomDiscreteValueWalker(MP params,
                                      Map<String, Object[]> hyperParams,
                                      ModelParametersBuilderFactory<MP> paramsBuilderFactory,
-                                     HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria search_criteria) {
+                                     RandomDiscreteValueSearchCriteria search_criteria) {
       super(params, hyperParams, paramsBuilderFactory, search_criteria);
 
       // seed the models using the search seed if it is the only one specified
@@ -456,7 +460,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
             MP params = getModelParams(commonModelParams, hypers);
 
             // add max_runtime_secs in search criteria into params if applicable
-            if (_search_criteria != null && _search_criteria.strategy() == HyperSpaceSearchCriteria.Strategy.RandomDiscrete) {
+            if (_search_criteria != null && _search_criteria.strategy() == Strategy.RandomDiscrete) {
               // ToDo: model seed setting will be different for parallel model building.
               // ToDo: This implementation only works for sequential model building.
               if (_set_model_seed_from_search_seed) {

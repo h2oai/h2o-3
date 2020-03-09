@@ -325,6 +325,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    *
    * @return list of model keys sorted lexically
    */
+  @Override
   public Key<Model>[] getModelKeys() {
     Key<Model>[] keys = _models.values().toArray(new Key[_models.size()]);
     Arrays.sort(keys);
@@ -336,6 +337,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
    *
    * @return all models in this grid
    */
+  @Override
   public Model[] getModels() {
     Collection<Key<Model>> modelKeys = _models.values();
     Model[] models = new Model[modelKeys.size()];
@@ -350,6 +352,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implem
   /**
    * Returns number of models in this grid.
    */
+  @Override
   public int getModelCount() {
     return _models.size();
   }

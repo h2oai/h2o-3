@@ -9,7 +9,7 @@ import water.fvec.Frame;
  * when to stop the search.
  */
 public class HyperSpaceSearchCriteria extends Iced {
-  public enum Strategy { Unknown, Cartesian, RandomDiscrete, Progressive } // search strategy
+  public enum Strategy { Unknown, Cartesian, RandomDiscrete, Sequential} // search strategy
 
   public static class StoppingCriteria extends Iced {
 
@@ -178,7 +178,7 @@ public class HyperSpaceSearchCriteria extends Iced {
     }
 
     public SequentialSearchCriteria(StoppingCriteria stoppingCriteria) {
-      super(Strategy.Progressive);
+      super(Strategy.Sequential);
       _stoppingCriteria = stoppingCriteria;
     }
 

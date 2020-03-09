@@ -27,7 +27,7 @@ public class StackedEnsembleStepsProvider
 
             StackedEnsembleModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.StackedEnsemble, id, weight, autoML);
-                _ignoreConstraints = true;
+                _ignoredConstraints = new AutoML.Constraint[] {AutoML.Constraint.TIMEOUT, AutoML.Constraint.MODEL_COUNT};
             }
 
             @Override

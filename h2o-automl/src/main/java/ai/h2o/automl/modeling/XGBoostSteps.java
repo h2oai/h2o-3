@@ -5,6 +5,7 @@ import ai.h2o.automl.AutoML;
 import ai.h2o.automl.ModelingStep;
 import ai.h2o.automl.ModelingSteps;
 import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
@@ -13,17 +14,16 @@ import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 import hex.grid.SequentialWalker;
+import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import water.DKV;
 import water.H2O;
 import water.Job;
 import water.Key;
+import water.util.StringUtils;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
@@ -44,11 +44,8 @@ public class XGBoostSteps extends ModelingSteps {
                 : DistributionFamily.AUTO;
 
         xgBoostParameters._score_tree_interval = 5;
-        xgBoostParameters._stopping_rounds = 5;
-
         xgBoostParameters._ntrees = 10000;
-        xgBoostParameters._learn_rate = 0.05;
-//            xgBoostParameters._min_split_improvement = 0.01f;
+//        xgBoostParameters._min_split_improvement = 0.01f;
 
         return xgBoostParameters;
     }
@@ -214,98 +211,34 @@ public class XGBoostSteps extends ModelingSteps {
     };
 
     private ModelingStep[] exploitation = new ModelingStep[] {
-            new XGBoostModelStep("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, aml(), false) {
+            new XGBoostExploitationStep("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, aml(), false) {
 
-                private XGBoostModel getBestXGB() {
-                    for (Model model : getTrainedModels()) {
-                        if (model instanceof XGBoostModel) {
-                            return (XGBoostModel) model;
-                        }
-                    }
-                    return null;
-                }
+                Key<Models> resultKey = null;
 
                 @Override
-                protected boolean canRun() {
-                    // TODO: add event log message here?
-                    return getBestXGB() != null;
-                }
-
-                @Override
-                protected Job<XGBoostModel> startJob() {
+                protected Job<Models> startTraining(Key result, double maxRuntimeSecs) {
+                    resultKey = result;
                     XGBoostModel bestXGB = getBestXGB();
+                    aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best XGBoost with learning rate annealing: "+bestXGB._key);
                     XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
-                    xgBoostParameters._learn_rate = 0.5;
-                    xgBoostParameters._learn_rate_annealing = 0.9;
-                    return trainModel(xgBoostParameters);
+                    xgBoostParameters._learn_rate_annealing = 0.95;
+                    xgBoostParameters._max_runtime_secs = maxRuntimeSecs;
+                    setStoppingCriteria(xgBoostParameters, new XGBoostParameters(), SeedPolicy.None);
+                    return asModelsJob(startModel(Key.make(result+"_model"), xgBoostParameters), result);
+                }
+
+                @Override
+                protected ModelSelectionStrategy getSelectionStrategy() {
+                    return (originalModels, newModels) ->
+                            new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _algo+"_"+_id)))
+                                    .select(new Key[] { getBestXGB()._key }, newModels);
                 }
             },
 
-            new XGBoostModelStep("lr_search_old", DEFAULT_GRID_TRAINING_WEIGHT, aml(), false) {
-                private XGBoostModel getBestXGB() {
-                    for (Model model : getTrainedModels()) {
-                        if (model instanceof XGBoostModel) {
-                            return (XGBoostModel) model;
-                        }
-                    }
-                    return null;
-                }
+            new XGBoostExploitationStep("lr_search", 2*DEFAULT_GRID_TRAINING_WEIGHT, aml(), false) {
 
-                @Override
-                protected boolean canRun() {
-                    // TODO: add event log message here?
-                    return getBestXGB() != null;
-                }
+                Key resultKey = null;
 
-                @Override
-                protected Job<XGBoostModel> startJob() {
-                    Leaderboard amlLeaderboard = aml().leaderboard();
-                    Leaderboard tmpLeaderboard = new Leaderboard(
-                            "my cool lb", //TODO
-                            new EventLog(Key.make("my cool el")), //TODO
-                            amlLeaderboard.leaderboardFrame(),
-                            amlLeaderboard.getSortMetric()
-                            );
-                    XGBoostModel bestXGB = getBestXGB();
-                    tmpLeaderboard.addModel(bestXGB._key);
-
-                    XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
-                    Object[][] hyperParams = new Object[][] {
-                            new Object[] {"_learn_rate", "_stopping_rounds"},
-                            new Object[] {        0.2  ,                 5 },
-                            new Object[] {        0.1  ,                 5 },
-                            new Object[] {        0.05 ,                10 },
-                            new Object[] {        0.02 ,                10 },
-                            new Object[] {        0.01 ,                10 },
-                            new Object[] {        0.005,                20 },
-                            new Object[] {        0.002,                20 },
-                            new Object[] {        0.001,                20 },
-                    };
-                    Key<XGBoostModel> key = makeKey(_algo.name(), true);
-                    int work = 10; //TODO
-                    int maxRuntimeSecs = 1000; //TODO
-                    Job<XGBoostModel> job = new Job<>(key, XGBoostModel.class.getName(), "a super tuned XGB"); //TODO
-                    return job.start(new H2O.H2OCountedCompleter() {
-                        @Override
-                        public void compute2() {
-                            Grid tuningGrid = GridSearch.startGridSearch(
-                                    Key.make("something cool"),  //TODO
-                                    new SequentialWalker<>(
-                                            xgBoostParameters,
-                                            hyperParams,
-                                            new GridSearch.SimpleParametersBuilderFactory<>(),
-                                            new SequentialSearchCriteria(StoppingCriteria.create().maxRuntimeSecs(maxRuntimeSecs).build())
-                                    ),
-                                    GridSearch.SEQUENTIAL_MODEL_BUILDING
-                            ).get();
-                            tmpLeaderboard.addModels(tuningGrid.getModelKeys());
-                            DKV.put(job._result, tmpLeaderboard.getLeader());
-                            //TODO handle exceptions, check if tmp leaderboard needs to be stored in DKV, in which case cleanup at the end...
-                        }
-                    }, work, maxRuntimeSecs);
-                }
-            },
-            new XGBoostExploitationStep("lr_search", DEFAULT_GRID_TRAINING_WEIGHT, aml(), false) {
                 @Override
                 protected ModelingStep.ModelSelectionStrategy getSelectionStrategy() {
 //                    return new KeepBestNFromSubgroup<>(
@@ -314,36 +247,47 @@ public class XGBoostSteps extends ModelingSteps {
 //                            () -> makeTmpLeaderboard()
 //                    );
                     return (originalModels, newModels) ->
-                            new KeepBestN<>(1, () -> makeTmpLeaderboard())
+                            new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _algo+"_"+_id)))
                                     .select(new Key[] { getBestXGB()._key }, newModels);
                 }
 
                 @Override
-                protected Job<Models> startTraining(Key resKey) {
+                protected Job<Models> startTraining(Key result, double maxRuntimeSecs) {
+                    resultKey = result;
                     XGBoostModel bestXGB = getBestXGBs(1).get(0);
+                    aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Applying learning rate search on best XGBoost: "+bestXGB._key);
                     XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
+                    XGBoostParameters defaults = new XGBoostParameters();
+                    setStoppingCriteria(xgBoostParameters, defaults, SeedPolicy.None); // keep the same seed as the bestXGB
+                    // reset _eta to defaults, otherwise it ignores the _learn_rate hyperparam: this is very annoying!
+                    xgBoostParameters._eta = defaults._eta;
+//                    xgBoostParameters._learn_rate = defaults._learn_rate;
+                    int sr = xgBoostParameters._stopping_rounds;
+                    int sti = xgBoostParameters._score_interval;
+
                     Object[][] hyperParams = new Object[][] {
-                            new Object[] {"_learn_rate", "_stopping_rounds"},
-                            new Object[] {        0.2  ,                 5 },
-                            new Object[] {        0.1  ,                 5 },
-                            new Object[] {        0.05 ,                10 },
-                            new Object[] {        0.02 ,                10 },
-                            new Object[] {        0.01 ,                10 },
-                            new Object[] {        0.005,                20 },
-                            new Object[] {        0.002,                20 },
-                            new Object[] {        0.001,                20 },
+                            new Object[] {"_learn_rate", "_stopping_rounds", },
+                            new Object[] {        0.5  ,                sr },
+                            new Object[] {        0.2  ,                sr },
+                            new Object[] {        0.1  ,                sr },
+                            new Object[] {        0.05 ,              2*sr },
+                            new Object[] {        0.02 ,              2*sr },
+                            new Object[] {        0.01 ,              2*sr },
+                            new Object[] {        0.005,              4*sr },
+                            new Object[] {        0.002,              4*sr },
+                            new Object[] {        0.001,              4*sr },
                     };
-                    int maxRuntimeSecs = 42; //TODO
+
                     return asModelsJob(GridSearch.startGridSearch(
-                            resKey,
+                            Key.make(result+"_grid"),
                             new SequentialWalker<>(
                                     xgBoostParameters,
                                     hyperParams,
                                     new GridSearch.SimpleParametersBuilderFactory<>(),
-                                    new SequentialSearchCriteria(StoppingCriteria.create().maxRuntimeSecs(maxRuntimeSecs).build())
+                                    new SequentialSearchCriteria(StoppingCriteria.create().maxRuntimeSecs((int)maxRuntimeSecs).build())
                             ),
                             GridSearch.SEQUENTIAL_MODEL_BUILDING
-                    ));
+                    ), result);
                 }
             }
     };

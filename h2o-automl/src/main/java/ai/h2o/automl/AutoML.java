@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLBuildModels;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLInput;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
@@ -10,7 +11,6 @@ import ai.h2o.automl.StepDefinition.Alias;
 import ai.h2o.automl.leaderboard.*;
 import hex.Model;
 import hex.ScoreKeeper.StoppingMetric;
-import hex.grid.Grid;
 import hex.splitframe.ShuffleSplitFrame;
 import water.*;
 import water.automl.api.schemas3.AutoMLV99;
@@ -18,13 +18,12 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.nbhm.NonBlockingHashMap;
-import water.util.Countdown;
-import water.util.Log;
-import water.util.PrettyPrint;
+import water.util.*;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING_TOLERANCE;
 
@@ -38,6 +37,11 @@ import static ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria.AUTO_STOPPING
  * will be the top performing models in the AutoML Leaderboard.
  */
 public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
+
+  public enum Constraint {
+    MODEL_COUNT,
+    TIMEOUT
+  }
 
   public static final Comparator<AutoML> byStartTime = Comparator.comparing(a -> a._startTime);
   public static final String keySeparator = "@@";
@@ -55,8 +59,8 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
           new StepDefinition(Algo.XGBoost.name(), Alias.grids),
           new StepDefinition(Algo.GBM.name(), Alias.grids),
           new StepDefinition(Algo.DeepLearning.name(), Alias.grids),
-//          new StepDefinition(Algo.GBM.name(), new String[]{ "lr_annealing" }),
-//          new StepDefinition(Algo.XGBoost.name(), new String[]{ "lr_search" }),
+          new StepDefinition(Algo.GBM.name(), new String[]{ "lr_annealing" }),
+          new StepDefinition(Algo.XGBoost.name(), new String[]{ "lr_search" }),
           new StepDefinition(Algo.StackedEnsemble.name(), Alias.defaults),
   };
 
@@ -169,6 +173,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   WorkAllocations _workAllocations;
   StepDefinition[] _actualModelingSteps; // the output definition, listing only the steps that were actually used
 
+  AtomicLong _incrementalSeed = new AtomicLong();
+  private NonBlockingHashMap<String, AtomicInteger> _instanceCounters = new NonBlockingHashMap<>();
+
   private ModelingStepsRegistry _modelingStepsRegistry;
   private ModelingStepsExecutor _modelingStepsExecutor;
   private Leaderboard _leaderboard;
@@ -178,7 +185,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private Vec[] _originalTrainingFrameVecs;
   private String[] _originalTrainingFrameNames;
   private long[] _originalTrainingFrameChecksums;
-  private Key<Grid> _gridKeys[] = new Key[0];  // Grid key for the GridSearches
+  private transient NonBlockingHashMap<Key, String> _trackedKeys = new NonBlockingHashMap<>();
   private transient ModelingStep[] _executionPlan;
 
   public AutoML() {
@@ -196,6 +203,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       _buildSpec = buildSpec;
       // now that buildSpec is validated, we can assign it: all future logic can now safely access parameters through _buildSpec.
       _runCountdown = Countdown.fromSeconds(_buildSpec.build_control.stopping_criteria.max_runtime_secs());
+      _incrementalSeed.set(_buildSpec.build_control.stopping_criteria.seed());
 
       prepareData();
       initLeaderboard();
@@ -349,7 +357,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     for (Algo algo : Algo.values()) {
       if (!skippedAlgos.contains(algo) && !algo.enabled()) {
         boolean isMultinode = H2O.CLOUD.size() > 1;
-        _eventLog.warn(Stage.ModelTraining,
+        _eventLog.warn(Stage.Workflow,
                 isMultinode ? "AutoML: "+algo.name()+" is not available in multi-node cluster; skipping it."
                         + " See http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html#experimental-features for details."
                         : "AutoML: "+algo.name()+" is not available; skipping it."
@@ -364,11 +372,29 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       workAllocations.allocate(step.makeWork());
     }
     for (Algo skippedAlgo : skippedAlgos) {
-      eventLog().info(Stage.ModelTraining, "Disabling Algo: "+skippedAlgo+" as requested by the user.");
+      eventLog().info(Stage.Workflow, "Disabling Algo: "+skippedAlgo+" as requested by the user.");
       workAllocations.remove(skippedAlgo);
     }
+    eventLog().debug(Stage.Workflow, "Defined work allocations: "+workAllocations);
+    distributeExplorationVsExploitationWork(workAllocations);
+    eventLog().debug(Stage.Workflow, "Actual work allocations: "+workAllocations);
     workAllocations.freeze();
     _workAllocations = workAllocations;
+  }
+
+  private void distributeExplorationVsExploitationWork(WorkAllocations allocations) {
+    int sumExploration = allocations.remainingWork(ModelingStep.isExplorationWork);
+    int sumExploitation = allocations.remainingWork(ModelingStep.isExploitationWork);
+    int total = sumExploration+sumExploitation;
+    double explorationRatio = _buildSpec.build_control.exploration_ratio;
+    int newSumExploration = (int)Math.round(explorationRatio * total);
+    int newSumExploitation = total - newSumExploration;
+    for (Work work : allocations.getAllocations(ModelingStep.isExplorationWork)) {
+      work._weight = (int)Math.round((double)work._weight * newSumExploration/sumExploration);
+    }
+    for (Work work : allocations.getAllocations(ModelingStep.isExploitationWork)) {
+      work._weight = (int)Math.round((double)work._weight * newSumExploitation/sumExploitation);
+    }
   }
 
   @Override
@@ -572,7 +598,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void learn() {
     List<ModelingStep> executed = new ArrayList<>();
     for (ModelingStep step : getExecutionPlan()) {
-        if (!exceededSearchLimits(step._description, step._ignoreConstraints)) {
+        if (!exceededSearchLimits(step)) {
           if (_modelingStepsExecutor.submit(step, job())) {
             executed.add(step);
           }
@@ -583,50 +609,40 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
 
-  // There are per (possibly concurrent) AutoML run.
-  // All created keys for a run use the unique AutoML run timestamp, so we can't have name collisions.
-  AtomicInteger individualModelsTrained = new AtomicInteger();
-  private NonBlockingHashMap<String, Integer> algoInstanceCounters = new NonBlockingHashMap<>();
-  private NonBlockingHashMap<String, Integer> gridInstanceCounters = new NonBlockingHashMap<>();
-
-  private int nextInstanceCounter(String algoName, NonBlockingHashMap<String, Integer> instanceCounters) {
-    synchronized (instanceCounters) {
-      int instanceNum = 1;
-      if (instanceCounters.containsKey(algoName))
-        instanceNum = instanceCounters.get(algoName) + 1;
-      instanceCounters.put(algoName, instanceNum);
-      return instanceNum;
+  private int nextInstanceCounter(String algoName, String type) {
+    String key = algoName+"_"+type;
+    if (!_instanceCounters.containsKey(key)) {
+      synchronized (_instanceCounters) {
+        if (!_instanceCounters.containsKey(key))
+          _instanceCounters.put(key, new AtomicInteger(0));
+      }
     }
+    return _instanceCounters.get(key).incrementAndGet();
   }
 
-  Key<Model> modelKey(String algoName, boolean with_counter) {
-    String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, algoInstanceCounters) : "";
-    return Key.make(algoName + counterStr + "_AutoML_" + timestampFormatForKeys.format(_startTime));
+  Key makeKey(String algoName, String type, boolean with_counter) {
+    String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, type) : "";
+    String prefix = StringUtils.isNullOrEmpty(type) ? algoName : algoName+"_"+type+"_";
+    return Key.make(prefix + counterStr + "_AutoML_" + timestampFormatForKeys.format(_startTime));
   }
 
-  Key<Grid> gridKey(String algoName, boolean with_counter) {
-    String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, gridInstanceCounters) : "";
-    return Key.make(algoName + "_grid_" + counterStr + "_AutoML_" + timestampFormatForKeys.format(_startTime));
+  void trackKey(Key key) {
+    _trackedKeys.put(key, Arrays.toString(Thread.currentThread().getStackTrace()));
   }
 
-  void addGridKey(Key<Grid> gridKey) {
-    _gridKeys = Arrays.copyOf(_gridKeys, _gridKeys.length + 1);
-    _gridKeys[_gridKeys.length - 1] = gridKey;
-  }
-
-  private boolean exceededSearchLimits(String modelDesc, boolean ignoreLimits) {
+  private boolean exceededSearchLimits(ModelingStep step) {
     if (_job.stop_requested()) {
-      eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: job cancelled; skipping "+modelDesc);
+      eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: job cancelled; skipping "+step._description);
       return true;
     }
 
-    if (!ignoreLimits && _runCountdown.timedOut()) {
-      eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: out of time; skipping "+modelDesc);
+    if (!ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT) && _runCountdown.timedOut()) {
+      eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: out of time; skipping "+step._description);
       return true;
     }
 
-    if (!ignoreLimits && remainingModels() <= 0) {
-      eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+modelDesc);
+    if (!ArrayUtils.contains(step._ignoredConstraints, Constraint.MODEL_COUNT) && remainingModels() <= 0) {
+      eventLog().debug(EventLogEntry.Stage.ModelTraining, "AutoML: hit the max_models limit; skipping "+step._description);
       return true;
     }
     return false;
@@ -658,9 +674,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (leaderboard() != null) leaderboard().remove(fs, cascade);
     if (eventLog() != null) eventLog().remove(fs, cascade);
 
-    // grid should be removed after leaderboard cleanup
-    if (_gridKeys != null)
-      for (Key<Grid> gridKey : _gridKeys) Keyed.remove(gridKey, fs, true);
+    for (Key key : _trackedKeys.keySet()) Keyed.remove(key, fs, true);
 
     return super.remove_impl(fs, cascade);
   }

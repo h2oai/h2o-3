@@ -9,8 +9,8 @@ import water.fvec.Frame;
 import water.util.*;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -28,13 +28,13 @@ import java.util.stream.Stream;
  * <p>
  * TODO: make this robust against removal of models from the DKV.
  */
-public class Leaderboard extends Lockable<Leaderboard> {
+public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer<Model>{
 
   /**
    * @param project_name
    * @return a Leaderboard id for the project name
    */
-  public static String idForProject(String project_name) { return "AutoML_Leaderboard_" + project_name; }
+  public static String idForProject(String project_name) { return "Leaderboard_" + project_name; }
 
   /**
    * @param metric
@@ -132,7 +132,7 @@ public class Leaderboard extends Lockable<Leaderboard> {
   private String[] _metrics;
 
   /**
-   * The eventLog attached to same AutoML instance as this Leaderboard object.
+   * The eventLog attached to same instance as this Leaderboard object.
    */
   private final Key<EventLog> _eventlog_key;
 
@@ -145,6 +145,8 @@ public class Leaderboard extends Lockable<Leaderboard> {
    * Checksum for the Frame for which we return the metrics, by default.
    */
   private final long _leaderboard_frame_checksum;
+
+  private final ReentrantLock updateLock = new ReentrantLock();
 
   /**
    * Constructs a new leaderboard (doesn't put it in DKV).
@@ -215,16 +217,19 @@ public class Leaderboard extends Lockable<Leaderboard> {
   /**
    * @return list of keys of models sorted by the default metric for the model category, fetched from the DKV
    */
+  @Override
   public Key<Model>[] getModelKeys() {
     return _model_keys;
   }
 
   /** Return the number of models in this Leaderboard. */
+  @Override
   public int getModelCount() { return getModelKeys() == null ? 0 : getModelKeys().length; }
 
   /**
    * @return list of models sorted by the default metric for the model category
    */
+  @Override
   public Model[] getModels() {
     if (getModelCount() == 0) return new Model[0];
     return getModelsFromKeys(getModelKeys());
@@ -376,22 +381,29 @@ public class Leaderboard extends Lockable<Leaderboard> {
     }
   } // addModels
 
-  public void removeModels(final Key<Model>[] modelKeys) {
-    if (modelKeys == null || modelKeys.length == 0) return;
-//    Map<Integer, Key<Model>> removed = Arrays.stream(modelKeys).collect(Collectors.toMap(
-//            k -> ArrayUtils.find(_model_keys, k),
-//            Function.identity()
-//    ));
-//    removed.remove(-1); // keys that were not listed in the previous keys
+  /**
+   * @param modelKeys the keys of the models to be removed from this leaderboard.
+   * @param cascade if true, the model itself and it's dependencies will be completely removed from the backend.
+   */
+  public void removeModels(final Key<Model>[] modelKeys, boolean cascade) {
+    if (modelKeys == null
+            || modelKeys.length == 0
+            || Arrays.stream(modelKeys).noneMatch(k -> ArrayUtils.contains(_model_keys, k))) return;
 
     Arrays.stream(modelKeys).filter(k -> ArrayUtils.contains(_model_keys, k)).forEach(k -> {
       eventLog().debug(Stage.ModelTraining, "Removing model "+k+" from leaderboard "+_key);
     });
     Key<Model>[] remainingKeys = Arrays.stream(_model_keys).filter(k -> !ArrayUtils.contains(modelKeys, k)).toArray(Key[]::new);
-    addModels(remainingKeys);
-//    atomicUpdate((Void v) -> {
-//      updateModels(remainingKeys);
-//    }, null);
+    atomicUpdate(v -> {
+      _model_keys = new Key[0];
+      addModels(remainingKeys);
+    }, null);
+
+    if (cascade) {
+      for (Key<Model> key : modelKeys) {
+        Keyed.remove(key);
+      }
+    }
   }
 
   private void updateModels(Key<Model>[] modelKeys) {
@@ -405,10 +417,22 @@ public class Leaderboard extends Lockable<Leaderboard> {
   }
 
   private void atomicUpdate(Consumer<Void> update, Key<Job> jobKey) {
-    write_lock(jobKey);
-    update.accept(null);
-    update(jobKey);
-    unlock(jobKey);
+    if (updateLock.isHeldByCurrentThread()) {
+      update.accept(null);
+    } else {
+      updateLock.lock();
+      try {
+        write_lock(jobKey);
+        try {
+          update.accept(null);
+          update(jobKey);
+        } finally {
+          unlock(jobKey);
+        }
+      } finally {
+        updateLock.unlock();
+      }
+    }
   }
 
   /**
@@ -420,10 +444,14 @@ public class Leaderboard extends Lockable<Leaderboard> {
     addModels(new Key[] {key});
   }
 
+  /**
+   * @param key the key of the model to be removed from the leaderboard.
+   * @param cascade if true, the model itself and it's dependencies will be completely removed from the backend.
+   */
   @SuppressWarnings("unchecked")
-  public <M extends Model> void removeModel(final Key<M> key) {
+  public <M extends Model> void removeModel(final Key<M> key, boolean cascade) {
     if (key == null) return;
-    removeModels(new Key[] {key});
+    removeModels(new Key[] {key}, cascade);
   }
 
   private void addModelMetrics(ModelMetrics modelMetrics) {

@@ -14,10 +14,14 @@ import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
+import hex.grid.HyperSpaceSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import jsr166y.CountedCompleter;
+import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
+import water.util.Countdown;
 import water.util.EnumUtils;
 import water.util.Log;
 
@@ -32,12 +36,52 @@ import java.util.function.Supplier;
  */
 public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
+    protected enum SeedPolicy { None, Global, Incremental }
+
+    static Predicate<Work> isExplorationWork = w -> w._type == JobType.ModelBuild || w._type == JobType.HyperparamSearch;
+    static Predicate<Work> isExploitationWork = w -> w._type == JobType.Selection;
+
+    protected <MP extends Model.Parameters> Job<Grid> startSearch(
+            final Key<Grid> resultKey,
+            final MP baseParams,
+            final Map<String, Object[]> hyperParams,
+            final HyperSpaceSearchCriteria searchCriteria)
+    {
+        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search");
+        return GridSearch.startGridSearch(
+                resultKey,
+                baseParams,
+                hyperParams,
+                new GridSearch.SimpleParametersBuilderFactory<>(),
+                searchCriteria,
+                GridSearch.SEQUENTIAL_MODEL_BUILDING
+        );
+    }
+
+    protected <M extends Model, MP extends Model.Parameters> Job<M> startModel(
+            final Key<M> resultKey,
+            final MP params
+    ) {
+        Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
+        ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
+        builder._parms = params;
+        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training");
+        builder.init(false);          // validate parameters
+        try {
+            return builder.trainModelOnH2ONode();
+        } catch (H2OIllegalArgumentException exception) {
+            aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model "+resultKey+" due to exception: "+exception);
+            return null;
+        }
+
+    }
+
     private transient AutoML _aml;
 
     protected final Algo _algo;
     protected final String _id;
     protected int _weight;
-    protected boolean _ignoreConstraints;  // whether or not to ignore the max_models/max_runtime constraints
+    protected AutoML.Constraint[] _ignoredConstraints = new AutoML.Constraint[0];  // whether or not to ignore the max_models/max_runtime constraints
     protected String _description;
 
     StepDefinition _fromDef;
@@ -93,7 +137,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      * </ul>
      * @param params the model parameters to which the common parameters will be added.
      */
-    void setCommonModelBuilderParams(Model.Parameters params) {
+    protected void setCommonModelBuilderParams(Model.Parameters params) {
         params._train = aml()._trainingFrame._key;
         if (null != aml()._validationFrame)
             params._valid = aml()._validationFrame._key;
@@ -130,7 +174,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         params._export_checkpoints_dir = buildSpec.build_control.export_checkpoints_dir;
     }
 
-    void setCustomParams(Model.Parameters params) {
+    protected void setCustomParams(Model.Parameters params) {
         AutoMLCustomParameters customParams = aml().getBuildSpec().build_models.algo_parameters;
         if (customParams == null) return;
         customParams.applyCustomParameters(_algo, params);
@@ -142,9 +186,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      *
      * @param parms the model parameters to which the stopping criteria will be added.
      * @param defaults the default parameters for the corresponding {@link ModelBuilder}.
-     * @param isIndividualModel is the parms will be use to build a single model or for hyperparameter search.
+     * @param useIncrementalSeed is the parms will be use to build a single model or for hyperparameter search.
      */
-    void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, boolean isIndividualModel) {
+    protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, SeedPolicy seedPolicy) {
         // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
         AutoMLBuildSpec buildSpec = aml().getBuildSpec();
         parms._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
@@ -155,13 +199,18 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         // We should instead provide hooks and ensure that properties are always set in the following order:
         //  1. defaults, 2. user defined, 3. internal logic/algo specific based on the previous state (esp. handling of AUTO properties).
 
-        // If we have set a seed for the search and not for the individual model params
-        // then use a sequence starting with the same seed given for the model build.
-        // Don't use the same exact seed so that, e.g., if we build two GBMs they don't
-        // do the same row and column sampling.
-        // Leave it as is for Grids as HyperSpaceWalker has its own increment logic.
-        if (isIndividualModel && parms._seed == defaults._seed && buildSpec.build_control.stopping_criteria.seed() != -1)
-            parms._seed = buildSpec.build_control.stopping_criteria.seed() + aml().individualModelsTrained.getAndIncrement();
+        // Don't use the same exact seed so that, e.g., if we build two GBMs they don't do the same row and column sampling.
+        if (parms._seed == defaults._seed) {
+            switch (seedPolicy) {
+                case Global:
+                    parms._seed = buildSpec.build_control.stopping_criteria.seed(); break;
+                case Incremental:
+                    parms._seed = _aml._incrementalSeed.get() == -1 ? -1 : _aml._incrementalSeed.getAndIncrement(); break;
+                default:
+                    break;
+            }
+        }
+
 
         if (parms._stopping_metric == defaults._stopping_metric)
             parms._stopping_metric = buildSpec.build_control.stopping_criteria.stopping_metric();
@@ -222,10 +271,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return getWorkAllocations().getAllocation(_id, _algo);
         }
 
-        @SuppressWarnings("unchecked")
         @Override
+        @SuppressWarnings("unchecked")
         protected Key<M> makeKey(String name, boolean withCounter) {
-            return (Key<M>)aml().modelKey(name, withCounter);
+            return aml().makeKey(name, null,  withCounter);
         }
 
         protected Job<M> trainModel(Model.Parameters parms) {
@@ -242,32 +291,24 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             if (null == key) key = makeKey(algoName, true);
 
-            Job<M> job = new Job<>(key, ModelBuilder.javaName(_algo.urlName()), _description);
-            ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>)key);
-            Model.Parameters defaults = builder._parms;
-            builder._parms = parms;
-
-            setCommonModelBuilderParams(builder._parms);
-            setStoppingCriteria(builder._parms, defaults, true);
-            setCustomParams(builder._parms);
+            Model.Parameters defaults = ModelBuilder.make(_algo.urlName(), null, null)._parms;
+            setCommonModelBuilderParams(parms);
+            setStoppingCriteria(parms, defaults, SeedPolicy.Incremental);
+            setCustomParams(parms);
 
             // override model's max_runtime_secs to ensure that the total max_runtime doesn't exceed expectations
-            if (_ignoreConstraints)
-                builder._parms._max_runtime_secs = 0;
-            else if (builder._parms._max_runtime_secs == 0)
-                builder._parms._max_runtime_secs = aml().timeRemainingMs() / 1e3;
-            else
-                builder._parms._max_runtime_secs = Math.min(builder._parms._max_runtime_secs, aml().timeRemainingMs() / 1e3);
-
-            aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+key+" model training");
-            builder.init(false);          // validate parameters
-            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
-            try {
-                return builder.trainModelOnH2ONode();
-            } catch (H2OIllegalArgumentException exception) {
-                aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
-                return null;
+            if (ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)) {
+                parms._max_runtime_secs = 0;
+            } else {
+                Work work = getAllocatedWork();
+//                double maxAssignedTimeSecs = aml().timeRemainingMs() / 1e3; // legacy
+                double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3; //including default models in the distribution of the time budget.
+                parms._max_runtime_secs = parms._max_runtime_secs == 0
+                        ? maxAssignedTimeSecs
+                        : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
             }
+            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
+            return startModel(key, parms);
         }
 
     }
@@ -297,8 +338,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         protected Key<Grid> makeKey(String name, boolean withCounter) {
-            return aml().gridKey(name, withCounter);
+            return aml().makeKey(name, "grid", withCounter);
         }
 
         protected Job<Grid> hyperparameterSearch(Model.Parameters baseParms, Map<String, Object[]> searchParms) {
@@ -321,39 +363,38 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             }
 
             setCommonModelBuilderParams(baseParms);
-            setStoppingCriteria(baseParms, defaults, false);
+            setStoppingCriteria(baseParms, defaults, SeedPolicy.None);
             setCustomParams(baseParms);
 
             AutoMLBuildSpec buildSpec = aml().getBuildSpec();
             RandomDiscreteValueSearchCriteria searchCriteria = (RandomDiscreteValueSearchCriteria)buildSpec.build_control.stopping_criteria.getSearchCriteria().clone();
 
             Work work = getAllocatedWork();
+            // for time limit, this is allocated in proportion of the entire work budget.
             double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
-            // predicate can be removed if/when we decide to include SEs in the max_models limit
-            int maxAssignedModels = (int) Math.ceil(aml().remainingModels() * getWorkAllocations().remainingWorkRatio(work, w -> w._algo != Algo.StackedEnsemble));
+            // SE predicate can be removed if/when we decide to include SEs in the max_models limit
+            // for models limit, this is not assigned in the same proportion as for time,
+            // as the exploitation phase is not supposed to "add" models but just to replace some by better ones,
+            // instead, allocation is done in proportion of the entire exploration budget.
+            int maxAssignedModels = (int) Math.ceil(aml().remainingModels() * getWorkAllocations().remainingWorkRatio(work, isExplorationWork.and(w -> w._algo != Algo.StackedEnsemble)));
 
-            if (searchCriteria.max_runtime_secs() == 0)
-                searchCriteria.set_max_runtime_secs(maxAssignedTimeSecs);
-            else
-                searchCriteria.set_max_runtime_secs(Math.min(searchCriteria.max_runtime_secs(), maxAssignedTimeSecs));
+            searchCriteria.set_max_runtime_secs(searchCriteria.max_runtime_secs() == 0
+                    ? maxAssignedTimeSecs
+                    : Math.min(searchCriteria.max_runtime_secs(), maxAssignedTimeSecs));
 
-            if (searchCriteria.max_models() == 0)
-                searchCriteria.set_max_models(maxAssignedModels);
-            else
-                searchCriteria.set_max_models(Math.min(searchCriteria.max_models(), maxAssignedModels));
+            searchCriteria.set_max_models(searchCriteria.max_models() == 0
+                    ? maxAssignedModels
+                    : Math.min(searchCriteria.max_models(), maxAssignedModels));
 
             if (null == key) key = makeKey(_algo.name(), true);
-            aml().addGridKey(key);
+            aml().trackKey(key);
 
-            aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+key+" hyperparameter search");
             Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+aml().timeRemainingMs());
-            return GridSearch.startGridSearch(
+            return startSearch(
                     key,
                     baseParms,
                     searchParms,
-                    new GridSearch.SimpleParametersBuilderFactory<>(),
-                    searchCriteria,
-                    GridSearch.SEQUENTIAL_MODEL_BUILDING
+                    searchCriteria
             );
         }
     }
@@ -362,6 +403,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         public SelectionStep(Algo algo, String id, int weight, AutoML autoML) {
             super(algo, id, weight, autoML);
+            _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
         }
 
         @Override
@@ -375,15 +417,16 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
 
         @Override
+        @SuppressWarnings("unchecked")
         protected Key<Models> makeKey(String name, boolean withCounter) {
-            return (Key)aml().modelKey(name, withCounter); //TODO: key dedicated to Models collection
+            return aml().makeKey(name, "selection", withCounter);
         }
 
-        protected Leaderboard makeTmpLeaderboard() {
+        protected Leaderboard makeTmpLeaderboard(String name) {
             Leaderboard amlLeaderboard = aml().leaderboard();
-            Leaderboard tmpLeaderboard = new Leaderboard(
-                    "tmp_leaderboard_"+_algo+"_"+_id,
-                    new EventLog(Key.make("tmp_eventlog_"+_algo+"_"+_id)),
+            Leaderboard tmpLeaderboard = Leaderboard.getOrMake(
+                    name,
+                    EventLog.getOrMake(Key.make(name)),
                     amlLeaderboard.leaderboardFrame(),
                     amlLeaderboard.getSortMetric()
             );
@@ -393,44 +436,94 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         @Override
         protected Job<Models> startJob() {
             Key<Model>[] trainedModelKeys = getTrainedModelsKeys();
-            Key<Models> key = makeKey(_id, false);
+            Key<Models> key = makeKey(_algo+"_"+_id, false);
+            aml().trackKey(key);
             Job<Models> job = new Job<>(key, Models.class.getName(), _description);
-            int work = 17; //TODO
-            int maxRuntimeSecs = 42; //TODO
+            Work work = getAllocatedWork();
+            double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
+
             return job.start(new H2O.H2OCountedCompleter() {
+
+                Models result = new Models(key, Model.class, job);
+                Key<Models> selectionKey = Key.make(key+"_select");
+                Leaderboard selectionLeaderboard = makeTmpLeaderboard(selectionKey.toString());
+                EventLog selectionEventLog = EventLog.getOrMake(selectionKey);
+
+                {
+                    result.delete_and_lock(job);
+                }
+
                 @Override
                 public void compute2() {
-                    Models tmpModels = startTraining(key).get();
-                    // monitor?
-                    ModelSelectionStrategy.Selection selection = getSelectionStrategy().select(trainedModelKeys, tmpModels._modelKeys);
+                    Countdown countdown = Countdown.fromSeconds(maxAssignedTimeSecs);
+                    ModelingStepsExecutor localExecutor = new ModelingStepsExecutor(selectionLeaderboard, selectionEventLog, countdown);
+                    localExecutor.start();
+                    Job<Models> innerTraining = startTraining(selectionKey, maxAssignedTimeSecs);
+                    localExecutor.monitor(innerTraining, work, job, false);
+
+                    Log.debug("Selection leaderboard " + selectionLeaderboard._key, selectionLeaderboard.toLogString());
+                    ModelSelectionStrategy.Selection selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.getModelKeys());
                     Leaderboard lb = aml().leaderboard();
+                    Log.debug("Selection result for job " + key, ToStringBuilder.reflectionToString(selection));
+                    lb.removeModels(selection._remove, true);
                     lb.addModels(selection._add);
-                    lb.removeModels(selection._remove);
-                    Models result = new Models(key, Model.class);
+
+                    result.unlock(job);
                     result.addModels(selection._add);
-                    DKV.put(result);
+                    tryComplete();
                 }
-            }, work, maxRuntimeSecs);
+
+                @Override
+                public void onCompletion(CountedCompleter caller) {
+                    Keyed.remove(selectionKey, new Futures(), false); // don't cascade: tmp models removal is is done using the logic below.
+                    selectionLeaderboard.removeModels(trainedModelKeys, false); // if original models were added to selection leaderboard, just remove them.
+                    selectionLeaderboard.removeModels( // for newly trained models, fully remove those that don't appear in the result container.
+                            Arrays.stream(selectionLeaderboard.getModelKeys()).filter(k -> !ArrayUtils.contains(result.getModelKeys(), k)).toArray(Key[]::new),
+                            true
+                    );
+                    selectionLeaderboard.remove(false); // don't cascade to avoid fully removing all models (the ones we wanted to remove have been cleaned up before).
+                    selectionEventLog.remove();
+                    super.onCompletion(caller);
+                }
+
+                @Override
+                public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+                    result.unlock(job._key, false);
+                    Keyed.remove(selectionKey);
+                    selectionLeaderboard.remove();
+                    selectionEventLog.remove();
+                    return super.onExceptionalCompletion(ex, caller);
+                }
+
+            }, work._weight, maxAssignedTimeSecs);
         }
 
-        protected abstract Job<Models> startTraining(Key<Models> result);
+        protected abstract Job<Models> startTraining(Key<Models> result, double maxRuntimeSecs);
 
         protected abstract ModelSelectionStrategy getSelectionStrategy();
 
-        protected Job<Models> asModelsJob(Job j ){
-            Job<Models> jModels = new Job<>(j._result, Models.class.getName(), j._description); // can use the same result key as original job, as it is dropped once its result is read
+        protected Job<Models> asModelsJob(Job j, Key<Models> result){
+            Job<Models> jModels = new Job<>(result, Models.class.getName(), j._description); // can use the same result key as original job, as it is dropped once its result is read
             return jModels.start(new H2O.H2OCountedCompleter() {
+
+                Models models = new Models(result, Model.class, jModels);
+                {
+                    models.delete_and_lock(jModels);
+                }
+
                 @Override
                 public void compute2() {
-                    Object res = j.get();
-                    Models models = new Models(j._result, Model.class, jModels);
+                    Keyed res = j.get();
+                    models.unlock(jModels);
                     if (res instanceof Model) {
                         models.addModel(((Model)res)._key);
                     } else if (res instanceof ModelContainer) {
                         models.addModels(((ModelContainer)res).getModelKeys());
+                        res.remove(false);
                     } else {
                         throw new H2OIllegalArgumentException("Can only convert jobs producing a single Model or ModelContainer.");
                     }
+                    tryComplete();
                 }
             }, j._work, j._max_runtime_msecs);
         }
@@ -440,7 +533,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         private final Class<M> _clz;
         private final Job _job;
-        private Key<M>[] _modelKeys;
+        private Key<M>[] _modelKeys = new Key[0];
 
         public Models(Key<Models<M>> key, Class<M> clz) {
             this(key, clz, null);
@@ -482,6 +575,16 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
            update(_job);
            unlock(_job);
         }
+
+        @Override
+        protected Futures remove_impl(final Futures fs, boolean cascade) {
+            if (cascade) {
+                for (Key<M> k : _modelKeys)
+                    Keyed.remove(k, fs, true);
+            }
+            _modelKeys = new Key[0];
+            return super.remove_impl(fs, cascade);
+        }
     }
 
     @FunctionalInterface
@@ -508,7 +611,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             _leaderboardSupplier = leaderboardSupplier;
         }
 
-        Leaderboard makeTmpLeaderboard() {
+        Leaderboard makeSelectionLeaderboard() {
             return _leaderboardSupplier.get();
         }
     }
@@ -525,7 +628,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         @Override
         @SuppressWarnings("unchecked")
         public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
-            Leaderboard tmpLeaderboard = makeTmpLeaderboard();
+            Leaderboard tmpLeaderboard = makeSelectionLeaderboard();
             tmpLeaderboard.addModels((Key<Model>[]) originalModels);
             tmpLeaderboard.addModels((Key<Model>[]) newModels);
             Key<Model>[] sortedKeys = tmpLeaderboard.getModelKeys();

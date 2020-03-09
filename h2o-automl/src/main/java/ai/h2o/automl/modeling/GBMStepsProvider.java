@@ -1,15 +1,17 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
 import hex.grid.Grid;
 import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
+import hex.tree.xgboost.XGBoostModel;
 import water.Job;
+import water.Key;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
@@ -22,7 +24,6 @@ public class GBMStepsProvider
 
         static GBMParameters prepareModelParameters() {
             GBMParameters gbmParameters = new GBMParameters();
-            gbmParameters._learn_rate = 0.5;  //default is 0.1
             gbmParameters._score_tree_interval = 5;
             gbmParameters._histogram_type = SharedTreeModel.SharedTreeParameters.HistogramType.AUTO;
             return gbmParameters;
@@ -55,6 +56,28 @@ public class GBMStepsProvider
                 return gbmParameters;
             }
         }
+
+        static abstract class GBMExploitationStep extends ModelingStep.SelectionStep<GBMModel> {
+
+            protected GBMModel getBestGBM() {
+                for (Model model : getTrainedModels()) {
+                    if (model instanceof GBMModel) {
+                        return (GBMModel) model;
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected boolean canRun() {
+                // TODO: add event log message here?
+                return getBestGBM() != null;
+            }
+            public GBMExploitationStep(String id, int weight, AutoML autoML) {
+                super(Algo.GBM, id, weight, autoML);
+            }
+        }
+
 
 
         private ModelingStep[] defaults = new GBMModelStep[] {
@@ -130,33 +153,30 @@ public class GBMStepsProvider
                 },
         };
 
-        private ModelingStep[] exploitation = new GBMModelStep[] {
-               new GBMModelStep("lr_anealing", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+        private ModelingStep[] exploitation = new ModelingStep[] {
+                new GBMExploitationStep("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
 
-                   private GBMModel getBestGBM() {
-                     for (Model model : getTrainedModels()) {
-                         if (model instanceof GBMModel) {
-                             return (GBMModel) model;
-                         }
-                     }
-                     return null;
-                   }
+                    Key<Models> resultKey = null;
 
-                   @Override
-                   protected boolean canRun() {
-                       // TODO: add event log message here?
-                       return getBestGBM() != null;
-                   }
+                    @Override
+                    protected Job<Models> startTraining(Key result, double maxRuntimeSecs) {
+                        resultKey = result;
+                        GBMModel bestGBM = getBestGBM();
+                        aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best GBM with learning rate annealing: "+bestGBM._key);
+                        GBMParameters gbmParameters = (GBMParameters) bestGBM._parms.clone();
+                        gbmParameters._learn_rate_annealing = 0.95;
+                        gbmParameters._max_runtime_secs = maxRuntimeSecs;
+                        setStoppingCriteria(gbmParameters, new GBMParameters(), SeedPolicy.None);
+                        return asModelsJob(startModel(Key.make(result+"_model"), gbmParameters), result);
+                    }
 
-                   @Override
-                   protected Job<GBMModel> startJob() {
-                       GBMModel bestGBM = getBestGBM();
-                       GBMParameters gbmParameters = (GBMParameters) bestGBM._parms.clone();
-                       gbmParameters._learn_rate = 0.5;
-                       gbmParameters._learn_rate_annealing = 0.9;
-                       return trainModel(gbmParameters);
-                   }
-               }
+                    @Override
+                    protected ModelSelectionStrategy getSelectionStrategy() {
+                        return (originalModels, newModels) ->
+                                new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _algo+"_"+_id)))
+                                        .select(new Key[] { getBestGBM()._key }, newModels);
+                    }
+                }
         };
 
         public GBMSteps(AutoML autoML) {

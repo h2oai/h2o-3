@@ -1,5 +1,6 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.AutoML.Constraint;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
@@ -7,10 +8,10 @@ import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.ModelContainer;
-import hex.grid.Grid;
 import water.Iced;
 import water.Job;
 import water.Key;
+import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.Log;
 
@@ -64,7 +65,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             if (job == null) {
                 skip(step._description, step.getAllocatedWork(), parentJob);
             } else {
-                monitor(job, step.getAllocatedWork(), parentJob, step._ignoreConstraints);
+                monitor(job, step.getAllocatedWork(), parentJob, ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT));
                 return true;
             }
         }
@@ -78,7 +79,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         }
     }
 
-    private void monitor(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
+    void monitor(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
         EventLog eventLog = eventLog();
         String jobDescription = job._result == null ? job._description : job._result.toString()+" ["+job._description+"]";
         eventLog.debug(Stage.ModelTraining, jobDescription + " started");
@@ -106,7 +107,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
             if (JobType.HyperparamSearch == work._type || JobType.Selection == work._type) {
                 ModelContainer<?> container = (ModelContainer)job._result.get();
-                int totalModelsBuilt = container.getModelCount();
+                int totalModelsBuilt = container == null ? 0 : container.getModelCount();
                 if (totalModelsBuilt > lastTotalModelsBuilt) {
                     eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
                     this.addModels(container);

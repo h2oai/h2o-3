@@ -1,9 +1,13 @@
 package ai.h2o.automl;
 
+import org.apache.commons.lang.builder.StandardToStringStyle;
+import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
 import water.Iced;
 import water.util.ArrayUtils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
@@ -34,6 +38,16 @@ public class WorkAllocations extends Iced<WorkAllocations> {
       int consumed = _weight;
       _weight = 0;
       return consumed;
+    }
+
+    @Override
+    public String toString() {
+      final StringBuilder sb = new StringBuilder("Work{")
+              .append(_id).append(", ")
+              .append(_algo).append(", ")
+              .append(_type).append(", ")
+              .append(_weight).append('}');
+      return sb.toString();
     }
   }
 
@@ -99,4 +113,8 @@ public class WorkAllocations extends Iced<WorkAllocations> {
     return (float) work._weight / remainingWork(predicate);
   }
 
+  @Override
+  public String toString() {
+    return Arrays.toString(allocations);
+  }
 }

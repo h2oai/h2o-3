@@ -27,6 +27,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     FeatureReduction,
     FeatureCreation,
     ModelTraining,
+    ModelSelection,
   }
 
   static TwoDimTable makeTwoDimTable(String tableHeader, int length) {
