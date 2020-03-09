@@ -18,10 +18,11 @@ import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.MathUtils.BasicStats;
-
 import java.util.Arrays;
 
 import static hex.glm.GLMTask.DataAddW2AugXZ.getCorrectChunk;
+import static hex.glm.GLMUtils.updateGradGam;
+import static hex.glm.GLMUtils.updateGradGamMultinomial;
 
 /**
  * All GLM related distributed tasks:
@@ -413,15 +414,23 @@ public abstract class GLMTask  {
     final transient  double _currentLambda;
     final transient double _reg;
     protected final DataInfo _dinfo;
-
-
+    public double[][][] _penalty_mat; // for gam only
+    public int[][] _gamBetaIndices; // for gam only
+    
     protected GLMGradientTask(Key jobKey, DataInfo dinfo, double reg, double lambda, double[] beta){
       _dinfo = dinfo;
       _beta = beta.clone();
       _reg = reg;
       _currentLambda = lambda;
-
     }
+
+    protected GLMGradientTask(Key jobKey, DataInfo dinfo, double reg, double lambda, double[] beta, 
+                              double[][][] penaltyMat, int[][] gamBetaInd){
+      this(jobKey, dinfo, reg, lambda, beta);
+      _penalty_mat = penaltyMat;
+      _gamBetaIndices = gamBetaInd;
+    }
+    
     protected abstract void computeGradientMultipliers(double [] es, double [] ys, double [] ws);
 
     private final void computeCategoricalEtas(Chunk [] chks, double [] etas, double [] vals, int [] ids) {
@@ -564,7 +573,9 @@ public abstract class GLMTask  {
     @Override public final void postGlobal(){
       ArrayUtils.mult(_gradient,_reg);
       for(int j = 0; j < _beta.length - 1; ++j)
-        _gradient[j] += _currentLambda * _beta[j];
+        _gradient[j] += _currentLambda * _beta[j];  // add L2 constraint for gradient
+      if ((_penalty_mat != null) && (_gamBetaIndices != null))
+        updateGradGam(_gradient, _penalty_mat, _gamBetaIndices, _beta);  // update contribution from gam smoothness constraint
     }
   }
 
@@ -572,6 +583,12 @@ public abstract class GLMTask  {
     private final GLMWeightsFun _glmf;
     public GLMGenericGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double[] beta) {
       super(jobKey, dinfo, parms._obj_reg, lambda, beta);
+      _glmf = new GLMWeightsFun(parms);
+    }
+
+    public GLMGenericGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double[] beta, 
+                                  double[][][] penaltyMat, int[][] gamCols) {
+      super(jobKey, dinfo, parms._obj_reg, lambda, beta, penaltyMat, gamCols);
       _glmf = new GLMWeightsFun(parms);
     }
 
@@ -607,6 +624,12 @@ public abstract class GLMTask  {
       super(jobKey, dinfo, parms._obj_reg, lambda, beta);
       _glmf = new GLMWeightsFun(parms);
     }
+
+    public GLMPoissonGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double[] beta, 
+                                  double[][][] penaltyMat, int[][] gamCols) {
+      super(jobKey, dinfo, parms._obj_reg, lambda, beta, penaltyMat, gamCols);
+      _glmf = new GLMWeightsFun(parms);
+    }
     @Override protected void computeGradientMultipliers(double [] es, double [] ys, double [] ws){
       double l = 0;
       for(int i = 0; i < es.length; ++i) {
@@ -631,6 +654,13 @@ public abstract class GLMTask  {
       super(jobKey, dinfo, parms._obj_reg, lambda, beta);
       _glmf = new GLMWeightsFun(parms);
     }
+
+    public GLMNegativeBinomialGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, 
+                                           double[] beta, double[][][] penaltyMat, int[][] gamCols) {
+      super(jobKey, dinfo, parms._obj_reg, lambda, beta, penaltyMat, gamCols);
+      _glmf = new GLMWeightsFun(parms);
+    }
+    
     @Override protected void computeGradientMultipliers(double [] es, double [] ys, double [] ws) {
       double l = 0;
       for(int i = 0; i < es.length; ++i) {
@@ -671,6 +701,12 @@ public abstract class GLMTask  {
       super(jobKey, dinfo, parms._obj_reg, lambda, beta);
       _glmf = new GLMWeightsFun(parms);
     }
+
+    public GLMQuasiBinomialGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double[] beta,
+                                        double[][][] penaltyMat, int[][] gamCols) {
+      super(jobKey, dinfo, parms._obj_reg, lambda, beta, penaltyMat, gamCols);
+      _glmf = new GLMWeightsFun(parms);
+    }
     @Override protected void computeGradientMultipliers(double [] es, double [] ys, double [] ws){
       double l = 0;
       for(int i = 0; i < es.length; ++i){
@@ -691,6 +727,12 @@ public abstract class GLMTask  {
       assert (parms._family == Family.binomial && parms._link == Link.logit) || (parms._family == Family.fractionalbinomial && parms._link == Link.logit);
     }
 
+    public GLMBinomialGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta, 
+                                   double[][][] penaltyMat, int[][] gamCol) {
+      super(jobKey,dinfo,parms._obj_reg,lambda,beta, penaltyMat, gamCol);
+      assert parms._family == Family.binomial && parms._link == Link.logit;
+    }
+
     @Override
     protected void computeGradientMultipliers(double[] es, double[] ys, double[] ws) {
       for(int i = 0; i < es.length; ++i) {
@@ -704,9 +746,15 @@ public abstract class GLMTask  {
     }
   }
 
-  static class GLMGaussianGradientTask extends GLMGradientTask {
+  public static class GLMGaussianGradientTask extends GLMGradientTask {
     public GLMGaussianGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta) {
       super(jobKey,dinfo,parms._obj_reg,lambda,beta);
+      assert parms._family == Family.gaussian && parms._link == Link.identity;
+    }
+
+    public GLMGaussianGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta, 
+                                   double[][][] penaltyMat, int[][] gamCol) {
+      super(jobKey,dinfo,parms._obj_reg,lambda,beta, penaltyMat, gamCol);
       assert parms._family == Family.gaussian && parms._link == Link.identity;
     }
 
@@ -744,11 +792,11 @@ public abstract class GLMTask  {
   }
 
   // share between multinomial and ordinal regression
-  static abstract class GLMMultinomialGradientBaseTask extends MRTask<GLMMultinomialGradientBaseTask> {
+  public static abstract class GLMMultinomialGradientBaseTask extends MRTask<GLMMultinomialGradientBaseTask> {
     final double[][] _beta;
     final transient double _currentLambda;
     final transient double _reg;
-    public double[][] _gradient;
+    public double[][] _gradient;  // this is arranged such that we have double[ncoeff][nclass]
     double _likelihood;
     Job _job;
     final boolean _sparse;
@@ -759,6 +807,8 @@ public abstract class GLMTask  {
     int _secondToLast;    // denote class label nclass-2
     int _theLast;         // denote class label nclass-1
     int _interceptId;     // index of offset/intercept in double[][] _beta
+    double[][][] _penaltyMat;
+    int[][] _gamBetaIndices;
 
     /**
      * @param job
@@ -788,6 +838,18 @@ public abstract class GLMTask  {
       _interceptId = _beta.length - 1;
       _link = glmp._link;
       _glmp = glmp;
+    }
+
+    public GLMMultinomialGradientBaseTask(Job job, DataInfo dinfo, double lambda, double[][] beta, GLMParameters glmp,
+                                          double[][][] penaltyMat, int[][] gamCols) {
+      this(job, dinfo, lambda, beta, glmp._obj_reg);
+      _theLast = beta.length - 1;       // initialize ordinal regression parameters
+      _secondToLast = _theLast - 1;
+      _interceptId = _beta.length - 1;
+      _link = glmp._link;
+      _glmp = glmp;
+      _penaltyMat = penaltyMat;
+      _gamBetaIndices = gamCols;
     }
 
     // common between multinomial and ordinal
@@ -1022,13 +1084,15 @@ public abstract class GLMTask  {
 
     @Override public void postGlobal(){
       ArrayUtils.mult(_gradient, _reg);
-      int P = _beta.length;
+      int P = _beta.length; // number of predictors
       // add l2 penalty
       if (_currentLambda > 0) {
         for (int c = 0; c < P - 1; ++c)
-          for (int j = 0; j < _beta[0].length; ++j)
+          for (int j = 0; j < _beta[0].length; ++j) // iterate over each class
             _gradient[c][j] += _currentLambda * _beta[c][j];
       }
+      if ((_penaltyMat!=null) && (_gamBetaIndices!=null)) 
+        updateGradGamMultinomial(_gradient, _penaltyMat, _gamBetaIndices, _beta); // beta is coeff index by class
     }
 
     public double [] gradient(){
@@ -1042,13 +1106,18 @@ public abstract class GLMTask  {
   }
 
   // share between multinomial and ordinal regression
-  static class GLMMultinomialGradientTask extends GLMMultinomialGradientBaseTask {
+  public static class GLMMultinomialGradientTask extends GLMMultinomialGradientBaseTask {
     public GLMMultinomialGradientTask(Job job, DataInfo dinfo, double lambda, double[][] beta, double reg) {
       super(job, dinfo, lambda, beta, reg);
     }
 
     public GLMMultinomialGradientTask(Job job, DataInfo dinfo, double lambda, double[][] beta, GLMParameters glmp) {
       super(job, dinfo, lambda, beta, glmp);
+    }
+
+    public GLMMultinomialGradientTask(Job job, DataInfo dinfo, double lambda, double[][] beta, GLMParameters glmp, 
+                                      double[][][] penaltyMat, int[][] gamCols) {
+      super(job, dinfo, lambda, beta, glmp, penaltyMat, gamCols);
     }
     @Override
     public void calMultipliersNGradients(double[][] etas, double[][] etasOffset, double[] ws, double[] vals,
@@ -1431,9 +1500,7 @@ public abstract class GLMTask  {
     protected Gram  _gram; // wx%*%x
     double [] _xy; // wx^t%*%z,
     double _yy;
-
     final double [] _ymu;
-
     long _nobs;
     public double _likelihood;
     private transient GLMWeights _w;
@@ -1449,7 +1516,7 @@ public abstract class GLMTask  {
       _ymu = null;
       _glmf = glmw;
     }
-
+    
     public  GLMIterationTask(Key jobKey, DataInfo dinfo, GLMWeightsFun glmw, double [] beta, int c) {
       super(null,dinfo,jobKey);
       _beta = beta;

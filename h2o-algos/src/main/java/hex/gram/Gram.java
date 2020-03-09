@@ -90,6 +90,42 @@ public final class Gram extends Iced<Gram> {
       _xx[i-_diagN][i] += ds[i];
   }
 
+  /**
+   * Add the effect of gam column smoothness factor.  
+   * @param activeColumns: store active columns
+   * @param ds: store penalty matrix per column 
+   * @param gamIndices: penalty column indices taken into account categorical column offset
+   */
+  public void addGAMPenalty(Integer[] activeColumns, double[][][] ds, int[][] gamIndices, int classOffsets) {
+    int numGamCols = gamIndices.length;
+    for (int gamInd = 0; gamInd < numGamCols; gamInd++) { // deal with each GAM column separately
+      int numKnots = gamIndices[gamInd].length;
+      for (int betaInd = 0; betaInd < numKnots; betaInd++) {
+        Integer betaIndex = gamIndices[gamInd][betaInd]; // for multinomial
+        if (activeColumns != null) {  // column indices in gamIndices need to be translated due to columns deleted
+          betaIndex = ArrayUtils.indexOf(activeColumns, betaIndex);
+          if (betaIndex < 0)
+            continue;
+        }
+        for (int betaIndj = 0; betaIndj <= betaInd; betaIndj++) {
+          Integer betaIndexJ = gamIndices[gamInd][betaIndj];
+          if (activeColumns != null) {  // column indices in gamIndices need to be translated due to columns deleted
+            betaIndexJ = ArrayUtils.indexOf(activeColumns, betaIndexJ);
+            if (betaIndexJ < 0)
+              continue;
+          }
+
+          betaIndex += classOffsets;
+          betaIndexJ += classOffsets;
+          int rowLen = _xx[betaIndex - _diagN].length;
+          if (betaIndexJ < rowLen) {  // only update the lower half, symmetric
+            _xx[betaIndex - _diagN][betaIndexJ] += 2 * ds[gamInd][betaInd][betaIndj];
+          }
+        }
+      }
+    }
+  }
+
   public double get(int i, int j) {
     if(j > i) {
       int k = i;

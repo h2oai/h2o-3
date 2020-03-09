@@ -23,6 +23,16 @@ public class ArrayUtils {
     }
     return cumsumR;
   }
+
+  public static double[] eleDiff(final double[] from) {
+    int arryLen = from.length-1;
+    double[] cumsumR = new double[arryLen];
+    for (int index = 0; index < arryLen; index++) {
+      cumsumR[index] = from[index+1]-from[index];
+    }
+    return cumsumR;
+  }
+  
   // Sum elements of an array
   public static long sum(final long[] from) {
     long result = 0;
@@ -72,6 +82,13 @@ public class ArrayUtils {
     return result;
   }
 
+  public static double innerProductPartial(double [] x, int[] x_index, double [] y){
+    double result = 0;
+    for (int i = 0; i < y.length; i++)
+      result += x[x_index[i]] * y[i];
+    return result;
+  }
+
   public static double [] mmul(double [][] M, double [] V) {
     double [] res = new double[M.length];
     for(int i = 0; i < M.length; ++i) {
@@ -93,6 +110,36 @@ public class ArrayUtils {
     return result;
   }
 
+  public static<T extends Comparable<T>> int indexOf(T[] arr, T val) {
+    int highIndex = arr.length-1;
+    int compare0 = val.compareTo(arr[0]); // small shortcut
+    if (compare0 == 0)
+      return 0;
+    int compareLast = val.compareTo(arr[highIndex]);
+    if (compareLast==0)
+      return highIndex;
+    if (val.compareTo(arr[0])<0 || val.compareTo(arr[highIndex])>0) // end shortcut
+      return -1;
+    
+    int count = 0;
+    int numBins = arr.length;
+    int lowIndex = 0;
+
+    while (count < numBins) {
+      int tryBin = (int) Math.floor((highIndex+lowIndex)*0.5);
+      double compareVal = val.compareTo(arr[tryBin]);
+      if (compareVal==0)
+        return tryBin;
+      else if (compareVal>0)
+        lowIndex = tryBin;
+      else
+        highIndex = tryBin;
+
+      count++;
+    }
+    return -1;
+  }
+  
   // return the sqrt of each element of the array.  Will overwrite the original array in this case
   public static double[] sqrtArr(double [] x){
     assert (x != null);
@@ -145,6 +192,28 @@ public class ArrayUtils {
       sum += x[i] >= 0?x[i]:-x[i];
     return sum;
   }
+
+  /**
+   * Like the R norm for matrices, this function will calculate the maximum absolute col sum if type='o' or
+   * return the maximum absolute row sum otherwise
+   * @param arr
+   * @param type
+   * @return
+   */
+  public static double rNorm(double[][] arr, char type) {
+    double rnorm = Double.NEGATIVE_INFINITY;
+    int numArr = arr.length;
+    for (int rind = 0; rind < numArr; rind++) {
+      double tempSum = 0.0;
+      for (int cind = 0; cind < numArr; cind++) {
+        tempSum += type == 'o' ? Math.abs(arr[rind][cind]) : Math.abs(arr[cind][rind]);
+      }
+      if (tempSum > rnorm)
+        rnorm = tempSum;
+    }
+    return rnorm;
+  }
+  
   public static double linfnorm(double [] x, boolean skipLast){
     double res = Double.NEGATIVE_INFINITY;
     int last = x.length -(skipLast?1:0);
@@ -236,7 +305,10 @@ public class ArrayUtils {
     for(int i = 0; i < a.length; i++ ) a[i] += b;
     return a;
   }
-
+  public static int[] add(int[] a, int b) {
+    for(int i = 0; i < a.length; i++ ) a[i] += b;
+    return a;
+  }
   public static double[] wadd(double[] a, double[] b, double w) {
     if( a==null ) return b;
     for(int i = 0; i < a.length; i++ )
@@ -352,6 +424,15 @@ public class ArrayUtils {
     return multArrVec(ary, nums, res);
   }
 
+  public static double[] multArrVecPartial(double[][] ary, double[] nums, int[] numColInd) {
+    if(ary == null) return null;
+    double[] res = new double[ary.length];
+    for (int ind = 0; ind < ary.length; ind++) {
+      res[ind] = innerProductPartial(nums, numColInd, ary[ind]);
+    }
+    return res;
+  }
+
   public static double[] diagArray(double[][] ary) {
     if(ary == null) return null;
     int arraylen = ary.length;
@@ -372,10 +453,10 @@ public class ArrayUtils {
   public static double[] multVecArr(double[] nums, double[][] ary) {
     if(ary == null || nums == null) return null;
     assert nums.length == ary.length : "Inner dimensions must match: Got " + nums.length + " != " + ary.length;
-    double[] res = new double[ary[0].length];
-    for(int j = 0; j < ary[0].length; j++) {
+    double[] res = new double[ary[0].length]; // number of columns
+    for(int j = 0; j < ary[0].length; j++) {  // go through each column
       res[j] = 0;
-      for(int i = 0; i < ary.length; i++)
+      for(int i = 0; i < ary.length; i++) // inner product of nums with each column of ary
         res[j] += nums[i] * ary[i][j];
     }
     return res;
@@ -416,6 +497,26 @@ public class ArrayUtils {
     for(int i = 0; i < res.length; i++) {
       for(int j = 0; j < res[0].length; j++)
         res[i][j] = ary[j][i];
+    }
+    return res;
+  }
+
+  /***
+   * This function will perform transpose of triangular matrices only.  If the original matrix is lower triangular,
+   * the return matrix will be upper triangular and vice versa.
+   * 
+   * @param ary
+   * @return
+   */
+  public static double[][] transposeTriangular(double[][] ary, boolean upperTriangular) {
+    if(ary == null) return null;
+    int rowNums = ary.length;
+    double[][] res = new double[ary.length][]; // allocate as many rows as original matrix
+    for (int rowIndex=0; rowIndex < rowNums; rowIndex++) {
+      int colNum = upperTriangular?(rowIndex+1):(rowNums-rowIndex);
+      res[rowIndex] = new double[colNum];
+      for (int colIndex=0; colIndex < colNum; colIndex++)
+        res[rowIndex][colIndex] = ary[colIndex+rowIndex][rowIndex];
     }
     return res;
   }

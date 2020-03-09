@@ -19,6 +19,12 @@ Supervised
     :show-inheritance:
     :members:
 
+:mod:`H2OGamEstimator`
+----------------------
+.. autoclass:: h2o.estimators.gam.H2OGamEstimator
+    :show-inheritance:
+    :members:
+
 :mod:`H2OGradientBoostingEstimator`
 -----------------------------------
 .. autoclass:: h2o.estimators.gbm.H2OGradientBoostingEstimator
