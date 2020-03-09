@@ -10,10 +10,7 @@ import org.junit.Test;
 import org.junit.experimental.runners.Enclosed;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import water.Job;
-import water.Key;
-import water.Scope;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 
 import java.util.Arrays;
@@ -120,6 +117,9 @@ public class ModelBuilderWithTETest {
         Scope.enter();
         Frame trainingFrame = parse_test_file("./smalldata/testng/airlines_train.csv");
         Scope.track(trainingFrame);
+        Frame trainOriginalCopy = trainingFrame.deepCopy("original_train_copy");
+        DKV.put(trainOriginalCopy);
+        Scope.track(trainOriginalCopy);
         Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
         Scope.track(testFrame);
 
@@ -154,6 +154,8 @@ public class ModelBuilderWithTETest {
         String variableImportancesTableAsString = ((GBMModel) gbmModel)._output._variable_importances.toString(0, true);
         String[] teEncodedColumns = {"Origin_te"};
         assertTrue(Arrays.stream(teEncodedColumns).allMatch(variableImportancesTableAsString::contains));
+
+        assertBitIdentical(trainOriginalCopy, trainingFrame);
 
         Scope.track_generic(gbmModel);
       } finally {
