@@ -105,13 +105,10 @@ public class MRUtils {
   public static class ClassDist extends MRTask<ClassDist> {
     final int _nclass;
     protected double[] _ys;
-    
     public ClassDist(final Vec label) { _nclass = label.domain().length; }
-    
     public ClassDist(int n) { _nclass = n; }
 
     public final double[] dist() { return _ys; }
-    
     public final double[] relDist() {
       final double sum = ArrayUtils.sum(_ys);
       return ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
@@ -120,20 +117,16 @@ public class MRUtils {
     @Override public void map(Chunk ys) {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
-        if (!ys.isNA(i)) {
+        if (!ys.isNA(i))
           _ys[(int) ys.at8(i)]++;
-        }
     }
     
     @Override public void map(Chunk ys, Chunk ws) {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
-        if (!ys.isNA(i)) {
-          int index = ys.at8(i) >= _ys.length ? 1 : (int) ys.at8(i);
-          _ys[index] += ws.atd(i);
-        }
+        if (!ys.isNA(i))
+          _ys[(int) ys.at8(i)] += ws.atd(i);
     }
-    
     @Override public void reduce( ClassDist that ) { ArrayUtils.add(_ys,that._ys); }
   }
 
