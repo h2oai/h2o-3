@@ -16,6 +16,7 @@ test <- function(h) {
     model <- h2o.glm(x = x, y="CAPSULE", training_frame=prostate_h2o,family="binomial", alpha=.99,lambda=.2)
     new_beta <- c(-7.27968, -0.01213, -0.62424, 0.55661, 0.48375, 0.02739, -0.01124, 0.97632)
     names(new_beta) <- c("Intercept","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    browser()
     new_glm <- h2o.makeGLMModel(model, new_beta)
     # compare actual predictions
     preds_h2o = as.data.frame(h2o.predict(object = new_glm,newdata=prostate_h2o))[,3]

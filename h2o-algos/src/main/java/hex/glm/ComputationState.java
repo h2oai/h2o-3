@@ -21,6 +21,8 @@ import water.fvec.Frame;
 import java.util.Arrays;
 import java.util.Comparator;
 
+import static hex.glm.GLMUtils.calSmoothNess;
+
 public final class ComputationState {
   final boolean _intercept;
   final int _nclasses;
@@ -54,6 +56,9 @@ public final class ComputationState {
   private GLMGradientSolver _gslvr;
   private final Job _job;
   private int _activeClass = -1;
+  double[][][] _penaltyMatrix;
+  int[][] _gamBetaIndices;
+  int _totalBetaLength; // actual coefficient length without taking into account active columns only
 
   /**
    *
@@ -69,12 +74,22 @@ public final class ComputationState {
     _intercept = _parms._intercept;
     _nclasses = (parms._family == Family.multinomial||parms._family == Family.ordinal)?nclasses:1;
     _alpha = _parms._alpha[0];
+    _totalBetaLength = (dinfo.fullN()+1)*_nclasses;
     if (_parms._HGLM) {
       _sumEtaSquareConvergence = new double[2];
       if (_parms._calc_like)
         _likelihoodInfo = new double[4];
     }
   }
+
+  public ComputationState(Job job, GLMParameters parms, DataInfo dinfo, BetaConstraint bc, int nclasses, 
+                          double[][][] penaltyMat, int[][] gamColInd){
+    this (job, parms, dinfo, bc, nclasses);
+    _penaltyMatrix = penaltyMat;
+    _gamBetaIndices = gamColInd;
+  }
+
+
   public void set_sumEtaSquareConvergence(double[] sumInfo) {
     _sumEtaSquareConvergence = sumInfo;
   }
@@ -159,9 +174,13 @@ public final class ComputationState {
     // (shoudl be safe as we check the KKTs anyways)
     applyStrongRules(lambda, _lambda);
     _lambda = lambda;
-    _gslvr = new GLMGradientSolver(_job,_parms,_activeData,l2pen(),_activeBC);
+    if (_penaltyMatrix == null)
+      _gslvr = new GLMGradientSolver(_job, _parms, _activeData, l2pen(), _activeBC);
+    else
+      _gslvr = new GLMGradientSolver(_job, _parms, _activeData, l2pen(), _activeBC, _penaltyMatrix, _gamBetaIndices);
     adjustToNewLambda(lambda, 0);
   }
+  
   public double [] beta(){
     if(_activeClass != -1)
       return betaMultinomial(_activeClass,_beta);
@@ -493,7 +512,8 @@ public final class ComputationState {
     }
     int [] activeCols = _activeData.activeCols();
     if(beta != _beta || _ginfo == null) {
-      _gslvr = new GLMGradientSolver(_job, _parms, _dinfo, (1 - _alpha) * _lambda, _bc);
+      _gslvr = new GLMGradientSolver(_job, _parms, _dinfo, (1 - _alpha) * _lambda, _bc, _penaltyMatrix, 
+              _gamBetaIndices);
       _ginfo = _gslvr.getGradient(beta);
     }
     double[] grad = _ginfo._gradient.clone();
@@ -589,7 +609,14 @@ public final class ComputationState {
   public double objective() {return _beta == null?Double.MAX_VALUE:objective(_beta,_likelihood);}
 
   public double objective(double [] beta, double likelihood) {
-    return likelihood * _parms._obj_reg + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
+    double gamVal = 0;
+    if (_parms._glmType == GLMParameters.GLMType.gam) {
+      if (beta.length == _totalBetaLength)
+        gamVal = calSmoothNess(beta, _penaltyMatrix, _gamBetaIndices);
+      else
+        gamVal = calSmoothNess(expandBeta(beta), _penaltyMatrix, _gamBetaIndices);  // take up memory
+    }
+    return likelihood * _parms._obj_reg + gamVal + penalty(beta) + (_activeBC == null?0:_activeBC.proxPen(beta));
   }
   protected double  updateState(double [] beta, double likelihood) {
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
@@ -730,8 +757,17 @@ public final class ComputationState {
   protected GramXY computeNewGram(DataInfo activeData, double [] beta, GLMParameters.Solver s){
     double obj_reg = _parms._obj_reg;
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
-    GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,_activeClass).doAll(activeData._adaptedFrame);
+    GLMTask.GLMIterationTask gt = new GLMTask.GLMIterationTask(_job._key, activeData, _glmw, beta,
+            _activeClass).doAll(activeData._adaptedFrame);
     gt._gram.mul(obj_reg);
+    if (_parms._glmType.equals(GLMParameters.GLMType.gam)) { // add contribution from GAM smoothness factor
+        Integer[] activeCols=null;
+        int[] activeColumns = activeData.activeCols();
+        if (activeColumns.length<_dinfo.fullN()) { // columns are deleted
+          activeCols = ArrayUtils.toIntegers(activeColumns, 0, activeColumns.length);
+        }
+        gt._gram.addGAMPenalty(activeCols , _penaltyMatrix, _gamBetaIndices, 0);
+    }
     ArrayUtils.mult(gt._xy,obj_reg);
     int [] activeCols = activeData.activeCols();
     int [] zeros = gt._gram.findZeroCols();
@@ -767,7 +803,8 @@ public final class ComputationState {
     assert beta == null || beta.length == activeData.fullN()+1;
     int [] activeCols = activeData.activeCols();
     if (Arrays.equals(_currGram.activeCols,activeCols))
-      return (!weighted || Arrays.equals(_currGram.beta, beta)) ? _currGram : (_currGram = computeNewGram(activeData, beta, s));
+      return (!weighted || Arrays.equals(_currGram.beta, beta)) ? _currGram : (_currGram = computeNewGram(activeData,
+              beta, s));
     if(_glmw == null) _glmw = new GLMModel.GLMWeightsFun(_parms);
     // check if we need full or just incremental update
     if(_currGram != null){

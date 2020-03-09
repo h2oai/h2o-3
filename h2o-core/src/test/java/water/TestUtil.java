@@ -74,6 +74,24 @@ public class TestUtil extends Iced {
     stall_till_cloudsize(x, getDefaultTimeForClouding());
   }
 
+  /**
+   * Take a double array and return it as a single array.  It will take each row on top of each other
+   * 
+   * @param arr
+   * @return
+   */
+  public static double[] changeDouble2SingleArray(double[][] arr) {
+    double[] result = new double[arr.length*arr[0].length];
+    int numRows = arr.length;
+    int offset = 0;
+    for (int rind = 0; rind < numRows; rind++) {
+      int rowLength = arr[rind].length;
+      System.arraycopy(arr[rind], 0, result, offset, rowLength);
+      offset += rowLength;
+    }
+    return result;
+  }
+  
   public static void stall_till_cloudsize(int x, int timeout) {
     stall_till_cloudsize(new String[] {}, x, timeout);
   }
@@ -1037,7 +1055,8 @@ public class TestUtil extends Iced {
               }
             } else {
               double d0 = c0.atd(rows), d1 = c1.atd(rows);
-              if (!(Math.abs(d0 - d1) <= Math.abs(d0 + d1) * _epsilon)) {
+              double cmpValue = ((d0==0.0) || (d1==0.0))?1.0:Math.abs(d0) + Math.abs(d1);
+              if (!(Math.abs(d0 - d1) <= cmpValue * _epsilon)) {
                 _unequal = true;
                 _message = msgBase + " d0 " + d0 + " != d1 " + d1;
                 return;
