@@ -7,8 +7,12 @@ import water.util.UnsafeUtils;
 
 public abstract class FileVec extends ByteVec {
   long _len;                    // File length
-  final byte _be;
+  private final byte _be;
 
+  public byte getBackend() {
+    return _be;
+  }
+  
   public String getPath() {
     return getPathForKey(_key);
   }

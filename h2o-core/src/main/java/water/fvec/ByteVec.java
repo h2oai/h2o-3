@@ -3,11 +3,9 @@ package water.fvec;
 import water.Job;
 import water.Key;
 import water.Value;
-import water.exceptions.H2OIllegalArgumentException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
 /**
  * A vector of plain Bytes.
@@ -27,7 +25,13 @@ public class ByteVec extends Vec {
    *  length Vec.DFLT_CHUNK_SIZE but no guarantees.  Useful for previewing the start
    *  of large files.
    *  @return array of initial bytes */
-  public byte[] getFirstBytes() { return chunkForChunkIdx(0)._mem; }
+  public byte[] getFirstBytes() { 
+    return getFirstChunkBytes();
+  }
+
+  final byte[] getFirstChunkBytes() {
+    return chunkForChunkIdx(0)._mem;
+  }
 
   /**
    * Open a stream view over the underlying data
