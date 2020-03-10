@@ -29,30 +29,6 @@ public class ByteVec extends Vec {
    *  @return array of initial bytes */
   public byte[] getFirstBytes() { return chunkForChunkIdx(0)._mem; }
 
-  static final byte CHAR_CR = 13;
-  static final byte CHAR_LF = 10;
-  /** Get all the bytes of a given chunk.
-   *  Useful for previewing sections of files.
-   *
-   *  @param chkIdx index of desired chunk
-   *  @return array of initial bytes
-   */
-  public byte[] getPreviewChunkBytes(int chkIdx) {
-    if (chkIdx >= nChunks())
-      throw new H2OIllegalArgumentException("Asked for chunk index beyond the number of chunks.");
-    if (chkIdx == 0)
-      return chunkForChunkIdx(chkIdx)._mem;
-    else { //must eat partial lines
-      // FIXME: a hack to consume partial lines since each preview chunk is seen as cidx=0
-      byte[] mem = chunkForChunkIdx(chkIdx)._mem;
-      int i = 0, j = mem.length-1;
-      while (i < mem.length && mem[i] != CHAR_CR && mem[i] != CHAR_LF) i++;
-      while (j > i && mem[j] != CHAR_CR && mem[j] != CHAR_LF) j--;
-      if (j-i > 1) return Arrays.copyOfRange(mem,i,j);
-      else return null;
-    }
-  }
-
   /**
    * Open a stream view over the underlying data
    */
