@@ -242,12 +242,16 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         computeImpl();
         saveModelCheckpointIfConfigured();
       } finally {
-        setFinalState();
         _parms.read_unlock_frames(_job);
         if (!_parms._is_cv_model) cleanUp(); //cv calls cleanUp on its own terms
         Scope.exit();
       }
       tryComplete();
+    }
+
+    @Override
+    public void onCompletion(CountedCompleter caller) {
+      setFinalState();
       if (_modelBuilderListener != null) {
         _modelBuilderListener.onModelSuccess(_result.get());
       }
@@ -255,6 +259,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     @Override
     public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
+      setFinalState();
       if (_modelBuilderListener != null) {
         _modelBuilderListener.onModelFailure(ex, _parms);
       }
@@ -271,6 +276,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (res != null && res._output != null) {
       res._output._job = _job;
       res._output.stopClock();
+//      res.unlock(_job == null ? null : _job._key, false); // last resort: dirty way to force unlock to be able to reacquire lock
+      res.write_lock(_job);
+      res.update(_job);
+      res.unlock(_job);
     }
     Log.info("Completing model "+ reskey);
   }

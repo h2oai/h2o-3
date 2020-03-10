@@ -64,6 +64,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
 
   void compute() {
     try {
+      _model.write_lock(_job);
       B builder = createBuilder();
 
       if (_hasMetalearnerParams) {
