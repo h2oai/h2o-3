@@ -842,11 +842,12 @@ final public class H2O {
    *  @param status H2O's requested process exit value.
    */
   public static void exit(int status) {
+    // Log subsystem might be still caching message, let it know to flush the cache and start logging even if we don't have SELF yet
+    Log.notifyAboutProcessExiting();
+
     // Embedded H2O path (e.g. inside Hadoop mapper task).
     if( embeddedH2OConfig != null )
       embeddedH2OConfig.exit(status);
-    // Flush all cached messages
-    Log.flushStdout();
 
     // Standalone H2O path,p or if the embedded config does not exit
     System.exit(status);
