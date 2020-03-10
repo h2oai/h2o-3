@@ -103,4 +103,4 @@ condition is met first.
 
 Exposing the H2O cluster is a responsibility of the Kubernetes administrator. By default, an
  [Ingress](https://kubernetes.io/docs/concepts/services-networking/ingress/) can be created. Different platforms offer
- different capabilities, e.g. OpenShift offers [Routess](https://docs.openshift.com/container-platform/4.3/networking/routes/route-configuration.html).
+ different capabilities, e.g. OpenShift offers [Routes](https://docs.openshift.com/container-platform/4.3/networking/routes/route-configuration.html).
