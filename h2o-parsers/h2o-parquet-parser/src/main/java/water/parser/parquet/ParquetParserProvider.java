@@ -14,7 +14,7 @@ import water.parser.*;
 public class ParquetParserProvider extends BinaryParserProvider {
 
   /* Setup for this parser */
-  static ParserInfo PARQUET_INFO = new ParserInfo("PARQUET", DefaultParserProviders.MAX_CORE_PRIO + 30, true, false, true,false);
+  static ParserInfo PARQUET_INFO = new ParserInfo("PARQUET", DefaultParserProviders.MAX_CORE_PRIO + 20, true, false, true,false);
 
   @Override
   public ParserInfo info() {
