@@ -43,6 +43,7 @@ import static water.util.JavaVersionUtils.JAVA_VERSION;
 */
 final public class H2O {
   public static final String DEFAULT_JKS_PASS = "h2oh2o";
+  public static final int H2O_DEFAULT_PORT = 54321;
 
   //-------------------------------------------------------------------------------------------------------------------
   // Command-line argument parsing and help
@@ -268,7 +269,7 @@ final public class H2O {
     public int port;
 
     /** -baseport=####; Port to start upward searching from. */
-    public int baseport = 54321;
+    public int baseport = H2O_DEFAULT_PORT;
 
     /** -port_offset=####; Offset between the API(=web) port and the internal communication port; api_port + port_offset = h2o_port */
     public int port_offset = 1;
@@ -793,8 +794,60 @@ final public class H2O {
   /**
    * Register embedded H2O configuration object with H2O instance.
    */
-  public static void setEmbeddedH2OConfig(AbstractEmbeddedH2OConfig c) { embeddedH2OConfig = c; }
-  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() { return embeddedH2OConfig; }
+  public static void setEmbeddedH2OConfig(AbstractEmbeddedH2OConfig c) {
+    embeddedH2OConfig = c;
+  }
+
+  /**
+   * Returns an instance of {@link AbstractEmbeddedH2OConfig}. The origin of the embedded config might be either
+   * from directly setting the embeddedH2OConfig field via setEmbeddedH2OConfig setter, or dynamically provided via
+   * service loader. Directly set {@link AbstractEmbeddedH2OConfig} is always prioritized. ServiceLoader lookup is only
+   * performed if no config is previously set.
+   * <p>
+   * Result of first ServiceLoader lookup is also considered final - once a service is found, dynamic lookup is not
+   * performed any further.
+   *
+   * @return An instance of {@link AbstractEmbeddedH2OConfig}, if set or dynamically provided. Otherwise null
+   * @author Michal Kurka
+   */
+  public static AbstractEmbeddedH2OConfig getEmbeddedH2OConfig() {
+    if (embeddedH2OConfig != null) {
+      return embeddedH2OConfig;
+    }
+
+    embeddedH2OConfig = discoverEmbeddedConfigProvider()
+            .map(embeddedConfigProvider -> {
+              Log.info(String.format("Dynamically loaded '%s' as AbstractEmbeddedH2OConfigProvider.", embeddedConfigProvider.getName()));
+              return embeddedConfigProvider.getConfig();
+            }).orElse(null);
+
+    return embeddedH2OConfig;
+  }
+
+  /**
+   * Uses {@link ServiceLoader} to discover active instances of {@link EmbeddedConfigProvider}. Only one provider
+   * may be active at a time. If more providers are detected, {@link IllegalStateException} is thrown.
+   *
+   * @return An {@link Optional} of {@link EmbeddedConfigProvider}, if a single active provider is found. Otherwise
+   * an empty optional.
+   * @throws IllegalStateException When there are multiple active instances {@link EmbeddedConfigProvider} discovered.
+   */
+  private static Optional<EmbeddedConfigProvider> discoverEmbeddedConfigProvider() throws IllegalStateException {
+    final ServiceLoader<EmbeddedConfigProvider> configProviders = ServiceLoader.load(EmbeddedConfigProvider.class);
+    EmbeddedConfigProvider provider = null;
+    for (final EmbeddedConfigProvider candidateProvider : configProviders) {
+      candidateProvider.init();
+      if (!candidateProvider.isActive())
+        continue;
+      if (provider != null) {
+        throw new IllegalStateException("Multiple active EmbeddedH2OConfig providers: " + provider.getName() +
+                " and " + candidateProvider.getName() + " (possibly other as well).");
+      }
+      provider = candidateProvider;
+    }
+
+    return Optional.ofNullable(provider);
+  }
 
   /**
    * Tell the embedding software that this H2O instance belongs to
