@@ -84,12 +84,6 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
      * Kubernetes. Otherwise false.
      */
     private boolean isRunningOnKubernetes() {
-        final Pattern KUBERNETES_SERVICE_HOST = Pattern.compile(".*_SERVICE_HOST");
-        final Pattern KUBERNETES_SERVICE_PORT = Pattern.compile(".*_SERVICE_PORT");
-        return System.getenv().keySet()
-                .stream()
-                .anyMatch(key -> KUBERNETES_SERVICE_HOST.matcher(key).matches()
-                        || KUBERNETES_SERVICE_PORT.matcher(key).matches());
-
+        return KubernetesDnsLookup.isLookupPossible();
     }
 }

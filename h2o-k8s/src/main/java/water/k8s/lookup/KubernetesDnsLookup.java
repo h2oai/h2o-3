@@ -113,11 +113,17 @@ public class KubernetesDnsLookup implements KubernetesLookup {
                 Log.warn(e.getMessage());
                 continue;
             } catch (InterruptedException e) {
+                Log.err(e);
                 return Optional.empty();
             }
         }
 
         return Optional.of(lookedUpNodes);
+    }
+
+    public static boolean isLookupPossible() {
+        return System.getenv()
+                .containsKey(KubernetesDnsLookup.K8S_SERVICE_DNS_ENV_VAR_KEY);
     }
 
     /**
