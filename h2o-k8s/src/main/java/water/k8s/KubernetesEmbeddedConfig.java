@@ -49,6 +49,7 @@ public class KubernetesEmbeddedConfig extends AbstractEmbeddedH2OConfig {
 
     @Override
     public void exit(int status) {
+        System.exit(status);
     }
 
     @Override
