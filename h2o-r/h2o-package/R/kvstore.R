@@ -210,6 +210,11 @@ h2o.getModel <- function(model_id) {
     }
   })
 
+  # Run model specific hooks
+  model_fill_func <- paste0(".h2o.fill_", json$algo)
+  if (exists(model_fill_func, mode="function")) {
+    model <- do.call(model_fill_func, list(model, parameters, allparams))
+  }
 
   # Convert ignored_columns/response_column to valid R x/y
 

@@ -263,7 +263,11 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         >>> stack.train(x=x, y=y, training_frame=train, validation_frame=test)
         >>> stack.model_performance()
         """
-        return self._parms.get("base_models")
+        base_models = self.actual_params.get("base_models", [])
+        base_models = [base_model["name"] for base_model in base_models]
+        if len(base_models) == 0:
+            base_models = self._parms.get("base_models")
+        return base_models
 
     @base_models.setter
     def base_models(self, base_models):
