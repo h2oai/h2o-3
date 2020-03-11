@@ -385,7 +385,7 @@ public class ModelMetrics extends Keyed<ModelMetrics> {
   }
 
   public static Key<ModelMetrics> buildKey(Model model, Frame frame) {
-    return frame==null || model == null ? null : buildKey(model._key, model.checksum(), frame._key, frame.checksum());
+    return frame==null || frame._key == null || model == null || model._key == null ? null : buildKey(model._key, model.checksum(), frame._key, frame.checksum());
   }
 
   public boolean isForModel(Model m) { return _model_checksum == m.checksum(); }
