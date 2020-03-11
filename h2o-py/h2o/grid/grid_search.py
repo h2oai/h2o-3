@@ -4,6 +4,7 @@ from __future__ import division, print_function, absolute_import, unicode_litera
 import itertools
 
 import h2o
+from h2o.base import Keyed
 from h2o.job import H2OJob
 from h2o.frame import H2OFrame
 from h2o.exceptions import H2OValueError
@@ -22,7 +23,7 @@ from h2o.utils.typechecks import assert_is_type, is_type
         giniCoef=lambda self, *args, **kwargs: self.gini(*args, **kwargs)
     )
 )
-class H2OGridSearch(h2o_meta()):
+class H2OGridSearch(h2o_meta(Keyed)):
     """
     Grid Search of a Hyper-Parameter Space for a Model
 
@@ -89,6 +90,9 @@ class H2OGridSearch(h2o_meta()):
         self._future = False  # used by __repr__/show to query job state#
         self._job = None  # used when _future is True#
 
+    @property
+    def key(self):
+        return self._id
 
     @property
     def grid_id(self):
@@ -130,6 +134,10 @@ class H2OGridSearch(h2o_meta()):
     @property
     def failed_raw_params(self):
         return self._grid_json.get("failed_raw_params", None)
+
+
+    def detach(self):
+        self._id = None
 
 
     def start(self, x, y=None, training_frame=None, offset_column=None, fold_column=None, weights_column=None,
