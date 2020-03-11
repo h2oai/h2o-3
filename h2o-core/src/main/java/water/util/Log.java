@@ -64,6 +64,16 @@ abstract public class Log {
     assert H2O.SELF_ADDRESS != null && H2O.H2O_PORT != 0;
   }
   
+  public static void notifyAboutProcessExiting() {
+    // make sure we write out whatever we have right now 
+    Log.flushStdout();
+
+    // if there are any other log messages after this call, we want to preserve them as well
+    _preHeader = "(exiting) ";
+    setQuiet(false);
+    INIT_MSGS = null;
+  }
+  
   public static void setLogLevel(String sLvl, boolean quiet) {
     init(sLvl, quiet);
   }
