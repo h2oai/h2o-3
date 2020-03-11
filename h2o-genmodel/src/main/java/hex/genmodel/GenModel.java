@@ -1,6 +1,9 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
+import hex.genmodel.easy.CategoricalEncoder;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowToRawDataConverter;
 import water.genmodel.IGeneratedModel;
 
 import java.awt.*;
@@ -703,7 +706,11 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
     }
   }
 
-  // Helpers for deeplearning mojo
-
-
+  public RowToRawDataConverter getRawDataConverter(Map<String, Integer> modelColumnNameToIndexMap,
+                                             Map<Integer, CategoricalEncoder> domainMap,
+                                             EasyPredictModelWrapper.ErrorConsumer errorConsumer,
+                                             EasyPredictModelWrapper.Config config){
+        return new RowToRawDataConverter(this, modelColumnNameToIndexMap, domainMap,
+            errorConsumer, config);
+  }
 }

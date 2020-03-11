@@ -1,7 +1,9 @@
-package hex.genmodel.easy;
+package hex.genmodel.algos.deepwater;
 
 import hex.genmodel.GenModel;
-import hex.genmodel.algos.deepwater.DeepwaterMojoModel;
+import hex.genmodel.easy.CategoricalEncoder;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowToRawDataConverter;
 import hex.genmodel.easy.exception.PredictException;
 
 import javax.imageio.ImageIO;

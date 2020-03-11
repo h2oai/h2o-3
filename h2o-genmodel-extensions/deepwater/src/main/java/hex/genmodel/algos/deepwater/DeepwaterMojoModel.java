@@ -8,8 +8,12 @@ import deepwater.datasets.ImageDataSet;
 import hex.genmodel.GenModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.deepwater.caffe.DeepwaterCaffeBackend;
+import hex.genmodel.easy.CategoricalEncoder;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowToRawDataConverter;
 
 import java.io.File;
+import java.util.Map;
 
 public class DeepwaterMojoModel extends MojoModel {
   public String _problem_type;
@@ -90,13 +94,25 @@ public class DeepwaterMojoModel extends MojoModel {
       if (backend.equals("mxnet"))
         backend="deepwater.backends.mxnet.MXNetBackend";
       else if (backend.equals("tensorflow"))
-        backend="deepwater.backends.tensorflow.TensorflowBackend";
+        backend = "deepwater.backends.tensorflow.TensorflowBackend";
 //      else if (backend.equals("xgrpc"))
 //        backend="deepwater.backends.grpc.XGRPCBackendTrain";
-      return (BackendTrain)(Class.forName(backend).newInstance());
+      return (BackendTrain) (Class.forName(backend).newInstance());
     } catch (Exception ignored) {
       //ignored.printStackTrace();
     }
     return null;
   }
+
+  @Override
+  public RowToRawDataConverter getRawDataConverter(Map<String, Integer> modelColumnNameToIndexMap, Map<Integer, CategoricalEncoder> domainMap, EasyPredictModelWrapper.ErrorConsumer errorConsumer, EasyPredictModelWrapper.Config config) {
+    if (_problem_type.equals("image"))
+      return new DWImageConverter(this, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    else if (_problem_type.equals("text")) {
+      return new DWTextConverter(this, modelColumnNameToIndexMap, domainMap, errorConsumer, config);
+    }
+    return new RowToRawDataConverter(this, modelColumnNameToIndexMap, domainMap,
+            errorConsumer, config);
+  }
+
 }
