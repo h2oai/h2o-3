@@ -45,7 +45,7 @@ public class XGBoostMultiNodeTest extends TestUtil  {
     
     @Test 
     public void shouldBuildExactOnSingleNode() {
-        Assume.assumeTrue(H2O.getCloudSize() > 1);
+        Assume.assumeTrue(H2O.getCloudSize() == 1);
         Scope.enter();
         try {
             XGBoostModel.XGBoostParameters parms = makeParms();

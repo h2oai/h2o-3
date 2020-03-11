@@ -10,6 +10,7 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
 import hex.tree.*;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
+import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
 import ml.dmlc.xgboost4j.java.Booster;

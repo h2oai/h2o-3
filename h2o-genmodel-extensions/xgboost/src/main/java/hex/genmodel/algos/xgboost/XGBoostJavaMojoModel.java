@@ -42,7 +42,13 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
 
   @Override
   public void postReadInit() {
-    _1hotFactory = new OneHotEncoderFactory();
+    _1hotFactory = new OneHotEncoderFactory(
+        backwardsCompatibility10(), _sparse, _catOffsets, _cats, _nums, _useAllFactorLevels
+    );
+  }
+  
+  private boolean backwardsCompatibility10() {
+    return _mojo_version == 1.0 && !"gbtree".equals(_boosterType);
   }
 
   public static Predictor makePredictor(byte[] boosterBytes) {
@@ -67,6 +73,18 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   }
 
   public final double[] score0(double[] doubles, double offset, double[] preds) {
+    if (backwardsCompatibility10()) {
+      // throw an exception for unexpectedly long input vector
+      if (doubles.length > _cats + _nums) {
+        throw new ArrayIndexOutOfBoundsException("Too many input values.");
+      }
+      // for unexpectedly short input vector handle the situation gracefully
+      if (doubles.length < _cats + _nums) {
+        double[] tmp = new double[_cats + _nums];
+        System.arraycopy(doubles, 0,tmp, 0, doubles.length);
+        doubles = tmp;
+      }
+    }
     FVec row = _1hotFactory.fromArray(doubles);
     float[] out;
     if (_hasOffset) {
@@ -117,59 +135,6 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     return convert(treeNumber, treeClass); // Options currently do not apply to XGBoost trees conversion
   }
 
-  private class OneHotEncoderFactory implements Serializable {
-    private final int[] _catMap;
-    private final float _notHot;
-
-    OneHotEncoderFactory() {
-      _notHot = _sparse ? Float.NaN : 0;
-      if (_catOffsets == null) {
-        _catMap = new int[0];
-      } else {
-        _catMap = new int[_catOffsets[_cats]];
-        for (int c = 0; c < _cats; c++) {
-          for (int j = _catOffsets[c]; j < _catOffsets[c+1]; j++)
-            _catMap[j] = c;
-        }
-      }
-    }
-
-    OneHotEncoderFVec fromArray(double[] input) {
-      float[] numValues = new float[_nums];
-      int[] catValues = new int[_cats];
-      GenModel.setCats(input, catValues, _cats, _catOffsets, _useAllFactorLevels);
-      for (int i = 0; i < numValues.length; i++) {
-        float val = (float) input[_cats + i];
-        numValues[i] = _sparse && (val == 0) ? Float.NaN : val;
-      }
-
-      return new OneHotEncoderFVec(_catMap, catValues, numValues, _notHot);
-    }
-  }
-
-  private class OneHotEncoderFVec implements FVec {
-    private final int[] _catMap;
-    private final int[] _catValues;
-    private final float[] _numValues;
-    private final float _notHot;
-
-    private  OneHotEncoderFVec(int[] catMap, int[] catValues, float[] numValues, float notHot) {
-      _catMap = catMap;
-      _catValues = catValues;
-      _numValues = numValues;
-      _notHot = notHot;
-    }
-
-    @Override
-    public final float fvalue(int index) {
-      if (index >= _catMap.length)
-        return _numValues[index - _catMap.length];
-
-      final boolean isHot = _catValues[_catMap[index]] == index;
-      return isHot ? 1 : _notHot;
-    }
-  }
-
   private final class XGBoostContributionsPredictor extends ContributionsPredictor<FVec> {
     private XGBoostContributionsPredictor(TreeSHAPPredictor<FVec> treeSHAPPredictor) {
       super(_nums + _catOffsets[_cats] + 1, treeSHAPPredictor);
@@ -180,5 +145,4 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
       return _1hotFactory.fromArray(input);
     }
   }
-
 }

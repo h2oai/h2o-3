@@ -5,15 +5,12 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
-import hex.genmodel.algos.xgboost.XGBoostMojoReader;
-import hex.genmodel.algos.xgboost.XGBoostNativeMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
-import hex.tree.gbm.GBM;
-import hex.tree.gbm.GBMModel;
+import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -45,16 +42,13 @@ import static water.util.FileUtils.getFile;
 public class XGBoostTest extends TestUtil {
 
   @Parameterized.Parameters(name = "XGBoost(javaMojoScoring={0},javaPredict={1}")
-  public static Collection<Object[]> data() {
-    return Arrays.asList(new Object[][]{
-            {"false", "false"}, {"true", "true"}, {"true", "false"}, {"false", "true"}
+  public static Collection<Object> data() {
+    return Arrays.asList(new Object[]{
+            "false", "true"
     });
   }
 
   @Parameterized.Parameter
-  public String confMojoJavaScoring;
-
-  @Parameterized.Parameter(1)
   public String confJavaPredict;
 
   @Rule
@@ -65,10 +59,7 @@ public class XGBoostTest extends TestUtil {
   
   @Before
   public void setupMojoJavaScoring() {
-    System.setProperty("sys.ai.h2o.xgboost.scoring.java.enable", confMojoJavaScoring); // mojo scoring
     System.setProperty("sys.ai.h2o.xgboost.predict.java.enable", confJavaPredict); // in-h2o predict
-
-    assertEquals(Boolean.valueOf(confMojoJavaScoring), XGBoostMojoReader.useJavaScoring(true, null)); // check that MOJO scoring config was applied
   }
 
   public static final class FrameMetadata {
@@ -1397,7 +1388,6 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testMojoBoosterDump() throws IOException { 
-    Assume.assumeFalse(XGBoostMojoReader.useJavaScoring(true, null));
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
@@ -1416,10 +1406,7 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
       Log.info(model);
 
-      XGBoostMojoModel mojo = getMojo(model);
-      assertTrue(mojo instanceof XGBoostNativeMojoModel);
-
-      String[] dump = ((XGBoostNativeMojoModel) mojo).getBoosterDump(false, "text");
+      String[] dump = BoosterDump.getBoosterDump(model.model_info()._boosterBytes, model.model_info()._featureMap, false, "text");
       assertEquals(parms._ntrees, dump.length);
     } finally {
       Scope.exit();
@@ -1704,7 +1691,6 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testScoreContributionsBernoulli() throws IOException, PredictException {
-    Assume.assumeTrue("true".equalsIgnoreCase(confMojoJavaScoring));
     try {
       Scope.enter();
       Frame fr = Scope.track(parse_test_file("smalldata/junit/titanic_alt.csv"));
