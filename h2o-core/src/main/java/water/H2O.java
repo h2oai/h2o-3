@@ -365,7 +365,7 @@ final public class H2O {
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
-    public String hdfs_config = null;
+    public String[] hdfs_config = null;
 
     /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
     public boolean hdfs_skip = false;
@@ -591,7 +591,7 @@ final public class H2O {
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
-        trgt.hdfs_config = args[i];
+        trgt.hdfs_config = ArrayUtils.append(trgt.hdfs_config, args[i]);
       }
       else if (s.matches("hdfs_skip")) {
         trgt.hdfs_skip = true;

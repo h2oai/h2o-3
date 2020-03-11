@@ -48,17 +48,17 @@ public final class PersistHdfs extends Persist {
   };
 
   // Global HDFS initialization
-  // FIXME: do not share it via classes, but initialize it by object
   static {
-    Configuration conf = null;
-    if( H2O.ARGS.hdfs_config != null ) {
-      conf = new Configuration();
-      File p = new File(H2O.ARGS.hdfs_config);
-      if( !p.exists() ) H2O.die("Unable to open hdfs configuration file " + p.getAbsolutePath());
-      conf.addResource(new Path(p.getAbsolutePath()));
-      Log.debug("resource ", p.getAbsolutePath(), " added to the hadoop configuration");
+    final Configuration conf = new Configuration();
+    if (H2O.ARGS.hdfs_config != null && H2O.ARGS.hdfs_config.length > 0) {
+      for (String config : H2O.ARGS.hdfs_config) {
+        File p = new File(config);
+        if (!p.exists())
+          H2O.die("Unable to open hdfs configuration file " + p.getAbsolutePath());
+        conf.addResource(new Path(p.getAbsolutePath()));
+        Log.debug("resource ", p.getAbsolutePath(), " added to the hadoop configuration");
+      }
     } else {
-      conf = new Configuration();
       Path confDir = null;
       // Try to guess location of default Hadoop configuration
       // http://www.slideshare.net/martyhall/hadoop-tutorial-hdfs-part-3-java-api
