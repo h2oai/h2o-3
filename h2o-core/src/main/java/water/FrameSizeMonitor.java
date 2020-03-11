@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
-public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
+public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandler {
 
     private static final String LOG_LEVEL_PROP = "util.frameSizeMonitor.logLevel";
     private static final String ENABLED_PROP = "util.frameSizeMonitor.enabled";
@@ -53,7 +53,9 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
                 } else {
                     FrameSizeMonitor monitor = new FrameSizeMonitor(jobKey);
                     registry.put(jobKey, monitor);
-                    H2O.submitTask(new LocalMR<>(monitor, 1));
+                    Thread t = new Thread(monitor, "FrameSizeMonitor-" + jobKey.get()._result);
+                    t.setUncaughtExceptionHandler(monitor);
+                    t.start();
                     c.accept(monitor);
                 }
             }
@@ -67,7 +69,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
     }
 
     @Override
-    protected void map(int id) {
+    public void run() {
         float nextProgress = 0.02f;
         Job<Frame> job = jobKey.get();
         while (job.isRunning() && nextProgress < 1f) {
@@ -108,7 +110,13 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
         }
         finish(jobKey);
     }
-    
+
+    @Override
+    public void uncaughtException(Thread t, Throwable e) {
+        Log.err(e);
+        finish(jobKey);
+    }
+
     private boolean isMemoryUsageOverLimit() {
         long availableMemory = getAvailableMemory();
         long minimumAvailableMemory = (long) (totalMemory * 2 * SAFE_FREE_MEM_COEF);
