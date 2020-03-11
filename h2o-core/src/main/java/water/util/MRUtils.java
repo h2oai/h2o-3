@@ -127,6 +127,7 @@ public class MRUtils {
         if (!ys.isNA(i))
           _ys[(int) ys.at8(i)] += ws.atd(i);
     }
+    
     @Override public void reduce( ClassDist that ) { ArrayUtils.add(_ys,that._ys); }
   }
 
@@ -136,13 +137,15 @@ public class MRUtils {
    */
   public static class ClassDistQuasibinomial extends MRTask<ClassDistQuasibinomial> {
     final int _nclass;
-    protected double[] _ys;
-    protected Double[] _domain;
-    
-    public ClassDistQuasibinomial(String[] domain) { 
+    private double[] _ys;
+    private String[] _domain;
+    private double _firstDoubleDomain;
+
+
+    public ClassDistQuasibinomial(String[] domain) {
       _nclass = 2;
-      _domain = new Double[]{Double.valueOf(domain[0]), Double.valueOf(domain[1])};
-      
+      _domain = domain;
+      _firstDoubleDomain = Double.valueOf(domain[0]);
     }
     
     public final double[] dist() {
@@ -155,14 +158,14 @@ public class MRUtils {
     }
     
     public final String[] domains(){
-      return new String[]{Double.toString(_domain[0]), Double.toString(_domain[1])};
+      return _domain;
     }
     
     @Override public void map(Chunk ys) {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
         if (!ys.isNA(i)) {
-          int index = ys.at8(i) == _domain[0] ? 0 : 1;
+          int index = ys.atd(i) == _firstDoubleDomain ? 0 : 1;
           _ys[index]++;
         }
     }
@@ -171,7 +174,7 @@ public class MRUtils {
       _ys = new double[_nclass];
       for( int i=0; i<ys._len; i++ )
         if (!ys.isNA(i)) {
-          int index = ys.at8(i) == _domain[0] ? 0 : 1;
+          int index = ys.atd(i) == _firstDoubleDomain? 0 : 1;
           _ys[index] += ws.atd(i);
         }
     }

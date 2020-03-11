@@ -3479,7 +3479,7 @@ public class GBMTest extends TestUtil {
       @Override
       public void map(Chunk[] cs) {
         for (int i=0;i<cs[0]._len;++i) {
-          cs[1].set(i, cs[1].at8(i) == 1 ? 2.2 : 0);
+          cs[1].set(i, cs[1].at8(i) == 1 ? 2.2 : 2.4);
         }
       }
     }.doAll(fr5);
