@@ -866,6 +866,7 @@ public class h2odriver extends Configured implements Tool {
                     "              (Note nnnnn is chosen randomly to produce a unique name)\n" +
                     "          [-principal <kerberos principal> -keytab <keytab path> [-run_as_user <impersonated hadoop username>] | -run_as_user <hadoop username>]\n" +
                     "          [-hiveHost <hostname:port> -hivePrincipal <hive server kerberos principal>]\n" +
+                    "          [-hiveJdbcUrlPattern <pattern for constructing hive jdbc url>]\n" +
                     "          [-refreshTokens]\n" +
                     "          [-clouding_method <callbacks|filesystem (defaults: to 'callbacks')>]\n" +
                     "          [-driverif <ip address of mapper->driver callback interface>]\n" +

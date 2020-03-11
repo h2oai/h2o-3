@@ -198,7 +198,7 @@ H2O supports direct ingestion of data managed by Hive in Hadoop. This feature is
 Requirements:
 
 - Direct Metastore access - Hive jars and configuration must be present on H2O job classpath - either via adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars
-- JDBC metadata access - Hive JDBC Driver must be on H2O job classpath
+- JDBC metadata access - Hive JDBC Driver must be on H2O job classpath (see below for details about access Kerberized Hive via JDBC)
 - user running H2O must have read access to Hive and the files it manages
 
 Limitations
@@ -369,6 +369,12 @@ H2O is able to generate Hive delegation tokens in three modes:
 - On the mapper side, a token refresh thread is started, periodically re-generating the token.
 - A combination of both of the above.
 
+H2O arguments used to configure the JDBC URL for Hive delegation token generation:
+
+- ``hiveHost`` - full address of HiveServer2, for example ``hostname:10000``
+- ``hivePrincipal`` -  Hiveserver2 Kerberos principal, for example ``hive/hostname@DOMAIN.COM``
+- ``hiveJdbcUrlPattern`` - (optional) can be used to further customize the way the driver constructs the Hive JDBC URL, the default pattern used is ``jdbc:hive2://{{host}}/;principal={{principal}}``
+
 **Note on libjars:**
 
 In the examples below, we are omitting the ``-libjars`` option of the ``hadoop.jar`` command because it is not necessary for token generation. You may need to add it to be able to import data from Hive via JDBC. 
@@ -380,9 +386,8 @@ The advantage of this approach is that the Hive delegation token is available im
 
 Requirements:
 
-- The Hive JDBC driver is on h2odriver classpath. (Only used to acquire Hive delegation token.)
-- The ``hiveHost`` argument needs to be set with the address of HiveServer2.
-- The ``hivePrincipal`` argument is set with the value of Hiveserver2 Kerberos principal.
+- The Hive JDBC driver is on h2odriver classpath (only used to acquire Hive delegation token)
+- The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present (see above for details)  
 
 Example command:
 
@@ -391,8 +396,8 @@ Example command:
       export HADOOP_CLASSPATH=/path/to/hive-jdbc-standalone.jar
       hadoop jar h2odriver.jar \
           -nodes 1 -mapperXmx 4G \
-          -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM
-
+          -hiveHost hostname:10000 -hivePrincipal hive/hostname@EXAMPLE.COM \
+          -hiveJdbcUrlPattern "jdbc:hive2://{{host}}/;ssl=true;sslTrustStore=/path/to/keystore.jks;principal={{principal}}"
 
 Generating the Token in the Mapper and Token Refresh
 ####################################################
@@ -404,8 +409,7 @@ The disadvantage of this approach is that the delegation token is not available 
 Requirements:
 
 - The Hive JDBC driver is on the h2o mapper classpath (either via libjars or YARN configuration).
-- The ``hiveHost`` argument needs to be set with the address of HiveServer2.
-- The ``hivePrincipal`` argument is set with the value of your HiveServer2 Kerberos principal.
+- The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present (see above for details)  
 - The ``principal`` argument is set with the value of the users's Kerberos principal.
 - The ``keytab`` argument set pointing to the file with the user's Kerberos keytab file.
 - The ``refreshTokens`` argument is present.
@@ -434,7 +438,7 @@ This is the best-of-bothpworlds approach. The token is generated first in the dr
 Requirements:
 
 - The Hive JDBC driver is on the h2o driver and mapper classpaths.
-- The ``hiveHost`` and ``hivePrincipal`` arguments are set.
+- The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present (see above for details)  
 - The ``keytab`` and ``principal`` arguments are set.
 - The ``refreshTokens`` argument is present.
 
