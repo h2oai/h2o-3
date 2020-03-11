@@ -6,6 +6,10 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 
+import java.util.Arrays;
+
+import static org.junit.Assert.assertNotNull;
+
 public class ExtendedIsolationForestTest extends TestUtil {
 
     @BeforeClass()
@@ -28,6 +32,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
 //            p._sample_size = 5;
 
             ExtendedIsolationForestModel model = new ExtendedIsolationForest(p).trainModel().get();
+            assertNotNull(model);
+            Frame out = model.score(train);
         } finally {
             Scope.exit();
         }
