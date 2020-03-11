@@ -5,51 +5,51 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'paribas': [
                 50: [
                     'train_time_min':  7,
-                    'train_time_max': 11
+                    'train_time_max': 12
                 ],
                 200: [
                     'train_time_min': 31,
-                    'train_time_max': 36
+                    'train_time_max': 38
                 ]
             ],
             'homesite': [
                 50: [
                     'train_time_min': 9,
-                    'train_time_max': 13
+                    'train_time_max': 16
                 ],
                 200: [
                     'train_time_min': 41,
-                    'train_time_max': 50
+                    'train_time_max': 55
                 ]
             ],
             'redhat': [
                 50: [
                     'train_time_min': 29,
-                    'train_time_max': 33
+                    'train_time_max': 36
                 ],
                 200: [
                     'train_time_min': 139,
-                    'train_time_max': 157
+                    'train_time_max': 170
                 ]
             ],
             'springleaf': [
                 50: [
-                    'train_time_min': 60,
-                    'train_time_max': 66
+                    'train_time_min': 59,
+                    'train_time_max': 67
                 ],
                 200: [
-                    'train_time_min': 461,
-                    'train_time_max': 540
+                    'train_time_min': 493,
+                    'train_time_max': 521
                 ]
             ],
             'higgs': [
                 50: [
                     'train_time_min': 87,
-                    'train_time_max': 96
+                    'train_time_max': 100
                 ],
                 200: [
                     'train_time_min': 519,
-                    'train_time_max': 546
+                    'train_time_max': 553
                 ]
             ]
         ],
@@ -57,51 +57,51 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'paribas': [
                 COORDINATE_DESCENT: [
                     'train_time_min': 3,
-                    'train_time_max': 6
+                    'train_time_max': 7
                 ],
                 IRLSM: [
-                    'train_time_min': 3,
-                    'train_time_max': 6
+                    'train_time_min': 4,
+                    'train_time_max': 7
                 ]
             ],
             'homesite': [
                 COORDINATE_DESCENT: [
                     'train_time_min': 36,
-                    'train_time_max': 43
+                    'train_time_max': 48
                 ],
                 IRLSM: [
                     'train_time_min': 68,
-                    'train_time_max': 76
+                    'train_time_max': 81
                 ]
             ],
             'redhat': [
                 COORDINATE_DESCENT: [
-                    'train_time_min': 34,
-                    'train_time_max': 40
+                    'train_time_min': 31,
+                    'train_time_max': 43
                 ],
                 IRLSM: [
-                    'train_time_min': 36,
-                    'train_time_max': 42
+                    'train_time_min': 33,
+                    'train_time_max': 46
                 ]
             ],
             'springleaf': [
                 COORDINATE_DESCENT: [
                     'train_time_min': 142,
-                    'train_time_max': 157
+                    'train_time_max': 164
                 ],
                 IRLSM: [
                     'train_time_min': 259,
-                    'train_time_max': 282
+                    'train_time_max': 289
                 ]
             ],
             'higgs': [
                 COORDINATE_DESCENT: [
                     'train_time_min': 43,
-                    'train_time_max': 50
+                    'train_time_max': 53
                 ],
                 IRLSM: [
-                    'train_time_min': 60,
-                    'train_time_max': 66
+                    'train_time_min': 58,
+                    'train_time_max': 68
                 ]
             ]
         ],
@@ -109,51 +109,51 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'paribas': [
                 50: [
                     'train_time_min': 7,
-                    'train_time_max': 11
+                    'train_time_max': 13
                 ],
                 200: [
                     'train_time_min': 31,
-                    'train_time_max': 36
+                    'train_time_max': 38
                 ]
             ],
             'homesite': [
                 50: [
                     'train_time_min': 9,
-                    'train_time_max': 13
+                    'train_time_max': 15
                 ],
                 200: [
                     'train_time_min': 41,
-                    'train_time_max': 50
+                    'train_time_max': 51
                 ]
             ],
             'redhat': [
                 50: [
                     'train_time_min': 29,
-                    'train_time_max': 33
+                    'train_time_max': 37
                 ],
                 200: [
-                    'train_time_min': 139,
-                    'train_time_max': 157
+                    'train_time_min': 140,
+                    'train_time_max': 155
                 ]
             ],
             'springleaf': [
                 50: [
-                    'train_time_min': 60,
+                    'train_time_min': 67,
                     'train_time_max': 66
                 ],
                 200: [
-                    'train_time_min': 493,
-                    'train_time_max': 510
+                    'train_time_min': 494,
+                    'train_time_max': 518
                 ]
             ],
             'higgs': [
                 50: [
-                    'train_time_min': 87,
+                    'train_time_min': 88,
                     'train_time_max': 96
                 ],
                 200: [
-                    'train_time_min': 519,
-                    'train_time_max': 546
+                    'train_time_min': 518,
+                    'train_time_max': 549
                 ]
             ]
         ],
@@ -161,43 +161,43 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'airlines-1m': [
                 [100, "cpu"]: [
                     'train_time_min': 26,
-                    'train_time_max': 45
+                    'train_time_max': 47
                 ],
                 [100, "gpu"]: [
-                    'train_time_min': 11,
+                    'train_time_min': 10,
                     'train_time_max': 17
                 ]
             ],
             'airlines-10m': [
                 [100, "cpu"]: [
-                    'train_time_min': 114,
-                    'train_time_max': 156
+                    'train_time_min': 112,
+                    'train_time_max': 159
                 ],
                 [100, "gpu"]: [
-                    'train_time_min': 30,
+                    'train_time_min': 29,
                     'train_time_max': 49
                 ]
             ],
             'higgs': [
                 [100, "cpu"]: [
                     'train_time_min': 167,
-                    'train_time_max': 213
+                    'train_time_max': 237
                 ],
                 [100, "gpu"]: [
-                    'train_time_min': 43,
+                    'train_time_min': 41,
                     'train_time_max': 49
                 ]
             ],
             'cox2': [
                 [10, "cpu"]: [
                     'train_time_min': 1439,
-                    'train_time_max': 2038
+                    'train_time_max': 2444
                 ]
             ],
             'cox2-20m': [
                 [10, "cpu"]: [
                     'train_time_min': 322,
-                    'train_time_max': 350
+                    'train_time_max': 361
                 ]
             ]
         ],
@@ -205,19 +205,19 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'airlines-1m': [
                 100: [
                     'train_time_min': 21,
-                    'train_time_max': 31
+                    'train_time_max': 37
                 ]
             ],
             'airlines-10m': [
                 100: [
                     'train_time_min': 99,
-                    'train_time_max': 141
+                    'train_time_max': 157
                 ]
             ],
             'higgs': [
                 100: [
                     'train_time_min': 140,
-                    'train_time_max': 175
+                    'train_time_max': 194
                 ]
             ]
         ],
@@ -225,19 +225,19 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             'airlines-1m': [
                 100: [
                     'train_time_min': 14,
-                    'train_time_max': 23
+                    'train_time_max': 29
                 ]
             ],
             'airlines-10m': [
                 100: [
                     'train_time_min': 76,
-                    'train_time_max': 103
+                    'train_time_max': 111
                 ]
             ],
             'higgs': [
                 100: [
                     'train_time_min': 153,
-                    'train_time_max': 176
+                    'train_time_max': 180
                 ]
             ]
         ]
