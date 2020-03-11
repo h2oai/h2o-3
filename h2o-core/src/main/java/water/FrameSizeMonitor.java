@@ -27,7 +27,7 @@ public class FrameSizeMonitor extends MrFun<FrameSizeMonitor> {
     private static final Map<Key<Job>, FrameSizeMonitor> registry = new HashMap<>();
     
     static {
-        LOG_LEVEL = Integer.parseInt(System.getProperty(LOG_LEVEL_PROP, String.valueOf(Log.DEBUG)));
+        LOG_LEVEL = Integer.parseInt(H2O.getSysProperty(LOG_LEVEL_PROP, String.valueOf(Log.DEBUG)));
         ENABLED = H2O.getSysBoolProperty(ENABLED_PROP, false);
         SAFE_FREE_MEM_COEF = Float.parseFloat(H2O.getSysProperty(SAFE_COEF_PROP, SAFE_FREE_MEM_DEFAULT_COEF));
     }
