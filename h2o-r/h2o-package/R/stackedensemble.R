@@ -180,6 +180,7 @@ h2o.stackedEnsemble <- function(x,
   if (!missing(metalearner_params)) {
       model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))[[1]] #Need the `[[ ]]` to avoid a nested list
   }
+  model@model <- .h2o.fill_stackedensemble(model@model, model@parameters, model@allparams)
   model@model$model_summary <- capture.output({
 
     print_ln <- function(...) cat(..., sep = "\n")
@@ -212,3 +213,11 @@ h2o.stackedEnsemble <- function(x,
   class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
   return(model)
 }
+
+
+.h2o.fill_stackedensemble <- function(model, parameters, allparams) {
+  # Store base models for the Stacked Ensemble in user-readable form
+  model$base_models <- unlist(lapply(parameters$base_models, function (base_model) base_model$name))
+  return(model)
+}
+
