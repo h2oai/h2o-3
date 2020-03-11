@@ -197,15 +197,15 @@ H2O supports direct ingestion of data managed by Hive in Hadoop. This feature is
 
 Requirements:
 
-- Direct Metastore access - Hive jars and configuration must be present on H2O job classpath - either via adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars
-- JDBC metadata access - Hive JDBC Driver must be on H2O job classpath (see below for details about access Kerberized Hive via JDBC)
-- user running H2O must have read access to Hive and the files it manages
+- Direct Metastore access - Hive jars and configuration must be present on H2O job classpath - either via adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars.
+- JDBC metadata access - Hive JDBC Driver must be on H2O job classpath. (See below for details about access Kerberized Hive via JDBC.)
+- The user running H2O must have read access to Hive and the files it manages.
 
 Limitations
 
-- imported table must be stored in a format supported by H2O (see above)
+- Imported table must be stored in a format supported by H2O. (See above.)
 - CSV - Hive table property ``skip.header.line.count`` is currently not supported, CSV files with header rows will be imported with header row as data
-- partitioned tables with different storage formats - H2O supports importing partitioned tables which use different storage formats for different partitions, however in some cases (for example large number of small partitions) H2O may run out of memory while importing even though the final data would easily fit into the memory allocated to the H2O cluster
+- Partitioned tables with different storage formats. H2O supports importing partitioned tables that use different storage formats for different partitions; however in some cases (for example large number of small partitions), H2O may run out of memory while importing even though the final data would easily fit into the memory allocated to the H2O cluster.
 
 .. example-code::
    .. code-block:: r
@@ -371,9 +371,9 @@ H2O is able to generate Hive delegation tokens in three modes:
 
 H2O arguments used to configure the JDBC URL for Hive delegation token generation:
 
-- ``hiveHost`` - full address of HiveServer2, for example ``hostname:10000``
+- ``hiveHost`` - The full address of HiveServer2, for example ``hostname:10000``
 - ``hivePrincipal`` -  Hiveserver2 Kerberos principal, for example ``hive/hostname@DOMAIN.COM``
-- ``hiveJdbcUrlPattern`` - (optional) can be used to further customize the way the driver constructs the Hive JDBC URL, the default pattern used is ``jdbc:hive2://{{host}}/;principal={{principal}}``
+- ``hiveJdbcUrlPattern`` - (optional) Can be used to further customize the way the driver constructs the Hive JDBC URL. The default pattern used is ``jdbc:hive2://{{host}}/;principal={{principal}}``.
 
 **Note on libjars:**
 
@@ -386,8 +386,8 @@ The advantage of this approach is that the Hive delegation token is available im
 
 Requirements:
 
-- The Hive JDBC driver is on h2odriver classpath (only used to acquire Hive delegation token)
-- The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present (see above for details)  
+- The Hive JDBC driver is on h2odriver classpath. (Only used to acquire Hive delegation token.)
+- The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present. (See above for details.)  
 
 Example command:
 
@@ -409,7 +409,7 @@ The disadvantage of this approach is that the delegation token is not available 
 Requirements:
 
 - The Hive JDBC driver is on the h2o mapper classpath (either via libjars or YARN configuration).
-- The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present (see above for details)  
+- The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present. (See above for details.)  
 - The ``principal`` argument is set with the value of the users's Kerberos principal.
 - The ``keytab`` argument set pointing to the file with the user's Kerberos keytab file.
 - The ``refreshTokens`` argument is present.
@@ -438,7 +438,7 @@ This is the best-of-bothpworlds approach. The token is generated first in the dr
 Requirements:
 
 - The Hive JDBC driver is on the h2o driver and mapper classpaths.
-- The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present (see above for details)  
+- The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present. (See above for details.)  
 - The ``keytab`` and ``principal`` arguments are set.
 - The ``refreshTokens`` argument is present.
 
