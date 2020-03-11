@@ -11,7 +11,6 @@ from h2o.estimators.kmeans import H2OKMeansEstimator
 from h2o.estimators.pca import H2OPrincipalComponentAnalysisEstimator as H2OPCA
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.word2vec import H2OWord2vecEstimator
-from h2o.estimators.deepwater import H2ODeepWaterEstimator
 from h2o.estimators.naive_bayes import H2ONaiveBayesEstimator
 
 def algo_max_runtime_secs():

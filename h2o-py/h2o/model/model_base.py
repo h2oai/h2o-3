@@ -994,7 +994,7 @@ class ModelBase(h2o_meta(Keyed)):
             style = "b-" if len(scoring_history[timestep]) > 1 else "bx"
             plt.plot(scoring_history[timestep], scoring_history[metric], style)
 
-        elif self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
+        elif self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
             # Set timestep
             if self._model_json["algo"] in ("gbm", "drf", "xgboost"):
                 assert_is_type(timestep, "AUTO", "duration", "number_of_trees")

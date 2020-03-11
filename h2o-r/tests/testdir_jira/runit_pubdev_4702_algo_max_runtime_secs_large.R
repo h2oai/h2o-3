@@ -77,20 +77,6 @@ function() {
   test_pass_fail <- c(test_pass_fail, eval_test_runtime(hh, hh2, err_bound, fact_red))
   cleanUP(c(hh, hh2, training1_data))
 
-  # deepwater
-  if (h2o.deepwater.available()) {
-    print("*************  starting max_runtime_test for deeplearning")
-    training1_data <- h2o.uploadFile(locate("smalldata/gbm_test/ecology_model.csv"))
-    training1_data <- training1_data.drop('Site')
-    training1_data['Angaus'] <- as.factor(training1_data['Angaus'])
-    hh <- h2o.deepwater(x=c(2:h2o.ncol(training1_data)), y="Angaus", training_frame=training1_data, epochs=50, hidden=c(4096, 4096, 4096), hidden_dropout_ratios=c(0.2, 0.2, 0.2))
-    hh2 <- h2o.deepwater(x=c(2:h2o.ncol(training1_data)), y="Angaus", training_frame=training1_data, epochs=50, hidden=c(4096, 4096, 4096), hidden_dropout_ratios=c(0.2, 0.2, 0.2), max_runtime_secs=hh@model$run_time/(1000.0*fact_red))
-    test_pass_fail <- c(test_pass_fail, eval_test_runtime(hh, hh2, err_bound, fact_red))
-    cleanUp(c(training1_data, hh, hh2))
-  } else {
-    print("*************  deepwater is skipped.  Not availabe.")
-  }
-
   # word2vec
   print("*************  starting max_runtime_test for word2vec")
   text8.path <- locate("bigdata/laptop/text8.gz")

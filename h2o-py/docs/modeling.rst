@@ -19,12 +19,6 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2ODeepWaterEstimator`
-----------------------------
-.. autoclass:: h2o.estimators.deepwater.H2ODeepWaterEstimator
-    :show-inheritance:
-    :members:
-
 :mod:`H2OGradientBoostingEstimator`
 -----------------------------------
 .. autoclass:: h2o.estimators.gbm.H2OGradientBoostingEstimator

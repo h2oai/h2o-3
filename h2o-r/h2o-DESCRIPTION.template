@@ -91,7 +91,6 @@ Collate:
          'psvm.R'
          'deeplearning.R'
          'stackedensemble.R'
-         'deepwater.R'
          'xgboost.R'
          'randomforest.R'
          'naivebayes.R'
