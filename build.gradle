@@ -96,7 +96,7 @@ ext {
       project(':h2o-logger'),
       project(':h2o-genmodel-extensions:jgrapht'),
       project(':h2o-k8s'),
-      project(':h2o-genmodel-extensions:deepwater')
+      project(':h2o-genmodel-ext-deepwater')
     ]
 
     javaProjects = [
@@ -132,7 +132,7 @@ ext {
       project(':h2o-logger'),
       project(':h2o-genmodel-extensions:jgrapht'),
       project(':h2o-k8s'), 
-      project(':h2o-genmodel-extensions:deepwater')
+      project(':h2o-genmodel-ext-deepwater')
     ]
 
     scalaProjects = [
