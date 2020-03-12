@@ -111,7 +111,8 @@ public class MRUtils {
     public final double[] dist() { return _ys; }
     public final double[] relDist() {
       final double sum = ArrayUtils.sum(_ys);
-      return ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
+      // due to CV and weights there can be sum == 0
+      return sum == 0 ? _ys : ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
     }
     
     @Override public void map(Chunk ys) {
@@ -154,7 +155,8 @@ public class MRUtils {
     
     public final double[] relDist() {
       final double sum = ArrayUtils.sum(_ys);
-      return ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
+      // due to CV and weights there can be sum == 0
+      return sum == 0 ? _ys : ArrayUtils.div(Arrays.copyOf(_ys, _ys.length), sum);
     }
     
     public final String[] domains(){
