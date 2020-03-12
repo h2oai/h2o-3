@@ -5,10 +5,10 @@ import water.fvec.NewChunk;
 import water.parser.FVecParseWriter;
 import water.util.Log;
 
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.function.Consumer;
 
 public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandler {
@@ -24,7 +24,7 @@ public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandl
     private static final int SLEEP_MS = 100;
     private static final int MB = 1024 * 1024;
     
-    private static final Map<Key<Job>, FrameSizeMonitor> registry = new HashMap<>();
+    private static final ConcurrentMap<Key<Job>, FrameSizeMonitor> registry = new ConcurrentHashMap<>();
     
     static {
         LOG_LEVEL = Integer.parseInt(H2O.getSysProperty(LOG_LEVEL_PROP, String.valueOf(Log.DEBUG)));
@@ -43,23 +43,20 @@ public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandl
     }
     
     public static void get(Key<Job> jobKey, Consumer<FrameSizeMonitor> c) {
-        synchronized (registry) {
-            if (registry.containsKey(jobKey)) {
-                c.accept(registry.get(jobKey));
-            } else if (ENABLED) {
-                if (jobKey.get().stop_requested()) {
-                    // throw an exception to stop the parsing
-                    throw new IllegalStateException("Memory is running low. Forcefully terminating.");
-                } else {
-                    FrameSizeMonitor monitor = new FrameSizeMonitor(jobKey);
-                    registry.put(jobKey, monitor);
-                    Thread t = new Thread(monitor, "FrameSizeMonitor-" + jobKey.get()._result);
-                    t.setUncaughtExceptionHandler(monitor);
-                    t.start();
-                    c.accept(monitor);
-                }
+        if (!ENABLED) return;
+        FrameSizeMonitor monitor = registry.computeIfAbsent(jobKey, key -> {
+            if (jobKey.get().stop_requested()) {
+                // throw an exception to stop the parsing
+                throw new IllegalStateException("Memory is running low. Forcefully terminating.");
+            } else {
+                FrameSizeMonitor m = new FrameSizeMonitor(jobKey);
+                Thread t = new Thread(m, "FrameSizeMonitor-" + jobKey.get()._result);
+                t.setUncaughtExceptionHandler(m);
+                t.start();
+                return m;
             }
-        }
+        });
+        c.accept(monitor);
     }
     
     private static void finish(Key<Job> jobKey) {
