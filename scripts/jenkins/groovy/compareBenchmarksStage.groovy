@@ -80,7 +80,7 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
                     'train_time_max': 43
                 ],
                 IRLSM: [
-                    'train_time_min': 33,
+                    'train_time_min': 31,
                     'train_time_max': 46
                 ]
             ],
@@ -138,8 +138,8 @@ def call(final pipelineContext, final stageConfig, final benchmarkFolderConfig) 
             ],
             'springleaf': [
                 50: [
-                    'train_time_min': 67,
-                    'train_time_max': 66
+                    'train_time_min': 60,
+                    'train_time_max': 67
                 ],
                 200: [
                     'train_time_min': 494,
