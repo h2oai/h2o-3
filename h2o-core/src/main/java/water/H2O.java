@@ -366,7 +366,7 @@ final public class H2O {
     // HDFS & AWS
     //-----------------------------------------------------------------------------------
     /** -hdfs_config=hdfs_config; configuration file of the HDFS */
-    public String hdfs_config = null;
+    public String[] hdfs_config = null;
 
     /** -hdfs_skip=hdfs_skip; used by Hadoop driver to not unpack and load any HDFS jar file at runtime. */
     public boolean hdfs_skip = false;
@@ -592,7 +592,7 @@ final public class H2O {
       }
       else if (s.matches("hdfs_config")) {
         i = s.incrementAndCheck(i, args);
-        trgt.hdfs_config = args[i];
+        trgt.hdfs_config = ArrayUtils.append(trgt.hdfs_config, args[i]);
       }
       else if (s.matches("hdfs_skip")) {
         trgt.hdfs_skip = true;
@@ -895,11 +895,12 @@ final public class H2O {
    *  @param status H2O's requested process exit value.
    */
   public static void exit(int status) {
+    // Log subsystem might be still caching message, let it know to flush the cache and start logging even if we don't have SELF yet
+    Log.notifyAboutProcessExiting();
+
     // Embedded H2O path (e.g. inside Hadoop mapper task).
     if( embeddedH2OConfig != null )
       embeddedH2OConfig.exit(status);
-    // Flush all cached messages
-    Log.flushStdout();
 
     // Standalone H2O path,p or if the embedded config does not exit
     System.exit(status);
