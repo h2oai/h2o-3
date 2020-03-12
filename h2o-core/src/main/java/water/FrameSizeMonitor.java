@@ -21,8 +21,10 @@ public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandl
     private static final int LOG_LEVEL;
     private static final boolean ENABLED;
     private static final float SAFE_FREE_MEM_COEF;
+    
     private static final int SLEEP_MS = 100;
     private static final int MB = 1024 * 1024;
+    private static final float FIRST_CHECK_PROGRESS = 0.02f;
     
     private static final ConcurrentMap<Key<Job>, FrameSizeMonitor> registry = new ConcurrentHashMap<>();
     
@@ -67,7 +69,7 @@ public class FrameSizeMonitor implements Runnable, Thread.UncaughtExceptionHandl
 
     @Override
     public void run() {
-        float nextProgress = 0.02f;
+        float nextProgress = FIRST_CHECK_PROGRESS;
         Job<Frame> job = jobKey.get();
         while (job.isRunning() && nextProgress < 1f) {
             if (!MemoryManager.canAlloc()) {
