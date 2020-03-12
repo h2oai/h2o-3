@@ -32,6 +32,7 @@ from ..model.regression import H2ORegressionModel
 from ..model.word_embedding import H2OWordEmbeddingModel
 from ..model.anomaly_detection import H2OAnomalyDetectionModel
 from ..model.coxph import H2OCoxPHModel
+from ..model.segment_models import H2OSegmentModels
 
 
 class EstimatorAttributeError(AttributeError):
@@ -107,14 +108,101 @@ class H2OEstimator(ModelBase):
         :param float max_runtime_secs: Maximum allowed runtime in seconds for model training. Use 0 to disable.
         :param bool verbose: Print scoring history to stdout. Defaults to False.
         """
-        self._train(x=x, y=y, training_frame=training_frame, offset_column=offset_column, fold_column=fold_column,
-                    weights_column=weights_column, validation_frame=validation_frame, max_runtime_secs=max_runtime_secs, 
-                    ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
+        parms = self._make_parms(x=x, y=y, training_frame=training_frame, offset_column=offset_column, 
+                                 fold_column=fold_column, weights_column=weights_column, 
+                                 validation_frame=validation_frame, max_runtime_secs=max_runtime_secs, 
+                                 ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
+        self._train(parms, verbose=verbose)
+
+    def bulk_train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
+                   weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
+                   segments=None, segment_models_id=None, verbose=False):
+        """
+        Trains H2O model for each segment of the training dataset.
+
+        :param x: A list of column names or indices indicating the predictor columns.
+        :param y: An index or a column name indicating the response column.
+        :param H2OFrame training_frame: The H2OFrame having the columns indicated by x and y (as well as any
+            additional columns specified by fold, offset, and weights).
+        :param offset_column: The name or index of the column in training_frame that holds the offsets.
+        :param fold_column: The name or index of the column in training_frame that holds the per-row fold
+            assignments.
+        :param weights_column: The name or index of the column in training_frame that holds the per-row weights.
+        :param validation_frame: H2OFrame with validation data to be scored on while training.
+        :param float max_runtime_secs: Maximum allowed runtime in seconds for each model training. Use 0 to disable.
+            Please note that regardless of how this parameter is set, a model will be built for each input segment.
+            This parameter only affects individual model training.
+        :param segments: A list of columns to segment-by. H2O will group the training (and validation) dataset
+            by the segment-by columns and train a separate model for each segment (group of rows).
+            As an alternative to providing a list of columns, users can also supply an explicit enumeration of
+            segments to build the models for. This enumeration needs to be represented as H2OFrame.
+        :param segment_models_id: Identifier for the returned collection of Segment Models. If not specified
+            it will be automatically generated.  
+        :param bool verbose: Enable to print additional information during model building. Defaults to False.
+
+        :examples:
+
+        >>> response = "survived"
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> titanic[response] = titanic[response].asfactor()
+        >>> predictors = ["survived","name","sex","age","sibsp","parch","ticket","fare","cabin"]
+        >>> train, valid = titanic.split_frame(ratios=[.8], seed=1234)
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> titanic_gbm = H2OGradientBoostingEstimator(seed=1234)
+        >>> titanic_models = titanic_gbm.bulk_train(segments=["pclass"],
+        ...                                         x=predictors,
+        ...                                         y=response,
+        ...                                         training_frame=train,
+        ...                                         validation_frame=valid)
+        >>> titanic_models.as_frame()
+        """
+        assert_is_type(segments, None, H2OFrame, [str])
+        assert_is_type(verbose, bool)
+        assert_is_type(segment_models_id, None, str)
+
+        if not segments:
+            raise H2OValueError("Parameter segments was not specified. Please provide either a list of columns to "
+                                "segment-by or an explicit list of segments to build models for.")
+
+        parms = self._make_parms(x=x, y=y, training_frame=training_frame, offset_column=offset_column,
+                                 fold_column=fold_column, weights_column=weights_column,
+                                 validation_frame=validation_frame, max_runtime_secs=max_runtime_secs,
+                                 ignored_columns=ignored_columns, model_id=None, verbose=verbose)
+
+        if isinstance(segments, H2OFrame):
+            parms["segments"] = H2OEstimator._keyify_if_h2oframe(segments)
+        else:
+            parms["segment_columns"] = segments
+        if segment_models_id:
+            parms["segment_models_id"] = segment_models_id
+
+        rest_ver = self._get_rest_version(parms)
+        bulk_train_response = h2o.api("POST /%d/BulkModelBuilders/%s" % (rest_ver, self.algo), data=parms)
+        job = H2OJob(bulk_train_response, job_type=(self.algo + " Bulk Model Build"))
+        job.poll()
+        return H2OSegmentModels(job.dest_key)
 
 
-    def _train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
-              weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
-              model_id=None, verbose=False, extend_parms_fn=None):
+    def _train(self, parms, verbose=False):
+        assert_is_type(verbose, bool)
+
+        rest_ver = self._get_rest_version(parms)
+        model_builder_json = h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms)
+        job = H2OJob(model_builder_json, job_type=(self.algo + " Model Build"))
+
+        if self._future:
+            self._job = job
+            self._rest_version = rest_ver
+            return
+
+        job.poll(poll_updates=self._print_model_scoring_history if verbose else None)
+        model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, job.dest_key))["models"][0]
+        self._resolve_model(job.dest_key, model_json)
+
+
+    def _make_parms(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
+                    weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
+                    model_id=None, verbose=False, extend_parms_fn=None):
         has_default_training_frame = hasattr(self, 'training_frame') and self.training_frame is not None
         training_frame = H2OFrame._validate(training_frame, 'training_frame',
                                             required=self._requires_training_frame() and not has_default_training_frame)
@@ -129,12 +217,12 @@ class H2OEstimator(ModelBase):
         assert_is_type(model_id, None, str)
         assert_is_type(verbose, bool)
         assert_is_type(extend_parms_fn, None, FunctionType)
-
+    
         override_default_training_frame = training_frame is not None
         if not override_default_training_frame:
             self._verify_training_frame_params(offset_column, fold_column, weights_column, validation_frame)
             training_frame = self.training_frame if has_default_training_frame else None
-
+    
         algo = self.algo
         if verbose and algo not in ["drf", "gbm", "deeplearning", "xgboost"]:
             raise H2OValueError("Verbose should only be set to True for drf, gbm, deeplearning, and xgboost models")
@@ -145,14 +233,14 @@ class H2OEstimator(ModelBase):
             del parms["__class__"]
         is_auto_encoder = bool(parms.get("autoencoder"))
         is_supervised = not(is_auto_encoder or algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest", "generic"})
-
+    
         names = training_frame.names if training_frame is not None else []
         ncols = training_frame.ncols if training_frame is not None else 0
         types = training_frame.types if training_frame is not None else {}
-        
+    
         if "checkpoint" in parms and isinstance(parms["checkpoint"], H2OEstimator):
             parms["checkpoint"] = parms["checkpoint"].key
-
+    
         if is_supervised:
             if y is None: y = "response"
             if is_type(y, int):
@@ -168,7 +256,7 @@ class H2OEstimator(ModelBase):
             # it. This way an unsupervised model can be used as a step in
             # sklearn's pipeline.
             y = None
-
+    
         if override_default_training_frame:
             assert_is_type(y, str, None)
             ignored_columns_set = set()
@@ -204,13 +292,13 @@ class H2OEstimator(ModelBase):
             self._check_and_save_parm(parms, "offset_column", offset_column)
             self._check_and_save_parm(parms, "weights_column", weights_column)
             self._check_and_save_parm(parms, "fold_column", fold_column)
-
+    
         if max_runtime_secs is not None: parms["max_runtime_secs"] = max_runtime_secs
-
+    
         # Overwrites the model_id parameter only if model_id is passed
         if model_id is not None:
             parms["model_id"] = model_id
-
+    
         # Step 2
         is_auto_encoder = "autoencoder" in parms and parms["autoencoder"]
         is_unsupervised = is_auto_encoder or self.algo in {"aggregator", "pca", "svd", "kmeans", "glrm", "word2vec", "isolationforest"}
@@ -218,17 +306,17 @@ class H2OEstimator(ModelBase):
             raise ValueError("y should not be specified for autoencoder.")
         if not is_unsupervised and y is None and self.algo not in ["generic"]:
             raise ValueError("Missing response")
-
+    
         # Step 3
         if override_default_training_frame:
             parms["training_frame"] = training_frame
             offset = parms["offset_column"]
             folds = parms["fold_column"]
             weights = parms["weights_column"]
-
+    
         if validation_frame is not None:
             parms["validation_frame"] = validation_frame
-
+    
         if is_type(y, int):
             y = names[y]
         if y is not None:
@@ -248,23 +336,15 @@ class H2OEstimator(ModelBase):
         # internal hook allowing subclasses to extend train parms 
         if extend_parms_fn is not None:
             extend_parms_fn(parms)
-
+    
         parms = {k: H2OEstimator._keyify_if_h2oframe(parms[k]) for k in parms}
         if "r2" in (parms.get('stopping_metric') or []):
             raise H2OValueError("r2 cannot be used as an early stopping_metric yet.  Check this JIRA https://0xdata.atlassian.net/browse/PUBDEV-5381 for progress.")
-        rest_ver = parms.pop("_rest_version") if "_rest_version" in parms else 3
+        return parms
 
-        model_builder_json = h2o.api("POST /%d/ModelBuilders/%s" % (rest_ver, self.algo), data=parms)
-        model = H2OJob(model_builder_json, job_type=(self.algo + " Model Build"))
 
-        if self._future:
-            self._job = model
-            self._rest_version = rest_ver
-            return
-
-        model.poll(poll_updates=self._print_model_scoring_history if verbose else None)
-        model_json = h2o.api("GET /%d/Models/%s" % (rest_ver, model.dest_key))["models"][0]
-        self._resolve_model(model.dest_key, model_json)
+    def _get_rest_version(self, parms):
+        return parms.pop("_rest_version") if "_rest_version" in parms else 3
 
 
     def _print_model_scoring_history(self, job, bar_progress=0):

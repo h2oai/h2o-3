@@ -254,8 +254,10 @@ public class ModelBuilderTest extends TestUtil {
   }
 
   public static class DummyModelOutput extends Model.Output {
-    public DummyModelOutput(ModelBuilder b, Frame train) {
+    public final String _msg;
+    public DummyModelOutput(ModelBuilder b, Frame train, String msg) {
       super(b, train);
+      _msg = msg;
     }
     @Override
     public ModelCategory getModelCategory() {
@@ -278,12 +280,13 @@ public class ModelBuilderTest extends TestUtil {
     }
   }
   public static class DummyModelParameters extends Model.Parameters {
-    private String _msg;
-    private Key _trgt;
-    private boolean _makeModel;
+    public DummyAction _action;
+    public boolean _makeModel;
     public boolean _cancel_job;
-    public DummyModelParameters() { this(null, Key.make()); }
-    public DummyModelParameters(String msg, Key trgt) { _msg = msg; _trgt = trgt; }
+    public DummyModelParameters() {}
+    public DummyModelParameters(String msg, Key trgt) {
+      _action = new MessageInstallAction(trgt, msg);
+    }
     @Override public String fullName() { return algoName(); }
     @Override public String algoName() { return "dummymodelbuilder"; }
     @Override public String javaName() { return DummyModelBuilder.class.getName(); }
@@ -302,7 +305,9 @@ public class ModelBuilderTest extends TestUtil {
     @Override
     protected Futures remove_impl(Futures fs, boolean cascade) {
       super.remove_impl(fs, cascade);
-      DKV.remove(_parms._trgt);
+      if (_parms._action != null) {
+        _parms._action.cleanUp();
+      }
       return fs;
     }
   }
@@ -321,13 +326,15 @@ public class ModelBuilderTest extends TestUtil {
         public void computeImpl() {
           if (_parms._cancel_job)
             throw new Job.JobCancelledException();
-          DKV.put(_parms._trgt, new BufferedString("Computed " + _parms._msg));
+          String msg = null;
+          if (_parms._action != null) 
+            msg = _parms._action.run(_parms);
           if (! _parms._makeModel)
             return;
           init(true);
           Model model = null;
           try {
-            model = new DummyModel(dest(), _parms, new DummyModelOutput(DummyModelBuilder.this, train()));
+            model = new DummyModel(dest(), _parms, new DummyModelOutput(DummyModelBuilder.this, train(), msg));
             model.delete_and_lock(_job);
             model.update(_job);
           } finally {
@@ -348,5 +355,28 @@ public class ModelBuilderTest extends TestUtil {
       return true;
     }
   }
+  public static abstract class DummyAction<T> extends Iced<DummyAction<T>> {
+    protected abstract String run(DummyModelParameters parms);
+    protected void cleanUp() {};
+  }
+  private static class MessageInstallAction extends DummyAction<MessageInstallAction> {
+    private final Key _trgt;
+    private final String _msg;
+    
+    public MessageInstallAction(Key trgt, String msg) {
+      _trgt = trgt;
+      _msg = msg;
+    }
 
+    @Override
+    protected String run(DummyModelParameters parms) {
+      DKV.put(_trgt, new BufferedString("Computed " + _msg));
+      return _msg;
+    }
+
+    @Override
+    protected void cleanUp() {
+      DKV.remove(_trgt);
+    }
+  } 
 }

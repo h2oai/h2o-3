@@ -48,6 +48,7 @@ water.api.schemas3.KeyV3
 water.api.schemas3.KeyV3$AssemblyKeyV3
 water.api.schemas3.KeyV3$FrameKeyV3
 water.api.schemas3.KeyV3$GridKeyV3
+water.api.schemas3.KeyV3$SegmentModelsKeyV3
 water.api.schemas3.KeyV3$JobKeyV3
 water.api.schemas3.KeyV3$ModelKeyV3
 water.api.schemas3.KeyV3$PartialDependenceKeyV3
@@ -161,3 +162,5 @@ water.api.schemas3.GridImportV3
 water.api.schemas3.PingV3
 water.api.schemas3.PingV3$NodeMemoryInfoV3
 water.api.schemas3.CloudLockV3
+water.api.schemas3.SegmentModelsV3
+water.api.schemas3.SegmentModelsParametersV3

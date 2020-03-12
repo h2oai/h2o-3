@@ -1022,7 +1022,7 @@ final public class H2O {
   //-------------------------------------------------------------------------------------------------------------------
 
   private static AtomicLong nextModelNum = new AtomicLong(0);
-
+  
   /**
    * Calculate a unique model id that includes User-Agent info (if it can be discovered).
    * For the user agent info to be discovered, this needs to be called from a Jetty thread.
@@ -1039,9 +1039,12 @@ final public class H2O {
    * @param desc Model description.
    * @return The suffix.
    */
-  synchronized public static String calcNextUniqueModelId(String desc) {
+  public static String calcNextUniqueModelId(String desc) {
+    return calcNextUniqueObjectId("model", nextModelNum, desc);
+  }
+  synchronized public static String calcNextUniqueObjectId(String type, AtomicLong sequenceSource, String desc) {
     StringBuilder sb = new StringBuilder();
-    sb.append(desc).append("_model_");
+    sb.append(desc).append('_').append(type).append('_');
 
     // Append user agent string if we can figure it out.
     String source = ServletUtils.getUserAgent();
@@ -1077,7 +1080,7 @@ final public class H2O {
     //
     // I actually tried only doing the addAndGet only for POST requests (and junk UUID otherwise),
     // but that didn't eliminate the gaps.
-    long n = nextModelNum.addAndGet(1);
+    long n = sequenceSource.addAndGet(1);
     sb.append(Long.toString(CLUSTER_ID)).append("_").append(Long.toString(n));
 
     return sb.toString();

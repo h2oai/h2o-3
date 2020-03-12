@@ -720,7 +720,10 @@ public class TestUtil extends Iced {
   public static void assertFrameEquals(Frame expected, Frame actual, Double absDelta, Double relativeDelta) {
     assertEquals("Frames have different number of vecs. ", expected.vecs().length, actual.vecs().length);
     for (int i = 0; i < expected.vecs().length; i++) {
-      assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), absDelta, relativeDelta);
+      if (expected.vec(i).isString())
+        assertStringVecEquals(expected.vec(i), actual.vec(i));
+      else
+        assertVecEquals(i + "/" + expected._names[i] + " ", expected.vec(i), actual.vec(i), absDelta, relativeDelta);
     }
   }
 

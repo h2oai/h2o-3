@@ -15,20 +15,29 @@ public abstract class AlgoAbstractRegister extends AbstractRegister {
    * @param version  registration version
    */
   protected final void registerModelBuilder(RestApiContext context, ModelBuilder mbProto, int version) {
-    Class<? extends water.api.Handler> handlerClass = water.api.ModelBuilderHandler.class;
     if (H2O.ARGS.features_level.compareTo(mbProto.builderVisibility()) > 0) {
       return; // Skip endpoint registration
     }
     String base = mbProto.getClass().getSimpleName();
     String lbase = mbProto.getName();
-    // This is common model builder handler
+    Class<? extends water.api.Handler> handlerClass = water.api.ModelBuilderHandler.class;
+    Class<? extends water.api.Handler> bulkHandlerClass = water.api.BulkModelBuilderHandler.class;
 
+    // This is common model builder handler
     context.registerEndpoint(
         "train_" + lbase,
         "POST /" + version + "/ModelBuilders/" + lbase,
         handlerClass,
         "train",
         "Train a " + base + " model."
+    );
+
+    context.registerEndpoint(
+            "bulk_train_" + lbase,
+            "POST /" + version + "/BulkModelBuilders/" + lbase,
+            bulkHandlerClass,
+            "bulk_train",
+            "Validate a set of " + base + " model builder parameters."
     );
 
     context.registerEndpoint(
@@ -39,7 +48,6 @@ public abstract class AlgoAbstractRegister extends AbstractRegister {
         "Validate a set of " + base + " model builder parameters."
     );
 
-    // Grid search is experimental feature
     context.registerEndpoint(
         "grid_search_" + lbase,
         "POST /99/Grid/" + lbase,
