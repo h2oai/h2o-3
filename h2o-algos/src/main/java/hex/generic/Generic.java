@@ -29,6 +29,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
         ALLOWED_MOJO_ALGOS.add("xgboost");
         ALLOWED_MOJO_ALGOS.add("isolationforest");
         ALLOWED_MOJO_ALGOS.add("drf");
+        ALLOWED_MOJO_ALGOS.add("deeplearning");
     }
 
 
