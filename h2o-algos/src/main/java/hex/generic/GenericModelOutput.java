@@ -40,10 +40,9 @@ public class GenericModelOutput extends Model.Output {
 
             if (modelAttributes instanceof SharedTreeModelAttributes) {
                 fillVariableImportances(((SharedTreeModelAttributes) modelAttributes).getVariableImportances(), modelDescriptor);
-            } else if (modelAttributes instanceof  DeepLearningModelAttributes){
+            } else if (modelAttributes instanceof DeepLearningModelAttributes) {
                 fillVariableImportances(((DeepLearningModelAttributes) modelAttributes).getVariableImportances(), modelDescriptor);
-            }
-            else {
+            } else {
                 _variable_importances = null;
             }
             convertMetrics(modelAttributes, modelDescriptor);
