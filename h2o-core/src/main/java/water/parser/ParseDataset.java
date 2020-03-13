@@ -785,7 +785,7 @@ public final class ParseDataset {
         switch( cpr ) {
         case NONE:
           ParserInfo.ParseMethod pm = _parseSetup.parseMethod(_keys.length, vec);
-          Log.debug("Key " + key + " will be parsed using method " + pm + ".");
+          Log.info("Key " + key + " will be parsed using method " + pm + ".");
 
           if(pm == ParserInfo.ParseMethod.DistributedParse) {
             new DistributedParse(_vg, localSetup, _vecIdStart, chunkStartIdx, this, key, vec.nChunks()).dfork(vec).getResult(false);

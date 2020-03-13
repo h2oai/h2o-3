@@ -3,11 +3,10 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
-import hex.glm.GLM;
-import hex.glm.GLMModel;
 import hex.quantile.Quantile;
 import hex.quantile.QuantileModel;
 import hex.util.CheckpointUtils;
+import hex.tree.gbm.GBMModel;
 import hex.util.LinearAlgebraUtils;
 import jsr166y.CountedCompleter;
 import org.joda.time.format.DateTimeFormat;
@@ -210,9 +209,16 @@ public abstract class SharedTree<
 
         // Compute the response domain; makes for nicer printouts
         String[] domain = isSupervised() ? _response.domain() : null;
-        if (_parms._distribution == DistributionFamily.quasibinomial) {
-          domain = new String[]{"0", "1"};
+
+        // Quasibinomial GBM can have different domains than {0, 1}
+        boolean isQuasibinomial = false;
+        if(_parms._distribution == DistributionFamily.quasibinomial){
+          isQuasibinomial = true;
+          domain = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
+          ((GBMModel)_model)._output._quasibinomialDomains = domain;
         }
+
+        // Compute the response domain; makes for nicer printouts
         assert (_nclass > 1 && domain != null) || (_nclass==1 && domain==null);
         if( _nclass==1 ) domain = new String[] {"r"}; // For regression, give a name to class 0
 
@@ -225,7 +231,6 @@ public abstract class SharedTree<
           // model.score() corrects the probabilities back using the
           // distribution ratios
           if(_model._output.isClassifier() && _parms._balance_classes ) {
-
             float[] trainSamplingFactors = new float[_train.lastVec().domain().length]; //leave initialized to 0 -> will be filled up below
             if (_parms._class_sampling_factors != null) {
               if (_parms._class_sampling_factors.length != _train.lastVec().domain().length)
@@ -233,16 +238,29 @@ public abstract class SharedTree<
               trainSamplingFactors = _parms._class_sampling_factors.clone(); //clone: don't modify the original
             }
             boolean verboseSampling = Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.sharedTree.sampleFrameStratified.verbose");
-            Frame stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long)(_parms._max_after_balance_size*_train.numRows()), _parms._seed, true, verboseSampling);
+            Frame stratified;
+            if(isQuasibinomial) {
+              stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long) (_parms._max_after_balance_size * _train.numRows()), _parms._seed, true, false, domain);
+            } else {
+              stratified = water.util.MRUtils.sampleFrameStratified(_train, _train.lastVec(), _train.vec(_model._output.weightsName()), trainSamplingFactors, (long) (_parms._max_after_balance_size * _train.numRows()), _parms._seed, true, false, null);
+            }
             if (stratified != _train) {
               _train = stratified;
               _response = stratified.vec(_parms._response_column);
               _weights = stratified.vec(_parms._weights_column);
               // Recompute distribution since the input frame was modified
-              MRUtils.ClassDist cdmt2 = _weights != null ?
-                      new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
-              _model._output._distribution = cdmt2.dist();
-              _model._output._modelClassDist = cdmt2.rel_dist();
+              if (isQuasibinomial){
+                  MRUtils.ClassDistQuasibinomial cdmt2 = _weights != null ?
+                          new MRUtils.ClassDistQuasibinomial(domain).doAll(_response, _weights) : new MRUtils.ClassDistQuasibinomial(domain).doAll(_response);
+                  _model._output._distribution = cdmt2.dist();
+                  _model._output._modelClassDist = cdmt2.relDist();
+                  _model._output._domains[_model._output._domains.length] = domain;
+              }  else {
+                  MRUtils.ClassDist cdmt2 = _weights != null ?
+                          new MRUtils.ClassDist(_nclass).doAll(_response, _weights) : new MRUtils.ClassDist(_nclass).doAll(_response);
+                  _model._output._distribution = cdmt2.dist();
+                  _model._output._modelClassDist = cdmt2.relDist();
+              }
             }
           }
           Log.info("Prior class distribution: " + Arrays.toString(_model._output._priorClassDist));
@@ -322,7 +340,7 @@ public abstract class SharedTree<
         final int [] cons = new int[_nclass];
         for( int i=0; i<_nclass; i++ ) {
           names[i] = "NIDs_" + domain[i];
-          cons[i] = isSupervised() && ((_parms._distribution == DistributionFamily.quasibinomial || _model._output._distribution[i]==0)) ? -1 : 0;
+          cons[i] = isSupervised() && _model._output._distribution[i] == 0 ? -1 : 0;
         }
         Vec [] vs = templateVec().makeVolatileInts(cons);
         _train.add(names, vs);

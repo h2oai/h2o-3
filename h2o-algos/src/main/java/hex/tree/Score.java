@@ -3,6 +3,7 @@ package hex.tree;
 import hex.*;
 import hex.genmodel.GenModel;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.gbm.GBMModel;
 import water.Iced;
 import water.Key;
 import water.fvec.C0DChunk;
@@ -59,8 +60,9 @@ public class Score extends CMetricScoringTask<Score> {
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
     String[] domain = _kresp != null ? _kresp.get().domain() : null;
-    if (domain == null && m._parms._distribution == DistributionFamily.quasibinomial)
-      domain = new String[]{"0", "1"};
+    if (m._parms._distribution == DistributionFamily.quasibinomial) {
+      domain = ((GBMModel) m)._output._quasibinomialDomains;
+    }
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
@@ -160,8 +162,9 @@ public class Score extends CMetricScoringTask<Score> {
 
   static Frame makePredictionCache(SharedTreeModel model, Vec resp) {
     String[] domain = resp.domain();
-    if (domain == null && model._parms._distribution == DistributionFamily.quasibinomial)
-      domain = new String[]{"0", "1"};
+    if (model._parms._distribution == DistributionFamily.quasibinomial) {
+      domain = ((GBMModel) model)._output._quasibinomialDomains;
+    }
     ModelMetrics.MetricBuilder mb = model.makeMetricBuilder(domain);
     return mb.makePredictionCache(model, resp);
   }

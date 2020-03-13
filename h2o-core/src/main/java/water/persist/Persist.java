@@ -7,6 +7,7 @@ import java.util.Arrays;
 import java.util.List;
 
 import water.*;
+import water.fvec.Vec;
 import water.util.Log;
 
 /** Abstract class describing various persistence targets.
@@ -24,6 +25,11 @@ public abstract class Persist {
 
   /** Load a previously stored Value */
   abstract public byte[] load(Value v) throws IOException;
+
+  public byte[] load(Key k, long skip, int max) throws IOException {
+    throw new UnsupportedOperationException(
+            "Persist Backend " + this.getClass().getSimpleName() + " doesn't support direct data read.");
+  }
 
   /** Reclaim space from a previously stored Value */
   abstract public void delete(Value v);
@@ -214,6 +220,37 @@ public abstract class Persist {
   }
 
   public InputStream open(String path) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  /**
+   * Creates a seekable Hadoop implementation of InputStream (FSDataInputStream)
+   * 
+   * h2o-core doesn't depend on Hadoop libraries and can thus not declare the return type specifically
+   * 
+   * @param path any H2O-3 allowed path
+   * @return instance of FSDataInputStream
+   */
+  public InputStream openSeekable(String path) {
+    throw new RuntimeException("Not implemented");
+  }
+
+  /**
+   * Indicates whether this Persist backend can natively support Seekable InputStreams
+   * 
+   * @return true, if openSeekable can be safely called
+   */
+  public boolean isSeekableOpenSupported() {
+    return false;
+  }
+
+  /**
+   * Creates a Seekable InputStream for a given Vec
+   * 
+   * @param vec any Vec in theory typically a ByteVec/FileVec
+   * @return instance of FSDataInputStream
+   */
+  public InputStream wrapSeekable(Vec vec) {
     throw new RuntimeException("Not implemented");
   }
 

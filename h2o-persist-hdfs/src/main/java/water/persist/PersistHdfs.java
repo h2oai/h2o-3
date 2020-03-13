@@ -3,11 +3,7 @@ package water.persist;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.*;
 
-import java.io.EOFException;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -23,6 +19,7 @@ import water.MemoryManager;
 import water.Value;
 import water.api.HDFSIOException;
 import water.fvec.HDFSFileVec;
+import water.fvec.Vec;
 import water.util.FileUtils;
 import water.util.Log;
 
@@ -145,13 +142,53 @@ public final class PersistHdfs extends Persist {
     // new library version.  Might make sense to go to straight to 's3a' which is a replacement
     // for 's3n'.
     //
-    long end, start = System.currentTimeMillis();
-    final byte[] b = MemoryManager.malloc1(v._max);
-    Key k = v._key;
+    assert v.isPersisted();
 
-    long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
-    final Path p = _iceRoot == null?new Path(getPathForKey(k)):new Path(_iceRoot, getIceName(v));
-    final long skip_ = skip;
+    final Key k = v._key;
+    final long skip = k.isChunkKey() ? water.fvec.NFSFileVec.chunkOffset(k) : 0;
+
+    return load(k, skip, v._max);
+  }
+
+  @Override
+  public byte[] load(final Key k, final long skip, final int max) {
+    final Path p = _iceRoot == null?new Path(getPathForKey(k)):new Path(_iceRoot, getIceName(k));
+    return load(p, skip, max);
+  }
+  
+  private byte[] load(final Path p, final long skip, final int max) {
+    //
+    // !!! WARNING !!!
+    //
+    // tomk: Sun Apr 19 13:11:51 PDT 2015
+    //
+    //
+    // This load implementation behaved *HORRIBLY* with S3 when the libraries were updated.
+    //    Behaves well (and is the same set of libraries as H2O-1):
+    //        org.apache.hadoop:hadoop-client:2.0.0-cdh4.3.0
+    //        net.java.dev.jets3t:jets3t:0.6.1
+    //
+    //    Behaves abysmally:
+    //        org.apache.hadoop:hadoop-client:2.5.0-cdh5.2.0
+    //        net.java.dev.jets3t:jets3t:0.9.2
+    //
+    //
+    // I did some debugging.
+    //
+    // What happens in the new libraries is the connection type is a streaming connection, and
+    // the entire file gets read on close() even if you only wanted to read a chunk.  The result
+    // is the same data gets read over and over again by the underlying transport layer even
+    // though H2O only thinks it's asking for (and receiving) each piece of data once.
+    //
+    // I suspect this has something to do with the 'Range' HTTP header on the GET, but I'm not
+    // entirely sure.  Many layers of library need to be fought through to really figure it out.
+    //
+    // Anyway, this will need to be rewritten from the perspective of how to properly use the
+    // new library version.  Might make sense to go to straight to 's3a' which is a replacement
+    // for 's3n'.
+    //
+    long end, start = System.currentTimeMillis();
+    final byte[] b = MemoryManager.malloc1(max);
     run(new Callable() {
       @Override public Object call() throws Exception {
         FileSystem fs = FileSystem.get(p.toUri(), CONF);
@@ -159,7 +196,7 @@ public final class PersistHdfs extends Persist {
         try {
 //          fs.getDefaultBlockSize(p);
 
-            s = fs.open(p);
+          s = fs.open(p);
 //          System.out.println("default block size = " + fs.getDefaultBlockSize(p));
 //          FileStatus f = fs.getFileStatus(p);
 //          BlockLocation [] bs = fs.getFileBlockLocations(f,0,f.getLen());
@@ -169,7 +206,7 @@ public final class PersistHdfs extends Persist {
             // Instead of skipping by seeking, it skips by reading and dropping.  Very bad.
             // Use the HDFS API here directly instead.
 
-            s.seek(skip_);
+            s.seek(skip);
             s.readFully(b);
           }
           else {
@@ -179,24 +216,23 @@ public final class PersistHdfs extends Persist {
             // Load of 300MB file via Google API ~ 14sec, via s.readFully ~ 5min (under the same condition)
 //            ByteStreams.skipFully(s, skip_);
 //            ByteStreams.readFully(s, b);
-            s.seek(skip_);
+            s.seek(skip);
             s.readFully(b);
           }
-          assert v.isPersisted();
         } finally {
           s.getWrappedStream().close();
           FileUtils.closeSilently(s);
         }
         return null;
       }
-    }, true, v._max);
+    }, true, max);
     end = System.currentTimeMillis();
     if (end-start > 1000) // Only log read that took over 1 second to complete
-      Log.debug("Slow Read: "+(end-start)+" millis to get bytes "+skip_ +"-"+(skip_+b.length)+" in HDFS read.");
+      Log.debug("Slow Read: "+(end-start)+" millis to get bytes "+skip +"-"+(skip+b.length)+" in HDFS read.");
 
     return b;
   }
-
+  
   @Override public void store(Value v) {
     // Should be used only if ice goes to HDFS
     assert this == H2O.getPM().getIce();
@@ -496,6 +532,11 @@ public final class PersistHdfs extends Persist {
 
   @Override
   public InputStream open(String path) {
+    return openSeekable(path);
+  }
+
+  @Override
+  public InputStream openSeekable(String path) {
     Path p = new Path(path);
     URI uri = p.toUri();
     try {
@@ -505,6 +546,14 @@ public final class PersistHdfs extends Persist {
     catch (IOException e) {
       throw new HDFSIOException(path, CONF.toString(), e);
     }
+  }
+
+  public InputStream wrapSeekable(Vec vec) {
+    return new FSDataInputStream(new VecDataInputStream(vec));
+  }
+  
+  public boolean isSeekableOpenSupported() {
+    return true;
   }
 
   @Override

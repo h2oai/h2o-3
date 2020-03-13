@@ -29,5 +29,9 @@ public final class HDFSFileVec extends FileVec {
     return k;
   }
 
+  @Override
+  public byte[] getFirstBytes() {
+    return FileVecUtils.getFirstBytes(this);
+  }
 
 }
