@@ -272,7 +272,7 @@ abstract public class Log {
     p.setProperty("log4j.logger.water.default", appenders);
     p.setProperty("log4j.additivity.water.default",   "false");
 
-    p.setProperty("log4j.appender.R1",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R1",                          "org.apache.log4j.FileAppender");
     p.setProperty("log4j.appender.R1.Threshold",                "TRACE");
     p.setProperty("log4j.appender.R1.File",                     getLogFilePath("trace"));
     p.setProperty("log4j.appender.R1.MaxFileSize",              "1MB");
@@ -280,23 +280,23 @@ abstract public class Log {
     p.setProperty("log4j.appender.R1.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R1.layout.ConversionPattern", "%m%n");
 
-    p.setProperty("log4j.appender.R2",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R2",                          "org.apache.log4j.FileAppender");
     p.setProperty("log4j.appender.R2.Threshold",                "DEBUG");
     p.setProperty("log4j.appender.R2.File",                     getLogFilePath("debug"));
-    p.setProperty("log4j.appender.R2.MaxFileSize",              "3MB");
+    p.setProperty("log4j.appender.R2.MaxFileSize",              String.valueOf(Long.MAX_VALUE));
     p.setProperty("log4j.appender.R2.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R2.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R2.layout.ConversionPattern", "%m%n");
 
-    p.setProperty("log4j.appender.R3",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R3",                          "org.apache.log4j.FileAppender");
     p.setProperty("log4j.appender.R3.Threshold",                "INFO");
     p.setProperty("log4j.appender.R3.File",                     getLogFilePath("info"));
-    p.setProperty("log4j.appender.R3.MaxFileSize",              "2MB");
+    p.setProperty("log4j.appender.R3.MaxFileSize",              String.valueOf(Long.MAX_VALUE));
     p.setProperty("log4j.appender.R3.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R3.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R3.layout.ConversionPattern", "%m%n");
 
-    p.setProperty("log4j.appender.R4",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R4",                          "org.apache.log4j.FileAppender");
     p.setProperty("log4j.appender.R4.Threshold",                "WARN");
     p.setProperty("log4j.appender.R4.File",                     getLogFilePath("warn"));
     p.setProperty("log4j.appender.R4.MaxFileSize",              "256KB");
@@ -304,7 +304,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R4.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R4.layout.ConversionPattern", "%m%n");
 
-    p.setProperty("log4j.appender.R5",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R5",                          "org.apache.log4j.FileAppender");
     p.setProperty("log4j.appender.R5.Threshold",                "ERROR");
     p.setProperty("log4j.appender.R5.File",                     getLogFilePath("error"));
     p.setProperty("log4j.appender.R5.MaxFileSize",              "256KB");
@@ -312,7 +312,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R5.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R5.layout.ConversionPattern", "%m%n");
 
-    p.setProperty("log4j.appender.R6",                          "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.R6",                          "org.apache.log4j.FileAppender");
     p.setProperty("log4j.appender.R6.Threshold",                "FATAL");
     p.setProperty("log4j.appender.R6.File",                     getLogFilePath("fatal"));
     p.setProperty("log4j.appender.R6.MaxFileSize",              "256KB");
@@ -324,7 +324,7 @@ abstract public class Log {
     p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, HTTPD");
     p.setProperty("log4j.additivity.water.api.RequestServer",   "false");
 
-    p.setProperty("log4j.appender.HTTPD",                       "org.apache.log4j.RollingFileAppender");
+    p.setProperty("log4j.appender.HTTPD",                       "org.apache.log4j.FileAppender");
     p.setProperty("log4j.appender.HTTPD.Threshold",             "TRACE");
     p.setProperty("log4j.appender.HTTPD.File",                  getLogFilePath("httpd"));
     p.setProperty("log4j.appender.HTTPD.MaxFileSize",           "1MB");
