@@ -39,9 +39,9 @@ public class GenericModelOutput extends Model.Output {
             _cross_validation_metrics_summary = convertTable(modelAttributes.getCrossValidationMetricsSummary());
 
             if (modelAttributes instanceof SharedTreeModelAttributes) {
-                fillModelAttributes(((SharedTreeModelAttributes) modelAttributes).getVariableImportances(), modelDescriptor);
+                fillVariableImportances(((SharedTreeModelAttributes) modelAttributes).getVariableImportances(), modelDescriptor);
             } else if (modelAttributes instanceof  DeepLearningModelAttributes){
-                fillModelAttributes(((DeepLearningModelAttributes) modelAttributes).getVariableImportances(), modelDescriptor);
+                fillVariableImportances(((DeepLearningModelAttributes) modelAttributes).getVariableImportances(), modelDescriptor);
             }
             else {
                 _variable_importances = null;
@@ -52,7 +52,7 @@ public class GenericModelOutput extends Model.Output {
 
     }
 
-    private void fillModelAttributes(final VariableImportances variableImportances, final ModelDescriptor modelDescriptor) {
+    private void fillVariableImportances(final VariableImportances variableImportances, final ModelDescriptor modelDescriptor) {
         _variable_importances = convertVariableImportances(variableImportances);
     }
 
