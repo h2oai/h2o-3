@@ -3,11 +3,9 @@ package water.fvec;
 import water.Job;
 import water.Key;
 import water.Value;
-import water.exceptions.H2OIllegalArgumentException;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Arrays;
 
 /**
  * A vector of plain Bytes.
@@ -27,30 +25,12 @@ public class ByteVec extends Vec {
    *  length Vec.DFLT_CHUNK_SIZE but no guarantees.  Useful for previewing the start
    *  of large files.
    *  @return array of initial bytes */
-  public byte[] getFirstBytes() { return chunkForChunkIdx(0)._mem; }
+  public byte[] getFirstBytes() { 
+    return getFirstChunkBytes();
+  }
 
-  static final byte CHAR_CR = 13;
-  static final byte CHAR_LF = 10;
-  /** Get all the bytes of a given chunk.
-   *  Useful for previewing sections of files.
-   *
-   *  @param chkIdx index of desired chunk
-   *  @return array of initial bytes
-   */
-  public byte[] getPreviewChunkBytes(int chkIdx) {
-    if (chkIdx >= nChunks())
-      throw new H2OIllegalArgumentException("Asked for chunk index beyond the number of chunks.");
-    if (chkIdx == 0)
-      return chunkForChunkIdx(chkIdx)._mem;
-    else { //must eat partial lines
-      // FIXME: a hack to consume partial lines since each preview chunk is seen as cidx=0
-      byte[] mem = chunkForChunkIdx(chkIdx)._mem;
-      int i = 0, j = mem.length-1;
-      while (i < mem.length && mem[i] != CHAR_CR && mem[i] != CHAR_LF) i++;
-      while (j > i && mem[j] != CHAR_CR && mem[j] != CHAR_LF) j--;
-      if (j-i > 1) return Arrays.copyOfRange(mem,i,j);
-      else return null;
-    }
+  final byte[] getFirstChunkBytes() {
+    return chunkForChunkIdx(0)._mem;
   }
 
   /**

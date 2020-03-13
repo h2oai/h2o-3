@@ -1,5 +1,7 @@
 package water.persist;
 
+import org.apache.hadoop.fs.FSDataInputStream;
+import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,6 +12,8 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.FileUtils;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 
 import static junit.framework.TestCase.*;
@@ -28,11 +32,17 @@ public class PersistHdfsTest extends TestUtil {
   @BeforeClass
   public static void setup() { stall_till_cloudsize(1); }
 
+  private Persist hdfsPersist;
+
+  @Before
+  public void initPersist() {
+    hdfsPersist = H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
+  }
+
   @Test
   public void testImport() throws Exception {
     Scope.enter();
     try {
-      Persist hdfsPersist = H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
       Key keyS3 = hdfsPersist.uriToKey(URI.create(scheme + "://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip"));
       Frame fr = Scope.track((Frame) DKV.getGet(keyS3));
       FileVec vS3 = (FileVec) fr.anyVec();
@@ -49,8 +59,6 @@ public class PersistHdfsTest extends TestUtil {
 
   @Test
   public void testExist() {
-    Persist hdfsPersist = H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
-
     String existing = scheme + "://h2o-public-test-data/smalldata/airlines/AirlinesTrain.csv.zip";
     assertTrue(hdfsPersist.exists(existing));
 
@@ -60,10 +68,26 @@ public class PersistHdfsTest extends TestUtil {
 
   @Test
   public void testGetParent() {
-    Persist hdfsPersist = H2O.getPM().getPersistForURI(URI.create("hdfs://localhost/"));
-
     String directory = "hdfs://h2o-public-test-data/smalldata/airlines";
     assertEquals("hdfs://h2o-public-test-data/smalldata", hdfsPersist.getParent(directory));
   }
 
+  @Test
+  public void testIsSeekableOpenSupported() {
+    assertTrue(hdfsPersist.isSeekableOpenSupported());
+  }
+ 
+  @Test
+  public void testWrapSeekable()  {
+    try {
+      Scope.enter();
+      Vec vec = Scope.track(Vec.makeZero(10));
+      InputStream seekable = hdfsPersist.wrapSeekable(vec);
+      assertTrue(seekable instanceof FSDataInputStream);
+      assertTrue(((FSDataInputStream) seekable).getWrappedStream() instanceof VecDataInputStream);
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }

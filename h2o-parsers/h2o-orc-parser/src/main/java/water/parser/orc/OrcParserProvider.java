@@ -24,7 +24,7 @@ public class OrcParserProvider extends ParserProvider {
   public static class OrcParserInfo extends ParserInfo {
 
     public OrcParserInfo() {
-      super("ORC", DefaultParserProviders.MAX_CORE_PRIO + 20, true, true, false);
+      super("ORC", DefaultParserProviders.MAX_CORE_PRIO + 30, true, true, false);
     }
 
     public ParseMethod parseMethod(int nfiles, int nchunks){
