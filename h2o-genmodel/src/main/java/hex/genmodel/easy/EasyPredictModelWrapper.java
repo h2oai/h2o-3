@@ -136,7 +136,7 @@ public class EasyPredictModelWrapper implements Serializable {
         throw new IOException("enableLeafAssignment cannot be set with null model.  Call setModel() first.");
       if (val && !(model instanceof TreeBackedMojoModel))
         throw new IOException("enableLeafAssignment can be set to true only with TreeBackedMojoModel," +
-                " i.e. with GBM, DRF or XGBoost.");
+                " i.e. with GBM, DRF, Isolation forest or XGBoost.");
 
       enableLeafAssignment = val;
       return this;
