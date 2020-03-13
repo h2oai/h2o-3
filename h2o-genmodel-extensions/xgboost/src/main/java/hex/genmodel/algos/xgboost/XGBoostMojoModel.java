@@ -16,7 +16,7 @@ import java.util.Arrays;
 /**
  * "Gradient Boosting Machine" MojoModel
  */
-public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGraphConverter, PlattScalingMojoHelper.MojoModelWithCalibration, Closeable {
+public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMojoModel, SharedTreeGraphConverter, PlattScalingMojoHelper.MojoModelWithCalibration, Closeable {
 
   private static final String SPACE = " ";
 
@@ -98,6 +98,21 @@ public abstract class XGBoostMojoModel extends MojoModel implements SharedTreeGr
       preds[0] = out[0];
     }
     return preds;
+  }
+
+  @Override
+  public int getNTreeGroups() {
+    return _ntrees;
+  }
+
+  @Override
+  public int getNTreesPerGroup() {
+    return _nclasses > 2 ? _nclasses : 1;
+  }
+
+  @Override
+  public String[] getDecisionPath(double[] row) {
+    return new String[0];
   }
 
   @Override

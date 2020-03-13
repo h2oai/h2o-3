@@ -48,10 +48,9 @@ public class EasyPredictModelWrapperTest {
   }
 
   private static class SupervisedModel extends GenModel {
+
     /**
      * Supervised model for testing purpose
-     * @param names
-     * @param domains
      */
     SupervisedModel(String[] names, String[][] domains) {
       super(names, domains, names[names.length - 1]);
@@ -88,11 +87,9 @@ public class EasyPredictModelWrapperTest {
   }
 
   private static class UnsupervisedModel extends GenModel {
+
     /**
      * Supervised model for testing purpose
-     *
-     * @param names
-     * @param domains
      */
     UnsupervisedModel(String[] names, String[][] domains) {
       super(names, domains, null);
@@ -190,7 +187,6 @@ public class EasyPredictModelWrapperTest {
     SupervisedModel rawModel = makeSupervisedModel();
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(rawModel);
 
-    Assert.assertTrue(m instanceof Serializable);
     ensureAllFieldsSerializable(EasyPredictModelWrapper.class.getDeclaredFields());
 
     checkSerialization(m);
@@ -204,10 +200,11 @@ public class EasyPredictModelWrapperTest {
     RowData row = new RowData();
     row.put("C1", Double.NaN);
     BinomialModelPrediction binomialModelPrediction = model.predictBinomial(row);
-    Assert.assertNotNull(row);
+    Assert.assertNotNull(binomialModelPrediction);
     verify(mockGenModel).score0(any(double[].class),any(double[].class));
 
     BinomialModelPrediction predictionWithOffset = model.predictBinomial(row, 1D);
+    Assert.assertNotNull(predictionWithOffset);
     verify(mockGenModel).score0(any(double[].class),eq(1D),any(double[].class));
   }
 
@@ -324,7 +321,7 @@ public class EasyPredictModelWrapperTest {
       } catch (PredictUnknownCategoricalLevelException e) {
         caught = true;
       }
-      Assert.assertEquals(caught, true);
+      Assert.assertTrue(caught);
       Map<String, AtomicLong> unknown = countingErrorConsumer.getUnknownCategoricalsPerColumn();
       long total = 0;
       Set<Object> allUnseen = new HashSet<>();
@@ -454,7 +451,7 @@ public class EasyPredictModelWrapperTest {
         return null;
       String[] words = word.split(",");
       for (int i = 0; i < words.length; i++)
-        output[i] = Float.valueOf(words[i]);
+        output[i] = Float.parseFloat(words[i]);
       return output;
     }
 
@@ -502,7 +499,7 @@ public class EasyPredictModelWrapperTest {
   }
 
   @Test
-  public void testVoidErrorConsumerInitialized() throws NoSuchFieldException, IllegalAccessException {
+  public void testVoidErrorConsumerInitialized() {
     MyAutoEncoderModel model = new MyAutoEncoderModel();
     EasyPredictModelWrapper m = new EasyPredictModelWrapper(model);
 
@@ -513,7 +510,7 @@ public class EasyPredictModelWrapperTest {
 
 
   @Test
-  public void testVoidErrorConsumerInitializedWithConfig() throws NoSuchFieldException, IllegalAccessException {
+  public void testVoidErrorConsumerInitializedWithConfig() {
     MyAutoEncoderModel model = new MyAutoEncoderModel();
     EasyPredictModelWrapper modelWrapper = new EasyPredictModelWrapper(new EasyPredictModelWrapper.Config()
         .setModel(model));

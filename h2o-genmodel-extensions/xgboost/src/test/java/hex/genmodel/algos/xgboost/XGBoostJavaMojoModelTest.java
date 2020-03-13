@@ -4,6 +4,10 @@ import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.PredictContributions;
+import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.easy.EasyPredictModelWrapper;
+import hex.genmodel.easy.RowData;
+import hex.genmodel.easy.prediction.RegressionModelPrediction;
 import org.junit.Test;
 
 import java.io.*;
@@ -31,6 +35,30 @@ public class XGBoostJavaMojoModelTest {
     PredictContributions pc = mojo.makeContributionsPredictor();
     assertNotNull(pc);
     assertTrue(deserialize(serialize(pc)) instanceof PredictContributions);
+  }
+
+  @Test
+  public void testLeafNodeAssignments() throws Exception {
+    MojoReaderBackend readerBackend = MojoReaderBackendFactory.createReaderBackend(
+        getClass().getResource("xgboost_java.zip"),
+        MojoReaderBackendFactory.CachingStrategy.MEMORY);
+    XGBoostJavaMojoModel mojo = (XGBoostJavaMojoModel) MojoModel.load(readerBackend);
+    double[] doubles = new double[]{1, 2, 3, 4, 5, 6, 7};
+    SharedTreeMojoModel.LeafNodeAssignments res = mojo.getLeafNodeAssignments(doubles);
+    assertNotNull(res._nodeIds);
+    assertNotNull(res._paths);
+    String[] paths = mojo.getDecisionPath(doubles);
+    assertArrayEquals(paths, res._paths);
+    RowData data = new RowData();
+    for (int i = 0; i< doubles.length; i++) data.put(mojo._names[i], doubles[i]);
+    EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(
+        new EasyPredictModelWrapper.Config().setModel(mojo).setEnableLeafAssignment(true)
+    );
+    RegressionModelPrediction res2 = (RegressionModelPrediction) wrapper.predict(data);
+    assertNotNull(res2.leafNodeAssignmentIds);
+    assertNotNull(res2.leafNodeAssignments);
+    assertArrayEquals(res._nodeIds, res2.leafNodeAssignmentIds);
+    assertArrayEquals(res._paths, res2.leafNodeAssignments);
   }
 
   private static byte[] serialize(Object o) throws Exception {
