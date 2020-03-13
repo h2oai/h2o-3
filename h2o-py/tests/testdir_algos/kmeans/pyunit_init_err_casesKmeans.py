@@ -2,7 +2,7 @@
 # -*- encoding: utf-8 -*-
 import h2o
 from h2o.estimators.kmeans import H2OKMeansEstimator
-from h2o.exceptions import H2OTypeError
+from h2o.exceptions import H2OTypeError, H2OResponseError
 from tests import pyunit_utils
 
 import random
@@ -84,6 +84,12 @@ def init_err_casesKmeans():
     for s in start: s[2] = s[0]
     H2OKMeansEstimator(k=3, user_points=h2o.H2OFrame(list(zip(*start)))).\
         train(x=list(range(numcol)), training_frame=benign_h2o)
+
+    try:
+        H2OKMeansEstimator(k=5, nfolds=3, fold_assignment="Stratified").train(x=list(range(numcol)), training_frame=benign_h2o)
+        assert False
+    except H2OResponseError:
+        pass
 
 
 
