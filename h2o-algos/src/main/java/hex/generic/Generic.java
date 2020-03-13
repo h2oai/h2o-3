@@ -20,16 +20,21 @@ import java.util.*;
  * Only H2O Mojos are currently supported.
  */
 public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, GenericModelOutput> {
-    
+
+    /**
+     * Unmodifiable {@link Set} of Algorithm MOJOs which are allowed to be imported as generic model
+     */
     private static final Set<String> ALLOWED_MOJO_ALGOS;
-    static{
-        ALLOWED_MOJO_ALGOS = new HashSet<>();
-        ALLOWED_MOJO_ALGOS.add("gbm");
-        ALLOWED_MOJO_ALGOS.add("glm");
-        ALLOWED_MOJO_ALGOS.add("xgboost");
-        ALLOWED_MOJO_ALGOS.add("isolationforest");
-        ALLOWED_MOJO_ALGOS.add("drf");
-        ALLOWED_MOJO_ALGOS.add("deeplearning");
+    static{ 
+        final Set<String> allowedAlgos = new HashSet<>(6);
+        allowedAlgos.add("gbm");
+        allowedAlgos.add("glm");
+        allowedAlgos.add("xgboost");
+        allowedAlgos.add("isolationforest");
+        allowedAlgos.add("drf");
+        allowedAlgos.add("deeplearning");
+        
+        ALLOWED_MOJO_ALGOS = Collections.unmodifiableSet(allowedAlgos);
     }
 
 
