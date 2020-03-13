@@ -12,6 +12,7 @@ import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 
 import java.io.*;
 import java.lang.reflect.Field;
@@ -45,6 +46,9 @@ public class EasyPredictModelWrapperTest {
     when(mockGenModel.getDomainValues(1)).thenReturn(domains[1]);
     when(mockGenModel.getDomainValues(2)).thenReturn(domains[2]);
     when(mockGenModel.getCategoricalEncoding()).thenReturn(CategoricalEncoding.AUTO);
+    when(mockGenModel.getRawDataConverter(ArgumentMatchers.<String, Integer>anyMap(), ArgumentMatchers.<Integer, CategoricalEncoder>anyMap(),
+            any(EasyPredictModelWrapper.ErrorConsumer.class), any(EasyPredictModelWrapper.Config.class)))
+            .thenCallRealMethod();
   }
 
   private static class SupervisedModel extends GenModel {
