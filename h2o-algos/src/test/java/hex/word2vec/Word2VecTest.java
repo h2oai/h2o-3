@@ -1,7 +1,9 @@
 package hex.word2vec;
 
-import org.junit.*;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Scope;
@@ -10,24 +12,25 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.*;
 
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assume.assumeThat;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.junit.Assert.*;
+import static org.junit.Assume.assumeThat;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class Word2VecTest extends TestUtil {
 
   @Rule
   public ExpectedException ee = ExpectedException.none();
   
-  @BeforeClass()
-  public static void setup() { stall_till_cloudsize(1); }
-
   @Test
   public void testW2V_SG_HSM_small() {
     String[] words = new String[220];
@@ -190,6 +193,33 @@ public class Word2VecTest extends TestUtil {
     } finally {
       fr.remove();
       if( w2vm != null) w2vm.delete();
+    }
+  }
+
+  @Test public void testW2V_CBOW_HSM() {
+    assumeThat("word2vec test enabled", System.getProperty("testW2V"), is(notNullValue())); // ignored by default
+
+    Frame fr = parse_test_file("bigdata/laptop/text8.gz", "NA", 0, new byte[]{Vec.T_STR});
+    Word2VecModel w2vm = null;
+    try {
+      Word2VecModel.Word2VecParameters parms = new Word2VecModel.Word2VecParameters();
+      parms._train = fr._key;
+      parms._min_word_freq = 20;
+      parms._word_model = Word2Vec.WordModel.CBOW;
+      parms._norm_model = Word2Vec.NormModel.HSM;
+      parms._vec_size = 100;
+      parms._window_size = 4;
+      parms._sent_sample_rate = 0.01f;
+      parms._init_learning_rate = 0.05f;
+      parms._epochs = 10;
+      w2vm = new Word2Vec(parms).trainModel().get();
+      Map<String, Float> hm = w2vm.findSynonyms("dog", 10);
+      logResults(hm);
+      assertTrue(hm.containsKey("dogs"));
+      assertTrue(hm.containsKey("cat") || hm.containsKey("dogs") || hm.containsKey("hound"));
+    } finally {
+      fr.remove();
+      if (w2vm != null) w2vm.delete();
     }
   }
 
