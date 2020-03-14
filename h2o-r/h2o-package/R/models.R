@@ -2056,12 +2056,12 @@ h2o.weights <- function(object, matrix_id=1){
 #' dlmodel<-h2o.deeplearning(x=c(1:3),
 #'                           y=4,
 #'                           hidden=c(17,191),
-#'                           epochs=1, 
+#'                           epochs=1,
 #'                           training_frame=census,
-#'                           balance_classes=F, 
-#'                           reproducible=T, 
-#'                           seed=1234, 
-#'                           export_weights_and_biases=T)
+#'                           balance_classes=FALSE,
+#'                           reproducible=TRUE,
+#'                           seed=1234,
+#'                           export_weights_and_biases=TRUE)
 #' h2o.biases(dlmodel,vector_id=1)
 #' }
 #' @export
