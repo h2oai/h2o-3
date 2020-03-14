@@ -103,6 +103,9 @@ public class KMeans extends ClusteringModelBuilder<KMeansModel,KMeansModel.KMean
         error("_cluster_size_constraints", "\"The number of cluster size constraints is not equal to k = \" + _parms._k");
       }
     }
+    if(_parms._fold_assignment == Model.Parameters.FoldAssignmentScheme.Stratified){
+      error("fold_assignment", "K-means is an unsupervised algorithm; the stratified fold assignment cannot be used because of the missing response column.");
+    }
     if (expensive && error_count() == 0) checkMemoryFootPrint();
   }
 
