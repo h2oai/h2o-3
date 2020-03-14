@@ -2058,10 +2058,10 @@ h2o.weights <- function(object, matrix_id=1){
 #'                           hidden=c(17,191),
 #'                           epochs=1, 
 #'                           training_frame=census,
-#'                           balance_classes=F, 
-#'                           reproducible=T, 
+#'                           balance_classes=FALSE, 
+#'                           reproducible=TRUE, 
 #'                           seed=1234, 
-#'                           export_weights_and_biases=T)
+#'                           export_weights_and_biases=TRUE)
 #' h2o.biases(dlmodel,vector_id=1)
 #' }
 #' @export
