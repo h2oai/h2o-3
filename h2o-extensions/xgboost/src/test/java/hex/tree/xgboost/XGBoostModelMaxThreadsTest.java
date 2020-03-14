@@ -1,11 +1,11 @@
 package hex.tree.xgboost;
 
+import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.contrib.java.lang.system.ClearSystemProperties;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 public class XGBoostModelMaxThreadsTest {
 
@@ -15,9 +15,9 @@ public class XGBoostModelMaxThreadsTest {
     @Test
     public void shouldRespectPropertyOverride() {
         int original = XGBoostModel.getMaxNThread();
-        assertNotEquals(original, 2); // just make sure the property will actually change things
-        System.setProperty("sys.ai.h2o.xgboost.nthreadMax", "2");
-        assertEquals(2, XGBoostModel.getMaxNThread());
+        Assume.assumeTrue(original >= 2);
+        System.setProperty("sys.ai.h2o.xgboost.nthreadMax", String.valueOf(original / 2));
+        assertEquals(original / 2, XGBoostModel.getMaxNThread());
     }
 
 }
