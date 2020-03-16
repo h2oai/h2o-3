@@ -1,6 +1,6 @@
 package hex.tree.xgboost;
 
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
@@ -13,8 +13,8 @@ import static org.junit.Assert.assertNotNull;
 
 public class XGBoostParamsTest extends TestUtil {
 
-  @Before
-  public void setUp() {
+  @BeforeClass
+  public static void setUp() {
     TestUtil.stall_till_cloudsize(1);
   }
 
