@@ -123,7 +123,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void testOneHotExplicitWithPOJO() throws Exception {
+  @Test public void testPOJOSupportedCategoricalEncodings() throws Exception {
     try {
       Scope.enter();
       final String response = "CAPSULE";
@@ -136,45 +136,58 @@ public class GBMTest extends TestUtil {
       fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
       Scope.track(fr);
       DKV.put(fr);
+
+      Model.Parameters.CategoricalEncodingScheme[] supportedSchemes = {
+              Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
+              Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+              Model.Parameters.CategoricalEncodingScheme.EnumLimited,
+              Model.Parameters.CategoricalEncodingScheme.Enum
+      };
       
-      GBMModel.GBMParameters parms = makeGBMParameters();
-      parms._train = fr._key;
-      parms._response_column = response;
-      parms._ntrees = 5;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+      for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
 
-      GBM job = new GBM(parms);
-      GBMModel gbm = job.trainModel().get();
-      Scope.track_generic(gbm);
-
-      // Done building model; produce a score column with predictions
-      Frame scored = Scope.track(gbm.score(fr));
-
-      // Build a POJO & MOJO, validate same results
-      Assert.assertTrue(gbm.testJavaScoring(fr, scored,1e-15));
-
-      File pojoScoringOutput = temporaryFolder.newFile(gbm._key + "_scored.csv");
-
-      String modelName = JCodeGen.toJavaId(gbm._key.toString());
-      String pojoSource = gbm.toJava(false, true);
-      Class pojoClass = JCodeGen.compile(modelName, pojoSource);
-
-      PredictCsv predictor = PredictCsv.make(
-              new String[]{
-              "--embedded",
-              "--input", TestUtil.makeNfsFileVec(testFile).getPath(),
-              "--output", pojoScoringOutput.getAbsolutePath(),
-              "--decimal"}, (GenModel) pojoClass.newInstance());
-      predictor.run();
-      Frame scoredWithMojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
-        @Override
-        public ParseSetup transformSetup(ParseSetup guessedSetup) {
-          return guessedSetup.setCheckHeader(1);
+        GBMModel.GBMParameters parms = makeGBMParameters();
+        parms._train = fr._key;
+        parms._response_column = response;
+        parms._ntrees = 5;
+        parms._categorical_encoding = scheme;
+        if (scheme == Model.Parameters.CategoricalEncodingScheme.EnumLimited) {
+          parms._max_categorical_levels = 3;
         }
-      }));
 
-      scoredWithMojo.setNames(scored.names());
-      assertFrameEquals(scored, scoredWithMojo, 1e-8);
+        GBM job = new GBM(parms);
+        GBMModel gbm = job.trainModel().get();
+        Scope.track_generic(gbm);
+
+        // Done building model; produce a score column with predictions
+        Frame scored = Scope.track(gbm.score(fr));
+
+        // Build a POJO & MOJO, validate same results
+        Assert.assertTrue(gbm.testJavaScoring(fr, scored, 1e-15));
+
+        File pojoScoringOutput = temporaryFolder.newFile(gbm._key + "_scored.csv");
+
+        String modelName = JCodeGen.toJavaId(gbm._key.toString());
+        String pojoSource = gbm.toJava(false, true);
+        Class pojoClass = JCodeGen.compile(modelName, pojoSource);
+
+        PredictCsv predictor = PredictCsv.make(
+                new String[]{
+                        "--embedded",
+                        "--input", TestUtil.makeNfsFileVec(testFile).getPath(),
+                        "--output", pojoScoringOutput.getAbsolutePath(),
+                        "--decimal"}, (GenModel) pojoClass.newInstance());
+        predictor.run();
+        Frame scoredWithMojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+          @Override
+          public ParseSetup transformSetup(ParseSetup guessedSetup) {
+            return guessedSetup.setCheckHeader(1);
+          }
+        }));
+
+        scoredWithMojo.setNames(scored.names());
+        assertFrameEquals(scored, scoredWithMojo, 1e-8);
+      }
     } finally {
       Scope.exit();
     }
