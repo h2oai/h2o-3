@@ -35,7 +35,7 @@ Defining an Aggregator Model
 
 -  **rel_tol_num_exemplars**: Specify the relative tolerance for the number of exemplars (e.g, 0.5 is +/- 50 percent). This value defaults to 0.5.
 
--  `transform <algo-params/transform.html>`__: Specify the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is Normalize.
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is Normalize.
 
 -  `categorical_encoding <algo-params/categorical_encoding.html>`__: Specify one of the following encoding schemes for handling categorical features:
 
