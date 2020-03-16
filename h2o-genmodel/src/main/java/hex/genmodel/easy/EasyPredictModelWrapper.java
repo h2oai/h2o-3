@@ -306,25 +306,13 @@ public class EasyPredictModelWrapper implements Serializable {
     Map<String, Integer> columnMapping = categoricalEncoding.createColumnMapping(m);
     Map<Integer, CategoricalEncoder> domainMap = categoricalEncoding.createCategoricalEncoders(m, columnMapping);
 
-    final RowtoRawDataConverterProvider rowtoRawDataConverterProvider = getRawDataConverterProviderForGenmodel(m);
-    rowDataConverter = rowtoRawDataConverterProvider.get(m, columnMapping, domainMap, errorConsumer, config);
-  }
-
-  private static final RowtoRawDataConverterProvider getRawDataConverterProviderForGenmodel(final GenModel genModel) {
-    final ServiceLoader<RowtoRawDataConverterProvider> services = ServiceLoader.load(RowtoRawDataConverterProvider.class);
-
-    final Iterator<RowtoRawDataConverterProvider> servicesIterator = services.iterator();
-
-    while (servicesIterator.hasNext()) { // Search for exact matches
-      final RowtoRawDataConverterProvider service = servicesIterator.next();
-      if (genModel.getClass().equals(service.isFor())) {
-        return service;
-      }
+    if (m instanceof ConverterFactoryProvidingModel) {
+      rowDataConverter = ((ConverterFactoryProvidingModel) m).makeConverterFactory(columnMapping, domainMap, errorConsumer, config);
+    } else {
+      rowDataConverter = new RowToRawDataConverter(m, columnMapping, domainMap, errorConsumer, config);
     }
-    
-    // In case no exact matches are found, 
-    return new CommonRowtoRawDataConverterProvider();
   }
+
 
   /**
    * Create a wrapper for a generated model.
