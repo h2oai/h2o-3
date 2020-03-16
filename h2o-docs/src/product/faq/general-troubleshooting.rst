@@ -194,6 +194,24 @@ At this point you want to see if the bottom trough of the usage is growing from 
 
 --------------
 
+How can I prevent out-of-memory errors when loading data into H2O?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+We recommend that you size your cluster memory to be about four times the size of your data. If for some reason you are worried that during loading of data your cluster may run out of memory, you can activate our out-of-memory prevention feature. When enabled, this will stop any data loading that threatens to cause an out-of-memory error. This can be enabled by setting the following property:
+
+::
+
+    -Dsys.ai.h2o.util.frameSizeMonitor.enabled=true
+
+Please note that this property has to be set for every node.
+
+By default, the frame size monitor will shut down any imports that cause the cluster to reach less than 20% of free memory. You can adjust this threshold to be less or more aggressive, as in the example below. It should be noted that setting this value to less than 20% will make this feature less reliable, and out-of-memory errors can still occur.
+
+::
+
+    -Dsys.ai.h2o.util.frameSizeMonitor.safetyCoefficient=0.3
+
+
 Is there a way to clear everything from H2O (including H2OFrames/Models)?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
