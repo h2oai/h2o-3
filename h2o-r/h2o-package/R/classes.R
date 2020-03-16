@@ -688,7 +688,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   } else {
       cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
   }
-  if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","xgboost","generic") && exists("r2", where=object@metrics)) {
+  if(!is.null(object@algorithm) && object@algorithm %in% c("glm","generic") && exists("r2", where=object@metrics)) {
     if (!is.na(h2o.r2(object))) cat("R^2 :  ", h2o.r2(object), "\n", sep="")
     null_dev <- h2o.null_deviance(object)
     res_dev  <- h2o.residual_deviance(object)

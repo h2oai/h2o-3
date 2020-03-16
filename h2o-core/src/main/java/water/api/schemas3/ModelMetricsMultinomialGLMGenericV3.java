@@ -32,6 +32,7 @@ public class ModelMetricsMultinomialGLMGenericV3 extends ModelMetricsMultinomial
     this.null_degrees_of_freedom = mms._nullDegressOfFreedom;
     this.residual_degrees_of_freedom = mms._residualDegressOfFreedom;
     this.coefficients_table = mms._coefficients_table != null ? new TwoDimTableV3().fillFromImpl(mms._coefficients_table) : null;
+    this.r2 = mms.r2();
 
     if (mms._hit_ratio_table != null) {
       hit_ratio_table = new TwoDimTableV3(mms._hit_ratio_table);
