@@ -1,17 +1,14 @@
 package hex.genmodel;
 
 import hex.ModelCategory;
-import hex.genmodel.easy.CategoricalEncoder;
-import hex.genmodel.easy.EasyPredictModelWrapper;
-import hex.genmodel.easy.RowToRawDataConverter;
 import water.genmodel.IGeneratedModel;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.Serializable;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 
 /**
  * This is a helper class to support Java generated models.
@@ -705,12 +702,5 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
       }
     }
   }
-
-  public RowToRawDataConverter getRawDataConverter(Map<String, Integer> modelColumnNameToIndexMap,
-                                             Map<Integer, CategoricalEncoder> domainMap,
-                                             EasyPredictModelWrapper.ErrorConsumer errorConsumer,
-                                             EasyPredictModelWrapper.Config config){
-        return new RowToRawDataConverter(this, modelColumnNameToIndexMap, domainMap,
-            errorConsumer, config);
-  }
+  
 }

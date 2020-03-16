@@ -29,9 +29,6 @@ NTREES = 50
 DEPTH = 5
 NTESTROWS = 1000
 
-# Deep Water
-EPOCHS = 1
-
 
 def test_mojo_model(target_dir):
     """
