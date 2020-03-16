@@ -879,20 +879,19 @@ public class VecUtils {
    * Make last {@code zeroNum} zeros. Used in Extended isolation forest.
    * 
    * @param length length of generated vector
-   * @param zeroNum Make last {@code zeroNum} zeros
+   * @param zeroNum Make first {@code zeroNum} zeros
    * @return vector with gaussian values. Last {@code zeroNum} values are zeros.
    */
   public static Vec makeGaussianVec(long length, long zeroNum, long seed) {
     return new MRTask() {
-      
-      @Override 
+
+      @Override
       public void map(Chunk c){
-        Random rng = new RandomUtils.PCGRNG(c.start(),1);
+        Random rng = RandomUtils.getRNG(seed + c.start());
 
         for(int row = 0; row < c._len; ++row) {
-          rng.setSeed(seed + c.start() + row);
-          if ((c.start() + row) >= (length - zeroNum)) {
-            break;
+          if ((c.start() + row) < zeroNum) {
+            continue;
           }
           c.set(row, rng.nextGaussian());
         }
@@ -939,7 +938,7 @@ public class VecUtils {
     }
 
     @Override
-    public void map(Chunk[] cs) {
+    public void map(Chunk[] cs, NewChunk [] ncs) {
       mins = Vec.makeCon(Double.MAX_VALUE, cs.length);
       maxs = Vec.makeCon(Double.MIN_VALUE, cs.length);
       uniformDistribution = Vec.makeZero(cs.length);
