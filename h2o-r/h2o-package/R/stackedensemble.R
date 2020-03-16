@@ -18,8 +18,9 @@
 #' @param validation_frame Id of the validation data frame.
 #' @param blending_frame Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending
 #'        mode if provided)
-#' @param base_models List of models (or model ids) to ensemble/stack together. If not using blending frame, then models must have
-#'        been cross-validated using nfolds > 1, and folds must be identical across models.
+#' @param base_models List of models or grids (or their ids) to ensemble/stack together. Grids are expanded to individual models. If
+#'        not using blending frame, then models must have been cross-validated using nfolds > 1, and folds must be
+#'        identical across models.
 #' @param metalearner_algorithm Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non negative weights; if
 #'        validation_frame is present, a lambda search is performed), 'deeplearning' (Deep Learning with default
 #'        parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm' (GLM
@@ -77,21 +78,16 @@ h2o.stackedEnsemble <- function(x,
   # Validate other args
   # Get the base models from model IDs (if any) that will be used for constructing model summary
   if(!is.list(base_models) && is.vector(x)) {
-     base_models <- as.list(base_models)
+    base_models <- if (inherits(base_models, "H2OGrid")) list(base_models) else as.list(base_models)
   }
-  baselearners <- lapply(base_models, function(base_model) {
-    if (is.character(base_model))
-      base_model <- h2o.getModel(base_model)
-    base_model
-  })
 
   # Get base model IDs that will be passed to REST API later
   if (length(base_models) == 0) stop('base_models is empty')
 
   # If base_models contains models instead of ids, replace with model id
   for (i in 1:length(base_models)) {
-    if (inherits(base_models[[i]], 'H2OModel')) {
-      base_models[[i]] <- base_models[[i]]@model_id
+    if (inherits(base_models[[i]], c('H2OModel', 'H2OGrid'))) {
+      base_models[[i]] <- h2o.keyof(base_models[[i]])
     }
   }
 
@@ -135,6 +131,14 @@ h2o.stackedEnsemble <- function(x,
       model@parameters$metalearner_params <- list(fromJSON(model@parameters$metalearner_params))[[1]] #Need the `[[ ]]` to avoid a nested list
   }
   model@model <- .h2o.fill_stackedensemble(model@model, model@parameters, model@allparams)
+
+  # Get the actual models (that were potentially expanded from H2OGrid on the backend)
+  baselearners <- lapply(model@model$base_models, function(base_model) {
+    if (is.character(base_model))
+      base_model <- h2o.getModel(base_model)
+    base_model
+  })
+
   model@model$model_summary <- capture.output({
 
     print_ln <- function(...) cat(..., sep = "\n")

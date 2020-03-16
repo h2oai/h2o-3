@@ -12,6 +12,8 @@ from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
+from h2o.grid import H2OGridSearch
+from h2o.base import Keyed
 import json
 import ast
 
@@ -231,8 +233,9 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def base_models(self):
         """
-        List of models (or model ids) to ensemble/stack together. If not using blending frame, then models must have
-        been cross-validated using nfolds > 1, and folds must be identical across models.
+        List of models or grids (or their ids) to ensemble/stack together. Grids are expanded to individual models. If
+        not using blending frame, then models must have been cross-validated using nfolds > 1, and folds must be
+        identical across models.
 
         Type: ``List[str]``  (default: ``[]``).
 
@@ -271,12 +274,18 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     @base_models.setter
     def base_models(self, base_models):
-        if is_type(base_models, [H2OEstimator]):
-            base_models = [b.model_id for b in base_models]
+        def _get_id(something):
+            if isinstance(something, Keyed):
+                return something.key
+            return something
+
+        if not is_type(base_models, list):
+            base_models = [base_models]
+        if is_type(base_models, [H2OEstimator, H2OGridSearch, str]):
+            base_models = [_get_id(b) for b in base_models]
             self._parms["base_models"] = base_models
         else:
-            assert_is_type(base_models, None, [str])
-            self._parms["base_models"] = base_models
+            assert_is_type(base_models, None)
 
 
     @property

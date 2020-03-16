@@ -31,6 +31,7 @@ import water.util.Log;
 
 import java.util.*;
 
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -1098,5 +1099,64 @@ public class StackedEnsembleTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testBaseModelsWorkWithGrid() {
+    GBMModel gbmModel = null;
+    try {
+      Scope.enter();
 
+      final Frame trainingFrame = TestUtil.parse_test_file("./smalldata/junit/weather.csv");
+      Scope.track(trainingFrame);
+      trainingFrame.toCategoricalCol("RainTomorrow");
+
+      GBMModel.GBMParameters parameters = new GBMModel.GBMParameters();
+      parameters._train = trainingFrame._key;
+      parameters._seed = 0xFEED;
+      parameters._response_column = "RainTomorrow";
+      parameters._ntrees = 1;
+      parameters._keep_cross_validation_predictions = true;
+
+      GBM gbm = new GBM(parameters);
+      gbmModel = gbm.trainModel().get();
+      assertNotNull(gbmModel);
+
+      final Integer[] maxDepthArr = new Integer[]{2, 3, 4};
+      HashMap<String, Object[]> hyperParms = new HashMap<String, Object[]>() {{
+        put("_distribution", new DistributionFamily[]{DistributionFamily.bernoulli});
+        put("_max_depth", maxDepthArr);
+      }};
+
+      GBMModel.GBMParameters params = new GBMModel.GBMParameters();
+      params._train = trainingFrame._key;
+      params._response_column = "RainTomorrow";
+      params._seed = 42;
+
+      Job<Grid> gs = GridSearch.startGridSearch(null, params, hyperParms);
+      Scope.track_generic(gs);
+      final Grid grid = gs.get();
+      Scope.track_generic(grid);
+
+      final StackedEnsembleParameters seParams = new StackedEnsembleParameters();
+      seParams._train = trainingFrame._key;
+      seParams._response_column = "RainTomorrow";
+      seParams._metalearner_algorithm = Algorithm.AUTO;
+      seParams._base_models = new Key[]{gbmModel._key, grid._key};
+      seParams._seed = 0xFEED;
+
+      final StackedEnsemble stackedEnsemble = new StackedEnsemble(seParams);
+      List<Key> expectedBaseModels = new ArrayList<Key>();
+      expectedBaseModels.add(gbmModel._key);
+      Collections.addAll(expectedBaseModels, grid.getModelKeys());
+
+      assertArrayEquals(expectedBaseModels.toArray(new Key[0]), stackedEnsemble._parms._base_models);
+    } finally {
+      Scope.exit();
+
+      if(gbmModel != null){
+        gbmModel.deleteCrossValidationModels();
+        gbmModel.deleteCrossValidationPreds();
+        gbmModel.remove();
+      }
+    }
+  }
 }

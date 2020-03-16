@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 
+import hex.grid.Grid;
 import water.DKV;
 import water.Job;
 import water.Key;
@@ -13,6 +14,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -71,6 +73,28 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     super.init(expensive);
 
     checkFoldColumnPresent(_parms._metalearner_fold_column, train(), valid(), _parms.blending());
+    validateAndExpandBaseModels();
+  }
+
+  /**
+   * Validates base models and if grid is provided instead of a model it gets expanded.
+   */
+  private void validateAndExpandBaseModels() {
+    List<Key> baseModels = new ArrayList<Key>();
+    for (Key baseModelKey : _parms._base_models) {
+      Object retrievedObject = DKV.getGet(baseModelKey);
+      if (retrievedObject instanceof Model) {
+        baseModels.add(baseModelKey);
+      } else if (retrievedObject instanceof Grid) {
+        Grid grid = (Grid) retrievedObject;
+        Collections.addAll(baseModels, grid.getModelKeys());
+      } else if (retrievedObject == null) {
+        throw new IllegalArgumentException(String.format("Specified id \"%s\" does not exist.", baseModelKey));
+      } else {
+        throw new IllegalArgumentException(String.format("Unsupported type \"%s\" as a base model.", retrievedObject.getClass().toString()));
+      }
+    }
+    _parms._base_models = baseModels.toArray(new Key[0]);
   }
 
   /**

@@ -805,6 +805,9 @@ setClass("H2OGrid", representation(grid_id = "character",
                                    failed_raw_params = "matrix",
                                    summary_table = "ANY"))
 
+#' @rdname h2o.keyof
+setMethod("h2o.keyof", signature("H2OGrid"), function(object) object@grid_id)
+
 #' Format grid object in user-friendly way
 #'
 #' @rdname H2OGrid-class
