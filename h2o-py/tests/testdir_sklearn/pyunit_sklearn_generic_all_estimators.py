@@ -188,7 +188,6 @@ def make_tests(classifier):
 failing = [
     'H2OAggregatorEstimator',  # can't use predict with it: looks more like a transformer, maybe should be removed from sklearn API
     'H2OCoxProportionalHazardsEstimator',  # NPE at water.fvec.Frame.<init>(Frame.java:168) .... at hex.coxph.CoxPH$CollectTimes.collect(CoxPH.java:805)
-    'H2ODeepWaterEstimator',  # requires DW backend
     'H2OGenericEstimator',  # maybe should be removed from sklearn API
     'H2OStackedEnsembleEstimator',  # needs a separate test (requires models as parameters)
     "H2OTargetEncoderEstimator", # needs dataset with categoricals to work + API polishing (use x, y with defaults)

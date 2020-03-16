@@ -305,7 +305,6 @@ def gen_module(schema, algo):
 def algo_to_classname(algo):
     if algo == "coxph": return "H2OCoxProportionalHazardsEstimator"
     if algo == "deeplearning": return "H2ODeepLearningEstimator"
-    if algo == "deepwater": return "H2ODeepWaterEstimator"
     if algo == "xgboost": return "H2OXGBoostEstimator"
     if algo == "gbm": return "H2OGradientBoostingEstimator"
     if algo == "glm": return "H2OGeneralizedLinearEstimator"

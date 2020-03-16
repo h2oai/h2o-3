@@ -159,7 +159,7 @@ class H2OMultinomialModel(ModelBase):
         >>> gbm.plot(metric="AUTO", timestep="AUTO")
         """
 
-        if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
+        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
             if metric == "AUTO":
                 metric = "classification_error"
             elif metric not in ("logloss", "classification_error", "rmse"):

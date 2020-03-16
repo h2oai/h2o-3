@@ -38,7 +38,7 @@ class H2ORegressionModel(ModelBase):
         >>> gbm.plot(timestep="AUTO", metric="AUTO",)
         """
 
-        if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
+        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
             if metric == "AUTO":
                 metric = "rmse"
             elif metric not in ("rmse", "deviance", "mae"):

@@ -12,6 +12,7 @@ import hex.genmodel.easy.prediction.*;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatchers;
 
 import java.io.*;
 import java.lang.reflect.Field;

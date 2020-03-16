@@ -91,8 +91,6 @@ reference:
       - h2o.decryptionSetup
       - h2o.deepfeatures
       - h2o.deeplearning
-      - h2o.deepwater.available
-      - h2o.deepwater
       - h2o.describe
       - h2o.difflag1
       - h2o.dim

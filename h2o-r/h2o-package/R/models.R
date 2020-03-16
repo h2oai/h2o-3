@@ -2058,10 +2058,10 @@ h2o.weights <- function(object, matrix_id=1){
 #'                           hidden=c(17,191),
 #'                           epochs=1, 
 #'                           training_frame=census,
-#'                           balance_classes=F, 
-#'                           reproducible=T, 
+#'                           balance_classes=FALSE, 
+#'                           reproducible=TRUE, 
 #'                           seed=1234, 
-#'                           export_weights_and_biases=T)
+#'                           export_weights_and_biases=TRUE)
 #' h2o.biases(dlmodel,vector_id=1)
 #' }
 #' @export
@@ -4190,18 +4190,17 @@ reShape<- function(x, y, z, xname, yname, nbin, user_cols, user_num_splits) {
   list(X,Y,Z)
 }
 
-#' Feature Generation via H2O Deep Learning or DeepWater Model
+#' Feature Generation via H2O Deep Learning
 #'
 #' Extract the non-linear feature from an H2O data set using an H2O deep learning
 #' model.
 #' @param object An \linkS4class{H2OModel} object that represents the deep
 #' learning model to be used for feature extraction.
 #' @param data An H2OFrame object.
-#' @param layer Index (for DeepLearning, integer) or Name (for DeepWater, String) of the hidden layer to extract
+#' @param layer Index (integer) of the hidden layer to extract
 #' @return Returns an H2OFrame object with as many features as the
 #'         number of units in the hidden layer of the specified index.
 #' @seealso \code{\link{h2o.deeplearning}} for making H2O Deep Learning models.
-#' @seealso \code{\link{h2o.deepwater}} for making H2O DeepWater models.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -4215,16 +4214,6 @@ reShape<- function(x, y, z, xname, yname, nbin, user_cols, user_num_splits) {
 #' head(prostate_deepfeatures_layer1)
 #' head(prostate_deepfeatures_layer2)
 #'
-#' #if (h2o.deepwater.available()) {
-#' #  prostate_dl = h2o.deepwater(x = 3:9, y = 2, backend="mxnet", training_frame = prostate,
-#' #                              hidden = c(100, 200), epochs = 5)
-#' #  prostate_deepfeatures_layer1 =
-#' #    h2o.deepfeatures(prostate_dl, prostate, layer = "fc1_w")
-#' #  prostate_deepfeatures_layer2 =
-#' #    h2o.deepfeatures(prostate_dl, prostate, layer = "fc2_w")
-#' #  head(prostate_deepfeatures_layer1)
-#' #  head(prostate_deepfeatures_layer2)
-#' #}
 #' }
 #' @export
 h2o.deepfeatures <- function(object, data, layer) {

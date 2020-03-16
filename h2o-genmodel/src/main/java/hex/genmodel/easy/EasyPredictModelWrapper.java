@@ -301,13 +301,18 @@ public class EasyPredictModelWrapper implements Serializable {
       predictContributions = null;
     }
 
-    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ? 
+    CategoricalEncoding categoricalEncoding = config.getUseExternalEncoding() ?
             CategoricalEncoding.AUTO : m.getCategoricalEncoding();
     Map<String, Integer> columnMapping = categoricalEncoding.createColumnMapping(m);
     Map<Integer, CategoricalEncoder> domainMap = categoricalEncoding.createCategoricalEncoders(m, columnMapping);
 
-    rowDataConverter = RowDataConverterFactory.makeConverter(m, columnMapping, domainMap, errorConsumer, config);
+    if (m instanceof ConverterFactoryProvidingModel) {
+      rowDataConverter = ((ConverterFactoryProvidingModel) m).makeConverterFactory(columnMapping, domainMap, errorConsumer, config);
+    } else {
+      rowDataConverter = new RowToRawDataConverter(m, columnMapping, domainMap, errorConsumer, config);
+    }
   }
+
 
   /**
    * Create a wrapper for a generated model.

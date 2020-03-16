@@ -204,7 +204,6 @@ def gen_module(schema, algo, module):
 def algo_to_modelname(algo):
     if algo == "aggregator": return "H2O Aggregator Model"
     if algo == "deeplearning": return "Deep Learning - Neural Network"
-    if algo == "deepwater": return "Deep Water - Neural Network"
     if algo == "xgboost": return "XGBoost"
     if algo == "drf": return "Random Forest Model in H2O"
     if algo == "gbm": return "Gradient Boosting Machine"

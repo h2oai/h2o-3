@@ -785,7 +785,7 @@ class H2OBinomialModel(ModelBase):
         """
         assert_is_type(metric, "AUTO", "logloss", "auc", "classification_error", "rmse", "objective", 
                        "negative_log_likelihood")
-        if self._model_json["algo"] in ("deeplearning", "deepwater", "xgboost", "drf", "gbm"):
+        if self._model_json["algo"] in ("deeplearning", "xgboost", "drf", "gbm"):
             # make sure metric is not those of GLM metrics for other models
             if metric in ("negative_log_likelihood", "objective"):
                 raise H2OValueError("Metrics: negative_log_likelihood, objective are only for glm models.")
