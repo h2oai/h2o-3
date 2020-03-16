@@ -37,7 +37,7 @@ public class ImportHiveTableHandler extends Handler {
         Job<Frame> job = importer.loadHiveTable(request.database, request.table, request.partitions, request.allow_multi_format);
         return new JobV3(job);
       } catch (NoClassDefFoundError e) {
-        throw new IllegalStateException("Hive Metastore client classes not available on classpath.", e);
+        throw new IllegalStateException("Hive Metastore client classes not available on classpath, try specifying the database as JDBC URL.", e);
       }
     } else {
       throw new IllegalStateException("HiveTableImporter extension not enabled.");
