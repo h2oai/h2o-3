@@ -88,6 +88,11 @@ public class StackedEnsembleStepsProvider
 
         }
 
+        static abstract class StackedEnsembleDummyStep extends ModelingStep.DummyStep<StackedEnsembleModel> {
+            StackedEnsembleDummyStep(String id, int weight, AutoML autoML){
+                super(Algo.StackedEnsemble, id, weight, autoML);
+            }
+        }
 
         private ModelingStep[] defaults = new StackedEnsembleModelStep[] {
                 new StackedEnsembleModelStep("best", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
@@ -134,6 +139,10 @@ public class StackedEnsembleStepsProvider
 
         private ModelingStep[] grids = new ModelingStep[0];
 
+        private ModelingStep[] dummies = new ModelingStep[]{
+                new StackedEnsembleDummyStep("dummy_sleep", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {},
+        };
+
         public StackedEnsembleSteps(AutoML autoML) {
             super(autoML);
         }
@@ -146,6 +155,11 @@ public class StackedEnsembleStepsProvider
         @Override
         protected ModelingStep[] getGrids() {
             return grids;
+        }
+
+        @Override
+        protected ModelingStep[] getDummySteps() {
+            return dummies;
         }
     }
 

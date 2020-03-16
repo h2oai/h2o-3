@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
+import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
@@ -13,6 +14,7 @@ import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
+import water.H2O;
 import water.Iced;
 import water.Job;
 import water.Key;
@@ -350,6 +352,54 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     searchCriteria,
                     GridSearch.SEQUENTIAL_MODEL_BUILDING
             );
+        }
+    }
+
+    /**
+     * Convenient class for testing time-based constrains
+    */
+    public static abstract class DummyStep<M extends Model> extends ModelingStep<M> {
+
+        public DummyStep(Algo algo, String id, int weight, AutoML autoML) {
+            super(algo, id, weight, autoML);
+        }
+
+        @Override
+        protected Work makeWork() {
+            return new Work(_id, _algo, WorkAllocations.JobType.Unknown, _weight);
+        }
+
+        @Override
+        protected Work getAllocatedWork() {
+            return getWorkAllocations().getAllocation(_id, _algo);
+        }
+
+        @Override
+        protected Key makeKey(String name, boolean withCounter) {
+            return aml().dummyKey(name, withCounter);
+        }
+
+        @Override
+        protected Job<M> startJob() {
+            // Sleep weight/10 seconds
+            long chunks = _weight;
+            Job<M> job = new Job(Key.make("dummy_model_step_sleep_job"), Model.class.getName(), "does nothing, just sleeps");
+            return job.start(new H2O.H2OCountedCompleter() {
+                @Override
+                public void compute2() {
+                    try {
+                        for (int i = 0; i < chunks; i++) {
+                            // Pretend some work
+                            Thread.sleep(100);
+                            // Update the status
+                            job.update(1);
+                        }
+                        tryComplete();
+                    } catch (InterruptedException e) {
+                        aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "DummyModelStep sleep interrupted.");
+                    }
+                }
+            }, chunks);
         }
     }
 }

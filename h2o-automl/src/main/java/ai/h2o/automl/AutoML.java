@@ -602,6 +602,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     return Key.make(algoName + counterStr + "_AutoML_" + timestampFormatForKeys.format(_startTime));
   }
 
+  Key<Model> dummyKey(String algoName, boolean with_counter) {
+    String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, algoInstanceCounters) : "";
+    return Key.make(algoName + "_dummy_" + counterStr + "_AutoML_" + timestampFormatForKeys.format(_startTime));
+  }
+
   Key<Grid> gridKey(String algoName, boolean with_counter) {
     String counterStr = with_counter ? "_" + nextInstanceCounter(algoName, gridInstanceCounters) : "";
     return Key.make(algoName + "_grid_" + counterStr + "_AutoML_" + timestampFormatForKeys.format(_startTime));

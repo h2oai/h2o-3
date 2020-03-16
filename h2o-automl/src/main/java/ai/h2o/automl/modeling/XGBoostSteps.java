@@ -68,6 +68,11 @@ public class XGBoostSteps extends ModelingSteps {
         }
     }
 
+    static abstract class XGBoostDummyStep extends ModelingStep.DummyStep<XGBoostModel> {
+        XGBoostDummyStep(String id, int weight, AutoML autoML){
+            super(Algo.XGBoost, id, weight, autoML);
+        }
+    }
 
     private ModelingStep[] defaults = new XGBoostModelStep[] {
             new XGBoostModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml(),false) {
@@ -171,6 +176,9 @@ public class XGBoostSteps extends ModelingSteps {
                 }
             },
     };
+    private ModelingStep[] dummies = new ModelingStep[]{
+            new XGBoostDummyStep("dummy_sleep", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {},
+    };
 
     public XGBoostSteps(AutoML autoML) {
         super(autoML);
@@ -184,5 +192,10 @@ public class XGBoostSteps extends ModelingSteps {
     @Override
     protected ModelingStep[] getGrids() {
         return grids;
+    }
+
+    @Override
+    protected ModelingStep[] getDummySteps() {
+        return dummies;
     }
 }

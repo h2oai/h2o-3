@@ -28,6 +28,11 @@ public class DRFStepsProvider
             }
         }
 
+        static abstract class DRFDummyStep extends ModelingStep.DummyStep<DRFModel> {
+            DRFDummyStep(String id, int weight, AutoML autoML){
+                super(Algo.DRF, id, weight, autoML);
+            }
+        }
 
         private ModelingStep[] defaults = new DRFModelStep[] {
                 new DRFModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
@@ -53,6 +58,10 @@ public class DRFStepsProvider
 
         private ModelingStep[] grids = new ModelingStep[0];
 
+        private ModelingStep[] dummies = new ModelingStep[]{
+                new DRFDummyStep("dummy_sleep", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {}
+        };
+
         public DRFSteps(AutoML autoML) {
             super(autoML);
         }
@@ -65,6 +74,11 @@ public class DRFStepsProvider
         @Override
         protected ModelingStep[] getGrids() {
             return grids;
+        }
+
+        @Override
+        protected ModelingStep[] getDummySteps() {
+            return dummies;
         }
     }
 

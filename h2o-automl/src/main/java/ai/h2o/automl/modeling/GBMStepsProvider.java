@@ -54,6 +54,11 @@ public class GBMStepsProvider
             }
         }
 
+        static abstract class GBMDummyStep extends ModelingStep.DummyStep<GBMModel> {
+            GBMDummyStep(String id, int weight, AutoML autoML) {
+                super(Algo.GBM, id, weight, autoML);
+            }
+        }
 
         private ModelingStep[] defaults = new GBMModelStep[] {
                 new GBMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
@@ -128,6 +133,10 @@ public class GBMStepsProvider
                 },
         };
 
+        private ModelingStep[] dummies = new ModelingStep[]{
+                new GBMDummyStep("dummy_sleep", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {}
+        };
+
         public GBMSteps(AutoML autoML) {
             super(autoML);
         }
@@ -140,6 +149,11 @@ public class GBMStepsProvider
         @Override
         protected ModelingStep[] getGrids() {
             return grids;
+        }
+
+        @Override
+        protected ModelingStep[] getDummySteps() {
+            return dummies;
         }
     }
 
