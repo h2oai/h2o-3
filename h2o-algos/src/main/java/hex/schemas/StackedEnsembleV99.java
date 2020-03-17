@@ -57,8 +57,9 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
     // Base models
     @API(level = API.Level.critical, direction = API.Direction.INOUT,
-            help = "List of models (or model ids) to ensemble/stack together. If not using blending frame, then models must have been cross-validated using nfolds > 1, and folds must be identical across models.", required = true)
-    public KeyV3.ModelKeyV3 base_models[];
+            help = "List of models or grids (or their ids) to ensemble/stack together. Grids are expanded to individual models. "
+                    + "If not using blending frame, then models must have been cross-validated using nfolds > 1, and folds must be identical across models.", required = true)
+    public KeyV3 base_models[];
 
     
     // Metalearner algorithm

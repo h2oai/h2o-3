@@ -29,6 +29,8 @@ public class ModelMetricsOrdinalGenericV3<I extends ModelMetricsOrdinalGeneric, 
       convertedConfusionMatrix.table = new TwoDimTableV3().fillFromImpl(modelMetrics._confusion_matrix);
       cm = convertedConfusionMatrix;
     }
+    
+    mean_per_class_error = modelMetrics._mean_per_class_error;
 
     return (S) this;
   }

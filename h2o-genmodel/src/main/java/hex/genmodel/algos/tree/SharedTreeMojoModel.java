@@ -58,8 +58,6 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
      */
     protected double[] _calib_glm_beta;
 
-    protected VariableImportances _variable_importances;
-
 
     protected void postInit() {
       if (_mojo_version == 1.0) {

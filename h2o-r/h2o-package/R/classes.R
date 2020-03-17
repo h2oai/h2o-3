@@ -688,7 +688,7 @@ setMethod("show", "H2ORegressionMetrics", function(object) {
   } else {
       cat("Mean Residual Deviance :  ", h2o.mean_residual_deviance(object), "\n", sep="")
   }
-  if(!is.null(object@algorithm) && object@algorithm %in% c("glm","gbm","drf","xgboost","generic") && exists("r2", where=object@metrics)) {
+  if(!is.null(object@algorithm) && object@algorithm %in% c("glm","generic") && exists("r2", where=object@metrics)) {
     if (!is.na(h2o.r2(object))) cat("R^2 :  ", h2o.r2(object), "\n", sep="")
     null_dev <- h2o.null_deviance(object)
     res_dev  <- h2o.residual_deviance(object)
@@ -804,6 +804,9 @@ setClass("H2OGrid", representation(grid_id = "character",
                                    failure_stack_traces = "list",
                                    failed_raw_params = "matrix",
                                    summary_table = "ANY"))
+
+#' @rdname h2o.keyof
+setMethod("h2o.keyof", signature("H2OGrid"), function(object) object@grid_id)
 
 #' Format grid object in user-friendly way
 #'
