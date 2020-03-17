@@ -29,14 +29,8 @@ There are two ways to use H2O with Java: using the REST API or embedding H2O wit
 How do I communicate with a remote cluster using the REST API?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To create a set of bare POJOs for the REST API payloads that can be used by JVM REST API clients:
+Download the H2O distribution zip file from https://www.h2o.ai/downloads. The distribution zip includes a file named **h2o-bindings-<version>.zip**. This file contains all of the Java bindings necessary for communicating with a remote cluster via the REST API. The REST API documentation is available `here <../rest-api-reference.html>`__.
 
-1. Clone the sources from GitHub.
-2. Start an H2O instance.
-3. Enter ``% cd py``.
-4. Enter ``% python generate_java_binding.py``.
-
-This script connects to the server, gets all the metadata for the REST API schemas, and writes the Java POJOs to ``{sourcehome}/build/bindings/Java``.
 
 --------------
 
