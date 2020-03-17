@@ -67,7 +67,23 @@ class MetricsBase(h2o_meta()):
         return key in dictionary and dictionary[key] is not None
 
     def show(self):
-        """Display a short summary of the metrics."""
+        """Display a short summary of the metrics.
+
+        :examples:
+
+        >>> from from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.show()
+        """
         if self._metric_json==None:
             print("WARNING: Model metrics cannot be calculated and metric_json is empty due to the absence of the response column in your dataset.")
             return
@@ -169,32 +185,125 @@ class MetricsBase(h2o_meta()):
 
 
     def r2(self):
-        """The R squared coefficient."""
+        """The R squared coefficient.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.r2()
+        """
         return self._metric_json["r2"]
 
 
     def logloss(self):
-        """Log loss."""
+        """Log loss.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.logloss()
+        """
         return self._metric_json["logloss"]
 
 
     def nobs(self):
-        """The number of observations."""
+        """
+        The number of observations.
+
+        :examples:
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> perf = cars_gbm.model_performance()
+        >>> perf.nobs()
+        """
         return self._metric_json["nobs"]
 
 
     def mean_residual_deviance(self):
-        """The mean residual deviance for this set of metrics."""
+        """The mean residual deviance for this set of metrics.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip")
+        >>> air_gbm = H2OGradientBoostingEstimator()
+        >>> air_gbm.train(x=list(range(9)),
+        ...               y=9,
+        ...               training_frame=airlines,
+        ...               validation_frame=airlines)
+        >>> air_gbm.mean_residual_deviance(train=True,valid=False,xval=False)
+        """
         return self._metric_json["mean_residual_deviance"]
 
 
     def auc(self):
-        """The AUC for this set of metrics."""
+        """The AUC for this set of metrics.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.auc()
+        """
         return self._metric_json['AUC']
 
 
     def aucpr(self):
-        """The area under the precision recall curve."""
+        """The area under the precision recall curve.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.aucpr()
+        """
         return self._metric_json['pr_auc']
 
 
@@ -204,37 +313,155 @@ class MetricsBase(h2o_meta()):
 
 
     def aic(self):
-        """The AIC for this set of metrics."""
+        """The AIC for this set of metrics.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate[2] = prostate[2].asfactor()
+        >>> prostate[4] = prostate[4].asfactor()
+        >>> prostate[5] = prostate[5].asfactor()
+        >>> prostate[8] = prostate[8].asfactor()
+        >>> predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        >>> response = "CAPSULE"
+        >>> train, valid = prostate.split_frame(ratios=[.8],seed=1234)
+        >>> pros_glm = H2OGeneralizedLinearEstimator(family="binomial")
+        >>> pros_glm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> pros_glm.aic()
+        """
         return self._metric_json['AIC']
 
 
     def gini(self):
-        """Gini coefficient."""
+        """Gini coefficient.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.gini()
+        """
         return self._metric_json['Gini']
 
 
     def mse(self):
-        """The MSE for this set of metrics."""
+        """The MSE for this set of metrics.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.mse()
+        """
         return self._metric_json['MSE']
 
 
     def rmse(self):
-        """The RMSE for this set of metrics."""
+        """The RMSE for this set of metrics.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.rmse()
+        """
         return self._metric_json['RMSE']
 
 
     def mae(self):
-        """The MAE for this set of metrics."""
+        """The MAE for this set of metrics.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(distribution = "poisson",
+        ...                                         seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.mae()
+        """
         return self._metric_json['mae']
 
 
     def rmsle(self):
-        """The RMSLE for this set of metrics."""
+        """The RMSLE for this set of metrics.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "cylinders"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(distribution = "poisson",
+        ...                                         seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.rmsle()
+        """
         return self._metric_json['rmsle']
 
 
     def residual_deviance(self):
-        """The residual deviance if the model has it, otherwise None."""
+        """The residual deviance if the model has it, otherwise None.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate[2] = prostate[2].asfactor()
+        >>> prostate[4] = prostate[4].asfactor()
+        >>> prostate[5] = prostate[5].asfactor()
+        >>> prostate[8] = prostate[8].asfactor()
+        >>> predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        >>> response = "CAPSULE"
+        >>> train, valid = prostate.split_frame(ratios=[.8],seed=1234)
+        >>> pros_glm = H2OGeneralizedLinearEstimator(family="binomial")
+        >>> pros_glm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> pros_glm.residual_deviance()
+        """
         if MetricsBase._has(self._metric_json, "residual_deviance"):
             return self._metric_json["residual_deviance"]
         return None
@@ -245,28 +472,104 @@ class MetricsBase(h2o_meta()):
         return None
     
     def residual_degrees_of_freedom(self):
-        """The residual DoF if the model has residual deviance, otherwise None."""
+        """The residual DoF if the model has residual deviance, otherwise None.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate[2] = prostate[2].asfactor()
+        >>> prostate[4] = prostate[4].asfactor()
+        >>> prostate[5] = prostate[5].asfactor()
+        >>> prostate[8] = prostate[8].asfactor()
+        >>> predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        >>> response = "CAPSULE"
+        >>> train, valid = prostate.split_frame(ratios=[.8],seed=1234)
+        >>> pros_glm = H2OGeneralizedLinearEstimator(family="binomial")
+        >>> pros_glm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> pros_glm.residual_degrees_of_freedom()
+        """
         if MetricsBase._has(self._metric_json, "residual_degrees_of_freedom"):
             return self._metric_json["residual_degrees_of_freedom"]
         return None
 
 
     def null_deviance(self):
-        """The null deviance if the model has residual deviance, otherwise None."""
+        """The null deviance if the model has residual deviance, otherwise None.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate[2] = prostate[2].asfactor()
+        >>> prostate[4] = prostate[4].asfactor()
+        >>> prostate[5] = prostate[5].asfactor()
+        >>> prostate[8] = prostate[8].asfactor()
+        >>> predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        >>> response = "CAPSULE"
+        >>> train, valid = prostate.split_frame(ratios=[.8],seed=1234)
+        >>> pros_glm = H2OGeneralizedLinearEstimator(family="binomial")
+        >>> pros_glm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> pros_glm.null_deviance()
+        """
         if MetricsBase._has(self._metric_json, "null_deviance"):
             return self._metric_json["null_deviance"]
         return None
 
 
     def null_degrees_of_freedom(self):
-        """The null DoF if the model has residual deviance, otherwise None."""
+        """The null DoF if the model has residual deviance, otherwise None.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate[2] = prostate[2].asfactor()
+        >>> prostate[4] = prostate[4].asfactor()
+        >>> prostate[5] = prostate[5].asfactor()
+        >>> prostate[8] = prostate[8].asfactor()
+        >>> predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        >>> response = "CAPSULE"
+        >>> train, valid = prostate.split_frame(ratios=[.8],seed=1234)
+        >>> pros_glm = H2OGeneralizedLinearEstimator(family="binomial")
+        >>> pros_glm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> pros_glm.null_degrees_of_freedom()
+        """
         if MetricsBase._has(self._metric_json, "null_degrees_of_freedom"):
             return self._metric_json["null_degrees_of_freedom"]
         return None
 
 
     def mean_per_class_error(self):
-        """The mean per class error."""
+        """The mean per class error.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        >>> prostate[2] = prostate[2].asfactor()
+        >>> prostate[4] = prostate[4].asfactor()
+        >>> prostate[5] = prostate[5].asfactor()
+        >>> prostate[8] = prostate[8].asfactor()
+        >>> predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+        >>> response = "CAPSULE"
+        >>> train, valid = prostate.split_frame(ratios=[.8],seed=1234)
+        >>> pros_glm = H2OGeneralizedLinearEstimator(family="binomial")
+        >>> pros_glm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> pros_glm.mean_per_class_error()
+        """
         return self._metric_json['mean_per_class_error']
 
     def custom_metric_name(self):
@@ -289,6 +592,21 @@ class H2ORegressionModelMetrics(MetricsBase):
     This class provides an API for inspecting the metrics returned by a regression model.
 
     It is possible to retrieve the R^2 (1 - MSE/variance) and MSE.
+
+    :examples:
+
+    >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+    >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    >>> predictors = ["displacement","power","weight","acceleration","year"]
+    >>> response = "cylinders"
+    >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+    >>> cars_glm = H2OGeneralizedLinearEstimator()
+    >>> cars_glm.train(x = predictors,
+    ...                y = response,
+    ...                training_frame = train,
+    ...                validation_frame = valid)
+    >>> cars_glm.mse()
     """
 
     def __init__(self, metric_json, on=None, algo=""):
@@ -304,20 +622,47 @@ class H2OClusteringModelMetrics(MetricsBase):
 
 
     def tot_withinss(self):
-        """The Total Within Cluster Sum-of-Square Error, or None if not present."""
+        """The Total Within Cluster Sum-of-Square Error, or None if not present.
+
+        :examples:
+
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> km.tot_withinss()
+        """
         if MetricsBase._has(self._metric_json, "tot_withinss"):
             return self._metric_json["tot_withinss"]
         return None
 
 
     def totss(self):
-        """The Total Sum-of-Square Error to Grand Mean, or None if not present."""
+        """The Total Sum-of-Square Error to Grand Mean, or None if not present.
+
+        :examples:
+
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> km.totss()
+        """
         if MetricsBase._has(self._metric_json, "totss"):
             return self._metric_json["totss"]
         return None
 
     def betweenss(self):
-        """The Between Cluster Sum-of-Square Error, or None if not present."""
+        """The Between Cluster Sum-of-Square Error, or None if not present.
+
+        :examples:
+
+        >>> from h2o.estimators.kmeans import H2OKMeansEstimator
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> km = H2OKMeansEstimator(k=3, nfolds=3)
+        >>> km.train(x=list(range(4)), training_frame=iris)
+        >>> km.betweenss()
+        """
         if MetricsBase._has(self._metric_json, "betweenss"):
             return self._metric_json["betweenss"]
         return None
@@ -331,12 +676,48 @@ class H2OMultinomialModelMetrics(MetricsBase):
         super(H2OMultinomialModelMetrics, self).__init__(metric_json, on, algo)
 
     def confusion_matrix(self):
-        """Returns a confusion matrix based of H2O's default prediction threshold for a dataset."""
+        """Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.confusion_matrix(train)
+        """
         return self._metric_json['cm']['table']
 
 
     def hit_ratio_table(self):
-        """Retrieve the Hit Ratios."""
+        """Retrieve the Hit Ratios.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.hit_ratio_table()
+        """
         return self._metric_json['hit_ratio_table']
 
 
@@ -347,12 +728,48 @@ class H2OOrdinalModelMetrics(MetricsBase):
         super(H2OOrdinalModelMetrics, self).__init__(metric_json, on, algo)
 
     def confusion_matrix(self):
-        """Returns a confusion matrix based of H2O's default prediction threshold for a dataset."""
+        """Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.confusion_matrix(train)
+        """
         return self._metric_json['cm']['table']
 
 
     def hit_ratio_table(self):
-        """Retrieve the Hit Ratios."""
+        """Retrieve the Hit Ratios.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution = distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.hit_ratio_table()
+        """
         return self._metric_json['hit_ratio_table']
 
 
@@ -378,6 +795,21 @@ class H2OBinomialModelMetrics(MetricsBase):
           :param on_xval: Metrics built on cross validation data (default is False)
           :param algo: The algorithm the metrics are based off of (e.g. deeplearning, gbm, etc.)
           :returns: A new H2OBinomialModelMetrics object.
+
+          :examples:
+
+          >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+          >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+          >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+          >>> predictors = ["displacement","power","weight","acceleration","year"]
+          >>> response = "economy_20mpg"
+          >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+          >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+          >>> cars_gbm.train(x = predictors,
+          ...                y = response,
+          ...                training_frame = train,
+          ...                validation_frame = valid)
+          >>> cars_gbm.auc(valid=True)
           """
         super(H2OBinomialModelMetrics, self).__init__(metric_json, on, algo)
 
@@ -387,6 +819,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The F1 for the given set of thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.F1()
         """
         return self.metric("f1", thresholds=thresholds)
 
@@ -396,6 +843,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The F2 for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.F2()
         """
         return self.metric("f2", thresholds=thresholds)
 
@@ -405,6 +867,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The F0.5 for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.F0point5()
         """
         return self.metric("f0point5", thresholds=thresholds)
 
@@ -414,6 +891,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The accuracy for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.accuracy()
         """
         return self.metric("accuracy", thresholds=thresholds)
 
@@ -423,6 +915,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold minimizing the error will be used.
         :returns: The error for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.error()
         """
         return H2OBinomialModelMetrics._accuracy_to_error(self.metric("accuracy", thresholds=thresholds))
 
@@ -432,6 +939,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The precision for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.precision()
         """
         return self.metric("precision", thresholds=thresholds)
 
@@ -441,6 +963,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The True Postive Rate.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.tpr()
         """
         return self.metric("tpr", thresholds=thresholds)
 
@@ -450,6 +987,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The True Negative Rate.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.tnr()
         """
         return self.metric("tnr", thresholds=thresholds)
 
@@ -459,6 +1011,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The False Negative Rate.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.fnr()
         """
         return self.metric("fnr", thresholds=thresholds)
 
@@ -468,6 +1035,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The False Positive Rate.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.fpr()
         """
         return self.metric("fpr", thresholds=thresholds)
 
@@ -477,6 +1059,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: Recall for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.recall()
         """
         return self.metric("recall", thresholds=thresholds)
 
@@ -486,6 +1083,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: Sensitivity or True Positive Rate for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.sensitivity()
         """
         return self.metric("sensitivity", thresholds=thresholds)
 
@@ -495,6 +1107,22 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The fallout (same as False Positive Rate) for this set of metrics and thresholds.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.fallout()
+
         """
         return self.metric("fallout", thresholds=thresholds)
 
@@ -504,6 +1132,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The miss rate (same as False Negative Rate).
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.missrate()
         """
         return self.metric("missrate", thresholds=thresholds)
 
@@ -513,6 +1156,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The specificity (same as True Negative Rate).
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.specificity()
         """
         return self.metric("specificity", thresholds=thresholds)
 
@@ -522,6 +1180,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold maximizing the metric will be used.
         :returns: The absolute MCC (a value between 0 and 1, 0 being totally dissimilar, 1 being identical).
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.mcc()
         """
         return self.metric("absolute_mcc", thresholds=thresholds)
 
@@ -531,6 +1204,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold minimizing the error will be used.
         :returns: Return 1 - min(per class accuracy).
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.max_per_class_error()
         """
         return H2OBinomialModelMetrics._accuracy_to_error(self.metric("min_per_class_accuracy", thresholds=thresholds))
 
@@ -540,6 +1228,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param thresholds: thresholds parameter must be a list (i.e. [0.01, 0.5, 0.99]).
             If None, then the threshold minimizing the error will be used.
         :returns: mean per class error.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.mean_per_class_error()
         """
         return H2OBinomialModelMetrics._accuracy_to_error(self.metric("mean_per_class_accuracy", thresholds=thresholds))
 
@@ -565,6 +1268,24 @@ class H2OBinomialModelMetrics(MetricsBase):
             The returned list has a 'value' property holding only
             the metric value (if no threshold provided or if provided as a number),
             or all the metric values (if thresholds provided as a list)
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> local_data = [[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],
+        ...               [1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],
+        ...               [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],
+        ...               [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b']]
+        >>> h2o_data = h2o.H2OFrame(local_data)
+        >>> h2o_data.set_names(['response', 'predictor'])
+        >>> h2o_data["response"] = h2o_data["response"].asfactor()
+        >>> gbm = H2OGradientBoostingEstimator(ntrees=1,
+        ...                                    distribution="bernoulli")
+        >>> gbm.train(x=list(range(1,h2o_data.ncol)),
+        ...           y="response",
+        ...           training_frame=h2o_data)
+        >>> perf = gbm.model_performance()
+        >>> perf.metric("tps", [perf.find_threshold_by_max_metric("f1")])[0][1]
         """
         assert_is_type(thresholds, None, 'all', numeric, [numeric])
         if metric not in H2OBinomialModelMetrics.maximizing_metrics:
@@ -603,6 +1324,21 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param type: the type of metric plot (currently, only ROC supported).
         :param server: if True, generate plot inline using matplotlib's "Agg" backend.
         :returns: None
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234)
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.plot()
         """
         # TODO: add more types (i.e. cutoffs)
         assert_is_type(type, "roc")
@@ -632,6 +1368,22 @@ class H2OBinomialModelMetrics(MetricsBase):
         Return all false positive rates for all threshold values.
 
         :returns: a list of false positive rates.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+        >>> gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+        >>> (fprs, tprs) = gbm.roc(train=True, valid=False, xval=False)
+        >>> fprs
         """
         return self._metric_json["thresholds_and_metric_scores"]["fpr"]
 
@@ -642,6 +1394,22 @@ class H2OBinomialModelMetrics(MetricsBase):
         Return all true positive rates for all threshold values.
 
         :returns: a list of true positive rates.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3, distribution=distribution, fold_assignment="Random")
+        >>> gbm.train(y=response_col, x=predictors, validation_frame=valid, training_frame=train)
+        >>> (fprs, tprs) = gbm.roc(train=True, valid=False, xval=False)
+        >>> tprs
         """
         return self._metric_json["thresholds_and_metric_scores"]["tpr"]
 
@@ -650,6 +1418,26 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         Return the coordinates of the ROC curve as a tuple containing the false positive rates as a list and true positive rates as a list.
         :returns: The ROC values.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> r = cars[0].runif()
+        >>> train = cars[r > .2]
+        >>> valid = cars[r <= .2]
+        >>> response_col = "economy_20mpg"
+        >>> distribution = "bernoulli"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution,
+        ...                                    fold_assignment="Random")
+        >>> gbm.train(x=predictors,
+        ...           y=response_col,
+        ...           validation_frame=valid,
+        ...           training_frame=train)
+        >>> gbm.roc(train=True,  valid=False, xval=False)
         """
         return self.fprs, self.tprs
 
@@ -678,6 +1466,23 @@ class H2OBinomialModelMetrics(MetricsBase):
             If None, then the thresholds maximizing each provided metric will be used.
         :returns: a list of ConfusionMatrix objects (if there are more than one to return), or a single ConfusionMatrix
             (if there is only one).
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.confusion_matrix(train)
         """
         # make lists out of metrics and thresholds arguments
         if metrics is None and thresholds is None:
@@ -742,6 +1547,24 @@ class H2OBinomialModelMetrics(MetricsBase):
         """
         :param metrics: A string among the metrics listed in :const:`maximizing_metrics`.
         :returns: the threshold at which the given metric is maximal.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> local_data = [[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],
+        ...               [1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],
+        ...               [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],
+        ...               [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b']]
+        >>> h2o_data = h2o.H2OFrame(local_data)
+        >>> h2o_data.set_names(['response', 'predictor'])
+        >>> h2o_data["response"] = h2o_data["response"].asfactor()
+        >>> gbm = H2OGradientBoostingEstimator(ntrees=1,
+        ...                                    distribution="bernoulli")
+        >>> gbm.train(x=list(range(1,h2o_data.ncol)),
+        ...           y="response",
+        ...           training_frame=h2o_data)
+        >>> perf = gbm.model_performance()
+        >>> perf.find_threshold_by_max_metric("f1")
         """
         crit2d = self._metric_json['max_criteria_and_metric_scores']
         # print(crit2d)
@@ -760,6 +1583,24 @@ class H2OBinomialModelMetrics(MetricsBase):
         :param threshold: Find the index of this input threshold.
         :returns: the index
         :raises ValueError: if no such index can be found.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> local_data = [[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],
+        ...               [1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],[1, 'a'],
+        ...               [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],
+        ...               [0, 'b'],[0, 'b'],[0, 'b'],[0, 'b'],[0, 'b']]
+        >>> h2o_data = h2o.H2OFrame(local_data)
+        >>> h2o_data.set_names(['response', 'predictor'])
+        >>> h2o_data["response"] = h2o_data["response"].asfactor()
+        >>> gbm = H2OGradientBoostingEstimator(ntrees=1,
+        ...                                    distribution="bernoulli")
+        >>> gbm.train(x=list(range(1,h2o_data.ncol)),
+        ...           y="response",
+        ...           training_frame=h2o_data)
+        >>> perf = gbm.model_performance()
+        >>> perf.find_idx_by_threshold(0.45)
         """
         assert_is_type(threshold, numeric)
         thresh2d = self._metric_json['thresholds_and_metric_scores']
@@ -780,7 +1621,25 @@ class H2OBinomialModelMetrics(MetricsBase):
 
 
     def gains_lift(self):
-        """Retrieve the Gains/Lift table."""
+        """Retrieve the Gains/Lift table.
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["cylinders"] = cars["cylinders"].asfactor()
+        >>> train, valid = cars.split_frame(ratios=[.8], seed=1234)
+        >>> response_col = "cylinders"
+        >>> distribution = "multinomial"
+        >>> predictors = ["displacement","power","weight","acceleration","year"]
+        >>> gbm = H2OGradientBoostingEstimator(nfolds=3,
+        ...                                    distribution=distribution)
+        >>> gbm.train(x=predictors,
+        ...           y = response,
+        ...           training_frame = train,
+        ...           validation_frame = valid)
+        >>> gbm.gains_lift()
+        """
         if 'gains_lift_table' in self._metric_json:
             return self._metric_json['gains_lift_table']
         return None
@@ -789,7 +1648,19 @@ class H2OBinomialModelMetrics(MetricsBase):
 
 
 class H2OAutoEncoderModelMetrics(MetricsBase):
+    """
+    :examples:
 
+    >>> from h2o.estimators.deeplearning import H2OAutoEncoderEstimator
+    >>> train_ecg = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv")
+    >>> test_ecg = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_test.csv")
+    >>> anomaly_model = H2OAutoEncoderEstimator(activation="Tanh",
+    ...                                         hidden=[50,50,50],
+    ...                                         sparse=True, l1=1e-4,
+    ...                                         epochs=100)
+    >>> anomaly_model.train(x=train_ecg.names, training_frame=train_ecg)
+    >>> anomaly_model.mse()
+    """
     def __init__(self, metric_json, on=None, algo=""):
         super(H2OAutoEncoderModelMetrics, self).__init__(metric_json, on, algo)
 
@@ -828,19 +1699,55 @@ class H2OAnomalyDetectionModelMetrics(MetricsBase):
         super(H2OAnomalyDetectionModelMetrics, self).__init__(metric_json, on, algo)
 
     def mean_score(self):
-        """Mean Anomaly Score. For Isolation Forest represents the average of all tree-path lengths."""
+        """
+        Mean Anomaly Score. For Isolation Forest represents the average of all tree-path lengths.
+
+        :examples:
+
+        >>> from h2o.estimators.isolation_forest import H2OIsolationForestEstimator
+        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_train.csv")
+        >>> test = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_test.csv")
+        >>> isofor_model = H2OIsolationForestEstimator(sample_size=5, ntrees=7)
+        >>> isofor_model.train(training_frame = train)
+        >>> perf = isofor_model.model_performance()
+        >>> perf.mean_score()
+        """
         if MetricsBase._has(self._metric_json, "mean_score"):
             return self._metric_json["mean_score"]
         return None
 
     def mean_normalized_score(self):
-        """Mean Normalized Anomaly Score. For Isolation Forest - normalized average path length."""
+        """
+        Mean Normalized Anomaly Score. For Isolation Forest - normalized average path length.
+
+        :examples:
+
+        >>> from h2o.estimators.isolation_forest import H2OIsolationForestEstimator
+        >>> train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_train.csv")
+        >>> test = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_test.csv")
+        >>> isofor_model = H2OIsolationForestEstimator(sample_size=5, ntrees=7)
+        >>> isofor_model.train(training_frame = train)
+        >>> perf = isofor_model.model_performance()
+        >>> perf.mean_normalized_score()
+
+        """
         if MetricsBase._has(self._metric_json, "mean_normalized_score"):
             return self._metric_json["mean_normalized_score"]
         return None
 
 
 class H2OCoxPHModelMetrics(MetricsBase):
+    """
+    :examples:
+
+    >>> from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
+    >>> heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+    >>> coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+    ...                                            stop_column="stop",
+    ...                                            ties="breslow")
+    >>> coxph.train(x="age", y="event", training_frame=heart)
+    >>> coxph
+    """
 
     def __init__(self, metric_json, on=None, algo=""):
         super(H2OCoxPHModelMetrics, self).__init__(metric_json, on, algo)
