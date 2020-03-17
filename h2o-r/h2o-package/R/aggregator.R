@@ -21,6 +21,7 @@
 #' @param num_iteration_without_new_exemplar The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
 #'        Defaults to 500.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param te_model_id Key of TargetEncoderModel
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -46,7 +47,8 @@ h2o.aggregator <- function(training_frame,
                            categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                            save_mapping_frame = FALSE,
                            num_iteration_without_new_exemplar = 500,
-                           export_checkpoints_dir = NULL)
+                           export_checkpoints_dir = NULL,
+                           te_model_id = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -75,6 +77,8 @@ h2o.aggregator <- function(training_frame,
     parms$num_iteration_without_new_exemplar <- num_iteration_without_new_exemplar
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(te_model_id))
+    parms$te_model_id <- te_model_id
 
   # Error check and build model
   model <- .h2o.modelJob('aggregator', parms, h2oRestApiVersion=99, verbose=FALSE)

@@ -52,6 +52,7 @@
 #' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param te_model_id Key of TargetEncoderModel
 #' @return an object of class \linkS4class{H2OBinomialModel} if the response has two categorical levels,
 #'         and \linkS4class{H2OMultinomialModel} otherwise.
 #' @examples
@@ -89,7 +90,8 @@ h2o.naiveBayes <- function(x,
                            eps_prob = 0,
                            compute_metrics = TRUE,
                            max_runtime_secs = 0,
-                           export_checkpoints_dir = NULL)
+                           export_checkpoints_dir = NULL,
+                           te_model_id = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -163,6 +165,8 @@ h2o.naiveBayes <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(te_model_id))
+    parms$te_model_id <- te_model_id
 
   if (!missing(threshold) && missing(min_sdev)) {
     warning("argument 'threshold' is deprecated; use 'min_sdev' instead.")

@@ -90,6 +90,7 @@
 #' @param pred_noise_bandwidth Bandwidth (sigma) of Gaussian multiplicative noise ~N(1,sigma) for tree node predictions Defaults to 0.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param te_model_id Key of TargetEncoderModel
 #' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
 #'        accurate estimates of class probabilities. Defaults to FALSE.
 #' @param calibration_frame Calibration frame for Platt Scaling
@@ -168,6 +169,7 @@ h2o.gbm <- function(x,
                     max_abs_leafnode_pred = 1.797693135e+308,
                     pred_noise_bandwidth = 0,
                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                    te_model_id = NULL,
                     calibrate_model = FALSE,
                     calibration_frame = NULL,
                     custom_metric_func = NULL,
@@ -300,6 +302,8 @@ h2o.gbm <- function(x,
     parms$pred_noise_bandwidth <- pred_noise_bandwidth
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(te_model_id))
+    parms$te_model_id <- te_model_id
   if (!missing(calibrate_model))
     parms$calibrate_model <- calibrate_model
   if (!missing(calibration_frame))
