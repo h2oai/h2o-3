@@ -2,3 +2,5 @@ hex.schemas.XGBoostModelV3
 hex.schemas.XGBoostModelV3$XGBoostModelOutputV3
 hex.schemas.XGBoostV3
 hex.schemas.XGBoostV3$XGBoostParametersV3
+hex.schemas.XGBoostExecReqV3
+hex.schemas.XGBoostExecRespV3

@@ -5,7 +5,7 @@ dependencies {
   
   compile "junit:junit:${junitVersion}"
   compile "com.google.guava:guava:16.0.1"
-  compile "org.apache.httpcomponents:httpclient:4.1"
+  compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
   compile "org.hamcrest:hamcrest-junit:2.0.0.0"
   compile "org.mockito:mockito-core:2.18.0"
   compile "com.github.stefanbirkner:system-rules:1.18.0"

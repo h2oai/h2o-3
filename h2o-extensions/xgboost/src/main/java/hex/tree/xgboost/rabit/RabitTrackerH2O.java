@@ -30,9 +30,7 @@ public class RabitTrackerH2O implements IRabitTracker {
         if (workers < 1) {
             throw new IllegalStateException("workers must be greater than or equal to one (1).");
         }
-
         this.workers = workers;
-        LOG.debug("Rabit tracker started on port " + this.port);
     }
 
     @Override
@@ -56,6 +54,7 @@ public class RabitTrackerH2O implements IRabitTracker {
                 this.sock.socket().setReceiveBufferSize(64 * 1024);
                 InetSocketAddress isa = new InetSocketAddress(H2O.SELF_ADDRESS, this.port);
                 this.sock.socket().bind(isa);
+                LOG.debug("Started listening on port " + this.port);
                 tryToBind = false;
             } catch (java.io.IOException e) {
                 this.port++;
@@ -129,6 +128,7 @@ public class RabitTrackerH2O implements IRabitTracker {
 
         @Override
         public void run() {
+            LOG.debug("Rabit tracker started on port " + tracker.port);
             LinkMap linkMap = null;
             Set<Integer> shutdown = new HashSet<>();
             Map<Integer, RabitWorker> waitConn = new HashMap<>();

@@ -22,6 +22,9 @@ public class BoosterHelper {
   }
   
   public static Booster loadModel(byte[] boosterBytes) {
+    if (boosterBytes == null) {
+      throw new IllegalArgumentException("Booster not initialized!");
+    }
     return loadModel(new ByteArrayInputStream(boosterBytes));
   }
 

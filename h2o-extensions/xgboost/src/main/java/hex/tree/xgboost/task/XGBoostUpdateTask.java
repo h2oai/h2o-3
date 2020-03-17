@@ -1,14 +1,12 @@
 package hex.tree.xgboost.task;
 
-import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.matrix.DenseMatrixFactory;
 import ml.dmlc.xgboost4j.java.Booster;
 import org.apache.log4j.Logger;
 import water.*;
 
 public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
 
-    private static final Logger LOG = Logger.getLogger(DenseMatrixFactory.class);
+    private static final Logger LOG = Logger.getLogger(XGBoostUpdateTask.class);
 
     private final int _tid;
 
@@ -24,7 +22,6 @@ public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
             throw new IllegalStateException("Boosting iteration didn't produce a valid Booster.");
     }
 
-    // This is called from driver
     public byte[] getBoosterBytes() {
         final H2ONode boosterNode = getBoosterNode();
         final byte[] boosterBytes;
@@ -39,12 +36,12 @@ public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
     }
 
     private static class FetchBoosterTask extends DTask<FetchBoosterTask> {
-        private final Key<XGBoostModel> _modelKey;
+        private final Key _modelKey;
 
         // OUT
         private byte[] _boosterBytes;
 
-        private FetchBoosterTask(Key<XGBoostModel> modelKey) {
+        private FetchBoosterTask(Key modelKey) {
             _modelKey = modelKey;
         }
 

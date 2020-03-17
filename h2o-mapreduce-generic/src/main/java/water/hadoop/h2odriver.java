@@ -137,6 +137,7 @@ public class h2odriver extends Configured implements Tool {
   static String cloudingDir = null;
   static boolean disableFlow = false;
   static boolean swExtBackend = false;
+  static String externalXGBoostClusterAddress; // Internal use only
 
   String proxyUrl = null;
 
@@ -1273,6 +1274,9 @@ public class h2odriver extends Configured implements Tool {
       } else if (s.equals("-clouding_dir")) {
         i++; if (i >= args.length) { usage(); }
         cloudingDir = args[i];
+      } else if (s.equals("-external_xgboost_cluster")) {
+        i++; if (i >= args.length) { usage(); }
+        externalXGBoostClusterAddress = args[i];
       } else {
         error("Unrecognized option " + s);
       }
@@ -1804,6 +1808,9 @@ public class h2odriver extends Configured implements Tool {
     }
     if (swExtBackend) {
       addMapperArg(conf, "-allow_clients");
+    }
+    if (externalXGBoostClusterAddress != null) {
+      addMapperArg(conf, "-external_xgboost_cluster", externalXGBoostClusterAddress);
     }
     addMapperArg(conf, "-user_name", userName);
 

@@ -3,7 +3,6 @@ package hex.tree.xgboost;
 import hex.DataInfo;
 import hex.tree.xgboost.matrix.DenseMatrixFactory;
 import hex.tree.xgboost.matrix.SparseMatrixFactory;
-import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
@@ -13,8 +12,6 @@ import water.fvec.Vec;
 import water.util.VecUtils;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import static water.H2O.technote;
 import static water.MemoryManager.malloc4f;
@@ -23,7 +20,15 @@ public class XGBoostUtils {
 
     private static final Logger LOG = Logger.getLogger(XGBoostUtils.class);
 
-    public static String makeFeatureMap(Frame f, DataInfo di) {
+    public static void createFeatureMap(XGBoostModel model, Frame train) {
+        // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
+        DataInfo dataInfo = model.model_info().dataInfo();
+        assert dataInfo != null;
+        String featureMap = makeFeatureMap(train, dataInfo);
+        model.model_info().setFeatureMap(featureMap);
+    }
+
+    private static String makeFeatureMap(Frame f, DataInfo di) {
         // set the names for the (expanded) columns
         String[] coefnames = di.coefNames();
         StringBuilder sb = new StringBuilder();

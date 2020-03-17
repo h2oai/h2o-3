@@ -292,6 +292,9 @@ final public class H2O {
     /** -context_path=jetty_context_path; the context path for jetty */
     public String context_path = "";
 
+    /** -external_xgboost_cluster localhost:12345 TESTING ONLY */
+    public String externalXGBoostClusterAddress;
+
     public KeyValueArg[] extra_headers = new KeyValueArg[0];
   }
 
@@ -742,6 +745,9 @@ final public class H2O {
         trgt.extra_headers = ArrayUtils.append(trgt.extra_headers, new KeyValueArg(key, value));
       } else if(s.matches("embedded")) {
         trgt.embedded = true;
+      } else if(s.matches("external_xgboost_cluster")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.externalXGBoostClusterAddress = args[i];
       } else {
         parseFailed("Unknown argument (" + s + ")");
       }

@@ -34,7 +34,7 @@ public class SparseMatrixFactory {
             di, sparseMatrix, sparseMatrixDimensions,
             responseVec, resp, weights, offsets);
 
-        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di);
+        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di.fullN());
     }
 
     public static DMatrix csr(
@@ -49,12 +49,12 @@ public class SparseMatrixFactory {
             chunks, weight,
             di, sparseMatrix._rowHeaders, sparseMatrix._sparseData, sparseMatrix._colIndices,
             respIdx, resp, weights, offsetIdx, offsets);
-        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di);
+        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di.fullN());
     }
 
-    private static DMatrix toDMatrix(SparseMatrix sm, SparseMatrixDimensions smd, int actualRows, DataInfo di) throws XGBoostError {
+    private static DMatrix toDMatrix(SparseMatrix sm, SparseMatrixDimensions smd, int actualRows, int shape) throws XGBoostError {
         DMatrix trainMat = new DMatrix(sm._rowHeaders, sm._colIndices, sm._sparseData,
-            DMatrix.SparseType.CSR, di.fullN(), actualRows + 1,
+            DMatrix.SparseType.CSR, shape, actualRows + 1,
             smd._nonZeroElementsCount);
         assert trainMat.rowNum() == actualRows;
         return trainMat;
