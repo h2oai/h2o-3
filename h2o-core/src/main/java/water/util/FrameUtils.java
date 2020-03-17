@@ -111,9 +111,16 @@ public class FrameUtils {
     }
   }
 
-  public static Frame applyTargetEncoder(Model teModel, Frame inputFrame) {
+  /**
+   * Helper method to apply TargetEncoderModel
+   * @param teModel trained TargetEncoderModel
+   * @param inputFrame frame to apply target encoding to
+   * @param scopeTrack `true` if Scope is tracking keys
+   * @return a Frame with encodings
+   */
+  public static Frame applyTargetEncoder(Model teModel, Frame inputFrame, boolean scopeTrack) {
     Frame transformed = teModel.score(inputFrame);
-    Scope.untrack(transformed.keys());
+    if (scopeTrack) Scope.untrack(transformed.keys());
 
     // following manipulations with columns is a responsibility of a future pipeline concept. Support for input output columns for the models would be helpful as well.
     Frame train = teModel._parms.train();
@@ -133,13 +140,6 @@ public class FrameUtils {
     });
     DKV.put(transformed);
     return transformed;
-  }
-
-  //TODO remove at the end of PR
-  public static void printOutFrameAsTable(Frame fr, boolean rollups, long limit) {
-    assert limit <= Integer.MAX_VALUE;
-    TwoDimTable twoDimTable = fr.toTwoDimTable(0, (int) limit, rollups);
-    System.out.println(twoDimTable.toString(2, true));
   }
 
   public static void printTopCategoricalLevels(Frame fr, boolean warn, int topK) {
