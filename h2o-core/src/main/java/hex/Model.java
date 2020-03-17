@@ -1519,7 +1519,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   private Frame applyTEIfModelAvailable(Frame newFr) {
     if(_output._te_model_key != null ) {
-      Frame encodedFrame = FrameUtils.applyTargetEncoder(DKV.getGet(_output._te_model_key), newFr);
+      Frame encodedFrame = FrameUtils.applyTargetEncoder(DKV.getGet(_output._te_model_key), newFr, false);
       Arrays.stream(encodedFrame.keys()).forEach(key -> {
         _toDelete.put(key, "track encoded by TE frame");
       });
