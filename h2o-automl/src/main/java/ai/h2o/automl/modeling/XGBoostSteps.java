@@ -1,12 +1,8 @@
 package ai.h2o.automl.modeling;
 
-import ai.h2o.automl.Algo;
-import ai.h2o.automl.AutoML;
-import ai.h2o.automl.ModelingStep;
-import ai.h2o.automl.ModelingSteps;
-import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.*;
+import ai.h2o.automl.ModelSelectionStrategies.KeepBestN;
 import ai.h2o.automl.events.EventLogEntry;
-import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
@@ -14,14 +10,10 @@ import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria.SequentialSearchCriteria;
 import hex.grid.HyperSpaceSearchCriteria.StoppingCriteria;
 import hex.grid.SequentialWalker;
-import hex.tree.gbm.GBMModel;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
-import water.DKV;
-import water.H2O;
 import water.Job;
 import water.Key;
-import water.util.StringUtils;
 
 import java.util.*;
 
@@ -97,8 +89,7 @@ public class XGBoostSteps extends ModelingSteps {
 
         @Override
         protected boolean canRun() {
-            // TODO: add event log message here?
-            return getBestXGBs(1).size() > 0;
+            return super.canRun() && getBestXGBs(1).size() > 0;
         }
         public XGBoostExploitationStep(String id, int weight, AutoML autoML, boolean emulateLightGBM) {
             super(Algo.XGBoost, id, weight, autoML);
@@ -240,7 +231,7 @@ public class XGBoostSteps extends ModelingSteps {
                 Key resultKey = null;
 
                 @Override
-                protected ModelingStep.ModelSelectionStrategy getSelectionStrategy() {
+                protected ModelSelectionStrategy getSelectionStrategy() {
 //                    return new KeepBestNFromSubgroup<>(
 //                            1,
 //                            k -> k.get() instanceof XGBoostModel,

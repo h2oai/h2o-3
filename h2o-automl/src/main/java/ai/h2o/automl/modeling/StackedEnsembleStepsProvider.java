@@ -34,7 +34,7 @@ public class StackedEnsembleStepsProvider
             protected boolean canRun() {
                 Key<Model>[] keys = getBaseModels();
                 Work seWork = getAllocatedWork();
-                if (seWork == null) {
+                if (!super.canRun()) {
                     aml().job().update(0, "Skipping this StackedEnsemble");
                     aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("Skipping StackedEnsemble '%s' due to the exclude_algos option.", _id));
                     return false;

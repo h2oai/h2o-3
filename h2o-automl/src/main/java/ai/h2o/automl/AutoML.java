@@ -385,10 +385,10 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void distributeExplorationVsExploitationWork(WorkAllocations allocations) {
     int sumExploration = allocations.remainingWork(ModelingStep.isExplorationWork);
     int sumExploitation = allocations.remainingWork(ModelingStep.isExploitationWork);
-    int total = sumExploration+sumExploitation;
-    double explorationRatio = _buildSpec.build_control.exploration_ratio;
-    int newSumExploration = (int)Math.round(explorationRatio * total);
-    int newSumExploitation = total - newSumExploration;
+    double explorationRatio = _buildSpec.build_models.exploration_ratio;
+    int newTotal = (int)Math.round(sumExploration / explorationRatio);
+    int newSumExploration = sumExploration; // keeping the same weight for exploration steps (principle of less surprise).
+    int newSumExploitation = newTotal - newSumExploration;
     for (Work work : allocations.getAllocations(ModelingStep.isExplorationWork)) {
       work._weight = (int)Math.round((double)work._weight * newSumExploration/sumExploration);
     }

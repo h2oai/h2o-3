@@ -46,7 +46,7 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
     protected Statement withBefores(FrameworkMethod method, Object target, Statement statement) {
         List<FrameworkMethod> befores = getTestClass().getAnnotatedMethods(
                 Before.class);
-        return new H2ORunnerBefores(statement, befores, null);
+        return new H2ORunnerBefores(statement, befores, target);
     }
 
     @Override

@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
+import ai.h2o.automl.ModelSelectionStrategy.Selection;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
@@ -25,11 +26,11 @@ import water.util.Countdown;
 import water.util.EnumUtils;
 import water.util.Log;
 
-import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
@@ -107,7 +108,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     }
 
     protected boolean canRun() {
-        return getAllocatedWork() != null;
+        Work work = getAllocatedWork();
+        return work != null && work._weight > 0;
     }
 
     protected WorkAllocations getWorkAllocations() {
@@ -462,7 +464,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     localExecutor.monitor(innerTraining, work, job, false);
 
                     Log.debug("Selection leaderboard " + selectionLeaderboard._key, selectionLeaderboard.toLogString());
-                    ModelSelectionStrategy.Selection selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.getModelKeys());
+                    Selection selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.getModelKeys());
                     Leaderboard lb = aml().leaderboard();
                     Log.debug("Selection result for job " + key, ToStringBuilder.reflectionToString(selection));
                     lb.removeModels(selection._remove, true);
@@ -526,147 +528,6 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     tryComplete();
                 }
             }, j._work, j._max_runtime_msecs);
-        }
-    }
-
-    public static class Models<M extends Model> extends Lockable<Models<M>> implements ModelContainer<M> {
-
-        private final Class<M> _clz;
-        private final Job _job;
-        private Key<M>[] _modelKeys = new Key[0];
-
-        public Models(Key<Models<M>> key, Class<M> clz) {
-            this(key, clz, null);
-        }
-
-        public Models(Key<Models<M>> key, Class<M> clz, Job job) {
-            super(key);
-            _clz = clz;
-            _job = job;
-        }
-
-        @Override
-        public Key<M>[] getModelKeys() {
-            return _modelKeys.clone();
-        }
-
-        @Override
-        public M[] getModels() {
-            M[] models = (M[]) Array.newInstance(_clz, _modelKeys.length);
-            for (int i=0; i < _modelKeys.length; i++) {
-                Key<M> key = _modelKeys[i];
-                models[i] = key == null ? null : key.get() ;
-            }
-            return models;
-        }
-
-        @Override
-        public int getModelCount() {
-            return _modelKeys.length;
-        }
-
-        public void addModel(Key<M> key) {
-            addModels(new Key[]{key});
-        }
-
-        public void addModels(Key<M>[] keys) {
-           write_lock(_job);
-           _modelKeys = ArrayUtils.append(_modelKeys, keys);
-           update(_job);
-           unlock(_job);
-        }
-
-        @Override
-        protected Futures remove_impl(final Futures fs, boolean cascade) {
-            if (cascade) {
-                for (Key<M> k : _modelKeys)
-                    Keyed.remove(k, fs, true);
-            }
-            _modelKeys = new Key[0];
-            return super.remove_impl(fs, cascade);
-        }
-    }
-
-    @FunctionalInterface
-    public interface ModelSelectionStrategy<M extends Model>{
-
-        class Selection<M extends Model> {
-            final Key<M>[] _add;  //models that should be added to the original population
-            final Key<M>[] _remove; //models that should be removed from the original population
-
-            public Selection(Key<M>[] add, Key<M>[] remove) {
-                _add = add;
-                _remove = remove;
-            }
-        }
-
-        Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels);
-    }
-
-    public abstract class LeaderboardBasedSelectionStrategy<M extends Model> implements ModelSelectionStrategy<M> {
-
-        final Supplier<Leaderboard> _leaderboardSupplier;
-
-        public LeaderboardBasedSelectionStrategy(Supplier<Leaderboard> leaderboardSupplier) {
-            _leaderboardSupplier = leaderboardSupplier;
-        }
-
-        Leaderboard makeSelectionLeaderboard() {
-            return _leaderboardSupplier.get();
-        }
-    }
-
-    public class KeepBestN<M extends Model> extends LeaderboardBasedSelectionStrategy<M>{
-
-        private final int _N;
-
-        public KeepBestN(int N, Supplier<Leaderboard> leaderboardSupplier) {
-            super(leaderboardSupplier);
-            _N = N;
-        }
-
-        @Override
-        @SuppressWarnings("unchecked")
-        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
-            Leaderboard tmpLeaderboard = makeSelectionLeaderboard();
-            tmpLeaderboard.addModels((Key<Model>[]) originalModels);
-            tmpLeaderboard.addModels((Key<Model>[]) newModels);
-            Key<Model>[] sortedKeys = tmpLeaderboard.getModelKeys();
-            Key<Model>[] bestN = ArrayUtils.subarray(sortedKeys, 0, _N);
-            Key<M>[] toAdd = Arrays.stream(bestN).filter(k -> !ArrayUtils.contains(originalModels, k)).toArray(Key[]::new);
-            Key<M>[] toRemove = Arrays.stream(originalModels).filter(k -> !ArrayUtils.contains(bestN, k)).toArray(Key[]::new);
-            return new Selection<>(toAdd, toRemove);
-        }
-    }
-
-    public class KeepBestConstantSize<M extends Model> extends LeaderboardBasedSelectionStrategy<M> {
-
-        public KeepBestConstantSize(Supplier<Leaderboard> leaderboardSupplier) {
-            super(leaderboardSupplier);
-        }
-
-        @Override
-        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
-            return new KeepBestN<M>(originalModels.length, _leaderboardSupplier).select(originalModels, newModels);
-        }
-    }
-
-    public class KeepBestNFromSubgroup<M extends Model> extends LeaderboardBasedSelectionStrategy<M> {
-
-        private final Predicate<Key<M>> _criterion;
-        private final int _N;
-
-        public KeepBestNFromSubgroup(int N, Predicate<Key<M>> criterion, Supplier<Leaderboard> leaderboardSupplier) {
-            super(leaderboardSupplier);
-            _criterion = criterion;
-            _N = N;
-        }
-
-        @Override
-        public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
-            Key<M>[] originalModelsSubgroup = Arrays.stream(originalModels).filter(_criterion).toArray(Key[]::new);
-            Key<M>[] newModelsSubGroup = Arrays.stream(newModels).filter(_criterion).toArray(Key[]::new);
-            return new KeepBestN<M>(_N, _leaderboardSupplier).select(originalModelsSubgroup, newModelsSubGroup);
         }
     }
 

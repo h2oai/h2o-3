@@ -1,13 +1,13 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import ai.h2o.automl.ModelSelectionStrategies.KeepBestN;
 import ai.h2o.automl.events.EventLogEntry;
 import hex.Model;
 import hex.grid.Grid;
 import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
-import hex.tree.xgboost.XGBoostModel;
 import water.Job;
 import water.Key;
 
@@ -70,8 +70,7 @@ public class GBMStepsProvider
 
             @Override
             protected boolean canRun() {
-                // TODO: add event log message here?
-                return getBestGBM() != null;
+                return super.canRun() && getBestGBM() != null;
             }
             public GBMExploitationStep(String id, int weight, AutoML autoML) {
                 super(Algo.GBM, id, weight, autoML);

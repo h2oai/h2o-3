@@ -50,7 +50,6 @@ public class AutoMLBuildSpec extends Iced {
     public boolean keep_cross_validation_models = false;
     public boolean keep_cross_validation_fold_assignment = false;
 
-    public double exploration_ratio = 0.67;
     public String export_checkpoints_dir = null;
 
     public AutoMLBuildControl() {
@@ -172,6 +171,7 @@ public class AutoMLBuildSpec extends Iced {
     public Algo[] exclude_algos;
     public Algo[] include_algos;
     public StepDefinition[] modeling_plan;
+    public double exploration_ratio = 0.8;
     public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
   }
 
