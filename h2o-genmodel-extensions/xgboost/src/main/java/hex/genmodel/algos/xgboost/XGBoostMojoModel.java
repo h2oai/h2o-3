@@ -111,11 +111,6 @@ public abstract class XGBoostMojoModel extends MojoModel implements TreeBackedMo
   }
 
   @Override
-  public String[] getDecisionPath(double[] row) {
-    return new String[0];
-  }
-
-  @Override
   public double[] getCalibGlmBeta() {
     return _calib_glm_beta;
   }
