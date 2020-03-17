@@ -110,6 +110,7 @@
 #'        Defaults to 0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
+#' @param te_model_id Key of TargetEncoderModel
 #' @return A subclass of \code{\linkS4class{H2OModel}} is returned. The specific subclass depends on the machine
 #'         learning task at hand (if it's binomial classification, then an \code{\linkS4class{H2OBinomialModel}} is
 #'         returned, if it's regression then a \code{\linkS4class{H2ORegressionModel}} is returned). The default print-
@@ -208,7 +209,8 @@ h2o.glm <- function(x,
                     max_after_balance_size = 5.0,
                     max_hit_ratio_k = 0,
                     max_runtime_secs = 0,
-                    custom_metric_func = NULL)
+                    custom_metric_func = NULL,
+                    te_model_id = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -353,6 +355,8 @@ h2o.glm <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
+  if (!missing(te_model_id))
+    parms$te_model_id <- te_model_id
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
