@@ -20,6 +20,7 @@ actual_model_runtime = []   # in seconds
 model_runtime_overrun = []  # % by which the model runtime exceeds the maximum runtime.
 model_within_max_runtime = []
 err_bound = 0.5              # fractor by which we allow the model runtime over-run to be
+system_overloaded = False # true if max run time increases while iteration number decreases
 
 def algo_max_runtime_secs():
     '''
@@ -167,11 +168,17 @@ def grabRuntimeInfo(err_bound, reduction_factor, model, training_data, x_indices
           "\nNumber of epochs/iterations/trees with max_runtime_sec "
           "restriction: {1}".format(model_iteration, checkIteration(model)))
     iteration_change = model_iteration - checkIteration(model)   # pass test as long as iteration number has dropped
+    if (iteration_change < 0) and model_runtime_overrun[-1] > 0:
+        system_overloaded=True
     if (model_runtime_overrun[-1] <= err_bound) or (iteration_change>0):
-        print("********** Test passed!.")
+        print("********** Test passed for {0}!.".format(model.algo))
+        model_within_max_runtime.append(0)
+    elif system_overloaded:
+        print("********** Test not evaluated for {0}.  System overloaded.".format(model.algo))
         model_within_max_runtime.append(0)
     else:
-        print("********** Test failed.  Model training time exceeds max_runtime_sec by more than {0}.".format(err_bound))
+        print("********** Test failed for {1}.  Model training time exceeds max_runtime_sec by more than "
+              "{0}.".format(err_bound, model.algo))
         model_within_max_runtime.append(1)
 
 
