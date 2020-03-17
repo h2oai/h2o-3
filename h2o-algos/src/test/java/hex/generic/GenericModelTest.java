@@ -24,6 +24,7 @@ import water.*;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.util.FrameUtilsTest;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -903,6 +904,11 @@ public class GenericModelTest extends TestUtil {
             Scope.track(predictions);
 
             final boolean equallyScored = genericModel.testJavaScoring(testFrame, predictions, 0);
+
+            final Frame originalModelPredictions = stackedEnsembleModel.score(testFrame);
+            Scope.track(originalModelPredictions);
+            assertTrue(FrameUtilsTest.compareFrames(predictions, originalModelPredictions));
+            
             assertTrue(equallyScored);
         } finally {
             Scope.exit();
