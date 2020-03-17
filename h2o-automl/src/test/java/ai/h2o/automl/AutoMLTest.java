@@ -22,7 +22,6 @@ import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
 
-import java.lang.invoke.LambdaMetafactory;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
