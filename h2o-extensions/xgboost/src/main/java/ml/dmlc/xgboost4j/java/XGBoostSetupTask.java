@@ -2,41 +2,35 @@ package ml.dmlc.xgboost4j.java;
 
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.XGBoostUtils;
-import water.*;
+import water.H2O;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.IcedHashMapGeneric;
 import water.util.Log;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 /**
  * Initializes XGBoost training (converts Frame to set of node-local DMatrices)
  */
-public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
+public abstract class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
 
-  private final XGBoostModelInfo _sharedModel;
-  private final XGBoostModel.XGBoostParameters _parms;
-  private final boolean _sparse;
+  protected final XGBoostModel.XGBoostParameters _parms;
   private final BoosterParms _boosterParms;
   private final byte[] _checkpoint;
   private final IcedHashMapGeneric.IcedHashMapStringString _rabitEnv;
-  private final Frame _trainFrame;
 
   public XGBoostSetupTask(
       XGBoostModel model, XGBoostModel.XGBoostParameters parms, BoosterParms boosterParms,
       byte[] checkpointToResume, Map<String, String> rabitEnv, FrameNodes trainFrame
   ) {
     super(model._key, trainFrame._nodes);
-    _sharedModel = model.model_info();
     _parms = parms;
-    _sparse = model._output._sparse;
     _boosterParms = boosterParms;
     _checkpoint = checkpointToResume;
     (_rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString()).putAll(rabitEnv);
-    _trainFrame = trainFrame._fr;
   }
 
   @Override
@@ -53,7 +47,7 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
         Log.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
         matrix.saveBinary(path.getAbsolutePath());
       }
-    } catch (XGBoostError xgBoostError) {
+    } catch (XGBoostError|IOException xgBoostError) {
       throw new IllegalStateException("Failed XGBoost training.", xgBoostError);
     }
 
@@ -67,16 +61,7 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
     thread.start(); // we do not need to wait for the Updater to init Rabit - subsequent tasks will wait
   }
 
-  private DMatrix makeLocalMatrix() throws XGBoostError {
-      return XGBoostUtils.convertFrameToDMatrix(
-              _sharedModel.dataInfo(),
-              _trainFrame,
-              _parms._response_column,
-              _parms._weights_column,
-              _parms._offset_column,
-              _sparse
-      );
-  }
+  protected abstract DMatrix makeLocalMatrix() throws IOException, XGBoostError;
 
   /**
    * Finds what nodes actually do carry some of data of a given Frame

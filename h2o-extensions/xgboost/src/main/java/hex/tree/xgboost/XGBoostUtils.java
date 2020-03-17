@@ -196,7 +196,7 @@ public class XGBoostUtils {
         }
     }
 
-    static Map<String, FeatureScore> parseFeatureScores(String[] modelDump) {
+    public static Map<String, FeatureScore> parseFeatureScores(String[] modelDump) {
         Map<String, FeatureScore> featureScore = new HashMap<>();
         for (String tree : modelDump) {
             for (String node : tree.split("\n")) {
