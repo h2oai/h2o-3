@@ -17,12 +17,6 @@ Note that in Python, if there are no `base_models` in `_parms`, then `actual_par
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7305'>PUBDEV-7305</a>] - Fixed an issue that caused `model end_time` and `run_time` properties to return a value of 0 in client mode.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7321'>PUBDEV-7321</a>] -         H2O XGBoost crash: H2OConnectionError: Local server has died unexpectedly.  (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7322'>PUBDEV-7322</a>] -         incorrectly conditionally changing string in a cell damages h2o DataFrame If there is another column that&#39;s numeric (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7329'>PUBDEV-7329</a>] - Added an option to disable security headers. This prevents denial of requests to display H2O Flow in an iframe. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7357'>PUBDEV-7357</a>] - TargetEncoderModel's summary no longer prints the fold column as a column that is going to be encoded by this model.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7364'>PUBDEV-7364</a>] - When h2omapper fails before discovering SELF (ip & port), the log messages are no longer lost. 
@@ -32,13 +26,7 @@ Note that in Python, if there are no `base_models` in `_parms`, then `actual_par
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4915'>PUBDEV-4915</a>] - Users can now specify offset_columns in Stacked Ensemble. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7167'>PUBDEV-7167</a>] - Added DeepLearning MOJO support in Generic Models. 
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7316'>PUBDEV-7316</a>] - Added PSVM to list of metalearner_algortihm options in Stacked Ensemble. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7352'>PUBDEV-7352</a>] - Stacked Ensemble MOJOs are now importable. (STILL OPEN)
 </li>
 </ul>
 
@@ -46,8 +34,6 @@ Note that in Python, if there are no `base_models` in `_parms`, then `actual_par
 
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6599'>PUBDEV-6599</a>] - Changed the output format of `get_automl` in Python from a dictionary to an object.
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7314'>PUBDEV-7314</a>] - Fixed an issue that caused PSVM to return NaNs for some metrics. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7371'>PUBDEV-7371</a>] - Users can now specify `-hdfs_config` multiple times to specify multiple Hadoop config files.
 </li>
@@ -58,9 +44,7 @@ Note that in Python, if there are no `base_models` in `_parms`, then `actual_par
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7187'>PUBDEV-7187</a>] - Improved FAQ describing how to use the H2O-3 REST API from Java. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7380'>PUBDEV-7380</a>] - Updated the `transform` parameter documentation in Aggregator, GLRM, and PCA to indicate that this option only works on numerical columns. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7187'>PUBDEV-7187</a>] - Improved FAQ describing how to use the H2O-3 REST API from Java.
 </li>
 </ul>
 
