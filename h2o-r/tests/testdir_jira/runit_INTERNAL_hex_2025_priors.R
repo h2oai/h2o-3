@@ -18,7 +18,7 @@ test <- function(){
   betaConstraints <- betaConstraints[1:(nrow(betaConstraints)-1),] # remove intercept
   betaConstraints <- as.data.frame(betaConstraints)
 
-  ## Set Parameters (default standardization = T)
+  ## Set Parameters (default standardization = TRUE)
 
   indVars <-  as.character(betaConstraints$names[1:nrow(betaConstraints)])
   depVars <- "C3"
@@ -35,12 +35,12 @@ test <- function(){
   ## Run full H2O GLM with and without priors
   Log.info("Run a logistic regression with no regularization and alpha = 0 and beta constraints without priors.")
   glm_nopriors <- h2o.glm(x = indVars, y = depVars, training_frame = h2oData, family = family_type,
-                          standardize = T, lambda = lambda, alpha = alpha,
+                          standardize = TRUE, lambda = lambda, alpha = alpha,
                           beta_constraints = betaConstraints)
   Log.info("Run a logistic regression with no regularization and alpha = 0 and beta constraints with prior =
             total real probability.")
   glm_priors <- h2o.glm(x = indVars, y = depVars, training_frame = h2oData, family = family_type, prior = totRealProb,
-                        standardize = T, lambda = lambda, alpha = alpha, beta_constraints = betaConstraints)
+                        standardize = TRUE, lambda = lambda, alpha = alpha, beta_constraints = betaConstraints)
 
 
   ## Check coefficients remained the same and the intercept is adjusted

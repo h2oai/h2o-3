@@ -10,8 +10,8 @@ hdfs_airlines_file <- "/datasets/allyears2k_headers.zip"
 s3_url <- paste0("s3n://", aws_id, ":", aws_key, "@", s3_airlines_file)
 hdfs_url <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_airlines_file)
 
-airlines.hex <- h2o.importFile(s3_url, header = T)
-airlines_hdfs.hex <- h2o.importFile(hdfs_url, header = T)
+airlines.hex <- h2o.importFile(s3_url, header = TRUE)
+airlines_hdfs.hex <- h2o.importFile(hdfs_url, header = TRUE)
 print(summary(airlines.hex))
 
 # Set predictor and response variables
@@ -21,10 +21,10 @@ myX <- c("Origin", "Dest", "Year", "UniqueCarrier", "DayOfWeek",
 
 ## Simple GLM - Predict Delays
 data.glm <- h2o.glm(y = myY, x = myX, training_frame = airlines.hex,
-                    family = "binomial", standardize=T, lambda_search = T)
+                    family = "binomial", standardize=T, lambda_search = TRUE)
 
 ## Simple GBM
-data.gbm <- h2o.gbm(y = myY, x = myX, balance_classes = T,
+data.gbm <- h2o.gbm(y = myY, x = myX, balance_classes = TRUE,
                     training_frame = airlines.hex, ntrees = 20, max_depth = 5,
                     distribution = "bernoulli", learn_rate = .1, min_rows = 2)
 

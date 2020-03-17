@@ -20,7 +20,7 @@ test <- function() {
 	myY <- "label"
 	print("Creating model with CV")
 	h2o.glm.CV <- h2o.glm(x=myX, y=myY, training_frame=mushroom.train, model_id="h2o.glm.CV.mushroom", family="binomial",
-						  alpha=1, lambda_search=T, nfolds=3, standardize = TRUE)
+						  alpha=1, lambda_search=TRUE, nfolds=3, standardize = TRUE)
 	print(h2o.glm.CV)  #Confirm reported values accurate and match browser
 
 	print("Reading in Abalone data for gaussian glm.")
@@ -29,7 +29,7 @@ test <- function() {
 	myY <- "C9"
 	print("Creating model with CV")
 	h2o.glm.CV <- h2o.glm(x=myX, y=myY, training_frame=abalone.train, model_id="h2o.glm.CV.abalone", family="gaussian",
-						  alpha=1, lambda_search=T, nfolds=3, standardize = TRUE)
+						  alpha=1, lambda_search=TRUE, nfolds=3, standardize = TRUE)
 	print(h2o.glm.CV)  #Confirm reported values accurate and match browser
 
   

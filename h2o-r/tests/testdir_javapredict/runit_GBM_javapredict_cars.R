@@ -25,7 +25,7 @@ function() {
     params$max_depth       <- 10
     params$min_rows        <- 1
     params$learn_rate      <- 0.1
-    params$balance_classes <- sample( c(T,F), 1)
+    params$balance_classes <- sample( c(TRUE,FALSE), 1)
     params$x               <- c("name","economy", "displacement","power","weight","acceleration","year")
     params$y               <- "cylinders"
     params$training_frame  <- training_frame

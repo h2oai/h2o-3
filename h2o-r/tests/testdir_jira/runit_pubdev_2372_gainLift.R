@@ -58,7 +58,7 @@ test.pubdev.2372 <- function(conn){
 	print("Compare results when calculation done in R")
 	lab = as.data.frame(train[,myY])
 	# Sort probabitites 
-	idx = sort(pred_prob[,1],decreasing = T,index.return=T)
+	idx = sort(pred_prob[,1],decreasing = TRUE,index.return=TRUE)
 	lab = lab[idx$ix,1]
 	pred_prob = pred_prob[idx$ix,1]
 

@@ -29,7 +29,7 @@ test <- function() {
 	#pr = predict(gg,newdata = data,type = "response")# mean = 0.04420; min = 0.02292; max = 0.07156; 
 	myX = c( "Merit", "Class","C1M3","C4M3")
 	hh = h2o.deeplearning(x = myX,y = "Loss",distribution ="tweedie",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
-                      reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
+                      reproducible = TRUE,activation = "Tanh",balance_classes = FALSE,force_load_balance = FALSE,
                       seed = 2353123,tweedie_power = 1.5,score_training_samples = 0,score_validation_samples = 0,
                       training_frame = cancar, stopping_rounds=0)
 
@@ -52,7 +52,7 @@ test <- function() {
 	#pr = predict(gg,newdata = data,type = "response") #mean = 0.04278; min = 0.02288; max = 0.07294 ; 
 	
 	hh = h2o.deeplearning(x = myX,y = "Loss",distribution ="tweedie",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
-                      reproducible = T,activation = "Tanh",balance_classes = F,force_load_balance = F,
+                      reproducible = TRUE,activation = "Tanh",balance_classes = FALSE,force_load_balance = FALSE,
                       seed = 2353123,tweedie_power = 1.5,score_training_samples = 0,score_validation_samples = 0,
                       weights_column = "Insured",training_frame = cancar, stopping_rounds=0)
 	hh@model$training_metrics@metrics$mean_residual_deviance  #0.0001958009   0.001300774

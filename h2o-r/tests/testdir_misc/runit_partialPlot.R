@@ -75,13 +75,13 @@ test <- function() {
   }
   
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
-  h2o_race_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
-  h2o_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = F)
+  h2o_race_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = FALSE)
+  h2o_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = FALSE)
   h2o_age_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex, xname = "AGE", h2o.pp = h2o_age_pp)
   h2o_race_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex, xname = "RACE", h2o.pp = h2o_race_pp)
   
   ## Calculate partial dependence uisng h2o.partialPlot for column "AGE" on row 1
-  h2o_row1_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = F, row_index=1)
+  h2o_row1_age_pp = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "AGE", plot = FALSE, row_index=1)
   h2o_row1_age_pp_2 = partialDependence(object = prostate_drf, pred.data = prostate_hex[1,], xname = "AGE", h2o.pp = h2o_age_pp)
     
   #Mean response
@@ -112,9 +112,9 @@ test <- function() {
   prostate_hex_race_2 <- prostate_hex[prostate_hex$RACE == "2", ]
   
   ## Calculate partial plot on the subsetted dataset
-  h2o_pp_race_0 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_0, cols = "RACE", plot = F)
-  h2o_pp_race_1 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_1, cols = "RACE", plot = F)
-  h2o_pp_race_2 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_2, cols = "RACE", plot = F)
+  h2o_pp_race_0 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_0, cols = "RACE", plot = FALSE)
+  h2o_pp_race_1 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_1, cols = "RACE", plot = FALSE)
+  h2o_pp_race_2 = h2o.partialPlot(object = prostate_drf, data = prostate_hex_race_2, cols = "RACE", plot = FALSE)
   
   ## Calculate the partial dependence manually
   check_pp_race_0 = partialDependence(object = prostate_drf, pred.data = prostate_hex_race_0, xname = "RACE", h2o.pp = h2o_pp_race_0)
@@ -139,7 +139,7 @@ test <- function() {
   checkEqualsNumeric(check_pp_race_2[,"std_error_mean_response"], h2o_pp_race_2[,"std_error_mean_response"])
   
   ## H2O partial plot on the entire dataset
-  h2o_pp_race   = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = F)
+  h2o_pp_race   = h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "RACE", plot = FALSE)
   
   ## Dataset with only one level only scores with the first level in the column domain based off of the model
   checkEquals(h2o_pp_race_0$RACE, "0")

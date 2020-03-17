@@ -33,8 +33,8 @@ check.deeplearning_autoencoder <- function() {
                                   model_id="ae_model",
                                   training_frame=train_unsupervised[-resp],
                                   activation="Tanh",
-                                  ignore_const_cols=F,
-                                  autoencoder=T,
+                                  ignore_const_cols=FALSE,
+                                  autoencoder=TRUE,
                                   hidden=c(nfeatures),
                                   epochs=1,
                                   reproducible=T,#slow - turn off for real problems
@@ -66,10 +66,10 @@ check.deeplearning_autoencoder <- function() {
                                           y=resp, 
                                           training_frame=train_supervised,
                                           validation_frame=test_hex,
-                                          ignore_const_cols=F,
+                                          ignore_const_cols=FALSE,
                                           hidden=(nfeatures), 
                                           epochs=1, 
-                                          reproducible=T,
+                                          reproducible=TRUE,
                                           seed=1234,
                                           pretrained_autoencoder="ae_model")
      print(h2o.logloss(pretrained_model,valid=T))
@@ -78,10 +78,10 @@ check.deeplearning_autoencoder <- function() {
                                           y=resp, 
                                           training_frame=train_supervised,
                                           validation_frame=test_hex,
-                                          ignore_const_cols=F,
+                                          ignore_const_cols=FALSE,
                                           hidden=(nfeatures), 
                                           epochs=1, 
-                                          reproducible=T,
+                                          reproducible=TRUE,
                                           seed=1234)
      print(h2o.logloss(model_from_scratch,valid=T))
 }

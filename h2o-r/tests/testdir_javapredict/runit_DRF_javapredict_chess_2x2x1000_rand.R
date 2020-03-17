@@ -25,7 +25,7 @@ function() {
     params$ntrees          <- sample( 100, 1)
     params$max_depth       <- sample( 10, 1)
     params$min_rows        <- sample( 5, 1)
-    params$balance_classes <- sample( c(T,F), 1)
+    params$balance_classes <- sample( c(TRUE,FALSE), 1)
     params$x               <- c("x", "y")
     params$y               <- "color"
     params$training_frame  <- training_frame

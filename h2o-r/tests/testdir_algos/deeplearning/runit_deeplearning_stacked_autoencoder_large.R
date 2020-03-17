@@ -13,7 +13,7 @@ check.deeplearning_stacked_autoencoder <- function() {
       ae_model <- do.call(h2o.deeplearning, 
                           modifyList(list(x=names(training_data),
                                           training_frame=training_data,
-                                          autoencoder=T,
+                                          autoencoder=TRUE,
                                           hidden=layers[i]),
                                      args))
       training_data = h2o.deepfeatures(ae_model,training_data,layer=1)
@@ -41,15 +41,15 @@ check.deeplearning_stacked_autoencoder <- function() {
   
   # set to T for RUnit
   # set to F for stand-alone demo
-  if (T) {
+  if (TRUE) {
     train_hex <- h2o.importFile(locate(TRAIN))
     test_hex  <- h2o.importFile(locate(TEST ))
   } else {
     library(h2o)
     h2o.init(nthreads=-1)
     homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
-    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = F, sep = ',')
-    test_hex  <- h2o.importFile(path = paste0(homedir,TEST), header = F, sep = ',')
+    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = FALSE, sep = ',')
+    test_hex  <- h2o.importFile(path = paste0(homedir,TEST), header = FALSE, sep = ',')
   }
   train <- train_hex[,-response]
   test  <- test_hex [,-response]

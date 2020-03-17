@@ -31,7 +31,7 @@ test.GLM.betaConstraints <- function(){
     ########### we want to vary family, alpha, standardization, beta constraint bounds
     run_glm <- function(  family_type = "gaussian",
                         alpha = 0.5,
-                        standardization = T
+                        standardization = TRUE
                         ) {
         prostate.hex <- h2o.importFile(locate("smalldata/prostate/prostate.csv"))
         Log.info(paste("Run H2O's GLM with :", "family =", family_type, ", alpha =", alpha, ",
@@ -102,7 +102,7 @@ test.GLM.betaConstraints <- function(){
 
     families <- c("gaussian", "binomial", "poisson")
     alpha <- c(0,0.5,1.0)
-    standard <- c(T, F)
+    standard <- c(TRUE, FALSE)
 
     grid <- expand.grid(families, alpha, standard)
     names(grid) <- c("Family", "Alpha", "Standardize")

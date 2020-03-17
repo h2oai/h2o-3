@@ -26,7 +26,7 @@ test <- function() {
 	#pr = as.data.frame(h2o.predict(hh,newdata = hdf))  mean(pr) = 47.33365; max(pr) = 361.0456; min(pr) = 3.017074
 	
 	hh = h2o.deeplearning(x = 1:3,y = "Claims",distribution ="tweedie",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
-                      reproducible = T,activation = "Tanh",single_node_mode = F,balance_classes = F,force_load_balance = F,
+                      reproducible = TRUE,activation = "Tanh",single_node_mode = FALSE,balance_classes = FALSE,force_load_balance = FALSE,
                       seed = 23123,tweedie_power = 1.5,score_training_samples = 0,score_validation_samples = 0,
                       training_frame = hdf, stopping_rounds=0)
 	mean_deviance = hh@model$training_metrics@metrics$mean_residual_deviance
@@ -48,7 +48,7 @@ test <- function() {
 	#pr = as.data.frame(h2o.predict(hh,newdata = hdf)) mean(pr) = 49.64749; max(pr) = 402.4205; min(pr) = 0.9327381
 	
 	hh = h2o.deeplearning(x = 1:3,y = "Claims",distribution ="tweedie",hidden = c(1),epochs = 1000,train_samples_per_iteration = -1,
-                      reproducible = T,activation = "Tanh",single_node_mode = F,balance_classes = F,force_load_balance = F,
+                      reproducible = TRUE,activation = "Tanh",single_node_mode = FALSE,balance_classes = FALSE,force_load_balance = FALSE,
                       seed = 23123,tweedie_power = 1.5,score_training_samples = 0,score_validation_samples = 0,
                       offset_column = "offset",training_frame = hdf, stopping_rounds=0)
 	

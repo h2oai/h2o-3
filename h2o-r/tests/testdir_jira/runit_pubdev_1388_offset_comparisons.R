@@ -25,7 +25,7 @@ test.offset.comparison <- function() {
   glm.bin.R <- glm(CAPSULE ~ . -ID -AGE, family = "binomial", data = pros.dat,
                    offset = pros.dat$AGE)
   glm.bin.h2o <- h2o.glm(x = 4:9, y = 2, training_frame = pros.hex, family = "binomial",
-                         standardize = F, offset_column = "AGE", lambda = 0, max_iterations = 100)
+                         standardize = FALSE, offset_column = "AGE", lambda = 0, max_iterations = 100)
   print("binomial")
   print("R:")
   print(paste("deviance       ", glm.bin.R$deviance))
@@ -44,7 +44,7 @@ test.offset.comparison <- function() {
   for(fam in family_type) {
     glm.R <- glm(economy..mpg. ~ . - name - year, family = fam, data = cars.dat, offset = cars.dat$year)
     glm.h2o <- h2o.glm(x = 3:7, y = 2, training_frame = cars.hex, family = fam,
-                       standardize = F, offset_column = "year", lambda = 0, max_iterations = 100)
+                       standardize = FALSE, offset_column = "year", lambda = 0, max_iterations = 100)
     print(fam)
     print("R:")
     print(paste("deviance:       ",glm.R$deviance))

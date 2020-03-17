@@ -39,15 +39,15 @@ test.mojo_predict_api_test <- function() {
     print(paste0("MOJO saved at ", model_zip_path))
 
     # test that we can predict using default paths
-    h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, verbose=T)
+    h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, verbose=TRUE)
     h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path,
-                         genmodel_jar_path=file.path(sandbox(), genmodel_name), verbose=T)
+                         genmodel_jar_path=file.path(sandbox(), genmodel_name), verbose=TRUE)
     expect_true(file.exists(output_csv), paste0('output csv cannot be found at ', output_csv))
     file.remove(model_zip_path)
     file.remove(file.path(sandbox(), genmodel_name))
     file.remove(output_csv)
-    other_sandbox_dir <- normalizePath(file.path(sandbox(), Sys.getpid()), mustWork=F)
-    dir.create(other_sandbox_dir, showWarnings=F)
+    other_sandbox_dir <- normalizePath(file.path(sandbox(), Sys.getpid()), mustWork=FALSE)
+    dir.create(other_sandbox_dir, showWarnings=FALSE)
     tryCatch(
         {
             download.mojo(regression_gbm1, normalizePath(sandbox()),
@@ -56,26 +56,26 @@ test.mojo_predict_api_test <- function() {
             expect_true(file.exists(model_zip_path))
             expect_true(file.exists(genmodel_jar))
 
-            expect_error(h2o_utils.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, verbose=T))
+            expect_error(h2o_utils.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, verbose=TRUE))
 
             expect_false(file.exists(file.path(other_sandbox_dir, 'h2o-genmodel.jar')), paste0("There should be no h2o-genmodel.jar at ", other_sandbox_dir))
             expect_false(file.exists(output_csv))
 
-            h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_jar, verbose=T)
+            h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_jar, verbose=TRUE)
             expect_true(file.exists(output_csv))
 
             file.remove(output_csv)
 
             output_csv <- file.path(other_sandbox_dir, "out.prediction")
 
-            h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_jar, verbose=T, output_csv_path=output_csv)
+            h2o.mojo_predict_csv(input_csv_path=input_csv, mojo_zip_path=model_zip_path, genmodel_jar_path=genmodel_jar, verbose=TRUE, output_csv_path=output_csv)
             expect_true(file.exists(output_csv))
             file.remove(model_zip_path)
             file.remove(genmodel_jar)
             file.remove(output_csv)
         },
         finally={
-            unlink(other_sandbox_dir, recursive=T)
+            unlink(other_sandbox_dir, recursive=TRUE)
         }
     )
 

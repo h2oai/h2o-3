@@ -88,4 +88,4 @@ test <- function(){
   if(!all(gradient2 < 1E-4)) stop(paste0("Gradient from model output > ", 1E-4))
 }
 
-doTest("GLM Test: Bayesian Priors with Standardization = F: ", test)
+doTest("GLM Test: Bayesian Priors with Standardization = FALSE: ", test)

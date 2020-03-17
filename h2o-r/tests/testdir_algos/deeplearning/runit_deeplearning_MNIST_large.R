@@ -16,8 +16,8 @@ check.deeplearning_MNIST <- function() {
   } else {
     library(h2o)
     homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
-    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = F, sep = ',')
-    test_hex  <- h2o.importFile(path = paste0(homedir,TEST ), header = F, sep = ',')
+    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = FALSE, sep = ',')
+    test_hex  <- h2o.importFile(path = paste0(homedir,TEST ), header = FALSE, sep = ',')
   }
   
   # Turn response into a factor (we want classification)

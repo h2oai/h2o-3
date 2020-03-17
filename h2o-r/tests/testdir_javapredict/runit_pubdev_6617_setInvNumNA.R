@@ -30,7 +30,7 @@ test.mojo.setInvNumNA <-
     mojozip = paste(modelAndDir$model@model_id, "zip", sep='.')
     mojozipAll = paste(modelAndDir$dirName, mojozip, sep='/')
     # get mojo-model-predict
-    mojoPredict = h2o.mojo_predict_csv(testPath, mojozipAll, genmodel_jar_path=jarName, verbose=T, setInvNumNA=T)
+    mojoPredict = h2o.mojo_predict_csv(testPath, mojozipAll, genmodel_jar_path=jarName, verbose=TRUE, setInvNumNA=TRUE)
    # mojo predict and model predict should agree
     for (ind in c(1:5)) {
       expect_true(abs(mojoPredict[ind,1]-modelPred[ind,1])<1e-6)
