@@ -6,6 +6,7 @@ import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.algos.glrm.GlrmMojoModel;
 import hex.genmodel.algos.targetencoder.TargetEncoderMojoModel;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
+import hex.genmodel.algos.tree.TreeBackedMojoModel;
 import hex.genmodel.algos.word2vec.WordEmbeddingModel;
 import hex.genmodel.easy.error.VoidErrorConsumer;
 import hex.genmodel.easy.exception.PredictException;
@@ -133,9 +134,9 @@ public class EasyPredictModelWrapper implements Serializable {
     public Config setEnableLeafAssignment(boolean val) throws IOException {
       if (val && (model==null))
         throw new IOException("enableLeafAssignment cannot be set with null model.  Call setModel() first.");
-      if (val && !(model instanceof SharedTreeMojoModel))
-        throw new IOException("enableLeafAssignment can be set to true only with SharedTreeMojoModel," +
-                " i.e. with GBM or DRF.");
+      if (val && !(model instanceof TreeBackedMojoModel))
+        throw new IOException("enableLeafAssignment can be set to true only with TreeBackedMojoModel," +
+                " i.e. with GBM, DRF, Isolation forest or XGBoost.");
 
       enableLeafAssignment = val;
       return this;
@@ -611,13 +612,13 @@ public class EasyPredictModelWrapper implements Serializable {
   public String[] leafNodeAssignment(RowData data) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    return ((SharedTreeMojoModel) m).getDecisionPath(rawData);
+    return ((TreeBackedMojoModel) m).getDecisionPath(rawData);
   }
 
   public SharedTreeMojoModel.LeafNodeAssignments leafNodeAssignmentExtended(RowData data) throws PredictException {
     double[] rawData = nanArray(m.nfeatures());
     rawData = fillRawData(data, rawData);
-    return ((SharedTreeMojoModel) m).getLeafNodeAssignments(rawData);
+    return ((TreeBackedMojoModel) m).getLeafNodeAssignments(rawData);
   }
 
   /**

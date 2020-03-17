@@ -135,6 +135,26 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     return convert(treeNumber, treeClass); // Options currently do not apply to XGBoost trees conversion
   }
 
+  @Override
+  public double getInitF() {
+    return _predictor.getBaseScore();
+  }
+
+  @Override
+  public SharedTreeMojoModel.LeafNodeAssignments getLeafNodeAssignments(double[] doubles) {
+    FVec row = _1hotFactory.fromArray(doubles);
+    final SharedTreeMojoModel.LeafNodeAssignments result = new SharedTreeMojoModel.LeafNodeAssignments();
+    result._paths = _predictor.predictLeafPath(row);
+    result._nodeIds = _predictor.predictLeaf(row);
+    return result;
+  }
+
+  @Override
+  public String[] getDecisionPath(double[] doubles) {
+    FVec row = _1hotFactory.fromArray(doubles);
+    return _predictor.predictLeafPath(row);
+  }
+
   private final class XGBoostContributionsPredictor extends ContributionsPredictor<FVec> {
     private XGBoostContributionsPredictor(TreeSHAPPredictor<FVec> treeSHAPPredictor) {
       super(_nums + _catOffsets[_cats] + 1, treeSHAPPredictor);

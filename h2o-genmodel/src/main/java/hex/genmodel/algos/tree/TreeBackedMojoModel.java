@@ -8,4 +8,8 @@ public interface TreeBackedMojoModel extends SharedTreeGraphConverter {
 
     double getInitF();
 
+    String[] getDecisionPath(final double[] row);
+
+    SharedTreeMojoModel.LeafNodeAssignments getLeafNodeAssignments(final double[] row);
+
 }
