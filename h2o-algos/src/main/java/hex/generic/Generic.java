@@ -33,6 +33,7 @@ public class Generic extends ModelBuilder<GenericModel, GenericModelParameters, 
         allowedAlgos.add("isolationforest");
         allowedAlgos.add("drf");
         allowedAlgos.add("deeplearning");
+        allowedAlgos.add("stackedensemble");
         
         ALLOWED_MOJO_ALGOS = Collections.unmodifiableSet(allowedAlgos);
     }
