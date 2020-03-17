@@ -433,7 +433,7 @@ Step 2: Compile and Run the MOJO
 
  GBM and DRF return classProbabilities, but not all MOJOs will return a classProbabilities field. Refer to the ModelPrediction definition for each algorithm to find the correct field(s) to access. This is available in the H2O-3 GitHub repo at: https://github.com/h2oai/h2o-3/tree/master/h2o-genmodel/src/main/java/hex/genmodel/easy/prediction. You can also view the hex.genmodel.easy.prediction classes in the `Javadoc <http://docs.h2o.ai/h2o/latest-stable/h2o-genmodel/javadoc/index.html>`__.
 
- In addition to classProbabilities, in GBM and DRF you can choose to generate additional ``leafNodeAssignments`` and ``contributions`` fields. The ``leafNodeAssignments`` field will show the decision path through each tree. The ``contributions`` field will provide Shapley contributions. Note that these fields may slow down the MOJO as they add computation. Below is the Java code showing how return both the leaf node assignment and the contributions:
+ In addition to classProbabilities, you can choose to generate additional ``leafNodeAssignments`` (GBM, DRF, Isolation Forest and XGBoost) and ``contributions`` (GBM, DRF and XGBoost) fields. The ``leafNodeAssignments`` field will show the decision path through each tree. The ``contributions`` field will provide Shapley contributions. Note that these fields may slow down the MOJO as they add computation. Below is the Java code showing how return to both the leaf node assignment and the contributions:
 
  .. code:: java
 

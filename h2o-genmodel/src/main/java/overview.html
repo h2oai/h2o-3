@@ -465,7 +465,7 @@ tree built in the model. Note that each tree file is saved as a binary file type
 
         <p />
 
-        In addition to classProbabilities, in GBM and DRF you can also choose to generate the leafNodeAssignments field, which will show the decision path through each tree. Note that this may slow down the MOJO as it adds computation. Below is the Java code showing how return the leaf node assignment:
+        In addition to classProbabilities, you can choose to generate additional <code>leafNodeAssignments</code> (GBM, DRF, Isolation Forest and XGBoost) and <code>contributions</code> (GBM, DRF and XGBoost) fields. The <code>leafNodeAssignments</code> field will show the decision path through each tree. The <code>contributions</code> field will provide Shapley contributions. Note that these fields may slow down the MOJO as they add computation. Below is the Java code showing how to return both the leaf node assignment and the contributions:
 
         <pre>
          import java.io.*;
