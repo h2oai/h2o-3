@@ -353,6 +353,83 @@ GBM Tuning Guide
 * `H2O Flow <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.flow>`__
 * `Blog <http://www.h2o.ai/blog/h2o-gbm-tuning-tutorial-for-r/>`__
 
+Examples
+~~~~~~~~
+
+.. example-code::
+   .. code-block:: r
+
+    library(h2o)
+    h2o.init()
+
+    # Import the airlines dataset into H2O:
+    airlines <-  h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+
+    # Set the predictors and response; set the factors:
+    airlines["Year"] <- as.factor(airlines["Year"])
+    airlines["Month"] <- as.factor(airlines["Month"])
+    airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
+    airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
+    airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
+    predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
+                    "DayOfWeek", "Month", "Distance", "FlightNum")
+    response <- "IsDepDelayed"
+
+    # Split the dataset into a train and valid set:
+    airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+    train <- airlines.splits[[1]]
+    valid <- airlines.splits[[2]]
+
+    # Build and train the model:
+    airlines_gbm <- h2o.gbm(x = predictors, 
+                            y = response, 
+                            training_frame = train, 
+                            validation_frame = valid, 
+                            seed = 1234)
+
+    # Eval performance:
+    perf <- h2o.performance(airlines_gbm)
+
+    # Generate predictions on a validation set (if necessary):
+    pred <- h2o.predict(airlines_gbm, newdata = valid)
+
+
+   .. code-block:: python
+   
+    import h2o
+    from h2o.estimators import H2OGradientBoostingEstimator
+    h2o.init()
+
+    # Import the airlines dataset into H2O:
+    airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+
+    # Set the predictors and response; set the factors:
+    airlines["Year"] = airlines["Year"].asfactor()
+    airlines["Month"] = airlines["Month"].asfactor()
+    airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+    airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+    airlines["FlightNum"] = airlines["FlightNum"].asfactor()
+    predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
+                  "DayOfWeek", "Month", "Distance", "FlightNum"]
+    response = "IsDepDelayed"
+
+    # Split the dataset into a train and valid set:
+    train, valid = airlines.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    airlines_gbm = H2OGradientBoostingEstimator(seed=1234)
+    airlines_gbm.train(x=predictors, 
+                       y=response, 
+                       training_frame=train, 
+                       validation_frame=valid)
+
+    # Eval performance:
+    perf = airlines_gbm.model_performance()
+
+    # Generate predictions on a test set (if necessary):
+    pred = airlines_gbm.predict(valid)
+
+
 References
 ~~~~~~~~~~
 

@@ -92,6 +92,72 @@ By default, the following output displays:
 -  A Priori response probabilities
 -  P-conditionals
 
+Examples
+~~~~~~~~
+
+.. example-code::
+   .. code-block:: r
+
+    # Import the cars dataset into H2O:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # Set the predictors and response; set the response as a factor:
+    cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+    predictors <- c("displacement","power","weight","acceleration","year")
+    response <- "economy_20mpg"
+
+    # Split the dataset into train and valid sets"
+    cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+    train <- cars.split[[1]]
+    valid <- cars.split[[2]]
+
+    # Build and train the model:
+    cars_nb <- h2o.naiveBayes(x=predictors, 
+                              y=response, 
+                              training_frame=train, 
+                              validation_frame=valid, 
+                              nfolds=5, 
+                              seed=1234)
+
+    # Eval performance:
+    perf <- h2o.performance(cars_nb)
+
+    # Generate the predictions on a test set (if necessary):
+    pred <- h2o.predict(cars_nb, newdata = valid)
+    
+
+
+   .. code-block:: python
+
+    import h2o
+    from h2o.estimators import H2ONaiveBayesEstimator
+    h2o.init()
+
+    # Import the cars dataset into H2O:
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # Set predictors and response; set the response as a factor:
+    predictors = ["displacement","power","weight","acceleration","year"]
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    response = "economy_20mpg"
+
+    # Split the dataset into train and valid sets:
+    train, valid = cars.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    cars_nb = H2ONaiveBayesEstimator(nfolds=5, seed=1234)
+    cars_nb.train(x=predictors, 
+                  y=response, 
+                  training_frame=train, 
+                  validation_frame=valid)
+
+    # Eval performance:
+    perf = cars_nb.model_performance()
+
+    # Generate predictions on a test set (if necessary):
+    pred = cars_nb.predict(valid)
+
+
 FAQ
 ~~~
 

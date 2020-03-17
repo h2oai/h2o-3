@@ -186,6 +186,63 @@ To add numeric stability to the model fitting calculations, the numeric predicto
 
      :math:`LRE(x, y) = - \log_{10}(\mid x \mid)`, if :math:`y = 0`
 
+Examples
+~~~~~~~~
+
+.. example-code::
+   .. code-block:: r
+
+    library(h2o)
+    h2o.init()
+
+    # Import the heart dataset into H2O:
+    heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+    # Split the dataset into a train and test set:
+    heart.split <- h2o.splitFrame(data=heart, ratios=.8, seed=1234)
+    train <- heart.split[[1]]
+    test <- heart.split[[2]]
+
+    # Build and train the model:
+    coxph.model <- h2o.coxph(x = "age", 
+                             event_column = "event", 
+                             start_column = "start", 
+                             stop_column = "stop", 
+                             training_frame = heart, 
+                             init = 3)
+
+    # Eval performance:
+    perf <- h2o.performance(coxph_model)
+
+    # Generate predictions on a test set (if necessary):
+    predict <- h2o.predict(coxph_model, newdata = test)
+
+
+   .. code-block:: python
+   
+    import h2o
+    from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
+    h2o.init()
+
+    # Import the heart dataset into H2O:
+    heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+    # Split the dataset into a train and test set:
+    train, test = heart.split_frame(ratios = [.8], seed = 1234)   
+
+    # Build and train the model:
+    coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+                                               stop_column="stop", 
+                                               ties="breslow")
+    coxph.train(x="age", 
+                y="event", 
+                training_frame=train, 
+                validation_frame=test)
+
+    # Generate predictions on a test set (if necessary):
+    pred = coxph.predict(test)
+
+
 
 References
 ~~~~~~~~~~

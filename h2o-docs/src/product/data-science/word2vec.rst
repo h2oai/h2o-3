@@ -103,6 +103,141 @@ More information about this function can be found in the H2O-3 GitHub repository
 - R: `https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L21 <https://github.com/h2oai/h2o-3/blob/master/h2o-r/h2o-package/R/w2vutils.R#L21>`__
 - Python: `https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L28 <https://github.com/h2oai/h2o-3/blob/master/h2o-py/h2o/model/word_embedding.py#L28>`__
 
+Examples
+~~~~~~~~
+
+.. example-code::
+   .. code-block:: r
+
+   	library(h2o)
+   	h2o.init()
+
+   	# Import the craigslist dataset into H2O:
+   	job.titles.path = "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/craigslistJobTitles.csv"
+   	job.titles <- h2o.importFile(job.titles.path, 
+                                     destination_frame = "jobtitles", 
+                                     col.names = c("category", "jobtitle"), 
+                                     col.types = c("Enum", "String"), 
+                                     header = TRUE)
+   	STOP_WORDS = c("ax","i","you","edu","s","t","m","subject","can",
+                       "lines","re","what","there","all","we","one","the",
+                       "a","an","of","or","in","for","by","on","but","is",
+                       "in","a","not","with","as","was","if","they","are",
+                       "this","and","it","have","from","at","my","be","by",
+                       "not","that","to","from","com","org","like","likes",
+                       "so")
+
+   	# Make the 'tokenize' function:
+   	tokenize <- function(sentences, stop.words = STOP_WORDS) {
+   		tokenized <- h2o.tokenize(sentences, "\\\\W+")
+   		tokenized.lower <- h2o.tolower(tokenized)
+   		tokenized.lengths <- h2o.nchar(tokenized.lower)
+   		tokenized.filtered <- tokenized.lower[is.na(tokenized.lengths) || tokenized.lengths >= 2,]
+   		tokenized.words <- tokenized.filtered[h2o.grep("[0-9]", tokenized.filtered, invert = TRUE, output.logical = TRUE),]
+   		tokenized.words[is.na(tokenized.words) || (! tokenized.words %in% STOP_WORDS),]
+   	}
+
+   	# Make the 'predict' function:
+   	.predict <- function(job.title, w2v, gbm) {
+   		words <- tokenize(as.character(as.h2o(job.title)))
+   		job.title.vec <- h2o.transform(w2v, words, aggregate_method = "AVERAGE")
+   		h2o.predict(gbm, job.title.vec)
+   	}
+
+   	# Break job titles into sequence of words:
+   	words <- tokenize(job.titles$jobtitle)
+
+   	# Build the word2vec model:
+   	w2v.model <- h2o.word2vec(words, sent_sample_rate = 0, epochs = 10)
+
+   	# Find synonyms for the word "teacher":
+   	print(h2o.findSynonyms(w2v.model, "teacher", count = 5))
+
+   	# Calculate a vector for each job title:
+   	job.title.vecs <- h2o.transform(w2v.model, words, aggregate_method = "AVERAGE")
+
+   	# Prepare training & validation data (keep only job titles made of known words):
+   	valid.job.titles <- ! is.na(job.title.vecs$C1)
+   	data <- h2o.cbind(job.titles[valid.job.titles, "category"], job.title.vecs[valid.job.titles, ])
+   	data.split <- h2o.splitFrame(data, ratios = 0.8)
+
+   	# Build a basic GBM model:
+   	gbm.model <- h2o.gbm(x = names(job.title.vecs), 
+                             y = "category", 
+                             training_frame = data.split[[1]], 
+                             validation_frame = data.split[[2]])
+
+   	# Predict:
+   	print(.predict("school teacher having holidays every month", w2v.model, gbm.model))
+   	print(.predict("developer with 3+ Java experience, jumping", w2v.model, gbm.model))
+   	print(.predict("Financial accountant CPA preferred", w2v.model, gbm.model))
+
+
+   .. code-block:: python
+
+    import h2o
+    from h2o.estimators import H2OWord2vecEstimator, H2OGradientBoostingEstimator
+    h2o.init()
+
+    # Import the craigslist dataset into H2O:
+    job_titles = h2o.import_file(("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv"), 
+                                  col_names = ["category", "jobtitle"], 
+                                  col_types = ["string", "string"], 
+                                  header = 1)
+    STOP_WORDS = ["ax","i","you","edu","s","t","m","subject","can",
+                  "lines","re","what","there","all","we","one","the",
+                  "a","an","of","or","in","for","by","on","but","is",
+                  "in","a","not","with","as","was","if","they","are",
+                  "this","and","it","have","from","at","my","be","by",
+                  "not","that","to","from","com","org","like","likes",
+                  "so"]
+
+    # Make the 'tokenize' function:
+    def tokenize(sentences, stop_word = STOP_WORDS):
+    	tokenized = sentences.tokenize("\\W+")
+    	tokenized_lower = tokenized.tolower()
+    	tokenized_filtered = tokenized_lower[(tokenized_lower.nchar() >= 2) | (tokenized_lower.isna()),:]
+    	tokenized_words = tokenized_filtered[tokenized_filtered.grep("[0-9]",invert=True,output_logical=True),:]
+    	tokenized_words = tokenized_words[(tokenized_words.isna()) | (~ tokenized_words.isin(STOP_WORDS)),:]
+    	return tokenized_words
+
+    # Make the `predict` function:
+    def predict(job_title,w2v, gbm):
+    	words = tokenize(h2o.H2OFrame(job_title).ascharacter())
+    	job_title_vec = w2v.transform(words, aggregate_method="AVERAGE")
+    	print(gbm.predict(test_data=job_title_vec))
+
+    # Break job titles into a sequence of words:
+    words = tokenize(job_titles["jobtitle"])
+
+    # Build word2vec model:
+    w2v_model = H2OWord2vecEstimator(sent_sample_rate = 0.0, epochs = 10)
+    w2v_model.train(training_frame=words)
+
+    # Find synonyms for the words "teacher":
+    w2v_model.find_synonyms("teacher", count = 5)
+
+    # Calculate a vector for each job title:
+    job_title_vecs = w2v_model.transform(words, aggregate_method = "AVERAGE")
+
+    # Prepare training & validation data (keep only job titles made of known words):
+    valid_job_titles = ~ job_title_vecs["C1"].isna()
+    data = job_titles[valid_job_titles,:].cbind(job_title_vecs[valid_job_titles,:])
+    data_split = data.split_frame(ratios=[0.8])
+
+    # Build a basic GBM model:
+    gbm_model = H2OGradientBoostingEstimator()
+    gbm_model.train(x = job_title_vecs.names, 
+                    y="category", 
+                    training_frame = data_split[0], 
+                    validation_frame = data_split[1])
+
+    # Predict
+    print(predict(["school teacher having holidays every month"], w2v_model, gbm_model))
+    print(predict(["developer with 3+ Java experience, jumping"], w2v_model, gbm_model))
+    print(predict(["Financial accountant CPA preferred"], w2v_model, gbm_model))
+
+
 References
 ~~~~~~~~~~
 

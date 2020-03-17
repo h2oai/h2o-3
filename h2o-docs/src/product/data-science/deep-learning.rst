@@ -291,6 +291,68 @@ and testing sets:
 -  Training and validation metrics (model name, model checksum name, frame name, frame checksum name, description, model category, duration in ms, scoring time, predictions, MSE, R2, logloss)
 -  Top-K Hit Ratios for training and validation (for multi-class classification)
 
+Examples
+~~~~~~~~
+
+.. example-code::
+   .. code-block:: r
+
+    library(h2o)
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+    # Set the predictors and response:
+    predictors <- c("petal_len", "petal_wid", "sepal_len", "sepal_wid")
+    response = "class"
+
+    # Split the dataset into a train and test set:
+    iris.split <- h2o.splitFrame(data=iris, ratios=.8, seed=1234)
+    train <- iris.split[[1]]
+    test <- iris.split[[2]]
+
+    # Build and train the model:
+    iris_dl <- h2o.deeplearning(x = predictors, 
+                                y = response, 
+                                training_frame = train, 
+                                validation_frame = test, 
+                                seed = 123456)
+
+    # Eval performance:
+    perf <- h2o.performance(iris_dl)
+
+    # Generate predictions on a test set (if necessary):
+    pred <- h2o.predict(iris_dl, newdata = test)
+
+
+
+   .. code-block:: python
+
+    import h2o
+    from h2o.estimators import H2ODeepLearningEstimator
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+    # Split the dataset into train and test:
+    train, test = heart.split_frame(ratios = [.8], seed = 1234)
+
+    # Build and train the model:
+    iris_dl = H2ODeepLearningEstimator(seed=123456)
+    iris_dl.train(x=list(range(4)), 
+                  y=4, 
+                  training_frame=train, 
+                  validation_frame=test)
+
+    # Eval performance:
+    perf = iris_dl.model_performance()
+
+    # Generate predictions on a test set (if necessary):
+    pred = iris_dl.predict(test) 
+
+
 FAQ
 ~~~
 

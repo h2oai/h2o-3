@@ -42,6 +42,8 @@ Example
 
 	[23 rows x 2 columns] 
 
+	
+
    .. code-block:: python
 
 	import h2o
@@ -59,26 +61,26 @@ Example
 	isofor_model.train(training_frame = train)
 
 	perf = isofor_model.model_performance()
-    perf
-      ModelMetricsAnomaly: isolationforest
-      ** Reported on train data. **
-      
-      Anomaly Score: 1.1392230576441102
-      Normalized Anomaly Score: 0.3631578947368421
+	perf
+	      ModelMetricsAnomaly: isolationforest
+	      ** Reported on train data. **
+	      
+	      Anomaly Score: 1.1392230576441102
+	      Normalized Anomaly Score: 0.3631578947368421
 
-    test_pred = isofor_model.predict(test)
-    test_pred
-      predict    mean_length
-    ---------  -------------
-         -0.1        1.57143
-         -0.1        1.57143
-          0          1.42857
-          0          1.42857
-          0          1.42857
-         -0.1        1.57143
-          0.1        1.28571
-          0          1.42857
-          0.2        1.14286
-         -0.1        1.57143
+	test_pred = isofor_model.predict(test)
+	test_pred
+	      predict    mean_length
+	    ---------  -------------
+	         -0.1        1.57143
+	         -0.1        1.57143
+	          0          1.42857
+	          0          1.42857
+	          0          1.42857
+	         -0.1        1.57143
+	          0.1        1.28571
+	          0          1.42857
+	          0.2        1.14286
+	         -0.1        1.57143
 
-    [23 rows x 2 columns]
+	    [23 rows x 2 columns]
