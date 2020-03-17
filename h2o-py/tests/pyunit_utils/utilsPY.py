@@ -3675,8 +3675,8 @@ def compare_frames_local_onecolumn_NA(f1, f2, prob=0.5, tol=1e-6, returnResult=F
                         if (diff > tol):
                             return False
                     else:
-                        assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                      "{1} and the difference/max(v1,v2) is {4}.  Column type is {5}".format(v1, v2, rowInd, colInd, diff, f1.types)
+                        assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, column name: {4}. frame2 value: " \
+                                          "{1}, column name:{5}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd, f1.names[0], f2.names[0])
     if returnResult:
         return True
 
@@ -3701,8 +3701,8 @@ def compare_frames_local_onecolumn_NA_enum(f1, f2, prob=0.5, tol=1e-6, returnRes
                         if not(temp1[rowInd][colInd]==temp2[rowInd][colInd]):
                             return False
                     else:
-                        assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                      "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
+                        assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, column name: {4}. frame2 value: " \
+                                      "{1}, column name:{5}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd, f1.names[0], f2.names[0])
 
     if returnResult:
         return True
@@ -3728,8 +3728,8 @@ def compare_frames_local_onecolumn_NA_string(f1, f2, prob=0.5, returnResult=Fals
                         if not(temp1[rowInd][colInd]==temp2[rowInd][colInd]):
                             return False
                     else:
-                        assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                                                         "{1}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd)
+                        assert temp1[rowInd][colInd]==temp2[rowInd][colInd], "Failed frame values check at row {2} and column {3}! frame1 value: {0}, column name: {4}. frame2 value: " \
+                                                                             "{1}, column name:{5}".format(temp1[rowInd][colInd], temp2[rowInd][colInd], rowInd, colInd, f1.names[0], f2.names[0])
 
     if returnResult:
         return True
