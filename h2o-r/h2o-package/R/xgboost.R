@@ -48,6 +48,7 @@
 #' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2. Defaults to 1.5.
 #' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
 #'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param te_model_id Key of TargetEncoderModel
 #' @param quiet_mode \code{Logical}. Enable quiet mode Defaults to TRUE.
 #' @param checkpoint Model checkpoint to resume training with.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
@@ -149,6 +150,7 @@ h2o.xgboost <- function(x,
                         distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
                         tweedie_power = 1.5,
                         categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                        te_model_id = NULL,
                         quiet_mode = TRUE,
                         checkpoint = NULL,
                         export_checkpoints_dir = NULL,
@@ -258,6 +260,8 @@ h2o.xgboost <- function(x,
     parms$tweedie_power <- tweedie_power
   if (!missing(categorical_encoding))
     parms$categorical_encoding <- categorical_encoding
+  if (!missing(te_model_id))
+    parms$te_model_id <- te_model_id
   if (!missing(quiet_mode))
     parms$quiet_mode <- quiet_mode
   if (!missing(checkpoint))
