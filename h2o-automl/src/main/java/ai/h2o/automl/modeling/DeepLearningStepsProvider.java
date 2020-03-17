@@ -52,11 +52,6 @@ public class DeepLearningStepsProvider
             }
         }
 
-        static abstract class DeepLearningDummyStep extends ModelingStep.DummyStep<DeepLearningModel> {
-            DeepLearningDummyStep(String id, int weight, AutoML autoML){
-                super(Algo.DeepLearning, id, weight, autoML);
-            }
-        }
 
         private ModelingStep[] defaults = new DeepLearningModelStep[] {
                 new DeepLearningModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
@@ -140,10 +135,6 @@ public class DeepLearningStepsProvider
                 },
         };
 
-        private ModelingStep[] dummies = new ModelingStep[]{
-                new DeepLearningDummyStep("dummy_sleep", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {},
-        };
-
         public DeepLearningSteps(AutoML autoML) {
             super(autoML);
         }
@@ -156,11 +147,6 @@ public class DeepLearningStepsProvider
         @Override
         protected ModelingStep[] getGrids() {
             return grids;
-        }
-
-        @Override
-        protected ModelingStep[] getDummySteps() {
-            return dummies;
         }
     }
 

@@ -31,11 +31,6 @@ public class GLMStepsProvider
             }
         }
 
-        static abstract class GLMDummyStep extends ModelingStep.DummyStep<GLMModel> {
-            GLMDummyStep(String id, int weight, AutoML autoML){
-                super(Algo.GLM, id, weight, autoML);
-            }
-        }
 
         private ModelingStep[] defaults = new GLMModelStep[] {
                 new GLMModelStep("def_1", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
@@ -71,10 +66,6 @@ public class GLMStepsProvider
                  */
         };
 
-        private ModelingStep[] dummies = new ModelingStep[]{
-                new GLMDummyStep("dummy_sleep", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {},
-        };
-
         public GLMSteps(AutoML autoML) {
             super(autoML);
         }
@@ -87,11 +78,6 @@ public class GLMStepsProvider
         @Override
         protected ModelingStep[] getGrids() {
             return grids;
-        }
-
-        @Override
-        protected ModelingStep[] getDummySteps() {
-            return dummies;
         }
     }
 

@@ -28,8 +28,9 @@ def test_modeling_plan_dummy():
     aml = H2OAutoML(project_name="py_modeling_plan_dummy_sleep",
                     max_models=2,
                     modeling_plan=[
-                        dict(name='GLM', steps=[dict(id='dummy_sleep', weight=sleep * 10)])
+                        dict(name='Dummy', steps=[dict(id='dummy_sleep')])
                     ],
+                    max_runtime_secs_per_model=5,
                     seed=1)
     start = time.time()
     aml.train(y=ds.target, training_frame=ds.train)
@@ -39,17 +40,13 @@ def test_modeling_plan_dummy():
 
 def test_modeling_plan_dummies_exist():
     modeling_plan = [
-        dict(name='DeepLearning', steps=[dict(id='dummy_sleep', weight=10)]),  # sleep 1 secs
-        dict(name='DRF', steps=[dict(id='dummy_sleep', weight=10)]),
-        dict(name='GBM', steps=[dict(id='dummy_sleep', weight=10)]),
-        dict(name='GLM', steps=[dict(id='dummy_sleep', weight=10)]),
-        dict(name='StackedEnsemble', steps=[dict(id='dummy_sleep', weight=10)]),
-        dict(name='XGBoost', steps=[dict(id='dummy_sleep', weight=10)]),
+        ("Dummy", ["dummy_sleep"])
     ]
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_modeling_plan_dummy_sleep",
                     max_models=len(modeling_plan),
                     modeling_plan=modeling_plan,
+                    max_runtime_secs_per_model=1,
                     seed=1)
 
     start = time.time()

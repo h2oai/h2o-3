@@ -4,3 +4,4 @@ ai.h2o.automl.modeling.GBMStepsProvider
 ai.h2o.automl.modeling.GLMStepsProvider
 ai.h2o.automl.modeling.StackedEnsembleStepsProvider
 ai.h2o.automl.modeling.XGBoostStepsProvider
+ai.h2o.automl.modeling.DummyStepsProvider
