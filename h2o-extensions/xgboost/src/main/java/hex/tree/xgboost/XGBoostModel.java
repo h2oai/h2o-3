@@ -545,7 +545,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     try {
       booster = model_info.deserializeBooster();
       return XGBoostNativePredict.score0(data, offset, preds, _parms._booster.toString(), _parms._ntrees,
-              model_info.deserializeBooster(), di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
+              booster, di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
               _output.nclasses(), _output._priorClassDist, threshold, _output._sparse, _output.hasOffset());
     } finally {
       if (booster != null)

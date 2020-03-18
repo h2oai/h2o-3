@@ -56,8 +56,11 @@ def perform_merges_assert_correct_merge(frame1, frame2):
 def assert_equal_frames(f1, f2, sortColName):
     f1sorted = f1.sort(sortColName)
     f2sorted = f2.sort(sortColName)
-
-    pyunit_utils.compare_frames_equal_names(f1sorted, f2sorted)
+    colNames = f1sorted.col_names
+    colNames2 = f2sorted.col_names
+    for index in range(0, len(colNames)):
+        if colNames[index] in colNames2:
+            pyunit_utils.compare_frames_equal_names(f1sorted[colNames[index]], f2sorted[colNames[index]])
 
 def total_na_cnts(fr):
     na_list = fr.nacnt()
