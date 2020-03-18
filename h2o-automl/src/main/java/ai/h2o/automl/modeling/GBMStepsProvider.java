@@ -37,7 +37,7 @@ public class GBMStepsProvider
 
             GBMParameters prepareModelParameters() {
                 GBMParameters gbmParameters = GBMSteps.prepareModelParameters();
-                gbmParameters._ntrees = 1000;
+                gbmParameters._ntrees = 10000;
                 gbmParameters._sample_rate = 0.8;
                 gbmParameters._col_sample_rate = 0.8;
                 gbmParameters._col_sample_rate_per_tree = 0.8;
@@ -163,7 +163,8 @@ public class GBMStepsProvider
                         GBMModel bestGBM = getBestGBM();
                         aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best GBM with learning rate annealing: "+bestGBM._key);
                         GBMParameters gbmParameters = (GBMParameters) bestGBM._parms.clone();
-                        gbmParameters._learn_rate_annealing = 0.95;
+                        gbmParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                        gbmParameters._learn_rate_annealing = 0.99;
                         gbmParameters._max_runtime_secs = maxRuntimeSecs;
                         setStoppingCriteria(gbmParameters, new GBMParameters(), SeedPolicy.None);
                         return asModelsJob(startModel(Key.make(result+"_model"), gbmParameters), result);

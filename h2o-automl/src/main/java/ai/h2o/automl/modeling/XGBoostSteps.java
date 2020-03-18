@@ -212,7 +212,8 @@ public class XGBoostSteps extends ModelingSteps {
                     XGBoostModel bestXGB = getBestXGB();
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best XGBoost with learning rate annealing: "+bestXGB._key);
                     XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
-                    xgBoostParameters._learn_rate_annealing = 0.95;
+                    xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                    xgBoostParameters._learn_rate_annealing = 0.99;
                     xgBoostParameters._max_runtime_secs = maxRuntimeSecs;
                     setStoppingCriteria(xgBoostParameters, new XGBoostParameters(), SeedPolicy.None);
                     return asModelsJob(startModel(Key.make(result+"_model"), xgBoostParameters), result);
@@ -249,24 +250,40 @@ public class XGBoostSteps extends ModelingSteps {
                     aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Applying learning rate search on best XGBoost: "+bestXGB._key);
                     XGBoostParameters xgBoostParameters = (XGBoostParameters) bestXGB._parms.clone();
                     XGBoostParameters defaults = new XGBoostParameters();
+                    xgBoostParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
                     setStoppingCriteria(xgBoostParameters, defaults, SeedPolicy.None); // keep the same seed as the bestXGB
                     // reset _eta to defaults, otherwise it ignores the _learn_rate hyperparam: this is very annoying!
                     xgBoostParameters._eta = defaults._eta;
 //                    xgBoostParameters._learn_rate = defaults._learn_rate;
+/*
+                    //keep score_tree_interval fixed, but increase stopping_rounds when lowering learn rate
                     int sr = xgBoostParameters._stopping_rounds;
-                    int sti = xgBoostParameters._score_interval;
-
                     Object[][] hyperParams = new Object[][] {
-                            new Object[] {"_learn_rate", "_stopping_rounds", },
+                            new Object[] {"_learn_rate", "_stopping_rounds"},
                             new Object[] {        0.5  ,                sr },
                             new Object[] {        0.2  ,                sr },
-                            new Object[] {        0.1  ,                sr },
+                            new Object[] {        0.1  ,              2*sr },
                             new Object[] {        0.05 ,              2*sr },
-                            new Object[] {        0.02 ,              2*sr },
-                            new Object[] {        0.01 ,              2*sr },
+                            new Object[] {        0.02 ,              3*sr },
+                            new Object[] {        0.01 ,              3*sr },
                             new Object[] {        0.005,              4*sr },
                             new Object[] {        0.002,              4*sr },
-                            new Object[] {        0.001,              4*sr },
+                            new Object[] {        0.001,              5*sr },
+                    };
+*/
+                    // keep stopping_rounds fixed, but increases score_tree_interval when lowering learn rate
+                    int sti = xgBoostParameters._score_tree_interval;
+                    Object[][] hyperParams = new Object[][] {
+                            new Object[] {"_learn_rate", "_score_tree_interval"},
+                            new Object[] {        0.5  ,                   sti },
+                            new Object[] {        0.2  ,                   sti },
+                            new Object[] {        0.1  ,                 2*sti },
+                            new Object[] {        0.05 ,                 2*sti },
+                            new Object[] {        0.02 ,                 3*sti },
+                            new Object[] {        0.01 ,                 3*sti },
+                            new Object[] {        0.005,                 4*sti },
+                            new Object[] {        0.002,                 4*sti },
+                            new Object[] {        0.001,                 5*sti },
                     };
 
                     return asModelsJob(GridSearch.startGridSearch(
