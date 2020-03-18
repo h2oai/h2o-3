@@ -35,4 +35,7 @@ public class ImportSQLTableV99 extends RequestSchemaV3<Iced,ImportSQLTableV99> {
   @API(help = "Mode for data loading. All modes may not be supported by all databases.")
   public String fetch_mode;
 
+  @API(help = "Desired number of chunks for the target Frame. Optional.")
+  public String num_chunks_hint;
+
 }

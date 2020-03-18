@@ -31,7 +31,7 @@ public class ImportSQLTableHandler extends Handler {
         importSqlTable.connection_url, importSqlTable.table, importSqlTable.select_query,
         importSqlTable.username, importSqlTable.password, importSqlTable.columns,
         useTempTable, importSqlTable.temp_table_name,
-        sqlFetchMode
+        sqlFetchMode, importSqlTable.num_chunks_hint != null ? Integer.valueOf(importSqlTable.num_chunks_hint) : null
     );
     return new JobV3().fillFromImpl(j);
 

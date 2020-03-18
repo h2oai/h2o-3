@@ -37,13 +37,14 @@ public class SQLManager {
    * @param username (Input)
    * @param password (Input)
    * @param columns (Input)
-   * @param fetch_mode (Input)
+   * @param fetchMode (Input)
+   * @param numChunksHint (optional) Specifies the desired number of chunks for the target Frame  
    */
   public static Job<Frame> importSqlTable(
       final String connection_url, final String table, final String select_query,
       final String username, final String password, final String columns,
       final Boolean useTempTable, final String tempTableName,
-      final SqlFetchMode fetch_mode) {
+      final SqlFetchMode fetchMode, final Integer numChunksHint) {
 
     final Key<Frame> destination_key = Key.make((table + "_sql_to_hex").replaceAll("\\W", "_"));
     final Job<Frame> j = new Job<>(destination_key, Frame.class.getName(), "Import SQL Table");
@@ -55,7 +56,7 @@ public class SQLManager {
         j, destination_key, databaseType, connection_url, 
         table, select_query, username, password, columns, 
         useTempTable, tempTableName,
-        fetch_mode
+        fetchMode, numChunksHint
     );
     j.start(importDriver, Job.WORK_UNKNOWN);
 
@@ -77,11 +78,12 @@ public class SQLManager {
     final boolean _useTempTable;
     final String _tempTableName;
     final SqlFetchMode _fetch_mode;
+    final Integer _num_chunks_hint;
 
     SQLImportDriver(
         Job<Frame> job, Key<Frame> destination_key, String database_type, 
         String connection_url, String table, String select_query, String username, String password, String columns,
-        Boolean useTempTable, String tempTableName, SqlFetchMode fetch_mode
+        Boolean useTempTable, String tempTableName, SqlFetchMode fetch_mode, Integer numChunksHint
     ) {
       _j = job;
       _destination_key = destination_key;
@@ -95,6 +97,7 @@ public class SQLManager {
       _useTempTable = shouldUseTempTable(useTempTable);
       _tempTableName = getTempTableName(tempTableName);
       _fetch_mode = fetch_mode;
+      _num_chunks_hint = numChunksHint;
     }
 
     /*
@@ -256,10 +259,17 @@ public class SQLManager {
                       +(float)(realcols+timecols+stringcols) *numRow*8); //8 bytes for real and time (long) values
 
       final Vec vec;
-      final int chunk_size = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
-              H2O.ARGS.nthreads, H2O.getCloudSize(), false, false);
-      final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
-      final int num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+      final int num_chunks;
+      if (_num_chunks_hint == null) {
+        final int chunk_size = FileVec.calcOptimalChunkSize(totSize, numCol, numCol * 4,
+                H2O.ARGS.nthreads, H2O.getCloudSize(), false, true);
+        final double rows_per_chunk = chunk_size; //why not numRow * chunk_size / totSize; it's supposed to be rows per chunk, not the byte size
+        num_chunks = Vec.nChunksFor(numRow, (int) Math.ceil(Math.log1p(rows_per_chunk)), false);
+        Log.info("Optimal calculated target number of chunks: " + num_chunks);
+      } else {
+        num_chunks = _num_chunks_hint;
+        Log.info("Using user-specified target number of chunks: " + num_chunks);
+      }
 
       if (SqlFetchMode.DISTRIBUTED.equals(_fetch_mode)) {
         final int num_retrieval_chunks = ConnectionPoolProvider.estimateConcurrentConnections(H2O.getCloudSize(), H2O.ARGS.nthreads);
