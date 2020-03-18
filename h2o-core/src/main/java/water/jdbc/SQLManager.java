@@ -270,7 +270,7 @@ public class SQLManager {
         vec = Vec.makeConN(numRow, num_chunks);
       }
 
-      Log.info("Number of chunks for data retrieval: " + vec.nChunks() + ", number of rows:" + numRow);
+      Log.info("Number of chunks for data retrieval: " + vec.nChunks() + ", number of rows: " + numRow);
       _j.setWork(vec.nChunks());
 
       // Finally read the data into an H2O Frame
@@ -583,22 +583,16 @@ public class SQLManager {
         final int fetchSize = (int) Math.min(blueprint.chunkLen(0), 1e5);
         stmt.setFetchSize(fetchSize);
         rs = stmt.executeQuery(query);
-        chunks: for (int cidx = 0; cidx < blueprint.nChunks(); cidx++) {
-          if (_job.stop_requested()) break;
+        for (int cidx = 0; cidx < blueprint.nChunks(); cidx++) {
+          if (_job.stop_requested()) 
+            break;
           NewChunk[] ncs = new NewChunk[columnTypes.length];
           for (int i = 0; i < columnTypes.length; i++) {
             ncs[i] = res[i].chunkForChunkIdx(cidx);
           }
           final int len = blueprint.chunkLen(cidx);
-          int r = 0;
-          while (r < len) {
-            if (! rs.next()) {
-              long totalLen = blueprint.espc()[cidx] + r;
-              Log.warn("Query `" + query + "` returned less rows than expected. Actual: " + totalLen + ", expected: " + blueprint.length());
-              break chunks;
-            }
+          for (int r = 0; r < len && rs.next(); r++) {
             SqlTableToH2OFrame.writeRow(rs, ncs);
-            r++;
           }
           fs.add(H2O.submitTask(new FinalizeNewChunkTask(cidx, ncs)));
           _job.update(1);
@@ -618,6 +612,10 @@ public class SQLManager {
       fs.blockForPending();
 
       Vec[] vecs = AppendableVec.closeAll(res);
+      if (vecs.length > 0 && vecs[0].length() != blueprint.length()) {
+        Log.warn("Query `" + query + "` returned less rows than expected. " +
+                "Actual: " + vecs[0].length() + ", expected: " + blueprint.length());
+      }
       return new Frame(destinationKey, _columnNames, vecs);
     }
 
