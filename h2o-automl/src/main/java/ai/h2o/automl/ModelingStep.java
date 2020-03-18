@@ -297,7 +297,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         }
 
         protected Job<Grid> hyperparameterSearch(Model.Parameters baseParms, Map<String, Object[]> searchParms) {
-            return hyperparameterSearch(null, baseParms, searchParms);
+            return hyperparameterSearch(null, baseParms, searchParms, GridSearch.ADAPTIVE_PARALLELISM_LEVEL);
         }
 
         /**
@@ -306,7 +306,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
          * @param searchParms hyperparameter search space,
          * @return the started hyperparameter search job.
          */
-        protected Job<Grid> hyperparameterSearch(Key<Grid> key, Model.Parameters baseParms, Map<String, Object[]> searchParms) {
+        protected Job<Grid> hyperparameterSearch(Key<Grid> key, Model.Parameters baseParms, Map<String, Object[]> searchParms, int parallelism) {
             Model.Parameters defaults;
             try {
                 defaults = baseParms.getClass().newInstance();
@@ -348,7 +348,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     searchParms,
                     new GridSearch.SimpleParametersBuilderFactory<>(),
                     searchCriteria,
-                    GridSearch.SEQUENTIAL_MODEL_BUILDING
+                    parallelism
             );
         }
     }
