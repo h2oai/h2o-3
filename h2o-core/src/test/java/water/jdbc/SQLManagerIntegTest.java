@@ -62,7 +62,7 @@ public class SQLManagerIntegTest extends TestUtil {
       Job<Frame> j = SQLManager.importSqlTable(
           connectionString, "TestData", "", "", "", "*",
           null, null,
-          SqlFetchMode.SINGLE
+          SqlFetchMode.SINGLE, null
       );
       Frame fr = Scope.track(j.get());
 
@@ -82,7 +82,7 @@ public class SQLManagerIntegTest extends TestUtil {
       Job<Frame> j = SQLManager.importSqlTable(
           connectionString, "", "select * from TestData", "", "", "*",
           false, null,
-          SqlFetchMode.SINGLE
+          SqlFetchMode.SINGLE, null
       );
       Frame fr = Scope.track(j.get());
 
