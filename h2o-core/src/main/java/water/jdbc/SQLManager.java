@@ -733,49 +733,26 @@ public class SQLManager {
     static void writeRow(ResultSet rs, NewChunk[] ncs) throws SQLException {
       for (int i = 0; i < ncs.length; i++) {
         Object res = rs.getObject(i + 1);
-        if (res == null) ncs[i].addNA();
-        else {
-          switch (res.getClass().getSimpleName()) {
-            case "Double":
-              ncs[i].addNum((double) res);
-              break;
-            case "Integer":
-              ncs[i].addNum((long) (int) res, 0);
-              break;
-            case "Long":
-              ncs[i].addNum((long) res, 0);
-              break;
-            case "Float":
-              ncs[i].addNum((double) (float) res);
-              break;
-            case "Short":
-              ncs[i].addNum((long) (short) res, 0);
-              break;
-            case "Byte":
-              ncs[i].addNum((long) (byte) res, 0);
-              break;
-            case "BigDecimal":
-              ncs[i].addNum(((BigDecimal) res).doubleValue());
-              break;
-            case "Boolean":
-              ncs[i].addNum(((boolean) res ? 1 : 0), 0);
-              break;
-            case "String":
-              ncs[i].addStr(new BufferedString((String) res));
-              break;
-            case "Date":
-              ncs[i].addNum(((Date) res).getTime(), 0);
-              break;
-            case "Time":
-              ncs[i].addNum(((Time) res).getTime(), 0);
-              break;
-            case "Timestamp":
-              ncs[i].addNum(((Timestamp) res).getTime(), 0);
-              break;
-            default:
-              ncs[i].addNA();
-          }
-        }
+        writeItem(res, ncs[i]);
+      }
+    }
+
+    static void writeItem(Object res, NewChunk nc) {
+      if (res == null)
+        nc.addNA();
+      else {
+        if (res instanceof Long || res instanceof Integer || res instanceof Short || res instanceof Byte)
+          nc.addNum(((Number) res).longValue(), 0);
+        else if (res instanceof Number)
+          nc.addNum(((Number) res).doubleValue());
+        else if (res instanceof Boolean)
+          nc.addNum(((boolean) res ? 1 : 0), 0);
+        else if (res instanceof String)
+          nc.addStr(res);
+        else if (res instanceof java.util.Date)
+          nc.addNum(((java.util.Date) res).getTime(), 0);
+        else
+          nc.addNA();
       }
     }
 
