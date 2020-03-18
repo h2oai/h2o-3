@@ -14,14 +14,16 @@ RUN \
     cd s3cmd-${S3_CMD_VERSION} && \
     python setup.py install
 
-# Install conda
+# Install conda for jenkins
+ENV PATH /home/jenkins/miniconda3/bin/:$PATH
+USER jenkins
 RUN \
     curl -sSL https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -o /tmp/miniconda.sh && \
-    bash /tmp/miniconda.sh -bfp /usr/local && \
+    bash /tmp/miniconda.sh -b && \
     rm /tmp/miniconda.sh && \
     conda install -y anaconda-client conda-build && \
     conda update conda && \
     conda clean --all --yes
+USER root
 
-ENV PATH /opt/conda/bin:$PATH
 ENV GRADLE_USER_HOME=/home/jenkins/.gradle
