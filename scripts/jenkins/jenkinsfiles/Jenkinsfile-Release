@@ -319,7 +319,7 @@ EOF
                                             echo "Activating Python ${env.PYTHON_VERSION}"
                                             . /envs/h2o_env_python${env.PYTHON_VERSION}/bin/activate
 
-                                            cd ${env.BUILD_NUMBER_DIR}/h2o-py/build
+                                            cd ${env.BUILD_NUMBER_DIR}/h2o-py/build/main
                                             python setup.py sdist
 
                                             s3cmd put --acl-public dist/h2o-${env.PROJECT_VERSION}.tar.gz ${env.S3_ROOT}/${env.BRANCH_NAME}/${currentBuild.number}/Python/
