@@ -35,7 +35,7 @@ def algo_max_runtime_secs():
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/glrmdata1000x25.csv"))
     x_indices = list(range(training1_data.ncol))
     model = H2OGeneralizedLowRankEstimator(k=10, loss="Quadratic", gamma_x=0.3,
-                                           gamma_y=0.3, transform="STANDARDIZE")
+                                           gamma_y=0.3, transform="STANDARDIZE", seed=seed)
     grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices)
     cleanUp([training1_data, model])
 
@@ -68,32 +68,21 @@ def algo_max_runtime_secs():
     print("******************** Skip testing Naives Bayes.  Not an iterative algo.")
 
     # random foreset
-    model = H2ORandomForestEstimator(ntrees=100, score_tree_interval=0)
+    model = H2ORandomForestEstimator(ntrees=100, score_tree_interval=0, seed=seed)
     grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices)
     cleanUp([model, training1_data])
-
-    # deepwater
-    if H2ODeepWaterEstimator.available():
-        training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/ecology_model.csv"))
-        training1_data = training1_data.drop('Site')
-        training1_data['Angaus'] = training1_data['Angaus'].asfactor()
-        y_index = "Angaus"
-        x_indices = list(range(1, training1_data.ncol))
-        model = H2ODeepWaterEstimator(epochs=50, hidden=[4096, 4096, 4096], hidden_dropout_ratios=[0.2, 0.2, 0.2])
-        grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices, y_index)
-        cleanUp([training1_data, model])
 
     # PCA
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/pca1000by25.csv"))
     x_indices = list(range(training1_data.ncol))
-    model = H2OPCA(k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=True)
+    model = H2OPCA(k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=True,seed=seed)
     grabRuntimeInfo(err_bound*5, 2, model, training1_data, x_indices)
     cleanUp([training1_data, model])
 
     # kmeans
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/kmeans_8_centers_3_coords.csv"))
     x_indices = list(range(training1_data.ncol))
-    model = H2OKMeansEstimator(k=10)
+    model = H2OKMeansEstimator(k=10, seed=seed)
     grabRuntimeInfo(err_bound*2, 2.5, model, training1_data, x_indices)
     cleanUp([training1_data, model])
 
