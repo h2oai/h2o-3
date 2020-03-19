@@ -248,6 +248,9 @@ test-package-java:
 		h2o-jetty-9/build/libs/h2o-jetty-9-*.jar \
 		h2o-extensions/target-encoder/src/ \
 		h2o-extensions/target-encoder/build/libs/h2o-ext-target-encoder*.jar \
+		h2o-k8s/src/ \
+        h2o-k8s/build/libs/h2o-k8s-*.jar \
+        h2o-k8s/tests/ \
 		scripts/run.py py/ scripts/test-xgb-gpu-smoke.sh \
 		sort_crash.csv tests/doOnlyJunitSmokeTestList \
 		jacoco/*.jar
@@ -445,6 +448,9 @@ test-kerberos-hadoop-3-spnego: test-kerberos-hadoop-3-standalone test-hadoop-com
 test-hadoop-multinode:
 	cd h2o-hadoop-common/tests_multinode/python && ../../../scripts/run.py --wipeall --nointernal --usecloud "$$CLOUD_IP:$$CLOUD_PORT"
 	cd h2o-hadoop-common/tests_multinode/R && ../../../scripts/run.py --wipeall --nointernal --usecloud "$$CLOUD_IP:$$CLOUD_PORT"
+
+test-h2o-k8s:
+	bash h2o-k8s/tests/clustering/docker-init-script.sh
 
 coverage-junit-algos-jenkins:
 	$(call sed_test_scripts)
