@@ -20,8 +20,8 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     """
 
     algo = "targetencoder"
-    param_names = {"blending", "k", "f", "data_leakage_handling", "noise_level", "seed", "model_id", "ignored_columns",
-                   "training_frame", "fold_column", "response_column"}
+    param_names = {"model_id", "training_frame", "fold_column", "response_column", "ignored_columns", "blending", "k",
+                   "f", "data_leakage_handling", "noise_level", "seed"}
 
     def __init__(self, **kwargs):
         super(H2OTargetEncoderEstimator, self).__init__()
@@ -35,6 +35,97 @@ class H2OTargetEncoderEstimator(H2OEstimator):
                 setattr(self, pname, pvalue)
             else:
                 raise H2OValueError("Unknown parameter %s = %r" % (pname, pvalue))
+
+    @property
+    def training_frame(self):
+        """
+        Id of the training data frame.
+
+        Type: ``H2OFrame``.
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = ["home.dest", "cabin", "embarked"]
+        >>> response = "survived"
+        >>> titanic["survived"] = titanic["survived"].asfactor()
+        >>> fold_col = "kfold_column"
+        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
+        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
+        ...                                        f=25,
+        ...                                        blending=True)
+        >>> titanic_te.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=titanic)
+        >>> titanic_te
+        """
+        return self._parms.get("training_frame")
+
+    @training_frame.setter
+    def training_frame(self, training_frame):
+        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
+
+
+    @property
+    def fold_column(self):
+        """
+        Column with cross-validation fold index assignment per observation.
+
+        Type: ``str``.
+
+        :examples:
+
+        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+        >>> predictors = ["home.dest", "cabin", "embarked"]
+        >>> response = "survived"
+        >>> titanic["survived"] = titanic["survived"].asfactor()
+        >>> fold_col = "kfold_column"
+        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
+        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
+        ...                                        f=25,
+        ...                                        blending=True)
+        >>> titanic_te.train(x=predictors,
+        ...                  y=response,
+        ...                  training_frame=titanic)
+        >>> titanic_te
+        """
+        return self._parms.get("fold_column")
+
+    @fold_column.setter
+    def fold_column(self, fold_column):
+        assert_is_type(fold_column, None, str)
+        self._parms["fold_column"] = fold_column
+
+
+    @property
+    def response_column(self):
+        """
+        Response variable column.
+
+        Type: ``str``.
+        """
+        return self._parms.get("response_column")
+
+    @response_column.setter
+    def response_column(self, response_column):
+        assert_is_type(response_column, None, str)
+        self._parms["response_column"] = response_column
+
+
+    @property
+    def ignored_columns(self):
+        """
+        Names of columns to ignore for training.
+
+        Type: ``List[str]``.
+        """
+        return self._parms.get("ignored_columns")
+
+    @ignored_columns.setter
+    def ignored_columns(self, ignored_columns):
+        assert_is_type(ignored_columns, None, [str])
+        self._parms["ignored_columns"] = ignored_columns
+
 
     @property
     def blending(self):
@@ -190,97 +281,6 @@ class H2OTargetEncoderEstimator(H2OEstimator):
     def seed(self, seed):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
-
-
-    @property
-    def ignored_columns(self):
-        """
-        Names of columns to ignore for training.
-
-        Type: ``List[str]``.
-        """
-        return self._parms.get("ignored_columns")
-
-    @ignored_columns.setter
-    def ignored_columns(self, ignored_columns):
-        assert_is_type(ignored_columns, None, [str])
-        self._parms["ignored_columns"] = ignored_columns
-
-
-    @property
-    def training_frame(self):
-        """
-        Id of the training data frame.
-
-        Type: ``H2OFrame``.
-
-        :examples:
-
-        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
-        >>> predictors = ["home.dest", "cabin", "embarked"]
-        >>> response = "survived"
-        >>> titanic["survived"] = titanic["survived"].asfactor()
-        >>> fold_col = "kfold_column"
-        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
-        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,
-        ...                                        blending=True)
-        >>> titanic_te.train(x=predictors,
-        ...                  y=response,
-        ...                  training_frame=titanic)
-        >>> titanic_te
-        """
-        return self._parms.get("training_frame")
-
-    @training_frame.setter
-    def training_frame(self, training_frame):
-        self._parms["training_frame"] = H2OFrame._validate(training_frame, 'training_frame')
-
-
-    @property
-    def fold_column(self):
-        """
-        Column with cross-validation fold index assignment per observation.
-
-        Type: ``str``.
-
-        :examples:
-
-        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
-        >>> predictors = ["home.dest", "cabin", "embarked"]
-        >>> response = "survived"
-        >>> titanic["survived"] = titanic["survived"].asfactor()
-        >>> fold_col = "kfold_column"
-        >>> titanic[fold_col] = titanic.kfold_column(n_folds=5, seed=1234)
-        >>> titanic_te = H2OTargetEncoderEstimator(k=35,
-        ...                                        f=25,
-        ...                                        blending=True)
-        >>> titanic_te.train(x=predictors,
-        ...                  y=response,
-        ...                  training_frame=titanic)
-        >>> titanic_te
-        """
-        return self._parms.get("fold_column")
-
-    @fold_column.setter
-    def fold_column(self, fold_column):
-        assert_is_type(fold_column, None, str)
-        self._parms["fold_column"] = fold_column
-
-
-    @property
-    def response_column(self):
-        """
-        Response variable column.
-
-        Type: ``str``.
-        """
-        return self._parms.get("response_column")
-
-    @response_column.setter
-    def response_column(self, response_column):
-        assert_is_type(response_column, None, str)
-        self._parms["response_column"] = response_column
 
 
     def transform(self, frame, data_leakage_handling="None", noise=-1, seed=-1):
