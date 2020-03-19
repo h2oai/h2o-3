@@ -1,6 +1,6 @@
 @Library('test-shared-library') _
 
-def NODE_LABEL = 'master'
+def NODE_LABEL = 'H2O-CPU && docker && linux'
 
 def pipelineContext = null
 def result = 'FAILURE'
