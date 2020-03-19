@@ -1,6 +1,6 @@
 #!/bin/bash -ex
 
-# init database for metastore
+# docker-init-script database for metastore
 service postgresql start
 
 sudo -u postgres createuser root -s
