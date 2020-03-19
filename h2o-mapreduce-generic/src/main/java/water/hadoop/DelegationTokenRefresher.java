@@ -22,12 +22,13 @@ import static water.hadoop.h2omapper.*;
 public class DelegationTokenRefresher implements Runnable {
   
   public static void setup(Configuration conf, String iceRoot) throws IOException {
+    String authUser = conf.get(H2O_AUTH_USER);
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
     String authKeytab = conf.get(H2O_AUTH_KEYTAB);
     HiveTokenGenerator.HiveOptions options = HiveTokenGenerator.HiveOptions.make(conf);
     if (authPrincipal != null && authKeytab != null && options != null) {
       String authKeytabPath = writeKeytabToFile(authKeytab, iceRoot);
-      new DelegationTokenRefresher(authPrincipal, authKeytabPath, options).start();
+      new DelegationTokenRefresher(authPrincipal, authKeytabPath, authUser, options).start();
     } else {
       log("Delegation token refresh not active.", null);
     }
@@ -47,6 +48,7 @@ public class DelegationTokenRefresher implements Runnable {
 
   private final String _authPrincipal;
   private final String _authKeytabPath;
+  private final String _authUser;
   private final HiveTokenGenerator.HiveOptions _hiveOptions;
 
   private final HiveTokenGenerator _hiveTokenGenerator = new HiveTokenGenerator();
@@ -54,10 +56,12 @@ public class DelegationTokenRefresher implements Runnable {
   public DelegationTokenRefresher(
       String authPrincipal,
       String authKeytabPath,
+      String authUser,
       HiveTokenGenerator.HiveOptions options
   ) {
     this._authPrincipal = authPrincipal;
     this._authKeytabPath = authKeytabPath;
+    this._authUser = authUser;
     this._hiveOptions = options;
   }
 
@@ -128,12 +132,14 @@ public class DelegationTokenRefresher implements Runnable {
     } catch (IOException e) {
       log("Failed to serialize credentials", e);
     }
-
   }
 
   private void doRefreshTokens() throws IOException, InterruptedException {
     log("Log in from keytab", null);
     UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
+    if (_authUser != null) {
+      ugi = UserGroupInformation.createProxyUser(_authUser, ugi);
+    }
     Credentials creds = getTokens(ugi);
     if (creds != null) {
       distribute(creds);

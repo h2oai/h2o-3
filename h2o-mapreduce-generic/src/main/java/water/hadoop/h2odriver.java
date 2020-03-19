@@ -56,8 +56,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static water.hadoop.h2omapper.H2O_AUTH_KEYTAB;
-import static water.hadoop.h2omapper.H2O_AUTH_PRINCIPAL;
+import static water.hadoop.h2omapper.*;
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 /**
@@ -2128,6 +2127,7 @@ public class h2odriver extends Configured implements Tool {
 
     HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
     if (refreshTokens && principal != null && keytabPath != null) {
+      j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
       j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
       byte[] payloadData = readBinaryFile(keytabPath);
       String payload = convertByteArrToString(payloadData);

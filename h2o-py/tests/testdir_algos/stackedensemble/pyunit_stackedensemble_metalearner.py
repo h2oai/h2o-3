@@ -2,11 +2,11 @@
 # -*- encoding: utf-8 -*-
 from __future__ import print_function
 
-import h2o
-
 import sys
+import warnings
 sys.path.insert(1,"../../../")  # allow us to run this standalone
 
+import h2o
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 from h2o.estimators.stackedensemble import H2OStackedEnsembleEstimator
@@ -77,8 +77,55 @@ def stackedensemble_metalearner_test():
         train_ensemble_using_metalearner(algo, expected_algo)
 
 
+# PUBDEV-6955 - modify metalearner property to return metalearner object not JSON while being backward compatible
+# in regards to the "name" property
+def metalearner_property_test():
+    train = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_train.csv"))
+    test = h2o.import_file(pyunit_utils.locate("smalldata/iris/iris_test.csv"))
+    x = train.columns
+    y = "species"
+    x.remove(y)
+
+    nfolds = 2
+    gbm = H2OGradientBoostingEstimator(nfolds=nfolds,
+                                       fold_assignment="Modulo",
+                                       keep_cross_validation_predictions=True)
+    gbm.train(x=x, y=y, training_frame=train)
+    rf = H2ORandomForestEstimator(nfolds=nfolds,
+                                  fold_assignment="Modulo",
+                                  keep_cross_validation_predictions=True)
+    rf.train(x=x, y=y, training_frame=train)
+    se = H2OStackedEnsembleEstimator(training_frame=train,
+                                     validation_frame=test,
+                                     base_models=[gbm.model_id, rf.model_id])
+    se.train(x=x, y=y, training_frame=train)
+
+    old_way_retrieved_metalearner = h2o.get_model(se.metalearner()["name"])
+
+    # Test backward compatibility
+    assert se.metalearner()["name"] == old_way_retrieved_metalearner.model_id
+    # Test we get the same metalearner as we used to get
+    assert old_way_retrieved_metalearner.model_id == se.metalearner().model_id
+
+    # Check we emit deprecation warning
+    for v in sys.modules.values():
+        if getattr(v, '__warningregistry__', None):
+            v.__warningregistry__ = {}
+    with warnings.catch_warnings(record=True) as ws:
+        # Get all DeprecationWarnings
+        warnings.simplefilter("always", DeprecationWarning)
+        # Trigger a warning.
+        _ = se.metalearner()["name"]
+        # Assert that we get the deprecation warning
+        assert any((
+            issubclass(w.category, DeprecationWarning) and
+            "metalearner()['name']" in str(w.message)
+            for w in ws
+        ))
+
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(stackedensemble_metalearner_test)
+    pyunit_utils.run_tests([stackedensemble_metalearner_test, metalearner_property_test])
 else:
     stackedensemble_metalearner_test()
+    metalearner_property_test()

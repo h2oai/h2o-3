@@ -11,6 +11,8 @@
 #'        The response must be either a numeric or a categorical/factor variable. 
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
+#' @param model_id Destination id for this model; auto-generated if not specified.
+#' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @param blending \code{Logical}. Blending enabled/disabled Defaults to FALSE.
 #' @param k Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
 #'        parameter. Defaults to 10.
@@ -20,8 +22,6 @@
 #' @param noise_level Noise level Defaults to 0.01.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
-#' @param model_id Destination id for this model; auto-generated if not specified.
-#' @param fold_column Column with cross-validation fold index assignment per observation.
 #' @examples
 #' \dontrun{
 #' # library(h2o)
@@ -38,14 +38,14 @@
 h2o.targetencoder <- function(x,
                               y,
                               training_frame,
+                              model_id = NULL,
+                              fold_column = NULL,
                               blending = FALSE,
                               k = 10,
                               f = 20,
                               data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
                               noise_level = 0.01,
-                              seed = -1,
-                              model_id = NULL,
-                              fold_column = NULL)
+                              seed = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -68,6 +68,10 @@ h2o.targetencoder <- function(x,
   parms$response_column <- args$y
   parms$training_frame <- training_frame
 
+  if (!missing(model_id))
+    parms$model_id <- model_id
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
   if (!missing(blending))
     parms$blending <- blending
   if (!missing(k))
@@ -80,10 +84,6 @@ h2o.targetencoder <- function(x,
     parms$noise_level <- noise_level
   if (!missing(seed))
     parms$seed <- seed
-  if (!missing(model_id))
-    parms$model_id <- model_id
-  if (!missing(fold_column))
-    parms$fold_column <- fold_column
 
   # Error check and build model
   model <- .h2o.modelJob('targetencoder', parms, h2oRestApiVersion=3, verbose=FALSE)

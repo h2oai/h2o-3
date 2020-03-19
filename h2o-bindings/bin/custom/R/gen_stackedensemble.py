@@ -95,6 +95,7 @@ class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
 .h2o.fill_stackedensemble <- function(model, parameters, allparams) {
   # Store base models for the Stacked Ensemble in user-readable form
   model$base_models <- unlist(lapply(parameters$base_models, function (base_model) base_model$name))
+  model$metalearner_model <- h2o.getModel(model$metalearner$name)
   return(model)
 }
 """
