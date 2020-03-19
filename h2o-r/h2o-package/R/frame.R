@@ -2285,7 +2285,8 @@ is.numeric <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+#' heart <- h2o.importFile(f)
 #' 
 #' heart["transplant"] <- as.character(heart["transplant"])
 #' is.character(heart["transplant"])
@@ -2963,7 +2964,9 @@ sd <- function(x, na.rm=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+#' heart <- h2o.importFile(f)
+#' 
 #' h2o.signif(heart["age"], digits = 3)
 #' }
 #' @export
@@ -2990,7 +2993,9 @@ signif <- function(x, digits=6) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+#' heart <- h2o.importFile(f)
+#' 
 #' h2o.round(heart["age"], digits = 3)
 #' }
 #' @export

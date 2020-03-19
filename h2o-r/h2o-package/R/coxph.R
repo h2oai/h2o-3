@@ -36,7 +36,8 @@
 #' h2o.init()
 #' 
 #' # Import the heart dataset
-#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+#' heart <- h2o.importFile(f)
 #' 
 #' # Set the predictor and response
 #' predictor <- "age"
