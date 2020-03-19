@@ -169,7 +169,7 @@ try {
                             }
                             sh """
                                 cd ${env.BUILD_NUMBER_DIR}
-                                git push --tags
+                                echo SKIPPING `git push --tags`
                             """
                             pipelineContext.getBuildSummary().markStageSuccessful(this, TAG_STAGE_NAME)
                         } catch (Exception e) {
