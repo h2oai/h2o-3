@@ -23,6 +23,7 @@ public class ScoreKeeper extends Iced {
   public double _logloss = Double.NaN;
   public double _AUC = Double.NaN;
   public double _pr_auc = Double.NaN;
+  public double _pr_auc_xgboost = Double.NaN;
   public double _classError = Double.NaN;
   public double _mean_per_class_error = Double.NaN;
   public double _custom_metric = Double.NaN;
@@ -84,6 +85,7 @@ public class ScoreKeeper extends Iced {
       if (((ModelMetricsBinomial)m)._auc != null) {
         _AUC = ((ModelMetricsBinomial) m)._auc._auc;
         _pr_auc = ((ModelMetricsBinomial) m)._auc.pr_auc();
+        _pr_auc_xgboost = ((ModelMetricsBinomial) m)._auc.pr_auc_xgboost();
         _classError = ((ModelMetricsBinomial) m)._auc.defaultErr();
         _mean_per_class_error = ((ModelMetricsBinomial)m).mean_per_class_error();
       }
@@ -409,6 +411,7 @@ public class ScoreKeeper extends Iced {
         ", _logloss=" + _logloss +
         ", _AUC=" + _AUC +
             ", _pr_auc="+_pr_auc+
+            ", _pr_auc_xgboost="+_pr_auc_xgboost+
         ", _classError=" + _classError +
         ", _mean_per_class_error=" + _mean_per_class_error +
         ", _hitratio=" + Arrays.toString(_hitratio) +

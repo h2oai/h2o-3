@@ -10,8 +10,7 @@ import water.util.fp.Functions;
 
 import java.util.Arrays;
 
-import static hex.AUC2.ThresholdCriterion.precision;
-import static hex.AUC2.ThresholdCriterion.recall;
+import static hex.AUC2.ThresholdCriterion.*;
 
 /** One-pass approximate AUC
  *
@@ -28,7 +27,7 @@ public class AUC2 extends Iced {
   public final double[] _tps;     // True  Positives
   public final double[] _fps;     // False Positives
   public final double _p, _n;     // Actual trues, falses
-  public double _auc, _gini, _pr_auc; // Actual AUC value
+  public double _auc, _gini, _pr_auc, _pr_auc_xgboost; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
 
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
@@ -177,11 +176,13 @@ public class AUC2 extends Iced {
     if (trueProbabilities) {
       _auc = compute_auc();
       _pr_auc = pr_auc();
+      _pr_auc_xgboost = pr_auc_xgboost();
       _gini = 2 * _auc - 1;
       _max_idx = DEFAULT_CM.max_criterion_idx(this);
     } else {
       _auc = Double.NaN;
       _pr_auc = Double.NaN;
+      _pr_auc_xgboost = Double.NaN;
       _gini = Double.NaN;
       _max_idx = 0;
     }
@@ -196,6 +197,7 @@ public class AUC2 extends Iced {
     _n = auc._n;
     _auc = auc._auc;
     _pr_auc = auc._pr_auc;
+    _pr_auc_xgboost = auc._pr_auc_xgboost;
     _gini = auc._gini;
     _max_idx = auc._max_idx >= 0 ? 0 : -1;
   }
@@ -225,7 +227,7 @@ public class AUC2 extends Iced {
     _nBins = 0;
     _ths = _tps = _fps = new double[0];
     _p =_n = 0;
-    _auc = _gini = _pr_auc = Double.NaN;
+    _auc = _gini = _pr_auc = _pr_auc_xgboost = Double.NaN;
     _max_idx = -1;
   }
 
@@ -247,6 +249,14 @@ public class AUC2 extends Iced {
     }
     checkRecallValidity();
     return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
+  }
+  
+  public double pr_auc_xgboost(){
+    if (isEmpty()) {
+      return Double.NaN;
+    }
+    checkRecallValidity();
+    return Functions.integrate2(forCriterion(tps), forCriterion(fps), 0, _nBins-1);
   }
 
   // Checks that recall is a non-decreasing function
@@ -556,6 +566,7 @@ public class AUC2 extends Iced {
       ps[i] = new Pair(rprob.at(i),(byte)racts.at8(i));
     return perfectAUC(ps);
   }
+  
   public static double perfectAUC( double ds[], double[] acts ) {
     Pair[] ps = new Pair[ds.length];
     for( int i=0; i<ps.length; i++ )
@@ -567,6 +578,12 @@ public class AUC2 extends Iced {
     // Sort by probs, then actuals - so tied probs have the 0 actuals before
     // the 1 actuals.  Sort probs from largest to smallest - so both the True
     // and False Positives are zero to start.
+    int totalPositive = 0;
+    int totalNegative = 0;
+    for( Pair p : ps ) {
+      
+    }
+    
     Arrays.sort(ps,new java.util.Comparator<Pair>() {
         @Override public int compare( Pair a, Pair b ) {
           return a._prob<b._prob ? 1 : (a._prob==b._prob ? (b._act-a._act) : -1);

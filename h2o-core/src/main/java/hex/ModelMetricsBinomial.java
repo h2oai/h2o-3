@@ -46,6 +46,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     if (_auc != null) {
       sb.append(" AUC: " + (float)_auc._auc + "\n");
       sb.append(" pr_auc: " + (float)_auc.pr_auc() + "\n");
+      sb.append(" pr_auc_xgboost: " + (float)_auc.pr_auc_xgboost() + "\n");
     }
     sb.append(" logloss: " + (float)_logloss + "\n");
     sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");

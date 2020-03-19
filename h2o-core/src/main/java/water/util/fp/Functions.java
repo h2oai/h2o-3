@@ -1,10 +1,6 @@
 package water.util.fp;
 
-import static water.util.Java7.*;
-
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
+import java.util.*;
 
 /**
  * Operations on functions
@@ -102,10 +98,7 @@ public class Functions {
    * @param to max value of the curve range
    * @return the area under curve, the result of integrating x*y' over [from,to].
    */
-  public static double integrate(
-      Function<Integer, Double> x,
-      Function<Integer, Double> y,
-      int from, int to) {
+  public static double integrate(Function<Integer, Double> x,  Function<Integer, Double> y, int from, int to) {
     double s = 0;
     double x0 = x.apply(from);
     double y0 = y.apply(from);
@@ -113,10 +106,53 @@ public class Functions {
       double x1 = x.apply(i);
       double y1 = y.apply(i);
       s += (y1+y0)*(x1-x0)*.5;
+      x0 = x1; 
+      y0 = y1;
+    }
+    return s;
+  }
 
-      x0 = x1; y0 = y1;
+  public static double integrate2(Function<Integer, Double> x,  Function<Integer, Double> y, int from, int to) {
+    double sum = 0.0;
+
+    if(to-from == 0){
+      return sum;
     }
 
-    return s;
+    double total_pos = 0.0;
+    double total_neg = 0.0;
+
+    for (int i= from + 1; i <= to; i++) {
+      total_pos += x.apply(i);
+      total_neg += y.apply(i);
+    }
+
+    assert total_neg > 0 && total_pos > 0: "AUC-PR calculation error";
+
+    double tp = 0.0, prevtp = 0.0, fp = 0.0, prevfp = 0.0;
+    double h, a, b;
+
+    for (int j = from+1; j <= to; j++) {
+      tp += x.apply(j);
+      fp += y.apply(j);
+      if (tp == prevtp) {
+        a = 1.0;
+        b = 0.0;
+      } else {
+        h = (fp - prevfp) / (tp - prevtp);
+        a = 1.0 + h;
+        b = (prevfp - h * prevtp) / total_pos;
+      }
+      if (0.0 != b) { 
+        sum += (tp / total_pos - prevtp / total_pos -
+                  b / a * (Math.log(a * tp / total_pos + b) -
+                  Math.log(a * prevtp / total_pos + b))) / a;
+        } else {
+          sum += (tp / total_pos - prevtp / total_pos) / a;
+        }
+        prevtp = tp;
+        prevfp = fp;
+      }
+    return sum;
   }
 }

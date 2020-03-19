@@ -24,6 +24,9 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
   @API(help="The precision-recall AUC for this scoring run.", direction=API.Direction.OUTPUT)
   public double pr_auc;
 
+  @API(help="The precision-recall AUC for this scoring run.", direction=API.Direction.OUTPUT)
+  public double pr_auc_xgboost;
+
   @API(help="The Gini score for this scoring run.", direction=API.Direction.OUTPUT)
   public double Gini;
 
@@ -65,6 +68,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       AUC  = auc._auc;
       Gini = auc._gini;
       pr_auc = auc._pr_auc;
+      pr_auc_xgboost = auc._pr_auc_xgboost;
 
       // Fill TwoDimTable
       String[] thresholds = new String[auc._nBins];
