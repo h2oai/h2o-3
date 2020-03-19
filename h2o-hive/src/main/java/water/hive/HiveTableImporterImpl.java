@@ -9,6 +9,7 @@ import water.fvec.Frame;
 import water.parser.CsvParser;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
+import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -251,8 +252,13 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
     return columnNames;
   }
 
-  private byte convertHiveType(String hiveType) {
-    switch (hiveType) {
+  static byte convertHiveType(String hiveType) {
+    return convertHiveType(hiveType, false);
+  }
+  
+  static byte convertHiveType(final String hiveType, final boolean strict) {
+    final String sanitized = sanitizeHiveType(hiveType);
+    switch (sanitized) {
       case "tinyint":
       case "smallint":
       case "int":
@@ -271,12 +277,26 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
       case "string":
       case "varchar":
       case "char":
+      case "binary": // binary could be a UTF8-encoded String (similar to what Parquet does)
         return T_STR;
       case "boolean":
         return T_CAT;
       default:
-        throw new IllegalArgumentException("Unsupported column type: " + hiveType);
+        if (strict)
+          throw new IllegalArgumentException("Unsupported column type: " + hiveType);
+        else {
+          Log.warn("Unrecognized Hive type '" + hiveType + "'. Using String type instead.");
+          return T_STR;
+        }
     }
   }
 
+  static String sanitizeHiveType(String type) {
+    int paramIdx = type.indexOf('(');
+    if (paramIdx >= 0) {
+      type = type.substring(0, paramIdx);
+    }
+    return type.trim().toLowerCase();
+  }
+  
 }
