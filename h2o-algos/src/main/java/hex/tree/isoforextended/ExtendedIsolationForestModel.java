@@ -3,6 +3,7 @@ package hex.tree.isoforextended;
 import hex.ModelMetrics;
 import hex.tree.SharedTreeModel;
 import hex.tree.isofor.ModelMetricsAnomaly;
+import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -17,7 +18,6 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
                                                                     ExtendedIsolationForestParameters,
                                                                     ExtendedIsolationForestOutput> {
     public IsolationTree[] iTrees;
-    public long trainRowsNum;
     
     public ExtendedIsolationForestModel(Key<ExtendedIsolationForestModel> selfKey, ExtendedIsolationForestParameters parms,
                                         ExtendedIsolationForestOutput output) {
@@ -67,6 +67,6 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
     }
 
     private double anomalyScore(double pathLength) {
-        return Math.pow(2, -1 * (pathLength / IsolationTree.averagePathLengthOfUnsuccesfullSearch(256)));
+        return Math.pow(2, -1 * (pathLength / IsolationTree.averagePathLengthOfUnsuccesfullSearch(_parms.sampleSize)));
     }
 }
