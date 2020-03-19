@@ -1382,7 +1382,8 @@ h2o.bottomN <- function(x, column, nPercent) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
+#' hdf <- h2o.importFile(f)
 #' h2o.year(hdf["ds9"])
 #' }
 #' @export
@@ -1403,7 +1404,8 @@ h2o.year <- function(x) .newExpr("year", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.month(hdf["ds9"])
 #' }
 #' @export
@@ -1423,7 +1425,8 @@ h2o.month <- function(x) .newExpr("month", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
+#' hdf <- h2o.importFile(f)
 #' h2o.week(hdf["ds9"])
 #' }
 #' @export
@@ -1443,7 +1446,8 @@ h2o.week <- function(x) .newExpr("week", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.day(hdf["ds9"])
 #' }
 #' @export
@@ -1463,7 +1467,8 @@ h2o.day <- function(x) .newExpr("day", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.dayOfWeek(hdf["ds9"])
 #' }
 #' @export
@@ -1482,7 +1487,8 @@ h2o.dayOfWeek <- function(x) .newExpr("dayOfWeek", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.hour(hdf["ds9"])
 #' }
 #' @seealso \code{\link{h2o.day}}
@@ -1566,7 +1572,9 @@ h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) 
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.as_date(hdf["ds5"], "%d.%m.%y %H:%M")
 #' }
 #' @export
