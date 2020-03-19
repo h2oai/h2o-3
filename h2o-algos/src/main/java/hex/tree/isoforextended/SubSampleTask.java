@@ -26,7 +26,7 @@ public class SubSampleTask extends MRTask<SubSampleTask> {
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
         for (int row = 0; row < cs[0]._len; row++) {
-            if ((currentSubSampleSize.incrementAndGet() < subSampleSize)) {
+            if (random.nextBoolean() && (currentSubSampleSize.incrementAndGet() < subSampleSize)) {
                 for (int column = 0; column < cs.length; column++) {
                     ncs[column].addNum(cs[column].atd(row));
                 }
