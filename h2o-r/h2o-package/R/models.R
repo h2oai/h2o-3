@@ -1463,7 +1463,8 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "cylinders"
 #' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
@@ -1500,7 +1501,8 @@ h2o.coef <- function(object) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "cylinders"
 #' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
@@ -1833,7 +1835,9 @@ h2o.rmsle <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
@@ -1962,7 +1966,8 @@ h2o.varsplits <- function(object) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
@@ -2341,7 +2346,8 @@ h2o.specificity <- function(object, thresholds){
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
@@ -2372,7 +2378,8 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
@@ -3540,7 +3547,8 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' cars_pca <- h2o.prcomp(cars, transform = "STANDARDIZE", 
 #'                        k = 3, x = predictors, seed = 12345)
@@ -3726,7 +3734,9 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
@@ -3754,7 +3764,9 @@ h2o.cross_validation_models <- function(object) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
@@ -3782,7 +3794,9 @@ h2o.cross_validation_fold_assignment <- function(object) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
@@ -3810,7 +3824,9 @@ h2o.cross_validation_holdout_predictions <- function(object) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"

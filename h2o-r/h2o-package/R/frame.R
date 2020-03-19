@@ -362,11 +362,13 @@ h2o.getTypes <- function(x){.eval.frame(x); .fetch.data(x, 10L); attr(x, "types"
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' dim(cars)
-#' split = h2o.splitFrame(data = cars, ratios = .8)
-#' train = h2o.assign(split[[1]], key = "train")
-#' test = h2o.assign(split[[2]], key = "test")
+#' split <- h2o.splitFrame(data = cars, ratios = .8)
+#' train <- h2o.assign(split[[1]], key = "train")
+#' test <- h2o.assign(split[[2]], key = "test")
 #' dim(train)
 #' dim(test)
 #' }
@@ -2123,7 +2125,9 @@ h2o.levels <- function(x, i) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.nlevels(cars)
 #' }
 #' @export
@@ -2231,8 +2235,9 @@ tail.H2OFrame <- h2o.tail
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' is.factor(cars["economy_20mpg"])
 #' }
@@ -2264,6 +2269,7 @@ is.numeric <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
+#' 
 #' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 #' 
 #' heart["transplant"] <- as.character(heart["transplant"])
@@ -2287,7 +2293,8 @@ is.character <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' print(cars, n = 8)
 #' }
 #' @export
@@ -3137,7 +3144,9 @@ h2o.trunc <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.dim(cars)
 #' }
 #' @export
@@ -3155,7 +3164,9 @@ h2o.dim <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.dimnames(cars)
 #' }
 #' @export
@@ -3211,7 +3222,8 @@ h2o.colnames <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' h2o.isfactor(cars["economy_20mpg"])
 #' }
@@ -3267,8 +3279,10 @@ h2o.ischaracter <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' h2o <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-#' h2o.asfactor(h2o["cylinders"])
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' h2o.asfactor(cars["cylinders"])
 #' }
 #' @export
 h2o.asfactor <- function(x) {
@@ -3285,7 +3299,9 @@ h2o.asfactor <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.asnumeric(cars)
 #' }
 #' @export
@@ -3785,7 +3801,9 @@ h2o.max <- function(x,na.rm = FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.nrow(cars)
 #' }
 #' @export
@@ -5140,7 +5158,9 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "cylinders"
 #' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
