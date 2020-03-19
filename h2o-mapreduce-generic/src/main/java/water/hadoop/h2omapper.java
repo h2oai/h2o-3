@@ -33,6 +33,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
   public static final String H2O_CLOUDING_DIR_KEY = "h2o.clouding.dir";
   public static final String H2O_CLOUD_SIZE_KEY = "h2o.clouding.cloud.size";
 
+  public static final String H2O_AUTH_USER = "h2o.auth.user";
   public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
   public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
   public static final String H2O_HIVE_JDBC_URL = "h2o.hive.jdbc.url";
