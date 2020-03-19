@@ -37,6 +37,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();
+            Scope.track_generic(model);
             assertNotNull(model);
             model.iTrees = eif.iTrees;
 
