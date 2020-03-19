@@ -576,7 +576,8 @@ def import_hive_table(database=None, table=None, partitions=None, allow_multi_fo
     return get_frame(j.dest_key)
 
 
-def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, fetch_mode=None):
+def import_sql_table(connection_url, table, username, password, columns=None, optimize=True, 
+                     fetch_mode=None, num_chunks_hint=None):
     """
     Import SQL table to H2OFrame in memory.
 
@@ -598,6 +599,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     :param optimize: DEPRECATED. Ignored - use fetch_mode instead. Optimize import of SQL table for faster imports.
     :param fetch_mode: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node
         from the database.
+    :param num_chunks_hint: Desired number of chunks for the target Frame.
 
     :returns: an :class:`H2OFrame` containing data of the specified SQL table.
 
@@ -616,8 +618,9 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
     assert_is_type(columns, [str], None)
     assert_is_type(optimize, bool)
     assert_is_type(fetch_mode, str, None)
+    assert_is_type(num_chunks_hint, int, None)
     p = {"connection_url": connection_url, "table": table, "username": username, "password": password,
-         "fetch_mode": fetch_mode}
+         "fetch_mode": fetch_mode, "num_chunks_hint": num_chunks_hint}
     if columns:
         p["columns"] = ", ".join(columns)
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
@@ -625,7 +628,7 @@ def import_sql_table(connection_url, table, username, password, columns=None, op
 
 
 def import_sql_select(connection_url, select_query, username, password, optimize=True,
-                      use_temp_table=None, temp_table_name=None, fetch_mode=None):
+                      use_temp_table=None, temp_table_name=None, fetch_mode=None, num_chunks_hint=None):
     """
     Import the SQL table that is the result of the specified SQL query to H2OFrame in memory.
 
@@ -648,6 +651,7 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     :param temp_table_name: name of temporary table to be created from select_query
     :param fetch_mode: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node
         from the database.
+    :param num_chunks_hint: Desired number of chunks for the target Frame.
 
     :returns: an :class:`H2OFrame` containing data of the specified SQL query.
 
@@ -668,8 +672,10 @@ def import_sql_select(connection_url, select_query, username, password, optimize
     assert_is_type(use_temp_table, bool, None)
     assert_is_type(temp_table_name, str, None)
     assert_is_type(fetch_mode, str, None)
+    assert_is_type(num_chunks_hint, int, None)
     p = {"connection_url": connection_url, "select_query": select_query, "username": username, "password": password,
-         "use_temp_table": use_temp_table, "temp_table_name": temp_table_name, "fetch_mode": fetch_mode}
+         "use_temp_table": use_temp_table, "temp_table_name": temp_table_name, "fetch_mode": fetch_mode,
+         "num_chunks_hint": num_chunks_hint}
     j = H2OJob(api("POST /99/ImportSQLTable", data=p), "Import SQL Table").poll()
     return get_frame(j.dest_key)
 
