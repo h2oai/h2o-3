@@ -34,7 +34,7 @@ test.LR.betaConstraints <- function(){
   intercept <- rep(0, times = nrow(prostate_h2o))
   xDataH2OFrame <- data.frame(AGE = prostate_r[,"AGE"], Intercept = intercept)
   xMatrix_age <- as.matrix(xDataH2OFrame)
-  lr.R <- glmnet(x = xMatrix_age, alpha = 0., lambda = lr.h2o@model$lambda, standardize = T,
+  lr.R <- glmnet(x = xMatrix_age, alpha = 0., lambda = lr.h2o@model$lambda, standardize = TRUE,
                  y = prostate_r[,"CAPSULE"], family = "gaussian", lower.limits = 0, upper.limits = 1)
   checkGLMModel2(lr.h2o, lr.R)
 
@@ -52,7 +52,7 @@ test.LR.betaConstraints <- function(){
     #Log.info("Shift AGE column to reflect negative upperbound...")
     xDataH2OFrame <- data.frame(AGE = prostate_r[,"AGE"]*(1+-0.002), Intercept = intercept)
     xMatrix_age <- as.matrix(xDataH2OFrame)
-    lr_negativeUpper.R <- glmnet(x = xMatrix_age, alpha = 0., lambda = lr.h2o@model$lambda, standardize = T,
+    lr_negativeUpper.R <- glmnet(x = xMatrix_age, alpha = 0., lambda = lr.h2o@model$lambda, standardize = TRUE,
                                  y = prostate_r[,"CAPSULE"], family = family_type, lower.limits = -0.008,
                                  upper.limits = 0.0)
     checkGLMModel2(lr_negativeUpper.h2o, lr_negativeUpper.R)

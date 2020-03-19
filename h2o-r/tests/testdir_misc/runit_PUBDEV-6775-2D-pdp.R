@@ -16,7 +16,7 @@ test <- function() {
                                  col_pairs_2dpdp=list(c("RACE", "AGE"), c("AGE", "PSA")), plot = T, 
                                  save_to=temp_filename_no_extension)
   h2o_pp_2d_only = h2o.partialPlot(object = prostate_drf, data = prostate_hex, col_pairs_2dpdp=list(c("RACE", "AGE"), c("AGE", "PSA")),
-                                   plot = F)
+                                   plot = FALSE)
   # compare 2d pdp results from 2d pdp only and from 1d and 2d pdps  
   assert_partialPlots_twoDTable_equal(h2o_pp_1d_2d[[3]],h2o_pp_2d_only[[1]])  # 2d pdp RACE and AGE
   assert_partialPlots_twoDTable_equal(h2o_pp_1d_2d[[4]],h2o_pp_2d_only[[2]])  # 2d pdp PSA and VOL

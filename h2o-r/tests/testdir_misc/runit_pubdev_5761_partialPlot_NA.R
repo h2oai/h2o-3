@@ -22,9 +22,9 @@ testPartialPlots <- function() {
   
   ## Calculate partial dependence using h2o.partialPlot for columns "AGE" and "RACE"
   # build pdp without weight or NA
-  h2o_pp <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), plot = F)
-  h2o_pp_weight_NA <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), plot = F, weight_column="constWeight", include_na=TRUE)
-  h2o_pp_vweight_NA <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), plot = F, weight_column="variWeight", include_na=TRUE)
+  h2o_pp <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), plot = FALSE)
+  h2o_pp_weight_NA <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), plot = FALSE, weight_column="constWeight", include_na=TRUE)
+  h2o_pp_vweight_NA <- h2o.partialPlot(object = prostate_gbm, data = prostate_hex, cols = c("AGE", "RACE"), plot = FALSE, weight_column="variWeight", include_na=TRUE)
   
   assert_twoDTable_equal(h2o_pp[[1]], h2o_pp_weight_NA[[1]]) # compare RACE pdp
   assert_twoDTable_equal(h2o_pp[[2]], h2o_pp_weight_NA[[2]]) # compare AGE pdp

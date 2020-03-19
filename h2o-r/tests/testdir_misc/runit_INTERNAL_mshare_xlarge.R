@@ -12,9 +12,9 @@ if (!running_inside_hexdata) {
     stop("0xdata internal test and data.")
 }
 
-data.hex <- h2o.uploadFile("/mnt/0xcustomer-datasets/c27/data.csv", header = F)
+data.hex <- h2o.uploadFile("/mnt/0xcustomer-datasets/c27/data.csv", header = FALSE)
 
-model <- h2o.glm(x=4:ncol(data.hex), y=3, training_frame=data.hex, family="binomial", standardize=T)
+model <- h2o.glm(x=4:ncol(data.hex), y=3, training_frame=data.hex, family="binomial", standardize=TRUE)
 }
 
 doTest("Test",rtest)

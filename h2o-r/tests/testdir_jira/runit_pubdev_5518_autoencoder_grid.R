@@ -11,7 +11,7 @@ test.pubdev.5518 <- function() {
     sex = sample(c("male","female"),size=N,replace=TRUE)
     sex = as.factor(sex)
     color = as.factor(color)
-    data = sample(c(0,1),size = N,replace = T)
+    data = sample(c(0,1),size = N,replace = TRUE)
     fdata = factor(data)
     table(fdata)
     dd = data.frame(color,sex,num,fdata)

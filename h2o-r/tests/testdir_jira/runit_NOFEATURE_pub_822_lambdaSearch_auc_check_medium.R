@@ -30,7 +30,7 @@ print(summary(spect_test))
 print("Build GLM model")
 myX <- 2:length(colnames(spect_train))
 myY <- 1
-my.glm <- h2o.glm(x=myX, y=myY, training_frame=spect_train, family="binomial", standardize=T, lambda_search=T)
+my.glm <- h2o.glm(x=myX, y=myY, training_frame=spect_train, family="binomial", standardize=TRUE, lambda_search=TRUE)
 print(my.glm)
 
 print("Predict models on test set and print AUC")

@@ -25,7 +25,7 @@ test <- function() {
   myY <- 2
 
   print("Creating model")
-  system.time(h2o.glm.model <- h2o.glm(x=myX, y=myY, training_frame=prostate.train, model_id="h2o.glm.prostate", family="binomial", alpha=1, lambda_search=F, nfolds=0))
+  system.time(h2o.glm.model <- h2o.glm(x=myX, y=myY, training_frame=prostate.train, model_id="h2o.glm.prostate", family="binomial", alpha=1, lambda_search=FALSE, nfolds=0))
 
   print("Predict on test data")
   prediction <- predict(h2o.glm.model, prostate.test)

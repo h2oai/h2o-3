@@ -28,12 +28,12 @@ test <- function() {
 
   print("Creating model without CV")
   system.time(h2o.glm.model <- h2o.glm(x=myX, y=myY, training_frame=adult.train, model_id="h2o.glm.adult", family="binomial",
-                                       alpha=1, lambda_search=T, nfolds=0, standardize = TRUE))
+                                       alpha=1, lambda_search=TRUE, nfolds=0, standardize = TRUE))
   h2o.glm.model
 
   print("Creating model with CV")
   system.time(h2o.glm.CV <- h2o.glm(x=myX, y=myY, training_frame=adult.train, model_id="h2o.glm.CV.adult", family="binomial",
-                                       alpha=1, lambda_search=T, nfolds=5, standardize = TRUE))    # This line is failing
+                                       alpha=1, lambda_search=TRUE, nfolds=5, standardize = TRUE))    # This line is failing
   h2o.glm.CV
 
   
