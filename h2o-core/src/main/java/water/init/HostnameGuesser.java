@@ -338,7 +338,7 @@ public class HostnameGuesser {
      * @param ia Address to test.
      * @return true if the address is on the network; false otherwise.
      */
-    boolean isInetAddressOnNetwork(InetAddress ia) {
+    public boolean isInetAddressOnNetwork(InetAddress ia) {
       byte[] ipBytes = ia.getAddress();
       return isInetAddressOnNetwork(ipBytes);
     }
