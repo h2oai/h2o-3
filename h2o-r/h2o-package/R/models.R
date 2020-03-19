@@ -2056,18 +2056,21 @@ h2o.weights <- function(object, matrix_id=1){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' census <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv"
+#' census <- h2o.importFile(f)
 #' census[,1] <- as.factor(census[,1])
-#' dlmodel<-h2o.deeplearning(x=c(1:3),
-#'                           y=4,
-#'                           hidden=c(17,191),
-#'                           epochs=1, 
-#'                           training_frame=census,
-#'                           balance_classes=FALSE, 
-#'                           reproducible=TRUE, 
-#'                           seed=1234, 
-#'                           export_weights_and_biases=TRUE)
-#' h2o.biases(dlmodel,vector_id=1)
+#' 
+#' dlmodel <- h2o.deeplearning(x = c(1:3),
+#'                             y = 4,
+#'                             hidden = c(17,191),
+#'                             epochs = 1, 
+#'                             training_frame = census,
+#'                             balance_classes = FALSE, 
+#'                             reproducible = TRUE, 
+#'                             seed = 1234, 
+#'                             export_weights_and_biases = TRUE)
+#' h2o.biases(dlmodel, vector_id = 1)
 #' }
 #' @export
 h2o.biases <- function(object, vector_id=1){

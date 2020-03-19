@@ -730,7 +730,11 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.filterNACols(frame, frac = 0.5)
 #' h2o.filterNACols(frame, frac = 0.6)
 #' }
@@ -880,7 +884,10 @@ match.H2OFrame <- h2o.match
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.na_omit(frame)
 #' }
 #' @export
@@ -1228,8 +1235,10 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' range(frame, na.rm = TRUE)
 #' }
 #' @export
@@ -1329,11 +1338,12 @@ h2o.topBottomN <- function(x, column, nPercent, grabTopN){
 #' library(h2o)
 #' h2o.init()
 #' 
-#' dataset <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip"
+#' dataset <- h2o.importFile(f)
 #' frameNames <- names(dataset)
 #' nPercent <- c(1, 2, 3, 4)
-#' nP <- nPercent[sample(1 : length(nPercent), 1, replace = F)]
-#' colIndex <- sample(1 : length(frameNames), 1, replace = F)
+#' nP <- nPercent[sample(1:length(nPercent), 1, replace = FALSE)]
+#' colIndex <- sample(1:length(frameNames), 1, replace = FALSE)
 #' h2o.topN(dataset, frameNames[colIndex], nP)
 #' }
 #' @export
@@ -1353,12 +1363,15 @@ h2o.topN <- function(x, column, nPercent) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' dataFrame <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip")
-#' bottomAnswer <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/Bottom20Per.csv.zip")
-#' nPercent = c(1, 2, 3, 4)
-#' frameNames = names(dataFrame)
-#' nP = nPercent[sample(1 : length(nPercent), 1, replace = F)]
-#' colIndex = sample(1 : length(frameNames), 1, replace = F)
+#' 
+#' f1 <- "https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip"
+#' f2 <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/Bottom20Per.csv.zip"
+#' dataFrame <- h2o.importFile(f1)
+#' bottomAnswer <- h2o.importFile(f2)
+#' nPercent <- c(1, 2, 3, 4)
+#' frameNames <- names(dataFrame)
+#' nP <- nPercent[sample(1:length(nPercent), 1, replace = FALSE)]
+#' colIndex <- sample(1:length(frameNames), 1, replace = FALSE)
 #' h2o.bottomN(dataFrame, frameNames[colIndex], nP)
 #' }
 #' @export
@@ -2044,8 +2057,10 @@ dimnames.H2OFrame <- function(x) .Primitive("dimnames")(.fetch.data(x,1L))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' names(frame)
 #' }
 #' @export
@@ -3064,8 +3079,10 @@ scale.H2OFrame <- function(x, center = TRUE, scale = TRUE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.log10(frame)
 #' }
 #' @export
@@ -3084,8 +3101,10 @@ h2o.log10 <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.log2(frame)
 #' }
 #' @export
@@ -3103,8 +3122,11 @@ h2o.log2 <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.log1p(frame)
 #' }
 #' @export
@@ -3125,8 +3147,10 @@ h2o.log1p <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.trunc(frame["C1"])
 #' }
 #' @export
@@ -3203,7 +3227,11 @@ h2o.names <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.colnames(frame)
 #' }
 #' @export
@@ -3353,7 +3381,11 @@ h2o.print <- function(x, n=6L) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.str(frame, cols = FALSE)
 #' }
 #' @export
@@ -3371,9 +3403,11 @@ h2o.str <- function(object, ..., cols=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, 
-#'                         missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cos(frame["C1"])
 #' }
 #' @export
@@ -3391,7 +3425,11 @@ h2o.cos <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.sin(frame)
 #' }
 #' @export
@@ -3427,9 +3465,11 @@ h2o.acos <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, 
-#'                         missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cosh(frame["C1"])
 #' }
 #' @export
@@ -3447,8 +3487,11 @@ h2o.cosh <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.tan(frame)
 #' }
 #' @export
@@ -3466,8 +3509,11 @@ h2o.tan <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.tanh(frame)
 #' }
 #' @export
@@ -3485,8 +3531,11 @@ h2o.tanh <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.exp(frame["C1"])
 #' }
 #' @export
@@ -3504,7 +3553,11 @@ h2o.exp <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.log(frame)
 #' }
 #' @export
@@ -3523,7 +3576,11 @@ h2o.log <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.sqrt(frame)
 #' }
 #' @export
@@ -3592,8 +3649,11 @@ h2o.ceiling <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.floor(frame["C2"])
 #' }
 #' @export
@@ -3614,8 +3674,11 @@ h2o.floor <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.sum(frame["C1"], na.rm = TRUE, axis = 0, return_frame = TRUE)
 #' }
 #' @export
@@ -3656,7 +3719,11 @@ h2o.prod <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cumsum(frame, 1)
 #' }
 #' @export
@@ -3675,8 +3742,11 @@ h2o.cumsum <- function(x, axis = 0){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cumprod(frame, 1)
 #' }
 #' @export
@@ -3695,8 +3765,11 @@ h2o.cumprod <- function(x, axis = 0){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cummin(frame, 1)
 #' }
 #' @export
@@ -3715,8 +3788,11 @@ h2o.cummin <- function(x, axis = 0){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cummax(frame, 1)
 #' }
 #' @export
@@ -3864,8 +3940,10 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' is.h2o(frame)
 #' }
 #' @export
@@ -5225,9 +5303,12 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr_with_nas = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6,
-#'                               cols = 2, seed = 123)
-#' fr <- h2o.fillna(fr_with_nas, "forward", axis = 1, maxlen = 2L)
+#' 
+#' frame_with_nas <- h2o.createFrame(rows = 6, cols = 2,
+#'                                   categorical_fraction = 0.0, 
+#'                                   missing_fraction = 0.7, 
+#'                                   seed = 123)
+#' frame <- h2o.fillna(frame_with_nas, "forward", axis = 1, maxlen = 2L)
 #' }
 #' @export
 h2o.fillna <- function(x, method="forward", axis=1, maxlen=1L) {
