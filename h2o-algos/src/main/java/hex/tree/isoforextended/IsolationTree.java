@@ -8,6 +8,8 @@ import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.VecUtils;
 
+import java.util.Arrays;
+
 public class IsolationTree extends Iced {
     private Node[] nodes;
 
@@ -26,27 +28,26 @@ public class IsolationTree extends Iced {
     }
 
     public void buildTree() {
-        int currentHeight = 0;
         nodes[0] = new Node(frame, 0);
         for (int i = 0; i < nodes.length; i++) {
             Node node = nodes[i];
             if (node == null || node.external)
                 continue;
-            if (node.currentHeight >= heightLimit || node.frame.numRows() <= 1) {
+            int currentHeight = node.height;
+            if (node.height >= heightLimit || node.frame.numRows() <= 1) {
                 node.external = true;
                 node.size = node.frame.numRows();
-                node.currentHeight = currentHeight;
+                node.height = currentHeight;
             } else {
                 currentHeight++;
-                
-                    node.p = VecUtils.uniformDistrFromFrameMR(node.frame, seed + i);
-                    node.n = VecUtils.makeGaussianVec(node.frame.numCols(), node.frame.numCols() - extensionLevel - 1, seed + i);
-                    node.nn = FrameUtils.asDoubles(node.n);
-                    Frame sub = MatrixUtils.subtractionMtv(node.frame, node.p);
-                    Vec mul = MatrixUtils.productMtv2(sub, node.n);
-                    Frame left = new FilterLtTask(mul, 0).doAll(node.frame.types(), node.frame).outputFrame();
-                    Frame right = new FilterGteRightTask(mul, 0).doAll(node.frame.types(), node.frame).outputFrame();
 
+                node.p = VecUtils.uniformDistrFromFrameMR(node.frame, seed + i);
+                node.n = VecUtils.makeGaussianVec(node.frame.numCols(), node.frame.numCols() - extensionLevel - 1, seed + i);
+                node.nn = FrameUtils.asDoubles(node.n);
+                Frame sub = MatrixUtils.subtractionMtv(node.frame, node.p);
+                Vec mul = MatrixUtils.productMtv2(sub, node.n);
+                Frame left = new FilterLtTask(mul, 0).doAll(node.frame.types(), node.frame).outputFrame();
+                Frame right = new FilterGteRightTask(mul, 0).doAll(node.frame.types(), node.frame).outputFrame();
                 
                 if ((2 * i + 1) < nodes.length) {
                     nodes[2 * i + 1] = new Node(left, currentHeight);
@@ -66,6 +67,16 @@ public class IsolationTree extends Iced {
         System.out.println("");
     }
 
+    public void printHeight() {
+        for (int i = 0; i < nodes.length; i++) {
+            if (nodes[i] == null)
+                System.out.print(". ");
+            else
+                System.out.print(nodes[i].height + " ");
+        }
+        System.out.println("");
+    }    
+
     public double computePathLength(Vec row) {
         int position = 0;
         Node node = nodes[0];
@@ -83,7 +94,7 @@ public class IsolationTree extends Iced {
             else
                 break;
         }
-        score += node.currentHeight + averagePathLengthOfUnsuccesfullSearch(node.size);
+        score += node.height + averagePathLengthOfUnsuccesfullSearch(node.size);
         return score;
     }
 
@@ -93,13 +104,13 @@ public class IsolationTree extends Iced {
         private double [] nn;
         private Vec p;
 
-        int currentHeight;
+        int height;
         boolean external = false;
         long size;
 
         public Node(Frame frame, int currentHeight) {
             this.frame = frame;
-            this.currentHeight = currentHeight;
+            this.height = currentHeight;
             this.size = frame.numRows();
         }
     }

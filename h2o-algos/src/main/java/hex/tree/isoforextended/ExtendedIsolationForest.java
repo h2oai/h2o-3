@@ -21,7 +21,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         ExtendedIsolationForestParameters,
         ExtendedIsolationForestOutput> {
 
-    public static final int SUB_SAMPLING_SIZE = 256;
     public IsolationTree[] iTrees;
     public int k = 0;
 
@@ -92,18 +91,18 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
         @Override
         protected boolean buildNextKTrees() {
-            int heightLimit = (int) Math.ceil(MathUtils.log2(SUB_SAMPLING_SIZE));
+            int heightLimit = (int) Math.ceil(MathUtils.log2(_parms.sampleSize));
 
             int randomUnit =  _rand.nextInt();
             
-            // create subsamble see EIF/IF paper algorithm 1
-            Frame subSample = new SubSampleTask(SUB_SAMPLING_SIZE, _parms._seed + randomUnit)
+            Frame subSample = new SubSampleTask(_parms.sampleSize, _parms._seed + randomUnit)
                     .doAll(new byte[]{Vec.T_NUM, Vec.T_NUM} , _train.vecs(new int[]{0,1})).outputFrame();
 //            System.out.println("subSample size: " + subSample.numRows());
             
             IsolationTree iTree = new IsolationTree(subSample, heightLimit, _parms._seed + randomUnit, _parms.extensionLevel);
             iTree.buildTree();
-            iTree.print();
+//            iTree.print();
+//            iTree.printHeight();
             iTrees[k] = iTree;
             k++;
             return false;
@@ -113,10 +112,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         protected void initializeModelSpecifics() {
 
         }
-    }
-    
-    public class Test extends Iced {
-        int k;
     }
 
 }

@@ -21,4 +21,6 @@ public class ExtendedIsolationForestParameters extends SharedTreeModel.SharedTre
     
     // Maximum is N - 1 (N = numCols). Minimum is 0. EIF with extension_level = 0 behaves like Isolation Forest.
     public int extensionLevel;
+    
+    public int sampleSize = 256;
 }
