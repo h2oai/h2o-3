@@ -141,6 +141,7 @@ public class DelegationTokenRefresher implements Runnable {
     UserGroupInformation tokenUser = realUser;
     if (_authUser != null) {
       log("Impersonate " + _authUser, null);
+      // attempt to impersonate token user, this verifies that the real-user is able to impersonate tokenUser
       tokenUser = UserGroupInformation.createProxyUser(_authUser, tokenUser);
     }
     Credentials creds = getTokens(realUser, tokenUser);
