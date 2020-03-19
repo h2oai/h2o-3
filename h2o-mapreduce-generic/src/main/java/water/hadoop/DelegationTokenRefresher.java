@@ -67,7 +67,6 @@ public class DelegationTokenRefresher implements Runnable {
 
   public void start() {
     if (HiveTokenGenerator.isHiveDriverPresent()) {
-      refreshTokens();
       _executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
     }
   }
