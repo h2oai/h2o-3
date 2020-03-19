@@ -12,7 +12,7 @@ test.pubdev.2386 <- function(conn){
   ci <- as.h2o(data.frame(Species = c("setosa", "setosa", "virginica"), ClusterID = c(1,2,3) ) )
   
   # Try to merge the ci frame with the iris frame, which should throw an error that will be ignored
-  try(expr = iris.hex <- h2o.merge(x = iris.hex, y = ci) , silent = T)
+  try(expr = iris.hex <- h2o.merge(x = iris.hex, y = ci) , silent = TRUE)
   
   # Check to see if iris.hex still exists in the DKV
   if(!all(dim(iris.hex) == c(150,5))) stop("H2OFrame is no longer there!")

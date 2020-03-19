@@ -18,8 +18,8 @@ test.export.file.separator <- function() {
     Log.info("Exporting File (custom separator - '|')...")
     h2o.exportFile(frame_hex, target_custom, sep="|")
 
-    parsed_default <- read.csv(target_default, header=T, sep = ",")
-    parsed_custom <- read.csv(target_custom, header=T, sep = "|")
+    parsed_default <- read.csv(target_default, header=TRUE, sep = ",")
+    parsed_custom <- read.csv(target_custom, header=TRUE, sep = "|")
 
     expect_equal(frame_r, parsed_default)
     expect_equal(frame_r, parsed_custom)

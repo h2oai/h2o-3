@@ -17,8 +17,8 @@ check.deeplearning_MNIST <- function() {
     library(h2o)
     conn <- h2o.init(nthreads=-1)
     homedir <- paste0(path.expand("~"),"/h2o-dev/") #modify if needed
-    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = F, sep = ',')
-    test_hex <- h2o.importFile(path = paste0(homedir,TEST), header = F, sep = ',')
+    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = FALSE, sep = ',')
+    test_hex <- h2o.importFile(path = paste0(homedir,TEST), header = FALSE, sep = ',')
   }
   
   # Turn response into a factor (we want classification)
@@ -31,7 +31,7 @@ check.deeplearning_MNIST <- function() {
   dl_model <- h2o.deeplearning(x=c(1:784), y=785,
                                training_frame=train_hex,
                                activation="RectifierWithDropout",
-                               adaptive_rate=F,
+                               adaptive_rate=FALSE,
                                rate=0.01,
                                rate_decay=0.9,
                                rate_annealing=1e-6,

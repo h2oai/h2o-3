@@ -17,8 +17,8 @@ check.deeplearning_anomaly <- function() {
   } else {
     library(h2o)
     homedir <- paste0(path.expand("~"),"/h2o-3/") #modify if needed
-    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = F, sep = ',', destination_frame = 'train.hex')
-    test_hex  <- h2o.importFile(path = paste0(homedir,TEST ), header = F, sep = ',', destination_frame = 'test.hex' )
+    train_hex <- h2o.importFile(path = paste0(homedir,TRAIN), header = FALSE, sep = ',', destination_frame = 'train.hex')
+    test_hex  <- h2o.importFile(path = paste0(homedir,TEST ), header = FALSE, sep = ',', destination_frame = 'test.hex' )
   }
   
   predictors = c(1:784)
@@ -56,10 +56,10 @@ check.deeplearning_anomaly <- function() {
   ae_model <- h2o.deeplearning(x=predictors,
                                training_frame=train_hex,
                                activation="Tanh",
-                               autoencoder=T,
+                               autoencoder=TRUE,
                                hidden=c(50),
                                l1=1e-5,
-                               ignore_const_cols=F,
+                               ignore_const_cols=FALSE,
                                epochs=1)
  
   # 2) DETECT OUTLIERS

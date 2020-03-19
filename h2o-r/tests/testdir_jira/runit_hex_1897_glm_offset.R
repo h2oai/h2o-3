@@ -35,7 +35,7 @@ test.GLM.offset <- function() {
     Log.info (paste ("Checking", family_type, "models without offset..."))
     prostate.glm.r <- glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv)
     prostate.glm.h2o <- h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"),
-      y = "CAPSULE", training_frame = prostate.hex, family = family_type, standardize = F,lambda=0,missing_values_handling="Skip")
+      y = "CAPSULE", training_frame = prostate.hex, family = family_type, standardize = FALSE,lambda=0,missing_values_handling="Skip")
     print(paste("h2o residual:", h2o.residual_deviance(prostate.glm.h2o)))
     print(paste("  r residual:",prostate.glm.r$deviance))
     expect_equal(h2o.residual_deviance(prostate.glm.h2o), prostate.glm.r$deviance, tolerance = 0.1,
@@ -47,7 +47,7 @@ test.GLM.offset <- function() {
     prostate.glm.r <- glm(formula = CAPSULE ~ . - ID - AGE, family = family_type, data = prostate.csv, offset = prostate.csv$AGE)
     prostate.glm.h2o <- h2o.glm(x = c("RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON"),
       y = "CAPSULE", training_frame = prostate.hex, family = family_type, offset = "AGE",
-      standardize = F,lambda=0,missing_values_handling="Skip")
+      standardize = FALSE,lambda=0,missing_values_handling="Skip")
     print(paste("h2o residual:", h2o.residual_deviance(prostate.glm.h2o)))
     print(paste("  r residual:",prostate.glm.r$deviance))
     expect_equal(h2o.residual_deviance(prostate.glm.h2o), prostate.glm.r$deviance, tolerance = 0.1,

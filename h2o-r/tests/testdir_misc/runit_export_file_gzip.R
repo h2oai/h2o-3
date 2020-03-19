@@ -13,7 +13,7 @@ test.export.file.gzip <- function() {
     Log.info("Exporting File (gzip)...")
     h2o.exportFile(prostate_hex, target, compression = "gzip")
 
-    prostate_gzip <- read.csv(gzfile(target), header=T)
+    prostate_gzip <- read.csv(gzfile(target), header=TRUE)
     prostate_r <- as.data.frame(prostate_hex)
     
     expect_equal(prostate_r, prostate_gzip)

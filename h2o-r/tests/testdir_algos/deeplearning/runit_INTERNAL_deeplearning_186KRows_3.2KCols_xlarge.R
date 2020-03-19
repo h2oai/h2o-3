@@ -9,7 +9,7 @@ hdfs_name_node = HADOOP.NAMENODE
 #----------------------------------------------------------------------
 # Parameters for the test.
 #----------------------------------------------------------------------
-parse_time <- system.time(data.hex <- h2o.importFile("/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = T))
+parse_time <- system.time(data.hex <- h2o.importFile("/mnt/0xcustomer-datasets/c25/df_h2o.csv", header = TRUE))
 #print("Time it took to parse", parse_time[[1]])
 print("Time it took to parse")
 print(parse_time)
