@@ -1369,13 +1369,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     if (expensive) {
       Model teModel = DKV.getGet(getTEModelKey());
-      if (teModel != null) {
-        if (train() != null) {
-          Frame trainEncoded = FrameUtils.applyTargetEncoder(teModel, train(), _parms._is_cv_model);
-          setTrain(trainEncoded);
-          _toDelete.put(trainEncoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
-        }
-      }
+      setTrain(encodeCategoricalsWithTE(teModel, train()));
 
       Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
       if (newtrain != _train) {
@@ -1385,15 +1379,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         separateFeatureVecs(); //fix up the pointers to the special vecs
       }
       if (_valid != null) {
-        Frame encodedVa = null;
-        if (teModel != null) {
-          encodedVa = FrameUtils.applyTargetEncoder(teModel, _valid, _parms._is_cv_model);
-          _toDelete.put(encodedVa._key, Arrays.toString(Thread.currentThread().getStackTrace()));
-        } else {
-          encodedVa = _valid;
-        }
-
-        _valid = encodeFrameCategoricals(encodedVa, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
+        setValid(encodeCategoricalsWithTE(teModel, _valid));
+        setValid(encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */));
         setValid(adaptFrameToTrain(_valid, "Validation Frame", "_validation_frame", expensive, true));
         _vresponse = _valid.vec(_parms._response_column);
       }
@@ -1488,6 +1475,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         }
       }
     }
+  }
+
+  private Frame encodeCategoricalsWithTE(Model teModel, Frame fr) {
+    if (teModel != null && fr != null) {
+      Frame encodedWithTE = FrameUtils.applyTargetEncoder(teModel, fr, _parms._is_cv_model);
+      _toDelete.put(encodedWithTE._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+      return encodedWithTE;
+    } else
+      return fr;
   }
 
   /**
