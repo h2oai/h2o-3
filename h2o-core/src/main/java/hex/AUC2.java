@@ -280,7 +280,7 @@ public class AUC2 extends Iced {
     return area/_p/_n;
   }
   
-  private double pr_auc_xgboost() {
+  public double pr_auc_xgboost() {
     if (isEmpty()) {
       return Double.NaN;
     }
