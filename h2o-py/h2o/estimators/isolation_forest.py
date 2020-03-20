@@ -600,6 +600,10 @@ class H2OIsolationForestEstimator(H2OEstimator):
         Key of TargetEncoderModel
 
         Type: ``str``.
+
+        Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator itself
+
+        Type: ``str`` | ``H2OTargetEncoderEstimator``.
         """
         return self._parms.get("te_model_id")
 
