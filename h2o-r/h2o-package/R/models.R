@@ -1508,15 +1508,15 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.coef <- function(object) {
-  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "coxph")) {
-    if (object@algorithm == "glm" && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "gam", "coxph")) {
+    if ((object@algorithm == "glm" || object@algorithm == "gam") && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
         grabCoeff(object@model$coefficients_table, "coefs_class", FALSE)
     } else {
       structure(object@model$coefficients_table$coefficients,
                 names = object@model$coefficients_table$names)
     }
   } else {
-    stop("Can only extract coefficients from GLM and CoxPH models")
+    stop("Can only extract coefficients from GAM, GLM and CoxPH models")
   }
 }
 
@@ -1546,7 +1546,7 @@ h2o.coef <- function(object) {
 #' }
 #' @export
 h2o.coef_norm <- function(object) {
-  if (is(object, "H2OModel") && object@algorithm == "glm") {
+  if (is(object, "H2OModel") && ((object@algorithm == "glm") && (object@algorithm == "gam")) {
     if (object@allparameters$family %in% c("multinomial", "ordinal")) {
         grabCoeff(object@model$coefficients_table, "std_coefs_class", TRUE)
     } else {
@@ -1554,7 +1554,7 @@ h2o.coef_norm <- function(object) {
                 names = object@model$coefficients_table$names)
     }
   } else {
-    stop("Can only extract coefficients from GLMs")
+    stop("Can only extract coefficients from GAMs/GLMs")
   }
 }
 

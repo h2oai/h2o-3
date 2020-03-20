@@ -6,16 +6,26 @@
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import h2o
 from h2o.estimators.estimator_base import H2OEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 
-class H2OGamEstimator(H2OEstimator):
+class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     """
     General Additive Model
 
+    Fits a generalized additive model, specified by a response variable, a set of predictors, and a
+    description of the error distribution.
+
+    A subclass of :class:`ModelBase` is returned. The specific subclass depends on the machine learning task
+    at hand (if it's binomial classification, then an H2OBinomialModel is returned, if it's regression then a
+    H2ORegressionModel is returned). The default print-out of the models is shown, but further GAM-specific
+    information can be queried out of the object. Upon completion of the GAM, the resulting object has
+    coefficients, normalized coefficients, residual/null deviance, aic, and a host of model metrics including
+    MSE, AUC (for logistic regression), degrees of freedom, and confusion matrices.
     """
 
     algo = "gam"
@@ -32,8 +42,9 @@ class H2OGamEstimator(H2OEstimator):
                    "max_runtime_secs", "custom_metric_func", "k", "knots_keys", "gam_x", "bs", "scale", "saveGamCols"}
 
     def __init__(self, **kwargs):
-        super(H2OGamEstimator, self).__init__()
+        super(H2OGeneralizedAdditiveEstimator, self).__init__()
         self._parms = {}
+        if "Lambda" in kwargs: kwargs["lambda_"] = kwargs.pop("Lambda")
         for pname, pvalue in kwargs.items():
             if pname == 'model_id':
                 self._id = pvalue
@@ -363,7 +374,8 @@ class H2OGamEstimator(H2OEstimator):
 
     @alpha.setter
     def alpha(self, alpha):
-        assert_is_type(alpha, None, [numeric])
+        # For `alpha` and `lambda` the server reports type float[], while in practice simple floats are also ok
+        assert_is_type(alpha, None, numeric, [numeric])
         self._parms["alpha"] = alpha
 
 
@@ -378,7 +390,7 @@ class H2OGamEstimator(H2OEstimator):
 
     @lambda_.setter
     def lambda_(self, lambda_):
-        assert_is_type(lambda_, None, [numeric])
+        assert_is_type(lambda_, None, numeric, [numeric])
         self._parms["lambda"] = lambda_
 
 
@@ -937,3 +949,11 @@ class H2OGamEstimator(H2OEstimator):
         self._parms["saveGamCols"] = saveGamCols
 
 
+    @property
+    def Lambda(self):
+        """DEPRECATED. Use ``self.lambda_`` instead"""
+        return self._parms["lambda"] if "lambda" in self._parms else None
+
+    @Lambda.setter
+    def Lambda(self, value):
+        self._parms["lambda"] = value

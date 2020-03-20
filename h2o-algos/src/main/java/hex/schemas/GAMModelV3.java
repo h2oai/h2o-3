@@ -11,7 +11,7 @@ public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAM
   public static final class GAMModelOutputV3 extends ModelOutputSchemaV3<GAMModel.GAMModelOutput, GAMModelOutputV3> {
     @API(help="Table of Coefficients")
     TwoDimTableV3 coefficients_table;
-
+    
     @API(help="Table of Coefficients without centering")
     TwoDimTableV3 coefficients_table_no_centering;
 
