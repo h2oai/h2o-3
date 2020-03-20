@@ -18,21 +18,16 @@ import water.util.MathUtils;
  * @author Adam Valenta
  */
 public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestModel,
-        ExtendedIsolationForestParameters,
-        ExtendedIsolationForestOutput> {
-
-    public IsolationTree[] iTrees;
-    public int k = 0;
-
-    public ExtendedIsolationForest(ExtendedIsolationForestParameters parms) {
+        ExtendedIsolationForestModel.ExtendedIsolationForestParameters,
+        ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
+    
+    public ExtendedIsolationForest(ExtendedIsolationForestModel.ExtendedIsolationForestParameters parms) {
         super(parms);
         init(false);
-        iTrees = new IsolationTree[_parms._ntrees];
     }
 
     @Override
     protected double score1(Chunk[] chks, double offset, double weight, double[] fs, int row) {
-        System.out.println("score1");
         return 0;
     }
 
@@ -54,34 +49,32 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
     }
 
     @Override
+    public boolean scoreZeroTrees() {
+        return false;
+    }
+
+    @Override
     public boolean isSupervised() {
         return false;
     }
 
-    private static class PrintRowsMRTask extends MRTask<PrintRowsMRTask> {
-
-        @Override
-        public void map(Chunk[] cs) {
-            for (int row = 0; row < cs[0]._len; row++) {
-                for (int column = 0; column < cs.length; column++) {
-                    System.out.print(cs[column].atd(row) + " ");
-                }
-                System.out.println();
-            }
-        }
+    @Override
+    public boolean havePojo() {
+        return false;
     }
 
+    @Override
+    public boolean haveMojo() {
+        return true;
+    }
+
+    public int k = 0;
     private class ExtendedIsolationForestDriver extends Driver {
-        
-        
-        @Override
-        public void computeImpl() {
-            super.computeImpl();
-        }
 
         @Override
-        protected ExtendedIsolationForestModel makeModel(Key<ExtendedIsolationForestModel> modelKey, ExtendedIsolationForestParameters parms) {
-            return new ExtendedIsolationForestModel(modelKey, parms, new ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
+        protected ExtendedIsolationForestModel makeModel(Key<ExtendedIsolationForestModel> modelKey,
+                                                         ExtendedIsolationForestModel.ExtendedIsolationForestParameters parms) {
+            return new ExtendedIsolationForestModel(modelKey, parms, new ExtendedIsolationForestModel.ExtendedIsolationForestOutput(ExtendedIsolationForest.this));
         }
 
         @Override
@@ -94,16 +87,16 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms.sampleSize));
 
             int randomUnit =  _rand.nextInt();
-            
+
             Frame subSample = new SubSampleTask(_parms.sampleSize, _parms._seed + randomUnit)
                     .doAll(new byte[]{Vec.T_NUM, Vec.T_NUM} , _train.vecs(new int[]{0,1})).outputFrame();
 //            System.out.println("subSample size: " + subSample.numRows());
-            
+
             IsolationTree iTree = new IsolationTree(subSample, heightLimit, _parms._seed + randomUnit, _parms.extensionLevel);
             iTree.buildTree();
 //            iTree.print();
 //            iTree.printHeight();
-            iTrees[k] = iTree;
+            _model.iTrees[k] = iTree;
             k++;
             return false;
         }
@@ -112,6 +105,20 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         protected void initializeModelSpecifics() {
 
         }
+        
     }
+    
+    private static class PrintRowsMRTask extends MRTask<PrintRowsMRTask> {
+
+        @Override
+        public void map(Chunk[] cs) {
+            for (int row = 0; row < cs[0]._len; row++) {
+                for (int column = 0; column < cs.length; column++) {
+                    System.out.print(cs[column].atd(row) + " ");
+                }
+                System.out.println();
+            }
+        }
+    }    
 
 }

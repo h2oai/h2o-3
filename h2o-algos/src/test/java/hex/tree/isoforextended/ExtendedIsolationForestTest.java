@@ -27,7 +27,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.enter();
             Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
 
-            ExtendedIsolationForestParameters p = new ExtendedIsolationForestParameters();
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p = new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
@@ -39,7 +39,6 @@ public class ExtendedIsolationForestTest extends TestUtil {
             ExtendedIsolationForestModel model = eif.trainModel().get();
             Scope.track_generic(model);
             assertNotNull(model);
-            model.iTrees = eif.iTrees;
 
             Frame test = Scope.track(parse_test_file("smalldata/anomaly/heatmap_data.csv"));
             Frame out = model.score(test);
