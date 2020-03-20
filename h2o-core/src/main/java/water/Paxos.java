@@ -1,7 +1,6 @@
 package water;
 
 import java.util.Arrays;
-
 import water.H2ONode.H2Okey;
 import water.init.JarHash;
 import water.nbhm.NonBlockingHashMap;
@@ -33,7 +32,7 @@ public abstract class Paxos {
   public static volatile boolean _cloudLocked = false;
 
   public static final NonBlockingHashMap<H2Okey,H2ONode> PROPOSED = new NonBlockingHashMap<>();
-  
+
   // ---
   // This is a packet announcing what Cloud this Node thinks is the current
   // Cloud, plus other status bits
@@ -138,7 +137,7 @@ public abstract class Paxos {
     assert hash != 0 || H2O.ARGS.client;
     return hash;
   }
-  
+
   // Before we start doing distributed writes... block until the cloud
   // stabilizes.  After we start doing distributed writes, it is an error to
   // change cloud shape - the distributed writes will be in the wrong place.

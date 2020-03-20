@@ -38,10 +38,6 @@ public class DelegationTokenRefresher implements Runnable {
     }
   }
   
-  public static void makeSureTokenAcquired() {
-    
-  }
-  
   private static String writeKeytabToFile(String authKeytab, String iceRoot) throws IOException {
     h2omapper.makeSureIceRootExists(iceRoot);
     String fileName = iceRoot + File.separator + "auth_keytab";
