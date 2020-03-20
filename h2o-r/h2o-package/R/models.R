@@ -2027,13 +2027,15 @@ h2o.get_ntrees_actual <- function(object) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' census <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv"
+#' census <- h2o.importFile(f)
 #' census[,1] <- as.factor(census[,1])
-#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
-#'                             epochs = 1, training_frame = census, 
-#'                             balance_classes = FALSE, reproducible = TRUE, 
-#'                             seed = 1234, export_weights_and_biases = TRUE)
-#' h2o.weights(dlmodel,matrix_id=1)
+#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
+#'                             hidden = c(17,191), 
+#'                             epochs = 1,
+#'                             balance_classes = FALSE,
+#'                             export_weights_and_biases = TRUE)
+#' h2o.weights(dlmodel, matrix_id = 1)
 #' }
 #' @export
 h2o.weights <- function(object, matrix_id=1){
@@ -2063,14 +2065,10 @@ h2o.weights <- function(object, matrix_id=1){
 #' census <- h2o.importFile(f)
 #' census[,1] <- as.factor(census[,1])
 #' 
-#' dlmodel <- h2o.deeplearning(x = c(1:3),
-#'                             y = 4,
+#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
 #'                             hidden = c(17,191),
 #'                             epochs = 1, 
-#'                             training_frame = census,
 #'                             balance_classes = FALSE, 
-#'                             reproducible = TRUE, 
-#'                             seed = 1234, 
 #'                             export_weights_and_biases = TRUE)
 #' h2o.biases(dlmodel, vector_id = 1)
 #' }

@@ -331,7 +331,9 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.getId(iris)
 #' }
 #' @export
@@ -345,7 +347,9 @@ h2o.getId <- function(x) attr( .eval.frame(x), "id")
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.getTypes(iris)
 #' }
 #' @export
@@ -575,7 +579,9 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.rep_len(iris, length.out = 3)
 #' }
 #' @export
@@ -788,7 +794,9 @@ table.H2OFrame <- h2o.table
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.unique(iris["class"])
 #' }
 #' @export
@@ -3215,7 +3223,8 @@ h2o.dimnames <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.names(iris)
 #' }
 #' @export
@@ -3356,8 +3365,10 @@ h2o.asnumeric <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.ascharacter(fr["species"])
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
+#' h2o.ascharacter(iris["species"])
 #' }
 #' @export
 h2o.ascharacter <- function(x) {
@@ -3373,7 +3384,9 @@ h2o.ascharacter <- function(x) {
 #' \dontrun{
 #' library()
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.print(iris["species"], n = 15)
 #' }
 
@@ -3638,8 +3651,10 @@ h2o.abs <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.ceiling(fr[,1])
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
+#' h2o.ceiling(iris[,1])
 #' }
 #' @export
 h2o.ceiling <- function(x) {
@@ -3710,7 +3725,9 @@ h2o.sum <- function(x, na.rm = FALSE, axis = 0, return_frame = FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.prod(iris["petal_len"])
 #' }
 #' @export
@@ -3831,8 +3848,10 @@ h2o.all <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.any(fr[,1] < 1000)
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
+#' h2o.any(iris[,1] < 1000)
 #' }
 #' @export
 h2o.any <- function(x) {
@@ -3850,7 +3869,9 @@ h2o.any <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.min(iris["sepal_len"], na.rm = TRUE)
 #' }
 #' @export
@@ -3869,7 +3890,9 @@ h2o.min <- function(x,na.rm = FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.max(iris["petal_len"], na.rm = TRUE)
 #' }
 #' @export
@@ -3907,7 +3930,9 @@ h2o.nrow <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.ncol(iris)
 #' }
 #' @export
@@ -3927,7 +3952,9 @@ h2o.ncol <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.range(iris["petal_len"], na.rm = TRUE, finite = TRUE)
 #' }
 #' @export
@@ -4634,8 +4661,10 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.arrange(fr, "species","petal_len","petal_wid")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
+#' h2o.arrange(iris, "species","petal_len","petal_wid")
 #' }
 #'
 #' @export
@@ -4785,12 +4814,16 @@ generate_col_ind <-function(data, by) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' air <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.csv")
-#' groupCols <- c("Distance")
-#' sortCols <- c("IsArrDelayed", "IsDepDelayed")
-#' sortDirs <- c(TRUE, FALSE)
-#' h2o.rank_within_group_by(air, groupCols, sortCols, 
-#'                          sortDirs, new_col_name = "New_Rank", 
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.csv"
+#' air <- h2o.importFile(f)
+#' group_cols <- c("Distance")
+#' sort_cols <- c("IsArrDelayed", "IsDepDelayed")
+#' sort_directions <- c(TRUE, FALSE)
+#' h2o.rank_within_group_by(x = air, group_by_cols = group_cols, 
+#'                          sort_cols = sort_cols, 
+#'                          ascending = sort_directions, 
+#'                          new_col_name = "New_Rank", 
 #'                          sort_cols_sorted = TRUE)
 #' }
 #' @export
@@ -5203,7 +5236,9 @@ apply <- function(X, MARGIN, FUN, ...) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.asnumeric(iris["petal_len"])
 #' h2o.hist(iris["petal_len"], breaks = "Sturges", plot = TRUE)
 #' }

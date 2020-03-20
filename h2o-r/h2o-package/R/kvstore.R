@@ -141,7 +141,9 @@ h2o.rm <- function(ids, cascade=TRUE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' train <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' train <- h2o.importFile(f)
 #' y <- "species"
 #' x <- setdiff(names(train), y)
 #' train[,y] <- as.factor(train[,y])
