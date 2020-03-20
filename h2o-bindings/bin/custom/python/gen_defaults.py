@@ -18,9 +18,6 @@ self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTarge
 )
 
 doc = dict(
-    te_model_id="""
-    Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator itself
-
-    Type: ``str`` | ``H2OTargetEncoderEstimator``.
+    te_model_id="""    Type: ``str`` | ``H2OTargetEncoderEstimator``.
 """
 )

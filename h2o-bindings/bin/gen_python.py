@@ -259,11 +259,12 @@ def gen_module(schema, algo):
         yield '        """'
         yield bi.wrap("%s%s" % ("[Deprecated] " if deprecated else "", param.get('help')), indent=8*' ')  # we need to wrap only for text coming from server
         yield ""
-        yield bi.wrap(property_doc, indent=8*' ')
         custom_property_doc = get_customizations_or_defaults_for(algo, "doc.{}".format(pname))
         if custom_property_doc:
-            yield ""
             yield reformat_block(custom_property_doc, 8)
+        else:
+            yield bi.wrap(property_doc, indent=8*' ')
+
         property_examples = get_customizations_or_defaults_for(algo, "examples.{}".format(pname))
         if property_examples:
             yield ""
