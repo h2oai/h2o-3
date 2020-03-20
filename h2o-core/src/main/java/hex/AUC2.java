@@ -250,14 +250,6 @@ public class AUC2 extends Iced {
     checkRecallValidity();
     return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
   }
-  
-  public double pr_auc_xgboost(){
-    if (isEmpty()) {
-      return Double.NaN;
-    }
-    checkRecallValidity();
-    return Functions.integrate2(forCriterion(tps), forCriterion(fps), 0, _nBins-1);
-  }
 
   // Checks that recall is a non-decreasing function
   void checkRecallValidity() {
@@ -287,6 +279,45 @@ public class AUC2 extends Iced {
     // Descale
     return area/_p/_n;
   }
+  
+  private double pr_auc_xgboost() {
+    if (isEmpty()) {
+      return Double.NaN;
+    }
+    checkRecallValidity();
+    
+    if (_fps[_nBins-1] == 0) return 1.0; //special case
+    if (_tps[_nBins-1] == 0) return 0.0; //special case
+    
+    double area = 0.0;
+    double total_pos = _p, total_neg = _n;
+    assert total_pos > 0 && total_neg > 0;
+    
+    double tp, prevtp = 0.0, fp, prevfp = 0.0, h, a, b;
+    for (int j = 0; j < _nBins; j++) {
+      tp = _tps[j];
+      fp = _fps[j];
+        if (tp == prevtp) {
+          a = 1.0;
+          b = 0.0;
+        } else {
+          h = (fp - prevfp) / (tp - prevtp);
+          a = 1.0 + h;
+          b = (prevfp - h * prevtp) / total_pos;
+        }
+        if (0.0 != b) {
+          area += (tp / total_pos - prevtp / total_pos -
+                  b / a * (Math.log(a * tp / total_pos + b) -
+                  Math.log(a * prevtp / total_pos + b))) / a;
+        } else {
+          area += (tp / total_pos - prevtp / total_pos) / a;
+        }
+        prevtp = tp;
+        prevfp = fp;
+    }
+    // Descale
+    return area;
+  }
 
   // Build a CM for a threshold index. - typed as doubles because of double observation weights
   public double[/*actual*/][/*predicted*/] buildCM( int idx ) {
@@ -308,8 +339,7 @@ public class AUC2 extends Iced {
   public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
   /** @return the error of the default CM */
   public double defaultErr( ) { return _max_idx == -1 ? Double.NaN : (fp(_max_idx)+fn(_max_idx))/(_p+_n); }
-
-
+  
 
   // Compute an online histogram of the predicted probabilities, along with
   // true positive and false positive totals in each histogram bin.

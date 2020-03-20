@@ -20,8 +20,16 @@ def comparison_test():
         runSeed = 1
         dataSeed = 17
         ntrees = 17
-        h2oParamsS = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                      "min_rows" : 5, "score_tree_interval": 1, "dmatrix_type":"sparse", "tree_method": "exact", "backend":"cpu"}
+        h2oParamsS = {"ntrees":ntrees, 
+                      "max_depth":4, 
+                      "seed":runSeed, 
+                      "learn_rate":0.7, 
+                      "col_sample_rate_per_tree" : 0.9,
+                      "min_rows" : 5, 
+                      "score_tree_interval": 1, 
+                      "dmatrix_type":"sparse", 
+                      "tree_method": "exact", 
+                      "backend":"cpu"}
         nativeParam = {'colsample_bytree': h2oParamsS["col_sample_rate_per_tree"],
                        'tree_method': 'exact',
                        'seed': h2oParamsS["seed"],

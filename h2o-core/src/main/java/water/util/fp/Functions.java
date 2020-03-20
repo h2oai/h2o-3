@@ -111,48 +111,4 @@ public class Functions {
     }
     return s;
   }
-
-  public static double integrate2(Function<Integer, Double> x,  Function<Integer, Double> y, int from, int to) {
-    double sum = 0.0;
-
-    if(to-from == 0){
-      return sum;
-    }
-
-    double total_pos = 0.0;
-    double total_neg = 0.0;
-
-    for (int i= from + 1; i <= to; i++) {
-      total_pos += x.apply(i);
-      total_neg += y.apply(i);
-    }
-
-    assert total_neg > 0 && total_pos > 0: "AUC-PR calculation error";
-
-    double tp = 0.0, prevtp = 0.0, fp = 0.0, prevfp = 0.0;
-    double h, a, b;
-
-    for (int j = from+1; j <= to; j++) {
-      tp += x.apply(j);
-      fp += y.apply(j);
-      if (tp == prevtp) {
-        a = 1.0;
-        b = 0.0;
-      } else {
-        h = (fp - prevfp) / (tp - prevtp);
-        a = 1.0 + h;
-        b = (prevfp - h * prevtp) / total_pos;
-      }
-      if (0.0 != b) { 
-        sum += (tp / total_pos - prevtp / total_pos -
-                  b / a * (Math.log(a * tp / total_pos + b) -
-                  Math.log(a * prevtp / total_pos + b))) / a;
-        } else {
-          sum += (tp / total_pos - prevtp / total_pos) / a;
-        }
-        prevtp = tp;
-        prevfp = fp;
-      }
-    return sum;
-  }
 }
