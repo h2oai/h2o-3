@@ -876,27 +876,32 @@ public class VecUtils {
 
   /**
    * Make a new vector initialized to random Gaussian N(0,1) values with the given seed.
-   * Make last {@code zeroNum} zeros. Used in Extended isolation forest.
+   * Make randomly selected {@code zeroNum} items zeros. Used in Extended isolation forest.
    * 
    * @param length length of generated vector
-   * @param zeroNum Make first {@code zeroNum} zeros
-   * @return vector with gaussian values. Last {@code zeroNum} values are zeros.
+   * @param zeroNum set randomly selected {@code zeroNum} items of vector to zero
+   * @return vector with gaussian values. Randomly selected {@code zeroNum} item values are zeros.
    */
   public static Vec makeGaussianVec(long length, long zeroNum, long seed) {
-    return new MRTask() {
+    Vec gausVec =  new MRTask() {
 
       @Override
       public void map(Chunk c){
         Random rng = RandomUtils.getRNG(seed + c.start());
 
         for(int row = 0; row < c._len; ++row) {
-          if ((c.start() + row) < zeroNum) {
-            continue;
-          }
           c.set(row, rng.nextGaussian());
         }
       }
     }.doAll(Vec.makeZero(length))._fr.vecs()[0];
+    
+    Random rng = RandomUtils.getRNG(seed);
+    for (int i = 0; i < zeroNum; i++) {
+      long randomItem = Math.abs(rng.nextLong());
+      randomItem = randomItem % gausVec.length();
+      gausVec.set(randomItem, 0);
+    }
+    return gausVec;
   }
 
   /**
