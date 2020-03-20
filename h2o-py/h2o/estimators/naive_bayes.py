@@ -31,7 +31,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                    "validation_frame", "response_column", "ignored_columns", "ignore_const_cols",
                    "score_each_iteration", "balance_classes", "class_sampling_factors", "max_after_balance_size",
                    "max_confusion_matrix_size", "max_hit_ratio_k", "laplace", "min_sdev", "eps_sdev", "min_prob",
-                   "eps_prob", "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "te_model_id"}
+                   "eps_prob", "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "te_model"}
 
     def __init__(self, **kwargs):
         super(H2ONaiveBayesEstimator, self).__init__()
@@ -790,17 +790,17 @@ class H2ONaiveBayesEstimator(H2OEstimator):
 
 
     @property
-    def te_model_id(self):
+    def te_model(self):
         """
         Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 
         Type: ``str`` | ``H2OTargetEncoderEstimator``.
         """
-        return self._parms.get("te_model_id")
+        return self._parms.get("te_model")
 
-    @te_model_id.setter
-    def te_model_id(self, te_model_id):
-        assert_is_type(te_model_id, None, str, H2OTargetEncoderEstimator)
-        self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTargetEncoderEstimator) else te_model_id
+    @te_model.setter
+    def te_model(self, te_model):
+        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
+        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 

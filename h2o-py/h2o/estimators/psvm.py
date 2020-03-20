@@ -23,7 +23,7 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
     param_names = {"model_id", "training_frame", "validation_frame", "response_column", "ignored_columns",
                    "ignore_const_cols", "hyper_param", "kernel_type", "gamma", "rank_ratio", "positive_weight",
                    "negative_weight", "disable_training_metrics", "sv_threshold", "fact_threshold",
-                   "feasible_threshold", "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed", "te_model_id"}
+                   "feasible_threshold", "surrogate_gap_threshold", "mu_factor", "max_iterations", "seed", "te_model"}
 
     def __init__(self, **kwargs):
         super(H2OSupportVectorMachineEstimator, self).__init__()
@@ -483,17 +483,17 @@ class H2OSupportVectorMachineEstimator(H2OEstimator):
 
 
     @property
-    def te_model_id(self):
+    def te_model(self):
         """
         Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 
         Type: ``str`` | ``H2OTargetEncoderEstimator``.
         """
-        return self._parms.get("te_model_id")
+        return self._parms.get("te_model")
 
-    @te_model_id.setter
-    def te_model_id(self, te_model_id):
-        assert_is_type(te_model_id, None, str, H2OTargetEncoderEstimator)
-        self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTargetEncoderEstimator) else te_model_id
+    @te_model.setter
+    def te_model(self, te_model):
+        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
+        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 

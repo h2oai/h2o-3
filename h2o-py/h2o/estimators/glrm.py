@@ -26,7 +26,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
                    "multi_loss", "period", "regularization_x", "regularization_y", "gamma_x", "gamma_y",
                    "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed", "init", "svd_method",
                    "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd", "max_runtime_secs",
-                   "export_checkpoints_dir", "te_model_id"}
+                   "export_checkpoints_dir", "te_model"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLowRankEstimator, self).__init__()
@@ -896,17 +896,17 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
 
     @property
-    def te_model_id(self):
+    def te_model(self):
         """
         Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 
         Type: ``str`` | ``H2OTargetEncoderEstimator``.
         """
-        return self._parms.get("te_model_id")
+        return self._parms.get("te_model")
 
-    @te_model_id.setter
-    def te_model_id(self, te_model_id):
-        assert_is_type(te_model_id, None, str, H2OTargetEncoderEstimator)
-        self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTargetEncoderEstimator) else te_model_id
+    @te_model.setter
+    def te_model(self, te_model):
+        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
+        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 

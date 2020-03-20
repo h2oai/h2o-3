@@ -30,7 +30,7 @@
 #' @param use_all_factor_levels \code{Logical}. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
 #'        FALSE.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param te_model_id Key of TargetEncoderModel
+#' @param te_model Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -69,7 +69,7 @@ h2o.coxph <- function(x,
                       interactions_only = NULL,
                       use_all_factor_levels = FALSE,
                       export_checkpoints_dir = NULL,
-                      te_model_id = NULL)
+                      te_model = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -139,8 +139,8 @@ h2o.coxph <- function(x,
     parms$use_all_factor_levels <- use_all_factor_levels
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
-  if (!missing(te_model_id))
-    parms$te_model_id <- te_model_id
+  if (!missing(te_model))
+    parms$te_model <- te_model
 
   # Error check and build model
   model <- .h2o.modelJob('coxph', parms, h2oRestApiVersion=3, verbose=FALSE)

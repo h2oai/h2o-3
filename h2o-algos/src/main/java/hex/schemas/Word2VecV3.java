@@ -21,7 +21,8 @@ public class Word2VecV3 extends ModelBuilderSchema<Word2Vec,Word2VecV3,Word2VecV
             "epochs",
             "pre_trained",
             "max_runtime_secs",
-            "export_checkpoints_dir"
+            "export_checkpoints_dir",
+            "te_model"
     };
 
     @API(help="Set size of word vectors")

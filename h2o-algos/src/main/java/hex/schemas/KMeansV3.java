@@ -33,7 +33,7 @@ public class KMeansV3 extends ClusteringModelBuilderSchema<KMeans,KMeansV3,KMean
         "categorical_encoding",
         "export_checkpoints_dir",
         "cluster_size_constraints",
-        "te_model_id"
+        "te_model"
     };
 
     // Input fields

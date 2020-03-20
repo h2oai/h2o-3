@@ -62,7 +62,7 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   public TwoDimTableV3 cross_validation_metrics_summary;
 
   @API(help="TargetEncoderModel key", direction=API.Direction.OUTPUT, level=API.Level.critical)
-  public KeyV3.ModelKeyV3 te_model_id;
+  public KeyV3.ModelKeyV3 te_model;
 
   @API(help="Job status", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public String status;

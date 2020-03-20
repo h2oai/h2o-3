@@ -27,7 +27,8 @@ public class PCAV3 extends ModelBuilderSchema<PCA,PCAV3,PCAV3.PCAParametersV3> {
         "impute_missing",
         "seed",
         "max_runtime_secs",
-        "export_checkpoints_dir"
+        "export_checkpoints_dir",
+        "te_model"
     };
 
     @API(help = "Transformation of training data", values = { "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE" }, gridable = true)  // TODO: pull out of categorical class

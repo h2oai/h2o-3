@@ -31,7 +31,7 @@
 #' @param max_iterations Maximum number of iteration of the algorithm Defaults to 200.
 #' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
 #'        Defaults to -1 (time-based random number).
-#' @param te_model_id Key of TargetEncoderModel
+#' @param te_model Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -67,7 +67,7 @@ h2o.psvm <- function(x,
                      mu_factor = 10,
                      max_iterations = 200,
                      seed = -1,
-                     te_model_id = NULL)
+                     te_model = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -124,8 +124,8 @@ h2o.psvm <- function(x,
     parms$max_iterations <- max_iterations
   if (!missing(seed))
     parms$seed <- seed
-  if (!missing(te_model_id))
-    parms$te_model_id <- te_model_id
+  if (!missing(te_model))
+    parms$te_model <- te_model
 
   # Error check and build model
   model <- .h2o.modelJob('psvm', parms, h2oRestApiVersion=3, verbose=FALSE)

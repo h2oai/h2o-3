@@ -28,7 +28,7 @@ public class CoxPHV3 extends ModelBuilderSchema<CoxPH,CoxPHV3,CoxPHV3.CoxPHParam
               "interactions_only",
               "use_all_factor_levels",
               "export_checkpoints_dir",
-              "te_model_id"
+              "te_model"
     };
 
     @API(help="Start Time Column.", direction = API.Direction.INOUT,

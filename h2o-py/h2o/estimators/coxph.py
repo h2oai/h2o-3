@@ -24,7 +24,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     param_names = {"model_id", "training_frame", "start_column", "stop_column", "response_column", "ignored_columns",
                    "weights_column", "offset_column", "stratify_by", "ties", "init", "lre_min", "max_iterations",
                    "interactions", "interaction_pairs", "interactions_only", "use_all_factor_levels",
-                   "export_checkpoints_dir", "te_model_id"}
+                   "export_checkpoints_dir", "te_model"}
 
     def __init__(self, **kwargs):
         super(H2OCoxProportionalHazardsEstimator, self).__init__()
@@ -479,18 +479,18 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
 
 
     @property
-    def te_model_id(self):
+    def te_model(self):
         """
         Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 
         Type: ``str`` | ``H2OTargetEncoderEstimator``.
         """
-        return self._parms.get("te_model_id")
+        return self._parms.get("te_model")
 
-    @te_model_id.setter
-    def te_model_id(self, te_model_id):
-        assert_is_type(te_model_id, None, str, H2OTargetEncoderEstimator)
-        self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTargetEncoderEstimator) else te_model_id
+    @te_model.setter
+    def te_model(self, te_model):
+        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
+        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 
     def _additional_used_columns(self, parms):
