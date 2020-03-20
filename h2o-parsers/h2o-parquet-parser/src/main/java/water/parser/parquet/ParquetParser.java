@@ -5,6 +5,7 @@ import org.apache.parquet.hadoop.metadata.BlockMetaData;
 import org.apache.parquet.hadoop.metadata.ParquetMetadata;
 import org.apache.parquet.schema.MessageType;
 import org.apache.parquet.schema.OriginalType;
+import org.apache.parquet.schema.PrimitiveType;
 import org.apache.parquet.schema.Type;
 import water.Job;
 import water.Key;
@@ -261,31 +262,36 @@ public class ParquetParser extends Parser {
     for (int i = 0; i < types.length; i++) {
       Type parquetType = messageType.getType(i);
       assert parquetType.isPrimitive();
-      switch (parquetType.asPrimitiveType().getPrimitiveTypeName()) {
-        case BOOLEAN:
-          types[i] = Vec.T_CAT;
-          break;
-        case INT32:
-        case FLOAT:
-        case DOUBLE:
-          types[i] = Vec.T_NUM;
-          break;
-        case INT96:
-          types[i] = Vec.T_TIME;
-          break;
-        case INT64:
-          types[i] = OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) ? Vec.T_TIME : Vec.T_NUM;
-          break;
-        default:
-          if (OriginalType.DECIMAL.equals(parquetType.getOriginalType())) {
-            types[i] = Vec.T_NUM;
-          } else
-            types[i] = Vec.T_BAD;
-      }
+      OriginalType ot = parquetType.getOriginalType();
+      PrimitiveType pt = parquetType.asPrimitiveType();
+      types[i] = convertType(ot, pt);
     }
     return types;
   }
 
+  private static byte convertType(OriginalType ot, PrimitiveType pt) {
+    // handle special cases (where we cannot guess based on the physical primitive type)
+    if (OriginalType.TIMESTAMP_MILLIS.equals(ot)) {
+      return Vec.T_TIME;
+    } else if (OriginalType.DECIMAL.equals(ot)){
+      return Vec.T_NUM;
+    }
+    // convert based on primitive type
+    switch (pt.getPrimitiveTypeName()) {
+      case BOOLEAN:
+        return Vec.T_CAT;
+      case INT32:
+      case FLOAT:
+      case DOUBLE:
+      case INT64:
+        return Vec.T_NUM;
+      case INT96:
+        return Vec.T_TIME;
+      default:
+        return Vec.T_BAD;
+    }
+  }
+  
   private static String[] columnNames(MessageType messageType) {
     String[] colNames = new String[messageType.getPaths().size()];
     int i = 0;
