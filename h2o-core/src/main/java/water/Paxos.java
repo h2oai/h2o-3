@@ -1,9 +1,6 @@
 package water;
 
 import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.concurrent.Callable;
 
 import water.H2ONode.H2Okey;
 import water.init.JarHash;
@@ -37,8 +34,6 @@ public abstract class Paxos {
 
   public static final NonBlockingHashMap<H2Okey,H2ONode> PROPOSED = new NonBlockingHashMap<>();
   
-  private static final List<Runnable> _lockListeners = new LinkedList<>();
-
   // ---
   // This is a packet announcing what Cloud this Node thinks is the current
   // Cloud, plus other status bits
@@ -144,16 +139,6 @@ public abstract class Paxos {
     return hash;
   }
   
-  public static void addLockListener(Runnable l) {
-    synchronized(Paxos.class) {
-      if (!_cloudLocked) {
-        _lockListeners.add(l);
-      } else {
-        l.run();
-      }
-    }
-  }
-
   // Before we start doing distributed writes... block until the cloud
   // stabilizes.  After we start doing distributed writes, it is an error to
   // change cloud shape - the distributed writes will be in the wrong place.
@@ -178,8 +163,6 @@ public abstract class Paxos {
         }
       }
     }
-    _lockListeners.forEach(Runnable::run);
-    _lockListeners.clear();
   }
 
 

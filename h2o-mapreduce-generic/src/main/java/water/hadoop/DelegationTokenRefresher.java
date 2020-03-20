@@ -32,11 +32,14 @@ public class DelegationTokenRefresher implements Runnable {
     HiveTokenGenerator.HiveOptions options = HiveTokenGenerator.HiveOptions.make(conf);
     if (authPrincipal != null && authKeytab != null && options != null) {
       String authKeytabPath = writeKeytabToFile(authKeytab, iceRoot);
-      DelegationTokenRefresher dtr = new DelegationTokenRefresher(authPrincipal, authKeytabPath, authUser, options);
-      Paxos.addLockListener(dtr::start);
+      new DelegationTokenRefresher(authPrincipal, authKeytabPath, authUser, options).start();
     } else {
       log("Delegation token refresh not active.", null);
     }
+  }
+  
+  public static void makeSureTokenAcquired() {
+    
   }
   
   private static String writeKeytabToFile(String authKeytab, String iceRoot) throws IOException {
@@ -71,10 +74,7 @@ public class DelegationTokenRefresher implements Runnable {
   }
 
   public void start() {
-    boolean leader = H2O.CLOUD.leader() == H2O.SELF;
-    if (!leader) return;
-    run();
-    _executor.scheduleAtFixedRate(this, 1, 1, TimeUnit.MINUTES);
+    _executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
   }
   
   private static void log(String s, Exception e) {
@@ -86,6 +86,11 @@ public class DelegationTokenRefresher implements Runnable {
   
   @Override
   public void run() {
+    if (Paxos._cloudLocked && !(H2O.CLOUD.leader() == H2O.SELF)) {
+      // cloud is formed the leader will take of subsequent refreshes
+      _executor.shutdown();
+      return;
+    }
     try {
       refreshTokens();
     } catch (IOException | InterruptedException e) {
@@ -124,12 +129,14 @@ public class DelegationTokenRefresher implements Runnable {
     return _hiveTokenGenerator.addHiveDelegationTokenAsUser(realUser, tokenUser, _hiveOptions);
   }
   
-  private void distribute(Credentials creds) {
-    try {
+  private void distribute(Credentials creds) throws IOException {
+    if (!Paxos._cloudLocked) {
+      // skip token distribution in pre-cloud forming phase, only use credentials locally
+      log("Updating credentials", null);
+      UserGroupInformation.getCurrentUser().addCredentials(creds);
+    } else {
       byte[] credsSerialized = serializeCreds(creds);
       new DistributeCreds(credsSerialized).doAllNodes();
-    } catch (IOException e) {
-      log("Failed to serialize credentials", e);
     }
   }
 
