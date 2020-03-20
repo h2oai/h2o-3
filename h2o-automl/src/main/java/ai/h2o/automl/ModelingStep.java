@@ -1,7 +1,6 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
-import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
@@ -14,7 +13,9 @@ import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
 import hex.grid.GridSearch;
 import hex.grid.HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria;
-import water.*;
+import water.Iced;
+import water.Job;
+import water.Key;
 import water.exceptions.H2OIllegalArgumentException;
 import water.util.EnumUtils;
 import water.util.Log;
