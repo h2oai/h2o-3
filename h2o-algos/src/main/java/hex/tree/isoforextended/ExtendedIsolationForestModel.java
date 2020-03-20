@@ -1,7 +1,11 @@
 package hex.tree.isoforextended;
 
+import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.genmodel.utils.DistributionFamily;
+import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel;
+import hex.tree.isofor.IsolationForestMojoWriter;
 import hex.tree.isofor.ModelMetricsAnomaly;
 import water.Iced;
 import water.Key;
@@ -14,14 +18,15 @@ import water.util.SBPrintStream;
  * 
  * @author Adam Valenta
  */
-public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolationForestModel,
-                                                                    ExtendedIsolationForestParameters,
-                                                                    ExtendedIsolationForestOutput> {
-    public IsolationTree[] iTrees;
+public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolationForestModel, ExtendedIsolationForestModel.ExtendedIsolationForestParameters, 
+        ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
+    
+    transient IsolationTree[] iTrees;
     
     public ExtendedIsolationForestModel(Key<ExtendedIsolationForestModel> selfKey, ExtendedIsolationForestParameters parms,
                                         ExtendedIsolationForestOutput output) {
         super(selfKey, parms, output);
+        iTrees = new IsolationTree[_parms._ntrees];
     }
 
     @Override
@@ -66,7 +71,65 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
         throw new UnsupportedOperationException("Extended Isolation Forest support only MOJOs.");
     }
 
+    @Override
+    public ExtendedIsolationForestMojoWriter getMojo() {
+        return new ExtendedIsolationForestMojoWriter(this);
+    }
+
     private double anomalyScore(double pathLength) {
         return Math.pow(2, -1 * (pathLength / IsolationTree.averagePathLengthOfUnsuccesfullSearch(_parms.sampleSize)));
+    }
+
+    public static class ExtendedIsolationForestParameters extends SharedTreeModel.SharedTreeParameters {
+
+        @Override
+        public String algoName() {
+            return "ExtendedIsolationForest";
+        }
+
+        @Override
+        public String fullName() {
+            return "Extended Isolation Forest";
+        }
+
+        @Override
+        public String javaName() {
+            return ExtendedIsolationForestModel.class.getName();
+        }
+
+        // Maximum is N - 1 (N = numCols). Minimum is 0. EIF with extension_level = 0 behaves like Isolation Forest.
+        public int extensionLevel;
+
+        public int sampleSize;
+
+        public ExtendedIsolationForestParameters() {
+            super();
+            _max_depth = 8; // log2(_sample_size)
+            _sample_rate = 0.5;
+            _min_rows = 1;
+            _min_split_improvement = 0;
+            _nbins = 2;
+            _nbins_cats = 2;
+            // _nbins_top_level = 2;
+            _histogram_type = HistogramType.Random;
+            _distribution = DistributionFamily.gaussian;
+
+            // early stopping
+            _stopping_tolerance = 0.01; // (default 0.001 is too low for the default criterion anomaly_score)
+            
+            sampleSize = 256;
+        }        
+    }
+
+    public static class ExtendedIsolationForestOutput extends SharedTreeModel.SharedTreeOutput {
+        
+        public ExtendedIsolationForestOutput(SharedTree b) {
+            super(b);
+        }
+
+        @Override
+        public ModelCategory getModelCategory() {
+            return ModelCategory.AnomalyDetection;
+        }
     }
 }
