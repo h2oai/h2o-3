@@ -277,7 +277,10 @@ public class ParquetParser extends Parser {
           types[i] = OriginalType.TIMESTAMP_MILLIS.equals(parquetType.getOriginalType()) ? Vec.T_TIME : Vec.T_NUM;
           break;
         default:
-          types[i] = Vec.T_BAD;
+          if (OriginalType.DECIMAL.equals(parquetType.getOriginalType())) {
+            types[i] = Vec.T_NUM;
+          } else
+            types[i] = Vec.T_BAD;
       }
     }
     return types;
