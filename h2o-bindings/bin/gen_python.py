@@ -192,6 +192,7 @@ def gen_module(schema, algo):
     if extra_imports:
         yield reformat_block(extra_imports)
     yield "from h2o.estimators.estimator_base import H2OEstimator"
+    yield "from h2o.estimators.targetencoder import H2OTargetEncoderEstimator"
     yield "from h2o.exceptions import H2OValueError"
     yield "from h2o.frame import H2OFrame"
     yield "from h2o.utils.typechecks import assert_is_type, Enum, numeric"
@@ -251,25 +252,25 @@ def gen_module(schema, algo):
             property_doc = "Type: ``%s``" % dtype
         property_doc += ("." if pdefault is None else "  (default: ``%s``)." % stringify(pdefault))
 
-        deprecated = pname in get_customizations_for(algo, 'deprecated', [])
+        deprecated = pname in get_customizations_or_defaults_for(algo, 'deprecated', [])
         yield "    @property"
         yield "    def %s(self):" % pname
         yield '        """'
         yield bi.wrap("%s%s" % ("[Deprecated] " if deprecated else "", param.get('help')), indent=8*' ')  # we need to wrap only for text coming from server
         yield ""
         yield bi.wrap(property_doc, indent=8*' ')
-        custom_property_doc = get_customizations_for(algo, "doc.{}".format(pname))
+        custom_property_doc = get_customizations_or_defaults_for(algo, "doc.{}".format(pname))
         if custom_property_doc:
             yield ""
             yield reformat_block(custom_property_doc, 8)
-        property_examples = get_customizations_for(algo, "examples.{}".format(pname))
+        property_examples = get_customizations_or_defaults_for(algo, "examples.{}".format(pname))
         if property_examples:
             yield ""
             yield "        :examples:"
             yield ""
             yield reformat_block(property_examples, 8)
         yield '        """'
-        property_getter = get_customizations_for(algo, "overrides.{}.getter".format(pname))  # check gen_stackedensemble.py for an example
+        property_getter = get_customizations_or_defaults_for(algo, "overrides.{}.getter".format(pname))  # check gen_stackedensemble.py for an example
         if property_getter:
             yield reformat_block(property_getter.format(**locals()), 8)
         else:
@@ -278,7 +279,7 @@ def gen_module(schema, algo):
         yield ""
         yield "    @%s.setter" % pname
         yield "    def %s(self, %s):" % (pname, pname)
-        property_setter = get_customizations_for(algo, "overrides.{}.setter".format(pname))  # check gen_stackedensemble.py for an example
+        property_setter = get_customizations_or_defaults_for(algo, "overrides.{}.setter".format(pname))  # check gen_stackedensemble.py for an example
         if property_setter:
             yield reformat_block(property_setter.format(**locals()), 8)
         else:

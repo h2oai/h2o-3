@@ -6,6 +6,9 @@ import h2o
 from tests import pyunit_utils
 from h2o.estimators import H2OTargetEncoderEstimator
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
+from h2o.exceptions import H2OTypeError
+import unittest
+
 
 def test_target_encoder_attached_as_preprocessor():
     print("Check that attached TargetEncoderModel is being used during training and scoring")
@@ -32,7 +35,7 @@ def test_target_encoder_attached_as_preprocessor():
                                              stopping_tolerance=0.001,
                                              distribution="multinomial",
                                              categorical_encoding="enum_limited",
-                                             te_model_id = te.model_id,
+                                             te_model_id = te,
                                              seed=1234)
 
     assert titanic_gbm_model.te_model_id is not None
@@ -73,8 +76,68 @@ def test_target_encoder_attached_as_preprocessor():
 
     assert not pyunit_utils.compare_frames_local(preds, preds_without_te, 1, tol=1e-10, returnResult=True), "Predictions should be different"
 
+
+def test_only_te_model_could_be_added_as_preprocessor():
+  print("Check that only TargetEncoderModel could be assigned to te_model_id argument in Py API")
+  targetColumnName = "survived"
+  foldColumnName = "kfold_column"
+
+  trainingFrame = h2o.import_file(pyunit_utils.locate("smalldata/gbm_test/titanic.csv"), header=1)
+
+  trainingFrame[targetColumnName] = trainingFrame[targetColumnName].asfactor()
+  trainingFrame[foldColumnName] = trainingFrame.kfold_column(n_folds=5, seed=1234)
+
+  myX = ["pclass", "sex", "age", "sibsp", "parch", "fare", "cabin", "embarked", "home.dest"]
+
+  gbm_preprocessor_model = H2OGradientBoostingEstimator(ntrees=50,
+                                                   learn_rate=0.1,
+                                                   score_tree_interval=10,
+                                                   stopping_rounds=5,
+                                                   stopping_metric="AUC",
+                                                   stopping_tolerance=0.001,
+                                                   distribution="multinomial",
+                                                   categorical_encoding="enum_limited",
+                                                   seed=1234)
+
+  gbm_preprocessor_model.train(x=myX, y=targetColumnName,
+                          training_frame=trainingFrame)
+
+
+  # Checking that assigning dummy string causes a validation error
+  with unittest.TestCase.assertRaises(None, H2OTypeError) as err:
+    H2OGradientBoostingEstimator(ntrees=50,
+                                 learn_rate=0.1,
+                                 score_tree_interval=10,
+                                 stopping_rounds=5,
+                                 stopping_metric="AUC",
+                                 stopping_tolerance=0.001,
+                                 distribution="multinomial",
+                                 categorical_encoding="enum_limited",
+                                 te_model_id = "abcdefg",
+                                 seed=1234)
+  assert "Argument `te_model_id` should be an ?H2OTargetEncoderEstimator, got string abcdefg" \
+           in str(err.exception), "Validation should not allow strings for `te_model_id` parameter"
+
+
+  # Checking that assigning NOT a te model causes validation error
+  with unittest.TestCase.assertRaises(None, H2OTypeError) as err:
+    H2OGradientBoostingEstimator(ntrees=50,
+                                 learn_rate=0.1,
+                                 score_tree_interval=10,
+                                 stopping_rounds=5,
+                                 stopping_metric="AUC",
+                                 stopping_tolerance=0.001,
+                                 distribution="multinomial",
+                                 categorical_encoding="enum_limited",
+                                 te_model_id = gbm_preprocessor_model,
+                                 seed=1234)
+  assert "Argument `te_model_id` should be an ?H2OTargetEncoderEstimator, got H2OGradientBoostingEstimator" \
+         in str(err.exception), "Validation should not allow non-targetencoder model id for `te_model_id` parameter"
+
+
 testList = [
-    test_target_encoder_attached_as_preprocessor
+    test_target_encoder_attached_as_preprocessor,
+    test_only_te_model_could_be_added_as_preprocessor
 ]
 
 pyunit_utils.run_tests(testList)
