@@ -26,7 +26,7 @@
 #' 
 #' # Import the CraigslistJobTitles dataset
 #' f <- "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/"
-#' jobtitles <- h2o.importFile(pasteo(f, "craigslistJobTitles.csv"), 
+#' jobtitles <- h2o.importFile(paste0(f, "craigslistJobTitles.csv"), 
 #'                              col.names = c("category", "jobtitle"),
 #'                              col.types = c("String", "String"), header = TRUE)
 #' 
