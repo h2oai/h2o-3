@@ -103,22 +103,6 @@ def test_only_te_model_could_be_added_as_preprocessor():
                           training_frame=trainingFrame)
 
 
-  # Checking that assigning dummy string causes a validation error
-  with unittest.TestCase.assertRaises(None, H2OTypeError) as err:
-    H2OGradientBoostingEstimator(ntrees=50,
-                                 learn_rate=0.1,
-                                 score_tree_interval=10,
-                                 stopping_rounds=5,
-                                 stopping_metric="AUC",
-                                 stopping_tolerance=0.001,
-                                 distribution="multinomial",
-                                 categorical_encoding="enum_limited",
-                                 te_model_id = "abcdefg",
-                                 seed=1234)
-  assert "Argument `te_model_id` should be an ?H2OTargetEncoderEstimator, got string abcdefg" \
-           in str(err.exception), "Validation should not allow strings for `te_model_id` parameter"
-
-
   # Checking that assigning NOT a te model causes validation error
   with unittest.TestCase.assertRaises(None, H2OTypeError) as err:
     H2OGradientBoostingEstimator(ntrees=50,

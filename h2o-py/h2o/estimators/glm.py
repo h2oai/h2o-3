@@ -1731,7 +1731,7 @@ class H2OGeneralizedLinearEstimator(H2OEstimator):
 
     @te_model_id.setter
     def te_model_id(self, te_model_id):
-        assert_is_type(te_model_id, None, H2OTargetEncoderEstimator)
+        assert_is_type(te_model_id, None, str, H2OTargetEncoderEstimator)
         self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTargetEncoderEstimator) else te_model_id
 
 

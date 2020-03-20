@@ -12,7 +12,7 @@ def update_param(name, param):
 overrides = dict(
     te_model_id=dict(
         setter="""
-assert_is_type(te_model_id, None, H2OTargetEncoderEstimator)
+assert_is_type(te_model_id, None, str, H2OTargetEncoderEstimator)
 self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTargetEncoderEstimator) else te_model_id
 """)
 )
