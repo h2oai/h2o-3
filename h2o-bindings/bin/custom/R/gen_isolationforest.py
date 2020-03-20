@@ -27,7 +27,8 @@ library(h2o)
 h2o.init()
 
 # Import the cars dataset
-cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+cars <- h2o.importFile(f)
 
 # Set the predictors
 predictors <- c("displacement","power","weight","acceleration","year")

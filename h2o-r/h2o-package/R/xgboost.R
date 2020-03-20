@@ -115,7 +115,7 @@
 #' response <- "survived"
 #' 
 #' # Split the dataset into train and valid
-#' splits <- h2o.splitFrame(data = titanic, ratios = 0.8, seed = 1234)
+#' splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
 #' train <- splits[[1]]
 #' valid <- splits[[2]]
 #' 

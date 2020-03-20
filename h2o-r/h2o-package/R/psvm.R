@@ -41,8 +41,8 @@
 #' splice <- h2o.importFile(f)
 #' 
 #' # Train the Support Vector Machine model
-#' svm_model <- h2o.psvm(y = "C1", training_frame = splice,
-#'                       gamma = 0.01, rank_ratio = 0.1,
+#' svm_model <- h2o.psvm(gamma = 0.01, rank_ratio = 0.1,
+#'                       y = "C1", training_frame = splice,
 #'                       disable_training_metrics = FALSE)
 #' }
 #' @export

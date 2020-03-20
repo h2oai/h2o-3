@@ -44,9 +44,10 @@
 #' response <- "event"
 #' 
 #' # Train a Cox Proportional Hazards model 
-#' heart_coxph <- h2o.coxph(start_column = "start", stop_column = "stop",
-#'                          event_column = "event", x = predictor,
-#'                          training_frame = heart)
+#' heart_coxph <- h2o.coxph(x = predictor, training_frame = heart,
+#'                          event_column = "event",
+#'                          start_column = "start", 
+#'                          stop_column = "stop")
 #' }
 #' @export
 h2o.coxph <- function(x,
