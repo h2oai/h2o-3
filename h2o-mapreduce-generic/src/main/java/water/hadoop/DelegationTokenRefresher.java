@@ -6,6 +6,7 @@ import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import water.H2O;
 import water.MRTask;
+import water.Paxos;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,13 +23,17 @@ import static water.hadoop.h2omapper.*;
 public class DelegationTokenRefresher implements Runnable {
   
   public static void setup(Configuration conf, String iceRoot) throws IOException {
+    if (!HiveTokenGenerator.isHiveDriverPresent()) {
+      return;
+    }
     String authUser = conf.get(H2O_AUTH_USER);
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
     String authKeytab = conf.get(H2O_AUTH_KEYTAB);
     HiveTokenGenerator.HiveOptions options = HiveTokenGenerator.HiveOptions.make(conf);
     if (authPrincipal != null && authKeytab != null && options != null) {
       String authKeytabPath = writeKeytabToFile(authKeytab, iceRoot);
-      new DelegationTokenRefresher(authPrincipal, authKeytabPath, authUser, options).start();
+      DelegationTokenRefresher dtr = new DelegationTokenRefresher(authPrincipal, authKeytabPath, authUser, options);
+      Paxos.addLockListener(dtr::start);
     } else {
       log("Delegation token refresh not active.", null);
     }
@@ -66,29 +71,23 @@ public class DelegationTokenRefresher implements Runnable {
   }
 
   public void start() {
-    if (HiveTokenGenerator.isHiveDriverPresent()) {
-      _executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
-    }
+    boolean leader = H2O.CLOUD.leader() == H2O.SELF;
+    if (!leader) return;
+    run();
+    _executor.scheduleAtFixedRate(this, 1, 1, TimeUnit.MINUTES);
   }
-
+  
   private static void log(String s, Exception e) {
     System.out.println("TOKEN REFRESH: " + s);
     if (e != null) {
       e.printStackTrace(System.out);
     }
   }
-
+  
   @Override
   public void run() {
-    boolean leader = (H2O.CLOUD.size() > 0 && H2O.CLOUD.leader() == H2O.SELF);
-    if (leader) {
-      refreshTokens();
-    }
-  }
-  
-  private void refreshTokens() {
     try {
-      doRefreshTokens();
+      refreshTokens();
     } catch (IOException | InterruptedException e) {
       log("Failed to refresh token.", e);
     }
@@ -134,7 +133,7 @@ public class DelegationTokenRefresher implements Runnable {
     }
   }
 
-  private void doRefreshTokens() throws IOException, InterruptedException {
+  private void refreshTokens() throws IOException, InterruptedException {
     log("Log in from keytab as " + _authPrincipal, null);
     UserGroupInformation realUser = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
     UserGroupInformation tokenUser = realUser;
