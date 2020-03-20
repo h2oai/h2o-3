@@ -7,6 +7,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.estimators.estimator_base import H2OEstimator
+from h2o.estimators.targetencoder import H2OTargetEncoderEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
@@ -1636,8 +1637,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
     @te_model_id.setter
     def te_model_id(self, te_model_id):
-        assert_is_type(te_model_id, None, str, H2OEstimator)
-        self._parms["te_model_id"] = te_model_id
+        assert_is_type(te_model_id, None, H2OTargetEncoderEstimator)
+        self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTargetEncoderEstimator) else te_model_id
 
 
     @property

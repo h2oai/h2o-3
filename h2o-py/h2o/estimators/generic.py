@@ -7,6 +7,7 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.estimators.estimator_base import H2OEstimator
+from h2o.estimators.targetencoder import H2OTargetEncoderEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
