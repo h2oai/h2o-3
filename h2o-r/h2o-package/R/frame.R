@@ -1018,11 +1018,10 @@ if (seed == -1) seed <- floor(runif(1,1,.Machine$integer.max*100))
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip")
-#' splits <- h2o.splitFrame(data, seed = 1234, ratios = .08)
-#' train <- splits[[1]]
-#' valid <- splits[[2]]
-#' h2o.kfold_column(train, nfolds = 5, seed = 1234)
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
+#' kfolds <- h2o.kfold_column(iris, nfolds = 5, seed = 1234)
 #' }
 #' @export
 h2o.kfold_column <- function(data,nfolds,seed=-1) .eval.frame(.newExpr("kfold_column",data,nfolds,seed))
@@ -1933,12 +1932,13 @@ h2o.which <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' census <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv"
+#' census <- h2o.importFile(f)
 #' census[,1] <- as.factor(census[,1])
-#' dlmodel<-h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
-#'                           epochs = 1, training_frame = census, 
-#'                           balance_classes = FALSE, reproducible = TRUE, 
-#'                           seed = 1234, export_weights_and_biases = TRUE)
+#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
+#'                             epochs = 1, training_frame = census, 
+#'                             balance_classes = FALSE,
+#'                             export_weights_and_biases = TRUE)
 #' h2o.which_max(census["PER CAPITA INCOME "], na.rm = FALSE, axis = 0)
 #' }
 #' @export
@@ -1967,11 +1967,12 @@ which.max.H2OFrame <- h2o.which_max
 #' library(h2o)
 #' h2o.init()
 #' 
-#' census <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv")
-#' dlmodel<-h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
-#'                           epochs = 1, training_frame = census, 
-#'                           balance_classes = FALSE, reproducible = TRUE, 
-#'                           seed = 1234, export_weights_and_biases = TRUE)
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv"
+#' census <- h2o.importFile(f)
+#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
+#'                             epochs = 1, training_frame = census, 
+#'                             balance_classes = FALSE, 
+#'                             export_weights_and_biases = TRUE)
 #' h2o.which_min(census["PER CAPITA INCOME "], na.rm = FALSE, axis = 0)
 #' }
 #' @export
@@ -3275,7 +3276,9 @@ h2o.isfactor <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.isnumeric(iris["sepal_len"])
 #' }
 #' @export
@@ -3293,7 +3296,9 @@ h2o.isnumeric <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
 #' iris_char <- h2o.ascharacter(iris["class"])
 #' h2o.ischaracter(iris_char)
 #' }

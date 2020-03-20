@@ -470,19 +470,20 @@ h2o.getFutureModel <- function(object, verbose=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' insurance <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv"
+#' insurance <- h2o.importFile(f)
 #' predictors <- colnames(insurance)[1:4]
-#' response <- 'Claims'
+#' response <- "Claims"
 #' insurance['Group'] <- as.factor(insurance['Group'])
 #' insurance['Age'] <- as.factor(insurance['Age'])
-#' insurance.splits <- h2o.splitFrame(data =  insurance, ratios = .8, seed = 1234)
-#' train <- insurance.splits[[1]]
-#' valid <- insurance.splits[[2]]
+#' splits <- h2o.splitFrame(data =  insurance, ratios = 0.8, seed = 1234)
+#' train <- splits[[1]]
+#' valid <- splits[[2]]
 #' insurance_gbm <- h2o.gbm(x = predictors, y = response, 
 #'                          training_frame = train,
 #'                          validation_frame = valid, 
-#'                          distribution = 'huber', 
-#'                          huber_alpha = .9, seed = 1234)
+#'                          distribution = "huber", 
+#'                          huber_alpha = 0.9, seed = 1234)
 #' h2o.predict(insurance_gbm, newdata = insurance)
 #' }
 #' @export
@@ -1897,7 +1898,8 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' pros <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip")
+#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
+#' pros <- h2o.importFile(f)
 #' response <- "GLEASON"
 #' predictors <- c("ID","AGE","CAPSULE","DCAPS","PSA","VOL","DPROS")
 #' model <- h2o.glm(x = predictors, y = response, training_frame = pros)
@@ -2101,10 +2103,13 @@ h2o.biases <- function(object, vector_id=1){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv")
-#' iris.split <- h2o.splitFrame(data = iris, ratios = .8, seed = 1234)
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
+#' iris.split <- h2o.splitFrame(data = iris, ratios = 0.8, seed = 1234)
 #' train <- iris.split[[1]]
 #' valid <- iris.split[[2]]
+#' 
 #' iris_xgb <- h2o.xgboost(x = 1:4, y = 5, training_frame = train, validation_frame = valid)
 #' hrt_iris <- h2o.hit_ratio_table(iris_xgb, valid = TRUE)
 #' hrt_iris
@@ -4441,9 +4446,11 @@ setMethod("length", signature(x = "H2OTree"), function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' airlines.data <- h2o.importFile(path = '/path/to/airlines_train.csv')
-#' gbm.model = h2o.gbm(x=c("Origin", "Dest", "Distance"),y="IsDepDelayed",training_frame=airlines.data ,model_id="gbm_trees_model")
-#' tree <-h2o.getModelTree(gbm.model, 1, 1)
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
+#' gbm_model <- h2o.gbm(y = "species", training_frame = iris)
+#' tree <- h2o.getModelTree(gbm_model, 1, "Iris-setosa")
 #' }
 #' @export
 h2o.getModelTree <- function(model, tree_number, tree_class = NA) {
