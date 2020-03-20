@@ -427,6 +427,7 @@ class H2OEstimator(ModelBase):
         if name == "H2ORandomForestEstimator": return "drf"
         if name == "H2OXGBoostEstimator": return "xgboost"
         if name == "H2OCoxProportionalHazardsEstimator": return "coxph"
+        if name == "H2OGeneralizedAdditiveEstimator": return "gam"
         if name in ["H2OPCA", "H2OPrincipalComponentAnalysisEstimator"]: return "pca"
         if name in ["H2OSVD", "H2OSingularValueDecompositionEstimator"]: return "svd"
 

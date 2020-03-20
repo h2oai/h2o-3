@@ -481,8 +481,8 @@ class ModelBase(h2o_meta(Keyed)):
         :returns: A list or Pandas DataFrame.
         """
         model = self._model_json["output"]
-        if self.algo=='glm' or "variable_importances" in list(model.keys()) and model["variable_importances"]:
-            if self.algo=='glm':
+        if self.algo=='glm' or self.algo=='gam' or "variable_importances" in list(model.keys()) and model["variable_importances"]:
+            if self.algo=='glm' or self.algo=='gam':
                 tempvals = model["standardized_coefficient_magnitudes"].cell_values
                 maxVal = 0
                 sum=0
@@ -622,7 +622,10 @@ class ModelBase(h2o_meta(Keyed)):
             return {name: coef for name, coef in zip(tbl["names"], tbl["standardized_coefficients"])}
 
     def _fillMultinomialDict(self, standardize=False):
-        tbl = self._model_json["output"]["coefficients_table_multinomials_with_class_names"]
+        if self.algo == 'gam':
+            tbl = self._model_json["output"]["coefficients_table"]
+        else:
+            tbl = self._model_json["output"]["coefficients_table_multinomials_with_class_names"]
         if tbl is None:
             return None
         coeff_dict = {} # contains coefficient names

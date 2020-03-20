@@ -215,6 +215,7 @@ def algo_to_modelname(algo):
     if algo == "svd": return "Singular Value Decomposition"
     if algo == "stackedensemble": return "H2O Stacked Ensemble"
     if algo == "psvm": return "Support Vector Machine"
+    if algo == "gam": return "Generalized Additive Model"
     if algo == "targetencoder": return "Target Encoder"
     return algo
 

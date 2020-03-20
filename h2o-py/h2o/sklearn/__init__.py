@@ -82,7 +82,7 @@ def _get_custom_params(cls):
                         'H2OSingularValueDecompositionEstimator',
                         'H2OTargetEncoderEstimator']:
         custom.update(predictions_col='all')  # `predict` will return all columns (instead of a vector by default).
-    if cls.__name__ in ['H2OGeneralizedLinearEstimator']:
+    if cls.__name__ in ['H2OGeneralizedLinearEstimator', 'H2OGeneralizedAdditiveEstimator']:
         custom.update(distribution_param='family')  # use algo `family` param to identify distribution (default is `distribution`).
     if cls.__name__ in ['H2ONaiveBayesEstimator',
                         'H2OSupportVectorMachineEstimator']:
