@@ -792,11 +792,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def te_model_id(self):
         """
-        Key of TargetEncoderModel
-
-        Type: ``str``.
-
-        Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator itself
+        Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 
         Type: ``str`` | ``H2OTargetEncoderEstimator``.
         """

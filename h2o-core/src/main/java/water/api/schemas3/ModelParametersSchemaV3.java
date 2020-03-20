@@ -122,7 +122,7 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
           help = "Encoding scheme for categorical features")
   public Model.Parameters.CategoricalEncodingScheme categorical_encoding;
 
-  @API(help="Key of TargetEncoderModel", direction=API.Direction.INOUT)
+  @API(help="Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator", direction=API.Direction.INOUT)
   public ModelKeyV3 te_model_id;
 
   @API(level = API.Level.secondary, direction = API.Direction.INPUT, gridable = true,
