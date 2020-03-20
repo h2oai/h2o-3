@@ -35,9 +35,8 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                    "huber_alpha", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                    "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                    "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
-                   "te_model_id", "calibrate_model", "calibration_frame", "custom_metric_func",
-                   "custom_distribution_func", "export_checkpoints_dir", "monotone_constraints",
-                   "check_constant_response"}
+                   "te_model", "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
+                   "export_checkpoints_dir", "monotone_constraints", "check_constant_response"}
 
     def __init__(self, **kwargs):
         super(H2OGradientBoostingEstimator, self).__init__()
@@ -1627,18 +1626,18 @@ class H2OGradientBoostingEstimator(H2OEstimator):
 
 
     @property
-    def te_model_id(self):
+    def te_model(self):
         """
         Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 
         Type: ``str`` | ``H2OTargetEncoderEstimator``.
         """
-        return self._parms.get("te_model_id")
+        return self._parms.get("te_model")
 
-    @te_model_id.setter
-    def te_model_id(self, te_model_id):
-        assert_is_type(te_model_id, None, str, H2OTargetEncoderEstimator)
-        self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTargetEncoderEstimator) else te_model_id
+    @te_model.setter
+    def te_model(self, te_model):
+        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
+        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 
     @property

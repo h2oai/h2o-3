@@ -22,7 +22,7 @@ class H2OAggregatorEstimator(H2OEstimator):
     algo = "aggregator"
     param_names = {"model_id", "training_frame", "response_column", "ignored_columns", "ignore_const_cols",
                    "target_num_exemplars", "rel_tol_num_exemplars", "transform", "categorical_encoding",
-                   "save_mapping_frame", "num_iteration_without_new_exemplar", "export_checkpoints_dir", "te_model_id"}
+                   "save_mapping_frame", "num_iteration_without_new_exemplar", "export_checkpoints_dir", "te_model"}
 
     def __init__(self, **kwargs):
         super(H2OAggregatorEstimator, self).__init__()
@@ -368,18 +368,18 @@ class H2OAggregatorEstimator(H2OEstimator):
 
 
     @property
-    def te_model_id(self):
+    def te_model(self):
         """
         Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 
         Type: ``str`` | ``H2OTargetEncoderEstimator``.
         """
-        return self._parms.get("te_model_id")
+        return self._parms.get("te_model")
 
-    @te_model_id.setter
-    def te_model_id(self, te_model_id):
-        assert_is_type(te_model_id, None, str, H2OTargetEncoderEstimator)
-        self._parms["te_model_id"] = te_model_id.key if isinstance(te_model_id, H2OTargetEncoderEstimator) else te_model_id
+    @te_model.setter
+    def te_model(self, te_model):
+        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
+        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 
     @property

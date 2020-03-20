@@ -61,7 +61,7 @@ public class GBMV3 extends SharedTreeV3<GBM,GBMV3,GBMV3.GBMParametersV3> {
       "max_abs_leafnode_pred",
       "pred_noise_bandwidth",
       "categorical_encoding",
-      "te_model_id",
+      "te_model",
       "calibrate_model",
       "calibration_frame",
       "custom_metric_func",

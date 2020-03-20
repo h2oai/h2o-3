@@ -138,7 +138,7 @@
 #' @param elastic_averaging_moving_rate Elastic averaging moving rate (only if elastic averaging is enabled). Defaults to 0.9.
 #' @param elastic_averaging_regularization Elastic averaging regularization strength (only if elastic averaging is enabled). Defaults to 0.001.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param te_model_id Key of TargetEncoderModel
+#' @param te_model Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per epoch). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -240,7 +240,7 @@ h2o.deeplearning <- function(x,
                              elastic_averaging_moving_rate = 0.9,
                              elastic_averaging_regularization = 0.001,
                              export_checkpoints_dir = NULL,
-                             te_model_id = NULL,
+                             te_model = NULL,
                              verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -442,8 +442,8 @@ h2o.deeplearning <- function(x,
     parms$elastic_averaging_regularization <- elastic_averaging_regularization
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
-  if (!missing(te_model_id))
-    parms$te_model_id <- te_model_id
+  if (!missing(te_model))
+    parms$te_model <- te_model
 
   # Error check and build model
   model <- .h2o.modelJob('deeplearning', parms, h2oRestApiVersion=3, verbose=verbose)

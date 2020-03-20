@@ -38,7 +38,7 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.01.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param te_model_id Key of TargetEncoderModel
+#' @param te_model Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -79,7 +79,7 @@ h2o.isolationForest <- function(training_frame,
                                 stopping_metric = c("AUTO", "anomaly_score"),
                                 stopping_tolerance = 0.01,
                                 export_checkpoints_dir = NULL,
-                                te_model_id = NULL)
+                                te_model = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -130,8 +130,8 @@ h2o.isolationForest <- function(training_frame,
     parms$stopping_tolerance <- stopping_tolerance
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
-  if (!missing(te_model_id))
-    parms$te_model_id <- te_model_id
+  if (!missing(te_model))
+    parms$te_model <- te_model
 
   # Error check and build model
   model <- .h2o.modelJob('isolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)

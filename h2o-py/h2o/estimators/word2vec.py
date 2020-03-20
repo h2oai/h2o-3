@@ -22,7 +22,7 @@ class H2OWord2vecEstimator(H2OEstimator):
     algo = "word2vec"
     param_names = {"model_id", "training_frame", "min_word_freq", "word_model", "norm_model", "vec_size", "window_size",
                    "sent_sample_rate", "init_learning_rate", "epochs", "pre_trained", "max_runtime_secs",
-                   "export_checkpoints_dir"}
+                   "export_checkpoints_dir", "te_model"}
 
     def __init__(self, **kwargs):
         super(H2OWord2vecEstimator, self).__init__()
@@ -373,6 +373,21 @@ class H2OWord2vecEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def te_model(self):
+        """
+        Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
+
+        Type: ``str`` | ``H2OTargetEncoderEstimator``.
+        """
+        return self._parms.get("te_model")
+
+    @te_model.setter
+    def te_model(self, te_model):
+        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
+        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 
     def _requires_training_frame(self):

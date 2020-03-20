@@ -19,6 +19,7 @@
 #' @param pre_trained Id of a data frame that contains a pre-trained (external) word2vec model
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param te_model Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -48,7 +49,8 @@ h2o.word2vec <- function(training_frame = NULL,
                          epochs = 5,
                          pre_trained = NULL,
                          max_runtime_secs = 0,
-                         export_checkpoints_dir = NULL)
+                         export_checkpoints_dir = NULL,
+                         te_model = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   # training_frame is required if pre_trained frame is not specified
@@ -84,6 +86,8 @@ h2o.word2vec <- function(training_frame = NULL,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(te_model))
+    parms$te_model <- te_model
 
   # Error check and build model
   model <- .h2o.modelJob('word2vec', parms, h2oRestApiVersion=3, verbose=FALSE)

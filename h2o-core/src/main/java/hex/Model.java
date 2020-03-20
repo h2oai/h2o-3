@@ -232,7 +232,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       boolean needsResponse() { return _needResponse; }
     }
 
-    public Key<Model> _te_model_id;
+    public Key<Model> _te_model;
 
     public long _seed = -1;
     public long getOrMakeRealSeed(){

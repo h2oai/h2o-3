@@ -102,7 +102,7 @@ public class DeepLearningV3 extends ModelBuilderSchema<DeepLearning,DeepLearning
         "elastic_averaging_moving_rate",
         "elastic_averaging_regularization",
         "export_checkpoints_dir",
-        "te_model_id"
+        "te_model"
     };
 
 
