@@ -34,7 +34,7 @@ def algo_max_runtime_secs():
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/glrmdata1000x25.csv"))
     x_indices = list(range(training1_data.ncol))
     model = H2OGeneralizedLowRankEstimator(k=10, loss="Quadratic", gamma_x=0.3,
-                                           gamma_y=0.3, transform="STANDARDIZE", seed=seed)
+                                           gamma_y=0.3, transform="STANDARDIZE")
     grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices)
     cleanUp([training1_data, model])
 
@@ -67,21 +67,21 @@ def algo_max_runtime_secs():
     print("******************** Skip testing Naives Bayes.  Not an iterative algo.")
 
     # random foreset
-    model = H2ORandomForestEstimator(ntrees=100, score_tree_interval=0, seed=seed)
+    model = H2ORandomForestEstimator(ntrees=100, score_tree_interval=0)
     grabRuntimeInfo(err_bound, 2.0, model, training1_data, x_indices)
     cleanUp([model, training1_data])
 
     # PCA
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/pca1000by25.csv"))
     x_indices = list(range(training1_data.ncol))
-    model = H2OPCA(k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=True,seed=seed)
+    model = H2OPCA(k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=True)
     grabRuntimeInfo(err_bound*5, 2, model, training1_data, x_indices)
     cleanUp([training1_data, model])
 
     # kmeans
     training1_data = h2o.import_file(path=pyunit_utils.locate("smalldata/gridsearch/kmeans_8_centers_3_coords.csv"))
     x_indices = list(range(training1_data.ncol))
-    model = H2OKMeansEstimator(k=10, seed=seed)
+    model = H2OKMeansEstimator(k=10)
     grabRuntimeInfo(err_bound*2, 2.5, model, training1_data, x_indices)
     cleanUp([training1_data, model])
 
