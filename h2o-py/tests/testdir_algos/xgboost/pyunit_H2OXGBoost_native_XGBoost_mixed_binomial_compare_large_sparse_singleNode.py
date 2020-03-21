@@ -23,8 +23,16 @@ def comparison_test_dense():
         ntrees = 17
         maxdepth = 5
         # CPU Backend is forced for the results to be comparable
-        h2oParamsD = {"ntrees":ntrees, "max_depth":maxdepth, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                     "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method":"exact", "backend":"cpu"}
+        h2oParamsD = {"ntrees": ntrees,
+                      "max_depth": maxdepth,
+                      "seed": runSeed,
+                      "learn_rate": 0.7,
+                      "col_sample_rate_per_tree": 0.9,
+                      "min_rows": 5,
+                      "score_tree_interval": ntrees+1,
+                      "dmatrix_type": "sparse",
+                      "tree_method": "exact",
+                      "backend": "cpu"}
         nativeParam = {'colsample_bytree': h2oParamsD["col_sample_rate_per_tree"],
                        'tree_method': 'exact',
                        'seed': h2oParamsD["seed"],
@@ -38,7 +46,8 @@ def comparison_test_dense():
                        'max_delta_step': 0.0,
                        'min_child_weight': h2oParamsD["min_rows"],
                        'gamma': 0.0,
-                       'max_depth': h2oParamsD["max_depth"]}
+                       'max_depth': h2oParamsD["max_depth"],
+                       'eval_metric': ['auc', 'aucpr']}
 
         nrows = 10000
         ncols = 10
@@ -65,7 +74,10 @@ def comparison_test_dense():
         # train the native XGBoost
         nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=enumCols)
         nrounds = ntrees
-        nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds)
+        evals_result = {}
+        watch_list = [(nativeTrain,'train')]
+        nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds,
+                                evals=watch_list, verbose_eval=True, evals_result=evals_result)
         modelsfound = False
         while not(modelsfound): # loop to make sure accurate number of trees are built
             modelInfo = nativeModel.get_dump()
@@ -84,6 +96,12 @@ def comparison_test_dense():
 
         pyunit_utils.summarizeResult_binomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
                                               nativeScoreTime, tolerance=testTol)
+        
+        print("Comparing H2OXGBoost metrics with native XGBoost metrics when DMatrix is set to sparse.....")
+        h2o_metrics = [h2oModelD.training_model_metrics()["AUC"], h2oModelD.training_model_metrics()["pr_auc"]]
+        xgboost_metrics = [evals_result['train']['auc'][ntrees-1], evals_result['train']['aucpr'][ntrees-1]]
+        pyunit_utils.summarize_metrics_binomial(h2o_metrics, xgboost_metrics, ["auc", "aucpr"])
+        
     else:
         print("********  Test skipped.  This test cannot be performed in multinode environment.")
 

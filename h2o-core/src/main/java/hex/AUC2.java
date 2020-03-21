@@ -27,7 +27,7 @@ public class AUC2 extends Iced {
   public final double[] _tps;     // True  Positives
   public final double[] _fps;     // False Positives
   public final double _p, _n;     // Actual trues, falses
-  public double _auc, _gini, _pr_auc, _pr_auc_xgboost; // Actual AUC value
+  public double _auc, _gini, _pr_auc; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
 
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
@@ -176,13 +176,11 @@ public class AUC2 extends Iced {
     if (trueProbabilities) {
       _auc = compute_auc();
       _pr_auc = pr_auc();
-      _pr_auc_xgboost = pr_auc_xgboost();
       _gini = 2 * _auc - 1;
       _max_idx = DEFAULT_CM.max_criterion_idx(this);
     } else {
       _auc = Double.NaN;
       _pr_auc = Double.NaN;
-      _pr_auc_xgboost = Double.NaN;
       _gini = Double.NaN;
       _max_idx = 0;
     }
@@ -197,7 +195,6 @@ public class AUC2 extends Iced {
     _n = auc._n;
     _auc = auc._auc;
     _pr_auc = auc._pr_auc;
-    _pr_auc_xgboost = auc._pr_auc_xgboost;
     _gini = auc._gini;
     _max_idx = auc._max_idx >= 0 ? 0 : -1;
   }
@@ -227,7 +224,7 @@ public class AUC2 extends Iced {
     _nBins = 0;
     _ths = _tps = _fps = new double[0];
     _p =_n = 0;
-    _auc = _gini = _pr_auc = _pr_auc_xgboost = Double.NaN;
+    _auc = _gini = _pr_auc = Double.NaN;
     _max_idx = -1;
   }
 
@@ -241,14 +238,6 @@ public class AUC2 extends Iced {
   
   private boolean isEmpty() {
     return _nBins == 0;
-  }
-
-  public double pr_auc() {
-    if (isEmpty()) {
-      return Double.NaN;
-    }
-    checkRecallValidity();
-    return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
   }
 
   // Checks that recall is a non-decreasing function
@@ -279,19 +268,25 @@ public class AUC2 extends Iced {
     // Descale
     return area/_p/_n;
   }
-  
-  public double pr_auc_xgboost() {
+
+  /**
+   * Compute the Area under Precision-Recall Curves using TPs and FPs.
+   * TPs and FPs are monotonically increasing.
+   * Calulation inspired by XGBoost implementation:
+   * https://github.com/dmlc/xgboost/blob/master/src/metric/rank_metric.cc#L566-L591
+   * @return
+   */
+  public double pr_auc() {
     if (isEmpty()) {
       return Double.NaN;
     }
     checkRecallValidity();
     
-    if (_fps[_nBins-1] == 0) return 1.0; //special case
-    if (_tps[_nBins-1] == 0) return 0.0; //special case
+    if (_fps[_nBins-1] == 0) return 1.0;
+    if (_tps[_nBins-1] == 0) return 0.0;
     
     double area = 0.0;
-    double total_pos = _p, total_neg = _n;
-    assert total_pos > 0 && total_neg > 0;
+    assert _p > 0 && _n > 0 : "AUC-PR calculation error, sum of positives and sum of negatives should be zero.";
     
     double tp, prevtp = 0.0, fp, prevfp = 0.0, h, a, b;
     for (int j = 0; j < _nBins; j++) {
@@ -303,14 +298,14 @@ public class AUC2 extends Iced {
         } else {
           h = (fp - prevfp) / (tp - prevtp);
           a = 1.0 + h;
-          b = (prevfp - h * prevtp) / total_pos;
+          b = (prevfp - h * prevtp) / _p;
         }
         if (0.0 != b) {
-          area += (tp / total_pos - prevtp / total_pos -
-                  b / a * (Math.log(a * tp / total_pos + b) -
-                  Math.log(a * prevtp / total_pos + b))) / a;
+          area += (tp / _p - prevtp / _p -
+                  b / a * (Math.log(a * tp / _p + b) -
+                  Math.log(a * prevtp / _p + b))) / a;
         } else {
-          area += (tp / total_pos - prevtp / total_pos) / a;
+          area += (tp / _p - prevtp / _p) / a;
         }
         prevtp = tp;
         prevfp = fp;
