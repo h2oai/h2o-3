@@ -25,6 +25,7 @@ import org.junit.runners.Parameterized;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.NFSFileVec;
+import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.parser.BufferedString;
 import water.parser.ParseDataset;
@@ -91,6 +92,24 @@ public class ParseTestParquet extends TestUtil {
       assertEquals(Arrays.asList(expected.typesStr()), Arrays.asList(actual.typesStr()));
       assertEquals(expected.numRows(), actual.numRows());
       assertBitIdentical(expected, actual);
+    } finally {
+      if (expected != null) expected.delete();
+      if (actual != null) actual.delete();
+    }
+  }
+
+  @Test
+  public void testParseHiveDecimal() {
+    Frame expected = null, actual = null;
+    try {
+      expected = new TestFrameBuilder()
+              .withColNames("name", "price")
+              .withVecTypes(Vec.T_CAT, Vec.T_NUM)
+              .withDataForCol(0, new String[]{"Michal"})
+              .withDataForCol(1, new double[]{10.34})
+              .build();
+      actual = parse_test_file("smalldata/parser/parquet/hive-decimal.parquet");
+      assertFrameEquals(expected, actual, 0);
     } finally {
       if (expected != null) expected.delete();
       if (actual != null) actual.delete();
