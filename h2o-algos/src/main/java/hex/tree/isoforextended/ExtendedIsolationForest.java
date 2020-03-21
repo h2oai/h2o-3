@@ -4,6 +4,7 @@ import hex.ModelCategory;
 import hex.ScoreKeeper;
 import hex.splitframe.ShuffleSplitFrame;
 import hex.tree.SharedTree;
+import water.DKV;
 import water.Iced;
 import water.Key;
 import water.MRTask;
@@ -89,10 +90,11 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             int randomUnit =  _rand.nextInt();
 
             Frame subSample = new SubSampleTask(_parms.sampleSize, _parms._seed + randomUnit)
-                    .doAll(new byte[]{Vec.T_NUM, Vec.T_NUM} , _train.vecs(new int[]{0,1})).outputFrame();
+                    .doAll(new byte[]{Vec.T_NUM, Vec.T_NUM} , _train.vecs(new int[]{0,1})).outputFrame(Key.make(), null, null);
 //            System.out.println("subSample size: " + subSample.numRows());
+            DKV.put(subSample);
 
-            IsolationTree iTree = new IsolationTree(subSample, heightLimit, _parms._seed + randomUnit, _parms.extensionLevel);
+            IsolationTree iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extensionLevel);
             iTree.buildTree();
 //            iTree.print();
 //            iTree.printHeight();
