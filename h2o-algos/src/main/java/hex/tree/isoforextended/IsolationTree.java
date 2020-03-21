@@ -1,25 +1,28 @@
 package hex.tree.isoforextended;
 
 import hex.psvm.psvm.MatrixUtils;
+import water.DKV;
 import water.Iced;
+import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.VecUtils;
 
+import javax.swing.*;
 import java.util.Arrays;
 
 public class IsolationTree extends Iced {
     private Node[] nodes;
 
-    private Frame frame;
+    private Key<Frame> frameKey;
     private int heightLimit;
     private long seed;
     private int extensionLevel;
 
-    public IsolationTree(Frame frame, int heightLimit, long seed, int extensionLevel) {
-        this.frame = frame;
+    public IsolationTree(Key<Frame> frame, int heightLimit, long seed, int extensionLevel) {
+        this.frameKey = frame;
         this.heightLimit = heightLimit;
         this.seed = seed;
         this.extensionLevel = extensionLevel;
@@ -28,30 +31,34 @@ public class IsolationTree extends Iced {
     }
 
     public void buildTree() {
-        nodes[0] = new Node(frame, 0);
+        Frame frame = DKV.get(frameKey).get();
+        nodes[0] = new Node(frame._key, frame.numRows(), 0);
         for (int i = 0; i < nodes.length; i++) {
             Node node = nodes[i];
             if (node == null || node.external)
                 continue;
+            Frame nodeFrame = node.getFrame();
             int currentHeight = node.height;
-            if (node.height >= heightLimit || node.frame.numRows() <= 1) {
+            if (node.height >= heightLimit || nodeFrame.numRows() <= 1) {
                 node.external = true;
-                node.size = node.frame.numRows();
+                node.size = nodeFrame.numRows();
                 node.height = currentHeight;
             } else {
                 currentHeight++;
 
-                node.p = VecUtils.uniformDistrFromFrameMR(node.frame, seed + i);
-                node.n = VecUtils.makeGaussianVec(node.frame.numCols(), node.frame.numCols() - extensionLevel - 1, seed + i);
+                node.p = VecUtils.uniformDistrFromFrameMR(nodeFrame, seed + i);
+                node.n = VecUtils.makeGaussianVec(nodeFrame.numCols(), nodeFrame.numCols() - extensionLevel - 1, seed + i);
                 node.nn = FrameUtils.asDoubles(node.n);
-                Frame sub = MatrixUtils.subtractionMtv(node.frame, node.p);
+                Frame sub = MatrixUtils.subtractionMtv(nodeFrame, node.p);
                 Vec mul = MatrixUtils.productMtv2(sub, node.n);
-                Frame left = new FilterLtTask(mul, 0).doAll(node.frame.types(), node.frame).outputFrame();
-                Frame right = new FilterGteRightTask(mul, 0).doAll(node.frame.types(), node.frame).outputFrame();
-                
+                Frame left = new FilterLtTask(mul, 0).doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
+                Frame right = new FilterGteRightTask(mul, 0).doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
+                DKV.put(left);
+                DKV.put(right);
+
                 if ((2 * i + 1) < nodes.length) {
-                    nodes[2 * i + 1] = new Node(left, currentHeight);
-                    nodes[2 * i + 2] = new Node(right, currentHeight);
+                    nodes[2 * i + 1] = new Node(left._key, left.numRows(), currentHeight);
+                    nodes[2 * i + 2] = new Node(right._key, right.numRows(), currentHeight);
                 }
             }
         }
@@ -75,7 +82,7 @@ public class IsolationTree extends Iced {
                 System.out.print(nodes[i].height + " ");
         }
         System.out.println("");
-    }    
+    }
 
     public double computePathLength(Vec row) {
         int position = 0;
@@ -99,19 +106,23 @@ public class IsolationTree extends Iced {
     }
 
     private class Node extends Iced {
-        private Frame frame;
+        private Key<Frame> frameKey;
         private Vec n;
-        private double [] nn;
+        private double[] nn;
         private Vec p;
 
         int height;
         boolean external = false;
         long size;
 
-        public Node(Frame frame, int currentHeight) {
-            this.frame = frame;
+        public Node(Key<Frame> frameKey, long size, int currentHeight) {
+            this.frameKey = frameKey;
             this.height = currentHeight;
-            this.size = frame.numRows();
+            this.size = size;
+        }
+
+        Frame getFrame() {
+            return DKV.get(frameKey).get();
         }
     }
 
