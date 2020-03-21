@@ -6,6 +6,7 @@ import org.apache.hadoop.security.Credentials;
 import org.apache.hadoop.security.UserGroupInformation;
 import water.H2O;
 import water.MRTask;
+import water.Paxos;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,6 +23,9 @@ import static water.hadoop.h2omapper.*;
 public class DelegationTokenRefresher implements Runnable {
   
   public static void setup(Configuration conf, String iceRoot) throws IOException {
+    if (!HiveTokenGenerator.isHiveDriverPresent()) {
+      return;
+    }
     String authUser = conf.get(H2O_AUTH_USER);
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
     String authKeytab = conf.get(H2O_AUTH_KEYTAB);
@@ -66,29 +70,25 @@ public class DelegationTokenRefresher implements Runnable {
   }
 
   public void start() {
-    if (HiveTokenGenerator.isHiveDriverPresent()) {
-      _executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
-    }
+    _executor.scheduleAtFixedRate(this, 0, 1, TimeUnit.MINUTES);
   }
-
+  
   private static void log(String s, Exception e) {
     System.out.println("TOKEN REFRESH: " + s);
     if (e != null) {
       e.printStackTrace(System.out);
     }
   }
-
+  
   @Override
   public void run() {
-    boolean leader = (H2O.CLOUD.size() > 0 && H2O.CLOUD.leader() == H2O.SELF);
-    if (leader) {
-      refreshTokens();
+    if (Paxos._cloudLocked && !(H2O.CLOUD.leader() == H2O.SELF)) {
+      // cloud is formed the leader will take of subsequent refreshes
+      _executor.shutdown();
+      return;
     }
-  }
-  
-  private void refreshTokens() {
     try {
-      doRefreshTokens();
+      refreshTokens();
     } catch (IOException | InterruptedException e) {
       log("Failed to refresh token.", e);
     }
@@ -125,16 +125,18 @@ public class DelegationTokenRefresher implements Runnable {
     return _hiveTokenGenerator.addHiveDelegationTokenAsUser(realUser, tokenUser, _hiveOptions);
   }
   
-  private void distribute(Credentials creds) {
-    try {
+  private void distribute(Credentials creds) throws IOException {
+    if (!Paxos._cloudLocked) {
+      // skip token distribution in pre-cloud forming phase, only use credentials locally
+      log("Updating credentials", null);
+      UserGroupInformation.getCurrentUser().addCredentials(creds);
+    } else {
       byte[] credsSerialized = serializeCreds(creds);
       new DistributeCreds(credsSerialized).doAllNodes();
-    } catch (IOException e) {
-      log("Failed to serialize credentials", e);
     }
   }
 
-  private void doRefreshTokens() throws IOException, InterruptedException {
+  private void refreshTokens() throws IOException, InterruptedException {
     log("Log in from keytab as " + _authPrincipal, null);
     UserGroupInformation realUser = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
     UserGroupInformation tokenUser = realUser;
