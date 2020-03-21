@@ -60,14 +60,26 @@ public class VecUtilsTest extends TestUtil {
 
   @Test
   public void testMakeGaussian() {
-    Vec v = VecUtils.makeGaussianVec(5, 3,0xCECE);
-    Assert.assertArrayEquals(new int[]{0, 0, 0, -1, 1}, FrameUtils.asInts(v));
+    Vec v = null;
+    try {
+      v = VecUtils.makeGaussianVec(5, 3,0xCECE);
+      Assert.assertArrayEquals(new int[]{0, 1, 0, 0, 2}, FrameUtils.asInts(v)); 
+    } finally {
+      if (v != null) 
+        v.remove(); 
+    }
   }
 
   @Test
   public void testMakeGaussian2() {
-    Vec v = VecUtils.makeGaussianVec(5,0xCECE);
-    Assert.assertArrayEquals(new int[]{-1, 1, 0, 0, 2}, FrameUtils.asInts(v));
+    Vec v = null;
+    try {    
+      v = VecUtils.makeGaussianVec(5,0xCECE);
+      Assert.assertArrayEquals(new int[]{-1, 1, 0, 0, 2}, FrameUtils.asInts(v));
+    } finally {
+      if (v != null) 
+        v.remove();
+    }
   }  
 
   @Test
