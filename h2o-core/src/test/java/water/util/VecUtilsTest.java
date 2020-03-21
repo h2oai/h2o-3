@@ -84,37 +84,73 @@ public class VecUtilsTest extends TestUtil {
 
   @Test
   public void testUniformDistrFromFrame() {
-    Frame train = parse_test_file("smalldata/anomaly/single_blob.csv");
-    Vec dist = VecUtils.uniformDistrFromFrame(train, 0xDECAF);
-    Assert.assertNotNull(dist);
-    Assert.assertEquals( -2.32361, dist.min(), 10e-5);
-    Assert.assertEquals( 0.22445, dist.max(), 10e-5);
+    Frame frame = null;
+    Vec dist = null;
+    try {
+      frame = parse_test_file("smalldata/anomaly/single_blob.csv");
+      dist = VecUtils.uniformDistrFromFrame(frame, 0xDECAF);
+      Assert.assertNotNull(dist);
+      Assert.assertEquals(-2.69738, dist.min(), 10e-5);
+      Assert.assertEquals(2.56836, dist.max(), 10e-5);
+    } finally {
+      if (frame != null) 
+        frame.remove();
+      if (dist != null)
+        dist.remove();
+    }
   }
 
   @Test
   public void testUniformDistrFromFrame2() {
-    Frame train = parse_test_file("smalldata/anomaly/single_blob_2.csv");
-    Vec dist = VecUtils.uniformDistrFromFrame(train, 0xDECAF);
-    Assert.assertNotNull(dist);
-    Assert.assertEquals( -3.04208, dist.min(), 10e-5);
-    Assert.assertEquals( 3.26150, dist.max(), 10e-5);
+    Frame frame = null;
+    Vec dist = null;
+    try {
+      frame = parse_test_file("smalldata/anomaly/single_blob_2.csv");
+      dist = VecUtils.uniformDistrFromFrame(frame, 0xDECAF);
+      Assert.assertNotNull(dist);
+      Assert.assertEquals( -2.98850, dist.min(), 10e-5);
+      Assert.assertEquals( 3.8769, dist.max(), 10e-5);
+    } finally {
+      if (frame != null)
+        frame.remove();
+      if (dist != null)
+        dist.remove();
+    }    
   }  
   
   @Test
   public void testUniformDistrFromFrameMR() {
-    Frame train = parse_test_file("smalldata/anomaly/single_blob.csv");
-    Vec dist = VecUtils.uniformDistrFromFrameMR(train, 0xDECAF);
-    Assert.assertNotNull(dist);
-    Assert.assertEquals( -2.32361, dist.min(), 10e-5);
-    Assert.assertEquals( 0.22445, dist.max(), 10e-5);
+    Frame frame = null;
+    Vec dist = null;
+    try {
+      frame = parse_test_file("smalldata/anomaly/single_blob.csv");
+      dist = VecUtils.uniformDistrFromFrameMR(frame, 0xDECAF);
+      Assert.assertNotNull(dist);
+      Assert.assertEquals(-2.69738, dist.min(), 10e-5);
+      Assert.assertEquals(2.56836, dist.max(), 10e-5);
+    } finally {
+      if (frame != null)
+        frame.remove();
+      if (dist != null)
+        dist.remove();
+    }
   }
 
   @Test
   public void testUniformDistrFromFrameMR2() {
-    Frame train = parse_test_file("smalldata/anomaly/single_blob_2.csv");
-    Vec dist = VecUtils.uniformDistrFromFrameMR(train, 0xDECAF);
-    Assert.assertNotNull(dist);
-    Assert.assertEquals( -3.04208, dist.min(), 10e-5);
-    Assert.assertEquals( 3.26150, dist.max(), 10e-5);
-  }  
+    Frame frame = null;
+    Vec dist = null;
+    try {
+      frame = parse_test_file("smalldata/anomaly/single_blob_2.csv");
+      dist = VecUtils.uniformDistrFromFrameMR(frame, 0xDECAF);
+      Assert.assertNotNull(dist);
+      Assert.assertEquals( -2.98850, dist.min(), 10e-5);
+      Assert.assertEquals( 3.8769, dist.max(), 10e-5);
+    } finally {
+      if (frame != null)
+        frame.remove();
+      if (dist != null)
+        dist.remove();
+    }
+}  
 }
