@@ -121,8 +121,8 @@ public class DelegationTokenRefresher implements Runnable {
     }
   }
   
-  private Credentials getTokens(UserGroupInformation ugi) throws IOException, InterruptedException {
-    return _hiveTokenGenerator.addHiveDelegationTokenAsUser(ugi, _hiveOptions);
+  private Credentials getTokens(UserGroupInformation realUser, UserGroupInformation tokenUser) throws IOException, InterruptedException {
+    return _hiveTokenGenerator.addHiveDelegationTokenAsUser(realUser, tokenUser, _hiveOptions);
   }
   
   private void distribute(Credentials creds) {
@@ -135,12 +135,15 @@ public class DelegationTokenRefresher implements Runnable {
   }
 
   private void doRefreshTokens() throws IOException, InterruptedException {
-    log("Log in from keytab", null);
-    UserGroupInformation ugi = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
+    log("Log in from keytab as " + _authPrincipal, null);
+    UserGroupInformation realUser = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
+    UserGroupInformation tokenUser = realUser;
     if (_authUser != null) {
-      ugi = UserGroupInformation.createProxyUser(_authUser, ugi);
+      log("Impersonate " + _authUser, null);
+      // attempt to impersonate token user, this verifies that the real-user is able to impersonate tokenUser
+      tokenUser = UserGroupInformation.createProxyUser(_authUser, tokenUser);
     }
-    Credentials creds = getTokens(ugi);
+    Credentials creds = getTokens(realUser, tokenUser);
     if (creds != null) {
       distribute(creds);
     } else {

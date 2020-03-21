@@ -44,8 +44,8 @@ function() {
 
 # random foreset
   print("*************  starting max_runtime_test for Random Forest")
-  model <- h2o.randomForest(y=y_index, x=x_indices, training_frame=training1_data, ntrees=100, score_tree_interval=0)
-  model2 <- h2o.randomForest(y=y_index, x=x_indices, training_frame=training1_data, ntrees=100, score_tree_interval=0, max_runtime_secs=model@model$run_time/(1000.0*fact_red))
+  model <- h2o.randomForest(y=y_index, x=x_indices, training_frame=training1_data, ntrees=100, score_tree_interval=0, seed=seed)
+  model2 <- h2o.randomForest(y=y_index, x=x_indices, training_frame=training1_data, ntrees=100, score_tree_interval=0, max_runtime_secs=model@model$run_time/(1000.0*fact_red), seed=seed)
   test_pass_fail <- c(test_pass_fail, eval_test_runtime(model, model2, err_bound, fact_red))
   cleanUP(c(model, model2, training1_data))
 
@@ -53,8 +53,8 @@ function() {
   print("*************  starting max_runtime_test for PCA")
   training1_data <- h2o.importFile(locate("smalldata/gridsearch/pca1000by25.csv"))
   x_indices <- c(1:h2o.ncol(training1_data))
-  model <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE)
-  model2 <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE, max_runtime_secs=model@model$run_time/(1000.0*fact_red))
+  model <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE, seed=seed)
+  model2 <- h2o.prcomp(training_frame=training1_data, k=10, transform="STANDARDIZE", pca_method="Power", compute_metrics=TRUE, max_runtime_secs=model@model$run_time/(1000.0*fact_red), seed=seed)
   test_pass_fail <- c(test_pass_fail, eval_test_runtime(model, model2, err_bound*2.0, 1.2))
   cleanUP(c(training1_data, model, model2))
 
@@ -62,8 +62,8 @@ function() {
   print("*************  starting max_runtime_test for kmeans")
   training1_data <- h2o.uploadFile(locate("smalldata/gridsearch/kmeans_8_centers_3_coords.csv"))
   x_indices <- c(1:h2o.ncol(training1_data))
-  model <- h2o.kmeans(training_frame=training1_data, k=10, x=x_indices)
-  model2 <- h2o.kmeans(training_frame=training1_data, k=10, x=x_indices, max_runtime_secs=model@model$run_time/(1000.0*fact_red))
+  model <- h2o.kmeans(training_frame=training1_data, k=10, x=x_indices, seed=seed)
+  model2 <- h2o.kmeans(training_frame=training1_data, k=10, x=x_indices, max_runtime_secs=model@model$run_time/(1000.0*fact_red), seed=seed)
   test_pass_fail <- c(test_pass_fail, eval_test_runtime(model, model2, err_bound*2, fact_red))
   cleanUP(c(training1_data, model, model2))
 
