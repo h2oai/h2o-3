@@ -4815,7 +4815,7 @@ generate_col_ind <-function(data, by) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.csv"
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip"
 #' air <- h2o.importFile(f)
 #' group_cols <- c("Distance")
 #' sort_cols <- c("IsArrDelayed", "IsDepDelayed")
