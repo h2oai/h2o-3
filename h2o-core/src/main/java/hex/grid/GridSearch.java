@@ -81,7 +81,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
     _result = gkey;
     String algoName = hyperSpaceWalker.getParams().algoName();
     _job = new Job<>(gkey, Grid.class.getName(), algoName + " Grid Search");
-    _parallelism = parallelism;
+    _parallelism = GridSearch.getParallelismLevel(parallelism);
     // Note: do not validate parameters of created model builders here!
     // Leave it to launch time, and just mark the corresponding model builder job as failed.
   }
@@ -733,7 +733,7 @@ public final class GridSearch<MP extends Model.Parameters> extends Keyed<GridSea
    */
   public static int getParallelismLevel(final int parallelism) {
     if (parallelism < 0) {
-      throw new IllegalArgumentException(String.format("Grid search parallelism level must be >= 0. Give value is '%d'.",
+      throw new IllegalArgumentException(String.format("Grid search parallelism level must be >= 0. Given value is '%d'.",
               parallelism));
     }
 
