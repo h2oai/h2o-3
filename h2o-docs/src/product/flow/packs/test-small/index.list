@@ -218,3 +218,4 @@ glm_junit_weights_all_ones.flow
 glm_junit_weights.flow
 grid_search_test.flow
 automl_prostate.flow
+stackedensemble_weather.flow
