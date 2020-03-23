@@ -48,8 +48,8 @@ public class ModelingStepRegistryTest extends TestUtil {
 
     @Test
     public void test_registration_of_default_step_providers() {
-        assertEquals(6, ModelingStepsRegistry.stepsByName.size());
-        assertEquals("Detected some duplicate registration", 6, new HashSet<>(ModelingStepsRegistry.stepsByName.values()).size());
+        assertEquals(7, ModelingStepsRegistry.stepsByName.size());
+        assertEquals("Detected some duplicate registration", 7, new HashSet<>(ModelingStepsRegistry.stepsByName.values()).size());
         for (Algo algo: Algo.values()) {
             assertTrue(ModelingStepsRegistry.stepsByName.containsKey(algo.name()));
             assertNotNull(ModelingStepsRegistry.stepsByName.get(algo.name()));
@@ -77,11 +77,11 @@ public class ModelingStepRegistryTest extends TestUtil {
                 .map(name -> new StepDefinition(name, StepDefinition.Alias.all))
                 .collect(Collectors.toList());
         ModelingStep[] modelingSteps = registry.getOrderedSteps(allSteps.toArray(new StepDefinition[0]), aml);
-        assertEquals((1 + 3/*DL*/) + (2/*DRF*/) + (5 + 1/*GBM*/) + (1/*GLM*/) + (2/*SE*/) + (3 + 1/*XGB*/),
+        assertEquals((1 + 3/*DL*/) + (2/*DRF*/) + (5 + 1/*GBM*/) + (1/*GLM*/) + (2/*SE*/) + (3 + 1/*XGB*/) + (1 /*Dummy*/),
                 modelingSteps.length);
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DeepLearning).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(3, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DeepLearning).filter(ModelingStep.GridStep.class::isInstance).count());
-        assertEquals(2, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DRF).filter(ModelingStep.ModelStep.class::isInstance).count());
+        assertEquals(2 /*DRF*/ + 1 /*DummySleep*/, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DRF).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(5, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.GridStep.class::isInstance).count());
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GLM).filter(ModelingStep.ModelStep.class::isInstance).count());
@@ -92,7 +92,7 @@ public class ModelingStepRegistryTest extends TestUtil {
         List<String> orderedStepIds = Arrays.stream(modelingSteps).map(s -> s._id).collect(Collectors.toList());
         assertEquals(Arrays.asList(
                 "def_1", "grid_1", "grid_2", "grid_3",
-                "def_1", "XRT",
+                "def_1", "XRT", "dummy_sleep",
                 "def_1", "def_2", "def_3", "def_4", "def_5", "grid_1",
                 "def_1",
                 "best", "all",
@@ -109,7 +109,7 @@ public class ModelingStepRegistryTest extends TestUtil {
                 .toArray(StepDefinition[]::new);
         ModelingStepsRegistry registry = new ModelingStepsRegistry();
         ModelingStep[] modelingSteps = registry.getOrderedSteps(allDefaultSteps, aml);
-        assertEquals((1/*DL*/) + (2/*DRF*/) + (5/*GBM*/) + (1/*GLM*/) + (2/*SE*/) + (3/*XGB*/),
+        assertEquals((1/*DL*/) + (2/*DRF*/) + (5/*GBM*/) + (1/*GLM*/) + (2/*SE*/) + (3/*XGB*/) + (1/*Dummy*/),
                 modelingSteps.length);
     }
 

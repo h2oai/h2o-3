@@ -23,7 +23,6 @@ def import_dataset(seed=0, larger=False):
 
 # PUBDEV-7288
 def test_modeling_plan_dummy():
-    sleep = 5  # sleep 5 secs
     ds = import_dataset()
     aml = H2OAutoML(project_name="py_modeling_plan_dummy_sleep",
                     max_models=2,
@@ -35,27 +34,10 @@ def test_modeling_plan_dummy():
     start = time.time()
     aml.train(y=ds.target, training_frame=ds.train)
     end = time.time()
-    assert sleep < end - start < 3 * sleep
-
-
-def test_modeling_plan_dummies_exist():
-    modeling_plan = [
-        ("Dummy", ["dummy_sleep"])
-    ]
-    ds = import_dataset()
-    aml = H2OAutoML(project_name="py_modeling_plan_dummy_sleep",
-                    max_models=len(modeling_plan),
-                    modeling_plan=modeling_plan,
-                    max_runtime_secs_per_model=1,
-                    seed=1)
-
-    start = time.time()
-    aml.train(y=ds.target, training_frame=ds.train)
-    end = time.time()
-    assert len(modeling_plan) < end - start < 3 * len(modeling_plan)
+    # Should be little over 5 secs...
+    assert 5 < end - start < 20
 
 
 pu.run_tests([
     test_modeling_plan_dummy,
-    test_modeling_plan_dummies_exist,
 ])
