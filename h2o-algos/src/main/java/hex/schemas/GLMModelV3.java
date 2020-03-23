@@ -37,8 +37,7 @@ public class GLMModelV3 extends ModelSchemaV3<GLMModel, GLMModelV3, GLMModel.GLM
     @API(help="Lambda best + 1 standard error. Only applicable with lambda search and cross-validation")
     double lambda_1se;
 
-    @API(help="Dispersion parameter, only applicable to Tweedie family for input/output and fractional Binomial for" +
-            " output only")
+    @API(help = "Dispersion parameter, only applicable to Tweedie family (input/output) and fractional Binomial (output only)")
     double dispersion;
 
     private GLMModelOutputV3 fillMultinomial(GLMOutput impl) {
