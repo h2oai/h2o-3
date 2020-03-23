@@ -4,7 +4,7 @@ import h2o
 from tests import pyunit_utils
 
 def glm_fractional_binomial_mojo_pojo():
-    params = set_params()   # set deeplearning model parameters
+    params = set_params()
     train = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/fraction_binommialOrig.csv"))
     test =  h2o.import_file(pyunit_utils.locate("smalldata/glm_test/fraction_binommialOrig.csv"))
     x = ["log10conc"]
