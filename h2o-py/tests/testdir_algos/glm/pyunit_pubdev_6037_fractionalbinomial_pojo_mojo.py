@@ -31,6 +31,6 @@ def set_params():
     return params
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(glm_ordinal_mojo_pojo)
+    pyunit_utils.standalone_test(glm_fractional_binomial_mojo_pojo)
 else:
-    glm_ordinal_mojo_pojo()
+    glm_fractional_binomial_mojo_pojo()
