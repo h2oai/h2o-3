@@ -465,7 +465,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
 //          if (_nclass != 1) error("_family", H2O.technote(2, "Gaussian requires the response to be numeric."));
           break;
         case fractionalbinomial:
-          Vec resp = (train()).vec(_parms._response_column);
+          final Vec resp = (train()).vec(_parms._response_column);
           if ((resp.min() <0) || (resp.max()>1))
             error("response", " response must be between 0 and 1 for fractional_binomial family.");
           break;
