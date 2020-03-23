@@ -3,7 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 
-def glm_ordinal_mojo_pojo():
+def glm_fractional_binomial_mojo_pojo():
     params = set_params()   # set deeplearning model parameters
     train = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/fraction_binommialOrig.csv"))
     test =  h2o.import_file(pyunit_utils.locate("smalldata/glm_test/fraction_binommialOrig.csv"))
