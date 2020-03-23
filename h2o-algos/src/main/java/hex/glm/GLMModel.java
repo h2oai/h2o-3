@@ -1050,8 +1050,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   @Override
   protected String[][] scoringDomains(){
     String [][] domains = _output._domains;
-    if((_parms._family == Family.binomial || _parms._family == Family.quasibinomial || 
-            _parms._family==Family.fractionalbinomial)
+    if ((_parms._family == Family.binomial || _parms._family == Family.quasibinomial ||
+            _parms._family == Family.fractionalbinomial)
             && _output._domains[_output._dinfo.responseChunkId(0)] == null) {
       domains = domains.clone();
       domains[_output._dinfo.responseChunkId(0)] = binomialClassNames;
