@@ -466,8 +466,11 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         case fractionalbinomial:
           final Vec resp = (train()).vec(_parms._response_column);
-          if ((resp.min() <0) || (resp.max()>1))
-            error("response", " response must be between 0 and 1 for fractional_binomial family.");
+          if ((resp.min() < 0) || (resp.max() > 1)) {
+            error("response",
+                    String.format("Response '%s' must be between 0 and 1 for fractional_binomial family. Min: %f, Max: %f",
+                            _parms._response_column, resp.min(), resp.max()));
+          }
           break;
         default:
           error("_family", "Invalid distribution: " + _parms._distribution);
