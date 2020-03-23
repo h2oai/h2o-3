@@ -83,11 +83,12 @@ public class GLMBasicTestBinomial extends TestUtil {
   public void testFractionalBinomialMojo() {
     try {
       Scope.enter();
-      Frame trainData = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
-      Frame te = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");;
-      Scope.track(te);
+      final Frame trainData = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
       Scope.track(trainData);
-      GLMParameters parms = new GLMParameters();
+      final Frame te = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      Scope.track(te);
+      
+      final GLMParameters parms = new GLMParameters();
       parms._train = trainData._key;
       parms._family = Family.fractionalbinomial;
       parms._response_column = "y";
@@ -95,16 +96,17 @@ public class GLMBasicTestBinomial extends TestUtil {
       parms._compute_p_values = true;
       parms._standardize = false;
       parms._lambda = new double[]{0};
-      GLMModel model = new GLM(parms).trainModel().get();
+      
+      final GLMModel model = new GLM(parms).trainModel().get();
       Scope.track_generic(model);
-      Frame pred = model.score(te);
+      
+      final Frame pred = model.score(te);
       Scope.track(pred);
       Scope.track(pred.remove("StdErr"));
       Assert.assertTrue(model.testJavaScoring(te, pred, _tol));
     } finally {
       Scope.exit();
     }
-    
   }
   
   // test and make sure the h2opredict, pojo and mojo predict agrees with multinomial dataset that includes
