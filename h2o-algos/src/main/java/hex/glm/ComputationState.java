@@ -67,8 +67,8 @@ public final class ComputationState {
     _dinfo = dinfo;
     _activeData = _dinfo;
     _intercept = _parms._intercept;
-    _nclasses = parms._family.equals(Family.fractionalbinomial)?2:
-            ((parms._family == Family.multinomial||parms._family == Family.ordinal)?nclasses:1);
+    _nclasses = Family.fractionalbinomial == parms._family ? 2 :
+            ((Family.multinomial == parms._family || Family.ordinal == parms._family) ? nclasses : 1);
     _alpha = _parms._alpha[0];
     if (_parms._HGLM) {
       _sumEtaSquareConvergence = new double[2];
