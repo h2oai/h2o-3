@@ -366,8 +366,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public int nclasses() {
     if (_parms._family == Family.multinomial || _parms._family == Family.ordinal)
       return _nclass;
-    if (_parms._family == Family.binomial || _parms._family == Family.quasibinomial 
-            || _parms._family.equals(Family.fractionalbinomial))
+    if (Family.binomial == _parms._family || Family.quasibinomial == _parms._family
+            || Family.fractionalbinomial == _parms._family)
       return 2;
     return 1;
   }
