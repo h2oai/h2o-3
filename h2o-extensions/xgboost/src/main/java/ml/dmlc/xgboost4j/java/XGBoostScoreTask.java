@@ -1,85 +1,72 @@
 package ml.dmlc.xgboost4j.java;
 
 import hex.*;
-import hex.tree.xgboost.*;
-import hex.tree.xgboost.util.BoosterHelper;
-import water.*;
-import water.fvec.*;
+import hex.tree.xgboost.XGBoostModel;
+import hex.tree.xgboost.XGBoostOutput;
+import hex.tree.xgboost.predict.XGBoostBigScorePredict;
+import hex.tree.xgboost.predict.XGBoostPredict;
+import water.Key;
+import water.MRTask;
+import water.MemoryManager;
+import water.Scope;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import static water.fvec.Vec.T_CAT;
 import static water.fvec.Vec.T_NUM;
 
 public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
 
-    enum OutputType { PREDICT, PREDICT_CONTRIB_APPROX}
-    
-    private final XGBoostModelInfo _sharedmodel;
-    private final XGBoostOutput _output;
-    private final XGBoostModel.XGBoostParameters _parms;
-    private final BoosterParms _boosterParms;
-    private final boolean _isTrain;
-    private final boolean _computeMetrics;
-    private final int _weightsChunkId;
-    private final Model _model;
-    private final double _threshold;
-
-    private ModelMetrics.MetricBuilder _metricBuilder;
-
-    public static class XGBoostScoreTaskResult {
-        public Frame preds;
-        public ModelMetrics mm;
-    }
-
-    public static XGBoostScoreTaskResult runScoreTask(XGBoostModelInfo sharedmodel,
-                                                      XGBoostOutput output,
-                                                      XGBoostModel.XGBoostParameters parms,
-                                                      Key<Frame> destinationKey,
-                                                      Frame data,
-                                                      Frame originalData,
-                                                      boolean isTrain,
-                                                      boolean computeMetrics,
-                                                      Model m) {
-        BoosterParms boosterParms = XGBoostModel.createParams(parms, output.nclasses(), sharedmodel.dataInfo().coefNames());
-        XGBoostScoreTask task = new XGBoostScoreTask(sharedmodel,
-                output,
-                parms,
-                boosterParms,
-                isTrain,
-                computeMetrics,
-                data.find(parms._weights_column),
-                m).doAll(outputTypes(output), data);
-
-        final String[] names = Model.makeScoringNames(output);
-        final Frame preds = task.outputFrame(destinationKey, names, makeDomains(output, names));
-
-        XGBoostScoreTaskResult res = new XGBoostScoreTaskResult();
-        if (output.nclasses() == 1) {
-            Vec pred = preds.vec(0);
-            if (computeMetrics) {
-                res.mm = task._metricBuilder.makeModelMetrics(m, originalData, data, new Frame(pred));
-            }
-        } else if (output.nclasses() == 2) {
-            Vec p1 = preds.vec(2);
-            if (computeMetrics) {
-                res.mm = task._metricBuilder.makeModelMetrics(m, originalData, data, new Frame(p1));
-            }
-        } else {
-            if (computeMetrics) {
+    public static ModelMetrics computeMetrics(
+        XGBoostBigScorePredict predict,
+        XGBoostOutput output,
+        XGBoostModel.XGBoostParameters parms,
+        Key<Frame> destinationKey,
+        Frame data,
+        Frame originalData,
+        Model m
+    ) {
+        Scope.enter();
+        try {
+            Frame preds = Scope.track(scoreModel(predict, output, parms, destinationKey, data, m));
+            ModelMetrics.MetricBuilder metricBuilder = createMetricsBuilder(output.nclasses(), output.classNames());
+            if (output.nclasses() == 1) {
+                Vec pred = preds.vec(0);
+                return metricBuilder.makeModelMetrics(m, originalData, data, new Frame(pred));
+            } else if (output.nclasses() == 2) {
+                Vec p1 = preds.vec(2);
+                return metricBuilder.makeModelMetrics(m, originalData, data, new Frame(p1));
+            } else {
                 Frame pp = new Frame(preds);
                 pp.remove(0);
-                Scope.enter();
-                res.mm = task._metricBuilder.makeModelMetrics(m, originalData, data, pp);
-                Scope.exit();
+                return metricBuilder.makeModelMetrics(m, originalData, data, pp);
             }
+        } finally {
+            Scope.exit();
         }
-        res.preds = preds;
-        assert "predict".equals(preds.name(0));
+    }
 
-        return res;
+    public static Frame scoreModel(
+        XGBoostBigScorePredict predict,
+        XGBoostOutput output,
+        XGBoostModel.XGBoostParameters parms,
+        Key<Frame> destinationKey,
+        Frame data,
+        Model m
+    ) {
+        XGBoostScoreTask task = new XGBoostScoreTask(
+            predict,
+            output,
+            data.find(parms._weights_column),
+            m
+        ).doAll(outputTypes(output), data);
+
+        final String[] names = Model.makeScoringNames(output);
+        return task.outputFrame(destinationKey, names, makeDomains(output, names));
     }
 
 
@@ -106,23 +93,26 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         }
     }
 
-    private XGBoostScoreTask(final XGBoostModelInfo sharedmodel,
-                             final XGBoostOutput output,
-                             final XGBoostModel.XGBoostParameters parms,
-                             final BoosterParms boosterParms,
-                             final boolean isTrain,
-                             final boolean computeMetrics,
-                             final int weightsChunkId,
-                             final Model model) {
-        _sharedmodel = sharedmodel;
+    private final XGBoostBigScorePredict _predict;
+    private final XGBoostOutput _output;
+    private final int _weightsChunkId;
+    private final Model _model;
+    private final double _threshold;
+
+    private final ModelMetrics.MetricBuilder _metricBuilder;
+
+    private XGBoostScoreTask(
+        final XGBoostBigScorePredict predict,
+        final XGBoostOutput output,
+        final int weightsChunkId,
+        final Model model
+    ) {
+        _predict = predict;
         _output = output;
-        _parms = parms;
-        _boosterParms = boosterParms;
-        _isTrain = isTrain;
-        _computeMetrics = computeMetrics;
         _weightsChunkId = weightsChunkId;
         _model = model;
         _threshold = model.defaultThreshold();
+        _metricBuilder = createMetricsBuilder(_output.nclasses(), _output.classNames());
     }
 
     /**
@@ -132,7 +122,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
      * @param responseDomain     Specific domains in response variable
      * @return An instance of {@link hex.ModelMetrics.MetricBuilder} corresponding to given response variable type
      */
-    private ModelMetrics.MetricBuilder createMetricsBuilder(final int responseClassesNum, final String[] responseDomain) {
+    private static ModelMetrics.MetricBuilder createMetricsBuilder(final int responseClassesNum, final String[] responseDomain) {
         switch (responseClassesNum) {
             case 1:
                 return new ModelMetricsRegression.MetricBuilderRegression();
@@ -143,117 +133,31 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
         }
     }
 
-    private static class ScoreResult {
-        float[][] _preds;
-        float[] _labels;
-    }
-
-    private static ScoreResult scoreChunkExt(final XGBoostModelInfo sharedmodel, final DataInfo dataInfo, 
-                                             final XGBoostModel.XGBoostParameters parms,
-                                             final BoosterParms boosterParms, final XGBoostOutput output,
-                                             final Frame fr, final Chunk[] cs,
-                                             final OutputType outputType) {
-        DMatrix data = null;
-        Booster booster = null;
-        try {
-            Map<String, String> rabitEnv = new HashMap<>();
-            // Rabit has to be initialized as parts of booster.predict() are using Rabit
-            // This might be fixed in future versions of XGBoost
-            Rabit.init(rabitEnv);
-
-            data = XGBoostUtils.convertChunksToDMatrix(
-                    dataInfo,
-                    cs,
-                    fr.find(parms._response_column),
-                    output._sparse, 
-                    fr.find(parms._offset_column)
-            );
-
-            // No local chunks for this frame
-            if (data.rowNum() == 0) {
-                return null;
-            }
-
-            // Initialize Booster
-            booster = sharedmodel.deserializeBooster();
-            booster.setParams(boosterParms.get());
-            int treeLimit = 0;
-            if (parms._booster == XGBoostModel.XGBoostParameters.Booster.dart) {
-                // DART with treeLimit=0 returns non-deterministic random predictions
-                treeLimit = parms._ntrees;
-            }
-            
-            // Predict
-            ScoreResult result = new ScoreResult();
-            switch (outputType) {
-                case PREDICT:
-                    result._preds = booster.predict(data, false, treeLimit);
-                    result._labels = data.getLabel();
-                    break;
-                case PREDICT_CONTRIB_APPROX:
-                    result._preds = booster.predictContrib(data, treeLimit);
-                    break;
-                default:
-                    throw new UnsupportedOperationException("Unsupported output type: " + outputType);
-            }
-            return result;
-        } catch (XGBoostError xgBoostError) {
-            throw new IllegalStateException("Failed to score with XGBoost.", xgBoostError);
-        } finally {
-            BoosterHelper.dispose(booster, data);
-            try {
-                Rabit.shutdown();
-            } catch (XGBoostError xgBoostError) {
-                throw new IllegalStateException("Failed Rabit shutdown. A hanging RabitTracker task might be present on the driver node.", xgBoostError);
-            }
-        }
-    }
-
-    public static float[][] scoreChunk(final XGBoostModelInfo sharedmodel, final DataInfo dataInfo,
-                                       final XGBoostModel.XGBoostParameters parms,
-                                       final BoosterParms boosterParms, final XGBoostOutput output,
-                                       final Frame fr, final Chunk[] cs) {
-        ScoreResult r = scoreChunkExt(sharedmodel, dataInfo, parms, boosterParms, output, fr, cs, OutputType.PREDICT);
-        return r == null ? new float[0][] : r._preds;
-    }
-
-    public static float[][] scoreChunkContribApprox(final XGBoostModelInfo sharedmodel, final DataInfo dataInfo,
-                                                    final XGBoostModel.XGBoostParameters parms,
-                                                    final BoosterParms boosterParms, final XGBoostOutput output,
-                                                    final Frame fr, final Chunk[] cs) {
-        ScoreResult r = scoreChunkExt(sharedmodel, dataInfo, parms, boosterParms, output, fr, cs, OutputType.PREDICT_CONTRIB_APPROX);
-        return r == null ? new float[0][] : r._preds;
-    }
-
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
-        _metricBuilder = _computeMetrics ? createMetricsBuilder(_output.nclasses(), _output.classNames()) : null;
-
-        final DataInfo di = _sharedmodel.scoringInfo(_isTrain);
-        final ScoreResult r = scoreChunkExt(_sharedmodel, di, _parms, _boosterParms, _output, _fr, cs, OutputType.PREDICT);
-
-        if (r == null)
-            return;
+        final XGBoostPredict predictor = _predict.initMap(_fr, cs);
+        final float[][] preds = predictor.predict(cs);
+        if (preds.length == 0) return;
+        
+        final Chunk responseChunk = cs[_output.responseIdx()];
 
         if (_output.nclasses() == 1) {
             double[] currentPred = new double[1];
             float[] yact = new float[1];
-            for (int j = 0; j < r._preds.length; ++j) {
-                currentPred[0] = r._preds[j][0];
-                if (_computeMetrics) {
-                    yact[0] = r._labels[j];
-                    double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(j) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                    _metricBuilder.perRow(currentPred, yact, weight, 0, _model);
-                }
+            for (int j = 0; j < preds.length; ++j) {
+                currentPred[0] = preds[j][0];
+                yact[0] = (float) responseChunk.atd(j);
+                double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(j) : 1; // If there is no chunk with weights, the weight is considered to be 1
+                _metricBuilder.perRow(currentPred, yact, weight, 0, _model);
             }
             for (int i = 0; i < cs[0]._len; ++i) {
-                ncs[0].addNum(r._preds[i][0]);
+                ncs[0].addNum(preds[i][0]);
             }
         } else if (_output.nclasses() == 2) {
             double[] row = new double[3];
             float[] yact = new float[1];
             for (int i = 0; i < cs[0]._len; ++i) {
-                final double p = r._preds[i][0];
+                final double p = preds[i][0];
                 row[1] = 1 - p;
                 row[2] = p;
                 row[0] = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold);
@@ -262,28 +166,24 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
                 ncs[1].addNum(row[1]);
                 ncs[2].addNum(row[2]);
 
-                if (_computeMetrics) {
-                    double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                    yact[0] = r._labels[i];
-                    _metricBuilder.perRow(row, yact, weight, 0, _model);
-                }
+                double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
+                yact[0] = (float) responseChunk.atd(i);
+                _metricBuilder.perRow(row, yact, weight, 0, _model);
             }
         } else {
             float[] yact = new float[1];
             double[] row = MemoryManager.malloc8d(ncs.length);
             for (int i = 0; i < cs[0]._len; ++i) {
                 for (int j = 1; j < row.length; ++j) {
-                    double val = r._preds[i][j - 1];
+                    double val = preds[i][j - 1];
                     ncs[j].addNum(val);
                     row[j] = val;
                 }
                 row[0] = hex.genmodel.GenModel.getPrediction(row, _output._priorClassDist, null, _threshold);
                 ncs[0].addNum(row[0]);
-                if (_computeMetrics) {
-                    yact[0] = r._labels[i];
-                    double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
-                    _metricBuilder.perRow(row, yact, weight, 0, _model);
-                }
+                yact[0] = (float) responseChunk.atd(i);
+                double weight = _weightsChunkId != -1 ? cs[_weightsChunkId].atd(i) : 1; // If there is no chunk with weights, the weight is considered to be 1
+                _metricBuilder.perRow(row, yact, weight, 0, _model);
             }
         }
     }
@@ -291,9 +191,7 @@ public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
     @Override
     public void reduce(XGBoostScoreTask mrt) {
         super.reduce(mrt);
-        if (_computeMetrics) {
-            _metricBuilder.reduce(mrt._metricBuilder);
-        }
+        _metricBuilder.reduce(mrt._metricBuilder);
     }
 
 }

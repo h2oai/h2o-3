@@ -11,9 +11,9 @@ public class PredictConfiguration {
     String predictNativePropValue = System.getProperty(PREDICT_NATIVE_PROP);
     String predictJavaPropValue = System.getProperty(PREDICT_JAVA_PROP);
     if (predictNativePropValue != null) {
-      return !Boolean.valueOf(predictNativePropValue);
+      return !Boolean.parseBoolean(predictNativePropValue);
     } if (predictJavaPropValue != null) {
-      return Boolean.valueOf(predictJavaPropValue);
+      return Boolean.parseBoolean(predictJavaPropValue);
     } else {
       return true;
     }
