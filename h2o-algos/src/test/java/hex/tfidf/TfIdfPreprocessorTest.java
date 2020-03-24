@@ -8,9 +8,6 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.Pair;
 
-import java.util.Arrays;
-
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 public class TfIdfPreprocessorTest extends TestUtil {
