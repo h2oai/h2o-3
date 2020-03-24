@@ -97,6 +97,9 @@ Defining a Stacked Ensemble Model
 
 -  **keep_levelone_frame**: (Optional) Keep the level one data frame that's constructed for the metalearning step. Defaults to False.
 
+-  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: (Optional) Maximum allowed runtime in seconds for the metalearner model
+   training. Use 0 to disable.
+
 -  `seed <algo-params/seed.html>`__: (Optional) Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.

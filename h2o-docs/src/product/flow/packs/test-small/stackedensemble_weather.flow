@@ -31,7 +31,7 @@
     },
     {
       "type": "cs",
-      "input": "buildModel 'stackedensemble', {\"model_id\":\"stackedensemble-6d61bf50-c3c0-4c82-b76f-4845723264e3\",\"training_frame\":\"weather.hex\",\"response_column\":\"RainTomorrow\",\"validation_frame\":\"weather.hex\",\"base_models\":[\"gbm-204e1edf-8521-4658-b531-71c1fea360f6\",\"drf-ed824362-1f8e-4b03-b0bd-7702c0886406\"],\"metalearner_algorithm\":\"AUTO\",\"metalearner_nfolds\":0,\"seed\":-1,\"keep_levelone_frame\":false}"
+      "input": "buildModel 'stackedensemble', {\"model_id\":\"stackedensemble-6d61bf50-c3c0-4c82-b76f-4845723264e3\",\"training_frame\":\"weather.hex\",\"response_column\":\"RainTomorrow\",\"validation_frame\":\"weather.hex\",\"base_models\":[\"gbm-204e1edf-8521-4658-b531-71c1fea360f6\",\"drf-ed824362-1f8e-4b03-b0bd-7702c0886406\"],\"metalearner_algorithm\":\"AUTO\",\"metalearner_nfolds\":0,\"seed\":-1,\"keep_levelone_frame\":false,\"max_runtime_secs\":4}"
     },
     {
       "type": "cs",

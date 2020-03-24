@@ -111,6 +111,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     parms._train = _levelOneTrainingFrame._key;
     parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
     parms._response_column = _model.responseColumn;
+    parms._max_runtime_secs = _parms._max_runtime_secs;
   }
 
   protected void setCrossValidationParams(P parms) {
