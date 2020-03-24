@@ -80,6 +80,9 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
    * Validates base models and if grid is provided instead of a model it gets expanded.
    */
   private void validateAndExpandBaseModels() {
+    // H2O Flow initializes SE with no base_models
+    if (_parms._base_models == null) return;
+
     List<Key> baseModels = new ArrayList<Key>();
     for (Key baseModelKey : _parms._base_models) {
       Object retrievedObject = DKV.getGet(baseModelKey);
