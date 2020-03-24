@@ -178,7 +178,19 @@ h2o.gam <- function(x,
 
   # If gam_X is missing, then assume user wants to use all columns as features for GAM.
   if (missing(gam_X)) {
-      gam_X <- x
+      stop("Columns indices to apply to GAM must be specified.. If you don't have any, use GLM.")
+  }
+
+  # Validate other args
+  # if (!is.null(beta_constraints)) {
+  #     if (!inherits(beta_constraints, 'data.frame') && !is.H2OFrame(beta_constraints))
+  #       stop(paste('`beta_constraints` must be an H2OH2OFrame or R data.frame. Got: ', class(beta_constraints)))
+  #     if (inherits(beta_constraints, 'data.frame')) {
+  #       beta_constraints <- as.h2o(beta_constraints)
+  #     }
+  # }
+  if (inherits(beta_constraints, 'data.frame')) {
+    beta_constraints <- as.h2o(beta_constraints)
   }
 
   # Build parameter list to send to model builder
@@ -196,8 +208,6 @@ h2o.gam <- function(x,
     parms$model_id <- model_id
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
-  if (!missing(nfolds))
-    parms$nfolds <- nfolds
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(keep_cross_validation_models))
@@ -240,8 +250,6 @@ h2o.gam <- function(x,
     parms$nlambdas <- nlambdas
   if (!missing(standardize))
     parms$standardize <- standardize
-  if (!missing(missing_values_handling))
-    parms$missing_values_handling <- missing_values_handling
   if (!missing(plug_values))
     parms$plug_values <- plug_values
   if (!missing(compute_p_values))
@@ -266,12 +274,8 @@ h2o.gam <- function(x,
     parms$prior <- prior
   if (!missing(lambda_min_ratio))
     parms$lambda_min_ratio <- lambda_min_ratio
-  if (!missing(beta_constraints))
-    parms$beta_constraints <- beta_constraints
   if (!missing(max_active_predictors))
     parms$max_active_predictors <- max_active_predictors
-  if (!missing(interactions))
-    parms$interactions <- interactions
   if (!missing(interaction_pairs))
     parms$interaction_pairs <- interaction_pairs
   if (!missing(obj_reg))
@@ -303,7 +307,30 @@ h2o.gam <- function(x,
   if (!missing(saveGamCols))
     parms$saveGamCols <- saveGamCols
 
+  if( !missing(interactions) ) {
+    # interactions are column names => as-is
+    if( is.character(interactions) )       parms$interactions <- interactions
+    else if( is.numeric(interactions) )    parms$interactions <- names(training_frame)[interactions]
+    else stop("Don't know what to do with interactions. Supply vector of indices or names")
+  }
+  # For now, accept nfolds in the R interface if it is 0 or 1, since those values really mean do nothing.
+  # For any other value, error out.
+  # Expunge nfolds from the message sent to H2O, since H2O doesn't understand it.
+  if (!missing(nfolds) && nfolds > 1)
+    parms$nfolds <- nfolds
+  if(!missing(beta_constraints))
+    parms$beta_constraints <- beta_constraints
+    if(!missing(missing_values_handling))
+      parms$missing_values_handling <- missing_values_handling
+
   # Error check and build model
   model <- .h2o.modelJob('gam', parms, h2oRestApiVersion=3, verbose=FALSE)
+
+  model@model$coefficients <- model@model$coefficients_table[,2]
+  names(model@model$coefficients) <- model@model$coefficients_table[,1]
+  if (!(is.null(model@model$random_coefficients_table))) {
+      model@model$random_coefficients <- model@model$random_coefficients_table[,2]
+      names(model@model$random_coefficients) <- model@model$random_coefficients_table[,1]
+  }
   return(model)
 }
