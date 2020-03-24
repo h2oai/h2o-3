@@ -271,6 +271,7 @@ def algo_to_modelname(algo):
     if algo == "stackedensemble": return "H2O Stacked Ensemble"
     if algo == "psvm": return "Support Vector Machine"
     if algo == "targetencoder": return "Target Encoder"
+    if algo == "gam": return "General Additive Model"
     return algo
 
 
