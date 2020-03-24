@@ -7,14 +7,14 @@ import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.tree.xgboost.XGBoostOutput;
 import water.fvec.Chunk;
 
-public class XGBoostJavaBigScoreChunkPredict implements XGBoostPredict, Model.BigScoreChunkPredict {
+public class XGboostJavaBigScoreChunkPredict2 implements XGBoostPredict, Model.BigScoreChunkPredict {
 
   private final XGBoostOutput _output;
   private final double _threshold;
   private final Predictor _predictor;
   private final MutableOneHotEncoderFVec _row;
 
-  public XGBoostJavaBigScoreChunkPredict(DataInfo di, XGBoostOutput output, double threshold, Predictor predictor) {
+  public XGboostJavaBigScoreChunkPredict2(DataInfo di, XGBoostOutput output, double threshold, Predictor predictor) {
     _output = output;
     _threshold = threshold;
     _predictor = predictor;
