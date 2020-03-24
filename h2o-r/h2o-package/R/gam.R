@@ -178,12 +178,8 @@ h2o.gam <- function(x,
 
   # If gam_X is missing, then assume user wants to use all columns as features for GAM.
   if (missing(gam_X)) {
-   if (is.numeric(y)) {
-       gam_X <- setdiff(col(training_frame), y)
-   } else {
-       gam_X <- setdiff(colnames(training_frame), y)
-   }
-}
+      gam_X <- x
+  }
 
   # Build parameter list to send to model builder
   parms <- list()
