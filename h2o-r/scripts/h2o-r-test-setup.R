@@ -190,7 +190,7 @@ function() {
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
 
         # source h2o-r/tests/runitUtils
-        to_src <- c("utilsR.R", "pcaR.R", "deeplearningR.R", "glmR.R", "gamR.R", "glrmR.R",
+        to_src <- c("utilsR.R", "pcaR.R", "deeplearningR.R", "glmR.R", "glrmR.R",
                     "gbmR.R", "kmeansR.R", "naivebayesR.R", "gridR.R", "shared_javapredict.R")
         src_path <- paste(h2oRDir,"tests","runitUtils",sep=.Platform$file.sep)
         invisible(lapply(to_src,function(x){source(paste(src_path, x, sep = .Platform$file.sep))}))
