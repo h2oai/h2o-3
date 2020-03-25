@@ -9,7 +9,7 @@
 #'        The response must be either a numeric or a categorical/factor variable. 
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
-#' @param gam_X Predictor column names for gam
+#' @param gam_x Predictor column names for gam
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
@@ -98,7 +98,7 @@
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
 #' @param k Number of knots for gam predictors
-#' @param knots_keys String arrays storing frame keys of knots.  One for each gam column specified in gam_X
+#' @param knots_keys String arrays storing frame keys of knots.  One for each gam column specified in gam_x
 #' @param bs Basis function type for each gam predictors, 0 for cr
 #' @param scale Smoothing parameter for gam predictors
 #' @param saveGamCols \code{Logical}. Save keys of model matrix Defaults to FALSE.
@@ -106,7 +106,7 @@
 h2o.gam <- function(x,
                     y,
                     training_frame,
-                    gam_X,
+                    gam_x,
                     model_id = NULL,
                     validation_frame = NULL,
                     nfolds = 0,
@@ -176,9 +176,9 @@ h2o.gam <- function(x,
      }
   }
 
-  # If gam_X is missing, then assume user wants to use all columns as features for GAM.
-  if (missing(gam_X)) {
-      stop("Columns indices to apply to GAM must be specified.. If you don't have any, use GLM.")
+  # If gam_x is missing, then assume user wants to use all columns as features for GAM.
+  if (missing(gam_x)) {
+      stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
   }
 
   # Validate other args
@@ -202,7 +202,7 @@ h2o.gam <- function(x,
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  parms$gam_X <- gam_X
+  parms$gam_x <- gam_x
 
   if (!missing(model_id))
     parms$model_id <- model_id
@@ -298,8 +298,8 @@ h2o.gam <- function(x,
     parms$k <- k
   if (!missing(knots_keys))
     parms$knots_keys <- knots_keys
-  if (!missing(gam_X))
-    parms$gam_X <- gam_X
+  if (!missing(gam_x))
+    parms$gam_x <- gam_x
   if (!missing(bs))
     parms$bs <- bs
   if (!missing(scale))
