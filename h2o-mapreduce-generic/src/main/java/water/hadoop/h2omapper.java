@@ -5,8 +5,9 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
-import water.hadoop.common.HadoopUtils;
+import water.util.BinaryFileTransfer;
 import water.hive.DelegationTokenRefresher;
+import water.util.FileUtils;
 import water.util.Log;
 import water.util.StringUtils;
 
@@ -141,7 +142,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     // Hadoop will set the tmpdir to a directory inside of the container
     // It is important to write to a directory that is in the container otherwise eg. logs can be overwriting each other
     String ice_root = System.getProperty("java.io.tmpdir");
-    if (!HadoopUtils.makeSureIceRootExists(ice_root)) {
+    if (!FileUtils.makeSureDirExists(ice_root)) {
       return -1;
     }
 
@@ -221,8 +222,8 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       String basename = conf.get(H2O_MAPPER_CONF_BASENAME_BASE + i);
       String fileName = ice_root + File.separator + basename;
       String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + i);
-      byte[] byteArr = HadoopUtils.convertStringToByteArr(payload);
-      HadoopUtils.writeBinaryFile(fileName, byteArr);
+      byte[] byteArr = BinaryFileTransfer.convertStringToByteArr(payload);
+      BinaryFileTransfer.writeBinaryFile(fileName, byteArr);
       if(null != arg && !arg.isEmpty()) {
         argsList.add(fileName);
       }

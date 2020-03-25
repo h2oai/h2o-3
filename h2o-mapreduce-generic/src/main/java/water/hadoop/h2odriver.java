@@ -23,8 +23,7 @@ import water.hadoop.clouding.fs.CloudingEvent;
 import water.hadoop.clouding.fs.CloudingEventType;
 import water.hadoop.clouding.fs.FileSystemBasedClouding;
 import water.hadoop.clouding.fs.FileSystemCloudingEventSource;
-import water.hadoop.common.HadoopUtils;
-import water.hive.DelegationTokenRefresher;
+import water.util.BinaryFileTransfer;
 import water.hive.HiveTokenGenerator;
 import water.init.NetworkInit;
 import water.network.SecurityUtils;
@@ -39,7 +38,6 @@ import java.io.DataInput;
 import java.io.DataOutput;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -59,7 +57,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static water.hadoop.h2omapper.*;
 import static water.hive.DelegationTokenRefresher.*;
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
@@ -1583,7 +1580,7 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private void addMapperConf(Configuration conf, String name, String value, byte[] payloadData) {
-    String payload = HadoopUtils.convertByteArrToString(payloadData);
+    String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
 
     conf.set(h2omapper.H2O_MAPPER_CONF_ARG_BASE + mapperConfLength, name);
     conf.set(h2omapper.H2O_MAPPER_CONF_BASENAME_BASE + mapperConfLength, value);
@@ -2081,7 +2078,7 @@ public class h2odriver extends Configured implements Tool {
       j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
       j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
       byte[] payloadData = readBinaryFile(keytabPath);
-      String payload = HadoopUtils.convertByteArrToString(payloadData);
+      String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
       j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
     }
 

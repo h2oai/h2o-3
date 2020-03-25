@@ -1,26 +1,10 @@
-package water.hadoop.common;
+package water.util;
 
-import water.util.Log;
-
-import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
-public class HadoopUtils {
-
-    public static boolean makeSureIceRootExists(String iceRoot) {
-        File f = new File(iceRoot);
-        if (!f.exists()) {
-            boolean success = f.mkdirs();
-            if (!success) {
-                Log.POST(103, "mkdirs(" + f.toString() + ") failed");
-                return false;
-            }
-            Log.POST(104, "after mkdirs()");
-        }
-        return true;
-    }
+public class BinaryFileTransfer {
 
     /**
      * Hexadecimal string to brute-force convert into an array of bytes.

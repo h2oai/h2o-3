@@ -15,7 +15,6 @@ dependencies {
   compile(project(':h2o-app')) {
     exclude module: "${defaultWebserverModule}"
   }
-  compile project(":h2o-hadoop-common")
   compile(project(':h2o-hive')) {
     transitive = false
   }

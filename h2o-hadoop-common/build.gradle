@@ -12,6 +12,5 @@ repositories {
 }
 
 dependencies {
-    compile project(":h2o-core")
     testCompile group: 'junit', name: 'junit', version: '4.12'
 }

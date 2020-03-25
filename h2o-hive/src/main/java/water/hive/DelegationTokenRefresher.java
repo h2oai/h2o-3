@@ -7,7 +7,8 @@ import org.apache.hadoop.security.UserGroupInformation;
 import water.H2O;
 import water.MRTask;
 import water.Paxos;
-import water.hadoop.common.HadoopUtils;
+import water.util.BinaryFileTransfer;
+import water.util.FileUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -44,10 +45,10 @@ public class DelegationTokenRefresher implements Runnable {
   }
   
   private static String writeKeytabToFile(String authKeytab, String iceRoot) throws IOException {
-    HadoopUtils.makeSureIceRootExists(iceRoot);
+    FileUtils.makeSureDirExists(iceRoot);
     String fileName = iceRoot + File.separator + "auth_keytab";
-    byte[] byteArr = HadoopUtils.convertStringToByteArr(authKeytab);
-    HadoopUtils.writeBinaryFile(fileName, byteArr);
+    byte[] byteArr = BinaryFileTransfer.convertStringToByteArr(authKeytab);
+    BinaryFileTransfer.writeBinaryFile(fileName, byteArr);
     return fileName;
   }
 

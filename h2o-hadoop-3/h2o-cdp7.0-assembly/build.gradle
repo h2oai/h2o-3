@@ -26,7 +26,6 @@ dependencies {
     compile(project(":h2o-mapreduce-generic")) {
         transitive = false
     }
-    compile project(":h2o-hadoop-common")
     compile project(":h2o-security")
     compileOnly "org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion"
     compileOnly "org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopMavenArtifactVersion"

@@ -20,6 +20,5 @@ dependencies {
     transitive = false
   }
   compile project(":h2o-core")
-  compile project(":h2o-hadoop-common")
   testCompile "junit:junit:${junitVersion}"
 }
