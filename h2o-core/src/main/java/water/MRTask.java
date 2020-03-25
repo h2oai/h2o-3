@@ -454,9 +454,18 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     _fr = fr;                   // Record vectors to work on
     _nlo = selfidx(); _nhi = (short)H2O.CLOUD.size(); // Do Whole Cloud
     _run_local = run_local;     // Run locally by copying data, or run globally?
+    assert checkRunLocal() : "MRTask is expected to be running in a local-mode but _run_local = false";
     setupLocal0();              // Local setup
     H2O.submitTask(this);       // Begin normal execution on a FJ thread
     return self();
+  }
+
+  private boolean checkRunLocal() {
+    if (!Boolean.getBoolean(H2O.OptArgs.SYSTEM_PROP_PREFIX + "debug.checkRunLocal"))
+      return true;
+    if ("water.fvec.RollupStats$Roll".equals(getClass().getName()))
+      return true;
+    return _run_local;
   }
 
   /** Block for and get any final results from a dfork'd MRTask.

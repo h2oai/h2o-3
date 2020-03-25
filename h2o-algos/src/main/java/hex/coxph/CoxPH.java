@@ -14,6 +14,8 @@ import water.fvec.Vec;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.*;
 
+import static water.util.ArrayUtils.constAry;
+
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -59,7 +61,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         else
           if (expensive) {
             try {
-              CollectTimes.collect(_parms.stopVec());
+              CollectTimes.collect(_parms.stopVec(), _parms._single_node_mode);
             } catch (CollectTimesException e) {
               error("stop_column", e.getMessage());
             }
@@ -132,13 +134,15 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
 
-    static Frame discretizeTime(double[] time, Vec startVec, Vec stopVec) {
+    static Frame discretizeTime(double[] time, Vec startVec, Vec stopVec, boolean runLocal) {
       final boolean hasStartColumn = startVec != null;
       final Frame f = new Frame();
       if (hasStartColumn)
         f.add("__startCol", startVec);
       f.add("__stopCol", stopVec);
-      return new DiscretizeTimeTask(time, startVec != null).doAll(hasStartColumn ? 2 : 1, Vec.T_NUM, f).outputFrame();
+      byte[] outputTypes = hasStartColumn ? new byte[]{Vec.T_NUM, Vec.T_NUM} : new byte[]{Vec.T_NUM}; 
+      return new DiscretizeTimeTask(time, startVec != null)
+              .doAll(outputTypes, f, runLocal).outputFrame();
     }
 
   }
@@ -192,19 +196,20 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
     }
 
-    static Vec makeStrataVec(Frame f, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> mapping) {
+    static Vec makeStrataVec(Frame f, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> mapping, boolean runLocal) {
       final Frame sf = f.subframe(stratifyBy);
-      return new StrataTask(mapping).doAll(Vec.T_NUM, sf).outputFrame().anyVec();
+      return new StrataTask(mapping).doAll(new byte[]{Vec.T_NUM}, sf, runLocal).outputFrame().anyVec();
     }
 
     static Frame stratifyTime(Frame f, double[] time, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> mapping,
-                              Vec startVec, Vec stopVec) {
+                              Vec startVec, Vec stopVec, boolean runLocal) {
       final Frame sf = f.subframe(stratifyBy);
       final boolean hasStartColumn = startVec != null;
       if (hasStartColumn)
         sf.add("__startVec", startVec);
       sf.add("__stopVec", stopVec);
-      return new StrataTask(mapping, time, hasStartColumn).doAll(hasStartColumn ? 3 : 2, Vec.T_NUM, sf).outputFrame();
+      return new StrataTask(mapping, time, hasStartColumn)
+              .doAll(constAry(hasStartColumn ? 3 : 2, Vec.T_NUM), sf, runLocal).outputFrame();
     }
 
     static void setupStrataMapping(Frame f, String[] stratifyBy, IcedHashMap<AstGroup.G, IcedInt> outMapping) {
@@ -253,14 +258,16 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       Frame discretizedFr;
       if (_parms.isStratified()) {
         StrataTask.setupStrataMapping(f, _parms._stratify_by, outStrataMap);
-        discretizedFr = Scope.track(StrataTask.stratifyTime(f, time, _parms._stratify_by, outStrataMap, startVec, stopVec));
+        discretizedFr = Scope.track(
+                StrataTask.stratifyTime(f, time, _parms._stratify_by, outStrataMap, startVec, stopVec, _parms._single_node_mode)
+        );
         strataVec = discretizedFr.remove(0);
         if (_parms.interactionSpec() == null) {
           // no interactions => we can drop the columns earlier
           f.remove(_parms._stratify_by);
         }
       } else {
-        discretizedFr = Scope.track(DiscretizeTimeTask.discretizeTime(time, startVec, stopVec));
+        discretizedFr = Scope.track(DiscretizeTimeTask.discretizeTime(time, startVec, stopVec, _parms._single_node_mode));
       }
       // swap time columns for their discretized versions
       if (startVec != null) {
@@ -346,7 +353,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       cs.reset();
       switch (p._ties) {
         case efron:
-          return EfronMethod.calcLoglik(dinfo, coxMR, cs);
+          return EfronMethod.calcLoglik(dinfo, coxMR, cs, _parms._single_node_mode);
         case breslow:
           final int n_coef = cs._n_coef;
           final int n_time = coxMR.sizeEvents.length;
@@ -496,7 +503,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       try {
         init(true);
 
-        final double[] time = CollectTimes.collect(_parms.stopVec());
+        final double[] time = CollectTimes.collect(_parms.stopVec(), _parms._single_node_mode);
 
         _job.update(0, "Initializing model training");
 
@@ -540,7 +547,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
           Timer aggregTimer = new Timer();
           coxMR = new CoxPHTask(dinfo, newCoef, time, (long) response().min() /* min event */,
                   n_offsets, has_start_column, dinfo._adaptedFrame.vec(_parms._strata_column), has_weights_column,
-                  _parms._ties).doAll(dinfo._adaptedFrame);
+                  _parms._ties).doAll(dinfo._adaptedFrame, _parms._single_node_mode);
           Log.info("CoxPHTask: iter=" + i + ", time=" + aggregTimer.toString());
           _job.update(1);
 
@@ -799,8 +806,8 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     private CollectTimes() {
       super(new double[0], MAX_TIME_BINS);
     }
-    static double[] collect(Vec timeVec) {
-      return new CollectTimes().doAll(timeVec).domain();
+    static double[] collect(Vec timeVec, boolean runLocal) {
+      return new CollectTimes().doAll(timeVec, runLocal).domain();
     }
     @Override
     protected void onMaxDomainExceeded(int maxDomainSize, int currentSize) {

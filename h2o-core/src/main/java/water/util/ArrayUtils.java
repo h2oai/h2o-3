@@ -1872,6 +1872,12 @@ public class ArrayUtils {
     return true;
   }
 
+  public static byte[] constAry(int len, byte b) {
+    byte[] ary = new byte[len];
+    Arrays.fill(ary, b);
+    return ary;
+  }
+
   public static double[] constAry(int len, double c) {
     double[] ary = new double[len];
     Arrays.fill(ary, c);

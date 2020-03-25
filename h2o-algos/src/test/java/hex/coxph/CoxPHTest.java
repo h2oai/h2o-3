@@ -1,16 +1,14 @@
 package hex.coxph;
 
 import hex.StringPair;
+import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.Key;
-import water.MRTask;
-import water.Scope;
-import water.TestUtil;
-import water.fvec.Chunk;
-import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
+import water.*;
+import water.fvec.*;
+
+import java.util.HashSet;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 
@@ -257,6 +255,85 @@ public class CoxPHTest extends TestUtil {
     } finally {
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testCoxPHSingleNodeMode() {
+    CoxPHModel model = null;
+    Frame fr = null;
+    Key<Frame> rebalancedKey = Key.make();
+    try {
+      fr = parse_test_file("smalldata/coxph_test/heart.csv");
+      fr = rebalanceToAllNodes(fr, rebalancedKey);
+
+      CoxPHModel.CoxPHParameters parms = new CoxPHModel.CoxPHParameters();
+      parms._auto_rebalance  = false; // make sure we keep the original frame layout
+      parms._calc_cumhaz     = true;
+      parms._train           = fr._key;
+      parms._start_column    = "start";
+      parms._stop_column     = "stop";
+      parms._response_column = "event";
+      parms._ignored_columns = new String[]{"id", "year", "surgery", "transplant"};
+      parms._ties = CoxPHModel.CoxPHParameters.CoxPHTies.efron;
+      assertEquals("Surv(start, stop, event) ~ age", parms.toFormula(fr));
+
+      System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.TRUE.toString());
+      parms._single_node_mode = true;
+      CoxPH builder = new CoxPH(parms);
+      model = builder.trainModel().get();
+
+      assertEquals(model._output._coef[0],        0.0307077486571334,   1e-8);
+      assertEquals(model._output._var_coef[0][0], 0.000203471477951459, 1e-8);
+      assertEquals(model._output._null_loglik,    -298.121355672984,    1e-8);
+      assertEquals(model._output._loglik,         -295.536762216228,    1e-8);
+      assertEquals(model._output._score_test,     4.64097294749287,     1e-8);
+      assertTrue(model._output._iter >= 1);
+      assertEquals(model._output._x_mean_num[0][0],  -2.48402655078554,    1e-8);
+      assertEquals(model._output._n,              172);
+      assertEquals(model._output._total_event,    75);
+      assertEquals(model._output._wald_test,      4.6343882547245,      1e-8);
+      assertEquals(model._output._var_cumhaz_2_matrix.rows(), 110);
+    } finally {
+      System.setProperty("sys.ai.h2o.debug.checkRunLocal", Boolean.FALSE.toString());
+      Frame rebalanced = rebalancedKey.get();
+      if (rebalanced != null)
+        rebalanced.delete();
+      if (fr != null)
+        fr.delete();
+      if (model != null)
+        model.delete();
+    }
+  }
+
+  private static Frame rebalanceToAllNodes(Frame fr, Key<Frame> rebalancedKey) {
+    // this is essentially a complicated way of setting nChunks = H2O.getCloudSize()
+    // because the tests are running with 5 nodes and with this number of nodes we use round-robin for the first few chunks
+    // (however we can handle any number nodes)
+    int nChunks = 0;
+    boolean[] nodeHasChunk = new boolean[H2O.getCloudSize()];
+    int nNodes = 0;
+    while (nNodes != H2O.getCloudSize()) {
+      Key k = fr.anyVec().chunkKey(nChunks++);
+      int idx = k.home_node().index();
+      if (nodeHasChunk[idx])
+        continue;
+      nodeHasChunk[idx] = true;
+      nNodes++;
+    }
+
+    H2O.submitTask(new RebalanceDataSet(fr, rebalancedKey, nChunks)).join();
+    fr.delete();
+    fr = rebalancedKey.get();
+
+    // make sure we do have a non-empty chunk on each node
+    Set<H2ONode> nodes = new HashSet<>();
+    for (int i = 0; i < fr.anyVec().nChunks(); i++) {
+      if (fr.anyVec().chunkLen(i) > 0) {
+        nodes.add(fr.anyVec().chunkKey(i).home_node());
+      }
+    }
+    assertEquals(H2O.getCloudSize(), nodes.size());
+    return fr;
   }
 
 }
