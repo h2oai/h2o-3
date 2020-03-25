@@ -74,7 +74,6 @@ public class AUCTest extends TestUtil {
     //}
 
     double aucp = AUC2.perfectAUC(fr.vec("V1"), fr.vec("V2"));
-    
     Assert.assertEquals(ROCR_auc, aucp, 1e-4);
     AUC2 auc = new AUC2(fr.vec("V1"), fr.vec("V2"));
     Assert.assertEquals(ROCR_auc, auc._auc, 1e-4);

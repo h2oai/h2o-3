@@ -310,7 +310,6 @@ public class AUC2 extends Iced {
         prevtp = tp;
         prevfp = fp;
     }
-    // Descale
     return area;
   }
 
@@ -334,8 +333,6 @@ public class AUC2 extends Iced {
   public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
   /** @return the error of the default CM */
   public double defaultErr( ) { return _max_idx == -1 ? Double.NaN : (fp(_max_idx)+fn(_max_idx))/(_p+_n); }
-  
-
   // Compute an online histogram of the predicted probabilities, along with
   // true positive and false positive totals in each histogram bin.
   private static class AUC_Impl extends MRTask<AUC_Impl> {
@@ -591,7 +588,6 @@ public class AUC2 extends Iced {
       ps[i] = new Pair(rprob.at(i),(byte)racts.at8(i));
     return perfectAUC(ps);
   }
-  
   public static double perfectAUC( double ds[], double[] acts ) {
     Pair[] ps = new Pair[ds.length];
     for( int i=0; i<ps.length; i++ )
@@ -603,12 +599,6 @@ public class AUC2 extends Iced {
     // Sort by probs, then actuals - so tied probs have the 0 actuals before
     // the 1 actuals.  Sort probs from largest to smallest - so both the True
     // and False Positives are zero to start.
-    int totalPositive = 0;
-    int totalNegative = 0;
-    for( Pair p : ps ) {
-      
-    }
-    
     Arrays.sort(ps,new java.util.Comparator<Pair>() {
         @Override public int compare( Pair a, Pair b ) {
           return a._prob<b._prob ? 1 : (a._prob==b._prob ? (b._act-a._act) : -1);
