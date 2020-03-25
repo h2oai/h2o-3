@@ -501,9 +501,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private ModelMetrics makeMetrics(Frame data, Frame originalData, boolean isTrain, String description) {
     Log.debug("Making metrics: " + description);
-    return XGBoostScoreTask.computeMetrics(
-            setupBigScorePredict(isTrain), _output, _parms, null, data, originalData, this
-    );
+    return XGBoostScoreTask.computeMetrics(_output, data, originalData, isTrain, this);
   }
 
   /**
@@ -559,7 +557,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return setupBigScorePredict(false);
   }
 
-  private XGBoostBigScorePredict setupBigScorePredict(boolean isTrain) {
+  public XGBoostBigScorePredict setupBigScorePredict(boolean isTrain) {
     DataInfo di = model_info().scoringInfo(isTrain); // always for validation scoring info for scoring (we are not in the training phase)
     return PredictConfiguration.useJavaScoring() ? setupBigScorePredictJava(di) : setupBigScorePredictNative(di);
   }
@@ -570,7 +568,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private XGBoostBigScorePredict setupBigScorePredictJava(DataInfo di) {
-    return new XGBoostJavaBigScorePredict(model_info, _output, di, defaultThreshold());
+    return new XGBoostJavaBigScorePredict(model_info, _output, di, _parms, defaultThreshold());
   }
 
   @Override
