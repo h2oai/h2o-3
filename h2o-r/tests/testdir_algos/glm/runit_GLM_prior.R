@@ -17,7 +17,7 @@ test <- function() {
 	print("Create sub frame with class distribution 0.5")
 	o_sub = full[which(full$y==1),]
 	zz = full[which(full$y==0),]
-	z_sub = zz[sample(1:nrow(zz),size = round(nrow(zz)*(1/9)),replace = F),]
+	z_sub = zz[sample(1:nrow(zz),size = round(nrow(zz)*(1/9)),replace = FALSE),]
 	sub = rbind(o_sub,z_sub)
 	dim(sub)
 	

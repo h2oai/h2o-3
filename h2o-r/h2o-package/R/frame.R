@@ -1330,8 +1330,8 @@ h2o.topBottomN <- function(x, column, nPercent, grabTopN){
 #' dataset <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip")
 #' frameNames <- names(dataset)
 #' nPercent <- c(1, 2, 3, 4)
-#' nP <- nPercent[sample(1 : length(nPercent), 1, replace = F)]
-#' colIndex <- sample(1 : length(frameNames), 1, replace = F)
+#' nP <- nPercent[sample(1 : length(nPercent), 1, replace = FALSE)]
+#' colIndex <- sample(1 : length(frameNames), 1, replace = FALSE)
 #' h2o.topN(dataset, frameNames[colIndex], nP)
 #' }
 #' @export
@@ -1355,8 +1355,8 @@ h2o.topN <- function(x, column, nPercent) {
 #' bottomAnswer <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/Bottom20Per.csv.zip")
 #' nPercent = c(1, 2, 3, 4)
 #' frameNames = names(dataFrame)
-#' nP = nPercent[sample(1 : length(nPercent), 1, replace = F)]
-#' colIndex = sample(1 : length(frameNames), 1, replace = F)
+#' nP = nPercent[sample(1 : length(nPercent), 1, replace = FALSE)]
+#' colIndex = sample(1 : length(frameNames), 1, replace = FALSE)
 #' h2o.bottomN(dataFrame, frameNames[colIndex], nP)
 #' }
 #' @export
