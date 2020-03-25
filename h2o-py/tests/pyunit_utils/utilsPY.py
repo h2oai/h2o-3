@@ -4037,6 +4037,18 @@ def summarizeResult_binomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrain
                                                                          "XGBoost prediction prob: {1}.  They are " \
                                                                          "very different.".format(h2oPredictLocalD[colnames[2]][ind], nativePred[ind])
 
+
+def summarize_metrics_binomial(h2o_metrics, xgboost_metrics, names, tolerance=1e-4):
+    for i in range(len(h2o_metrics)):
+        difference = abs(h2o_metrics[i] - xgboost_metrics[i])
+        print("H2O {0} metric: {1} and native " \
+              "XGBoost {0} metric: {2}. " \
+              "Difference is {3}".format(names[i], h2o_metrics[i], xgboost_metrics[i], difference))
+        assert difference < tolerance, "H2O {0} metric: {1} and native " \
+                                       "XGBoost {0} metric: {2}.  They are " \
+                                       "very different.".format(names[i], h2o_metrics[i], xgboost_metrics[i])
+    
+
 def summarizeResult_multinomial(h2oPredictD, nativePred, h2oTrainTimeD, nativeTrainTime, h2oPredictTimeD,
                                 nativeScoreTime, tolerance=1e-6):
     # Result comparison in terms of time

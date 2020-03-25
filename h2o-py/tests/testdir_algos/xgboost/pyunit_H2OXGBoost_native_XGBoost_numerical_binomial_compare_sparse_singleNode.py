@@ -20,8 +20,16 @@ def comparison_test():
         runSeed = 1
         dataSeed = 17
         ntrees = 17
-        h2oParamsS = {"ntrees":ntrees, "max_depth":4, "seed":runSeed, "learn_rate":0.7, "col_sample_rate_per_tree" : 0.9,
-                      "min_rows" : 5, "score_tree_interval": ntrees+1, "dmatrix_type":"sparse", "tree_method": "exact", "backend":"cpu"}
+        h2oParamsS = {"ntrees": ntrees,
+                      "max_depth": 4, 
+                      "seed": runSeed,
+                      "learn_rate": 0.7,
+                      "col_sample_rate_per_tree": 0.9,
+                      "min_rows": 5,
+                      "score_tree_interval": ntrees+1,
+                      "dmatrix_type": "sparse",
+                      "tree_method": "exact",
+                      "backend": "cpu"}
         nativeParam = {'colsample_bytree': h2oParamsS["col_sample_rate_per_tree"],
                        'tree_method': 'exact',
                        'seed': h2oParamsS["seed"],
@@ -35,7 +43,8 @@ def comparison_test():
                        'max_delta_step': 0.0,
                        'min_child_weight': h2oParamsS["min_rows"],
                        'gamma': 0.0,
-                       'max_depth': h2oParamsS["max_depth"]}
+                       'max_depth': h2oParamsS["max_depth"],
+                       'eval_metric': ['auc', 'aucpr']}
 
         nrows = 10000
         ncols = 11
@@ -58,9 +67,13 @@ def comparison_test():
         h2oPredictTimeS = time.time()-time1
 
         # train the native XGBoost
+
         nativeTrain = pyunit_utils.convertH2OFrameToDMatrixSparse(trainFile, y, enumCols=[])
         nrounds=ntrees
-        nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds)
+        evals_result = {}
+        watch_list = [(nativeTrain,'train')]
+        nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds, 
+                                evals=watch_list, verbose_eval=True, evals_result=evals_result)
         modelsfound = False
         while not(modelsfound): # loop to make sure accurate number of trees are built
             modelInfo = nativeModel.get_dump()
@@ -70,7 +83,8 @@ def comparison_test():
                 modelsfound=True
             else:
                 nrounds=nrounds+1
-                nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds)
+                nativeModel = xgb.train(params=nativeParam, dtrain=nativeTrain, num_boost_round=nrounds, 
+                                        evals=watch_list, verbose_eval=True, evals_result=evals_result)
         nativeTrainTime = time.time()-time1
         time1=time.time()
         nativePred = nativeModel.predict(data=nativeTrain, ntree_limit=ntrees)
@@ -82,6 +96,12 @@ def comparison_test():
         print("Comparing H2OXGBoost results with native XGBoost result when DMatrix is set to sparse.....")
         pyunit_utils.summarizeResult_binomial(h2oPredictS, nativePred, h2oTrainTimeS, nativeTrainTime, h2oPredictTimeS,
                                               nativeScoreTime, tolerance=1e-6)
+
+        print("Comparing H2OXGBoost metrics with native XGBoost metrics when DMatrix is set to sparse.....")
+        h2o_metrics = [h2oModelS.training_model_metrics()["AUC"], h2oModelS.training_model_metrics()["pr_auc"]]
+        xgboost_metrics = [evals_result['train']['auc'][ntrees-1], evals_result['train']['aucpr'][ntrees-1]]
+        pyunit_utils.summarize_metrics_binomial(h2o_metrics, xgboost_metrics, ["auc", "aucpr"])
+        
     else:
         print("********  Test skipped.  This test cannot be performed in multinode environment.")
 

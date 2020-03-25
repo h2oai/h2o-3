@@ -10,8 +10,7 @@ import water.util.fp.Functions;
 
 import java.util.Arrays;
 
-import static hex.AUC2.ThresholdCriterion.precision;
-import static hex.AUC2.ThresholdCriterion.recall;
+import static hex.AUC2.ThresholdCriterion.*;
 
 /** One-pass approximate AUC
  *
@@ -241,14 +240,6 @@ public class AUC2 extends Iced {
     return _nBins == 0;
   }
 
-  public double pr_auc() {
-    if (isEmpty()) {
-      return Double.NaN;
-    }
-    checkRecallValidity();
-    return Functions.integrate(forCriterion(recall), forCriterion(precision), 0, _nBins-1);
-  }
-
   // Checks that recall is a non-decreasing function
   void checkRecallValidity() {
     double x0 = recall.exec(this, 0);
@@ -278,6 +269,52 @@ public class AUC2 extends Iced {
     return area/_p/_n;
   }
 
+  /**
+   * Compute the Area under Precision-Recall Curves using TPs and FPs.
+   * TPs and FPs are monotonically increasing.
+   * Calulation inspired by XGBoost implementation:
+   * https://github.com/dmlc/xgboost/blob/master/src/metric/rank_metric.cc#L566-L591
+   * @return
+   */
+  public double pr_auc() {
+    if (isEmpty()) {
+      return Double.NaN;
+    }
+    checkRecallValidity();
+    
+    if (_fps[_nBins-1] == 0) return 1.0;
+    if (_tps[_nBins-1] == 0) return 0.0;
+    
+    double area = 0.0;
+    assert _p > 0 && _n > 0 : "AUC-PR calculation error, sum of positives and sum of negatives should be greater than zero.";
+    
+    double tp, prevtp = 0.0, fp, prevfp = 0.0, tpp, prevtpp, h, a, b;
+    for (int j = 0; j < _nBins; j++) {
+      tp = _tps[j];
+      fp = _fps[j];
+      if (tp == prevtp) {
+        a = 1.0;
+        b = 0.0;
+      } else {
+        h = (fp - prevfp) / (tp - prevtp);
+        a = 1.0 + h;
+        b = (prevfp - h * prevtp) / _p;
+      }
+      tpp = tp / _p;
+      prevtpp = prevtp / _p;
+      if (0.0 != b) {
+        area += (tpp - prevtpp - 
+                 b / a * (Math.log(a * tpp + b) - 
+                         Math.log(a * prevtpp + b))) / a;
+      } else {
+        area += (tpp - prevtpp) / a;
+      }
+      prevtp = tp;
+      prevfp = fp;
+    }
+    return area;
+  }
+
   // Build a CM for a threshold index. - typed as doubles because of double observation weights
   public double[/*actual*/][/*predicted*/] buildCM( int idx ) {
     //  \ predicted:  0   1
@@ -298,9 +335,6 @@ public class AUC2 extends Iced {
   public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
   /** @return the error of the default CM */
   public double defaultErr( ) { return _max_idx == -1 ? Double.NaN : (fp(_max_idx)+fn(_max_idx))/(_p+_n); }
-
-
-
   // Compute an online histogram of the predicted probabilities, along with
   // true positive and false positive totals in each histogram bin.
   private static class AUC_Impl extends MRTask<AUC_Impl> {

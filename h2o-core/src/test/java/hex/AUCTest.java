@@ -85,7 +85,6 @@ public class AUCTest extends TestUtil {
 
     double ROCR_f1 = 0.9920445; // same as ROCR "f" with alpha=0, or alternative beta=1
     Assert.assertEquals(ROCR_f1, AUC2.ThresholdCriterion.f1.max_criterion(auc), 1e-4);
-
     fr.remove();
   }
 
