@@ -36,16 +36,18 @@
 #' h2o.init()
 #' 
 #' # Import the heart dataset
-#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+#' heart <- h2o.importFile(f)
 #' 
 #' # Set the predictor and response
 #' predictor <- "age"
 #' response <- "event"
 #' 
 #' # Train a Cox Proportional Hazards model 
-#' heart_coxph <- h2o.coxph(start_column = "start", stop_column = "stop",
-#'                          event_column = "event", x = predictor,
-#'                          training_frame = heart)
+#' heart_coxph <- h2o.coxph(x = predictor, training_frame = heart,
+#'                          event_column = "event",
+#'                          start_column = "start", 
+#'                          stop_column = "stop")
 #' }
 #' @export
 h2o.coxph <- function(x,

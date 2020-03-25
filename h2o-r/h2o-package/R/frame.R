@@ -331,7 +331,9 @@ pfr <- function(x) { chk.H2OFrame(x); .pfr(x) }
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.getId(iris)
 #' }
 #' @export
@@ -345,7 +347,9 @@ h2o.getId <- function(x) attr( .eval.frame(x), "id")
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.getTypes(iris)
 #' }
 #' @export
@@ -362,11 +366,13 @@ h2o.getTypes <- function(x){.eval.frame(x); .fetch.data(x, 10L); attr(x, "types"
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' dim(cars)
-#' split = h2o.splitFrame(data = cars, ratios = .8)
-#' train = h2o.assign(split[[1]], key = "train")
-#' test = h2o.assign(split[[2]], key = "test")
+#' split <- h2o.splitFrame(data = cars, ratios = .8)
+#' train <- h2o.assign(split[[1]], key = "train")
+#' test <- h2o.assign(split[[2]], key = "test")
 #' dim(train)
 #' dim(test)
 #' }
@@ -573,7 +579,9 @@ h2o.interaction <- function(data, destination_frame, factors, pairwise, max_fact
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.rep_len(iris, length.out = 3)
 #' }
 #' @export
@@ -728,7 +736,11 @@ h2o.splitFrame <- function(data, ratios = 0.75, destination_frames, seed = -1) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.filterNACols(frame, frac = 0.5)
 #' h2o.filterNACols(frame, frac = 0.6)
 #' }
@@ -782,7 +794,9 @@ table.H2OFrame <- h2o.table
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.unique(iris["class"])
 #' }
 #' @export
@@ -878,7 +892,10 @@ match.H2OFrame <- h2o.match
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.na_omit(frame)
 #' }
 #' @export
@@ -1009,11 +1026,10 @@ if (seed == -1) seed <- floor(runif(1,1,.Machine$integer.max*100))
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip")
-#' splits <- h2o.splitFrame(data, seed = 1234, ratios = .08)
-#' train <- splits[[1]]
-#' valid <- splits[[2]]
-#' h2o.kfold_column(train, nfolds = 5, seed = 1234)
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
+#' kfolds <- h2o.kfold_column(iris, nfolds = 5, seed = 1234)
 #' }
 #' @export
 h2o.kfold_column <- function(data,nfolds,seed=-1) .eval.frame(.newExpr("kfold_column",data,nfolds,seed))
@@ -1226,8 +1242,10 @@ h2o.impute <- function(data, column=0, method=c("mean","median","mode"), # TODO:
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' range(frame, na.rm = TRUE)
 #' }
 #' @export
@@ -1327,11 +1345,12 @@ h2o.topBottomN <- function(x, column, nPercent, grabTopN){
 #' library(h2o)
 #' h2o.init()
 #' 
-#' dataset <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip"
+#' dataset <- h2o.importFile(f)
 #' frameNames <- names(dataset)
 #' nPercent <- c(1, 2, 3, 4)
-#' nP <- nPercent[sample(1 : length(nPercent), 1, replace = F)]
-#' colIndex <- sample(1 : length(frameNames), 1, replace = F)
+#' nP <- nPercent[sample(1:length(nPercent), 1, replace = FALSE)]
+#' colIndex <- sample(1:length(frameNames), 1, replace = FALSE)
 #' h2o.topN(dataset, frameNames[colIndex], nP)
 #' }
 #' @export
@@ -1351,12 +1370,15 @@ h2o.topN <- function(x, column, nPercent) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' dataFrame <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip")
-#' bottomAnswer <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/Bottom20Per.csv.zip")
-#' nPercent = c(1, 2, 3, 4)
-#' frameNames = names(dataFrame)
-#' nP = nPercent[sample(1 : length(nPercent), 1, replace = F)]
-#' colIndex = sample(1 : length(frameNames), 1, replace = F)
+#' 
+#' f1 <- "https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/jira/TopBottomNRep4.csv.zip"
+#' f2 <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/Bottom20Per.csv.zip"
+#' dataFrame <- h2o.importFile(f1)
+#' bottomAnswer <- h2o.importFile(f2)
+#' nPercent <- c(1, 2, 3, 4)
+#' frameNames <- names(dataFrame)
+#' nP <- nPercent[sample(1:length(nPercent), 1, replace = FALSE)]
+#' colIndex <- sample(1:length(frameNames), 1, replace = FALSE)
 #' h2o.bottomN(dataFrame, frameNames[colIndex], nP)
 #' }
 #' @export
@@ -1382,7 +1404,8 @@ h2o.bottomN <- function(x, column, nPercent) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
+#' hdf <- h2o.importFile(f)
 #' h2o.year(hdf["ds9"])
 #' }
 #' @export
@@ -1403,7 +1426,8 @@ h2o.year <- function(x) .newExpr("year", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.month(hdf["ds9"])
 #' }
 #' @export
@@ -1423,7 +1447,8 @@ h2o.month <- function(x) .newExpr("month", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv"
+#' hdf <- h2o.importFile(f)
 #' h2o.week(hdf["ds9"])
 #' }
 #' @export
@@ -1443,7 +1468,8 @@ h2o.week <- function(x) .newExpr("week", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.day(hdf["ds9"])
 #' }
 #' @export
@@ -1463,7 +1489,8 @@ h2o.day <- function(x) .newExpr("day", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.dayOfWeek(hdf["ds9"])
 #' }
 #' @export
@@ -1482,7 +1509,8 @@ h2o.dayOfWeek <- function(x) .newExpr("dayOfWeek", chk.H2OFrame(x))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.hour(hdf["ds9"])
 #' }
 #' @seealso \code{\link{h2o.day}}
@@ -1566,7 +1594,9 @@ h2o.mktime <- function(year=1970,month=0,day=0,hour=0,minute=0,second=0,msec=0) 
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' hdf <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/jira/v-11-eurodate.csv
+#' hdf <- h2o.importFile(f)
 #' h2o.as_date(hdf["ds5"], "%d.%m.%y %H:%M")
 #' }
 #' @export
@@ -1910,12 +1940,13 @@ h2o.which <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' census <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv"
+#' census <- h2o.importFile(f)
 #' census[,1] <- as.factor(census[,1])
-#' dlmodel<-h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
-#'                           epochs = 1, training_frame = census, 
-#'                           balance_classes = FALSE, reproducible = TRUE, 
-#'                           seed = 1234, export_weights_and_biases = TRUE)
+#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
+#'                             epochs = 1, training_frame = census, 
+#'                             balance_classes = FALSE,
+#'                             export_weights_and_biases = TRUE)
 #' h2o.which_max(census["PER CAPITA INCOME "], na.rm = FALSE, axis = 0)
 #' }
 #' @export
@@ -1944,11 +1975,12 @@ which.max.H2OFrame <- h2o.which_max
 #' library(h2o)
 #' h2o.init()
 #' 
-#' census <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv")
-#' dlmodel<-h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
-#'                           epochs = 1, training_frame = census, 
-#'                           balance_classes = FALSE, reproducible = TRUE, 
-#'                           seed = 1234, export_weights_and_biases = TRUE)
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv"
+#' census <- h2o.importFile(f)
+#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, hidden = c(17,191), 
+#'                             epochs = 1, training_frame = census, 
+#'                             balance_classes = FALSE, 
+#'                             export_weights_and_biases = TRUE)
 #' h2o.which_min(census["PER CAPITA INCOME "], na.rm = FALSE, axis = 0)
 #' }
 #' @export
@@ -2034,8 +2066,10 @@ dimnames.H2OFrame <- function(x) .Primitive("dimnames")(.fetch.data(x,1L))
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' names(frame)
 #' }
 #' @export
@@ -2115,7 +2149,9 @@ h2o.levels <- function(x, i) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.nlevels(cars)
 #' }
 #' @export
@@ -2223,8 +2259,9 @@ tail.H2OFrame <- h2o.tail
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 #' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' is.factor(cars["economy_20mpg"])
 #' }
@@ -2256,7 +2293,9 @@ is.numeric <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' 
+#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+#' heart <- h2o.importFile(f)
 #' 
 #' heart["transplant"] <- as.character(heart["transplant"])
 #' is.character(heart["transplant"])
@@ -2279,7 +2318,8 @@ is.character <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' print(cars, n = 8)
 #' }
 #' @export
@@ -2933,7 +2973,9 @@ sd <- function(x, na.rm=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+#' heart <- h2o.importFile(f)
+#' 
 #' h2o.signif(heart["age"], digits = 3)
 #' }
 #' @export
@@ -2960,7 +3002,9 @@ signif <- function(x, digits=6) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+#' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv"
+#' heart <- h2o.importFile(f)
+#' 
 #' h2o.round(heart["age"], digits = 3)
 #' }
 #' @export
@@ -3049,8 +3093,10 @@ scale.H2OFrame <- function(x, center = TRUE, scale = TRUE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.log10(frame)
 #' }
 #' @export
@@ -3069,8 +3115,10 @@ h2o.log10 <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.log2(frame)
 #' }
 #' @export
@@ -3088,8 +3136,11 @@ h2o.log2 <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.log1p(frame)
 #' }
 #' @export
@@ -3110,8 +3161,10 @@ h2o.log1p <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.trunc(frame["C1"])
 #' }
 #' @export
@@ -3129,7 +3182,9 @@ h2o.trunc <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.dim(cars)
 #' }
 #' @export
@@ -3147,7 +3202,9 @@ h2o.dim <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.dimnames(cars)
 #' }
 #' @export
@@ -3166,7 +3223,8 @@ h2o.dimnames <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.names(iris)
 #' }
 #' @export
@@ -3184,7 +3242,11 @@ h2o.names <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.colnames(frame)
 #' }
 #' @export
@@ -3203,7 +3265,8 @@ h2o.colnames <- function(x) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' h2o.isfactor(cars["economy_20mpg"])
 #' }
@@ -3222,7 +3285,9 @@ h2o.isfactor <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.isnumeric(iris["sepal_len"])
 #' }
 #' @export
@@ -3240,7 +3305,9 @@ h2o.isnumeric <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
+#' iris <- h2o.importFile(f)
 #' iris_char <- h2o.ascharacter(iris["class"])
 #' h2o.ischaracter(iris_char)
 #' }
@@ -3259,8 +3326,10 @@ h2o.ischaracter <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' h2o <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
-#' h2o.asfactor(h2o["cylinders"])
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
+#' h2o.asfactor(cars["cylinders"])
 #' }
 #' @export
 h2o.asfactor <- function(x) {
@@ -3277,7 +3346,9 @@ h2o.asfactor <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.asnumeric(cars)
 #' }
 #' @export
@@ -3294,8 +3365,10 @@ h2o.asnumeric <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.ascharacter(fr["species"])
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
+#' h2o.ascharacter(iris["species"])
 #' }
 #' @export
 h2o.ascharacter <- function(x) {
@@ -3311,7 +3384,9 @@ h2o.ascharacter <- function(x) {
 #' \dontrun{
 #' library()
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.print(iris["species"], n = 15)
 #' }
 
@@ -3329,7 +3404,11 @@ h2o.print <- function(x, n=6L) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.str(frame, cols = FALSE)
 #' }
 #' @export
@@ -3347,9 +3426,11 @@ h2o.str <- function(object, ..., cols=FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, 
-#'                         missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cos(frame["C1"])
 #' }
 #' @export
@@ -3367,7 +3448,11 @@ h2o.cos <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.sin(frame)
 #' }
 #' @export
@@ -3403,9 +3488,11 @@ h2o.acos <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, 
-#'                         missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cosh(frame["C1"])
 #' }
 #' @export
@@ -3423,8 +3510,11 @@ h2o.cosh <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.tan(frame)
 #' }
 #' @export
@@ -3442,8 +3532,11 @@ h2o.tan <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.tanh(frame)
 #' }
 #' @export
@@ -3461,8 +3554,11 @@ h2o.tanh <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.exp(frame["C1"])
 #' }
 #' @export
@@ -3480,7 +3576,11 @@ h2o.exp <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.log(frame)
 #' }
 #' @export
@@ -3499,7 +3599,11 @@ h2o.log <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.sqrt(frame)
 #' }
 #' @export
@@ -3547,8 +3651,10 @@ h2o.abs <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.ceiling(fr[,1])
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
+#' h2o.ceiling(iris[,1])
 #' }
 #' @export
 h2o.ceiling <- function(x) {
@@ -3568,8 +3674,11 @@ h2o.ceiling <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.floor(frame["C2"])
 #' }
 #' @export
@@ -3590,8 +3699,11 @@ h2o.floor <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.sum(frame["C1"], na.rm = TRUE, axis = 0, return_frame = TRUE)
 #' }
 #' @export
@@ -3613,7 +3725,9 @@ h2o.sum <- function(x, na.rm = FALSE, axis = 0, return_frame = FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.prod(iris["petal_len"])
 #' }
 #' @export
@@ -3632,7 +3746,11 @@ h2o.prod <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cumsum(frame, 1)
 #' }
 #' @export
@@ -3651,8 +3769,11 @@ h2o.cumsum <- function(x, axis = 0){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cumprod(frame, 1)
 #' }
 #' @export
@@ -3671,8 +3792,11 @@ h2o.cumprod <- function(x, axis = 0){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cummin(frame, 1)
 #' }
 #' @export
@@ -3691,8 +3815,11 @@ h2o.cummin <- function(x, axis = 0){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' 
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' h2o.cummax(frame, 1)
 #' }
 #' @export
@@ -3721,8 +3848,10 @@ h2o.all <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.any(fr[,1] < 1000)
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
+#' h2o.any(iris[,1] < 1000)
 #' }
 #' @export
 h2o.any <- function(x) {
@@ -3740,7 +3869,9 @@ h2o.any <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.min(iris["sepal_len"], na.rm = TRUE)
 #' }
 #' @export
@@ -3759,7 +3890,9 @@ h2o.min <- function(x,na.rm = FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.max(iris["petal_len"], na.rm = TRUE)
 #' }
 #' @export
@@ -3777,7 +3910,9 @@ h2o.max <- function(x,na.rm = FALSE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' h2o.nrow(cars)
 #' }
 #' @export
@@ -3795,7 +3930,9 @@ h2o.nrow <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.ncol(iris)
 #' }
 #' @export
@@ -3815,7 +3952,9 @@ h2o.ncol <- function(x) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.range(iris["petal_len"], na.rm = TRUE, finite = TRUE)
 #' }
 #' @export
@@ -3838,8 +3977,10 @@ h2o.range <- function(x,na.rm = FALSE,finite = FALSE) {
 #' library(h2o)
 #' h2o.init()
 #' 
-#' frame = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, 
-#'                         rows = 6, cols = 2, seed = 123)
+#' frame <- h2o.createFrame(rows = 6, cols = 2,
+#'                          categorical_fraction = 0.0, 
+#'                          missing_fraction = 0.7, 
+#'                          seed = 123)
 #' is.h2o(frame)
 #' }
 #' @export
@@ -4520,8 +4661,10 @@ h2o.merge <- function(x, y, by=intersect(names(x), names(y)), by.x=by, by.y=by, 
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.arrange(fr, "species","petal_len","petal_wid")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
+#' h2o.arrange(iris, "species","petal_len","petal_wid")
 #' }
 #'
 #' @export
@@ -4671,12 +4814,16 @@ generate_col_ind <-function(data, by) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' air <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.csv")
-#' groupCols <- c("Distance")
-#' sortCols <- c("IsArrDelayed", "IsDepDelayed")
-#' sortDirs <- c(TRUE, FALSE)
-#' h2o.rank_within_group_by(air, groupCols, sortCols, 
-#'                          sortDirs, new_col_name = "New_Rank", 
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip"
+#' air <- h2o.importFile(f)
+#' group_cols <- c("Distance")
+#' sort_cols <- c("IsArrDelayed", "IsDepDelayed")
+#' sort_directions <- c(TRUE, FALSE)
+#' h2o.rank_within_group_by(x = air, group_by_cols = group_cols, 
+#'                          sort_cols = sort_cols, 
+#'                          ascending = sort_directions, 
+#'                          new_col_name = "New_Rank", 
 #'                          sort_cols_sorted = TRUE)
 #' }
 #' @export
@@ -5089,7 +5236,9 @@ apply <- function(X, MARGIN, FUN, ...) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
+#' 
+#' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv"
+#' iris <- h2o.importFile(f)
 #' h2o.asnumeric(iris["petal_len"])
 #' h2o.hist(iris["petal_len"], breaks = "Sturges", plot = TRUE)
 #' }
@@ -5132,7 +5281,9 @@ h2o.hist <- function(x, breaks="Sturges", plot=TRUE) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+#' 
+#' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
+#' cars <- h2o.importFile(f)
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "cylinders"
 #' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
@@ -5197,9 +5348,12 @@ h2o.isax <- function(x, num_words, max_cardinality, optimize_card = FALSE){
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' fr_with_nas = h2o.createFrame(categorical_fraction = 0.0, missing_fraction = 0.7, rows = 6,
-#'                               cols = 2, seed = 123)
-#' fr <- h2o.fillna(fr_with_nas, "forward", axis = 1, maxlen = 2L)
+#' 
+#' frame_with_nas <- h2o.createFrame(rows = 6, cols = 2,
+#'                                   categorical_fraction = 0.0, 
+#'                                   missing_fraction = 0.7, 
+#'                                   seed = 123)
+#' frame <- h2o.fillna(frame_with_nas, "forward", axis = 1, maxlen = 2L)
 #' }
 #' @export
 h2o.fillna <- function(x, method="forward", axis=1, maxlen=1L) {
