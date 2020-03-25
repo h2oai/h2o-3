@@ -501,7 +501,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private ModelMetrics makeMetrics(Frame data, Frame originalData, boolean isTrain, String description) {
     Log.debug("Making metrics: " + description);
-    return XGBoostScoreTask.computeMetrics(_output, data, originalData, isTrain, this);
+    return new XGBoostModelMetrics(_output, data, originalData, isTrain, this).compute();
   }
 
   /**
