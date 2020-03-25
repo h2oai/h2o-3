@@ -23,6 +23,9 @@ import water.hadoop.clouding.fs.CloudingEvent;
 import water.hadoop.clouding.fs.CloudingEventType;
 import water.hadoop.clouding.fs.FileSystemBasedClouding;
 import water.hadoop.clouding.fs.FileSystemCloudingEventSource;
+import water.hadoop.common.HadoopUtils;
+import water.hive.DelegationTokenRefresher;
+import water.hive.HiveTokenGenerator;
 import water.init.NetworkInit;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
@@ -57,6 +60,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static water.hadoop.h2omapper.*;
+import static water.hive.DelegationTokenRefresher.*;
 import static water.util.JavaVersionUtils.JAVA_VERSION;
 
 /**
@@ -998,59 +1002,6 @@ public class h2odriver extends Configured implements Tool {
     return ous.toByteArray();
   }
 
-  static public void writeBinaryFile(String fileName, byte[] byteArr) throws IOException {
-    FileOutputStream out = new FileOutputStream(fileName);
-    for (byte b : byteArr) {
-      out.write(b);
-    }
-    out.close();
-  }
-
-  /**
-   * Array of bytes to brute-force convert into a hexadecimal string.
-   * The length of the returned string is byteArr.length * 2.
-   *
-   * @param byteArr byte array to convert
-   * @return hexadecimal string
-   */
-  static private String convertByteArrToString(byte[] byteArr) {
-    StringBuilder sb = new StringBuilder();
-    for (byte b : byteArr) {
-      int i = b;
-      i = i & 0xff;
-      sb.append(String.format("%02x", i));
-    }
-    return sb.toString();
-  }
-
-  /**
-   * Hexadecimal string to brute-force convert into an array of bytes.
-   * The length of the string must be even.
-   * The length of the string is 2x the length of the byte array.
-   *
-   * @param s Hexadecimal string
-   * @return byte array
-   */
-  static public byte[] convertStringToByteArr(String s) {
-    if ((s.length() % 2) != 0) {
-      throw new RuntimeException("String length must be even (was " + s.length() + ")");
-    }
-
-    ArrayList<Byte> byteArrayList = new ArrayList<Byte>();
-    for (int i = 0; i < s.length(); i = i + 2) {
-      String s2 = s.substring(i, i + 2);
-      Integer i2 = Integer.parseInt(s2, 16);
-      Byte b2 = (byte)(i2 & 0xff);
-      byteArrayList.add(b2);
-    }
-
-    byte[] byteArr = new byte[byteArrayList.size()];
-    for (int i = 0; i < byteArr.length; i++) {
-      byteArr[i] = byteArrayList.get(i);
-    }
-    return byteArr;
-  }
-
   /**
    * Parse remaining arguments after the ToolRunner args have already been removed.
    * @param args Argument list
@@ -1632,7 +1583,7 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private void addMapperConf(Configuration conf, String name, String value, byte[] payloadData) {
-    String payload = convertByteArrToString(payloadData);
+    String payload = HadoopUtils.convertByteArrToString(payloadData);
 
     conf.set(h2omapper.H2O_MAPPER_CONF_ARG_BASE + mapperConfLength, name);
     conf.set(h2omapper.H2O_MAPPER_CONF_BASENAME_BASE + mapperConfLength, value);
@@ -2130,7 +2081,7 @@ public class h2odriver extends Configured implements Tool {
       j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
       j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
       byte[] payloadData = readBinaryFile(keytabPath);
-      String payload = convertByteArrToString(payloadData);
+      String payload = HadoopUtils.convertByteArrToString(payloadData);
       j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
     }
 

@@ -1,6 +1,7 @@
 package water.hadoop;
 
 import org.junit.Test;
+import water.hive.HiveTokenGenerator;
 
 import static org.junit.Assert.*;
 
