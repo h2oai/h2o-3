@@ -28,7 +28,7 @@ public class DelegationTokenRefresher implements Runnable {
   public static final String H2O_HIVE_JDBC_URL = "h2o.hive.jdbc.url";
   public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
 
-  public static void setup(Configuration conf, String iceRoot) throws IOException {
+  public static void setup(Configuration conf, String tmpDir) throws IOException {
     if (!HiveTokenGenerator.isHiveDriverPresent()) {
       return;
     }
@@ -37,16 +37,16 @@ public class DelegationTokenRefresher implements Runnable {
     String authKeytab = conf.get(H2O_AUTH_KEYTAB);
     HiveTokenGenerator.HiveOptions options = HiveTokenGenerator.HiveOptions.make(conf);
     if (authPrincipal != null && authKeytab != null && options != null) {
-      String authKeytabPath = writeKeytabToFile(authKeytab, iceRoot);
+      String authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
       new DelegationTokenRefresher(authPrincipal, authKeytabPath, authUser, options).start();
     } else {
       log("Delegation token refresh not active.", null);
     }
   }
   
-  private static String writeKeytabToFile(String authKeytab, String iceRoot) throws IOException {
-    FileUtils.makeSureDirExists(iceRoot);
-    String fileName = iceRoot + File.separator + "auth_keytab";
+  private static String writeKeytabToFile(String authKeytab, String tmpDir) throws IOException {
+    FileUtils.makeSureDirExists(tmpDir);
+    String fileName = tmpDir + File.separator + "auth_keytab";
     byte[] byteArr = BinaryFileTransfer.convertStringToByteArr(authKeytab);
     BinaryFileTransfer.writeBinaryFile(fileName, byteArr);
     return fileName;
@@ -100,7 +100,7 @@ public class DelegationTokenRefresher implements Runnable {
     }
   }
   
-  private static class DistributeCreds extends MRTask {
+  private static class DistributeCreds extends MRTask<DistributeCreds> {
     
     private final byte[] _credsSerialized;
 
