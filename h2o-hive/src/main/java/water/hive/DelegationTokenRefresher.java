@@ -1,4 +1,4 @@
-package water.hadoop;
+package water.hive;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.hadoop.conf.Configuration;
@@ -7,6 +7,8 @@ import org.apache.hadoop.security.UserGroupInformation;
 import water.H2O;
 import water.MRTask;
 import water.Paxos;
+import water.util.BinaryFileTransfer;
+import water.util.FileUtils;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,11 +20,15 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import static water.hadoop.h2omapper.*;
-
 public class DelegationTokenRefresher implements Runnable {
-  
-  public static void setup(Configuration conf, String iceRoot) throws IOException {
+
+  public static final String H2O_AUTH_USER = "h2o.auth.user";
+  public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
+  public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
+  public static final String H2O_HIVE_JDBC_URL = "h2o.hive.jdbc.url";
+  public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
+
+  public static void setup(Configuration conf, String tmpDir) throws IOException {
     if (!HiveTokenGenerator.isHiveDriverPresent()) {
       return;
     }
@@ -31,18 +37,18 @@ public class DelegationTokenRefresher implements Runnable {
     String authKeytab = conf.get(H2O_AUTH_KEYTAB);
     HiveTokenGenerator.HiveOptions options = HiveTokenGenerator.HiveOptions.make(conf);
     if (authPrincipal != null && authKeytab != null && options != null) {
-      String authKeytabPath = writeKeytabToFile(authKeytab, iceRoot);
+      String authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
       new DelegationTokenRefresher(authPrincipal, authKeytabPath, authUser, options).start();
     } else {
       log("Delegation token refresh not active.", null);
     }
   }
   
-  private static String writeKeytabToFile(String authKeytab, String iceRoot) throws IOException {
-    h2omapper.makeSureIceRootExists(iceRoot);
-    String fileName = iceRoot + File.separator + "auth_keytab";
-    byte[] byteArr = h2odriver.convertStringToByteArr(authKeytab);
-    h2odriver.writeBinaryFile(fileName, byteArr);
+  private static String writeKeytabToFile(String authKeytab, String tmpDir) throws IOException {
+    FileUtils.makeSureDirExists(tmpDir);
+    String fileName = tmpDir + File.separator + "auth_keytab";
+    byte[] byteArr = BinaryFileTransfer.convertStringToByteArr(authKeytab);
+    BinaryFileTransfer.writeBinaryFile(fileName, byteArr);
     return fileName;
   }
 
@@ -94,7 +100,7 @@ public class DelegationTokenRefresher implements Runnable {
     }
   }
   
-  private static class DistributeCreds extends MRTask {
+  private static class DistributeCreds extends MRTask<DistributeCreds> {
     
     private final byte[] _credsSerialized;
 

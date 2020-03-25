@@ -14,6 +14,16 @@ import java.net.URI;
  * File utilities.
  */
 public class FileUtils {
+
+  public static boolean makeSureDirExists(String dir) {
+    File f = new File(dir);
+    if (!f.exists()) {
+      return f.mkdirs();
+    } else {
+      return true;
+    }
+  }
+
   /**
    * Silently close given files.
    *
