@@ -33,7 +33,8 @@ library(h2o)
 h2o.init()
 
 # Import the titanic dataset
-titanic <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+titanic <- h2o.importFile(f)
 
 # Set predictors and response; set response as a factor
 titanic['survived'] <- as.factor(titanic['survived'])
@@ -41,9 +42,9 @@ predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
 response <- "survived"
 
 # Split the dataset into train and valid
-titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
-train <- titanic.splits[[1]]
-valid <- titanic.splits[[2]]
+splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
+train <- splits[[1]]
+valid <- splits[[2]]
 
 # Train the XGB model
 titanic_xgb <- h2o.xgboost(x = predictors, y = response,

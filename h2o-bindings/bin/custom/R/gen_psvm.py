@@ -24,7 +24,8 @@ library(h2o)
 h2o.init()
 
 # Import the splice dataset
-splice <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/splice/splice.svm")
+f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/splice/splice.svm"
+splice <- h2o.importFile(f)
 
 # Train the Support Vector Machine model
 svm_model <- h2o.psvm(gamma = 0.01, rank_ratio = 0.1,
