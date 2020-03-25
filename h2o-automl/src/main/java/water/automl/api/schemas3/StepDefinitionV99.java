@@ -13,7 +13,7 @@ public final class StepDefinitionV99 extends Schema<StepDefinition, StepDefiniti
     @API(help="The id of the step (must be unique per step provider).", direction=API.Direction.INOUT)
     public String id;
     @API(help="The relative weight for the given step (can impact time and/or number of models allocated for this step).", direction=API.Direction.INOUT)
-    public int weight;
+    public int weight = Step.DEFAULT_WEIGHT;
   }  
   
   public static final class AliasProvider extends EnumValuesProvider<Alias> {

@@ -14,7 +14,7 @@ public class StepDefinition extends Iced<StepDefinition> {
     public enum Alias { all, defaults, grids, exploitation }
 
     public static class Step extends Iced<Step> {
-        static final int DEFAULT_WEIGHT = -1;  // means that the Step will use the default weight set by the TrainingStep
+        public static final int DEFAULT_WEIGHT = -1;  // means that the Step will use the default weight set by the ModelingStep
 
         /**
          * The id of the step (must be unique per step provider).

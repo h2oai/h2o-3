@@ -4,6 +4,7 @@ import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
 import ai.h2o.automl.ModelSelectionStrategies.LeaderboardHolder;
 import ai.h2o.automl.ModelSelectionStrategy.Selection;
 import ai.h2o.automl.events.EventLog;
+import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
@@ -28,6 +29,7 @@ import water.util.EnumUtils;
 import water.util.Log;
 
 import java.util.Arrays;
+import java.util.Date;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -54,7 +56,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final Map<String, Object[]> hyperParams,
             final HyperSpaceSearchCriteria searchCriteria)
     {
-        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search");
+        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search")
+                .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat);
         return GridSearch.startGridSearch(
                 resultKey,
                 baseParams,
@@ -72,7 +75,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
         ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
         builder._parms = params;
-        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training");
+        aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
+                .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat);
         builder.init(false);          // validate parameters
         try {
             return builder.trainModelOnH2ONode();

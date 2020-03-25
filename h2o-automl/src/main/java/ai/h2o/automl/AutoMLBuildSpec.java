@@ -168,8 +168,8 @@ public class AutoMLBuildSpec extends Iced {
    * The specification of the parameters for building models for a single algo (e.g., GBM), including base model parameters and hyperparameter search.
    */
   public static final class AutoMLBuildModels extends Iced {
-    public IAlgo[] exclude_algos;
-    public IAlgo[] include_algos;
+    public Algo[] exclude_algos;
+    public Algo[] include_algos;
     public StepDefinition[] modeling_plan;
     public double exploitation_ratio = 0;
     public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();

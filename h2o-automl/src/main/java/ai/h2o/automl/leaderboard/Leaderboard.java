@@ -9,7 +9,9 @@ import water.fvec.Frame;
 import water.util.*;
 
 import java.util.*;
+import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -146,7 +148,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    */
   private final long _leaderboard_frame_checksum;
 
-  private final ReentrantLock updateLock = new ReentrantLock();
+  private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
   /**
    * Constructs a new leaderboard (doesn't put it in DKV).
@@ -197,7 +199,8 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
    * @return the full list of metrics available in the leaderboard.
    */
   public String[] getMetrics() {
-    return _metrics;
+    return _metrics == null ? (_sort_metric == null ? new String[0] : new String[]{_sort_metric})
+            : _metrics;
   }
 
   /**
@@ -347,7 +350,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
     }
 
     final List<ModelMetrics> modelMetrics = new ArrayList<>();
-    final Map<Key<Model>, LeaderboardCell[]> newExtensions = new HashMap<>();
+    final Map<Key<Model>, LeaderboardCell[]> extensions = new HashMap<>();
 
     for (Key<Model> modelKey : allModelKeys) {  // fully rebuilding modelMetrics, so we loop through all keys, not only new ones
       Model model = modelKey.get();
@@ -356,10 +359,10 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
         continue;
       }
 
-      if (_extensionsProvider != null && newModelKeys.contains(modelKey)) {
-        newExtensions.put(modelKey, _extensionsProvider.createExtensions(model));
+      if (_extensionsProvider != null) {
+        extensions.put(modelKey, _extensionsProvider.createExtensions(model));
       }
-      modelMetrics.add(getOrCreateModelMetrics(modelKey, newExtensions));
+      modelMetrics.add(getOrCreateModelMetrics(modelKey, extensions));
     }
 
     if (_metrics == null) {
@@ -372,7 +375,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
       modelMetrics.forEach(this::addModelMetrics);
       updateModels(allModelKeys.toArray(new Key[0]));
       _extensions_cells = new LeaderboardCell[0];
-      newExtensions.forEach(this::addExtensions);
+      extensions.forEach(this::addExtensions);
     }, null);
 
     if (oldLeaderKey == null || !oldLeaderKey.equals(_model_keys[0])) {
@@ -409,18 +412,25 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   private void updateModels(Key<Model>[] modelKeys) {
     final Key<Model>[] sortedModelKeys = sortModelKeys(modelKeys);
     final Model[] sortedModels = getModelsFromKeys(sortedModelKeys);
-    _metric_values = new IcedHashMap<>();
+    final IcedHashMap<String, double[]> metricValues = new IcedHashMap<>();
     for (String metric : _metrics) {
-      _metric_values.put(metric, getMetrics(metric, sortedModels));
+      metricValues.put(metric, getMetrics(metric, sortedModels));
     }
+    _metric_values = metricValues;
     _model_keys = sortedModelKeys;
   }
 
   private void atomicUpdate(Consumer<Void> update, Key<Job> jobKey) {
-    if (updateLock.isHeldByCurrentThread()) {
-      update.accept(null);
+    final ReentrantReadWriteLock.WriteLock writeLock = lock.writeLock();
+    if (writeLock.isHeldByCurrentThread()) {
+      writeLock.lock();
+      try {
+        update.accept(null);
+      } finally {
+        writeLock.unlock();
+      }
     } else {
-      updateLock.lock();
+      writeLock.lock();
       try {
         write_lock(jobKey);
         try {
@@ -430,7 +440,7 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
           unlock(jobKey);
         }
       } finally {
-        updateLock.unlock();
+        writeLock.unlock();
       }
     }
   }
@@ -667,43 +677,55 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
   }
 
   private TwoDimTable toTwoDimTable(String tableHeader, boolean leftJustifyModelIds, String... extensions) {
-    final Key<Model>[] modelKeys = _model_keys.clone(); // leaderboard can be retrieved when AutoML is still running: freezing current models state.
+    final Lock readLock = lock.readLock();
+    if (readLock.tryLock()) {
+      try {
+        final Key<Model>[] modelKeys = _model_keys.clone(); // leaderboard can be retrieved when AutoML is still running: freezing current models state.
+        final List<LeaderboardColumn> columns = getDefaultTableColumns();
+        final List<LeaderboardColumn> extColumns = new ArrayList<>();
+        if (getModelCount() > 0) {
+          final Key<Model> leader = getModelKeys()[0];
+          LeaderboardCell[] extCells = (extensions.length > 0 && LeaderboardExtensionsProvider.ALL.equalsIgnoreCase(extensions[0]))
+                  ? getExtensions(leader)
+                  : Stream.of(extensions).map(e -> getExtension(leader, e)).toArray(LeaderboardCell[]::new);
+          Stream.of(extCells).filter(Objects::nonNull).forEach(e -> extColumns.add(e.getColumn()));
+        }
+        columns.addAll(extColumns);
+
+        TwoDimTable table = makeTwoDimTable(tableHeader, modelKeys.length, columns.toArray(new LeaderboardColumn[0]));
+
+        int maxModelIdLen = Stream.of(modelKeys).mapToInt(k -> k.toString().length()).max().orElse(0);
+        final String[] modelIDsFormatted = new String[modelKeys.length];
+        for (int i = 0; i < modelKeys.length; i++) {
+          Key<Model> key = modelKeys[i];
+          if (leftJustifyModelIds) {
+            // %-s doesn't work in TwoDimTable.toString(), so fake it here:
+            modelIDsFormatted[i] = org.apache.commons.lang.StringUtils.rightPad(key.toString(), maxModelIdLen);
+          } else {
+            modelIDsFormatted[i] = key.toString();
+          }
+          addTwoDimTableRow(table, i,
+                  modelIDsFormatted[i],
+                  getMetrics(),
+                  extColumns.stream().map(ext -> getExtension(key, ext.getName())).toArray(LeaderboardCell[]::new)
+          );
+        }
+        return table;
+      } finally {
+        readLock.unlock();
+      }
+    } else {
+      return makeTwoDimTable(tableHeader, 0, getDefaultTableColumns().toArray(new LeaderboardColumn[0]));
+    }
+  }
+
+  private List<LeaderboardColumn> getDefaultTableColumns() {
     final List<LeaderboardColumn> columns = new ArrayList<>();
-    final List<LeaderboardColumn> extColumns = new ArrayList<>();
-    String[] metrics = _metrics == null ? (_sort_metric == null ? new String[0] : new String[] {_sort_metric})
-                      : _metrics;
     columns.add(ModelId.COLUMN);
-    for (String metric: metrics) {
+    for (String metric : getMetrics()) {
       columns.add(MetricScore.getColumn(metric));
     }
-    if (getModelCount() > 0) {
-      final Key<Model> leader = getModelKeys()[0];
-      LeaderboardCell[] extCells = (extensions.length > 0 && LeaderboardExtensionsProvider.ALL.equalsIgnoreCase(extensions[0]))
-              ? getExtensions(leader)
-              : Stream.of(extensions).map(e -> getExtension(leader, e)).toArray(LeaderboardCell[]::new);
-      Stream.of(extCells).filter(Objects::nonNull).forEach(e -> extColumns.add(e.getColumn()));
-    }
-    columns.addAll(extColumns);
-
-    TwoDimTable table = makeTwoDimTable(tableHeader, modelKeys.length, columns.toArray(new LeaderboardColumn[0]));
-
-    int maxModelIdLen = Stream.of(modelKeys).mapToInt(k -> k.toString().length()).max().orElse(0);
-    final String[] modelIDsFormatted = new String[modelKeys.length];
-    for (int i = 0; i < modelKeys.length; i++) {
-      Key<Model> key = modelKeys[i];
-      if (leftJustifyModelIds) {
-        // %-s doesn't work in TwoDimTable.toString(), so fake it here:
-        modelIDsFormatted[i] = org.apache.commons.lang.StringUtils.rightPad(key.toString(), maxModelIdLen);
-      } else {
-        modelIDsFormatted[i] = key.toString();
-      }
-      addTwoDimTableRow(table, i,
-              modelIDsFormatted[i],
-              metrics,
-              extColumns.stream().map(ext -> getExtension(key, ext.getName())).toArray(LeaderboardCell[]::new)
-      );
-    }
-    return table;
+    return columns;
   }
 
   private String toString(String fieldSeparator, String lineSeparator, boolean includeTitle, boolean includeHeader) {

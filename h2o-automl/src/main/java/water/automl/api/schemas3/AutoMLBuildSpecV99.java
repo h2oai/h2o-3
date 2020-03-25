@@ -4,6 +4,7 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import ai.h2o.automl.IAlgo;
 import hex.KeyValue;
 import hex.ScoreKeeper.StoppingMetric;
 import water.Iced;

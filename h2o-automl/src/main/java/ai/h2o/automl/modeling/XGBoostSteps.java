@@ -282,6 +282,8 @@ public class XGBoostSteps extends ModelingSteps {
                             new Object[] {       0.0005,                 5*sti },
                     };
 
+                    aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
+                            .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat);
                     return asModelsJob(GridSearch.startGridSearch(
                             Key.make(result+"_grid"),
                             new SequentialWalker<>(
