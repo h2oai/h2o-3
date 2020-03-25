@@ -336,3 +336,4 @@ h2o.stackedEnsemble <- function(x,
   model$metalearner_model <- h2o.getModel(model$metalearner$name)
   return(model)
 }
+

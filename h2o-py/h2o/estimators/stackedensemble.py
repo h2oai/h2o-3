@@ -553,7 +553,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     @property
     def max_runtime_secs(self):
         """
-        Maximum allowed runtime in seconds for metalearner model training. Use 0 to disable the time limit. Defaults to 0.
+        Maximum allowed runtime in seconds for metalearner model training. Use 0 to disable the time limit.
 
         Type: ``float``  (default: ``0``).
         """

@@ -6,6 +6,9 @@ def update_param(name, param):
         param['type'] = 'KeyValue'
         param['default_value'] = None
         return param
+    elif name == 'max_runtime_secs':
+        param['help'] = """Maximum allowed runtime in seconds for metalearner model training. Use 0 to disable the time limit."""
+        return param
     return None  # param untouched
 
 

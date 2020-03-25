@@ -115,6 +115,9 @@ If x is missing, then all columns except y are used.  Training frame is used onl
 """,
         seed="""
 Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
+""",
+        max_runtime_secs="""
+Maximum allowed runtime in seconds for metalearner model training. Use 0 to disable the time limit. Defaults to 0.
 """
     ),
     examples="""
