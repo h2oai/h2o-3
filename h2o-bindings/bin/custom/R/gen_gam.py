@@ -1,6 +1,6 @@
 
 extensions = dict(
-    required_params=['x', 'y', 'training_frame', 'gam_X'],  # empty to override defaults in gen_defaults
+    required_params=['x', 'y', 'training_frame', 'gam_x'],  # empty to override defaults in gen_defaults
     validate_required_params="""
     # If x is missing, then assume user wants to use all columns as features.
     if (missing(x)) {
@@ -11,9 +11,9 @@ extensions = dict(
        }
     }
 
-    # If gam_X is missing, then assume user wants to use all columns as features for GAM.
-    if (missing(gam_X)) {
-        stop("Columns indices to apply to GAM must be specified.. If you don't have any, use GLM.")
+    # If gam_x is missing, then assume user wants to use all columns as features for GAM.
+    if (missing(gam_x)) {
+        stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
     }
     """,
     set_required_params="""
@@ -24,7 +24,7 @@ extensions = dict(
     if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
     parms$ignored_columns <- args$x_ignore
     parms$response_column <- args$y
-    parms$gam_X <- gam_X
+    parms$gam_x <- gam_x
     """,
     with_model="""
     model@model$coefficients <- model@model$coefficients_table[,2]
