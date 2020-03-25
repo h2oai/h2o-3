@@ -3,6 +3,12 @@
 #'
 # -------------------------- General Additive Model -------------------------- #
 #'
+#' Fit a General Additive Model
+#' 
+#' Creates a generalized additive model, specified by a response variable, a set of predictors, and a
+#' description of the error distribution.
+#' 
+#'
 #' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
 #'        If x is missing, then all columns except y are used.
 #' @param y The name or column index of the response variable in the data. 

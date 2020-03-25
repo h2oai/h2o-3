@@ -65,4 +65,14 @@ extensions = dict(
       if(!missing(missing_values_handling))
         parms$missing_values_handling <- missing_values_handling
     """,
+
+)
+
+doc = dict(
+    preamble="""
+    Fit a General Additive Model
+
+    Creates a generalized additive model, specified by a response variable, a set of predictors, and a
+    description of the error distribution.
+    """
 )
