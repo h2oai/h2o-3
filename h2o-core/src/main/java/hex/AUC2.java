@@ -286,29 +286,31 @@ public class AUC2 extends Iced {
     if (_tps[_nBins-1] == 0) return 0.0;
     
     double area = 0.0;
-    assert _p > 0 && _n > 0 : "AUC-PR calculation error, sum of positives and sum of negatives should be zero.";
+    assert _p > 0 && _n > 0 : "AUC-PR calculation error, sum of positives and sum of negatives should be greater than zero.";
     
-    double tp, prevtp = 0.0, fp, prevfp = 0.0, h, a, b;
+    double tp, prevtp = 0.0, fp, prevfp = 0.0, tpp, prevtpp, h, a, b;
     for (int j = 0; j < _nBins; j++) {
       tp = _tps[j];
       fp = _fps[j];
-        if (tp == prevtp) {
-          a = 1.0;
-          b = 0.0;
-        } else {
-          h = (fp - prevfp) / (tp - prevtp);
-          a = 1.0 + h;
-          b = (prevfp - h * prevtp) / _p;
-        }
-        if (0.0 != b) {
-          area += (tp / _p - prevtp / _p -
-                  b / a * (Math.log(a * tp / _p + b) -
-                  Math.log(a * prevtp / _p + b))) / a;
-        } else {
-          area += (tp / _p - prevtp / _p) / a;
-        }
-        prevtp = tp;
-        prevfp = fp;
+      if (tp == prevtp) {
+        a = 1.0;
+        b = 0.0;
+      } else {
+        h = (fp - prevfp) / (tp - prevtp);
+        a = 1.0 + h;
+        b = (prevfp - h * prevtp) / _p;
+      }
+      tpp = tp / _p;
+      prevtpp = prevtp / _p;
+      if (0.0 != b) {
+        area += (tpp - prevtpp - 
+                 b / a * (Math.log(a * tpp + b) - 
+                         Math.log(a * prevtpp + b))) / a;
+      } else {
+        area += (tpp - prevtpp) / a;
+      }
+      prevtp = tp;
+      prevfp = fp;
     }
     return area;
   }
