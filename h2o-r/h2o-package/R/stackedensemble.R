@@ -34,7 +34,7 @@
 #'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param metalearner_params Parameters for metalearner algorithm
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for metalearner model training. Use 0 to disable the time limit. Defaults to 0.
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
 #' @param score_training_samples Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
 #'        enter 0. Defaults to 10000.
@@ -336,4 +336,3 @@ h2o.stackedEnsemble <- function(x,
   model$metalearner_model <- h2o.getModel(model$metalearner$name)
   return(model)
 }
-
