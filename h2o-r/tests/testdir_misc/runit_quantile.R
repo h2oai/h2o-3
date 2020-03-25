@@ -22,7 +22,7 @@ h_q = h2o.quantile(aa,probs = seq(0,1,.05),na.rm=TRUE)
 expect_equal(r_q,h_q )
 
 x = rexp(N, rate = 12.3) 
-ss = sample(1:N,size = N/10,replace = F)
+ss = sample(1:N,size = N/10,replace = FALSE)
  x[ss]=NA
 aa = as.h2o(x)
 r_q = quantile(x,  probs = seq(0,1,.05),na.rm=TRUE)
