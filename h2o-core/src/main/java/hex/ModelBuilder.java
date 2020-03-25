@@ -1356,15 +1356,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
     // Build the validation set to be compatible with the training set.
     // Toss out extra columns, complain about missing ones, remap categoricals
-    if(!expensive || _parms._is_cv_model) {
-      Frame va = _parms.valid();  // User-given validation set
-      if (va != null) {
-        setValid(adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive, false));
-        _vresponse = _valid.vec(_parms._response_column);
-      } else {
-        _valid = null;
-        _vresponse = null;
-      }
+    setValid(_parms.valid());  // User-given validation set
+    _vresponse = valid() != null ? valid().vec(_parms._response_column) : null;
+    if (valid() != null && (!expensive || _parms._is_cv_model)) {
+        setValid(adaptFrameToTrain(valid(), "Validation Frame", "_validation_frame", expensive, false));
     }
 
     if (expensive) {
