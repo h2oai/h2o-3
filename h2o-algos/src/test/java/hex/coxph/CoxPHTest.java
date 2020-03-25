@@ -1,7 +1,6 @@
 package hex.coxph;
 
 import hex.StringPair;
-import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.*;

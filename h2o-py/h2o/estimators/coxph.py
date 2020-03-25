@@ -23,7 +23,7 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     param_names = {"model_id", "training_frame", "start_column", "stop_column", "response_column", "ignored_columns",
                    "weights_column", "offset_column", "stratify_by", "ties", "init", "lre_min", "max_iterations",
                    "interactions", "interaction_pairs", "interactions_only", "use_all_factor_levels",
-                   "export_checkpoints_dir"}
+                   "export_checkpoints_dir", "single_node_mode"}
 
     def __init__(self, **kwargs):
         super(H2OCoxProportionalHazardsEstimator, self).__init__()
@@ -475,6 +475,21 @@ class H2OCoxProportionalHazardsEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def single_node_mode(self):
+        """
+        Run on a single node to reduce the effect of network overhead (for smaller datasets)
+
+        Type: ``bool``  (default: ``False``).
+        """
+        return self._parms.get("single_node_mode")
+
+    @single_node_mode.setter
+    def single_node_mode(self, single_node_mode):
+        assert_is_type(single_node_mode, None, bool)
+        self._parms["single_node_mode"] = single_node_mode
 
 
     def _additional_used_columns(self, parms):
