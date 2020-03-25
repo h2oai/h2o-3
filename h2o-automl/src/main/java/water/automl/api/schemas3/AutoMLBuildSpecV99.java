@@ -247,6 +247,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
             level = API.Level.secondary)
     public Algo[] include_algos;
 
+    @API(help="The budget ratio dedicated to the exploitation phase.",
+            level = API.Level.secondary)
+    public double exploitation_ratio;
+
     @API(help="The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).",
             level = API.Level.expert)
     public StepDefinitionV99[] modeling_plan;

@@ -346,7 +346,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   }
 
   void planWork() {
-    Set<Algo> skippedAlgos = new HashSet<>();
+    Set<IAlgo> skippedAlgos = new HashSet<>();
     if (_buildSpec.build_models.exclude_algos != null) {
       skippedAlgos.addAll(Arrays.asList(_buildSpec.build_models.exclude_algos));
     } else if (_buildSpec.build_models.include_algos != null) {
@@ -371,7 +371,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     for (ModelingStep step: getExecutionPlan()) {
       workAllocations.allocate(step.makeWork());
     }
-    for (Algo skippedAlgo : skippedAlgos) {
+    for (IAlgo skippedAlgo : skippedAlgos) {
       eventLog().info(Stage.Workflow, "Disabling Algo: "+skippedAlgo+" as requested by the user.");
       workAllocations.remove(skippedAlgo);
     }
@@ -385,7 +385,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
   private void distributeExplorationVsExploitationWork(WorkAllocations allocations) {
     int sumExploration = allocations.remainingWork(ModelingStep.isExplorationWork);
     int sumExploitation = allocations.remainingWork(ModelingStep.isExploitationWork);
-    double explorationRatio = _buildSpec.build_models.exploration_ratio;
+    double explorationRatio = 1 - _buildSpec.build_models.exploitation_ratio;
     int newTotal = (int)Math.round(sumExploration / explorationRatio);
     int newSumExploration = sumExploration; // keeping the same weight for exploration steps (principle of less surprise).
     int newSumExploitation = newTotal - newSumExploration;

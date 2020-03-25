@@ -1,6 +1,7 @@
 package ai.h2o.automl;
 
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLCustomParameters;
+import ai.h2o.automl.ModelSelectionStrategies.LeaderboardHolder;
 import ai.h2o.automl.ModelSelectionStrategy.Selection;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry.Stage;
@@ -26,9 +27,7 @@ import water.util.Countdown;
 import water.util.EnumUtils;
 import water.util.Log;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 
@@ -37,7 +36,14 @@ import java.util.function.Predicate;
  */
 public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
-    protected enum SeedPolicy { None, Global, Incremental }
+    protected enum SeedPolicy {
+        /** No seed will be used (= random). */
+        None,
+        /** The global AutoML seed will be used. */
+        Global,
+        /** The seed is incremented for each model, starting from the global seed if there is one. */
+        Incremental
+    }
 
     static Predicate<Work> isExplorationWork = w -> w._type == JobType.ModelBuild || w._type == JobType.HyperparamSearch;
     static Predicate<Work> isExploitationWork = w -> w._type == JobType.Selection;
@@ -79,7 +85,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     private transient AutoML _aml;
 
-    protected final Algo _algo;
+    protected final IAlgo _algo;
     protected final String _id;
     protected int _weight;
     protected AutoML.Constraint[] _ignoredConstraints = new AutoML.Constraint[0];  // whether or not to ignore the max_models/max_runtime constraints
@@ -87,7 +93,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     StepDefinition _fromDef;
 
-    protected ModelingStep(Algo algo, String id, int weight, AutoML autoML) {
+    protected ModelingStep(IAlgo algo, String id, int weight, AutoML autoML) {
         _algo = algo;
         _id = id;
         _weight = weight;
@@ -188,7 +194,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
      *
      * @param parms the model parameters to which the stopping criteria will be added.
      * @param defaults the default parameters for the corresponding {@link ModelBuilder}.
-     * @param useIncrementalSeed is the parms will be use to build a single model or for hyperparameter search.
+     * @param seedPolicy the policy defining how the seed will be assigned to the model parameters.
      */
     protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, SeedPolicy seedPolicy) {
         // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
@@ -205,9 +211,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         if (parms._seed == defaults._seed) {
             switch (seedPolicy) {
                 case Global:
-                    parms._seed = buildSpec.build_control.stopping_criteria.seed(); break;
+                    parms._seed = buildSpec.build_control.stopping_criteria.seed();
+                    break;
                 case Incremental:
-                    parms._seed = _aml._incrementalSeed.get() == -1 ? -1 : _aml._incrementalSeed.getAndIncrement(); break;
+                    parms._seed = _aml._incrementalSeed.get() == defaults._seed ? defaults._seed : _aml._incrementalSeed.getAndIncrement();
+                    break;
                 default:
                     break;
             }
@@ -256,7 +264,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         public static final int DEFAULT_MODEL_TRAINING_WEIGHT = 10;
 
-        public ModelStep(Algo algo, String id, int cost, AutoML autoML) {
+        public ModelStep(IAlgo algo, String id, int cost, AutoML autoML) {
             super(algo, id, cost, autoML);
         }
 
@@ -322,7 +330,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         public static final int DEFAULT_GRID_TRAINING_WEIGHT = 20;
 
-        public GridStep(Algo algo, String id, int cost, AutoML autoML) {
+        public GridStep(IAlgo algo, String id, int cost, AutoML autoML) {
             super(algo, id, cost, autoML);
         }
 
@@ -403,7 +411,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
     public static abstract class SelectionStep<M extends Model> extends ModelingStep<M> {
 
-        public SelectionStep(Algo algo, String id, int weight, AutoML autoML) {
+        public SelectionStep(IAlgo algo, String id, int weight, AutoML autoML) {
             super(algo, id, weight, autoML);
             _ignoredConstraints = new AutoML.Constraint[] { AutoML.Constraint.MODEL_COUNT };
         }
@@ -424,15 +432,33 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return aml().makeKey(name, "selection", withCounter);
         }
 
-        protected Leaderboard makeTmpLeaderboard(String name) {
+        private LeaderboardHolder makeLeaderboard(String name) {
             Leaderboard amlLeaderboard = aml().leaderboard();
+            EventLog tmpEventLog = EventLog.getOrMake(Key.make(name));
             Leaderboard tmpLeaderboard = Leaderboard.getOrMake(
                     name,
-                    EventLog.getOrMake(Key.make(name)),
+                    tmpEventLog,
                     amlLeaderboard.leaderboardFrame(),
                     amlLeaderboard.getSortMetric()
             );
-            return tmpLeaderboard;
+            return new LeaderboardHolder() {
+                @Override
+                public Leaderboard get() {
+                    return tmpLeaderboard;
+                }
+
+                @Override
+                public void cleanup() {
+                    //by default, just empty the leaderboard and remove the container without touching anything model-related.
+                    tmpLeaderboard.removeModels(tmpLeaderboard.getModelKeys(), false);
+                    tmpLeaderboard.remove(false);
+                    tmpEventLog.remove();
+                }
+            };
+        }
+
+        protected LeaderboardHolder makeTmpLeaderboard(String name) {
+            return makeLeaderboard("tmp_"+name);
         }
 
         @Override
@@ -448,7 +474,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
                 Models result = new Models(key, Model.class, job);
                 Key<Models> selectionKey = Key.make(key+"_select");
-                Leaderboard selectionLeaderboard = makeTmpLeaderboard(selectionKey.toString());
+                LeaderboardHolder selectionLeaderboard = makeLeaderboard(selectionKey.toString());
                 EventLog selectionEventLog = EventLog.getOrMake(selectionKey);
 
                 {
@@ -458,13 +484,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 @Override
                 public void compute2() {
                     Countdown countdown = Countdown.fromSeconds(maxAssignedTimeSecs);
-                    ModelingStepsExecutor localExecutor = new ModelingStepsExecutor(selectionLeaderboard, selectionEventLog, countdown);
+                    ModelingStepsExecutor localExecutor = new ModelingStepsExecutor(selectionLeaderboard.get(), selectionEventLog, countdown);
                     localExecutor.start();
                     Job<Models> innerTraining = startTraining(selectionKey, maxAssignedTimeSecs);
                     localExecutor.monitor(innerTraining, work, job, false);
 
-                    Log.debug("Selection leaderboard " + selectionLeaderboard._key, selectionLeaderboard.toLogString());
-                    Selection selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.getModelKeys());
+                    Log.debug("Selection leaderboard " + selectionLeaderboard.get()._key, selectionLeaderboard.get().toLogString());
+                    Selection selection = getSelectionStrategy().select(trainedModelKeys, selectionLeaderboard.get().getModelKeys());
                     Leaderboard lb = aml().leaderboard();
                     Log.debug("Selection result for job " + key, ToStringBuilder.reflectionToString(selection));
                     lb.removeModels(selection._remove, true);
@@ -478,12 +504,12 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 @Override
                 public void onCompletion(CountedCompleter caller) {
                     Keyed.remove(selectionKey, new Futures(), false); // don't cascade: tmp models removal is is done using the logic below.
-                    selectionLeaderboard.removeModels(trainedModelKeys, false); // if original models were added to selection leaderboard, just remove them.
-                    selectionLeaderboard.removeModels( // for newly trained models, fully remove those that don't appear in the result container.
-                            Arrays.stream(selectionLeaderboard.getModelKeys()).filter(k -> !ArrayUtils.contains(result.getModelKeys(), k)).toArray(Key[]::new),
+                    selectionLeaderboard.get().removeModels(trainedModelKeys, false); // if original models were added to selection leaderboard, just remove them.
+                    selectionLeaderboard.get().removeModels( // for newly trained models, fully remove those that don't appear in the result container.
+                            Arrays.stream(selectionLeaderboard.get().getModelKeys()).filter(k -> !ArrayUtils.contains(result.getModelKeys(), k)).toArray(Key[]::new),
                             true
                     );
-                    selectionLeaderboard.remove(false); // don't cascade to avoid fully removing all models (the ones we wanted to remove have been cleaned up before).
+                    selectionLeaderboard.cleanup();
                     selectionEventLog.remove();
                     super.onCompletion(caller);
                 }
@@ -492,7 +518,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 public boolean onExceptionalCompletion(Throwable ex, CountedCompleter caller) {
                     result.unlock(job._key, false);
                     Keyed.remove(selectionKey);
-                    selectionLeaderboard.remove();
+                    selectionLeaderboard.get().remove();
                     selectionEventLog.remove();
                     return super.onExceptionalCompletion(ex, caller);
                 }

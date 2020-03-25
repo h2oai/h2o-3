@@ -13,13 +13,13 @@ public final class ModelSelectionStrategies {
 
     public static abstract class LeaderboardBasedSelectionStrategy<M extends Model> implements ModelSelectionStrategy<M> {
 
-        final Supplier<Leaderboard> _leaderboardSupplier;
+        final Supplier<LeaderboardHolder> _leaderboardSupplier;
 
-        public LeaderboardBasedSelectionStrategy(Supplier<Leaderboard> leaderboardSupplier) {
+        public LeaderboardBasedSelectionStrategy(Supplier<LeaderboardHolder> leaderboardSupplier) {
             _leaderboardSupplier = leaderboardSupplier;
         }
 
-        Leaderboard makeSelectionLeaderboard() {
+        LeaderboardHolder makeSelectionLeaderboard() {
             return _leaderboardSupplier.get();
         }
     }
@@ -28,7 +28,7 @@ public final class ModelSelectionStrategies {
 
         private final int _N;
 
-        public KeepBestN(int N, Supplier<Leaderboard> leaderboardSupplier) {
+        public KeepBestN(int N, Supplier<LeaderboardHolder> leaderboardSupplier) {
             super(leaderboardSupplier);
             _N = N;
         }
@@ -36,20 +36,23 @@ public final class ModelSelectionStrategies {
         @Override
         @SuppressWarnings("unchecked")
         public Selection<M> select(Key<M>[] originalModels, Key<M>[] newModels) {
-            Leaderboard tmpLeaderboard = makeSelectionLeaderboard();
+            LeaderboardHolder lbHolder = makeSelectionLeaderboard();
+            Leaderboard tmpLeaderboard = lbHolder.get();
             tmpLeaderboard.addModels((Key<Model>[]) originalModels);
             tmpLeaderboard.addModels((Key<Model>[]) newModels);
             Key<Model>[] sortedKeys = tmpLeaderboard.getModelKeys();
             Key<Model>[] bestN = ArrayUtils.subarray(sortedKeys, 0, Math.min(sortedKeys.length, _N));
             Key<M>[] toAdd = Arrays.stream(bestN).filter(k -> !ArrayUtils.contains(originalModels, k)).toArray(Key[]::new);
             Key<M>[] toRemove = Arrays.stream(originalModels).filter(k -> !ArrayUtils.contains(bestN, k)).toArray(Key[]::new);
-            return new Selection<>(toAdd, toRemove);
+            Selection selection = new Selection<>(toAdd, toRemove);
+            lbHolder.cleanup();
+            return selection;
         }
     }
 
     public static class KeepBestConstantSize<M extends Model> extends LeaderboardBasedSelectionStrategy<M> {
 
-        public KeepBestConstantSize(Supplier<Leaderboard> leaderboardSupplier) {
+        public KeepBestConstantSize(Supplier<LeaderboardHolder> leaderboardSupplier) {
             super(leaderboardSupplier);
         }
 
@@ -64,7 +67,7 @@ public final class ModelSelectionStrategies {
         private final Predicate<Key<M>> _criterion;
         private final int _N;
 
-        public KeepBestNFromSubgroup(int N, Predicate<Key<M>> criterion, Supplier<Leaderboard> leaderboardSupplier) {
+        public KeepBestNFromSubgroup(int N, Predicate<Key<M>> criterion, Supplier<LeaderboardHolder> leaderboardSupplier) {
             super(leaderboardSupplier);
             _criterion = criterion;
             _N = N;
@@ -76,6 +79,11 @@ public final class ModelSelectionStrategies {
             Key<M>[] newModelsSubGroup = Arrays.stream(newModels).filter(_criterion).toArray(Key[]::new);
             return new KeepBestN<M>(_N, _leaderboardSupplier).select(originalModelsSubgroup, newModelsSubGroup);
         }
+    }
+
+    public interface LeaderboardHolder {
+        Leaderboard get();
+        default void cleanup() {};
     }
 
 }

@@ -16,10 +16,10 @@ public class HyperSpaceSearchCriteria extends Iced {
     public static class Builder {
       private StoppingCriteria _criteria = new StoppingCriteria();
       public Builder maxModels(int maxModels) { _criteria._max_models = maxModels; return this; }
-      public Builder maxRuntimeSecs(int maxRuntimeSecs) { _criteria._max_runtime_secs = maxRuntimeSecs; return this; }
+      public Builder maxRuntimeSecs(double maxRuntimeSecs) { _criteria._max_runtime_secs = maxRuntimeSecs; return this; }
       public Builder stoppingMetric(StoppingMetric stoppingMetric) { _criteria._stopping_metric = stoppingMetric; return this; }
       public Builder stoppingRounds(int stoppingRounds) { _criteria._stopping_rounds = stoppingRounds; return this; }
-      public Builder stoppingTolerance(int stoppingTolerance) { _criteria._stopping_tolerance = stoppingTolerance; return this; }
+      public Builder stoppingTolerance(double stoppingTolerance) { _criteria._stopping_tolerance = stoppingTolerance; return this; }
       public StoppingCriteria build() { return _criteria; }
     }
 

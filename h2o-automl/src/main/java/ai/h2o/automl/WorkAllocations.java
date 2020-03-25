@@ -23,11 +23,11 @@ public class WorkAllocations extends Iced<WorkAllocations> {
 
   public static class Work extends Iced<Work> {
     String _id;
-    Algo _algo;
+    IAlgo _algo;
     JobType _type;
     int _weight;
 
-    Work(String id, Algo algo, JobType type, int weight) {
+    Work(String id, IAlgo algo, JobType type, int weight) {
       this._algo = algo;
       this._type = type;
       this._id = id;
@@ -65,20 +65,20 @@ public class WorkAllocations extends Iced<WorkAllocations> {
     return this;
   }
 
-  void remove(Algo algo) {
+  void remove(IAlgo algo) {
     if (frozen) throw new IllegalStateException("Can not modify allocations.");
     List<Work> filtered = new ArrayList<>(allocations.length);
     for (Work alloc : allocations) {
-      if (!algo.equals(alloc._algo)) {
+      if (!algo.name().equals(alloc._algo.name())) {
         filtered.add(alloc);
       }
     }
     allocations = filtered.toArray(new Work[0]);
   }
 
-  public Work getAllocation(String id, Algo algo) {
+  public Work getAllocation(String id, IAlgo algo) {
     for (Work alloc : allocations) {
-      if (alloc._algo == algo && alloc._id.equals(id)) return alloc;
+      if (alloc._algo.name().equals(algo.name()) && alloc._id.equals(id)) return alloc;
     }
     return null;
   }

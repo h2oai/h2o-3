@@ -1,21 +1,22 @@
 package ai.h2o.automl.dummy;
 
 import hex.Model;
+import hex.ModelBuilder;
 import hex.ModelMetrics;
 import hex.ModelMetricsBinomial;
 import water.Key;
+import water.util.IcedHashMap;
 
 import java.util.Random;
 import java.util.function.Function;
 
 public class DummyModel extends Model<DummyModel, DummyModel.DummyModelParameters, DummyModel.DummyModelOutput>{
 
-    private static Random RNG = new Random(1);
-
     public static class DummyModelParameters extends Model.Parameters {
 
         public transient Function<double[], double[]> _predict;
-        public String[] _tags = new String[0];
+        public String _tag = null;
+        public IcedHashMap<String, String> _moreParams = new IcedHashMap<>();
 
         @Override
         public String algoName() {
@@ -39,7 +40,18 @@ public class DummyModel extends Model<DummyModel, DummyModel.DummyModelParameter
     }
 
     public static class DummyModelOutput extends Model.Output {
+
+        public IcedHashMap<String, String> _moreProperties = new IcedHashMap<>();
+
         boolean _supervised = true;
+
+        public DummyModelOutput() {
+            super();
+        }
+
+        public DummyModelOutput(ModelBuilder b) {
+            super(b);
+        }
 
         @Override
         public boolean isSupervised() {
@@ -50,6 +62,10 @@ public class DummyModel extends Model<DummyModel, DummyModel.DummyModelParameter
 
     public DummyModel(String key) {
         super(Key.make(key), new DummyModelParameters(), new DummyModelOutput());
+    }
+
+    public DummyModel(Key<DummyModel> key, DummyModelParameters parameters, DummyModelOutput output) {
+        super(key, parameters, output);
     }
 
     @Override

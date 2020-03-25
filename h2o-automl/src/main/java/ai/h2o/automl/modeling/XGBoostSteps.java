@@ -233,11 +233,6 @@ public class XGBoostSteps extends ModelingSteps {
 
                 @Override
                 protected ModelSelectionStrategy getSelectionStrategy() {
-//                    return new KeepBestNFromSubgroup<>(
-//                            1,
-//                            k -> k.get() instanceof XGBoostModel,
-//                            () -> makeTmpLeaderboard()
-//                    );
                     return (originalModels, newModels) ->
                             new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _algo+"_"+_id)))
                                     .select(new Key[] { getBestXGB()._key }, newModels);
@@ -275,15 +270,16 @@ public class XGBoostSteps extends ModelingSteps {
                     int sti = xgBoostParameters._score_tree_interval;
                     Object[][] hyperParams = new Object[][] {
                             new Object[] {"_learn_rate", "_score_tree_interval"},
-                            new Object[] {        0.5  ,                   sti },
-                            new Object[] {        0.2  ,                   sti },
-                            new Object[] {        0.1  ,                 2*sti },
-                            new Object[] {        0.05 ,                 2*sti },
-                            new Object[] {        0.02 ,                 3*sti },
-                            new Object[] {        0.01 ,                 3*sti },
-                            new Object[] {        0.005,                 4*sti },
-                            new Object[] {        0.002,                 4*sti },
-                            new Object[] {        0.001,                 5*sti },
+                            new Object[] {       0.5   ,                   sti },
+                            new Object[] {       0.2   ,                   sti },
+                            new Object[] {       0.1   ,                 2*sti },
+                            new Object[] {       0.05  ,                 2*sti },
+                            new Object[] {       0.02  ,                 3*sti },
+                            new Object[] {       0.01  ,                 3*sti },
+                            new Object[] {       0.005 ,                 4*sti },
+                            new Object[] {       0.002 ,                 4*sti },
+                            new Object[] {       0.001 ,                 5*sti },
+                            new Object[] {       0.0005,                 5*sti },
                     };
 
                     return asModelsJob(GridSearch.startGridSearch(
@@ -292,7 +288,12 @@ public class XGBoostSteps extends ModelingSteps {
                                     xgBoostParameters,
                                     hyperParams,
                                     new GridSearch.SimpleParametersBuilderFactory<>(),
-                                    new SequentialSearchCriteria(StoppingCriteria.create().maxRuntimeSecs((int)maxRuntimeSecs).build())
+                                    new SequentialSearchCriteria(StoppingCriteria.create()
+                                            .maxRuntimeSecs((int)maxRuntimeSecs)
+                                            .stoppingMetric(xgBoostParameters._stopping_metric)
+                                            .stoppingRounds(2) // enforcing this as we define the sequence and it is quite small.
+                                            .stoppingTolerance(xgBoostParameters._stopping_tolerance)
+                                            .build())
                             ),
                             GridSearch.SEQUENTIAL_MODEL_BUILDING
                     ), result);

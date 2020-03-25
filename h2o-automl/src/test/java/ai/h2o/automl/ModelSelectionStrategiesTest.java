@@ -3,6 +3,7 @@ package ai.h2o.automl;
 import ai.h2o.automl.ModelSelectionStrategies.KeepBestConstantSize;
 import ai.h2o.automl.ModelSelectionStrategies.KeepBestN;
 import ai.h2o.automl.ModelSelectionStrategies.KeepBestNFromSubgroup;
+import ai.h2o.automl.ModelSelectionStrategies.LeaderboardHolder;
 import ai.h2o.automl.dummy.DummyModel;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.leaderboard.Leaderboard;
@@ -34,7 +35,7 @@ public class ModelSelectionStrategiesTest {
     private Frame fr;
     private Model[] oldModels;
     private Model[] newModels;
-    private Supplier<Leaderboard> leaderboardSupplier;
+    private Supplier<LeaderboardHolder> leaderboardSupplier;
 
 
     @Before
@@ -52,16 +53,27 @@ public class ModelSelectionStrategiesTest {
 
         leaderboardSupplier = () -> {
             String name = "dummy_lb";
-            EventLog el = EventLog.getOrMake(Key.make(name)); toDelete.add(el);
-            Leaderboard lb = Leaderboard.getOrMake(name, el, fr, "logloss"); toDelete.add(lb);
-            return lb;
+            EventLog el = EventLog.getOrMake(Key.make(name)); //toDelete.add(el);
+            Leaderboard lb = Leaderboard.getOrMake(name, el, fr, "logloss"); //toDelete.add(lb);
+            return new LeaderboardHolder() {
+                @Override
+                public Leaderboard get() {
+                    return lb;
+                }
+
+                @Override
+                public void cleanup() {
+                    lb.remove();
+                    el.remove();
+                }
+            };
         };
 
         Model[] models = Arrays.asList(1., 2., 3., 4., 1.1, 2.2, 5.5).stream().map(score -> {
             DummyModel m = new DummyModel("dummy_" + score);
             double[] perfect_preds = ard(1., 1., 1., 0., 0.);
             int good_preds = (int) Math.floor(score);
-            m._parms._tags = new String[] {good_preds % 2 == 0 ? "even" : "odd"};
+            m._parms._moreParams.put(good_preds % 2 == 0 ? "even" : "odd", String.valueOf(good_preds));
             m._parms._predict = data -> {
                 int row_idx = (int) data[0];
                 boolean ok = row_idx < good_preds;
@@ -170,7 +182,7 @@ public class ModelSelectionStrategiesTest {
                     1,
                     k -> {
                         DummyModel m = k.get();
-                        return ArrayUtils.contains(m._parms._tags, "odd");
+                        return m._parms._moreParams.containsKey("odd");
                     },
                     leaderboardSupplier
             );

@@ -46,6 +46,7 @@
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with exclude_algos param.
 #         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+#  @param exploitation_ratio. The budget ratio dedicated to the exploitation phase. Defaults to 0.
 #' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional (Expert usage only).
 #' @param monotone_constraints List. A mapping representing monotonic constraints.
 #         Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
@@ -95,6 +96,7 @@ h2o.automl <- function(x, y, training_frame,
                        exclude_algos = NULL,
                        include_algos = NULL,
                        modeling_plan = NULL,
+                       exploitation_ratio = NULL,
                        monotone_constraints = NULL,
                        algo_parameters = NULL,
                        keep_cross_validation_predictions = FALSE,
@@ -208,6 +210,9 @@ h2o.automl <- function(x, y, training_frame,
       include_algos <- as.list(include_algos)
     }
     build_models$include_algos <- include_algos
+  }
+  if (!is.null(exploitation_ratio)) {
+    build_models$exploitation_ratio <- exploitation_ratio
   }
   if (!is.null(modeling_plan)) {
     is.string <- function(s) is.character(s) && length(s) == 1
