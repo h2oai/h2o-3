@@ -295,10 +295,10 @@ def test_suite_clean_cv_models():
 def test_suite_remove_automl():
 
     def contains_leaderboard(project_name, keys):
-        return "AutoML_Leaderboard_{}".format(project_name) in keys['all'].values
+        return "Leaderboard_{}".format(project_name) in keys['all'].values
 
     def contains_event_log(project_name, keys):
-        return "AutoML_Events_{}".format(project_name) in keys['all'].values
+        return "Events_{}".format(project_name) in keys['all'].values
 
     def frame_in_cluster(frame):
         # reload the first row of the frame to verify that no vec has been removed

@@ -248,7 +248,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
             level = API.Level.secondary)
     public Algo[] include_algos;
 
-    @API(help="The budget ratio dedicated to the exploitation phase.",
+    @API(help="The budget ratio (between 0 and 1) dedicated to the exploitation phase.",
             level = API.Level.secondary)
     public double exploitation_ratio;
 
