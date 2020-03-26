@@ -66,7 +66,8 @@ class LocalSequentialSegmentModelsBuilder extends Iced<LocalSequentialSegmentMod
   }
 
   private ModelBuilder makeBuilder(long segmentIdx, double[] segmentVals) {
-    ModelBuilder builder = ModelBuilder.make(_blueprint_parms);
+    Key<Model> mKey = SegmentModelsUtils.makeUniqueModelKey(_job._result, segmentIdx);
+    ModelBuilder builder = ModelBuilder.make(_blueprint_parms, mKey);
     builder._parms._train = makeSegmentFrame(_full_train, segmentIdx, segmentVals);
     builder._parms._valid = makeSegmentFrame(_full_valid, segmentIdx, segmentVals);
     return builder;
