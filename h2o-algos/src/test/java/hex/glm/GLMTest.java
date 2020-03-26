@@ -2099,7 +2099,7 @@ public class GLMTest  extends TestUtil {
         GLMModel.GLMParameters parms = new GLMModel.GLMParameters();
         parms._train = tfr._key;
         String resp = tfr.lastVecName();
-        if (fam==Family.binomial || fam==Family.multinomial) {
+        if (fam==Family.binomial || fam==Family.multinomial || fam == Family.fractionalbinomial) {
           resp = fam==Family.multinomial?"rad":"chas";
           Vec v = tfr.remove(resp);
           tfr.add(resp, v.toCategoricalVec());
