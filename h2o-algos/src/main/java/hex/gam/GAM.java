@@ -159,7 +159,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
 
       if (_parms._gam_x == null)  // check _gam_x contains valid columns
-        error("_gam_X", "must specify columns indices to apply GAM to.  If you don't have any," +
+        error("_gam_x", "must specify columns names to apply GAM to.  If you don't have any," +
                 " use GLM.");
       else {  // check and make sure gam_x column types are legal
         Frame dataset = _parms.train();
@@ -173,8 +173,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                     "column.");
           if (dataset.vec(cname).isBad() || dataset.vec(cname).isTime() || dataset.vec(cname).isUUID() || 
           dataset.vec(cname).isConst())
-            error("gam_x", "column " + cname + " is bad, time column, constant column or UUID and" +
-                    " cannot be used as a gam column.");
+            error("gam_x", String.format("Column '%s' of type '%s' cannot be used as GAM column. Column types " +
+                    "BAD, TIME, CONSTANT and UUID cannot be used.", cname, dataset.vec(cname).get_type_str()));
           if (!dataset.vec(cname).isNumeric())
             error("gam_x", "column " + cname + " is not numerical and cannot be used as a gam" +
                     " column.");
