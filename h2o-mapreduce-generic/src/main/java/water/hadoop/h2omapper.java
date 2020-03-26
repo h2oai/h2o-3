@@ -5,6 +5,9 @@ import org.apache.hadoop.io.Text;
 import org.apache.hadoop.mapreduce.Counter;
 import org.apache.hadoop.mapreduce.Mapper;
 import water.H2O;
+import water.util.BinaryFileTransfer;
+import water.hive.DelegationTokenRefresher;
+import water.util.FileUtils;
 import water.util.Log;
 import water.util.StringUtils;
 
@@ -15,7 +18,6 @@ import java.net.Socket;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
-
 
 /**
  * Interesting Configuration properties:
@@ -33,12 +35,6 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
   public static final String H2O_CLOUDING_DIR_KEY = "h2o.clouding.dir";
   public static final String H2O_CLOUD_SIZE_KEY = "h2o.clouding.cloud.size";
 
-  public static final String H2O_AUTH_USER = "h2o.auth.user";
-  public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
-  public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
-  public static final String H2O_HIVE_JDBC_URL = "h2o.hive.jdbc.url";
-  public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
-  
   public static final String H2O_IP_ENVVAR = "h2o.ip.envvar";
   
   public static final String H2O_MAPPER_ARGS_BASE = "h2o.mapper.args.";
@@ -134,18 +130,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     }
   }
   
-  static boolean makeSureIceRootExists(String iceRoot) {
-    File f = new File(iceRoot);
-    if (!f.exists()) {
-      boolean success = f.mkdirs();
-      if (!success) {
-        Log.POST(103, "mkdirs(" + f.toString() + ") failed");
-        return false;
-      }
-      Log.POST(104, "after mkdirs()");
-    }
-    return true;
-  }
+
   
   private int run2(Context context) throws IOException {
     Configuration conf = context.getConfiguration();
@@ -157,7 +142,7 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
     // Hadoop will set the tmpdir to a directory inside of the container
     // It is important to write to a directory that is in the container otherwise eg. logs can be overwriting each other
     String ice_root = System.getProperty("java.io.tmpdir");
-    if (!makeSureIceRootExists(ice_root)) {
+    if (!FileUtils.makeSureDirExists(ice_root)) {
       return -1;
     }
 
@@ -237,8 +222,8 @@ public class h2omapper extends Mapper<Text, Text, Text, Text> {
       String basename = conf.get(H2O_MAPPER_CONF_BASENAME_BASE + i);
       String fileName = ice_root + File.separator + basename;
       String payload = conf.get(H2O_MAPPER_CONF_PAYLOAD_BASE + i);
-      byte[] byteArr = h2odriver.convertStringToByteArr(payload);
-      h2odriver.writeBinaryFile(fileName, byteArr);
+      byte[] byteArr = BinaryFileTransfer.convertStringToByteArr(payload);
+      BinaryFileTransfer.writeBinaryFile(fileName, byteArr);
       if(null != arg && !arg.isEmpty()) {
         argsList.add(fileName);
       }

@@ -11,6 +11,7 @@ compileJava {
 
 dependencies {
   // the versions here are not important - user will provide the correct versions at runtime
+  compileOnly "org.apache.hive:hive-jdbc:1.1.0-cdh5.10.0"
   compileOnly "org.apache.hadoop:hadoop-client:2.6.0-cdh5.10.0"
   compileOnly("org.apache.hive:hive-exec:1.1.0-cdh5.10.0") {
     transitive = false
