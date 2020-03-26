@@ -230,7 +230,7 @@ public class GamTestPiping extends TestUtil {
       params._family = family;
       params._link = GLMModel.GLMParameters.Link.family_default;
       params._saveZMatrix = saveZmat;
-      params._saveGamCols = true;
+      params._save_gam_cols = true;
       params._savePenaltyMat = savePenalty;
       params._solver = GLMModel.GLMParameters.Solver.IRLSM;
       gam = new GAM(params).trainModel().get();
@@ -530,7 +530,7 @@ public class GamTestPiping extends TestUtil {
   }
   
   @Test
-  public void testAgainstRGam() {
+  public void testModelMetricsGeneration() {
     Scope.enter();
     try {
       // test for gaussian

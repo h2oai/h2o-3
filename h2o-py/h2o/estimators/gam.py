@@ -39,7 +39,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                    "gradient_epsilon", "link", "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors",
                    "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir", "balance_classes",
                    "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
-                   "max_runtime_secs", "custom_metric_func", "k", "knots_keys", "gam_x", "bs", "scale", "saveGamCols"}
+                   "max_runtime_secs", "custom_metric_func", "k", "knots_keys", "gam_x", "bs", "scale", "save_gam_cols"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
@@ -935,18 +935,18 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
 
 
     @property
-    def saveGamCols(self):
+    def save_gam_cols(self):
         """
         Save keys of model matrix
 
         Type: ``bool``  (default: ``False``).
         """
-        return self._parms.get("saveGamCols")
+        return self._parms.get("save_gam_cols")
 
-    @saveGamCols.setter
-    def saveGamCols(self, saveGamCols):
-        assert_is_type(saveGamCols, None, bool)
-        self._parms["saveGamCols"] = saveGamCols
+    @save_gam_cols.setter
+    def save_gam_cols(self, save_gam_cols):
+        assert_is_type(save_gam_cols, None, bool)
+        self._parms["save_gam_cols"] = save_gam_cols
 
 
     @property

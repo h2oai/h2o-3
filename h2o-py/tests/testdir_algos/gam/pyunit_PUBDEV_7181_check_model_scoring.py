@@ -50,7 +50,7 @@ def buildModelCheckPredict(train_data, test_data, model_test_data, myy, gamX, fa
     if pred.ncols < model_test_data.ncols:
         ncolT = model_test_data.ncols-1
         model_test_data = model_test_data.drop(ncolT)
-    pyunit_utils.compare_frames_local(pred, model_test_data)
+    pyunit_utils.compare_frames_local(pred, model_test_data, prob=1)
     
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_gam_model_predict)

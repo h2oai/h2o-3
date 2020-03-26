@@ -107,7 +107,7 @@
 #' @param knots_keys String arrays storing frame keys of knots.  One for each gam column specified in gam_x
 #' @param bs Basis function type for each gam predictors, 0 for cr
 #' @param scale Smoothing parameter for gam predictors
-#' @param saveGamCols \code{Logical}. Save keys of model matrix Defaults to FALSE.
+#' @param save_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
 #' @export
 h2o.gam <- function(x,
                     y,
@@ -166,7 +166,7 @@ h2o.gam <- function(x,
                     knots_keys = NULL,
                     bs = NULL,
                     scale = NULL,
-                    saveGamCols = FALSE)
+                    save_gam_cols = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -310,8 +310,8 @@ h2o.gam <- function(x,
     parms$bs <- bs
   if (!missing(scale))
     parms$scale <- scale
-  if (!missing(saveGamCols))
-    parms$saveGamCols <- saveGamCols
+  if (!missing(save_gam_cols))
+    parms$save_gam_cols <- save_gam_cols
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

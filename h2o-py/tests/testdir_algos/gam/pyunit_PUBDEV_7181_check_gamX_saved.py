@@ -17,9 +17,9 @@ def test_gam_gamColumns():
     myY = "C11"
     h2o_data["C11"] = h2o_data["C11"].asfactor()
     h2o_model = H2OGeneralizedAdditiveEstimator(family="multinomial", gam_x=["C6", "C7", "C8"],
-                                                 saveGamCols=True, scale = [1,1,1], k=[5,5,5])
+                                                 save_gam_cols=True, scale = [1,1,1], k=[5,5,5])
     h2o_model.train(x=myX, y=myY, training_frame=h2o_data)
-    gamFrame = h2o.get_frame(h2o_model._model_json["output"]["gamTransformedTrainCenterKey"])
+    gamFrame = h2o.get_frame(h2o_model._model_json["output"]["gam_transformed_center_key"])
     gamFrame = gamFrame.drop("C1").drop("C2").drop("C11")
     gamFrameAns = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C6Gam_center.csv"))
     gamFrameAns = gamFrameAns.cbind (h2o.import_file(pyunit_utils.locate("smalldata/gam_test/multinomial_10_classes_10_cols_10000_Rows_train_C7Gam_center.csv")))

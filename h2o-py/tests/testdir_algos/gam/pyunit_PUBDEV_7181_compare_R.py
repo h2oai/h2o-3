@@ -21,6 +21,8 @@ def test_gam_compare_R():
     gaussModelLS = buildModelCheckPredict(h2o_data, myY, ["C11", "C12", "C13"], 'gaussian', searchLambda = True)
     print("R rmse is {0}.  H2O GAM rmse with mostly default settings: {1}.  H2O GAM rmse with Lambda search enabled: "
           "{2}".format(rmseR, gaussModel.rmse()*2, gaussModelLS.rmse()*2))
+    assert gaussModelLS.rmse()*2 < rmseR, "H2O GAM mean residual error {0} is higher than R GAM mean residual " \
+                                          "error {1}".format(gaussModelLS.rmse()*2, rmseR)
    
     print("Checking model scoring for binomial")
     h2o_data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
@@ -29,15 +31,20 @@ def test_gam_compare_R():
     rpredAcc = 6931.0/h2o_data.nrow
     myY = "C21"
     h2o_data["C21"] = h2o_data["C21"].asfactor()
-    model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictBinomialGAMRPython.csv")) 
     binomialModel = buildModelCheckPredict(h2o_data, myY, ["C11", "C12", "C13"], 'binomial')
     binomialModelLS = buildModelCheckPredict(h2o_data, myY, ["C11", "C12", "C13"], 'binomial', searchLambda = True)
     predF = binomialModel.predict(h2o_data)
     predFLS = binomialModelLS.predict(h2o_data)
-    binomialAcc = (sum(predF["predict"]==h2o_data["C21"])[0,0])/h2o_data.nrow;
-    binomialLSAcc = (sum(predFLS["predict"]==h2o_data["C21"])[0,0])/h2o_data.nrow;
+    tempV = predF["predict"]==h2o_data["C21"]
+    binomialAcc = tempV.sum()/h2o_data.nrow
+    binomialAcc = float(binomialAcc.as_data_frame(use_pandas=False)[1][0])
+    tempV3 = predFLS["predict"]==h2o_data["C21"]
+    binomialLSAcc = tempV3.sum()/h2o_data.nrow
+    binomialLSAcc = float(binomialLSAcc.as_data_frame(use_pandas=False)[1][0])
     print("R prediction accuracy: {0}.  H2O GAM prediction accuracy with mostly default settings: {1}.  H2O GAM "
           "prediction accuracy with Lambda search enabled: {2} ".format(rpredAcc, binomialAcc, binomialLSAcc))
+    assert binomialLSAcc > rpredAcc, "H2O Gam accuracy: {0} is lower than R Gam accuracy: {1}".format(binomialLSAcc,
+                                                                                                      rpredAcc)
     print("gam compare with R completed successfully")    
     
 def buildModelCheckPredict(train_data, myy, gamX, family, searchLambda=False):

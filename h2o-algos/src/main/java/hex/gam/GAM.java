@@ -360,7 +360,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         DKV.put(dinfo._key, dinfo);
         model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, dinfo._adaptedFrame, dinfo));
         model.delete_and_lock(_job);
-        if (_parms._saveGamCols) {  // save gam column keys
+        if (_parms._save_gam_cols) {  // save gam column keys
           model._output._gamTransformedTrainCenter = newTFrame._key;
 
         }
@@ -378,7 +378,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       } finally {
         List<Key<Vec>> keep = new ArrayList<>();
         if (model != null) {
-          if (_parms._saveGamCols) {
+          if (_parms._save_gam_cols) {
             addFrameKeys2Keep(keep, newTFrame._key);
           }
           model.unlock(_job);
@@ -435,8 +435,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       model._output._binvD = _binvD;
       model._output._knots = _knots;
       model._output._numKnots = _numKnots;
-      if (_parms._saveGamCols)
-        model._output._gamTransformedTrainCenterKey = model._output._gamTransformedTrainCenter.toString();
+      if (_parms._save_gam_cols)
+        model._output._gam_transformed_center_key = model._output._gamTransformedTrainCenter.toString();
       if (_parms._savePenaltyMat) {
         model._output._penaltyMatrices_center = _penalty_mat_center;
         model._output._penaltyMatrices = _penalty_mat;

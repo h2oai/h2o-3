@@ -249,7 +249,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public double[] _scale;  // array storing scaling values to control wriggliness of fit
     public GLMType _glmType = GLMType.gam; // internal parameter
     public boolean _saveZMatrix = false;  // if asserted will save Z matrix
-    public boolean _saveGamCols = false;  // if true will save the keys to gam Columns only
+    public boolean _save_gam_cols = false;  // if true will save the keys to gam Columns only
     public boolean _savePenaltyMat = false; // if true will save penalty matrices as tripple array
 
     public String algoName() { return "GAM"; }
@@ -361,9 +361,9 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public Key<Frame> _gamTransformedTrainCenter;  // contain key of predictors, all gam columns centered
     public DataInfo _dinfo;
     public String[] _responseDomains;
-    public String _gamTransformedTrainCenterKey;
+    public String _gam_transformed_center_key;
     final Family _family;
-
+    
     public double dispersion(){ return _dispersion;}
 
     public GAMModelOutput(GAM b, Frame adaptr, DataInfo dinfo) {
@@ -400,7 +400,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     // compare column names with test frame.  If equal, call adaptTestForTrain.  Otherwise, need to adapt it first
     String[] testNames = test.names();
     if (!equalColNames(testNames, _output._dinfo._adaptedFrame.names(), _parms._response_column)) {  // shallow check: column number, column names only
-      Frame adptedF = cleanUpInputFrame(test, testNames);
+      Frame adptedF = cleanUpInputFrame(test, testNames); // column names here need to be in same sequence of dinfo._adaptedFrame
       int testNumCols = test.numCols();
       for (int index = 0; index < testNumCols; index++)
         test.remove(0);
@@ -450,7 +450,13 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     
     if (respV != null)
       adptedF.add(_parms._response_column, respV);
-    return adptedF;
+    DataInfo dinfo = new DataInfo(adptedF, null, respV!=null?1:0, _parms._use_all_factor_levels
+            || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
+            _parms.missingValuesHandling() == GLMModel.GLMParameters.MissingValuesHandling.Skip,
+            _parms.missingValuesHandling() == GLMModel.GLMParameters.MissingValuesHandling.MeanImputation || _parms.missingValuesHandling() == GLMModel.GLMParameters.MissingValuesHandling.PlugValues,
+            _parms.makeImputer(),
+            false, _parms._weights_column != null, _parms._offset_column != null,  _parms._fold_column != null, _parms.interactionSpec());
+    return dinfo._adaptedFrame;
   }
 
   @Override

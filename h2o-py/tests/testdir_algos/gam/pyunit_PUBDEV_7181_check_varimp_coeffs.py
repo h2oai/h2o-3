@@ -47,13 +47,13 @@ def buildModelCoeffVarimpCheck(train_data, y, gamX, family):
     nclass = 1
     if family == 'multinomial':
         nclass = len(train_data[y].categories())  
-        h2oCoeffs = h2oCoeffs[h2oCoeffs.keys()[0]]
+        h2oCoeffs = h2oCoeffs['coefficients']
         
     assert len(h2oCoeffs)==numPCoeffs*nclass, "expected number of coefficients: {0}, actual number of coefficients: " \
                                       "{1}".format(numPCoeffs*nclass, len(h2oCoeffs))
     h2oCoeffsStandardized = h2o_model.coef_norm()
     if family == 'multinomial':
-        h2oCoeffsStandardized = h2oCoeffsStandardized[h2oCoeffsStandardized.keys()[0]]
+        h2oCoeffsStandardized = h2oCoeffsStandardized['standardized_coefficients']
     assert len(h2oCoeffsStandardized)==numPCoeffs*nclass, "expected number of coefficients: {0}, actual number of " \
                                                   "coefficients:{1}".format(numPCoeffs*nclass, len(h2oCoeffsStandardized))
     varimp = h2o_model.varimp()

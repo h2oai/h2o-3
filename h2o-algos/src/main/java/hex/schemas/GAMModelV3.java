@@ -28,7 +28,7 @@ public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAM
     double dispersion;
     
     @API(help="key storing gam columns and predictor columns.  For debugging purposes only")
-    String gamTransformedTrainCenterKey;
+    String gam_transformed_center_key;
     
     @API(help="GLM Z values.  For debugging purposes only")
     double[] glm_zvalues;
@@ -37,7 +37,7 @@ public class GAMModelV3 extends ModelSchemaV3<GAMModel, GAMModelV3, GAMModel.GAM
     double[] glm_pvalues;
 
     @API(help="GLM standard error values.  For debugging purposes only")
-    double[] glm_stdErr;
+    double[] glm_std_err;
   }
 
   public GAMV3.GAMParametersV3 createParametersSchema() { return new GAMV3.GAMParametersV3();}
