@@ -10,7 +10,7 @@ import java.util.Arrays;
 
 public class Models<M extends Model> extends Lockable<Models<M>> implements ModelContainer<M> {
 
-    private final Class<M> _clz;
+    private final int _type_id;
     private final Job _job;
     private Key<M>[] _modelKeys = new Key[0];
 
@@ -20,7 +20,7 @@ public class Models<M extends Model> extends Lockable<Models<M>> implements Mode
 
     public Models(Key<Models<M>> key, Class<M> clz, Job job) {
         super(key);
-        _clz = clz;
+        _type_id = clz != null ? TypeMap.getIcedId(clz.getName()) : -1;
         _job = job;
     }
 
@@ -30,10 +30,13 @@ public class Models<M extends Model> extends Lockable<Models<M>> implements Mode
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     public M[] getModels() {
+        Arrays.stream(_modelKeys).forEach(DKV::prefetch);
+        Class<M> clz = (Class<M>)(_type_id > 0 ? TypeMap.theFreezable(_type_id).getClass(): Model.class);
         return Arrays.stream(_modelKeys)
                 .map(k -> k == null ? null : k.get())
-                .toArray(l -> (M[])Array.newInstance(_clz, l));
+                .toArray(l -> (M[])Array.newInstance(clz, l));
     }
 
     @Override
