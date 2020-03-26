@@ -135,17 +135,29 @@ public class ModelBuilderTest extends TestUtil {
   }
   
   @Test
-  public void testMakeByModelParameters() {
+  public void testMakeFromModelParams() {
     DummyModelParameters params = new DummyModelParameters();
 
     ModelBuilder modelBuilder = ModelBuilder.make(params);
 
     assertNotNull(modelBuilder._job); 
     assertNotNull(modelBuilder._result); 
-    assertEquals(params, params); 
-    assertNotEquals(modelBuilder._parms, params); 
+    assertNotSame(modelBuilder._parms, params); 
   }
 
+  @Test
+  public void testMakeFromParamsAndKey() {
+    DummyModelParameters params = new DummyModelParameters();
+    Key<Model> mKey = Key.make();
+
+    ModelBuilder modelBuilder = ModelBuilder.make(params, mKey);
+
+    assertNotNull(modelBuilder._job);
+    assertEquals(modelBuilder._job._result, mKey);
+    assertEquals(mKey, modelBuilder._result);
+    assertNotSame(modelBuilder._parms, params);
+  }
+  
   @Test
   public void testScoreReorderedDomain() {
     Frame train = null, test = null, scored = null;

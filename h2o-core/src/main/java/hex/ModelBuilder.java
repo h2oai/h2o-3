@@ -184,6 +184,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public static <B extends ModelBuilder, MP extends Model.Parameters> B make(MP parms) {
     Key<Model> mKey = ModelBuilder.defaultKey(parms.algoName());
+    return make(parms, mKey);
+  }
+
+  public static <B extends ModelBuilder, MP extends Model.Parameters> B make(MP parms, Key<Model> mKey) {
     Job<Model> mJob = new Job<>(mKey, parms.javaName(), parms.algoName());
     B newMB = ModelBuilder.make(parms.algoName(), mJob, mKey);
     newMB._parms = parms.clone();
