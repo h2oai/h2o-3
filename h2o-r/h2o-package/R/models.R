@@ -117,20 +117,33 @@ NULL
   if (algo=="pca" && is.null(params$k)) # make sure to set k=1 for default for pca
     params$k=1
   job <- .h2o.startModelJob(algo, params, h2oRestApiVersion)
-  h2o.getFutureModel(job, verbose = verbose)
+  .h2o.getFutureModel(job, verbose = verbose)
 }
 
 .h2o.startModelJob <- function(algo, params, h2oRestApiVersion) {
   .key.validate(params$key)
+  #---------- Params ----------#
+  param_values <- .h2o.makeModelParams(algo, params, h2oRestApiVersion)
+  #---------- Build! ----------#
+  res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+  .h2o.processResponseWarnings(res)
+  #---------- Output ----------#
+  job_key  <- res$job$key$name
+  dest_key <- res$job$dest$name
+  new("H2OModelFuture",job_key=job_key, model_id=dest_key)
+}
+
+.h2o.makeModelParams <- function(algo, params, h2oRestApiVersion) {
   #---------- Force evaluate temporary ASTs ----------#
   ALL_PARAMS <- .h2o.__remoteSend(method = "GET", h2oRestApiVersion = h2oRestApiVersion, .h2o.__MODEL_BUILDERS(algo))$model_builders[[algo]]$parameters
-
   #---------- Check user parameter types ----------#
   param_values <- .h2o.checkAndUnifyModelParameters(algo = algo, allParams = ALL_PARAMS, params = params)
   #---------- Validate parameters ----------#
   #.h2o.validateModelParameters(algo, param_values, h2oRestApiVersion)
-  #---------- Build! ----------#
-  res <- .h2o.__remoteSend(method = "POST", .h2o.__MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+  return(param_values)
+}
+
+.h2o.processResponseWarnings <- function(res) {
   if(length(res$messages) != 0L){
     warn <- lapply(res$messages, function(y) {
       if(class(y) == "list" && y$message_type == "WARN" )
@@ -139,9 +152,29 @@ NULL
     })
     if(any(nzchar(warn))) warning(warn)
   }
-  job_key  <- res$job$key$name
-  dest_key <- res$job$dest$name
-  new("H2OModelFuture",job_key=job_key, model_id=dest_key)
+}
+
+.h2o.startSegmentModelsJob <- function(algo, segment_params, params, h2oRestApiVersion) {
+  #---------- Params ----------#
+  param_values <- .h2o.makeModelParams(algo, params, h2oRestApiVersion)
+  param_values$segment_models_id <- segment_params$segment_models_id
+  param_values$segment_columns <- segment_params$segment_columns
+  #---------- Build! ----------#
+  job <- .h2o.__remoteSend(method = "POST", .h2o.__BULK_MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+  job_key  <- job$key$name
+  dest_key <- job$dest$name
+  new("H2OSegmentModelsFuture",job_key=job_key, segment_models_id=dest_key)
+}
+
+.h2o.segmentModelsJob <- function(algo, segment_params, params, h2oRestApiVersion) {
+  .key.validate(segment_params$segment_models_id)
+  sm <- .h2o.startSegmentModelsJob(algo, segment_params, params, h2oRestApiVersion)
+  .h2o.getFutureSegmentModels(sm)
+}
+
+.h2o.getFutureSegmentModels <- function(object) {
+  .h2o.__waitOnJob(object@job_key)
+  h2o.getSegmentModels(object@segment_models_id)
 }
 
 #
@@ -167,7 +200,7 @@ NULL
 }
 
 .h2o.createModel <- function(algo, params, h2oRestApiVersion = .h2o.__REST_API_VERSION) {
-  h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
+  .h2o.getFutureModel(.h2o.startModelJob(algo, params, h2oRestApiVersion))
 }
 
 .h2o.pollModelUpdates <- function(job) {
@@ -180,13 +213,7 @@ NULL
   }
 }
 
-#' Get future model
-#'
-#' @rdname h2o.getFutureModel
-#' @param object H2OModel
-#' @param verbose Print model progress to console. Default is FALSE
-#' @export
-h2o.getFutureModel <- function(object, verbose=FALSE) {
+.h2o.getFutureModel <- function(object, verbose=FALSE) {
   .h2o.__waitOnJob(object@job_key, pollUpdates=ifelse(verbose, .h2o.pollModelUpdates, as.null))
   h2o.getModel(object@model_id)
 }

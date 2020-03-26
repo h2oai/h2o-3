@@ -142,3 +142,137 @@ h2o.coxph <- function(x,
   model <- .h2o.modelJob('coxph', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
+
+#'
+#' Trains coxph model for each segment of the training dataset.
+#'
+#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
+#'        If x is missing, then all columns except event_column, start_column and stop_column are used.
+#' @param event_column The name of binary data column in the training frame indicating the occurrence of an event.
+#' @param training_frame Id of the training data frame.
+#' @param start_column Start Time Column.
+#' @param stop_column Stop Time Column.
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
+#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+#' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
+#' @param stratify_by List of columns to use for stratification.
+#' @param ties Method for Handling Ties. Must be one of: "efron", "breslow". Defaults to efron.
+#' @param init Coefficient starting value. Defaults to 0.
+#' @param lre_min Minimum log-relative error. Defaults to 9.
+#' @param max_iterations Maximum number of iterations. Defaults to 20.
+#' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
+#' @param interaction_pairs A list of pairwise (first order) column interactions.
+#' @param interactions_only A list of columns that should only be used to create interactions but should not itself participate in model
+#'        training.
+#' @param use_all_factor_levels \code{Logical}. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
+#'        FALSE.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
+#'        and train a separate model for each segment (group of rows).
+#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
+#' @export
+h2o.bulk_coxph <- function(x,
+                           event_column,
+                           training_frame,
+                           start_column = NULL,
+                           stop_column = NULL,
+                           weights_column = NULL,
+                           offset_column = NULL,
+                           stratify_by = NULL,
+                           ties = c("efron", "breslow"),
+                           init = 0,
+                           lre_min = 9,
+                           max_iterations = 20,
+                           interactions = NULL,
+                           interaction_pairs = NULL,
+                           interactions_only = NULL,
+                           use_all_factor_levels = FALSE,
+                           export_checkpoints_dir = NULL,
+                           segment_columns = NULL,
+                           segment_models_id = NULL)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+
+  # Validate other required args
+  # If x is missing, then assume user wants to use all columns as features.
+  if (missing(x)) {
+     if (is.numeric(event_column)) {
+         x <- setdiff(col(training_frame), event_column)
+     } else {
+         x <- setdiff(colnames(training_frame), event_column)
+     }
+  }
+
+  # Validate other args
+  if (is.null(interactions_only) && (! is.null(interactions) || ! is.null(interaction_pairs))) {
+    used <- unique(c(interactions, unlist(sapply(interaction_pairs, function(x) {x[1]})), unlist(sapply(interaction_pairs, function(x) {x[2]}))))
+    interactions_only <- setdiff(used, x)
+    x <- c(x, interactions_only)
+  }
+  if (! is.null(stratify_by)) {
+    stratify_by_only <- setdiff(stratify_by, x)
+    x <- c(x, stratify_by_only)
+  }
+  if(!is.character(stop_column) && !is.numeric(stop_column)) {
+    stop('argument "stop_column" must be a column name or an index')
+  }
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  args <- .verify_dataxy(training_frame, x, event_column)
+  if( !missing(offset_column) && !is.null(offset_column))  args$x_ignore <- args$x_ignore[!( offset_column == args$x_ignore )]
+  if( !missing(weights_column) && !is.null(weights_column)) args$x_ignore <- args$x_ignore[!( weights_column == args$x_ignore )]
+  if( !missing(start_column) && !is.null(start_column)) args$x_ignore <- args$x_ignore[!( start_column == args$x_ignore )]
+  if( !missing(stop_column) && !is.null(stop_column)) args$x_ignore <- args$x_ignore[!( stop_column == args$x_ignore )]
+  parms$ignored_columns <- args$x_ignore
+  parms$response_column <- args$y
+
+  if (!missing(start_column))
+    parms$start_column <- start_column
+  if (!missing(stop_column))
+    parms$stop_column <- stop_column
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
+  if (!missing(offset_column))
+    parms$offset_column <- offset_column
+  if (!missing(stratify_by))
+    parms$stratify_by <- stratify_by
+  if (!missing(ties))
+    parms$ties <- ties
+  if (!missing(init))
+    parms$init <- init
+  if (!missing(lre_min))
+    parms$lre_min <- lre_min
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if (!missing(interactions))
+    parms$interactions <- interactions
+  if (!missing(interaction_pairs))
+    parms$interaction_pairs <- interaction_pairs
+  if (!missing(interactions_only))
+    parms$interactions_only <- interactions_only
+  if (!missing(use_all_factor_levels))
+    parms$use_all_factor_levels <- use_all_factor_levels
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('coxph', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
+}

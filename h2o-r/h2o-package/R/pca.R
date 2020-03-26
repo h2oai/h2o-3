@@ -111,3 +111,111 @@ h2o.prcomp <- function(training_frame,
   model <- .h2o.modelJob('pca', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
+
+#'
+#' Trains Principal Components Analysis model for each segment of the training dataset.
+#'
+#' @param training_frame Id of the training data frame.
+#' @param x A vector containing the \code{character} names of the predictors in the model.
+#' @param validation_frame Id of the validation data frame.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
+#' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
+#'        Defaults to NONE.
+#' @param pca_method Specify the algorithm to use for computing the principal components: GramSVD - uses a distributed computation
+#'        of the Gram matrix, followed by a local SVD; Power - computes the SVD using the power iteration method
+#'        (experimental); Randomized - uses randomized subspace iteration method; GLRM - fits a generalized low-rank
+#'        model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
+#'        (experimental) Must be one of: "GramSVD", "Power", "Randomized", "GLRM". Defaults to GramSVD.
+#' @param pca_impl Specify the implementation to use for computing PCA (via SVD or EVD): MTJ_EVD_DENSEMATRIX - eigenvalue
+#'        decompositions for dense matrix using MTJ; MTJ_EVD_SYMMMATRIX - eigenvalue decompositions for symmetric matrix
+#'        using MTJ; MTJ_SVD_DENSEMATRIX - singular-value decompositions for dense matrix using MTJ; JAMA - eigenvalue
+#'        decompositions for dense matrix using JAMA. References: JAMA - http://math.nist.gov/javanumerics/jama/; MTJ -
+#'        https://github.com/fommil/matrix-toolkits-java/ Must be one of: "MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX",
+#'        "MTJ_SVD_DENSEMATRIX", "JAMA".
+#' @param k Rank of matrix approximation Defaults to 1.
+#' @param max_iterations Maximum training iterations Defaults to 1000.
+#' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to FALSE.
+#' @param compute_metrics \code{Logical}. Whether to compute metrics on the training data Defaults to TRUE.
+#' @param impute_missing \code{Logical}. Whether to impute missing entries with the column mean Defaults to FALSE.
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
+#'        Defaults to -1 (time-based random number).
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
+#'        and train a separate model for each segment (group of rows).
+#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
+#' @export
+h2o.bulk_prcomp <- function(training_frame,
+                            x,
+                            validation_frame = NULL,
+                            ignore_const_cols = TRUE,
+                            score_each_iteration = FALSE,
+                            transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                            pca_method = c("GramSVD", "Power", "Randomized", "GLRM"),
+                            pca_impl = c("MTJ_EVD_DENSEMATRIX", "MTJ_EVD_SYMMMATRIX", "MTJ_SVD_DENSEMATRIX", "JAMA"),
+                            k = 1,
+                            max_iterations = 1000,
+                            use_all_factor_levels = FALSE,
+                            compute_metrics = TRUE,
+                            impute_missing = FALSE,
+                            seed = -1,
+                            max_runtime_secs = 0,
+                            export_checkpoints_dir = NULL,
+                            segment_columns = NULL,
+                            segment_models_id = NULL)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(x))
+    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(transform))
+    parms$transform <- transform
+  if (!missing(pca_method))
+    parms$pca_method <- pca_method
+  if (!missing(pca_impl))
+    parms$pca_impl <- pca_impl
+  if (!missing(k))
+    parms$k <- k
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if (!missing(use_all_factor_levels))
+    parms$use_all_factor_levels <- use_all_factor_levels
+  if (!missing(compute_metrics))
+    parms$compute_metrics <- compute_metrics
+  if (!missing(impute_missing))
+    parms$impute_missing <- impute_missing
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('pca', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
+}

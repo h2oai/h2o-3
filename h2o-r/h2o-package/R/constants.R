@@ -105,6 +105,11 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' @param algo Cannonical identifier of H2O algorithm.
 .h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo)
 
+#' Bulk Model Builder Endpoint Generator
+#'
+#' @param algo Cannonical identifier of H2O algorithm.
+.h2o.__BULK_MODEL_BUILDERS <- function(algo) paste0("BulkModelBuilders/", algo)
+
 #' Export Files Endpoint Generator
 #'
 #' @param frame H2OFrame
