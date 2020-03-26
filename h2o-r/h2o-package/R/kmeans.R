@@ -161,3 +161,165 @@ h2o.kmeans <- function(training_frame,
   model <- .h2o.modelJob('kmeans', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
+
+#'
+#' Trains KMeans Model in H2O model for each segment of the training dataset.
+#'
+#' @param training_frame Id of the training data frame.
+#' @param x A vector containing the \code{character} names of the predictors in the model.
+#' @param validation_frame Id of the validation data frame.
+#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
+#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
+#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
+#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
+#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
+#'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
+#'        "Random", "Modulo", "Stratified". Defaults to AUTO.
+#' @param fold_column Column with cross-validation fold index assignment per observation.
+#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
+#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
+#' @param k The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will
+#'        find up to k centroids. Defaults to 1.
+#' @param estimate_k \code{Logical}. Whether to estimate the number of clusters (<=k) iteratively and deterministically. Defaults
+#'        to FALSE.
+#' @param user_points This option allows you to specify a dataframe, where each row represents an initial cluster center. The user-
+#'        specified points must have the same number of columns as the training observations. The number of rows must
+#'        equal the number of clusters
+#' @param max_iterations Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration) Defaults
+#'        to 10.
+#' @param standardize \code{Logical}. Standardize columns before computing distances Defaults to TRUE.
+#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
+#'        Defaults to -1 (time-based random number).
+#' @param init Initialization mode Must be one of: "Random", "PlusPlus", "Furthest", "User". Defaults to Furthest.
+#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
+#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
+#' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param cluster_size_constraints An array specifying the minimum number of points that should be in each cluster. The length of the constraints
+#'        array has to be the same as the number of clusters.
+#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
+#'        and train a separate model for each segment (group of rows).
+#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
+#' @export
+h2o.bulk_kmeans <- function(training_frame,
+                            x,
+                            validation_frame = NULL,
+                            nfolds = 0,
+                            keep_cross_validation_models = TRUE,
+                            keep_cross_validation_predictions = FALSE,
+                            keep_cross_validation_fold_assignment = FALSE,
+                            fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                            fold_column = NULL,
+                            ignore_const_cols = TRUE,
+                            score_each_iteration = FALSE,
+                            k = 1,
+                            estimate_k = FALSE,
+                            user_points = NULL,
+                            max_iterations = 10,
+                            standardize = TRUE,
+                            seed = -1,
+                            init = c("Random", "PlusPlus", "Furthest", "User"),
+                            max_runtime_secs = 0,
+                            categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                            export_checkpoints_dir = NULL,
+                            cluster_size_constraints = NULL,
+                            segment_columns = NULL,
+                            segment_models_id = NULL)
+{
+  # formally define variables that were excluded from function parameters
+  model_id <- NULL
+  verbose <- NULL
+  destination_key <- NULL
+  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
+  training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
+  validation_frame <- .validate.H2OFrame(validation_frame, required=FALSE)
+
+  # Build parameter list to send to model builder
+  parms <- list()
+  parms$training_frame <- training_frame
+  if(!missing(x)){
+    parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
+    if(!missing(fold_column)){
+      parms$ignored_columns <- setdiff(parms$ignored_columns, fold_column)
+    }
+  }
+
+  if (!missing(validation_frame))
+    parms$validation_frame <- validation_frame
+  if (!missing(nfolds))
+    parms$nfolds <- nfolds
+  if (!missing(keep_cross_validation_models))
+    parms$keep_cross_validation_models <- keep_cross_validation_models
+  if (!missing(keep_cross_validation_predictions))
+    parms$keep_cross_validation_predictions <- keep_cross_validation_predictions
+  if (!missing(keep_cross_validation_fold_assignment))
+    parms$keep_cross_validation_fold_assignment <- keep_cross_validation_fold_assignment
+  if (!missing(fold_assignment))
+    parms$fold_assignment <- fold_assignment
+  if (!missing(fold_column))
+    parms$fold_column <- fold_column
+  if (!missing(ignore_const_cols))
+    parms$ignore_const_cols <- ignore_const_cols
+  if (!missing(score_each_iteration))
+    parms$score_each_iteration <- score_each_iteration
+  if (!missing(k))
+    parms$k <- k
+  if (!missing(estimate_k))
+    parms$estimate_k <- estimate_k
+  if (!missing(user_points))
+    parms$user_points <- user_points
+  if (!missing(max_iterations))
+    parms$max_iterations <- max_iterations
+  if (!missing(standardize))
+    parms$standardize <- standardize
+  if (!missing(seed))
+    parms$seed <- seed
+  if (!missing(init))
+    parms$init <- init
+  if (!missing(max_runtime_secs))
+    parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(categorical_encoding))
+    parms$categorical_encoding <- categorical_encoding
+  if (!missing(export_checkpoints_dir))
+    parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(cluster_size_constraints))
+    parms$cluster_size_constraints <- cluster_size_constraints
+
+  # Check if user_points is an acceptable set of user-specified starting points
+  if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) || is.H2OFrame(user_points) ) {
+    if ( length(init) > 1 || init == 'User') {
+      parms[["init"]] <- "User"
+    } else {
+      warning(paste0("Parameter init must equal 'User' when user_points is set. Ignoring init = '", init, "'. Setting init = 'User'."))
+    }
+    parms[["init"]] <- "User"
+
+    # Convert user-specified starting points to H2OFrame
+    if( is.data.frame(user_points) || is.matrix(user_points) || is.list(user_points) ) {
+      if( !is.data.frame(user_points) && !is.matrix(user_points) ) user_points <- t(as.data.frame(user_points))
+      user_points <- as.h2o(user_points)
+    }
+    parms[["user_points"]] <- user_points
+
+    # Set k
+    if( !(missing(k)) && k!=as.integer(nrow(user_points)) ) {
+      warning("Parameter k is not equal to the number of user-specified starting points. Ignoring k. Using specified starting points.")
+    }
+    parms[["k"]] <- as.numeric(nrow(user_points))
+  } else if ( is.character(init) ) { # Furthest, Random, PlusPlus{
+    parms[["user_points"]] <- NULL
+  } else{
+    stop ("argument init must be set to Furthest, Random, PlusPlus, or a valid set of user-defined starting points.")
+  }
+
+  # Build segment-models specific parameters
+  segment_parms <- list()
+  if (!missing(segment_columns))
+    segment_parms$segment_columns <- segment_columns
+  if (!missing(segment_models_id))
+    segment_parms$segment_models_id <- segment_models_id
+
+  # Error check and build segment models
+  segment_models <- .h2o.segmentModelsJob('kmeans', segment_parms, parms, h2oRestApiVersion=3)
+  return(segment_models)
+}

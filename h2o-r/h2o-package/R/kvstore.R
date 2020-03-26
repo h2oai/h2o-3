@@ -287,6 +287,14 @@ h2o.getModel <- function(model_id) {
   }
 }
 
+h2o.getSegmentModels <- function(segment_models_id) {
+  new("H2OSegmentModels", segment_models_id=segment_models_id)
+}
+
+as.data.frame.H2OSegmentModels <- function(x, ...) {
+  as.data.frame(.newExpr("segment_models_as_frame", x@segment_models_id))
+}
+
 #'
 #' Download the Scoring POJO (Plain Old Java Object) of an H2O Model
 #'

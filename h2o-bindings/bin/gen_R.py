@@ -68,7 +68,6 @@ def gen_module(schema, algo, module):
                 break
         return param if isinstance(param, (list, tuple)) else [param]  # always return array to support deprecated aliases
 
-
     tag = "@param"
     pdocs = odict()
     for pname in all_params:
@@ -127,6 +126,79 @@ def gen_module(schema, algo, module):
 
     # start function body
     yield "{"
+    yield '\n'.join(gen_set_params(algo, sig_pnames, schema_params, required_params))
+
+    yield ""
+    yield "  # Error check and build model"
+    verbose = 'verbose' if 'verbose' in extra_params else 'FALSE'
+    yield "  model <- .h2o.modelJob('%s', parms, h2oRestApiVersion=%d, verbose=%s)" % (algo, rest_api_version, verbose)
+    with_model = get_customizations_for(algo, 'extensions.with_model')
+    if with_model:
+        yield ""
+        yield reformat_block(with_model, indent=2)
+    yield "  return(model)"
+    yield "}"
+
+    bulk_pnames_skip = ["model_id",
+                        "verbose",
+                        "destination_key"] # destination_key is only for SVD
+    bulk_params = list(zip(*filter(lambda t: not t[0] in bulk_pnames_skip, zip(sig_pnames, sig_params))))
+    bulk_pnames = list(bulk_params[0])
+    sig_bulk_params = list(bulk_params[1])
+    sig_bulk_params.append("segment_columns = NULL")
+    sig_bulk_params.append("segment_models_id = NULL")
+
+    if algo != "generic":
+        #
+        # Bulk model building (Segment Models)
+        #
+        yield ""
+        yield "#'"
+        yield "#' Trains %s model for each segment of the training dataset." % model_name
+        yield "#'"
+        tag = "@param"
+        for pname, pdoc in pdocs.items():
+            if pdoc and not pname in bulk_pnames_skip:
+                yield reformat_block("%s %s %s" % (tag, pname, pdoc.lstrip('\n')), indent=len(tag)+1, indent_first=False, prefix="#' ")
+        yield "#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) " \
+              "dataset by the segment-by columns\n" \
+              "#'        and train a separate model for each segment (group of rows)."
+        yield "#' @param segment_models_id Identifier for the returned collection of Segment Models. " \
+              "If not specified it will be automatically generated."
+        yield "#' @export"
+        bulk_param_indent = len("h2o.bulk_%s <- function(" % module)
+        yield reformat_block("h2o.bulk_%s <- function(%s)" % (module, ',\n'.join(sig_bulk_params)), indent=bulk_param_indent, indent_first=False)
+    
+        # start bulk-function body
+        yield "{"
+        yield '\n'.join(gen_set_params(algo, bulk_pnames, schema_params, required_params, bulk_pnames_skip))
+        yield ""
+        yield "  # Build segment-models specific parameters"
+        yield "  segment_parms <- list()"
+        yield "  if (!missing(segment_columns))"
+        yield "    segment_parms$segment_columns <- segment_columns"
+        yield "  if (!missing(segment_models_id))"
+        yield "    segment_parms$segment_models_id <- segment_models_id"
+        yield ""
+        yield "  # Error check and build segment models"
+        yield "  segment_models <- .h2o.segmentModelsJob('%s', segment_parms, parms, h2oRestApiVersion=%d)" % (algo, rest_api_version)
+        yield "  return(segment_models)"
+        yield "}"
+
+    #
+    # Additional functions
+    #
+    module_extensions = get_customizations_for(algo, 'extensions.module')
+    if module_extensions:
+        yield ""
+        yield module_extensions
+
+
+def gen_set_params(algo, pnames, schema_params, required_params, skip_params=None):
+    if skip_params:
+        yield "  # formally define variables that were excluded from function parameters"
+        for pname in skip_params:
+           yield "  %s <- NULL" % pname
     validate_frames = get_customizations_or_defaults_for(algo, 'extensions.validate_frames')
     if validate_frames:
         yield "  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object"
@@ -136,7 +208,7 @@ def gen_module(schema, algo, module):
         if frames:
             yield "  # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object"
         for frame in frames:
-            if frame in sig_pnames:
+            if frame in pnames:
                 required_val = str(frame in required_params).upper()
                 yield "  {frame} <- .validate.H2OFrame({frame}, required={required})".format(frame=frame, required=required_val)
 
@@ -162,7 +234,7 @@ def gen_module(schema, algo, module):
     skip_default_set_params = get_customizations_or_defaults_for(algo, 'extensions.skip_default_set_params_for', [])
     yield ""
     for pname in schema_params:
-        if pname in skip_default_set_params:
+        if pname in skip_default_set_params or (skip_params and pname in skip_params):
             continue
 
         # leave the special handling of 'loss' param here for now as it is used by several algos
@@ -182,23 +254,6 @@ def gen_module(schema, algo, module):
     if set_params:
         yield ""
         yield reformat_block(set_params, indent=2)
-
-    yield ""
-    yield "  # Error check and build model"
-    verbose = 'verbose' if 'verbose' in extra_params else 'FALSE'
-    yield "  model <- .h2o.modelJob('%s', parms, h2oRestApiVersion=%d, verbose=%s)" % (algo, rest_api_version, verbose)
-    with_model = get_customizations_for(algo, 'extensions.with_model')
-    if with_model:
-        yield ""
-        yield reformat_block(with_model, indent=2)
-    yield "  return(model)"
-    yield "}"
-
-    # start additional functions
-    module_extensions = get_customizations_for(algo, 'extensions.module')
-    if module_extensions:
-        yield ""
-        yield module_extensions
 
 
 def algo_to_modelname(algo):

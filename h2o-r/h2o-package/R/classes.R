@@ -780,6 +780,22 @@ setClass("H2OTargetEncoderMetrics", contains="H2OModelMetrics")
 #' @export
 setClass("H2OModelFuture", representation(job_key="character", model_id="character"))
 
+#' H2O Future Segment Models
+#'
+#' A class to contain the information for background segment models jobs.
+#' @slot job_key a character key representing the identification of the job process.
+#' @slot segment_models_id the final identifier for the segment models collections
+#' @seealso \linkS4class{H2OSegmentModels} for the final segment models types.
+#' @export
+setClass("H2OSegmentModelsFuture", representation(job_key="character", segment_models_id="character"))
+
+#' H2O Segment Models
+#'
+#' A class to contain the information for segment models.
+#' @slot segment_models_id the  identifier for the segment models collections
+#' @export
+setClass("H2OSegmentModels", representation(segment_models_id="character"))
+
 #' H2O Grid
 #'
 #' A class to contain the information about grid results
