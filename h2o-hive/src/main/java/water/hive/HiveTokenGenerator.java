@@ -1,4 +1,4 @@
-package water.hadoop;
+package water.hive;
 
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.io.Text;
@@ -15,7 +15,8 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-import static water.hadoop.h2omapper.*;
+import static water.hive.DelegationTokenRefresher.H2O_HIVE_JDBC_URL;
+import static water.hive.DelegationTokenRefresher.H2O_HIVE_PRINCIPAL;
 
 public class HiveTokenGenerator {
 
@@ -51,7 +52,7 @@ public class HiveTokenGenerator {
     return value != null && !value.isEmpty();
   }
 
-  static String makeHiveJdbcUrl(String hiveJdbcUrlPattern, String hiveHost, String hivePrincipal) {
+  public static String makeHiveJdbcUrl(String hiveJdbcUrlPattern, String hiveHost, String hivePrincipal) {
     if (hiveJdbcUrlPattern != null) {
       String result = hiveJdbcUrlPattern;
       if (hiveHost != null)
