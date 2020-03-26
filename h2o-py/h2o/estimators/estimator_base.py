@@ -160,7 +160,7 @@ class H2OEstimator(ModelBase):
         assert_is_type(verbose, bool)
         assert_is_type(segment_models_id, None, str)
 
-        if not segments:
+        if segments is None:
             raise H2OValueError("Parameter segments was not specified. Please provide either a list of columns to "
                                 "segment-by or an explicit list of segments to build models for.")
 
