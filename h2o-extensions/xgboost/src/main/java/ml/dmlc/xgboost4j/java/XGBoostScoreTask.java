@@ -1,22 +1,17 @@
 package ml.dmlc.xgboost4j.java;
 
-import hex.*;
+import hex.ModelMetrics;
+import hex.ModelMetricsBinomial;
+import hex.ModelMetricsMultinomial;
+import hex.ModelMetricsRegression;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
 import hex.tree.xgboost.predict.XGBoostBigScorePredict;
 import hex.tree.xgboost.predict.XGBoostPredict;
 import water.MRTask;
 import water.MemoryManager;
-import water.Scope;
 import water.fvec.Chunk;
-import water.fvec.Frame;
 import water.fvec.NewChunk;
-import water.fvec.Vec;
-
-import java.util.Arrays;
-
-import static water.fvec.Vec.T_CAT;
-import static water.fvec.Vec.T_NUM;
 
 public class XGBoostScoreTask extends MRTask<XGBoostScoreTask> {
 

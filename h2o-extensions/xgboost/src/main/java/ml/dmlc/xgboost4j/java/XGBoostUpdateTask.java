@@ -1,7 +1,5 @@
 package ml.dmlc.xgboost4j.java;
 
-import hex.tree.xgboost.XGBoost;
-import hex.tree.xgboost.XGBoostModel;
 import water.*;
 import water.util.Log;
 
@@ -36,12 +34,12 @@ public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
     }
 
     private static class FetchBoosterTask extends DTask<FetchBoosterTask> {
-        private final Key<XGBoostModel> _modelKey;
+        private final Key _modelKey;
 
         // OUT
         private byte[] _boosterBytes;
 
-        private FetchBoosterTask(Key<XGBoostModel> modelKey) {
+        private FetchBoosterTask(Key modelKey) {
             _modelKey = modelKey;
         }
 

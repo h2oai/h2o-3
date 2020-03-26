@@ -4,10 +4,7 @@ import hex.DataInfo;
 import hex.tree.xgboost.XGBoostModel;
 import water.Iced;
 import water.Key;
-import water.util.Log;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Arrays;
 
 
@@ -41,19 +38,6 @@ final public class XGBoostModelInfo extends Iced {
 
   public void setBoosterBytes(byte[] boosterBytes) {
     _boosterBytes = boosterBytes;
-  }
-
-  public Booster deserializeBooster() {
-    if (_boosterBytes == null) {
-      throw new IllegalStateException("Booster not initialized!");
-    }
-    try {
-      Booster booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
-      Log.debug("Booster created from bytes, raw size = " + _boosterBytes.length);
-      return booster;
-    } catch (XGBoostError | IOException exception) {
-      throw new IllegalStateException("Failed to load the booster.", exception);
-    }
   }
 
   @Override

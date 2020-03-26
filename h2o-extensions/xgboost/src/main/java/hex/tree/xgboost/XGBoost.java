@@ -9,13 +9,10 @@ import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
 import hex.tree.*;
-import hex.tree.xgboost.exec.BoosterProvider;
 import hex.tree.xgboost.exec.LocalXGBoostExecutor;
 import hex.tree.xgboost.exec.XGBoostExecutor;
-import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
-import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.*;
@@ -350,17 +347,12 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._sparse = isTrainDatasetSparse();
       }
 
-      LocalXGBoostExecutor exec = new LocalXGBoostExecutor(_parms, model, _train);
+      XGBoostExecutor exec = new LocalXGBoostExecutor(model, _train, _parms);
       try {
-        exec.setup();
-        try {
-          scoreAndBuildTrees(exec);
-        } finally {
-          exec.cleanup();
-        }
-      } catch (XGBoostError xgBoostError) {
-        throw new RuntimeException("XGBoost failure", xgBoostError);
+        model.model_info().setBoosterBytes(exec.setup());
+        scoreAndBuildTrees(model, exec);
       } finally {
+        exec.cleanup();
         // Unlock & save results
         model.unlock(_job);
       }
@@ -399,11 +391,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           || ((_train.numRows() * totalColumns) > Integer.MAX_VALUE);
     }
 
-    private void scoreAndBuildTrees(final XGBoostExecutor exec) throws XGBoostError {
-      final XGBoostModel model = exec.getModel();
-      for( int tid=0; tid< _ntrees; tid++) {
+    private void scoreAndBuildTrees(final XGBoostModel model, final XGBoostExecutor exec) {
+      for (int tid = 0; tid < _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(exec, false);
+        boolean scored = doScoring(model, exec, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           Log.info("Early stopping triggered - stopping XGBoost training");
           break;
@@ -431,13 +422,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           constraintCheckEnabled()
       ) {
         _job.update(0, "Checking monotonicity constraints on the final model");
-        exec.updateBooster();
+        model.model_info()._boosterBytes = exec.updateBooster();
         checkConstraints(model.model_info(), monotoneConstraints);
       }
       
       _job.update(0, "Scoring the final model");
       // Final scoring
-      doScoring(exec, true);
+      doScoring(model, exec, true);
       // Finish remaining work (if stopped early)
       _job.update(_parms._ntrees-model._output._ntrees);
     }
@@ -468,8 +459,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       float[] maxs = new float[tree.length];
       int[] max_ids = new int[tree.length];
       rollupMinMaxPreds(tree, 0, mins, min_ids, maxs, max_ids);
-      for (int i = 0; i < tree.length; i++) {
-        RegTreeNode node = tree[i];
+      for (RegTreeNode node : tree) {
         if (node.isLeaf()) continue;
         String splitColumn = featureProperties._names[node.getSplitIndex()];
         if (!monotoneConstraints.containsKey(splitColumn)) continue;
@@ -521,8 +511,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
 
-    private boolean doScoring(final XGBoostExecutor exec, boolean finalScoring) throws XGBoostError {
-      final XGBoostModel model = exec.getModel();
+    private boolean doScoring(final XGBoostModel model, final XGBoostExecutor exec, boolean finalScoring) {
       boolean scored = false;
       long now = System.currentTimeMillis();
       if (_firstScore == 0) _firstScore = now;
@@ -541,7 +530,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
               manualInterval) {
         _timeLastScoreStart = now;
-        exec.updateBooster(); // retrieve booster, expensive!
+        model.model_info()._boosterBytes = exec.updateBooster();
         model.doScoring(_train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         XGBoostOutput out = model._output;

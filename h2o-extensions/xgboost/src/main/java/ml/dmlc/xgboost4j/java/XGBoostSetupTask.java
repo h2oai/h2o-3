@@ -1,8 +1,8 @@
 package ml.dmlc.xgboost4j.java;
 
 import hex.tree.xgboost.BoosterParms;
-import hex.tree.xgboost.XGBoostModel;
 import water.H2O;
+import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.IcedHashMapGeneric;
@@ -17,17 +17,17 @@ import java.util.Map;
  */
 public abstract class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
 
-  protected final XGBoostModel.XGBoostParameters _parms;
+  private final String _saveMatrixDirectory;
   private final BoosterParms _boosterParms;
   private final byte[] _checkpoint;
   private final IcedHashMapGeneric.IcedHashMapStringString _rabitEnv;
 
   public XGBoostSetupTask(
-      XGBoostModel model, XGBoostModel.XGBoostParameters parms, BoosterParms boosterParms,
-      byte[] checkpointToResume, Map<String, String> rabitEnv, FrameNodes trainFrame
+      Key modelKey, String saveMatrixDirectory, BoosterParms boosterParms,
+      byte[] checkpointToResume, Map<String, String> rabitEnv, boolean[] nodes
   ) {
-    super(model._key, trainFrame._nodes);
-    _parms = parms;
+    super(modelKey, nodes);
+    _saveMatrixDirectory = saveMatrixDirectory;
     _boosterParms = boosterParms;
     _checkpoint = checkpointToResume;
     (_rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString()).putAll(rabitEnv);
@@ -38,8 +38,8 @@ public abstract class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupT
     final DMatrix matrix;
     try {
       matrix = makeLocalMatrix();
-      if (_parms._save_matrix_directory != null) {
-        File directory = new File(_parms._save_matrix_directory);
+      if (_saveMatrixDirectory != null) {
+        File directory = new File(_saveMatrixDirectory);
         if (directory.mkdirs()) {
           Log.debug("Created directory for matrix export: " + directory.getAbsolutePath());
         }

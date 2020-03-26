@@ -9,7 +9,8 @@ import java.util.Map;
 
 public class LocalXGBoostSetupTask extends XGBoostSetupTask {
 
-    private final XGBoostModelInfo _sharedModel;
+    private final XGBoostModelInfo _modelInfo;
+    private final XGBoostModel.XGBoostParameters _parms;
     private final boolean _sparse;
     private final Frame _trainFrame;
 
@@ -19,19 +20,19 @@ public class LocalXGBoostSetupTask extends XGBoostSetupTask {
         BoosterParms boosterParms,
         byte[] checkpointToResume,
         Map<String, String> rabitEnv,
-        FrameNodes trainFrame
+        FrameNodes train
     ) {
-        super(model, parms, boosterParms, checkpointToResume, rabitEnv, trainFrame);
-        _sharedModel = model.model_info();
+        super(model._key, parms._save_matrix_directory, boosterParms, checkpointToResume, rabitEnv, train._nodes);
+        _modelInfo = model.model_info();
+        _parms = parms;
         _sparse = model._output._sparse;
-        _trainFrame = trainFrame._fr;
+        _trainFrame = train._fr;
     }
-
 
     @Override
     protected DMatrix makeLocalMatrix() throws XGBoostError {
         return XGBoostUtils.convertFrameToDMatrix(
-            _sharedModel.dataInfo(),
+            _modelInfo.dataInfo(),
             _trainFrame,
             _parms._response_column,
             _parms._weights_column,

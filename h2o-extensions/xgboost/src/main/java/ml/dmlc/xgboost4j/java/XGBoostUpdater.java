@@ -18,9 +18,9 @@ public class XGBoostUpdater extends Thread {
   private static long WORK_START_TIMEOUT_SECS = 5 * 60; // Each Booster task should start before this timer expires
   private static long INACTIVE_CHECK_INTERVAL_SECS = 60;
 
-  private static final NonBlockingHashMap<Key<XGBoostModel>, XGBoostUpdater> updaters = new NonBlockingHashMap<>();
+  private static final NonBlockingHashMap<Key, XGBoostUpdater> updaters = new NonBlockingHashMap<>();
 
-  private final Key<XGBoostModel> _modelKey;
+  private final Key _modelKey;
   private final DMatrix _trainMat;
   private final BoosterParms _boosterParms;
   private final byte[] _checkpointBoosterBytes;
@@ -32,7 +32,7 @@ public class XGBoostUpdater extends Thread {
   private Booster _booster;
 
   private XGBoostUpdater(
-      Key<XGBoostModel> modelKey, DMatrix trainMat, BoosterParms boosterParms, 
+      Key modelKey, DMatrix trainMat, BoosterParms boosterParms, 
       byte[] checkpointBoosterBytes, Map<String, String> rabitEnv
   ) {
     super("XGBoostUpdater-" + modelKey);
@@ -181,7 +181,7 @@ public class XGBoostUpdater extends Thread {
     }
   }
 
-  static XGBoostUpdater make(Key<XGBoostModel> modelKey, DMatrix trainMat, BoosterParms boosterParms,
+  static XGBoostUpdater make(Key modelKey, DMatrix trainMat, BoosterParms boosterParms,
                              byte[] checkpoint, Map<String, String> rabitEnv) {
     XGBoostUpdater updater = new XGBoostUpdater(modelKey, trainMat, boosterParms, checkpoint, rabitEnv);
     updater.setUncaughtExceptionHandler(LoggingExceptionHandler.INSTANCE);
@@ -190,7 +190,7 @@ public class XGBoostUpdater extends Thread {
     return updater;
   }
 
-  static void terminate(Key<XGBoostModel> modelKey) {
+  static void terminate(Key modelKey) {
     XGBoostUpdater updater = updaters.remove(modelKey);
     if (updater == null)
       Log.debug("XGBoostUpdater for modelKey=" + modelKey + " was already clean-up on node " + H2O.SELF);
@@ -198,7 +198,7 @@ public class XGBoostUpdater extends Thread {
       updater.interrupt();
   }
 
-  static XGBoostUpdater getUpdater(Key<XGBoostModel> modelKey) {
+  static XGBoostUpdater getUpdater(Key modelKey) {
     XGBoostUpdater updater = updaters.get(modelKey);
     if (updater == null) {
       throw new IllegalStateException("XGBoostUpdater for modelKey=" + modelKey + " was not found!");

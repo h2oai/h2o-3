@@ -11,6 +11,7 @@ import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.xgboost.util.BoosterDump;
+import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -1595,7 +1596,7 @@ public class XGBoostTest extends TestUtil {
       Map<String, String> rabitEnv = new HashMap<>();
       rabitEnv.put("DMLC_TASK_ID", "0");
       Rabit.init(rabitEnv);
-      Booster booster = model.model_info().deserializeBooster();
+      Booster booster = BoosterHelper.loadModel(model.model_info()._boosterBytes);
       DMatrix matrix = new DMatrix(new File(parms._save_matrix_directory, "matrix.part0").getAbsolutePath());
       final float[][] expectedContribs = booster.predictContrib(matrix, 0);
       booster.dispose();
