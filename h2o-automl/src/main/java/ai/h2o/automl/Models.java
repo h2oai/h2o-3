@@ -6,6 +6,7 @@ import water.*;
 import water.util.ArrayUtils;
 
 import java.lang.reflect.Array;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 
 public class Models<M extends Model> extends Lockable<Models<M>> implements ModelContainer<M> {
@@ -20,7 +21,7 @@ public class Models<M extends Model> extends Lockable<Models<M>> implements Mode
 
     public Models(Key<Models<M>> key, Class<M> clz, Job job) {
         super(key);
-        _type_id = clz != null ? TypeMap.getIcedId(clz.getName()) : -1;
+        _type_id = (clz != null && !Modifier.isAbstract(clz.getModifiers())) ? TypeMap.getIcedId(clz.getName()) : -1;
         _job = job;
     }
 
@@ -33,7 +34,7 @@ public class Models<M extends Model> extends Lockable<Models<M>> implements Mode
     @SuppressWarnings("unchecked")
     public M[] getModels() {
         Arrays.stream(_modelKeys).forEach(DKV::prefetch);
-        Class<M> clz = (Class<M>)(_type_id > 0 ? TypeMap.theFreezable(_type_id).getClass(): Model.class);
+        Class<M> clz = (Class<M>)(_type_id >= 0 ? TypeMap.theFreezable(_type_id).getClass(): Model.class);
         return Arrays.stream(_modelKeys)
                 .map(k -> k == null ? null : k.get())
                 .toArray(l -> (M[])Array.newInstance(clz, l));
