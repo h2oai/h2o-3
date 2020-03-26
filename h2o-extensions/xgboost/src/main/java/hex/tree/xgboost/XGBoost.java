@@ -447,7 +447,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
 
     private void scoreAndBuildTrees(final XGBoostSetupTask setupTask, final BoosterProvider boosterProvider,
                                     final XGBoostModel model) throws XGBoostError {
-      for( int tid=0; tid< _ntrees; tid++) {
+      for (int tid = 0; tid < _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, boosterProvider, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
