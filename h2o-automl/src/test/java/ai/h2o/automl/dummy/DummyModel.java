@@ -16,7 +16,6 @@ public class DummyModel extends Model<DummyModel, DummyModel.DummyModelParameter
 
     public static class DummyModelParameters extends Model.Parameters {
 
-        public transient Function<double[], double[]> _predict;
         public String _tag = null;
         public IcedHashMap<String, String> _moreParams = new IcedHashMap<>();
 
@@ -77,6 +76,6 @@ public class DummyModel extends Model<DummyModel, DummyModel.DummyModelParameter
 
     @Override
     protected double[] score0(double[] data, double[] preds) {
-        return _parms._predict == null ? preds : _parms._predict.apply(data);
+        return preds;
     }
 }

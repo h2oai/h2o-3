@@ -4,6 +4,7 @@ import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
 import water.Key;
 import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.Arrays;
 import java.util.function.Predicate;
@@ -40,6 +41,7 @@ public final class ModelSelectionStrategies {
             Leaderboard tmpLeaderboard = lbHolder.get();
             tmpLeaderboard.addModels((Key<Model>[]) originalModels);
             tmpLeaderboard.addModels((Key<Model>[]) newModels);
+            if (Log.isLoggingFor(Log.DEBUG)) Log.debug(tmpLeaderboard.toLogString());
             Key<Model>[] sortedKeys = tmpLeaderboard.getModelKeys();
             Key<Model>[] bestN = ArrayUtils.subarray(sortedKeys, 0, Math.min(sortedKeys.length, _N));
             Key<M>[] toAdd = Arrays.stream(bestN).filter(k -> !ArrayUtils.contains(originalModels, k)).toArray(Key[]::new);

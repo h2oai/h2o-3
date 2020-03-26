@@ -33,10 +33,30 @@ public class ModelSelectionStrategiesTest {
 
     private List<Keyed> toDelete = new ArrayList<>();
     private Frame fr;
+    private double[] perfectPreds;
     private Model[] oldModels;
     private Model[] newModels;
     private Supplier<LeaderboardHolder> leaderboardSupplier;
 
+    static class DummyScoreModel extends DummyModel {
+
+        private double[] _perfectPreds;
+        private int _goodPredsCount;
+
+        public DummyScoreModel(String key, double[] perfectPreds, int goodPredsCount) {
+            super(key);
+            _perfectPreds = perfectPreds;
+            _goodPredsCount = goodPredsCount;
+        }
+
+        @Override
+        protected double[] score0(double[] data, double[] preds) {
+            int rowIdx = (int) data[0];
+            boolean ok = rowIdx < _goodPredsCount;
+            double pred = ok ? _perfectPreds[rowIdx - 1] : 1 - _perfectPreds[rowIdx - 1];
+            return ard(pred, pred, 1 - pred);
+        }
+    }
 
     @Before
     public void prepareModels() {
@@ -49,10 +69,11 @@ public class ModelSelectionStrategiesTest {
                         cvec("foo", "foo", "foo", "bar", "bar"),
                 }
         );
+        perfectPreds = ard(1., 1., 1., 0., 0.);
         DKV.put(fr); toDelete.add(fr);
 
         leaderboardSupplier = () -> {
-            String name = "dummy_lb";
+            String name = "selection_lb";
             EventLog el = EventLog.getOrMake(Key.make(name)); //toDelete.add(el);
             Leaderboard lb = Leaderboard.getOrMake(name, el, fr, "logloss"); //toDelete.add(lb);
             return new LeaderboardHolder() {
@@ -70,16 +91,9 @@ public class ModelSelectionStrategiesTest {
         };
 
         Model[] models = Arrays.asList(1., 2., 3., 4., 1.1, 2.2, 5.5).stream().map(score -> {
-            DummyModel m = new DummyModel("dummy_" + score);
-            double[] perfect_preds = ard(1., 1., 1., 0., 0.);
-            int good_preds = (int) Math.floor(score);
-            m._parms._moreParams.put(good_preds % 2 == 0 ? "even" : "odd", String.valueOf(good_preds));
-            m._parms._predict = data -> {
-                int row_idx = (int) data[0];
-                boolean ok = row_idx < good_preds;
-                double pred = ok ? perfect_preds[row_idx - 1] : 1 - perfect_preds[row_idx - 1];
-                return ard(pred, pred, 1 - pred);
-            };
+            int goodPredsCount = (int) Math.floor(score);
+            DummyModel m = new DummyScoreModel("dummy_" + score, perfectPreds, goodPredsCount);
+            m._parms._moreParams.put(goodPredsCount % 2 == 0 ? "even" : "odd", String.valueOf(goodPredsCount));
             m._output._names = fr.names();
             m._output._domains = ar(null, null, fr.vec("target").domain());
             DKV.put(m); toDelete.add(m);
