@@ -132,6 +132,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 # Export/Import Model Endpoints
 .h2o.__SAVE_MODEL <- function(model) paste0("Models.bin/", model)
 .h2o.__LOAD_MODEL <- "Models.bin/"
+.h2o.__UPLOAD_MODEL <- "Models.upload.bin/"
 
 # Grid search 
 .h2o.__GRID <- function(algo) paste0("Grid/", algo)

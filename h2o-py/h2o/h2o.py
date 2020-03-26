@@ -1410,6 +1410,18 @@ def download_model(model, path=""):
     path = os.path.join(os.getcwd() if path == "" else path, model.model_id)
     return api("GET /3/Models.fetch.bin/%s" % model.model_id, save_to=path)
 
+def upload_model(path):
+    """
+    Upload a model from the provided local path to the H2O cluster.
+    
+    :param path: A path specifying the location of the model to upload
+    
+    :returns: a new :class:`H2OEstimator` object.
+    """
+    response = api("POST /3/PostFile.bin", filename=path)
+    frame_key = response["destination_frame"]
+    res = api("POST /99/Models.upload.bin/%s" % "", data={"dir": frame_key})
+    return get_model(res["models"][0]["model_id"]["name"])
 
 def load_model(path):
     """
