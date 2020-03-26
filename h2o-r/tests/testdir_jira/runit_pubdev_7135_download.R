@@ -88,8 +88,30 @@ test.pubdev_7135 <- function() {
   gbm.pred2 = pred_df(object = gbm2, newdata = prostate.hex)
   srf.pred2 = pred_df(object = srf2, newdata = iris.hex)
   drf.pred2 = pred_df(object = drf2, newdata = iris.hex)
-   nb.pred2 = pred_df(object =  nb2, newdata = iris.hex)
-   dl.pred2 = pred_df(object =  dl2, newdata = iris.hex)
+  nb.pred2 = pred_df(object =  nb2, newdata = iris.hex)
+  dl.pred2 = pred_df(object =  dl2, newdata = iris.hex)
+
+  reuploaded_models = {}
+  for(path in new_model_paths) {
+    Log.info(paste("Uploading model from",path,sep=" "))
+    model_obj = h2o.upload_model(path)
+    reuploaded_models = append(x = reuploaded_models, values = model_obj)
+  }
+
+  Log.info("Running Predictions for Uploaded Models")
+  glm3 = reuploaded_models[[1]]
+  gbm3 = reuploaded_models[[2]]
+  srf3 = reuploaded_models[[3]]
+  drf3 = reuploaded_models[[4]]
+  nb3 = reuploaded_models[[5]]
+  dl3 = reuploaded_models[[6]]
+
+  glm.pred3 = pred_df(object = glm3, newdata = prostate.hex)
+  gbm.pred3 = pred_df(object = gbm3, newdata = prostate.hex)
+  srf.pred3 = pred_df(object = srf3, newdata = iris.hex)
+  drf.pred3 = pred_df(object = drf3, newdata = iris.hex)
+  nb.pred3 = pred_df(object =  nb3, newdata = iris.hex)
+  dl.pred3 = pred_df(object =  dl3, newdata = iris.hex)
 
 ## Check to make sure scores are the same
   expect_equal(nrow(glm.pred), 380)
@@ -104,6 +126,12 @@ test.pubdev_7135 <- function() {
   expect_equal( nb.pred,  nb.pred2)
   expect_equal( dl.pred,  dl.pred2)
   expect_equal(srf.pred, srf.pred2)
+  expect_equal(glm.pred, glm.pred3)
+  expect_equal(gbm.pred, gbm.pred3)
+  expect_equal(drf.pred, drf.pred3)
+  expect_equal( nb.pred,  nb.pred3)
+  expect_equal( dl.pred,  dl.pred3)
+  expect_equal(srf.pred, srf.pred3)  
 
 }
 

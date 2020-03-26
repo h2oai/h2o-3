@@ -26,6 +26,9 @@ def download_model():
     assert isinstance(loaded_model, H2OGradientBoostingEstimator), \
         "Expected an H2OGradientBoostingEstimator, but got {0}".format(downloaded_model_path)
     
+    uploaded_model = h2o.upload_model(downloaded_model_path)
+    assert isinstance(uploaded_model, H2OGradientBoostingEstimator), \
+        "Expected an H2OGradientBoostingEstimator, but got {0}".format(downloaded_model_path)
 
 
 if __name__ == "__main__":

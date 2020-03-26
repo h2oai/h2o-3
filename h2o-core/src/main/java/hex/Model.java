@@ -2679,6 +2679,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+    /**
+     * Uploads a binary model from a given frame.
+     * Note: binary model has to be created by the same version of H2O, import of a model from a different version will fail
+     * @param destinationFrame key of the frame containing the binary representation of the model on a local filesystem, HDFS, S3...
+     * @return instance of an H2O Model
+     * @throws IOException when reading fails
+     */
+    public static <M extends Model<?, ?, ?>> M uploadBinaryModel(String destinationFrame) throws IOException {
+      Frame fr = DKV.getGet(destinationFrame);
+      ByteVec vec = (ByteVec) fr.vec(0);
+      try (InputStream inputStream = vec.openStream(null)) {
+          final AutoBuffer ab = new AutoBuffer(inputStream);
+          @SuppressWarnings("unchecked")
+          M model = (M) Keyed.readAll(ab);
+          ab.close();
+          return model;
+        } 
+    }
+
   /**
    * Exports a binary model to a given location.
    * @param location target path, it can be on local filesystem, HDFS, S3...
