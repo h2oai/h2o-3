@@ -163,7 +163,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @Override
     public AutoMLStoppingCriteria fillImpl(AutoMLStoppingCriteria impl) {
       AutoMLStoppingCriteria filled = super.fillImpl(impl, new String[] {"_searchCriteria"});
-      PojoUtils.copyProperties(filled.getSearchCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
+      PojoUtils.copyProperties(filled.getSearchCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, new String[] {"_stoppingCriteria"});
       PojoUtils.copyProperties(filled.getSearchCriteria().stoppingCriteria(), this, PojoUtils.FieldNaming.DEST_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
       return filled;
     }
@@ -171,7 +171,7 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
     @Override
     public AutoMLStoppingCriteriaV99 fillFromImpl(AutoMLStoppingCriteria impl) {
       AutoMLStoppingCriteriaV99 schema = super.fillFromImpl(impl, new String[]{"_searchCriteria"});
-      PojoUtils.copyProperties(schema, impl.getSearchCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
+      PojoUtils.copyProperties(schema, impl.getSearchCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"_stoppingCriteria"});
       PojoUtils.copyProperties(schema, impl.getSearchCriteria().stoppingCriteria(), PojoUtils.FieldNaming.ORIGIN_HAS_UNDERSCORES, new String[] {"max_runtime_secs_per_model"});
       return schema;
     }
