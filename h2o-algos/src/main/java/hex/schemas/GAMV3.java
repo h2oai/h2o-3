@@ -99,7 +99,7 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     @API(help = "Distribution of regularization between the L1 (Lasso) and L2 (Ridge) penalties. A value of 1 for alpha represents Lasso regression, a value of 0 produces Ridge regression, and anything in between specifies the amount of mixing between the two. Default value of alpha is 0 when SOLVER = 'L-BFGS'; 0.5 otherwise.", level = Level.critical, gridable = true)
     public double[] alpha;
 
-    @API(help = "Regularization strength", required = false, level = Level.critical, gridable = true)
+    @API(help = "Regularization strength", level = Level.critical, gridable = true)
     public double[] lambda;
 
     @API(help = "Use lambda search starting at lambda max, given lambda is then interpreted as lambda min", level = Level.critical)
@@ -218,16 +218,16 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     @API(help="In case of linearly dependent columns, remove some of the dependent columns", level = Level.secondary, direction = Direction.INPUT)
     public boolean remove_collinear_columns; // _remove_collinear_columns
 
-    @API(help = "Number of knots for gam predictors", required = false, level = Level.critical, gridable = true)
+    @API(help = "Number of knots for gam predictors", level = Level.critical, gridable = true)
     public int[] k;
 
     @API(help = "Predictor column names for gam", required = true, level = Level.critical, gridable = true)
     public String[] gam_x;
 
-    @API(help = "Smoothing parameter for gam predictors", required = false, level = Level.critical, gridable = true)
+    @API(help = "Smoothing parameter for gam predictors", level = Level.critical, gridable = true)
     public double[] scale;
 
-    @API(help = "Basis function type for each gam predictors, 0 for cr", required = false, level = Level.critical, gridable = true)
+    @API(help = "Basis function type for each gam predictors, 0 for cr", level = Level.critical, gridable = true)
     public int[] bs;
     //public BSType bs;
 
