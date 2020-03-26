@@ -58,6 +58,7 @@ abstract public class Log {
     int lvl = valueOf(sLvl);
     if( lvl != -1 ) _level = lvl;
     _quiet = quiet;
+    _logger = null;
     if(maxLogFileSize != null) {
       _maxLogFileSize = maxLogFileSize;
     }
