@@ -4,12 +4,14 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelMetrics;
 import hex.ModelMetricsBinomial;
+import org.junit.Ignore;
 import water.Key;
 import water.util.IcedHashMap;
 
 import java.util.Random;
 import java.util.function.Function;
 
+@Ignore("utility class")
 public class DummyModel extends Model<DummyModel, DummyModel.DummyModelParameters, DummyModel.DummyModelOutput>{
 
     public static class DummyModelParameters extends Model.Parameters {

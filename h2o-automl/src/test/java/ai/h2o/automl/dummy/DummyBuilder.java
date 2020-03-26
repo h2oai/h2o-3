@@ -3,7 +3,9 @@ package ai.h2o.automl.dummy;
 import ai.h2o.automl.IAlgo;
 import hex.ModelBuilder;
 import hex.ModelCategory;
+import org.junit.Ignore;
 
+@Ignore("utility class")
 public class DummyBuilder extends ModelBuilder<DummyModel, DummyModel.DummyModelParameters, DummyModel.DummyModelOutput> {
 
     public static IAlgo algo = new IAlgo() {

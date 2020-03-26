@@ -1,10 +1,12 @@
 package ai.h2o.automl.dummy;
 
 import ai.h2o.automl.*;
+import org.junit.Ignore;
 
 import java.util.function.Function;
 import java.util.function.Supplier;
 
+@Ignore("utility class")
 public class DummyStepsProvider implements ModelingStepsProvider<DummyStepsProvider.DummyModelSteps>,
         ModelParametersProvider<DummyModel.DummyModelParameters> {
 
