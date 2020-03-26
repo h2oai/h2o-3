@@ -61,12 +61,14 @@ public class ModelBuilderWithTETest {
         addKFoldColumn(trainingFrame, foldColumnName, 5, 1234L);
         String offsetColumnName = "offset";
         trainingFrame.add(offsetColumnName, trainingFrame.anyVec().makeCon(0.2));
-
+        DKV.put(trainingFrame);
         Scope.track(trainingFrame);
+
         Frame testFrame = parse_test_file("./smalldata/testng/airlines_test.csv");
         testFrame.add(offsetColumnName, testFrame.anyVec().makeCon(0.2));
         testFrame.add(weightsColumnName, testFrame.anyVec().makeCon(0.6));
         Scope.track(testFrame);
+        DKV.put(testFrame);
 
         TargetEncoderModel.TargetEncoderParameters parameters = new TargetEncoderModel.TargetEncoderParameters();
         parameters._data_leakage_handling = TargetEncoder.DataLeakageHandlingStrategy.None;
