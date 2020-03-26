@@ -52,7 +52,7 @@ public class HiveTokenGenerator {
     return value != null && !value.isEmpty();
   }
 
-  static String makeHiveJdbcUrl(String hiveJdbcUrlPattern, String hiveHost, String hivePrincipal) {
+  public static String makeHiveJdbcUrl(String hiveJdbcUrlPattern, String hiveHost, String hivePrincipal) {
     if (hiveJdbcUrlPattern != null) {
       String result = hiveJdbcUrlPattern;
       if (hiveHost != null)
