@@ -57,8 +57,7 @@ public class DRFV3 extends SharedTreeV3<DRF, DRFV3, DRFV3.DRFParametersV3> {
                 "distribution",
                 "custom_metric_func",
                 "export_checkpoints_dir",
-                "check_constant_response",
-                "te_model"
+                "check_constant_response"
         };
 
         // Input fields
