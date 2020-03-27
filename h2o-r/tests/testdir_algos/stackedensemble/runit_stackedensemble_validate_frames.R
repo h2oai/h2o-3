@@ -7,10 +7,10 @@ source("../../../scripts/h2o-r-test-setup.R")
   print("uploading dataset")
   train <- h2o.importFile(locate("smalldata/testng/prostate_train.csv"))
   train[,y] <- as.factor(train[,y])
-  train <- as.h2o(train)
+  train <- h2o.assign(train, "prostate_train")
   test <- h2o.importFile(locate("smalldata/testng/prostate_test.csv"))
   test[,y] <- as.factor(test[,y])
-  ss <- h2o.splitFrame(test, seed = 1)
+  ss <- h2o.splitFrame(test, destination_frames = c("prostate_valid", "prostate_test"), seed = 1)
   valid <- ss[[1]]
   test <- ss[[2]]
 
