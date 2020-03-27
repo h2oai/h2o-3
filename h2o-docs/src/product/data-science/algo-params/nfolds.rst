@@ -1,7 +1,7 @@
 ``nfolds``
 ---------------
 
-- Available in: GBM, DRF, Deep Learning, GLM, Naïve-Bayes, K-Means, XGBoost, AutoML
+- Available in: GBM, DRF, Deep Learning, GLM, GAM, Naïve-Bayes, K-Means, XGBoost, AutoML
 - Hyperparameter: no
 
 

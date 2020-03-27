@@ -1,7 +1,7 @@
 ``nlambdas``
 ------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description

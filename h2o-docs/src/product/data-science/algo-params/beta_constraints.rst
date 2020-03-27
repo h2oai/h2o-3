@@ -1,29 +1,29 @@
 ``beta_constraints``
 --------------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-Beta constraints allow you to set special conditions over the model coefficients. Currently supported constraints are upper and lower bounds and the proximal operator interface, as described in Proximal Algorithms by Boyd et. al. The proximal operator interface allows you to run the GLM with a proximal penalty on a distance from a specified given solution. There are many potential uses: for example, it can be used as part of an ADMM consensus algorithm to obtain a unified solution over separate H2O clouds or in Bayesian regression approximation.
+Beta constraints allow you to set special conditions over the model coefficients. Currently supported constraints are upper and lower bounds and the proximal operator interface, as described in Proximal Algorithms by Boyd et. al. The proximal operator interface allows you to run GLM or GAM with a proximal penalty on a distance from a specified given solution. There are many potential uses: for example, it can be used as part of an ADMM consensus algorithm to obtain a unified solution over separate H2O clouds or in Bayesian regression approximation.
 
-Use the ``beta_constraints`` parameter to specify a data frame or ``H2OParsedData`` object with the beta constraints, where each row corresponds to a predictor in the GLM. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The constraints are specified as a frame with the following vectors (matched by name; all vecs can be sparse):
+Use the ``beta_constraints`` parameter to specify a data frame or ``H2OParsedData`` object with the beta constraints, where each row corresponds to a predictor in the GLM/GAM. The selected frame is used to constrain the coefficient vector to provide upper and lower bounds. The constraints are specified as a frame with the following vectors (matched by name; all vecs can be sparse):
 
  - ``names``: (mandatory) Specifies the predictor names. This is required. The dataset must contain a names column with valid coefficient names.
  - ``lower_bounds``: (optional) The lower bounds of the beta. Must be less than or equal to upper_bounds.
  - ``upper_bounds``: (optional) The upper bounds of the beta. Must be greater than or equal to ``lower_bounds``.
  - ``beta_given``: (optional) Specifies the given solution. This works as a base in proximal penalty.
- - ``beta_start``: (optional) Specifies the starting solution. This is useful for warm-starting GLM (otherwise GLM starts with all zeros).
+ - ``beta_start``: (optional) Specifies the starting solution. This is useful for warm-starting GLM/GAM. (Otherwise, the algorithm starts with all zeros.)
  - ``rho``: (mandatory if ``beta_given`` is specified; otherwise ignored): Specifies the per-column :math:`\ell_2` penalties on the distance from the given solution.
  - ``mean``: (optional) Specifies the mean override (for data standardization).
  - ``std_dev``: (optional) Specifies the standard deviation override (for data standardization).
 
-Running GLM with Weights and Beta Constraints
-'''''''''''''''''''''''''''''''''''''''''''''
+Running GLM/GAM with Weights and Beta Constraints
+'''''''''''''''''''''''''''''''''''''''''''''''''
 
-When running GLM with weights, the expectation is that it will produce the same model as up-sampling the training dataset. This is true when standardization is turned on and without beta constraints. But if you add beta constraints, the up-sampled and weighted cases produce different GLM models with different coefficients. This occurs for a couple of reasons:
+When running GLM or GAM with weights, the expectation is that it will produce the same model as up-sampling the training dataset. This is true when standardization is turned on and without beta constraints. But if you add beta constraints, the up-sampled and weighted cases produce different GLM/GAM models with different coefficients. This occurs for a couple of reasons:
 
 - Priors is standardized and changed when standardization is turned on for the model build. When standardization is turned on, the ``beta_given`` in ``beta_constraints`` is standardized as well. In the `code <https://github.com/h2oai/h2o-3/blob/master/h2o-algos/src/main/java/hex/glm/GLM.java#L1902>`__, you see that the ``beta_given`` is multiplied by factor ``d : _betaGiven *= d;``` where ``d = 1/sd``. In particular, be careful when using previous coefficients as priors and with standardization turned on because the penalty taken on different priors.
 

@@ -1,13 +1,13 @@
 ``non_negative``
 ----------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-At times when working with real-world data, regression models can yield counterintuitive results, such as when an increase in one variable causes an increase in a response even though they are negatively correlated. To adjust this, you can specify ``non_negative=TRUE``, which instructs GLM to force coefficients (non-intercept) to have non-negative values. When enabled, GLM will return only positive coefficients. 
+At times when working with real-world data, regression models can yield counterintuitive results, such as when an increase in one variable causes an increase in a response even though they are negatively correlated. To adjust this, you can specify ``non_negative=TRUE``, which instructs GLM or GAM to force coefficients (non-intercept) to have non-negative values. When enabled, the algorithm will return only positive coefficients. 
 
 To enforce the algorithm to only use positive coefficients, you are (in a sense) indicating that you know that the features are all correlated with positive outcomes. As such, this option is generally only useful if you know the predictive features are positively correlated with the outcome. In superlearning, this does hold true. But you should use caution when enabling this command, keeping in mind that your best chance for catching overfitting with some negative coefficients performing worse is when your model has unseen data that looks a little different. 
 

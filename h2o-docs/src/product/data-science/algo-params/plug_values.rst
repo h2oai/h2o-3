@@ -1,7 +1,7 @@
 ``plug_values``
 ---------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: yes
 
 Description

@@ -1,7 +1,7 @@
 ``tweedie_variance_power``
 --------------------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: yes 
 
 Description
