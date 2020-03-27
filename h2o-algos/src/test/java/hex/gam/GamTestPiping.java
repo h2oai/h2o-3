@@ -7,11 +7,14 @@ import hex.glm.GLMTask;
 import hex.gram.Gram;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 
 import static hex.gam.MatrixFrameUtils.GamUtils.equalColNames;
@@ -25,11 +28,9 @@ import static org.junit.Assert.assertEquals;
  * Here I am going to test the following:
  * - model matrix formation with centering
  */
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class GamTestPiping extends TestUtil {
-  @BeforeClass
-  public static void setup() {
-    stall_till_cloudsize(1);
-  }
 
   /**
    * This test is to make sure that we carried out the expansion of ONE gam column to basis functions
