@@ -118,7 +118,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
                 " manually");
         return;
       }
-      if (index > 0 && (knots[index]-knots[index-1]) <= 0) { // knots must be increasing in order
+      if (index > 0 && knots[index - 1] >= knots[index]) { // knots must be increasing in order
         error("knots formation", "knots not sorted in ascending order.");
         return;
       }
