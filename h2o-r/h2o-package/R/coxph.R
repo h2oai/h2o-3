@@ -30,6 +30,8 @@
 #' @param use_all_factor_levels \code{Logical}. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
 #'        FALSE.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param single_node_mode \code{Logical}. Run on a single node to reduce the effect of network overhead (for smaller datasets) Defaults
+#'        to FALSE.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -67,7 +69,8 @@ h2o.coxph <- function(x,
                       interaction_pairs = NULL,
                       interactions_only = NULL,
                       use_all_factor_levels = FALSE,
-                      export_checkpoints_dir = NULL)
+                      export_checkpoints_dir = NULL,
+                      single_node_mode = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -137,6 +140,8 @@ h2o.coxph <- function(x,
     parms$use_all_factor_levels <- use_all_factor_levels
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(single_node_mode))
+    parms$single_node_mode <- single_node_mode
 
   # Error check and build model
   model <- .h2o.modelJob('coxph', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -170,6 +175,8 @@ h2o.coxph <- function(x,
 #' @param use_all_factor_levels \code{Logical}. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
 #'        FALSE.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param single_node_mode \code{Logical}. Run on a single node to reduce the effect of network overhead (for smaller datasets) Defaults
+#'        to FALSE.
 #' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
 #'        and train a separate model for each segment (group of rows).
 #' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
@@ -191,6 +198,7 @@ h2o.bulk_coxph <- function(x,
                            interactions_only = NULL,
                            use_all_factor_levels = FALSE,
                            export_checkpoints_dir = NULL,
+                           single_node_mode = FALSE,
                            segment_columns = NULL,
                            segment_models_id = NULL)
 {
@@ -264,6 +272,8 @@ h2o.bulk_coxph <- function(x,
     parms$use_all_factor_levels <- use_all_factor_levels
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(single_node_mode))
+    parms$single_node_mode <- single_node_mode
 
   # Build segment-models specific parameters
   segment_parms <- list()

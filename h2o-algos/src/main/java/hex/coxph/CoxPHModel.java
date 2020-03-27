@@ -51,6 +51,8 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
 
     public boolean _calc_cumhaz = true; // support survfit
 
+    public boolean _single_node_mode = false;
+
     String[] responseCols() {
       String[] cols = _start_column != null ? new String[]{_start_column} : new String[0];
       if (isStratified())
@@ -284,7 +286,7 @@ public class CoxPHModel extends Model<CoxPHModel,CoxPHParameters,CoxPHOutput> {
     }
     String[] msgs = super.adaptTestForTrain(test, expensive, computeMetrics);
     if (createStrataVec) {
-      Vec strataVec = CoxPH.StrataTask.makeStrataVec(test, _parms._stratify_by, _output._strataMap);
+      Vec strataVec = CoxPH.StrataTask.makeStrataVec(test, _parms._stratify_by, _output._strataMap, _parms._single_node_mode);
       _toDelete.put(strataVec._key, "adapted missing strata vector");
       test.replace(test.find(_parms._strata_column), strataVec);
       if (_output._strataOnlyCols != null)
