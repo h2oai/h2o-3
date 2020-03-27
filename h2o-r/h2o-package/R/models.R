@@ -1546,7 +1546,7 @@ h2o.coef <- function(object) {
 #' }
 #' @export
 h2o.coef_norm <- function(object) {
-  if (is(object, "H2OModel") && ((object@algorithm == "glm") && (object@algorithm == "gam"))) {
+  if (is(object, "H2OModel") && ((object@algorithm == "glm") || (object@algorithm == "gam"))) {
     if (object@allparameters$family %in% c("multinomial", "ordinal")) {
         grabCoeff(object@model$coefficients_table, "std_coefs_class", TRUE)
     } else {
