@@ -119,7 +119,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         return;
       }
       if (index > 0 && knots[index - 1] >= knots[index]) { // knots must be increasing in order
-        error("knots formation", "knots not sorted in ascending order.");
+        error("knots formation", String.format("knots not sorted in ascending order. Knots at index %d: %f." +
+                "  Knots at index %d: %f", index-1, knots[index-1], index, knots[index]));
         return;
       }
     }
@@ -494,7 +495,6 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       model._ymu = new double[glmModel._ymu.length];
       System.arraycopy(glmModel._ymu, 0, model._ymu, 0, glmModel._ymu.length);
     }
-    
     
     void copyGLMCoeffs(GLMModel glm, GAMModel model, DataInfo dinfo) {
       int totCoefNumsNoCenter = dinfo.fullN()+1+_parms._gam_x.length;

@@ -17,6 +17,7 @@ import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.ArrayUtils;
 import water.util.FrameUtils;
+import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.io.Serializable;
@@ -81,6 +82,9 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     String[] coeffNames = new String[nCoeff];
     System.arraycopy(coefficientNames, 0, coeffNames, 0, nCoeff);
     
+    Log.info("genCoefficientMagTableMultinomial", String.format("coemffNames length: %d.  coefficients " +
+            "length: %d, coeffSigns length: %d", coeffNames.length, coefficients.length, coefficientsStand.length));
+    
     TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
             "names");
     fillUpCoeffs(coeffNames, coefficients, coefficientsStand, table, 0);
@@ -129,6 +133,9 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       coeffNames2[index] = coeffNames[indices[index]];
     }
     
+    Log.info("genCoefficientMagTableMultinomial", String.format("coeffNames2 length: %d.  coeffMags2 " +
+            "length: %d, coeffSigns length: %d", coeffNames2.length, coeffMags2.length, coeffSigns.length));
+    
     TwoDimTable table = new TwoDimTable(tableHeader, "Standardized Coefficient Magnitutes", coeffNames2, colHeaders, colTypes, colFormat,
             "names");
     fillUpCoeffsMag(coeffNames2, coeffMags2, coeffSigns, table, 0);
@@ -152,6 +159,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         coeffNames[countMagIndex++] = coefficientNames[index];
       }
     }
+    Log.info("genCoefficientMagTableMultinomial", String.format("coeffNames length: %d.  coeffMags " +
+            "length: %d, coeffSigns length: %d", coeffNames.length, coeffMags.length, coeffSigns.length));
 
     TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
             "names");
