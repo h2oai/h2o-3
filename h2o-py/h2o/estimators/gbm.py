@@ -34,7 +34,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                    "huber_alpha", "checkpoint", "sample_rate", "sample_rate_per_class", "col_sample_rate",
                    "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                    "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
-                   "te_model", "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
+                   "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
                    "export_checkpoints_dir", "monotone_constraints", "check_constant_response"}
 
     def __init__(self, **kwargs):
@@ -1622,21 +1622,6 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
-
-
-    @property
-    def te_model(self):
-        """
-        Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
-
-        Type: ``str``.
-        """
-        return self._parms.get("te_model")
-
-    @te_model.setter
-    def te_model(self, te_model):
-        assert_is_type(te_model, None, str, H2OEstimator)
-        self._parms["te_model"] = te_model
 
 
     @property
