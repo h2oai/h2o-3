@@ -43,6 +43,7 @@ def _get_default_args(estimator_cls):
         H2OCoxProportionalHazardsClassifier=dict(),
         H2ODeepLearningClassifier=dict(seed=seed, reproducible=True),
         H2OGeneralizedLinearClassifier=dict(family='binomial', seed=seed),
+        H2OGeneralizedAdditiveEstimator=dict(family='binomial', seed=seed, gam_x = ["C1"])
     )
     return defaults.get(estimator_cls.__name__, dict(seed=seed))
 

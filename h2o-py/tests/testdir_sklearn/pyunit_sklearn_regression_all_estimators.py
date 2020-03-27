@@ -43,6 +43,7 @@ def _get_default_args(estimator_cls):
         H2OCoxProportionalHazardsRegressor=dict(),
         H2ODeepLearningRegressor=dict(seed=seed, reproducible=True),
         H2OGeneralizedLinearRegressor=dict(family='gaussian', seed=seed),
+        H2OGeneralizedAdditiveEstimator=dict(family='gaussian', seed=seed, gam_x = ["C1"])
     )
     return defaults.get(estimator_cls.__name__, dict(seed=seed))
 
