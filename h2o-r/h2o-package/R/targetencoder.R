@@ -112,6 +112,7 @@ h2o.targetencoder <- function(x,
 #' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
 #'        and train a separate model for each segment (group of rows).
 #' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
+#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
 #' @export
 h2o.bulk_targetencoder <- function(x,
                                    y,
@@ -124,7 +125,8 @@ h2o.bulk_targetencoder <- function(x,
                                    noise_level = 0.01,
                                    seed = -1,
                                    segment_columns = NULL,
-                                   segment_models_id = NULL)
+                                   segment_models_id = NULL,
+                                   parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL
