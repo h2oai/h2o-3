@@ -74,5 +74,14 @@ doc = dict(
 
     Creates a generalized additive model, specified by a response variable, a set of predictors, and a
     description of the error distribution.
+    """,
+    examples="""
+    h2o.init()
+
+    # Run GAM of CAPSULE ~ AGE + RACE + PSA + DCAPS
+    prostate = h2o.importFile(locate("smalldata/prostate/prostate.csv"))
+    prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+    h2o.gam(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), gam_x = c("DCAPS"), training_frame = prostate,
+            family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
     """
 )
