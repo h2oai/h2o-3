@@ -218,6 +218,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       if (_parms._link == null || _parms._link.equals(GLMParameters.Link.family_default))
         _parms._link = _parms._family.defaultLink;
     }
+    
+    if ((_parms._family == GLMParameters.Family.multinomial || _parms._family == GLMParameters.Family.binomial)
+            && response().get_type() != Vec.T_CAT){
+      error("_response_column", String.format("For given response family '%s', please provide a categorical" +
+              " response column. Current response column type is '%s'.", _parms._family, response().get_type_str()));
+    }
   }
 
   @Override
