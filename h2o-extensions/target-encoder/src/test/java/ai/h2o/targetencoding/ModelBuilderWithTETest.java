@@ -16,7 +16,7 @@ import water.fvec.Frame;
 import java.util.Arrays;
 
 import static ai.h2o.targetencoding.TargetEncoderFrameHelper.addKFoldColumn;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 @RunWith(Enclosed.class)
 public class ModelBuilderWithTETest {
@@ -94,6 +94,10 @@ public class ModelBuilderWithTETest {
         modelBuilderForMainModel.addTEModelKey(targetEncoderModel._key);
 
         Model gbmModel = (GBMModel) modelBuilderForMainModel.trainModel().get();
+        Scope.track_generic(gbmModel);
+
+        // Check that output has reference to the original model
+        assertEquals(targetEncoderModel._key, gbmModel._output._te_model_key);
 
         Frame scoredTest = gbmModel.score(testFrame);
         Scope.track(scoredTest);
@@ -105,8 +109,6 @@ public class ModelBuilderWithTETest {
 
         String[] teEncodedColumns = {"Origin_te"};
         assertTrue(Arrays.stream(teEncodedColumns).allMatch(variableImportancesTableAsString::contains));
-
-        Scope.track_generic(gbmModel);
       } finally {
         Scope.exit();
       }
