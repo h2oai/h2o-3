@@ -8,6 +8,7 @@ import biz.k11i.xgboost.tree.RegTreeNode;
 import hex.*;
 import hex.genmodel.algos.tree.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
+import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
@@ -500,10 +501,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private ModelMetrics makeMetrics(Frame data, Frame originalData, boolean isTrain, String description) {
     Log.debug("Making metrics: " + description);
-    XGBoostScoreTask.XGBoostScoreTaskResult score = XGBoostScoreTask.runScoreTask(
-            model_info(), _output, _parms, null, data, originalData, isTrain, true, this);
-    score.preds.remove();
-    return score.mm;
+    return new XGBoostModelMetrics(_output, data, originalData, isTrain, this).compute();
   }
 
   /**
@@ -540,32 +538,37 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public double[] score0(final double[] data, final double[] preds, final double offset) {
     final DataInfo di = model_info.dataInfo();
     assert di != null;
-    final double threshold = defaultThreshold();
-    Booster booster = null;
-    try {
-      booster = model_info.deserializeBooster();
-      return XGBoostNativePredict.score0(data, offset, preds, _parms._booster.toString(), _parms._ntrees,
-              booster, di._nums, di._cats, di._catOffsets, di._useAllFactorLevels,
-              _output.nclasses(), _output._priorClassDist, threshold, _output._sparse, _output.hasOffset());
-    } finally {
-      if (booster != null)
-        BoosterHelper.dispose(booster);
+    MutableOneHotEncoderFVec row = new MutableOneHotEncoderFVec(di, _output._sparse);
+    row.setInput(data);
+    Predictor predictor = PredictorFactory.makePredictor(model_info._boosterBytes);
+    float[] out;
+    if (_output.hasOffset()) {
+      out = predictor.predict(row, (float) offset);
+    } else if (offset != 0) {
+      throw new UnsupportedOperationException("Unsupported: offset != 0");
+    } else {
+      out = predictor.predict(row);
     }
+    return XGBoostMojoModel.toPreds(data, out, preds, _output.nclasses(), _output._priorClassDist, defaultThreshold());
   }
 
   @Override
-  protected BigScorePredict setupBigScorePredict(BigScore bs) {
-    DataInfo di = model_info().scoringInfo(false); // always for validation scoring info for scoring (we are not in the training phase)
+  protected XGBoostBigScorePredict setupBigScorePredict(BigScore bs) {
+    return setupBigScorePredict(false);
+  }
+
+  public XGBoostBigScorePredict setupBigScorePredict(boolean isTrain) {
+    DataInfo di = model_info().scoringInfo(isTrain); // always for validation scoring info for scoring (we are not in the training phase)
     return PredictConfiguration.useJavaScoring() ? setupBigScorePredictJava(di) : setupBigScorePredictNative(di);
   }
 
-  private BigScorePredict setupBigScorePredictNative(DataInfo di) {
+  private XGBoostBigScorePredict setupBigScorePredictNative(DataInfo di) {
     BoosterParms boosterParms = XGBoostModel.createParams(_parms, _output.nclasses(), di.coefNames());
-    return new XGBoostBigScorePredict(model_info, _parms, _output, di, boosterParms, defaultThreshold());
+    return new XGBoostNativeBigScorePredict(model_info, _parms, _output, di, boosterParms, defaultThreshold());
   }
 
-  private BigScorePredict setupBigScorePredictJava(DataInfo di) {
-    return new XGBoostJavaBigScorePredict(di, _output, defaultThreshold(), model_info()._boosterBytes);
+  private XGBoostBigScorePredict setupBigScorePredictJava(DataInfo di) {
+    return new XGBoostJavaBigScorePredict(model_info, _output, di, _parms, defaultThreshold());
   }
 
   @Override

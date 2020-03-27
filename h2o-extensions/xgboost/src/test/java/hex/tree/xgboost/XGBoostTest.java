@@ -41,7 +41,7 @@ import static water.util.FileUtils.getFile;
 @RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
 
-  @Parameterized.Parameters(name = "XGBoost(javaMojoScoring={0},javaPredict={1}")
+  @Parameterized.Parameters(name = "XGBoost(javaPredict={0}")
   public static Collection<Object> data() {
     return Arrays.asList(new Object[]{
             "false", "true"
@@ -482,8 +482,8 @@ public class XGBoostTest extends TestUtil {
       preds = model.score(testFrame);
       assertTrue(model.testJavaScoring(testFrame, preds, 1e-6));
       assertEquals(
-              ((ModelMetricsBinomial)model._output._validation_metrics).auc(),
               ModelMetricsBinomial.make(preds.vec(2), testFrame.vec(response)).auc(),
+              ((ModelMetricsBinomial) model._output._validation_metrics).auc(),
               1e-5
       );
       assertTrue(preds.anyVec().sigma() > 0);
