@@ -55,12 +55,12 @@ public class GridTest extends TestUtil {
       params._seed = 42;
 
       HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria searchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
+      searchCriteria.set_max_runtime_secs(1d);
+
       Job<Grid> gridSearch = GridSearch.startGridSearch(null, params,
               hyperParms,
               new GridSearch.SimpleParametersBuilderFactory(),
               searchCriteria, 2);
-
-      searchCriteria.set_max_runtime_secs(1d);
 
       Scope.track_generic(gridSearch);
       final Grid grid = gridSearch.get();

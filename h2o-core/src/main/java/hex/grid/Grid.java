@@ -105,7 +105,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
       String[] nm = Arrays.copyOf(m, m.length + 1);
       nm[m.length] = failureDetails;
       _failure_details = nm;
-      // Append raw parames
+      // Append raw params
       String[][] rp = _failed_raw_params;
       String[][] nrp = Arrays.copyOf(rp, rp.length + 1);
       nrp[rp.length] = rawParams;

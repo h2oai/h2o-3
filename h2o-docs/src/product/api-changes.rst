@@ -38,3 +38,12 @@ The following classes were moved:
 ``ai.h2o.automl.Leaderboard``                       ``ai.h2o.automl.leaderboard.Leaderboard``
 =================================================   =========================================
 
+
+From 3.28 or Below to 3.30
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Java API
+''''''''
+
+`hex.grid.HyperSpaceWalker` and `hex.grid.HyperspaceWalker.HyperSpaceIterator` interfaces have been simplified.
+Users implementing those interfaces directly, for example to create a custom grid search exploration algorithm, may want to look at the default implementations in ` h2o-core/src/main/java/hex/grid/HyperSpaceWalker.java` if they are facing any issue when compiling against the new interfaces.

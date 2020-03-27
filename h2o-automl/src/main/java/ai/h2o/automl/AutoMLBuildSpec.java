@@ -60,8 +60,23 @@ public class AutoMLBuildSpec extends Iced {
 
     public static final int AUTO_STOPPING_TOLERANCE = -1;
 
+    public static double default_stopping_tolerance_for_frame(Frame frame) {
+      return HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(frame);
+    }
+
     private final HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria _searchCriteria = new HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria();
     private double _max_runtime_secs_per_model = 0;
+
+    public AutoMLStoppingCriteria() {
+      // reasonable defaults:
+      set_max_models(0); // no limit
+      set_max_runtime_secs(0); // no limit
+      set_max_runtime_secs_per_model(0); // no limit
+
+      set_stopping_rounds(3);
+      set_stopping_tolerance(AUTO_STOPPING_TOLERANCE);
+      set_stopping_metric(StoppingMetric.AUTO);
+    }
 
     public double max_runtime_secs_per_model() {
       return _max_runtime_secs_per_model;
@@ -123,23 +138,8 @@ public class AutoMLBuildSpec extends Iced {
       _searchCriteria.set_default_stopping_tolerance_for_frame(frame);
     }
 
-    public static double default_stopping_tolerance_for_frame(Frame frame) {
-      return HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria.default_stopping_tolerance_for_frame(frame);
-    }
-
     public HyperSpaceSearchCriteria.RandomDiscreteValueSearchCriteria getSearchCriteria() {
       return _searchCriteria;
-    }
-
-    public AutoMLStoppingCriteria() {
-      // reasonable defaults:
-      set_max_models(0); // no limit
-      set_max_runtime_secs(0); // no limit
-      set_max_runtime_secs_per_model(0); // no limit
-
-      set_stopping_rounds(3);
-      set_stopping_tolerance(AUTO_STOPPING_TOLERANCE);
-      set_stopping_metric(StoppingMetric.AUTO);
     }
   }
 

@@ -18,7 +18,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
 
   public static abstract class ParallelModelBuilderCallback<D extends ParallelModelBuilderCallback> extends Iced<D> {
 
-    public abstract void onBuildSucces(final Model model, final ParallelModelBuilder parallelModelBuilder);
+    public abstract void onBuildSuccess(final Model model, final ParallelModelBuilder parallelModelBuilder);
 
     public abstract void onBuildFailure(final ModelBuildFailure modelBuildFailure, final ParallelModelBuilder parallelModelBuilder);
   }
@@ -56,7 +56,7 @@ public class ParallelModelBuilder extends ForkJoinTask<ParallelModelBuilder> {
     @Override
     public void onModelSuccess(Model model) {
       try {
-        _callback.onBuildSucces(model, ParallelModelBuilder.this);
+        _callback.onBuildSuccess(model, ParallelModelBuilder.this);
       } finally {
         _modelInProgressCounter.decrementAndGet();
       }
