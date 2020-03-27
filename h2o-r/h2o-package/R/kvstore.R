@@ -456,6 +456,7 @@ h2o.download_mojo <- function(model, path=getwd(), get_genmodel_jar=FALSE, genmo
 
 #'
 #' Download the model in binary format.
+#' The owner of the file saved is the user by which python session was executed.
 #'
 #' @param model An H2OModel
 #' @param path The path where binary file should be downloaded. Downloaded to current directory by default.
