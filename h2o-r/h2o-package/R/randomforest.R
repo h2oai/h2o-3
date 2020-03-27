@@ -89,7 +89,6 @@
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
-#' @param te_model Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @return Creates a \linkS4class{H2OModel} object of the right type.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
@@ -162,7 +161,6 @@ h2o.randomForest <- function(x,
                              custom_metric_func = NULL,
                              export_checkpoints_dir = NULL,
                              check_constant_response = TRUE,
-                             te_model = NULL,
                              verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -277,8 +275,6 @@ h2o.randomForest <- function(x,
     parms$export_checkpoints_dir <- export_checkpoints_dir
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
-  if (!missing(te_model))
-    parms$te_model <- te_model
 
   if (!missing(distribution)) {
     warning("Argument distribution is deprecated and has no use for Random Forest.")

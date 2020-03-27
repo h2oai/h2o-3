@@ -7,7 +7,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.estimators.estimator_base import H2OEstimator
-from h2o.estimators.targetencoder import H2OTargetEncoderEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
@@ -32,7 +31,7 @@ class H2ORandomForestEstimator(H2OEstimator):
                    "sample_rate", "sample_rate_per_class", "binomial_double_trees", "checkpoint",
                    "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                    "histogram_type", "categorical_encoding", "calibrate_model", "calibration_frame", "distribution",
-                   "custom_metric_func", "export_checkpoints_dir", "check_constant_response", "te_model"}
+                   "custom_metric_func", "export_checkpoints_dir", "check_constant_response"}
 
     def __init__(self, **kwargs):
         super(H2ORandomForestEstimator, self).__init__()
@@ -1596,20 +1595,5 @@ class H2ORandomForestEstimator(H2OEstimator):
     def check_constant_response(self, check_constant_response):
         assert_is_type(check_constant_response, None, bool)
         self._parms["check_constant_response"] = check_constant_response
-
-
-    @property
-    def te_model(self):
-        """
-        Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
-
-        Type: ``str`` | ``H2OTargetEncoderEstimator``.
-        """
-        return self._parms.get("te_model")
-
-    @te_model.setter
-    def te_model(self, te_model):
-        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
-        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 

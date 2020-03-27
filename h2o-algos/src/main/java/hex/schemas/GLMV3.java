@@ -76,8 +76,7 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "max_confusion_matrix_size",
             "max_hit_ratio_k",
             "max_runtime_secs",
-            "custom_metric_func",
-            "te_model"
+            "custom_metric_func"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)

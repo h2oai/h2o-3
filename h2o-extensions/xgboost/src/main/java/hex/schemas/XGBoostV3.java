@@ -35,7 +35,6 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "distribution",
         "tweedie_power",
         "categorical_encoding",
-        "te_model",
         "quiet_mode",
         "checkpoint",
         "export_checkpoints_dir",

@@ -146,6 +146,7 @@ h2o.prcomp <- function(training_frame,
 #'        Defaults to -1 (time-based random number).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param te_model Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 #' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
 #'        and train a separate model for each segment (group of rows).
 #' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
@@ -166,6 +167,7 @@ h2o.bulk_prcomp <- function(training_frame,
                             seed = -1,
                             max_runtime_secs = 0,
                             export_checkpoints_dir = NULL,
+                            te_model = NULL,
                             segment_columns = NULL,
                             segment_models_id = NULL)
 {
@@ -211,6 +213,8 @@ h2o.bulk_prcomp <- function(training_frame,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(te_model))
+    parms$te_model <- te_model
 
   # Build segment-models specific parameters
   segment_parms <- list()

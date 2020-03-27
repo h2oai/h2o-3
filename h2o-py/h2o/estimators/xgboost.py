@@ -8,7 +8,6 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import h2o
 from h2o.estimators.estimator_base import H2OEstimator
-from h2o.estimators.targetencoder import H2OTargetEncoderEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
@@ -26,15 +25,15 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "score_each_iteration",
                    "fold_assignment", "fold_column", "response_column", "ignored_columns", "ignore_const_cols",
                    "offset_column", "weights_column", "stopping_rounds", "stopping_metric", "stopping_tolerance",
-                   "max_runtime_secs", "seed", "distribution", "tweedie_power", "categorical_encoding", "te_model",
-                   "quiet_mode", "checkpoint", "export_checkpoints_dir", "ntrees", "max_depth", "min_rows",
-                   "min_child_weight", "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate",
-                   "colsample_bylevel", "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred",
-                   "max_delta_step", "monotone_constraints", "score_tree_interval", "min_split_improvement", "gamma",
-                   "nthread", "save_matrix_directory", "build_tree_one_node", "calibrate_model", "calibration_frame",
-                   "max_bins", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type",
-                   "normalize_type", "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster",
-                   "reg_lambda", "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
+                   "max_runtime_secs", "seed", "distribution", "tweedie_power", "categorical_encoding", "quiet_mode",
+                   "checkpoint", "export_checkpoints_dir", "ntrees", "max_depth", "min_rows", "min_child_weight",
+                   "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
+                   "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred", "max_delta_step",
+                   "monotone_constraints", "score_tree_interval", "min_split_improvement", "gamma", "nthread",
+                   "save_matrix_directory", "build_tree_one_node", "calibrate_model", "calibration_frame", "max_bins",
+                   "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type", "normalize_type",
+                   "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda",
+                   "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
 
     def __init__(self, **kwargs):
         super(H2OXGBoostEstimator, self).__init__()
@@ -741,21 +740,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def categorical_encoding(self, categorical_encoding):
         assert_is_type(categorical_encoding, None, Enum("auto", "enum", "one_hot_internal", "one_hot_explicit", "binary", "eigen", "label_encoder", "sort_by_response", "enum_limited"))
         self._parms["categorical_encoding"] = categorical_encoding
-
-
-    @property
-    def te_model(self):
-        """
-        Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
-
-        Type: ``str`` | ``H2OTargetEncoderEstimator``.
-        """
-        return self._parms.get("te_model")
-
-    @te_model.setter
-    def te_model(self, te_model):
-        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
-        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 
     @property

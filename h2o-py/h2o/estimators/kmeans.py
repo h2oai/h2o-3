@@ -7,7 +7,6 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 
 from h2o.estimators.estimator_base import H2OEstimator
-from h2o.estimators.targetencoder import H2OTargetEncoderEstimator
 from h2o.exceptions import H2OValueError
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import assert_is_type, Enum, numeric
@@ -25,7 +24,7 @@ class H2OKMeansEstimator(H2OEstimator):
                    "keep_cross_validation_predictions", "keep_cross_validation_fold_assignment", "fold_assignment",
                    "fold_column", "ignored_columns", "ignore_const_cols", "score_each_iteration", "k", "estimate_k",
                    "user_points", "max_iterations", "standardize", "seed", "init", "max_runtime_secs",
-                   "categorical_encoding", "export_checkpoints_dir", "cluster_size_constraints", "te_model"}
+                   "categorical_encoding", "export_checkpoints_dir", "cluster_size_constraints"}
 
     def __init__(self, **kwargs):
         super(H2OKMeansEstimator, self).__init__()
@@ -651,20 +650,5 @@ class H2OKMeansEstimator(H2OEstimator):
     def cluster_size_constraints(self, cluster_size_constraints):
         assert_is_type(cluster_size_constraints, None, [int])
         self._parms["cluster_size_constraints"] = cluster_size_constraints
-
-
-    @property
-    def te_model(self):
-        """
-        Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
-
-        Type: ``str`` | ``H2OTargetEncoderEstimator``.
-        """
-        return self._parms.get("te_model")
-
-    @te_model.setter
-    def te_model(self, te_model):
-        assert_is_type(te_model, None, str, H2OTargetEncoderEstimator)
-        self._parms["te_model"] = te_model.key if isinstance(te_model, H2OTargetEncoderEstimator) else te_model
 
 
