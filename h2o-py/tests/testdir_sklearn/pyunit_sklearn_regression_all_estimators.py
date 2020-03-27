@@ -43,7 +43,7 @@ def _get_default_args(estimator_cls):
         H2OCoxProportionalHazardsRegressor=dict(),
         H2ODeepLearningRegressor=dict(seed=seed, reproducible=True),
         H2OGeneralizedLinearRegressor=dict(family='gaussian', seed=seed),
-        H2OGeneralizedAdditiveEstimator=dict(family='gaussian', seed=seed, gam_x = ["C1"])
+        H2OGeneralizedAdditiveRegressor=dict(family='gaussian', seed=seed, gam_x = ["C1"])
     )
     return defaults.get(estimator_cls.__name__, dict(seed=seed))
 
@@ -106,7 +106,7 @@ def test_scores_are_equivalent(estimator_cls):
         lk, rk = ('with_h2o_frames', 'with_numpy_arrays')
         est_scores = scores[estimator_cls]
         if lk in est_scores and rk in est_scores:
-            assert abs(est_scores[lk] - abs(est_scores[rk])) < 1e-6, \
+            assert abs(est_scores[lk] - est_scores[rk]) < 1e-6, \
                 "expected equivalent scores but got {lk}={lscore} and {rk}={rscore}" \
                     .format(lk=lk, rk=rk, lscore=est_scores[lk], rscore=est_scores[rk])
         elif lk not in est_scores:
