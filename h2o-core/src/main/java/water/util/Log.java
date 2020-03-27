@@ -34,6 +34,7 @@ abstract public class Log {
   static String LOG_DIR = null;
   static int _level=INFO;
   static boolean _quiet = false;
+  static String _maxLogFileSize = "3MB";
   private static org.apache.log4j.Logger _logger = null;
   private static boolean _bufferMessages = true;
   // Common pre-header
@@ -53,10 +54,14 @@ abstract public class Log {
     return -1;
   }
   
-  public static void init(String sLvl, boolean quiet) {
+  public static void init(String sLvl, boolean quiet, String maxLogFileSize) {
     int lvl = valueOf(sLvl);
     if( lvl != -1 ) _level = lvl;
     _quiet = quiet;
+    _logger = null;
+    if(maxLogFileSize != null) {
+      _maxLogFileSize = maxLogFileSize;
+    }
   }
   
   public static void notifyAboutNetworkingInitialized() {
@@ -75,7 +80,7 @@ abstract public class Log {
   }
   
   public static void setLogLevel(String sLvl, boolean quiet) {
-    init(sLvl, quiet);
+    init(sLvl, quiet, null);
   }
   
   public static void setLogLevel(String sLvl) {
@@ -283,7 +288,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R2",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R2.Threshold",                "DEBUG");
     p.setProperty("log4j.appender.R2.File",                     getLogFilePath("debug"));
-    p.setProperty("log4j.appender.R2.MaxFileSize",              "3MB");
+    p.setProperty("log4j.appender.R2.MaxFileSize",              _maxLogFileSize);
     p.setProperty("log4j.appender.R2.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R2.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R2.layout.ConversionPattern", "%m%n");
@@ -291,7 +296,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R3",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R3.Threshold",                "INFO");
     p.setProperty("log4j.appender.R3.File",                     getLogFilePath("info"));
-    p.setProperty("log4j.appender.R3.MaxFileSize",              "2MB");
+    p.setProperty("log4j.appender.R3.MaxFileSize",              _maxLogFileSize);
     p.setProperty("log4j.appender.R3.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R3.layout",                   "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.R3.layout.ConversionPattern", "%m%n");

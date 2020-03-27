@@ -106,8 +106,11 @@ final public class H2O {
             "          (This usually has a good default that you need not change.)\n" +
             "\n" +
             "    -log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>\n" +
-            "          Write messages at this logging level, or above.  Default is INFO." +
-            "\n" +
+            "          Write messages at this logging level, or above.  Default is INFO.\n" +
+            "\n" + 
+            "    -max_log_file_size\n" +
+            "          Maximum size of INFO and DEBUG log files. The file is rolled over after a specified size has been reached.\n" +
+            "          (The default is 3MB. Minimum is 1MB and maximum is 99999MB)\n" +
             "\n" +
             "    -flow_dir <server side directory or HDFS directory>\n" +
             "          The directory where H2O stores saved flows.\n" +
@@ -120,9 +123,9 @@ final public class H2O {
             "    -client\n" +
             "          Launch H2O node in client mode.\n" +
             "\n" +
-            "    -notify_local <fileSystemPath>" +
-            "          Specifies a file to write when the node is up. The file contains one line with the IP and" +
-            "          port of the embedded web server. e.g. 192.168.1.100:54321" +
+            "    -notify_local <fileSystemPath>\n" +
+            "          Specifies a file to write when the node is up. The file contains one line with the IP and\n" +
+            "          port of the embedded web server. e.g. 192.168.1.100:54321\n" +
             "\n" +
             "    -context_path <context_path>\n" +
             "          The context path for jetty.\n" +
@@ -382,6 +385,9 @@ final public class H2O {
     /** -log_level=log_level; One of DEBUG, INFO, WARN, ERRR.  Default is INFO. */
     public String log_level;
 
+    /** -max_log_file_size=max_log_file_size; Maximum size of log file. The file is rolled over after a specified size has been reached.*/
+    public String max_log_file_size;
+
     /** -random_udp_drop, -random_udp_drop=true; test only, randomly drop udp incoming */
     public boolean random_udp_drop;
 
@@ -481,6 +487,21 @@ final public class H2O {
       }else{
         return portNum;
       }
+    }
+    
+    public String checkFileSize(String fileSizeString){
+      int length = fileSizeString.length();
+      if(length > 2 && length < 8 && fileSizeString.substring(length-2, length).equals("MB")){
+        try {
+          Integer.parseInt(fileSizeString.substring(0, length-2));
+          return fileSizeString;
+        } catch (NumberFormatException ex){
+          parseFailed("Argument " + _lastMatchedFor + " must be String value from 1MB to 99999MB.");
+          return null;
+        }
+      } 
+      parseFailed("Argument " + _lastMatchedFor + " must be String value from 1MB to 99999MB.");
+      return null;
     }
 
     @Override public String toString() { return _s; }
@@ -611,6 +632,10 @@ final public class H2O {
       else if (s.matches("log_level")) {
         i = s.incrementAndCheck(i, args);
         trgt.log_level = args[i];
+      }
+      else if (s.matches("max_log_file_size")) {
+        i = s.incrementAndCheck(i, args);
+        trgt.max_log_file_size = s.checkFileSize(args[i]);
       }
       else if (s.matches("random_udp_drop")) {
         trgt.random_udp_drop = true;
@@ -1635,7 +1660,7 @@ final public class H2O {
    *  stdout.  This allows for early processing of the '-version' option
    *  without unpacking the jar file and other startup stuff.  */
   private static void printAndLogVersion(String[] arguments) {
-    Log.init(ARGS.log_level, ARGS.quiet);
+    Log.init(ARGS.log_level, ARGS.quiet, ARGS.max_log_file_size);
     Log.info("----- H2O started " + (ARGS.client?"(client)":"") + " -----");
     Log.info("Build git branch: " + ABV.branchName());
     Log.info("Build git hash: " + ABV.lastCommitHash());
