@@ -116,7 +116,7 @@ class H2OEstimator(ModelBase):
 
     def bulk_train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
                    weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
-                   segments=None, segment_models_id=None, verbose=False):
+                   segments=None, segment_models_id=None, parallelism=1, verbose=False):
         """
         Trains H2O model for each segment of the training dataset.
 
@@ -137,7 +137,9 @@ class H2OEstimator(ModelBase):
             As an alternative to providing a list of columns, users can also supply an explicit enumeration of
             segments to build the models for. This enumeration needs to be represented as H2OFrame.
         :param segment_models_id: Identifier for the returned collection of Segment Models. If not specified
-            it will be automatically generated.  
+            it will be automatically generated.
+        :param parallelism: Level of parallelism of bulk model building, it is the maximum number of models 
+            each H2O node will be building in parallel.
         :param bool verbose: Enable to print additional information during model building. Defaults to False.
 
         :examples:
@@ -159,6 +161,7 @@ class H2OEstimator(ModelBase):
         assert_is_type(segments, None, H2OFrame, [str])
         assert_is_type(verbose, bool)
         assert_is_type(segment_models_id, None, str)
+        assert_is_type(parallelism, int)
 
         if segments is None:
             raise H2OValueError("Parameter segments was not specified. Please provide either a list of columns to "
@@ -175,6 +178,7 @@ class H2OEstimator(ModelBase):
             parms["segment_columns"] = segments
         if segment_models_id:
             parms["segment_models_id"] = segment_models_id
+        parms["parallelism"] = parallelism
 
         rest_ver = self._get_rest_version(parms)
         bulk_train_response = h2o.api("POST /%d/BulkModelBuilders/%s" % (rest_ver, self.algo), data=parms)

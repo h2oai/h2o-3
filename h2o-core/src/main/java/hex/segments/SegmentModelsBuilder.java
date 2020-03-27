@@ -4,8 +4,12 @@ import hex.Model;
 import water.*;
 import water.fvec.Frame;
 import water.rapids.ast.prims.mungers.AstGroup;
+import water.util.Log;
+
+import static hex.segments.LocalSequentialSegmentModelsBuilder.SegmentModelsStats;
 
 import java.util.List;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,7 +35,7 @@ public class SegmentModelsBuilder {
     }
     final Job<SegmentModels> job = new Job<>(makeDestKey(), SegmentModels.class.getName(), _blueprint_parms.algoName());
     SegmentModelsBuilderTask segmentBuilder = new SegmentModelsBuilderTask(
-            job, segments, _blueprint_parms._train, _blueprint_parms._valid);
+            job, segments, _blueprint_parms._train, _blueprint_parms._valid, _parms._parallelism);
     return job.start(segmentBuilder, segments.numRows());
   }
 
@@ -70,14 +74,17 @@ public class SegmentModelsBuilder {
     private final Frame _full_train;
     private final Frame _full_valid;
     private final Key _counter_key;
+    private final int _parallelism;
 
     private SegmentModelsBuilderTask(Job<SegmentModels> job, Frame segments,
-                                     Key<Frame> train, Key<Frame> valid) {
+                                     Key<Frame> train, Key<Frame> valid,
+                                     int parallelism) {
       _job = job;
       _segments = segments;
       _full_train = reorderColumns(train);
       _full_valid = reorderColumns(valid);
       _counter_key = Key.make();
+      _parallelism = parallelism;
     }
 
     @Override
@@ -88,7 +95,8 @@ public class SegmentModelsBuilder {
         WorkAllocator allocator = new WorkAllocator(_counter_key, _segments.numRows());
         LocalSequentialSegmentModelsBuilder localBuilder = new LocalSequentialSegmentModelsBuilder(
                 _job, _blueprint_parms, _segments, _full_train, _full_valid, allocator);
-        new MultiNodeRunner(localBuilder, segmentModels).doAllNodes();
+        SegmentModelsStats stats = new MultiNodeRunner(localBuilder, segmentModels, _parallelism).doAllNodes()._stats;
+        Log.info("Finished per-segment model building; summary: ", stats);
       } finally {
         _blueprint_parms.read_unlock_frames(_job);
         if (_segments._key == null) { // segments frame was auto-generated 
@@ -116,24 +124,51 @@ public class SegmentModelsBuilder {
   }
 
   private static class MultiNodeRunner extends MRTask<MultiNodeRunner> {
-    LocalSequentialSegmentModelsBuilder _builder;
-    SegmentModels _segment_models;
+    final LocalSequentialSegmentModelsBuilder _builder;
+    final SegmentModels _segment_models;
+    final int _parallelism;
 
-    private MultiNodeRunner(LocalSequentialSegmentModelsBuilder builder, SegmentModels segmentModels) {
+    // OUT
+    LocalSequentialSegmentModelsBuilder.SegmentModelsStats _stats;
+
+    private MultiNodeRunner(LocalSequentialSegmentModelsBuilder builder, SegmentModels segmentModels, int parallelism) {
       _builder = builder;
       _segment_models = segmentModels;
+      _parallelism = parallelism;
     }
 
     @Override
     protected void setupLocal() {
-      _builder.buildModels(_segment_models);
+      if (_parallelism == 1) {
+        _stats = _builder.buildModels(_segment_models);
+      } else {
+        List<Callable<SegmentModelsStats>> runnables = Stream.<Callable<SegmentModelsStats>>generate(
+                () -> (() -> _builder.clone().buildModels(_segment_models))
+        ).limit(_parallelism).collect(Collectors.toList());
+        try {
+          ExecutorService executor = Executors.newFixedThreadPool(_parallelism);
+          _stats = new SegmentModelsStats();
+          for (Future<SegmentModelsStats> f : executor.invokeAll(runnables)) {
+            _stats.reduce(f.get());
+          }
+        } catch (ExecutionException | InterruptedException e) {
+          throw new RuntimeException("Failed to build segment-models", e);
+        }
+      }
+      Log.info("Finished per-segment model building on node ", H2O.SELF, "; summary: ", _stats);
+    }
+
+    @Override
+    public void reduce(MultiNodeRunner mrt) {
+      _stats.reduce(mrt._stats);
     }
   }
-
+  
   public static class SegmentModelsParameters extends Iced<SegmentModelsParameters> {
     Key<SegmentModels> _segment_models_id;
     Key<Frame> _segments;
     String[] _segment_columns;
+    int _parallelism = 1;
   }
 
 }

@@ -31,17 +31,18 @@ class LocalSequentialSegmentModelsBuilder extends Iced<LocalSequentialSegmentMod
     _allocator = allocator;
   }
 
-  void buildModels(SegmentModels segmentModels) {
+  SegmentModelsStats buildModels(SegmentModels segmentModels) {
     Vec.Reader[] segmentVecReaders = new Vec.Reader[_segments.numCols()];
     for (int i = 0; i < segmentVecReaders.length; i++)
       segmentVecReaders[i] = _segments.vec(i).new Reader();
+    SegmentModelsStats stats = new SegmentModelsStats();
     for (long segmentIdx = _allocator.getNextWorkItem(); segmentIdx < _allocator.getMaxWork(); segmentIdx = _allocator.getNextWorkItem()) {
       if (_job.stop_requested())
         throw new Job.JobCancelledException();  // Handle end-user cancel request
 
       double[] segmentVals = readRow(segmentVecReaders, segmentIdx);
       final ModelBuilder builder = makeBuilder(segmentIdx, segmentVals);
-
+      
       Exception failure = null;
       try {
         builder.init(false);
@@ -54,8 +55,29 @@ class LocalSequentialSegmentModelsBuilder extends Iced<LocalSequentialSegmentMod
         SegmentModels.SegmentModelResult result = segmentModels.addResult(segmentIdx, builder, failure);
         Log.info("Finished building a model for segment id=", segmentIdx, ", result: ", result);
         cleanUp(builder);
+        if (result.isSuccessful())
+          stats._succeeded++;
+        else
+          stats._failed++;
       }
     }
+    return stats;
+  }
+
+  static class SegmentModelsStats extends Iced<SegmentModelsStats> {
+    int _succeeded;
+    int _failed;
+
+    void reduce(SegmentModelsStats other) {
+      _succeeded += other._succeeded;
+      _failed += other._failed;
+    }
+
+    @Override
+    public String toString() {
+      return "succeeded=" + _succeeded + ", failed=" + _failed;
+    }
+
   }
 
   private void cleanUp(ModelBuilder builder) {

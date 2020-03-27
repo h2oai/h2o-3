@@ -147,6 +147,7 @@ def gen_module(schema, algo, module):
     sig_bulk_params = list(bulk_params[1])
     sig_bulk_params.append("segment_columns = NULL")
     sig_bulk_params.append("segment_models_id = NULL")
+    sig_bulk_params.append("parallelism = 1")
 
     if algo != "generic":
         #
@@ -165,6 +166,8 @@ def gen_module(schema, algo, module):
               "#'        and train a separate model for each segment (group of rows)."
         yield "#' @param segment_models_id Identifier for the returned collection of Segment Models. " \
               "If not specified it will be automatically generated."
+        yield "#' @param parallelism Level of parallelism of bulk model building, it is the maximum number " \
+              "of models each H2O node will be building in parallel, defaults to 1."
         yield "#' @export"
         bulk_param_indent = len("h2o.bulk_%s <- function(" % module)
         yield reformat_block("h2o.bulk_%s <- function(%s)" % (module, ',\n'.join(sig_bulk_params)), indent=bulk_param_indent, indent_first=False)
