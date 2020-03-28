@@ -52,7 +52,7 @@ public class GlmMojoModel extends GlmMojoModelBase {
 
     double mu = _linkFn.eval(eta);
 
-    if (_binomial) {
+    if (_binomial || _family.equals("fractionalbinomial")) {
       preds[0] = (mu >= _defaultThreshold) ? 1 : 0; // threshold given by ROC
       preds[1] = 1.0 - mu; // class 0
       preds[2] =       mu; // class 1

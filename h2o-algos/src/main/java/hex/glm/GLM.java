@@ -366,7 +366,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public int nclasses() {
     if (_parms._family == Family.multinomial || _parms._family == Family.ordinal)
       return _nclass;
-    if (_parms._family == Family.binomial || _parms._family == Family.quasibinomial)
+    if (Family.binomial == _parms._family || Family.quasibinomial == _parms._family
+            || Family.fractionalbinomial == _parms._family)
       return 2;
     return 1;
   }
@@ -462,6 +463,14 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           break;
         case gaussian:
 //          if (_nclass != 1) error("_family", H2O.technote(2, "Gaussian requires the response to be numeric."));
+          break;
+        case fractionalbinomial:
+          final Vec resp = (train()).vec(_parms._response_column);
+          if ((resp.min() < 0) || (resp.max() > 1)) {
+            error("response",
+                    String.format("Response '%s' must be between 0 and 1 for fractional_binomial family. Min: %f, Max: %f",
+                            _parms._response_column, resp.min(), resp.max()));
+          }
           break;
         default:
           error("_family", "Invalid distribution: " + _parms._distribution);
@@ -2790,7 +2799,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         assert beta.length == _dinfo.fullN() + 1;
         assert _parms._intercept || (beta[beta.length-1] == 0);
         GLMGradientTask gt;
-        if(_parms._family == Family.binomial && _parms._link == Link.logit)
+        if((_parms._family == Family.binomial && _parms._link == Link.logit) || 
+                (_parms._family == Family.fractionalbinomial && _parms._link == Link.logit))
           gt = new GLMBinomialGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);
         else if(_parms._family == Family.gaussian && _parms._link == Link.identity)
           gt = new GLMGaussianGradientTask(_job == null?null:_job._key,_dinfo,_parms,_l2pen, beta).doAll(_dinfo._adaptedFrame);

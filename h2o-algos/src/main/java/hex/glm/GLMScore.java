@@ -116,7 +116,9 @@ public class GLMScore extends MRTask<GLMScore> {
       preds[0] = ArrayUtils.maxIndex(eta);
     } else {
       double mu = _m._parms.linkInv(r.innerProduct(_beta) + o);
-      if (_m._parms._family == GLMModel.GLMParameters.Family.binomial || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial) { // threshold for prediction
+      if (_m._parms._family == GLMModel.GLMParameters.Family.binomial 
+              || _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial 
+              || _m._parms._family == GLMModel.GLMParameters.Family.fractionalbinomial) { // threshold for prediction
         preds[0] = mu >= _defaultThreshold?1:0;
         preds[1] = 1.0 - mu; // class 0
         preds[2] = mu; // class 1

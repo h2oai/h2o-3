@@ -3,9 +3,9 @@ package hex.glm;
 import hex.CreateFrame;
 import hex.ModelMetricsBinomialGLM;
 import hex.SplitFrame;
-import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
+import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -19,6 +19,7 @@ import water.util.VecUtils;
 
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.Assert.*;
@@ -35,6 +36,87 @@ public class GLMBasicTestBinomial extends TestUtil {
   static Frame _airlinesTest;
   double _tol = 1e-10;
 
+  /**
+   * Easy test for fractional binomial implementation.  Two models are built:
+   * 1. family = fractionalbinomial
+   * 2. family = binomial, response will be 0 or 1 but with weights derived from response column of fractionabinomial
+   * family.
+   * 
+   * The coefficients are compared and they should equal.
+   */
+  @Test
+  public void testFractionalBinomial() {
+    try {
+      Scope.enter();
+      Frame trainData = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      Scope.track(trainData);
+      List<String> cnames = Arrays.asList(trainData.names());
+      boolean rightDataset = cnames.contains("y") && cnames.contains("z") && cnames.contains("conc");
+      Frame trainDataB = parse_test_file("smalldata/glm_test/fractional_binomial1.csv");
+      Scope.track(trainDataB);
+      List<String> cnamesB = Arrays.asList(trainDataB.names());
+      rightDataset = rightDataset && cnamesB.contains("z") && cnames.contains("y");
+      if (rightDataset) {
+        GLMParameters parms = new GLMParameters();
+        parms._train = trainData._key;
+        parms._family = Family.fractionalbinomial;
+        parms._response_column = "y";
+        parms._ignored_columns = new String[]{"z", "conc"};
+        parms._compute_p_values = true;
+        parms._standardize = false;
+        parms._lambda = new double[]{0};
+        GLMModel model = new GLM(parms).trainModel().get();
+        Scope.track_generic(model);
+
+        GLMParameters parmsB = new GLMParameters();
+        parmsB._train = trainDataB._key;
+        parmsB._family = Family.binomial;
+        parmsB._response_column = "z";
+        parmsB._weights_column = "y";
+        parmsB._standardize = false;
+        parmsB._ignored_columns = new String[]{"conc"};
+        parmsB._lambda = new double[]{0};
+        GLMModel modelB = new GLM(parmsB).trainModel().get();
+        Scope.track_generic(modelB);
+
+        TestUtil.checkArrays(model._output._global_beta, modelB._output._global_beta, 1e-4);
+      } else 
+        System.out.println("testFractionalBinomial is skipped because the wrong dataset is loaded.");
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testFractionalBinomialMojo() {
+    try {
+      Scope.enter();
+      final Frame trainData = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      Scope.track(trainData);
+      final Frame te = parse_test_file("smalldata/glm_test/fraction_binommialOrig.csv");
+      Scope.track(te);
+      
+      final GLMParameters parms = new GLMParameters();
+      parms._train = trainData._key;
+      parms._family = Family.fractionalbinomial;
+      parms._response_column = "y";
+      parms._ignored_columns = new String[]{"z", "conc"};
+      parms._compute_p_values = true;
+      parms._standardize = false;
+      parms._lambda = new double[]{0};
+      
+      final GLMModel model = new GLM(parms).trainModel().get();
+      Scope.track_generic(model);
+      
+      final Frame pred = model.score(te);
+      Scope.track(pred);
+      Scope.track(pred.remove("StdErr"));
+      Assert.assertTrue(model.testJavaScoring(te, pred, _tol));
+    } finally {
+      Scope.exit();
+    }
+  }
+  
   // test and make sure the h2opredict, pojo and mojo predict agrees with multinomial dataset that includes
   // both enum and numerical datasets
   @Test
