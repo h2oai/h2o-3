@@ -157,7 +157,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     String[] coeffSigns = new String[nCoeff-1];
   //  System.arraycopy(coefficientNames, 0, coeffNames, 0, nCoeff);
     int countMagIndex = 0;
-    for (int index = 0; index < nCoeff; index++) {
+    for (int index = 0; index < nCoeff - 1; index++) {
       if (coefficientNames[index] != "Intercept") {
         coeffMags[countMagIndex] = Math.abs(coefficients[index]);
         coeffSigns[countMagIndex] = coefficients[index] > 0 ? "POS" : "NEG";
