@@ -82,8 +82,7 @@ doc = dict(
     prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
     prostate <- h2o.uploadFile(path = prostate_path)
     prostate$CAPSULE <- as.factor(prostate$CAPSULE)
-    h2o.gam(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), gam_x = c("DCAPS"),
-            training_frame = prostate,family = "binomial", nfolds = 0, alpha = 0.5,
-            lambda_search = FALSE)
+    h2o.gam(y = "CAPSULE", x = c("RACE"), gam_x = c("PSA"),
+         training_frame = prostate,family = "binomial")
     """
 )
