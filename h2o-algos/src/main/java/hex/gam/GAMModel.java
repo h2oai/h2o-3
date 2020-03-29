@@ -111,8 +111,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       if (coefficientNames[index] != "Intercept") {
       for (int classInd = 0; classInd < nClass; classInd++) {
         coeffMags[countIndex] += Math.abs(coefficients[classInd][index]);
-        coeffNames[countIndex] = coefficientNames[index];
       }
+      coeffNames[countIndex] = coefficientNames[index];
       coeffSigns[countIndex] = "POS";   // assign all signs to positive for multinomial
       }
       countIndex++;
