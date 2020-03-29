@@ -92,12 +92,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       final Frame predictVec = new Frame(new String[]{_parms._gam_x[index]}, new Vec[]{_parms.train().vec(_parms._gam_x[index])});
       String tempKey = allNull?null:_parms._knots_keys[index];
       if (tempKey != null && (tempKey.length() > 0)) {  // read knots location from Frame given by user
-        Frame knotFrame = Scope.track((Frame)DKV.getGet(Key.make(tempKey)));
+        final Frame knotFrame = Scope.track((Frame)DKV.getGet(Key.make(tempKey)));
         double[][] knotContent = new double[(int)knotFrame.numRows()][1];
-        ArrayUtils.FrameToArray f2a = new ArrayUtils.FrameToArray(0,0, knotFrame.numRows(), knotContent);
-        f2a.doAll(knotFrame);
+        final ArrayUtils.FrameToArray f2a = new ArrayUtils.FrameToArray(0,0, knotFrame.numRows(), knotContent);
+        knotContent = f2a.doAll(knotFrame).getArray();
         knots[index] = new double[knotContent.length];
-        double[][] knotCTranspose = ArrayUtils.transpose(knotContent);
+        final double[][] knotCTranspose = ArrayUtils.transpose(knotContent);
         System.arraycopy(knotCTranspose[0],0,knots[index], 0, knots[index].length);
         failVerifyKnots(knots[index]);
       } else {  // current column knotkey is null
