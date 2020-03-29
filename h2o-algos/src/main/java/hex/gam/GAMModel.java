@@ -113,8 +113,9 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
         coeffMags[countIndex] += Math.abs(coefficients[classInd][index]);
         coeffNames[countIndex] = coefficientNames[index];
       }
-      coeffSigns[countIndex++] = "POS";   // assign all signs to positive for multinomial
+      coeffSigns[countIndex] = "POS";   // assign all signs to positive for multinomial
       }
+      countIndex++;
     }
     // sort in descending order of the magnitudes
     Integer[] indices = new Integer[nCoeff-1];
