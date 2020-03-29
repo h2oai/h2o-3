@@ -730,7 +730,7 @@ public abstract class GLMTask  {
     public GLMBinomialGradientTask(Key jobKey, DataInfo dinfo, GLMParameters parms, double lambda, double [] beta, 
                                    double[][][] penaltyMat, int[][] gamCol) {
       super(jobKey,dinfo,parms._obj_reg,lambda,beta, penaltyMat, gamCol);
-      assert parms._family == Family.binomial && parms._link == Link.logit;
+      assert (parms._family == Family.binomial && parms._link == Link.logit) || (parms._family == Family.fractionalbinomial && parms._link == Link.logit);
     }
 
     @Override
