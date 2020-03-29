@@ -184,7 +184,6 @@ public class XGBoostSteps extends ModelingSteps {
                     searchParams.put("_sample_rate", new Double[]{0.6, 0.8, 1.0}); // = _subsample
                     searchParams.put("_col_sample_rate" , new Double[]{ 0.6, 0.8, 1.0}); // = _colsample_bylevel"
                     searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.7, 0.8, 0.9, 1.0}); // = _colsample_bytree: start higher to always use at least about 40% of columns
-//                    searchParams.put("_learn_rate", new Double[]{0.01, 0.05, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5, 0.8, 1.0}); // = _eta
 //                    searchParams.put("_min_split_improvement", new Float[]{0.01f, 0.05f, 0.1f, 0.5f, 1f, 5f, 10f, 50f}); // = _gamma
 //                    searchParams.put("_tree_method", new XGBoostParameters.TreeMethod[]{XGBoostParameters.TreeMethod.auto});
                     searchParams.put("_booster", new XGBoostParameters.Booster[]{ // include gblinear? cf. https://0xdata.atlassian.net/browse/PUBDEV-7254
@@ -250,37 +249,39 @@ public class XGBoostSteps extends ModelingSteps {
                     // reset _eta to defaults, otherwise it ignores the _learn_rate hyperparam: this is very annoying!
                     xgBoostParameters._eta = defaults._eta;
 //                    xgBoostParameters._learn_rate = defaults._learn_rate;
-/*
-                    //keep score_tree_interval fixed, but increase stopping_rounds when lowering learn rate
-                    int sr = xgBoostParameters._stopping_rounds;
-                    Object[][] hyperParams = new Object[][] {
-                            new Object[] {"_learn_rate", "_stopping_rounds"},
-                            new Object[] {        0.5  ,                sr },
-                            new Object[] {        0.2  ,                sr },
-                            new Object[] {        0.1  ,              2*sr },
-                            new Object[] {        0.05 ,              2*sr },
-                            new Object[] {        0.02 ,              3*sr },
-                            new Object[] {        0.01 ,              3*sr },
-                            new Object[] {        0.005,              4*sr },
-                            new Object[] {        0.002,              4*sr },
-                            new Object[] {        0.001,              5*sr },
-                    };
-*/
+
                     // keep stopping_rounds fixed, but increases score_tree_interval when lowering learn rate
                     int sti = xgBoostParameters._score_tree_interval;
+
                     Object[][] hyperParams = new Object[][] {
                             new Object[] {"_learn_rate", "_score_tree_interval"},
                             new Object[] {       0.5   ,                   sti },
-                            new Object[] {       0.2   ,                   sti },
-                            new Object[] {       0.1   ,                 2*sti },
-                            new Object[] {       0.05  ,                 2*sti },
-                            new Object[] {       0.02  ,                 3*sti },
-                            new Object[] {       0.01  ,                 3*sti },
-                            new Object[] {       0.005 ,                 4*sti },
-                            new Object[] {       0.002 ,                 4*sti },
-                            new Object[] {       0.001 ,                 5*sti },
-                            new Object[] {       0.0005,                 5*sti },
+                            new Object[] {       0.2   ,                 2*sti },
+                            new Object[] {       0.1   ,                 3*sti },
+                            new Object[] {       0.05  ,                 4*sti },
+                            new Object[] {       0.02  ,                 5*sti },
+                            new Object[] {       0.01  ,                 6*sti },
+                            new Object[] {       0.005 ,                 7*sti },
+//                            new Object[] {       0.002 ,                 8*sti },
+//                            new Object[] {       0.001 ,                 9*sti },
+//                            new Object[] {       0.0005,                10*sti },
                     };
+
+/*
+                    Object[][] hyperParams = new Object[][] {
+                            new Object[] {"_learn_rate", "_score_tree_interval"},
+                            new Object[] {       0.5   ,                   sti },
+                            new Object[] {       0.2   ,            (1<<1)*sti },
+                            new Object[] {       0.1   ,            (1<<2)*sti },
+                            new Object[] {       0.05  ,            (1<<3)*sti },
+                            new Object[] {       0.02  ,            (1<<4)*sti },
+                            new Object[] {       0.01  ,            (1<<5)*sti },
+                            new Object[] {       0.005 ,            (1<<6)*sti },
+                            new Object[] {       0.002 ,            (1<<7)*sti },
+                            new Object[] {       0.001 ,            (1<<8)*sti },
+                            new Object[] {       0.0005,            (1<<9)*sti },
+                    };
+*/
 
                     aml().eventLog().info(EventLogEntry.Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
                             .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat);

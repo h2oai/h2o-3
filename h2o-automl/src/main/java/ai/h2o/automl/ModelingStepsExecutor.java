@@ -16,6 +16,7 @@ import water.util.Countdown;
 import water.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -166,10 +167,10 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _modelCount.addAndGet(after - before);
     }
 
-    private void addModel(final Model newModel) {
+    private void addModel(final Model model) {
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModel(newModel._key);
+        leaderboard.addModel(model._key);
         int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }

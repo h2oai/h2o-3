@@ -345,8 +345,13 @@ public class Leaderboard extends Lockable<Leaderboard> implements ModelContainer
 
     // In case we're just re-adding existing models
     if (newModelKeys.isEmpty()) return;
+
+    allModelKeys.forEach(DKV::prefetch);
     for (Key<Model> k : newModelKeys) {
-      eventLog().debug(Stage.ModelTraining, "Adding model "+k+" to leaderboard "+_key);
+      Model m = k.get();
+      eventLog().debug(Stage.ModelTraining, "Adding model "+k+" to leaderboard "+_key+"."
+              + " Training time: model="+Math.round(m._output._run_time/1000)+"s,"
+              + " total="+Math.round(m._output._total_run_time/1000)+"s");
     }
 
     final List<ModelMetrics> modelMetrics = new ArrayList<>();

@@ -23,6 +23,7 @@ import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.init.TimelineSnapshot;
 import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.EnumUtils;
@@ -320,6 +321,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 parms._max_runtime_secs = parms._max_runtime_secs == 0
                         ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
+                aml().eventLog().debug(Stage.ModelTraining, "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
             }
             Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
             return startModel(key, parms);
@@ -403,6 +405,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             if (null == key) key = makeKey(_algo.name(), true);
             aml().trackKey(key);
 
+            aml().eventLog().debug(Stage.ModelTraining, "Time assigned for "+key+": "+searchCriteria.max_runtime_secs()+"s");
             Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+aml().timeRemainingMs());
             return startSearch(
                     key,
@@ -436,9 +439,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return aml().makeKey(name, "selection", withCounter);
         }
 
-        private LeaderboardHolder makeLeaderboard(String name) {
+        private LeaderboardHolder makeLeaderboard(String name, EventLog eventLog) {
             Leaderboard amlLeaderboard = aml().leaderboard();
-            EventLog tmpEventLog = EventLog.getOrMake(Key.make(name));
+            EventLog tmpEventLog = eventLog == null ? EventLog.getOrMake(Key.make(name)) : eventLog;
             Leaderboard tmpLeaderboard = Leaderboard.getOrMake(
                     name,
                     tmpEventLog,
@@ -456,13 +459,15 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     //by default, just empty the leaderboard and remove the container without touching anything model-related.
                     tmpLeaderboard.removeModels(tmpLeaderboard.getModelKeys(), false);
                     tmpLeaderboard.remove(false);
-                    tmpEventLog.remove();
+                    if (eventLog == null) {
+                        tmpEventLog.remove();
+                    }
                 }
             };
         }
 
         protected LeaderboardHolder makeTmpLeaderboard(String name) {
-            return makeLeaderboard("tmp_"+name);
+            return makeLeaderboard("tmp_"+name, null);
         }
 
         @Override
@@ -474,12 +479,15 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             Work work = getAllocatedWork();
             double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
 
+            aml().eventLog().debug(Stage.ModelTraining, "Time assigned for "+key+": "+maxAssignedTimeSecs+"s");
+
             return job.start(new H2O.H2OCountedCompleter() {
 
                 Models result = new Models(key, Model.class, job);
                 Key<Models> selectionKey = Key.make(key+"_select");
-                LeaderboardHolder selectionLeaderboard = makeLeaderboard(selectionKey.toString());
                 EventLog selectionEventLog = EventLog.getOrMake(selectionKey);
+//                EventLog selectionEventLog = aml().eventLog();
+                LeaderboardHolder selectionLeaderboard = makeLeaderboard(selectionKey.toString(), selectionEventLog);
 
                 {
                     result.delete_and_lock(job);
@@ -514,7 +522,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                             true
                     );
                     selectionLeaderboard.cleanup();
-                    selectionEventLog.remove();
+                    if (!aml().eventLog()._key.equals(selectionEventLog._key)) selectionEventLog.remove();
                     super.onCompletion(caller);
                 }
 
@@ -523,7 +531,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     result.unlock(job._key, false);
                     Keyed.remove(selectionKey);
                     selectionLeaderboard.get().remove();
-                    selectionEventLog.remove();
+                    if (!aml().eventLog()._key.equals(selectionEventLog._key)) selectionEventLog.remove();
                     return super.onExceptionalCompletion(ex, caller);
                 }
 
