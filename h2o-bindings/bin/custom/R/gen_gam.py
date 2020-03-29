@@ -81,7 +81,8 @@ doc = dict(
     # Run GAM of CAPSULE ~ AGE + RACE + PSA + DCAPS
     prostate = h2o.importFile(locate("smalldata/prostate/prostate.csv"))
     prostate$CAPSULE <- as.factor(prostate$CAPSULE)
-    h2o.gam(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), gam_x = c("DCAPS"), training_frame = prostate,
-            family = "binomial", nfolds = 0, alpha = 0.5, lambda_search = FALSE)
+    h2o.gam(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), gam_x = c("DCAPS"),
+            training_frame = prostate,family = "binomial", nfolds = 0, alpha = 0.5,
+            lambda_search = FALSE)
     """
 )
