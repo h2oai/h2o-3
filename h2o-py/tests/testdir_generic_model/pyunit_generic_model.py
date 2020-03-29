@@ -22,12 +22,15 @@ def generic_blank_constructor():
     mojo_model.path = original_model_filename
     mojo_model.train()
     assert isinstance(mojo_model, H2OGenericEstimator)
-    
+
+    assert mojo_model._model_json["output"]["original_model_identifier"] == "gbm"
+    assert mojo_model._model_json["output"]["original_model_full_name"] == "Gradient Boosting Machine"
+
     # Test scoring is available on the model
     predictions = mojo_model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
-    
+
 if __name__ == "__main__":
     pyunit_utils.standalone_test(generic_blank_constructor)
 else:

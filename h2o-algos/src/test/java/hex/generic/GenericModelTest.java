@@ -22,7 +22,6 @@ import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import water.*;
 import water.fvec.Frame;
-import water.fvec.TestFrameBuilder;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.FrameUtilsTest;
@@ -909,6 +908,42 @@ public class GenericModelTest extends TestUtil {
         final Key<Frame> key = Key.make(keys.get(0));
         Scope.track_generic(key.get());
         return key;
+    }
+    
+    
+    @Test
+    public void isAlgoNamePresent() throws IOException {
+        try {
+            Scope.enter();
+            // Create new GBM model
+            final Frame trainingFrame = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
+            Scope.track(trainingFrame);
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = trainingFrame._key;
+            parms._distribution = AUTO;
+            parms._response_column = trainingFrame._names[1];
+            parms._ntrees = 1;
+
+            GBM job = new GBM(parms);
+            final GBMModel gbm = job.trainModel().get();
+            Scope.track_generic(gbm);
+            final File originalModelMojoFile = File.createTempFile("mojo", "zip");
+            gbm.getMojo().writeTo(new FileOutputStream(originalModelMojoFile));
+
+            final Key mojo = importMojo(originalModelMojoFile.getAbsolutePath());
+
+            // Create Generic model from given imported MOJO
+            final GenericModelParameters genericModelParameters = new GenericModelParameters();
+            genericModelParameters._model_key = mojo;
+            final Generic generic = new Generic(genericModelParameters);
+            final GenericModel genericModel = trainAndCheck(generic);
+            Scope.track_generic(genericModel);
+            
+            assertEquals("gbm",genericModel._output._original_model_identifier);
+            assertEquals("Gradient Boosting Machine", genericModel._output._original_model_full_name);
+        } finally {
+            Scope.exit();
+        }
     }
 
 }
