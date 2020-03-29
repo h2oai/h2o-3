@@ -79,7 +79,8 @@ doc = dict(
     h2o.init()
 
     # Run GAM of CAPSULE ~ AGE + RACE + PSA + DCAPS
-    prostate = h2o.importFile(locate("smalldata/prostate/prostate.csv"))
+    prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+    prostate <- h2o.uploadFile(path = prostate_path)
     prostate$CAPSULE <- as.factor(prostate$CAPSULE)
     h2o.gam(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), gam_x = c("DCAPS"),
             training_frame = prostate,family = "binomial", nfolds = 0, alpha = 0.5,
