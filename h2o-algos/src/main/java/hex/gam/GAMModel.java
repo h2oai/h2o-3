@@ -101,8 +101,11 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     String[] coeffNames2 = new String[coeffNames.length];
     double[] coeffMags = new double[coeffNames.length];
     double[] coeffMags2 = new double[coeffNames.length];
-    String[] coeffSigns = new String[nCoeff-1];
+    String[] coeffSigns = new String[coeffNames.length];
 
+    Log.info("genCoefficientMagTableMultinomial", String.format("coeffNames length: %d.  coeffMags " +
+            "length: %d, coeffSigns length: %d", coeffNames.length, coeffMags.length, coeffSigns.length));
+    
     int countIndex = 0;
     for (int index = 0; index < nCoeff; index++) {
       if (coefficientNames[index] != "Intercept") {
@@ -115,6 +118,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     }
     // sort in descending order of the magnitudes
     Integer[] indices = new Integer[nCoeff-1];
+    Log.info("genCoefficientMagTableMultinomial", String.format("index length: %d. ", indices.length));
     for (int index = 0; index < indices.length; index++)
       indices[index] = index;
 
