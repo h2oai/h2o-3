@@ -97,7 +97,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     String[] colFormat = new String[]{"%5f", ""};
     int nCoeff = coefficients[0].length;
     int nClass = coefficients.length;
-    String[] coeffNames = new String[nCoeff-1];
+    String[] coeffNames = new String[nCoeff - 1];
     String[] coeffNames2 = new String[coeffNames.length];
     double[] coeffMags = new double[coeffNames.length];
     double[] coeffMags2 = new double[coeffNames.length];
@@ -107,7 +107,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
             "length: %d, coeffSigns length: %d", coeffNames.length, coeffMags.length, coeffSigns.length));
     
     int countIndex = 0;
-    for (int index = 0; index < nCoeff; index++) {
+    for (int index = 0; index < nCoeff - 1; index++) {
       if (coefficientNames[index] != "Intercept") {
       for (int classInd = 0; classInd < nClass; classInd++) {
         coeffMags[countIndex] += Math.abs(coefficients[classInd][index]);
