@@ -107,15 +107,15 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
             "length: %d, coeffSigns length: %d", coeffNames.length, coeffMags.length, coeffSigns.length));
     
     int countIndex = 0;
-    for (int index = 0; index < nCoeff - 1; index++) {
-      if (coefficientNames[index] != "Intercept") {
-      for (int classInd = 0; classInd < nClass; classInd++) {
-        coeffMags[countIndex] += Math.abs(coefficients[classInd][index]);
+    for (int index = 0; index < nCoeff; index++) {
+      if (coefficientNames[index].equals("Intercept")) {
+        for (int classInd = 0; classInd < nClass; classInd++) {
+          coeffMags[countIndex] += Math.abs(coefficients[classInd][index]);
+        }
+        coeffNames[countIndex] = coefficientNames[index];
+        coeffSigns[countIndex] = "POS";   // assign all signs to positive for multinomial
+        countIndex++;
       }
-      coeffNames[countIndex] = coefficientNames[index];
-      coeffSigns[countIndex] = "POS";   // assign all signs to positive for multinomial
-      }
-      countIndex++;
     }
     // sort in descending order of the magnitudes
     Integer[] indices = new Integer[nCoeff-1];
@@ -157,8 +157,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     String[] coeffSigns = new String[nCoeff-1];
   //  System.arraycopy(coefficientNames, 0, coeffNames, 0, nCoeff);
     int countMagIndex = 0;
-    for (int index = 0; index < nCoeff - 1; index++) {
-      if (coefficientNames[index] != "Intercept") {
+    for (int index = 0; index < nCoeff; index++) {
+      if (coefficientNames[index].equals("Intercept")) {
         coeffMags[countMagIndex] = Math.abs(coefficients[index]);
         coeffSigns[countMagIndex] = coefficients[index] > 0 ? "POS" : "NEG";
         coeffNames[countMagIndex++] = coefficientNames[index];
