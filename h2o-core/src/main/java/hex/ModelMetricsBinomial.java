@@ -49,7 +49,11 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     }
     sb.append(" logloss: " + (float)_logloss + "\n");
     sb.append(" mean_per_class_error: " + (float)_mean_per_class_error + "\n");
-    sb.append(" default threshold: " + (_auc == null ? 0.5 : (float)_auc.defaultThreshold()) + "\n");
+    if(_auc._custom_max_idx != -1){
+        sb.append(" custom threshold: " + (_auc == null ? 0.5 : (float)_auc.defaultThreshold()) + "\n");
+    } else {
+        sb.append(" default threshold: " + (_auc == null ? 0.5 : (float) _auc.defaultThreshold()) + "\n");
+    }
     if (cm() != null) sb.append(" CM: " + cm().toASCII());
     if (_gainsLift != null) sb.append(_gainsLift);
     return sb.toString();
@@ -68,6 +72,11 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     if( _auc == null ) return null;
     double[][] cm = _auc.cmByCriterion(criterion);
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
+  }
+  
+  public void resetThreshold(double threshold){
+    _auc.resetThreshold(threshold);
+    
   }
   
   public GainsLift gainsLift() { return _gainsLift; }

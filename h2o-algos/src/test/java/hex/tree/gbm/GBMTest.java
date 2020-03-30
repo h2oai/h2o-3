@@ -3960,9 +3960,9 @@ public class GBMTest extends TestUtil {
 
       String lastUsedFeature = "";
       int usedFeatures = 0;
-      for(String feature : model._output._names) {
+      for (String feature : model._output._names) {
         if (model.isFeatureUsedInPredict(feature)) {
-          usedFeatures ++;
+          usedFeatures++;
           lastUsedFeature = feature;
         }
       }
@@ -3984,5 +3984,9 @@ public class GBMTest extends TestUtil {
       nonzeros.remove();
       Scope.exit();
     }
+  }
+
+  @Test
+  public void testResetThreshold(){
   }
 }

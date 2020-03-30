@@ -29,6 +29,7 @@ public class AUC2 extends Iced {
   public final double _p, _n;     // Actual trues, falses
   public double _auc, _gini, _pr_auc; // Actual AUC value
   public final int _max_idx;    // Threshold that maximizes the default criterion
+  public int _custom_max_idx;   // Custom threshold
 
   public static final ThresholdCriterion DEFAULT_CM = ThresholdCriterion.f1;
   // Default bins, good answers on a highly unbalanced sorted (and reverse
@@ -122,6 +123,10 @@ public class AUC2 extends Iced {
   } // public enum ThresholdCriterion
 
   public double threshold( int idx ) { return _ths[idx]; }
+  
+  public void resetThreshold(double threshold){
+    _custom_max_idx = Arrays.binarySearch(_ths, 0, _ths.length, threshold);
+  }
   public double tp( int idx ) { return _tps[idx]; }
   public double fp( int idx ) { return _fps[idx]; }
   public double tn( int idx ) { return _n-_fps[idx]; }
@@ -178,11 +183,13 @@ public class AUC2 extends Iced {
       _pr_auc = pr_auc();
       _gini = 2 * _auc - 1;
       _max_idx = DEFAULT_CM.max_criterion_idx(this);
+      _custom_max_idx = -1;
     } else {
       _auc = Double.NaN;
       _pr_auc = Double.NaN;
       _gini = Double.NaN;
       _max_idx = 0;
+      _custom_max_idx = -1;
     }
   }
 
@@ -197,6 +204,7 @@ public class AUC2 extends Iced {
     _pr_auc = auc._pr_auc;
     _gini = auc._gini;
     _max_idx = auc._max_idx >= 0 ? 0 : -1;
+    _custom_max_idx = -1;
   }
 
   /**
@@ -226,6 +234,7 @@ public class AUC2 extends Iced {
     _p =_n = 0;
     _auc = _gini = _pr_auc = Double.NaN;
     _max_idx = -1;
+    _custom_max_idx = -1;
   }
 
   /**
@@ -324,18 +333,35 @@ public class AUC2 extends Iced {
   }
 
   /** @return the default CM, or null for an empty AUC */
-  public double[/*actual*/][/*predicted*/] defaultCM( ) { return _max_idx == -1 ? null : buildCM(_max_idx); }
+  public double[/*actual*/][/*predicted*/] defaultCM( ) { 
+    if(_custom_max_idx > -1){
+      return buildCM(_custom_max_idx);
+    }
+    return _max_idx == -1 ? null : buildCM(_max_idx); }
   
   /** @return the CM that corresponds to a bin's index which brings max value for a given {@code criterion} */
   public double[/*actual*/][/*predicted*/] cmByCriterion( ThresholdCriterion criterion) {
     int maxIdx = criterion.max_criterion_idx(this);
     return buildCM(maxIdx); 
   }
+  
   /** @return the default threshold; threshold that maximizes the default criterion */
-  public double defaultThreshold( ) { return _max_idx == -1 ? 0.5 : _ths[_max_idx]; }
+  public double defaultThreshold( ) {
+    if(_custom_max_idx > -1){
+      return _ths[_custom_max_idx];
+    }
+    return _max_idx == -1 ? 0.5 : _ths[_max_idx]; 
+  }
+  
   /** @return the error of the default CM */
-  public double defaultErr( ) { return _max_idx == -1 ? Double.NaN : (fp(_max_idx)+fn(_max_idx))/(_p+_n); }
-  // Compute an online histogram of the predicted probabilities, along with
+  public double defaultErr( ) {
+    if(_custom_max_idx > -1){
+      return (fp(_custom_max_idx)+fn(_custom_max_idx))/(_p+_n);
+    }
+    return _max_idx == -1 ? Double.NaN : (fp(_max_idx)+fn(_max_idx))/(_p+_n); 
+  }
+  
+    // Compute an online histogram of the predicted probabilities, along with
   // true positive and false positive totals in each histogram bin.
   private static class AUC_Impl extends MRTask<AUC_Impl> {
     final int _nBins;

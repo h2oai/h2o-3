@@ -122,6 +122,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double defaultThreshold() {
     return _output.defaultThreshold();
   }
+  
+  public void resetThreshold(double threshold){
+    _output.resetThreshold(threshold);
+  }
 
   /**
    * @deprecated use {@link Output#defaultThreshold()} instead.
@@ -877,6 +881,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (((ModelMetricsBinomial) _training_metrics)._auc != null)
         return ((ModelMetricsBinomial) _training_metrics)._auc.defaultThreshold();
       return 0.5;
+    }
+    
+    public void resetThreshold(double threshold){
+      if(nclasses() == 2){
+        if(_training_metrics != null && ((ModelMetricsBinomial) _training_metrics)._auc != null){
+          ((ModelMetricsBinomial) _training_metrics).resetThreshold(threshold);
+        } 
+        if(_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null){
+          ((ModelMetricsBinomial) _validation_metrics).resetThreshold(threshold);
+        }
+      }
     }
     
     public void printTwoDimTables(StringBuilder sb, Object o) {
