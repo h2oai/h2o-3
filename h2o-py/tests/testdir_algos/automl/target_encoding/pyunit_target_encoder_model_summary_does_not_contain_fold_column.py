@@ -28,10 +28,6 @@ def test_target_encoder_model_summary_does_not_contain_fold_column():
     model_summary = te._model_json['output']['model_summary'].as_data_frame()
     print(model_summary)
     encoded_column_names = model_summary['encoded_column_name']
-
-    # Checking that there is a `te_model` empty field in a model's output
-    assert te._model_json['output']['te_model'] is None
-
     # Checking that we don't have empty entries in TwoDim table
     assert len(model_summary) == 2
 
