@@ -65,7 +65,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
                  project_name=None,
                  exclude_algos=None,
                  include_algos=None,
-                 exploitation_ratio=None,
+                 exploitation_ratio=0,
                  modeling_plan=None,
                  monotone_constraints=None,
                  algo_parameters=None,
@@ -114,7 +114,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
         :param include_algos: List of character strings naming the algorithms to restrict to during the model-building phase.
           This can't be used in combination with `exclude_algos` param.
           Defaults to ``None``, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
-        :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation phase. Defaults to 0.
+        :param exploitation_ratio: The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. Defaults to 0.
         :param modeling_plan: List of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).
           Defaults to None (Expert usage only).
         :param monotone_constraints: Dict representing monotonic constraints.
@@ -229,7 +229,7 @@ class H2OAutoML(H2OAutoMLBaseMixin, Keyed):
             assert exclude_algos is None, "Use either include_algos or exclude_algos, not both."
         self.include_algos = self.build_models['include_algos'] = include_algos
 
-        assert_is_type(exploitation_ratio, None, float)
+        assert_is_type(exploitation_ratio, None, numeric)
         self.exploitation_ratio = self.build_models['exploitation_ratio'] = exploitation_ratio
 
         assert_is_type(modeling_plan, None, list)

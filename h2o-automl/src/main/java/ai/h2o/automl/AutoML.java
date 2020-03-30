@@ -302,6 +302,9 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     if (modelBuilding.exclude_algos != null && modelBuilding.include_algos != null) {
       throw new  H2OIllegalArgumentException("Parameters `exclude_algos` and `include_algos` are mutually exclusive: please use only one of them if necessary.");
     }
+    if (modelBuilding.exploitation_ratio < 0 || modelBuilding.exploitation_ratio > 1) {
+      throw new H2OIllegalArgumentException("`exploitation_ratio` must be between 0 and 1.");
+    }
     if (modelBuilding.modeling_plan == null) {
       modelBuilding.modeling_plan = defaultModelingPlan;
     }
