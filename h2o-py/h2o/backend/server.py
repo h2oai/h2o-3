@@ -105,7 +105,7 @@ class H2OLocalServer(object):
         assert_is_type(log_dir, str, None)
         assert_is_type(log_level, str, None)
         assert_satisfies(log_level, log_level in [None, "TRACE", "DEBUG", "INFO", "WARN", "ERRR", "FATA"])
-        assert_is_type(max_log_file_size, str)
+        assert_is_type(max_log_file_size, str, None)
         assert_is_type(ice_root, None, I(str, os.path.isdir))
         assert_is_type(extra_classpath, None, [str])
         assert_is_type(jvm_custom_args, list, None)
