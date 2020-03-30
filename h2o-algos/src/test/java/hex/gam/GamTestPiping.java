@@ -482,13 +482,15 @@ public class GamTestPiping extends TestUtil {
       Scope.track_generic(multinomialModel);
       Frame predictMult = Scope.track(multinomialModel.score(trainMultinomial));
       Frame predictGLMMulti = Scope.track(parse_test_file("smalldata/gam_test/predictMultinomialGAM.csv"));
+      Scope.track(predictMult.remove("predict"));
+      Scope.track(predictGLMMulti.remove("predict"));
       TestUtil.assertIdenticalUpToRelTolerance(predictMult, predictGLMMulti, 1e-6);
       
       // test for gaussian
       ignoredCols = new String[]{"C3", "C4", "C5", "C6", "C7", "C8", "C9", "C10", "C11", "C12", "C13", "C14",
               "C15", "C16", "C17", "C18", "C19", "C20"};
       gamCols = new String[]{"C11", "C12", "C13"};
-/*      Frame trainBinomial = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"),
+      Frame trainBinomial = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/binomial_20_cols_10KRows.csv"),
               binomial));
       DKV.put(trainBinomial);
       GAMModel binomialModel = getModel(binomial,
@@ -499,7 +501,9 @@ public class GamTestPiping extends TestUtil {
       binomialModel._output._training_metrics = null; // force prediction threshold of 0.5
       Frame predictBinomial = Scope.track(binomialModel.score(trainBinomial));
       Frame predictGLMBinomial = Scope.track(parse_test_file("smalldata/gam_test/predictBinomialGAM.csv"));
-      TestUtil.assertIdenticalUpToRelTolerance(predictBinomial, predictGLMBinomial, 1e-6);*/
+      Scope.track(predictBinomial.remove("predict"));
+      Scope.track(predictGLMBinomial.remove("predict"));
+      TestUtil.assertIdenticalUpToRelTolerance(predictBinomial, predictGLMBinomial, 1e-6);
       
       Frame trainGaussian = Scope.track(massageFrame(parse_test_file("smalldata/glm_test/gaussian_20cols_10000Rows.csv"), gaussian));
       DKV.put(trainGaussian);
