@@ -1223,6 +1223,13 @@ A confusion matrix is a table depicting performance of algorithm in terms of fal
 .. figure:: images/Flow_ConfusionMatrix.png
    :alt: Confusion Matrix example
 
+The class labels calculations vary based on whether this is a binary or multiclass classification problem.
+
+- **Binary Classification**: All predicted probabilities greater than or equal to the F1 Max threshold are labeled with the positive class (e.g., 1, True, or the second label in lexicographical order). The F1 Max threshold is selected to maximize the F1 score calculated from confusion matrix values (true positives, true negatives, false positives, and false negatives).
+
+- **Multiclass Classification**: Prediction class labels are based on the class with the highest predicted probability.
+
+
 Examples:
 
 .. example-code::
