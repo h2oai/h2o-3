@@ -122,7 +122,7 @@ public class FrameUtils {
     Frame transformed = teModel.score(inputFrame);
     if (scopeTrack) Scope.untrack(transformed.keys());
 
-    // following manipulations with columns is a responsibility of a future pipeline concept. Support for input output columns for the models would be helpful as well.
+    // following manipulations with columns is a responsibility of a future pipeline concept. Support for input/output columns' names for the models would be helpful as well.
     Frame train = teModel._parms.train();
     List<String> catColumnNames = new ArrayList<>();
     for(String name : train.names() ) {
