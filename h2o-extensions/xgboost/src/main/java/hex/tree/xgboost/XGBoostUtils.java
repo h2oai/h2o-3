@@ -21,7 +21,16 @@ import static water.MemoryManager.malloc4f;
 
 public class XGBoostUtils {
 
-    public static String makeFeatureMap(Frame f, DataInfo di) {
+    public static String createFeatureMap(XGBoostModel model, Frame train) {
+        // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
+        DataInfo dataInfo = model.model_info().dataInfo();
+        assert dataInfo != null;
+        String featureMap = makeFeatureMap(train, dataInfo);
+        model.model_info().setFeatureMap(featureMap);
+        return featureMap;
+    }
+
+    private static String makeFeatureMap(Frame f, DataInfo di) {
         // set the names for the (expanded) columns
         String[] coefnames = di.coefNames();
         StringBuilder sb = new StringBuilder();

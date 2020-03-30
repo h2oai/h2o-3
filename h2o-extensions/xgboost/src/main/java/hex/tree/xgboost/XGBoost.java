@@ -8,24 +8,31 @@ import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
-import hex.tree.*;
-import hex.tree.xgboost.exec.LocalXGBoostExecutor;
+import hex.tree.PlattScalingHelper;
+import hex.tree.TreeUtils;
+import hex.tree.xgboost.exec.RemoteXGBoostExecutor;
 import hex.tree.xgboost.exec.XGBoostExecutor;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+import ml.dmlc.xgboost4j.java.XGBoostModelInfo;
 import water.*;
-import ml.dmlc.xgboost4j.java.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.Timer;
+import water.util.TwoDimTable;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
@@ -347,7 +354,8 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._sparse = isTrainDatasetSparse();
       }
 
-      XGBoostExecutor exec = new LocalXGBoostExecutor(model, _train, _parms);
+      // XGBoostExecutor exec = new LocalXGBoostExecutor(model, _train, _parms);
+      XGBoostExecutor exec = new RemoteXGBoostExecutor("http://localhost:54330", model, _train, _parms);
       try {
         model.model_info().setBoosterBytes(exec.setup());
         scoreAndBuildTrees(model, exec);

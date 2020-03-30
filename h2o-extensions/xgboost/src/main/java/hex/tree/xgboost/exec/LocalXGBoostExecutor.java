@@ -1,18 +1,16 @@
 package hex.tree.xgboost.exec;
 
 import hex.DataInfo;
-import hex.schemas.exec.XGBoostExecInitV3;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
-import hex.tree.xgboost.remote.RemoteXGBoostSetupTask;
+import ml.dmlc.xgboost4j.java.FileXGBoostMatrixFactory;
 import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.*;
 import water.H2O;
 import water.Key;
-import water.Keyed;
 import water.fvec.Frame;
 import water.util.Log;
 
@@ -21,7 +19,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.Files;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,15 +36,17 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     /**
      * Used when executing from a remote model
      */
-    public LocalXGBoostExecutor(XGBoostExecInitV3 init) {
-        modelKey = Key.make();
+    public LocalXGBoostExecutor(Key key, XGBoostExecReq.Init init) {
+        modelKey = key;
         rt = new RabitTrackerH2O(init.num_nodes);
         BoosterParms boosterParams = BoosterParms.fromMap(init.parms);
         boolean[] nodes = new boolean[H2O.CLOUD.size()];
         for (int i = 0; i < init.num_nodes; i++) nodes[i] = true;
-        setupTask = new RemoteXGBoostSetupTask(
-            modelKey, boosterParams, init.checkpoint_bytes, getRabitEnv(), nodes, init.matrix_dir_path
+        XGBoostMatrixFactory f = new FileXGBoostMatrixFactory(init.matrix_dir_path);
+        setupTask = new XGBoostSetupTask(
+            modelKey, null, boosterParams, init.checkpoint_bytes, getRabitEnv(), nodes, f
         );
+        featureMapFile = createFeatureMapFile(init.featureMap);
     }
 
     /**
@@ -64,8 +63,12 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         DataInfo dataInfo = model.model_info().dataInfo();
         BoosterParms boosterParms = XGBoostModel.createParams(parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = boosterParms.toTwoDimTable();
-        setupTask = new LocalXGBoostSetupTask(model, parms, boosterParms, checkpointBytes, getRabitEnv(), trainFrameNodes);
-        createFeatureMap(model, train);
+        XGBoostMatrixFactory f = new FrameXGBoostMatrixFactory(model, parms, trainFrameNodes);
+        setupTask = new XGBoostSetupTask(
+            modelKey, parms._save_matrix_directory, boosterParms, checkpointBytes, getRabitEnv(), trainFrameNodes._nodes, f
+        );
+        String featureMap = XGBoostUtils.createFeatureMap(model, train);
+        featureMapFile = createFeatureMapFile(featureMap);
     }
     
     @Override
@@ -100,16 +103,6 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         }
     }
 
-    private void createFeatureMap(XGBoostModel model, Frame train) {
-        // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
-        DataInfo dataInfo = model.model_info().dataInfo();
-        assert dataInfo != null;
-        String featureMap = XGBoostUtils.makeFeatureMap(train, dataInfo);
-        model.model_info().setFeatureMap(featureMap);
-        featureMapFile = createFeatureMapFile(featureMap);
-    }
-
-    // For feature importance - write out column info
     private File createFeatureMapFile(String featureMap) {
         try {
             File fmFile = Files.createTempFile("h2o_xgb_" + modelKey.toString(), ".txt").toFile();

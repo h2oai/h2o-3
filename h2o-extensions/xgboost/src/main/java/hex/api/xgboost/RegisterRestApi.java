@@ -2,6 +2,7 @@ package hex.api.xgboost;
 
 import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostExtension;
+import hex.tree.xgboost.remote.RemoteXGBoostHandler;
 import water.ExtensionManager;
 import water.api.AlgoAbstractRegister;
 import water.api.RestApiContext;
@@ -17,8 +18,15 @@ public class RegisterRestApi extends AlgoAbstractRegister {
     XGBoostExtension ext = (XGBoostExtension) ExtensionManager.getInstance().getCoreExtension(XGBoostExtension.NAME);
     ext.logNativeLibInfo();
     XGBoost xgBoostMB = new XGBoost(true);
+    int version = SchemaServer.getStableVersion();
     // Register XGBoost model builder REST API
-    registerModelBuilder(context, xgBoostMB, SchemaServer.getStableVersion());
+    registerModelBuilder(context, xgBoostMB, version);
+    // Register Remote XGBoost execution
+    context.registerEndpoint(
+        "remote_xgb", "POST /3/XGBoostExecutor", 
+        RemoteXGBoostHandler.class, "exec",
+        "Remote XGBoost execution"
+    );
   }
 
   @Override

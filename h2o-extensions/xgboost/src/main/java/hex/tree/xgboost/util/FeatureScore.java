@@ -1,6 +1,8 @@
 package hex.tree.xgboost.util;
 
-public class FeatureScore {
+import java.io.Serializable;
+
+public class FeatureScore implements Serializable {
     
     public static final String GAIN_KEY = "gain";
     public static final String COVER_KEY = "cover";

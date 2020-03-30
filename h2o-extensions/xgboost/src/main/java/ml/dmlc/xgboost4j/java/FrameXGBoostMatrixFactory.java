@@ -1,28 +1,21 @@
 package ml.dmlc.xgboost4j.java;
 
-import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostUtils;
 import water.fvec.Frame;
 
-import java.util.Map;
-
-public class LocalXGBoostSetupTask extends XGBoostSetupTask {
+public class FrameXGBoostMatrixFactory extends XGBoostMatrixFactory {
 
     private final XGBoostModelInfo _modelInfo;
     private final XGBoostModel.XGBoostParameters _parms;
     private final boolean _sparse;
     private final Frame _trainFrame;
 
-    public LocalXGBoostSetupTask(
+    public FrameXGBoostMatrixFactory(
         XGBoostModel model,
         XGBoostModel.XGBoostParameters parms,
-        BoosterParms boosterParms,
-        byte[] checkpointToResume,
-        Map<String, String> rabitEnv,
-        FrameNodes train
+        XGBoostSetupTask.FrameNodes train
     ) {
-        super(model._key, parms._save_matrix_directory, boosterParms, checkpointToResume, rabitEnv, train._nodes);
         _modelInfo = model.model_info();
         _parms = parms;
         _sparse = model._output._sparse;
@@ -30,7 +23,7 @@ public class LocalXGBoostSetupTask extends XGBoostSetupTask {
     }
 
     @Override
-    protected DMatrix makeLocalMatrix() throws XGBoostError {
+    public DMatrix makeLocalMatrix() throws XGBoostError {
         return XGBoostUtils.convertFrameToDMatrix(
             _modelInfo.dataInfo(),
             _trainFrame,

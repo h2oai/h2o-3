@@ -15,19 +15,18 @@ import java.util.Map;
 /**
  * Initializes XGBoost training (converts Frame to set of node-local DMatrices)
  */
-public abstract class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
+public class XGBoostSetupTask extends XGBoostSaveMatrixTask {
 
-  private final String _saveMatrixDirectory;
   private final BoosterParms _boosterParms;
   private final byte[] _checkpoint;
   private final IcedHashMapGeneric.IcedHashMapStringString _rabitEnv;
 
   public XGBoostSetupTask(
       Key modelKey, String saveMatrixDirectory, BoosterParms boosterParms,
-      byte[] checkpointToResume, Map<String, String> rabitEnv, boolean[] nodes
+      byte[] checkpointToResume, Map<String, String> rabitEnv, boolean[] nodes,
+      XGBoostMatrixFactory factory
   ) {
-    super(modelKey, nodes);
-    _saveMatrixDirectory = saveMatrixDirectory;
+    super(modelKey, saveMatrixDirectory, nodes, factory);
     _boosterParms = boosterParms;
     _checkpoint = checkpointToResume;
     (_rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString()).putAll(rabitEnv);
@@ -35,22 +34,7 @@ public abstract class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupT
 
   @Override
   protected void execute() {
-    final DMatrix matrix;
-    try {
-      matrix = makeLocalMatrix();
-      if (_saveMatrixDirectory != null) {
-        File directory = new File(_saveMatrixDirectory);
-        if (directory.mkdirs()) {
-          Log.debug("Created directory for matrix export: " + directory.getAbsolutePath());
-        }
-        File path = new File(directory, "matrix.part" + H2O.SELF.index()); 
-        Log.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
-        matrix.saveBinary(path.getAbsolutePath());
-      }
-    } catch (XGBoostError|IOException xgBoostError) {
-      throw new IllegalStateException("Failed XGBoost training.", xgBoostError);
-    }
-
+    super.execute();
     if (matrix == null)
       throw new IllegalStateException("Node " + H2O.SELF + " is supposed to participate in XGB training " +
               "but it doesn't have a DMatrix!");
@@ -60,8 +44,6 @@ public abstract class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupT
     XGBoostUpdater thread = XGBoostUpdater.make(_modelKey, matrix, _boosterParms, _checkpoint, _rabitEnv);
     thread.start(); // we do not need to wait for the Updater to init Rabit - subsequent tasks will wait
   }
-
-  protected abstract DMatrix makeLocalMatrix() throws IOException, XGBoostError;
 
   /**
    * Finds what nodes actually do carry some of data of a given Frame
@@ -81,9 +63,9 @@ public abstract class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupT
   }
 
   public static class FrameNodes {
-    final Frame _fr;
-    final boolean[] _nodes;
-    final int _numNodes;
+    public final Frame _fr;
+    public final boolean[] _nodes;
+    public final int _numNodes;
     private FrameNodes(Frame fr, boolean[] nodes) {
       _fr = fr;
       _nodes = nodes;
