@@ -204,7 +204,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
     protected void setStoppingCriteria(Model.Parameters parms, Model.Parameters defaults, SeedPolicy seedPolicy) {
         // If the caller hasn't set ModelBuilder stopping criteria, set it from our global criteria.
         AutoMLBuildSpec buildSpec = aml().getBuildSpec();
-        parms._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
+        if (parms._max_runtime_secs == 0)
+            parms._max_runtime_secs = buildSpec.build_control.stopping_criteria.max_runtime_secs_per_model();
 
         //FIXME: Do we really need to compare with defaults before setting the buildSpec value instead?
         // This can create subtle bugs: e.g. if dev wanted to enforce a stopping criteria for a specific algo/model,
@@ -542,8 +543,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
         protected abstract ModelSelectionStrategy getSelectionStrategy();
 
-        protected Job<Models> asModelsJob(Job j, Key<Models> result){
-            Job<Models> jModels = new Job<>(result, Models.class.getName(), j._description); // can use the same result key as original job, as it is dropped once its result is read
+        protected Job<Models> asModelsJob(Job job, Key<Models> result){
+            Job<Models> jModels = new Job<>(result, Models.class.getName(), job._description); // can use the same result key as original job, as it is dropped once its result is read
             return jModels.start(new H2O.H2OCountedCompleter() {
 
                 Models models = new Models(result, Model.class, jModels);
@@ -553,7 +554,8 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
                 @Override
                 public void compute2() {
-                    Keyed res = j.get();
+                    ModelingStepsExecutor.ensureStopRequestPropagated(job, jModels);
+                    Keyed res = job.get();
                     models.unlock(jModels);
                     if (res instanceof Model) {
                         models.addModel(((Model)res)._key);
@@ -565,7 +567,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                     }
                     tryComplete();
                 }
-            }, j._work, j._max_runtime_msecs);
+            }, job._work, job._max_runtime_msecs);
         }
     }
 

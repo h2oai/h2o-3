@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 
 /**
@@ -28,6 +29,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
     private static final int pollingIntervalInMillis = 1000;
+
+    static void ensureStopRequestPropagated(Job job, Job parentJob) {
+        if (job == null || parentJob == null) return;
+        while (job.isRunning()) {
+            if (parentJob.stop_requested()) {
+                job.stop();
+            }
+            try {
+                Thread.sleep(pollingIntervalInMillis);
+            } catch (InterruptedException ignored) {}
+        }
+    }
 
     final Key<EventLog> _eventLogKey;
     final Key<Leaderboard> _leaderboardKey;

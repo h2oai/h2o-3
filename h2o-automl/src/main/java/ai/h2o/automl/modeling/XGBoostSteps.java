@@ -262,8 +262,8 @@ public class XGBoostSteps extends ModelingSteps {
                             new Object[] {       0.02  ,                 5*sti },
                             new Object[] {       0.01  ,                 6*sti },
                             new Object[] {       0.005 ,                 7*sti },
-//                            new Object[] {       0.002 ,                 8*sti },
-//                            new Object[] {       0.001 ,                 9*sti },
+                            new Object[] {       0.002 ,                 8*sti },
+                            new Object[] {       0.001 ,                 9*sti },
 //                            new Object[] {       0.0005,                10*sti },
                     };
 
