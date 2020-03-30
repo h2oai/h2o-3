@@ -452,8 +452,6 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
   }
 
-  private static final String TEST_DATA_PATH_PREFIX_KEY = "H2O_TEST_DATA_PATH_PREFIX";
-
   /**
    * @param fileName File to prefix with local test file path
    * @return Original path prefixed with local small data path from environment variable, if the environment variable is
@@ -462,7 +460,7 @@ public class TestUtil extends Iced {
   private static String localTestDataPath(final String fileName) {
     Objects.requireNonNull(fileName);
 
-    final String smallDataPathPrefix = System.getenv(TEST_DATA_PATH_PREFIX_KEY);
+    final String smallDataPathPrefix = System.getenv("H2O_TEST_DATA_PATH_PREFIX");
     if (smallDataPathPrefix == null) return fileName;
 
     final StringBuilder localizedFileNameBuilder = new StringBuilder(smallDataPathPrefix);
