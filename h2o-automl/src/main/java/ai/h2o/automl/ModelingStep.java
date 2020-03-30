@@ -23,7 +23,6 @@ import jsr166y.CountedCompleter;
 import org.apache.commons.lang.builder.ToStringBuilder;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.init.TimelineSnapshot;
 import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.EnumUtils;
@@ -322,9 +321,11 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                 parms._max_runtime_secs = parms._max_runtime_secs == 0
                         ? maxAssignedTimeSecs
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
-                aml().eventLog().debug(Stage.ModelTraining, "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
             }
             Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
+            aml().eventLog().debug(Stage.ModelTraining, parms._max_runtime_secs == 0
+                    ? "No time limitation for "+key
+                    : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
             return startModel(key, parms);
         }
 
@@ -388,7 +389,9 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
 
             Work work = getAllocatedWork();
             // for time limit, this is allocated in proportion of the entire work budget.
-            double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
+            double maxAssignedTimeSecs = ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)
+                    ? 0
+                    : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
             // SE predicate can be removed if/when we decide to include SEs in the max_models limit
             // for models limit, this is not assigned in the same proportion as for time,
             // as the exploitation phase is not supposed to "add" models but just to replace some by better ones,
@@ -406,8 +409,10 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             if (null == key) key = makeKey(_algo.name(), true);
             aml().trackKey(key);
 
-            aml().eventLog().debug(Stage.ModelTraining, "Time assigned for "+key+": "+searchCriteria.max_runtime_secs()+"s");
             Log.debug("Hyperparameter search: "+_algo.name()+", time remaining (ms): "+aml().timeRemainingMs());
+            aml().eventLog().debug(Stage.ModelTraining, searchCriteria.max_runtime_secs() == 0
+                    ? "No time limitation for "+key
+                    : "Time assigned for "+key+": "+searchCriteria.max_runtime_secs()+"s");
             return startSearch(
                     key,
                     baseParms,
@@ -478,9 +483,14 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             aml().trackKey(key);
             Job<Models> job = new Job<>(key, Models.class.getName(), _description);
             Work work = getAllocatedWork();
-            double maxAssignedTimeSecs = aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
 
-            aml().eventLog().debug(Stage.ModelTraining, "Time assigned for "+key+": "+maxAssignedTimeSecs+"s");
+            double maxAssignedTimeSecs = ArrayUtils.contains(_ignoredConstraints, AutoML.Constraint.TIMEOUT)
+                    ? 0
+                    : aml().timeRemainingMs() * getWorkAllocations().remainingWorkRatio(work) / 1e3;
+
+            aml().eventLog().debug(Stage.ModelTraining, maxAssignedTimeSecs == 0
+                    ? "No time limitation for "+key
+                    : "Time assigned for "+key+": "+maxAssignedTimeSecs+"s");
 
             return job.start(new H2O.H2OCountedCompleter() {
 
