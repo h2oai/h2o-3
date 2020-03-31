@@ -1497,12 +1497,6 @@ public final class AutoBuffer {
     return put1(x==null ? -1 : x.ordinal());
   }
 
-  public static void writeToChannel(AutoBuffer ab, ByteChannel channel) throws IOException {
-    ab.flipForReading();
-    channel.write(ab._bb);
-    ab.clearForWriting(H2O.MAX_PRIORITY);
-  }
-  
   public static byte[] javaSerializeWritePojo(Object o) {
     ByteArrayOutputStream bos = new ByteArrayOutputStream();
     ObjectOutputStream out = null;
