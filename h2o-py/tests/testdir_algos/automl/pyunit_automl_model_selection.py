@@ -372,7 +372,8 @@ def test_exploitation_impacts_exploration_duration():
     ds = import_dataset()
     planned_duration = 30
     aml = H2OAutoML(project_name="py_exploitation_ratio_max_runtime",
-                    exploitation_ratio=.5,
+                    exploitation_ratio=.5,  # excessive ratio on purpose, due to training overheads in multinode
+                    exclude_algos=['DeepLearning', 'XGBoost'],  # removing some algos for the same reason as above
                     max_runtime_secs=planned_duration,
                     seed=1,
                     # verbosity='debug'
