@@ -24,7 +24,7 @@ import java.util.Objects;
  *
  * @param <MP> type of model build parameters
  */
-public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
+public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> implements ModelContainer<Model> {
 
   /**
    * Publicly available Grid prototype - used by REST API.
@@ -325,6 +325,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    *
    * @return list of model keys sorted lexically
    */
+  @Override
   public Key<Model>[] getModelKeys() {
     Key<Model>[] keys = _models.values().toArray(new Key[_models.size()]);
     Arrays.sort(keys);
@@ -336,6 +337,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
    *
    * @return all models in this grid
    */
+  @Override
   public Model[] getModels() {
     Collection<Key<Model>> modelKeys = _models.values();
     Model[] models = new Model[modelKeys.size()];
@@ -350,6 +352,7 @@ public class Grid<MP extends Model.Parameters> extends Lockable<Grid<MP>> {
   /**
    * Returns number of models in this grid.
    */
+  @Override
   public int getModelCount() {
     return _models.size();
   }

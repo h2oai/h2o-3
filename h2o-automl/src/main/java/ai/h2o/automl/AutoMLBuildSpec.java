@@ -49,6 +49,7 @@ public class AutoMLBuildSpec extends Iced {
     public boolean keep_cross_validation_predictions = false;
     public boolean keep_cross_validation_models = false;
     public boolean keep_cross_validation_fold_assignment = false;
+
     public String export_checkpoints_dir = null;
 
     public AutoMLBuildControl() {
@@ -170,6 +171,7 @@ public class AutoMLBuildSpec extends Iced {
     public Algo[] exclude_algos;
     public Algo[] include_algos;
     public StepDefinition[] modeling_plan;
+    public double exploitation_ratio = 0;
     public AutoMLCustomParameters algo_parameters = new AutoMLCustomParameters();
   }
 
@@ -192,13 +194,13 @@ public class AutoMLBuildSpec extends Iced {
         _value = value;
       }
 
-      private AutoMLCustomParameter(Algo algo, String name, V value) {
+      private AutoMLCustomParameter(IAlgo algo, String name, V value) {
         _algo = algo;
         _name = name;
         _value = value;
       }
 
-      private Algo _algo;
+      private IAlgo _algo;
       private String _name;
       private V _value;
     }
@@ -213,7 +215,7 @@ public class AutoMLBuildSpec extends Iced {
         return this;
       }
 
-      public <V> Builder add(Algo algo, String param, V value) {
+      public <V> Builder add(IAlgo algo, String param, V value) {
         assertParameterAllowed(param);
         _specificAlgoParams.add(new AutoMLCustomParameter<>(algo, param, value));
         return this;
@@ -253,15 +255,15 @@ public class AutoMLBuildSpec extends Iced {
     private final IcedHashMap<String, String[]> _algoParameterNames = new IcedHashMap<>(); // stores the parameters names overridden, by algo name
     private final IcedHashMap<String, Model.Parameters> _algoParameters = new IcedHashMap<>(); //stores the parameters values, by algo name
 
-    public boolean hasCustomParams(Algo algo) {
+    public boolean hasCustomParams(IAlgo algo) {
       return _algoParameterNames.get(algo.name()) != null;
     }
 
-    public boolean hasCustomParam(Algo algo, String param) {
+    public boolean hasCustomParam(IAlgo algo, String param) {
       return ArrayUtils.contains(_algoParameterNames.get(algo.name()), param);
     }
 
-    public void applyCustomParameters(Algo algo, Model.Parameters destParams) {
+    public void applyCustomParameters(IAlgo algo, Model.Parameters destParams) {
       if (hasCustomParams(algo)) {
         String[] paramNames = getCustomParameterNames(algo);
         String[] onlyParamNames = Stream.of(paramNames).map(p -> "_"+p).toArray(String[]::new);
@@ -269,11 +271,11 @@ public class AutoMLBuildSpec extends Iced {
       }
     }
 
-    String[] getCustomParameterNames(Algo algo) {
+    String[] getCustomParameterNames(IAlgo algo) {
       return _algoParameterNames.get(algo.name());
     }
 
-    Model.Parameters getCustomizedDefaults(Algo algo) {
+    Model.Parameters getCustomizedDefaults(IAlgo algo) {
       if (!_algoParameters.containsKey(algo.name())) {
         Model.Parameters defaults = defaultParameters(algo);
         if (defaults != null) _algoParameters.put(algo.name(), defaults);
@@ -281,11 +283,11 @@ public class AutoMLBuildSpec extends Iced {
       return _algoParameters.get(algo.name());
     }
 
-    private Model.Parameters defaultParameters(Algo algo) {
+    private Model.Parameters defaultParameters(IAlgo algo) {
       return algo.enabled() ? ModelingStepsRegistry.defaultParameters(algo.name()) : null;
     }
 
-    private void addParameterName(Algo algo, String param) {
+    private void addParameterName(IAlgo algo, String param) {
       if (!_algoParameterNames.containsKey(algo.name())) {
         _algoParameterNames.put(algo.name(), new String[] {param});
       } else {
@@ -304,7 +306,7 @@ public class AutoMLBuildSpec extends Iced {
       return added;
     }
 
-    private <V> boolean addParameter(Algo algo, String param, V value) {
+    private <V> boolean addParameter(IAlgo algo, String param, V value) {
       Model.Parameters customParams = getCustomizedDefaults(algo);
       try {
         if (customParams != null

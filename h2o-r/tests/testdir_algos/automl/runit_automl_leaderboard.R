@@ -77,10 +77,9 @@ automl.leaderboard.suite <- function() {
         # Exclude all the algorithms, check for empty leaderboard
         fr <- h2o.uploadFile(locate("smalldata/logreg/prostate.csv"))  #need to reload data (getting error otherwise)
         fr["CAPSULE"] <- as.factor(fr["CAPSULE"])
-        exclude_algos <- c("GLM", "DRF", "GBM", "DeepLearning", "XGBoost", "StackedEnsemble")
-        aml <- h2o.automl(y = 2, training_frame = fr, max_runtime_secs = 5,
+        aml <- h2o.automl(y = 2, training_frame = fr,
                            project_name = "r_aml_lb_empty_test",
-                           exclude_algos = exclude_algos)
+                           include_algos = list())
         aml@leaderboard
         expect_equal(nrow(aml@leaderboard), 0)
 

@@ -27,10 +27,14 @@ public class ModelingStepsRegistry extends Iced<ModelingStepsRegistry> {
     static {
         ServiceLoader<ModelingStepsProvider> trainingStepsProviders = ServiceLoader.load(ModelingStepsProvider.class);
         for (ModelingStepsProvider provider : trainingStepsProviders) {
-            stepsByName.put(provider.getName(), provider);
-            if (provider instanceof ModelParametersProvider) {  // mainly for hardcoded providers in this module, that's why we can reuse the ModelingStepsProvider
-                parametersByName.put(provider.getName(), (ModelParametersProvider)provider);
-            }
+            registerProvider(provider);
+        }
+    }
+
+    public static void registerProvider(ModelingStepsProvider provider) {
+        stepsByName.put(provider.getName(), provider);
+        if (provider instanceof ModelParametersProvider) {  // mainly for hardcoded providers in this module, that's why we can reuse the ModelingStepsProvider
+            parametersByName.put(provider.getName(), (ModelParametersProvider)provider);
         }
     }
 

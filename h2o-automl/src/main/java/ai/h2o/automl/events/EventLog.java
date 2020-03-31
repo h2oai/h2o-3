@@ -1,6 +1,5 @@
 package ai.h2o.automl.events;
 
-import ai.h2o.automl.AutoML;
 import ai.h2o.automl.events.EventLogEntry.Level;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import water.DKV;
@@ -19,16 +18,16 @@ import java.io.Serializable;
  */
 public class EventLog extends Keyed<EventLog> {
 
-  public final Key<AutoML> _automl_id;
+  public final Key _runner_id;
   public EventLogEntry[] _events;
 
-  public EventLog(Key<AutoML> automlKey) {
-    _automl_id = automlKey;
-    _key = Key.make(idForRun(automlKey));
+  public EventLog(Key runKey) {
+    _runner_id = runKey;
+    _key = Key.make(idForRun(runKey));
     _events = new EventLogEntry[0];
   }
 
-  public static EventLog getOrMake(Key<AutoML> runKey) {
+  public static EventLog getOrMake(Key runKey) {
     EventLog eventLog = DKV.getGet(Key.make(idForRun(runKey)));
     if (null == eventLog) {
       eventLog = new EventLog(runKey);
@@ -37,10 +36,10 @@ public class EventLog extends Keyed<EventLog> {
     return eventLog;
   }
 
-  private static String idForRun(Key<AutoML> runKey) {
+  private static String idForRun(Key runKey) {
     if (null == runKey)
-      return "AutoML_Events_dummy";
-    return "AutoML_Events_" + runKey.toString();
+      return "Events_dummy";
+    return "Events_" + runKey.toString();
   }
 
   /** Add a Debug EventLogEntry and log. */
@@ -63,7 +62,7 @@ public class EventLog extends Keyed<EventLog> {
 
   /** Add a EventLogEntry, but don't log. */
   public <V extends Serializable> EventLogEntry<V> addEvent(Level level, Stage stage, String message) {
-    EventLogEntry<V> entry = new EventLogEntry<>(_automl_id, level, stage, message);
+    EventLogEntry<V> entry = new EventLogEntry<>(_runner_id, level, stage, message);
     addEvent(entry);
     return entry;
   }
@@ -87,8 +86,8 @@ public class EventLog extends Keyed<EventLog> {
   }
 
   public TwoDimTable toTwoDimTable() {
-    String name = _automl_id == null ? "(new)" : _automl_id.toString();
-    return toTwoDimTable("Event Log for AutoML:" + name);
+    String name = _runner_id == null ? "(new)" : _runner_id.toString();
+    return toTwoDimTable("Event Log for:" + name);
   }
 
   public TwoDimTable toTwoDimTable(String tableHeader) {

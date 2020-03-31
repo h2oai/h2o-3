@@ -1,6 +1,6 @@
 package hex.grid;
 
-import hex.ScoreKeeper;
+import hex.ScoreKeeper.StoppingMetric;
 import water.Iced;
 import water.fvec.Frame;
 
@@ -9,15 +9,30 @@ import water.fvec.Frame;
  * when to stop the search.
  */
 public class HyperSpaceSearchCriteria extends Iced {
-  public enum Strategy { Unknown, Cartesian, RandomDiscrete } // search strategy
+  public enum Strategy { Unknown, Cartesian, RandomDiscrete, Sequential} // search strategy
 
   public static class StoppingCriteria extends Iced {
+
+    public static class Builder {
+      private StoppingCriteria _criteria = new StoppingCriteria();
+      public Builder maxModels(int maxModels) { _criteria._max_models = maxModels; return this; }
+      public Builder maxRuntimeSecs(double maxRuntimeSecs) { _criteria._max_runtime_secs = maxRuntimeSecs; return this; }
+      public Builder stoppingMetric(StoppingMetric stoppingMetric) { _criteria._stopping_metric = stoppingMetric; return this; }
+      public Builder stoppingRounds(int stoppingRounds) { _criteria._stopping_rounds = stoppingRounds; return this; }
+      public Builder stoppingTolerance(double stoppingTolerance) { _criteria._stopping_tolerance = stoppingTolerance; return this; }
+      public StoppingCriteria build() { return _criteria; }
+    }
+
+    public static Builder create() { return new Builder(); }
+
     // keeping those private fields in snake-case so that they can be set from Schema through reflection
     private int _max_models = 0;  // no limit
     private double _max_runtime_secs = 0;  // no time limit
+    private StoppingMetric _stopping_metric = StoppingMetric.AUTO;
     private int _stopping_rounds = 0;
-    private ScoreKeeper.StoppingMetric _stopping_metric = ScoreKeeper.StoppingMetric.AUTO;
     private double _stopping_tolerance = 1e-3;  // = Model.Parameters.defaultStoppingTolerance()
+
+    public StoppingCriteria() {}
 
     public int getMaxModels() {
       return _max_models;
@@ -31,7 +46,7 @@ public class HyperSpaceSearchCriteria extends Iced {
       return _stopping_rounds;
     }
 
-    public ScoreKeeper.StoppingMetric getStoppingMetric() {
+    public StoppingMetric getStoppingMetric() {
       return _stopping_metric;
     }
 
@@ -39,6 +54,7 @@ public class HyperSpaceSearchCriteria extends Iced {
       return _stopping_tolerance;
     }
   }
+
 
   public final Strategy _strategy;
   public final Strategy strategy() { return _strategy; }
@@ -104,7 +120,7 @@ public class HyperSpaceSearchCriteria extends Iced {
     public int stopping_rounds() { return _stoppingCriteria._stopping_rounds; }
 
     /** Metric to use for convergence checking; only for _stopping_rounds > 0 */
-    public ScoreKeeper.StoppingMetric stopping_metric() { return _stoppingCriteria._stopping_metric; }
+    public StoppingMetric stopping_metric() { return _stoppingCriteria._stopping_metric; }
 
     /** Relative tolerance for metric-based stopping criterion: stop if relative improvement is not at least this much. */
     public double stopping_tolerance() { return _stoppingCriteria._stopping_tolerance; }
@@ -139,7 +155,7 @@ public class HyperSpaceSearchCriteria extends Iced {
       cloneStoppingCriteria()._stopping_rounds = stopping_rounds;
     }
 
-    public void set_stopping_metric(ScoreKeeper.StoppingMetric stopping_metric) {
+    public void set_stopping_metric(StoppingMetric stopping_metric) {
       cloneStoppingCriteria()._stopping_metric = stopping_metric;
     }
 
@@ -152,4 +168,24 @@ public class HyperSpaceSearchCriteria extends Iced {
       return _stoppingCriteria;
     }
   }
+
+  public static final class SequentialSearchCriteria extends HyperSpaceSearchCriteria {
+
+    private StoppingCriteria _stoppingCriteria;
+
+    public SequentialSearchCriteria() {
+      this(new StoppingCriteria());
+    }
+
+    public SequentialSearchCriteria(StoppingCriteria stoppingCriteria) {
+      super(Strategy.Sequential);
+      _stoppingCriteria = stoppingCriteria;
+    }
+
+    @Override
+    public StoppingCriteria stoppingCriteria() {
+      return _stoppingCriteria;
+    }
+  }
+
 }

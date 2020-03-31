@@ -519,7 +519,7 @@ class H2OFrame(Keyed):
         ...                          binary_ones_fraction=0,
         ...                          missing_fraction=0)
         >>> num = frame.columns_by_type(coltype="numeric")
-        >>> str = frame.columns_by_type(coltype="string)
+        >>> str = frame.columns_by_type(coltype="string")
         >>> num
         >>> string
         """

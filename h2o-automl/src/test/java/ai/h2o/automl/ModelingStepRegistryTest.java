@@ -77,26 +77,28 @@ public class ModelingStepRegistryTest extends TestUtil {
                 .map(name -> new StepDefinition(name, StepDefinition.Alias.all))
                 .collect(Collectors.toList());
         ModelingStep[] modelingSteps = registry.getOrderedSteps(allSteps.toArray(new StepDefinition[0]), aml);
-        assertEquals((1 + 3/*DL*/) + (2/*DRF*/) + (5 + 1/*GBM*/) + (1/*GLM*/) + (2/*SE*/) + (3 + 1/*XGB*/),
+        assertEquals((1 + 3/*DL*/) + (2/*DRF*/) + (5 + 1 + 1/*GBM*/) + (1/*GLM*/) + (2/*SE*/) + (3 + 1 + 2/*XGB*/),
                 modelingSteps.length);
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DeepLearning).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(3, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DeepLearning).filter(ModelingStep.GridStep.class::isInstance).count());
         assertEquals(2, Stream.of(modelingSteps).filter(s -> s._algo == Algo.DRF).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(5, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.GridStep.class::isInstance).count());
+        assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GBM).filter(ModelingStep.SelectionStep.class::isInstance).count());
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.GLM).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(2, Stream.of(modelingSteps).filter(s -> s._algo == Algo.StackedEnsemble).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(3, Stream.of(modelingSteps).filter(s -> s._algo == Algo.XGBoost).filter(ModelingStep.ModelStep.class::isInstance).count());
         assertEquals(1, Stream.of(modelingSteps).filter(s -> s._algo == Algo.XGBoost).filter(ModelingStep.GridStep.class::isInstance).count());
+        assertEquals(2, Stream.of(modelingSteps).filter(s -> s._algo == Algo.XGBoost).filter(ModelingStep.SelectionStep.class::isInstance).count());
 
         List<String> orderedStepIds = Arrays.stream(modelingSteps).map(s -> s._id).collect(Collectors.toList());
         assertEquals(Arrays.asList(
                 "def_1", "grid_1", "grid_2", "grid_3",
                 "def_1", "XRT",
-                "def_1", "def_2", "def_3", "def_4", "def_5", "grid_1",
+                "def_1", "def_2", "def_3", "def_4", "def_5", "grid_1", "lr_annealing",
                 "def_1",
                 "best", "all",
-                "def_1", "def_2", "def_3", "grid_1"
+                "def_1", "def_2", "def_3", "grid_1", "lr_annealing", "lr_search"
         ), orderedStepIds);
 
 

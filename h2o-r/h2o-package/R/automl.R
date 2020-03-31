@@ -17,7 +17,7 @@
 #' @param leaderboard_frame Leaderboard frame (H2OFrame or ID); Optional.  If provided, the Leaderboard will be scored using
 #'        this data frame intead of using cross-validation metrics, which is the default.
 #' @param blending_frame Blending frame (H2OFrame or ID) used to train the the metalearning algorithm in Stacked Ensembles (instead of relying on cross-validated predicted values); Optional.
-#         When provided, it also is recommended to disable cross validation by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.
+#'        When provided, it also is recommended to disable cross validation by setting `nfolds=0` and to provide a leaderboard frame for scoring purposes.
 #' @param nfolds Number of folds for k-fold cross-validation. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensemble (thus decreasing the overall model performance).
 #' @param fold_column Column with cross-validation fold index assignment per observation; used to override the default, randomized, 5-fold cross-validation scheme for individual models in the AutoML run.
 #' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
@@ -43,12 +43,13 @@
 #' @param project_name Character string to identify an AutoML project.  Defaults to NULL, which means a project name will be auto-generated.
 #' @param exclude_algos Vector of character strings naming the algorithms to skip during the model-building phase.  An example use is exclude_algos = c("GLM", "DeepLearning", "DRF"),
 #'        and the full list of options is: "DRF" (Random Forest and Extremely-Randomized Trees), "GLM", "XGBoost", "GBM", "DeepLearning" and "StackedEnsemble".
-#         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+#'        Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
 #' @param include_algos Vector of character strings naming the algorithms to restrict to during the model-building phase. This can't be used in combination with exclude_algos param.
-#         Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+#'        Defaults to NULL, which means that all appropriate H2O algorithms will be used, if the search stopping criteria allow. Optional.
+#' @param exploitation_ratio The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase. By default, the exploitation phase is disabled (exploitation_ratio=0) as this is still experimental; to activate it, it is recommended to try a ratio around 0.1. Note that the current exploitation phase only tries to fine-tune the best XGBoost and the best GBM found during exploration.
 #' @param modeling_plan List. The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints). Optional (Expert usage only).
 #' @param monotone_constraints List. A mapping representing monotonic constraints.
-#         Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
+#'        Use +1 to enforce an increasing constraint and -1 to specify a decreasing constraint.
 #' @param algo_parameters List. A list of param_name=param_value to be passed to internal models. Defaults to none (Expert usage only).
 #'        By default, params are set only to algorithms accepting them, and ignored by others.
 #'        Only following parameters are currently allowed: "monotone_constraints".
@@ -95,6 +96,7 @@ h2o.automl <- function(x, y, training_frame,
                        exclude_algos = NULL,
                        include_algos = NULL,
                        modeling_plan = NULL,
+                       exploitation_ratio = 0.0,
                        monotone_constraints = NULL,
                        algo_parameters = NULL,
                        keep_cross_validation_predictions = FALSE,
@@ -208,6 +210,9 @@ h2o.automl <- function(x, y, training_frame,
       include_algos <- as.list(include_algos)
     }
     build_models$include_algos <- include_algos
+  }
+  if (!is.null(exploitation_ratio)) {
+    build_models$exploitation_ratio <- exploitation_ratio
   }
   if (!is.null(modeling_plan)) {
     is.string <- function(s) is.character(s) && length(s) == 1

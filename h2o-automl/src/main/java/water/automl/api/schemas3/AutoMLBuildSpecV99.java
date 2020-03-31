@@ -4,6 +4,7 @@ package water.automl.api.schemas3;
 import ai.h2o.automl.Algo;
 import ai.h2o.automl.AutoMLBuildSpec;
 import ai.h2o.automl.AutoMLBuildSpec.AutoMLStoppingCriteria;
+import ai.h2o.automl.IAlgo;
 import hex.KeyValue;
 import hex.ScoreKeeper.StoppingMetric;
 import water.Iced;
@@ -246,6 +247,10 @@ public class AutoMLBuildSpecV99 extends SchemaV3<AutoMLBuildSpec, AutoMLBuildSpe
             valuesProvider=AlgoProvider.class,
             level = API.Level.secondary)
     public Algo[] include_algos;
+
+    @API(help="The budget ratio (between 0 and 1) dedicated to the exploitation (vs exploration) phase.",
+            level = API.Level.secondary)
+    public double exploitation_ratio;
 
     @API(help="The list of modeling steps to be used by the AutoML engine (they may not all get executed, depending on other constraints).",
             level = API.Level.expert)

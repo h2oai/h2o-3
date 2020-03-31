@@ -95,7 +95,7 @@ def test_warn_on_empty_leaderboard():
     y = 'CAPSULE'
     train[y] = train[y].asfactor()
     aml = H2OAutoML(project_name="test_empty_leaderboard",
-                    max_runtime_secs=3,
+                    include_algos=[],
                     seed=1234)
     aml.train(y=y, training_frame=train)
     assert aml.leaderboard.nrow == 0

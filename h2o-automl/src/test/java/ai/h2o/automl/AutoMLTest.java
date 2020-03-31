@@ -23,6 +23,7 @@ import water.util.ArrayUtils;
 import water.util.Log;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 import static junit.framework.TestCase.assertNotNull;
@@ -32,7 +33,10 @@ import static org.junit.Assert.*;
 
 public class AutoMLTest extends water.TestUtil {
 
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+  @BeforeClass public static void setup() {
+    stall_till_cloudsize(1);
+//    stall_till_cloudsize(new String[] {"-log_level", "DEBUG"}, 1);
+  }
 
   @Test public void test_basic_automl_behaviour_using_cv() {
     AutoML aml=null;
@@ -46,8 +50,12 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = target;
       autoMLBuildSpec.input_spec.sort_metric = "AUCPR";
+//      autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.XGBoost};
+      int maxModels = 10;
 
-      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(5);
+//      autoMLBuildSpec.build_models.exploitation_ratio = 1;
+      autoMLBuildSpec.build_control.stopping_criteria.set_seed(1);
+      autoMLBuildSpec.build_control.stopping_criteria.set_max_models(maxModels);
       autoMLBuildSpec.build_control.keep_cross_validation_models = false; //Prevent leaked keys from CV models
       autoMLBuildSpec.build_control.keep_cross_validation_predictions = false; //Prevent leaked keys from CV predictions
 
@@ -58,9 +66,9 @@ public class AutoMLTest extends water.TestUtil {
       int count_se = 0, count_non_se = 0;
       for (Key k : modelKeys) if (k.toString().startsWith("StackedEnsemble")) count_se++; else count_non_se++;
 
-      assertEquals("wrong amount of standard models", 5, count_non_se);
+      assertEquals("wrong amount of standard models", maxModels, count_non_se);
       assertEquals("wrong amount of SE models", 2, count_se);
-      assertEquals(5+2, aml.leaderboard().getModelCount());
+      assertEquals(maxModels+2, aml.leaderboard().getModelCount());
     } finally {
       // Cleanup
       if(aml!=null) aml.delete();
@@ -333,7 +341,7 @@ public class AutoMLTest extends water.TestUtil {
     }
   }
 
-  @Test public void testWorkPlan() {
+  @Test public void testWorkPlanWithoutExploitation() {
     AutoML aml = null;
     Frame fr=null;
     try {
@@ -341,14 +349,15 @@ public class AutoMLTest extends water.TestUtil {
       fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
       autoMLBuildSpec.input_spec.training_frame = fr._key;
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
+      autoMLBuildSpec.build_models.exploitation_ratio = 0;
       aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
 
       Map<Algo, Integer> defaultAllocs = new HashMap<Algo, Integer>(){{
-        put(Algo.DeepLearning, 1*10+3*20);
+        put(Algo.DeepLearning, 1*10+3*20); // models+grids
         put(Algo.DRF, 2*10);
-        put(Algo.GBM, 5*10+1*60);
+        put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
-        put(Algo.XGBoost, 3*10+1*100);
+        put(Algo.XGBoost, 3*10+1*100); // models+grids
         put(Algo.StackedEnsemble, 2*10);
       }};
       int maxTotalWork = 0;
@@ -358,12 +367,66 @@ public class AutoMLTest extends water.TestUtil {
         }
       }
 
-      assertEquals(aml._workAllocations.remainingWork(), maxTotalWork);
+      assertEquals(maxTotalWork, aml._workAllocations.remainingWork());
 
       autoMLBuildSpec.build_models.exclude_algos = aro(Algo.DeepLearning, Algo.DRF);
       aml.planWork();
 
-      assertEquals(aml._workAllocations.remainingWork(), maxTotalWork - defaultAllocs.get(Algo.DeepLearning) - defaultAllocs.get(Algo.DRF));
+      assertEquals(maxTotalWork - defaultAllocs.get(Algo.DeepLearning) - defaultAllocs.get(Algo.DRF), aml._workAllocations.remainingWork());
+
+    } finally {
+      if (aml != null) aml.delete();
+      if (fr != null) fr.remove();
+    }
+  }
+
+  @Test public void testWorkPlanWithExploitation() {
+    AutoML aml = null;
+    Frame fr=null;
+    try {
+      double exploitationRatio = 0.2;
+      AutoMLBuildSpec autoMLBuildSpec = new AutoMLBuildSpec();
+      fr = parse_test_file("./smalldata/airlines/allyears2k_headers.zip");
+      autoMLBuildSpec.input_spec.training_frame = fr._key;
+      autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
+      autoMLBuildSpec.build_models.exploitation_ratio = exploitationRatio;
+      aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
+
+      Map<Algo, Integer> explorationAllocs = new HashMap<Algo, Integer>(){{
+        put(Algo.DeepLearning, 1*10+3*20); // models+grids
+        put(Algo.DRF, 2*10);
+        put(Algo.GBM, 5*10+1*60); // models+grids
+        put(Algo.GLM, 1*10);
+        put(Algo.XGBoost, 3*10+1*100); // models+grids
+        put(Algo.StackedEnsemble, 2*10);
+      }};
+      Map<Algo, Integer> exploitationAllocs = new HashMap<Algo, Integer>(){{
+        put(Algo.GBM, 1*10);
+        put(Algo.XGBoost, 2*20);
+      }};
+      int expectedExplorationWork = explorationAllocs.entrySet().stream().filter(algo -> algo.getKey().enabled()).mapToInt(Map.Entry::getValue).sum();
+
+      Function<AutoML, Double> computeExploitationRatio = automl -> {
+        int explorationWork = automl._workAllocations.remainingWork(ModelingStep.isExplorationWork);
+        int exploitationWork = automl._workAllocations.remainingWork(ModelingStep.isExploitationWork);
+        return (double)exploitationWork/(explorationWork+exploitationWork);
+      };
+
+      assertEquals(expectedExplorationWork, aml._workAllocations.remainingWork(ModelingStep.isExplorationWork));
+      assertEquals(expectedExplorationWork, aml._workAllocations.remainingWork() * (1 - exploitationRatio), 1);
+      assertEquals(exploitationRatio, computeExploitationRatio.apply(aml), 0.1);
+
+      autoMLBuildSpec.build_models.exclude_algos = aro(Algo.DeepLearning, Algo.DRF);
+      aml.planWork();
+      expectedExplorationWork = expectedExplorationWork - explorationAllocs.get(Algo.DeepLearning) - explorationAllocs.get(Algo.DRF);
+      assertEquals(expectedExplorationWork, aml._workAllocations.remainingWork(ModelingStep.isExplorationWork));
+      assertEquals(expectedExplorationWork, aml._workAllocations.remainingWork() * (1 - exploitationRatio), 1);
+      assertEquals(exploitationRatio, computeExploitationRatio.apply(aml), 0.01);
+
+      int totalExploitationWork = exploitationAllocs.entrySet().stream().filter(algo -> algo.getKey().enabled()).mapToInt(Map.Entry::getValue).sum();
+      double expectedGBMExploitationRatio = (double)exploitationAllocs.get(Algo.GBM) / totalExploitationWork;
+      double computedGBMExploitationRatio = (double)aml._workAllocations.remainingWork(ModelingStep.isExploitationWork.and(w -> w._algo == Algo.GBM)) / aml._workAllocations.remainingWork(ModelingStep.isExploitationWork);
+      assertEquals(expectedGBMExploitationRatio, computedGBMExploitationRatio, 0.01);
 
     } finally {
       if (aml != null) aml.delete();
@@ -534,7 +597,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.exclude_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
       aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
-      for (Algo algo : autoMLBuildSpec.build_models.exclude_algos) {
+      for (IAlgo algo : autoMLBuildSpec.build_models.exclude_algos) {
         assertEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
       }
       for (Algo algo : Algo.values()) {
@@ -558,7 +621,7 @@ public class AutoMLTest extends water.TestUtil {
       autoMLBuildSpec.input_spec.response_column = "IsDepDelayed";
       autoMLBuildSpec.build_models.include_algos = new Algo[] {Algo.DeepLearning, Algo.XGBoost, };
       aml = new AutoML(Key.make(), new Date(), autoMLBuildSpec);
-      for (Algo algo : autoMLBuildSpec.build_models.include_algos) {
+      for (IAlgo algo : autoMLBuildSpec.build_models.include_algos) {
         if (algo.enabled()) {
           assertNotEquals(0, aml._workAllocations.getAllocations(w -> w._algo == algo).length);
         } else {
@@ -658,7 +721,7 @@ public class AutoMLTest extends water.TestUtil {
         for (Key<Model> key : keys) {
           XGBoostParameters parameters = (XGBoostParameters)key.get()._parms;
           assertEquals(5, parameters._score_tree_interval);
-          assertEquals(5, parameters._stopping_rounds); //should probably not be left enforced/hardcoded for XGB?
+          assertEquals(3, parameters._stopping_rounds); //should probably not be left enforced/hardcoded for XGB?
         }
       }
 

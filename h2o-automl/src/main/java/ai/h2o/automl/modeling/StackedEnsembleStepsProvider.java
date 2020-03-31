@@ -27,14 +27,14 @@ public class StackedEnsembleStepsProvider
 
             StackedEnsembleModelStep(String id, int weight, AutoML autoML) {
                 super(Algo.StackedEnsemble, id, weight, autoML);
-                _ignoreConstraints = true;
+                _ignoredConstraints = new AutoML.Constraint[] {AutoML.Constraint.TIMEOUT, AutoML.Constraint.MODEL_COUNT};
             }
 
             @Override
             protected boolean canRun() {
                 Key<Model>[] keys = getBaseModels();
                 Work seWork = getAllocatedWork();
-                if (seWork == null) {
+                if (!super.canRun()) {
                     aml().job().update(0, "Skipping this StackedEnsemble");
                     aml().eventLog().info(EventLogEntry.Stage.ModelTraining, String.format("Skipping StackedEnsemble '%s' due to the exclude_algos option.", _id));
                     return false;

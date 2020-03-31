@@ -343,6 +343,53 @@ def test_cannot_set_unauthorized_algo_parameter():
         assert "algo_parameters: score_tree_interval" in str(e)
 
 
+def test_exploitation_disabled():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_exploitation_ratio_disabled",
+                    exploitation_ratio=.0,
+                    max_models=6,
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train)
+    assert 'start_GBM_lr_annealing' not in aml.training_info
+    assert 'start_XGBoost_lr_search' not in aml.training_info
+
+
+def test_exploitation_doesnt_impact_max_models():
+    ds = import_dataset()
+    aml = H2OAutoML(project_name="py_exploitation_ratio_max_models",
+                    exploitation_ratio=.1,
+                    max_models=6,
+                    seed=1)
+    aml.train(y=ds.target, training_frame=ds.train)
+    assert 'start_GBM_lr_annealing' in aml.training_info
+    assert 'start_XGBoost_lr_search' in aml.training_info
+    _, non_se, se = get_partitioned_model_names(aml.leaderboard)
+    assert len(non_se) == 6
+    assert len(se) == 2
+
+
+def test_exploitation_impacts_exploration_duration():
+    ds = import_dataset()
+    planned_duration = 30
+    aml = H2OAutoML(project_name="py_exploitation_ratio_max_runtime",
+                    exploitation_ratio=.5,
+                    max_runtime_secs=planned_duration,
+                    seed=1,
+                    # verbosity='debug'
+                    )
+    aml.train(y=ds.target, training_frame=ds.train)
+    automl_start = int(aml.training_info['start_epoch'])
+    assert 'start_GBM_lr_annealing' in aml.training_info
+    assert 'start_XGBoost_lr_search' in aml.training_info
+    exploitation_start = int(aml.training_info['start_GBM_lr_annealing'])
+    exploration_duration = exploitation_start - automl_start
+    se_start = int(aml.training_info['start_StackedEnsemble_best'])
+    exploitation_duration = se_start - exploitation_start
+    # can't reliably check duration ratio
+    assert 0 < exploration_duration < planned_duration
+    assert 0 < exploitation_duration < exploration_duration
+
+
 pu.run_tests([
     test_exclude_algos,
     test_include_algos,
@@ -358,4 +405,7 @@ pu.run_tests([
     test_monotone_constraints_can_be_passed_as_algo_parameter,
     test_algo_parameter_can_be_applied_only_to_a_specific_algo,
     test_cannot_set_unauthorized_algo_parameter,
+    test_exploitation_disabled,
+    test_exploitation_doesnt_impact_max_models,
+    test_exploitation_impacts_exploration_duration,
 ])

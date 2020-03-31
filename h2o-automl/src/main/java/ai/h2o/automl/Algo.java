@@ -9,7 +9,7 @@ import static water.util.OSUtils.isLinux;
 // if we need to make the Algo list dynamic, we should just turn this enum into a class...
 // implementation of AutoML.algo can be safely removed once we get rid of this interface: current purpose
 // is to keep backward compatibility with {@link AutoML.algo}
-public enum Algo {
+public enum Algo implements IAlgo {
   GLM,
   DRF,
   GBM,
@@ -27,12 +27,4 @@ public enum Algo {
     }
   },
   ;
-
-  String urlName() {
-    return this.name().toLowerCase();
-  }
-
-  public boolean enabled() {
-    return true;
-  }
 }

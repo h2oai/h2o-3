@@ -1,14 +1,17 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import ai.h2o.automl.ModelSelectionStrategies.KeepBestN;
+import ai.h2o.automl.events.EventLogEntry;
+import hex.Model;
 import hex.grid.Grid;
 import hex.tree.SharedTreeModel;
 import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBMModel.GBMParameters;
 import water.Job;
+import water.Key;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 import static ai.h2o.automl.ModelingStep.GridStep.DEFAULT_GRID_TRAINING_WEIGHT;
 import static ai.h2o.automl.ModelingStep.ModelStep.DEFAULT_MODEL_TRAINING_WEIGHT;
@@ -34,7 +37,7 @@ public class GBMStepsProvider
 
             GBMParameters prepareModelParameters() {
                 GBMParameters gbmParameters = GBMSteps.prepareModelParameters();
-                gbmParameters._ntrees = 1000;
+                gbmParameters._ntrees = 10000;
                 gbmParameters._sample_rate = 0.8;
                 gbmParameters._col_sample_rate = 0.8;
                 gbmParameters._col_sample_rate_per_tree = 0.8;
@@ -53,6 +56,27 @@ public class GBMStepsProvider
                 return gbmParameters;
             }
         }
+
+        static abstract class GBMExploitationStep extends ModelingStep.SelectionStep<GBMModel> {
+
+            protected GBMModel getBestGBM() {
+                for (Model model : getTrainedModels()) {
+                    if (model instanceof GBMModel) {
+                        return (GBMModel) model;
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected boolean canRun() {
+                return super.canRun() && getBestGBM() != null;
+            }
+            public GBMExploitationStep(String id, int weight, AutoML autoML) {
+                super(Algo.GBM, id, weight, autoML);
+            }
+        }
+
 
 
         private ModelingStep[] defaults = new GBMModelStep[] {
@@ -117,7 +141,7 @@ public class GBMStepsProvider
                         Map<String, Object[]> searchParams = new HashMap<>();
                         searchParams.put("_max_depth", new Integer[]{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17});
                         searchParams.put("_min_rows", new Integer[]{1, 5, 10, 15, 30, 100});
-                        searchParams.put("_learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
+//                        searchParams.put("_learn_rate", new Double[]{0.001, 0.005, 0.008, 0.01, 0.05, 0.08, 0.1, 0.5, 0.8});
                         searchParams.put("_sample_rate", new Double[]{0.50, 0.60, 0.70, 0.80, 0.90, 1.00});
                         searchParams.put("_col_sample_rate", new Double[]{ 0.4, 0.7, 1.0});
                         searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
@@ -126,6 +150,33 @@ public class GBMStepsProvider
                         return hyperparameterSearch(gbmParameters, searchParams);
                     }
                 },
+        };
+
+        private ModelingStep[] exploitation = new ModelingStep[] {
+                new GBMExploitationStep("lr_annealing", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+
+                    Key<Models> resultKey = null;
+
+                    @Override
+                    protected Job<Models> startTraining(Key result, double maxRuntimeSecs) {
+                        resultKey = result;
+                        GBMModel bestGBM = getBestGBM();
+                        aml().eventLog().info(EventLogEntry.Stage.ModelSelection, "Retraining best GBM with learning rate annealing: "+bestGBM._key);
+                        GBMParameters gbmParameters = (GBMParameters) bestGBM._parms.clone();
+                        gbmParameters._ntrees = 10000; // reset ntrees (we'll need more for this fine tuning)
+                        gbmParameters._learn_rate_annealing = 0.99;
+                        gbmParameters._max_runtime_secs = maxRuntimeSecs;
+                        setStoppingCriteria(gbmParameters, new GBMParameters(), SeedPolicy.None);
+                        return asModelsJob(startModel(Key.make(result+"_model"), gbmParameters), result);
+                    }
+
+                    @Override
+                    protected ModelSelectionStrategy getSelectionStrategy() {
+                        return (originalModels, newModels) ->
+                                new KeepBestN<>(1, () -> makeTmpLeaderboard(Objects.toString(resultKey, _algo+"_"+_id)))
+                                        .select(new Key[] { getBestGBM()._key }, newModels);
+                    }
+                }
         };
 
         public GBMSteps(AutoML autoML) {
@@ -140,6 +191,11 @@ public class GBMStepsProvider
         @Override
         protected ModelingStep[] getGrids() {
             return grids;
+        }
+
+        @Override
+        protected ModelingStep[] getExploitation() {
+            return exploitation;
         }
     }
 

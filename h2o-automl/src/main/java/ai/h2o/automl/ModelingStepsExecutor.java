@@ -1,21 +1,25 @@
 package ai.h2o.automl;
 
+import ai.h2o.automl.AutoML.Constraint;
 import ai.h2o.automl.events.EventLog;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import ai.h2o.automl.WorkAllocations.JobType;
 import ai.h2o.automl.WorkAllocations.Work;
 import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
-import hex.grid.Grid;
+import hex.ModelContainer;
 import water.Iced;
 import water.Job;
 import water.Key;
+import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.util.Log;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 
 /**
@@ -25,6 +29,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
 
     private static final int pollingIntervalInMillis = 1000;
+
+    static void ensureStopRequestPropagated(Job job, Job parentJob) {
+        if (job == null || parentJob == null) return;
+        while (job.isRunning()) {
+            if (parentJob.stop_requested()) {
+                job.stop();
+            }
+            try {
+                Thread.sleep(pollingIntervalInMillis);
+            } catch (InterruptedException ignored) {}
+        }
+    }
 
     final Key<EventLog> _eventLogKey;
     final Key<Leaderboard> _leaderboardKey;
@@ -63,7 +79,7 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
             if (job == null) {
                 skip(step._description, step.getAllocatedWork(), parentJob);
             } else {
-                monitor(job, step.getAllocatedWork(), parentJob, step._ignoreConstraints);
+                monitor(job, step.getAllocatedWork(), parentJob, ArrayUtils.contains(step._ignoredConstraints, Constraint.TIMEOUT));
                 return true;
             }
         }
@@ -77,14 +93,14 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         }
     }
 
-    private void monitor(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
+    void monitor(Job job, Work work, Job parentJob, boolean ignoreTimeout) {
         EventLog eventLog = eventLog();
         String jobDescription = job._result == null ? job._description : job._result.toString()+" ["+job._description+"]";
         eventLog.debug(Stage.ModelTraining, jobDescription + " started");
         _jobs.add(job);
 
         long lastWorkedSoFar = 0;
-        long lastTotalGridModelsBuilt = 0;
+        long lastTotalModelsBuilt = 0;
 
         while (job.isRunning()) {
             if (null != parentJob) {
@@ -103,13 +119,13 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
                 parentJob.update(Math.round(workedSoFar - lastWorkedSoFar), jobDescription);
             }
 
-            if (JobType.HyperparamSearch == work._type) {
-                Grid<?> grid = (Grid)job._result.get();
-                int totalGridModelsBuilt = grid.getModelCount();
-                if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-                    eventLog.debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
-                    this.addModels(grid);
-                    lastTotalGridModelsBuilt = totalGridModelsBuilt;
+            if (JobType.HyperparamSearch == work._type || JobType.Selection == work._type) {
+                ModelContainer<?> container = (ModelContainer)job._result.get();
+                int totalModelsBuilt = container == null ? 0 : container.getModelCount();
+                if (totalModelsBuilt > lastTotalModelsBuilt) {
+                    eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
+                    this.addModels(container);
+                    lastTotalModelsBuilt = totalModelsBuilt;
                 }
             }
 
@@ -123,17 +139,17 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         }
 
         // pick up any stragglers:
-        if (JobType.HyperparamSearch == work._type) {
+        if (JobType.HyperparamSearch == work._type || JobType.Selection == work._type) {
             if (job.isCrashed()) {
                 eventLog.warn(Stage.ModelTraining, jobDescription + " failed: " + job.ex().toString());
             } else if (job.get() == null) {
                 eventLog.info(Stage.ModelTraining, jobDescription + " cancelled");
             } else {
-                Grid<?> grid = (Grid) job.get();
-                int totalGridModelsBuilt = grid.getModelCount();
-                if (totalGridModelsBuilt > lastTotalGridModelsBuilt) {
-                    eventLog.debug(Stage.ModelTraining, "Built: " + totalGridModelsBuilt + " models for search: " + jobDescription);
-                    this.addModels(grid);
+                ModelContainer<?> container = (ModelContainer) job.get();
+                int totalModelsBuilt = container.getModelCount();
+                if (totalModelsBuilt > lastTotalModelsBuilt) {
+                    eventLog.debug(Stage.ModelTraining, "Built: "+totalModelsBuilt+" models for "+work._type+" : "+jobDescription);
+                    this.addModels(container);
                 }
                 eventLog.debug(Stage.ModelTraining, jobDescription + " complete");
             }
@@ -156,18 +172,18 @@ class ModelingStepsExecutor extends Iced<ModelingStepsExecutor> {
         _jobs.remove(job);
     }
 
-    private void addModels(final Grid grid) {
+    private void addModels(final ModelContainer container) {
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModels(grid.getModelKeys());
+        leaderboard.addModels(container.getModelKeys());
         int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }
 
-    private void addModel(final Model newModel) {
+    private void addModel(final Model model) {
         Leaderboard leaderboard = leaderboard();
         int before = leaderboard.getModelCount();
-        leaderboard.addModel(newModel._key);
+        leaderboard.addModel(model._key);
         int after = leaderboard.getModelCount();
         _modelCount.addAndGet(after - before);
     }
