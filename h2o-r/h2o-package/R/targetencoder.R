@@ -26,7 +26,7 @@
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' # Import the titanic dataset
+#' #Import the titanic dataset
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
 #' titanic <- h2o.importFile(f)
 #' 
