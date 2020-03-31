@@ -2,6 +2,65 @@
 
 ## H2O
 
+### Yule (3.28.1.3) - 4/1/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yule/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yule/3/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7337'>PUBDEV-7337</a>] - Fixed an issue that occurred during Hive SQL import with `fetch_mode=SINGLE`; improved Hive SQL import speed; added an option to specify the number of chunks to parse.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7386'>PUBDEV-7386</a>] - Hive delegation token refresh now recognizes `-runAsUser`.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7394'>PUBDEV-7394</a>] - Fixed `base_model` selection for Stacked Ensembles in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7396'>PUBDEV-7396</a>] - The Parquet parser now supports arbitrary precision decimal types.
+</li>
+</ul>
+
+<h4>Story</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7391'>PUBDEV-7391</a>] - The H2O Hive parser now recognizes varchar column types.
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7414'>PUBDEV-7414</a>] - Hive tokens are now refreshed without distributing the Steam keytab.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7171'>PUBDEV-7171</a>] - Users can now specify the `max_log_file_size` when starting H2O. The log file size currently defaults to 3MB.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7358'>PUBDEV-7358</a>] - Fixed the of parameters for TargetEncoder in Flow.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7390'>PUBDEV-7390</a>] -  HostnameGuesser.isInetAddressOnNetwork is now public.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7402'>PUBDEV-7402</a>] - Improved mapper-side Hive delegation token acquisition. Now when H2O is started from Steam, the Hive delegation token will already be acquired when the cluster is up.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7380'>PUBDEV-7380</a>] - Added to docs that `transform` only works on numerical columns.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7419'>PUBDEV-7419</a>] - Added documentation for the new num_chunks_hint option that can be specified with `import_sql_table`.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7420'>PUBDEV-7420</a>] - Added documentation for the new `max_log_file_size` H2O starting parameter.
+</li>
+</ul>
+
+
+
+
 ### Yule (3.28.1.2) - 3/17/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yule/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yule/2/index.html</a>
