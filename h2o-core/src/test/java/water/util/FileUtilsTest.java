@@ -51,6 +51,7 @@ public class FileUtilsTest {
             testFileFound("./smalldata/testng/airlines_train.csv", testedMethod);
             testFileFound("../smalldata/testng/airlines_train.csv", testedMethod);
             testFileFound("../../../smalldata/testng/airlines_train.csv", testedMethod);
+            testFileNotFound("/smalldata/testng/airlines_train.csv", testedMethod);
 
         } finally {
             testedMethod.setAccessible(false);
