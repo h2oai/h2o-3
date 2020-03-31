@@ -217,18 +217,13 @@ class H2OCluster(object):
         """
         keys = _cluster_status_info_keys
         values = self._get_cluster_status_info_values()
-        table = [[k+":"] for k in keys]
-        for i, k in enumerate(keys):
-            table[i].append(values[i])     
-        H2ODisplay(table)        
+        table = [[k+":", values[i]] for i, k in enumerate(keys)]
+        H2ODisplay(table)
 
         if detailed:
             keys = _cluster_status_detailed_info_keys
             header = ["Nodes info:"] + ["Node %d" % (i + 1) for i in range(len(self.nodes))]
-            table = [[k] for k in keys]
-            for node in self.nodes:
-                for i, k in enumerate(keys):
-                    table[i].append(node[k])
+            table = [[k]+[node[k] for node in self.nodes] for k in keys]
             H2ODisplay(table=table, header=header)
 
     def get_status(self):
@@ -248,13 +243,9 @@ class H2OCluster(object):
             # Info is stale, need to refresh
             new_info = h2o.api("GET /3/Cloud")
             self._fill_from_h2ocluster(new_info)
-        keys = _cluster_status_detailed_info_keys.copy()
-        node_table = [[] for k in self.nodes]
-        for j, node in enumerate(self.nodes):
-            node_table[j].append("Node %d" % (j + 1))
-            for i, k in enumerate(keys):
-                node_table[j].append(node[k])
-        keys.insert(0,"node")       
+        keys = _cluster_status_detailed_info_keys[:]
+        node_table = [["Node %d" % (j + 1)] + [node[k] for k in keys] for j, node in enumerate(self.nodes)]
+        keys.insert(0, "node")
         table = H2OTwoDimTable(cell_values=node_table, col_header=keys, row_header=keys)
         return table
 
