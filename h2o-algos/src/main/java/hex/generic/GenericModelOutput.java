@@ -13,7 +13,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class GenericModelOutput extends Model.Output {
-
+    final String _original_model_identifier;
+    final String _original_model_full_name;
     final ModelCategory _modelCategory;
     final int _nfeatures;
     final double _defaultThreshold;
@@ -33,6 +34,8 @@ public class GenericModelOutput extends Model.Output {
         _modelCategory = modelDescriptor.getModelCategory();
         _nfeatures = modelDescriptor.nfeatures();
         _defaultThreshold = modelDescriptor.defaultThreshold();
+        _original_model_identifier = modelDescriptor.algoName();
+        _original_model_full_name = modelDescriptor.algoFullName();
 
         if (modelAttributes != null) {
             _model_summary = convertTable(modelAttributes.getModelSummary());
