@@ -15,7 +15,7 @@ Use the ``h2o.init()`` method to initialize H2O. This method accepts the followi
 - ``forceDL``: (Optional) A logical value indicating whether to force download of the H2O executable. This defaults to FALSE, so the executable will only be downloaded if it does not already exist in the H2O R library resources directory at h2o/java/h2o.jar. 
 - ``enable_assertions``:  (Optional) A logical value indicating whether H2O should be launched with assertions enabled. This is used mainly for error checking and debugging purposes. 
 - ``license``: (Optional) A character string value specifying the full path of the license file. 
-- ``max_log_file_size``: Maximum size of INFO and DEBUG log files. The file is rolled over after the specifized size has been reached.
+- ``max_log_file_size``: Maximum size of INFO and DEBUG log files. The file is rolled over after the specifized size has been reached. The range for this option is 1MB to 99999MB. The value defaults to 3MB.
 - ``max_mem_size``: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
 - ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
 - ``ice_root``: (Optional) A directory to handle object spillage. The default varies by OS.
