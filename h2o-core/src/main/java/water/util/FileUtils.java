@@ -9,6 +9,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.URI;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * File utilities.
@@ -97,33 +101,74 @@ public class FileUtils {
    *  @param fname filename
    *  @return      Found file or null */
   public static File locateFile(String fname) {
-    // When run from eclipse, the working directory is different.
-    // Try pointing at another likely place
+
     File file = new File(fname);
-    if( !file.exists() )
-      file = new File("target/" + fname);
-    if( !file.exists() )
+    if (file.exists()) return file;
+    
+    final Optional<File> fileInPredefinedPath = findFileInPredefinedPath(fname);
+    if (fileInPredefinedPath.isPresent()) return fileInPredefinedPath.get();
+    
+    file = new File("target/" + fname);
+    if (!file.exists())
       file = new File("../" + fname);
-    if( !file.exists() )
+    if (!file.exists())
       file = new File("../../" + fname);
-    if( !file.exists() )
+    if (!file.exists())
       file = new File("../../../" + fname);
-    if( !file.exists() )
+    if (!file.exists())
       file = new File("../target/" + fname);
-    if( !file.exists() )
+    if (!file.exists())
       file = new File(StringUtils.expandPath(fname));
-    if( !file.exists() )
+    if (!file.exists())
       file = null;
     return file;
   }
 
-  private static void check(boolean cond, String msg) throws IOException{
+  /**
+   * @param fileName File name/path to search for in pre-defined search path
+   * @return An {@link Optional} with the file inside, if the H2O_FILES_SEARCH_PATH is defined and the file exists.
+   * Otherwise an empty {@link Optional}. Never null.
+   */
+  private static Optional<File> findFileInPredefinedPath(final String fileName) {
+    Objects.requireNonNull(fileName);
+
+    final String smallDataPathPrefix = System.getenv("H2O_FILES_SEARCH_PATH");
+    if (smallDataPathPrefix == null) return Optional.empty();
+
+    final StringBuilder localizedFileNameBuilder = new StringBuilder(smallDataPathPrefix);
+
+    if (!smallDataPathPrefix.endsWith("/")) {
+      localizedFileNameBuilder.append('/');
+    }
+    
+    // If the file starts with {"./", ".\"} (or multiple instances of these), strip it.
+    // Does not match relative paths from top of the filesystem tree (starting with "/").
+    final Pattern pattern = Pattern.compile("\\.+[\\/]{1}(.*)");
+    final Matcher matcher = pattern.matcher(fileName);
+    
+    if(matcher.matches()){
+      localizedFileNameBuilder.append(matcher.group(1));
+    } else {
+      localizedFileNameBuilder.append(fileName);
+    }
+    
+    final File file = new File(localizedFileNameBuilder.toString());
+
+    if (file.exists()) {
+      return Optional.of(file);
+    } else {
+      return Optional.empty();
+    }
+
+  }
+
+  private static void check(boolean cond, String msg) throws IOException {
     if (!cond) throw new IOException(msg);
   }
-  
+
   private static void checkFileEntry(String name, File file) throws IOException {
     check(file != null, "File not found: " + name);
-    check(file.exists(), "File should exist: "  + name);
+    check(file.exists(), "File should exist: " + name);
   }
 
   public static void checkFile(File file, String name) throws IOException {

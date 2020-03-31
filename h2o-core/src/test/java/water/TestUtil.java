@@ -437,9 +437,7 @@ public class TestUtil extends Iced {
     return parse_test_file(outputKey, fname, transformer, null);
   }
 
-  public static Frame parse_test_file(final Key outputKey, String fname, final ParseSetupTransformer transformer,
-                                      final int[] skippedColumns) {
-    fname = localTestDataPath(fname);
+  public static Frame parse_test_file( Key outputKey, String fname, ParseSetupTransformer transformer, int[] skippedColumns) {
     NFSFileVec nfs = makeNfsFileVec(fname);
     ParseSetup guessedSetup = ParseSetup.guessSetup(new Key[]{nfs._key}, false, ParseSetup.GUESS_HEADER);
     if (skippedColumns != null) {
@@ -452,33 +450,7 @@ public class TestUtil extends Iced {
     return ParseDataset.parse(outputKey, new Key[]{nfs._key}, true, guessedSetup);
   }
 
-  /**
-   * @param fileName File to prefix with local test file path
-   * @return Original path prefixed with local small data path from environment variable, if the environment variable is
-   * present. Otherwise the original path.
-   */
-  private static String localTestDataPath(final String fileName) {
-    Objects.requireNonNull(fileName);
-
-    final String smallDataPathPrefix = System.getenv("H2O_TEST_DATA_PATH_PREFIX");
-    if (smallDataPathPrefix == null) return fileName;
-
-    final StringBuilder localizedFileNameBuilder = new StringBuilder(smallDataPathPrefix);
-
-    if (!smallDataPathPrefix.endsWith("/")) {
-      localizedFileNameBuilder.append('/');
-    }
-
-    if (fileName.startsWith("./")) {
-      localizedFileNameBuilder.append(fileName, 2, fileName.length());
-    } else {
-      localizedFileNameBuilder.append(fileName);
-    }
-
-    return localizedFileNameBuilder.toString();
-  }
-
-  protected Frame parse_test_file(String fname, String na_string, int check_header, byte[] column_types) {
+  protected Frame parse_test_file( String fname, String na_string, int check_header, byte[] column_types) {
     return parse_test_file(fname, na_string, check_header, column_types, null, null);
   }
 
