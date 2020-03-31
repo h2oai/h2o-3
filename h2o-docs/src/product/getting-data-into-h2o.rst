@@ -373,7 +373,7 @@ H2O arguments used to configure the JDBC URL for Hive delegation token generatio
 
 - ``hiveHost`` - The full address of HiveServer2, for example ``hostname:10000``
 - ``hivePrincipal`` -  Hiveserver2 Kerberos principal, for example ``hive/hostname@DOMAIN.COM``
-- ``hiveJdbcUrlPattern`` - (optional) Can be used to further customize the way the driver constructs the Hive JDBC URL. The default pattern used is ``jdbc:hive2://{{host}}/;{{auth}}`` where auth is replaced by ``principal={{hivePrincipal}}`` or ``auth=delegationToken`` based on context
+- ``hiveJdbcUrlPattern`` - (optional) Can be used to further customize the way the driver constructs the Hive JDBC URL. The default pattern used is ``jdbc:hive2://{{host}}/;{{auth}}`` where ``{{auth}}`` is replaced by ``principal={{hivePrincipal}}`` or ``auth=delegationToken`` based on context
 
 **Note on libjars:**
 
@@ -386,7 +386,7 @@ The advantage of this approach is that the keytab does not need to be distribute
 
 Requirements:
 
-- The Hive JDBC driver is on h2odriver classpath via HADOOP_CLASSPATH environment variable. (Only used to acquire Hive delegation token.)
+- The Hive JDBC driver is on h2odriver classpath via the HADOOP_CLASSPATH environment variable. (Only used to acquire Hive delegation token.)
 - The ``hiveHost``, ``hivePrincipal`` and optionally ``hiveJdbcUrlPattern`` arguments are present. (See above for details.)  
 
 Example command:
