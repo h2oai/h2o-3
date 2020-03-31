@@ -18,3 +18,11 @@
         <name>dfs.datanode.kerberos.principal</name>
         <value>hdfs/localhost@H2O.AI</value>
     </property>
+    <property>
+        <name>hadoop.proxyuser.steam.hosts</name>
+        <value>*</value>
+    </property>
+    <property>
+        <name>hadoop.proxyuser.steam.groups</name>
+        <value>*</value>
+    </property>
