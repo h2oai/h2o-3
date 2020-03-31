@@ -132,12 +132,12 @@ public class FileUtils {
   private static Optional<File> findFileInPredefinedPath(final String fileName) {
     Objects.requireNonNull(fileName);
 
-    final String smallDataPathPrefix = System.getenv("H2O_FILES_SEARCH_PATH");
-    if (smallDataPathPrefix == null) return Optional.empty();
+    final String searchPath = System.getenv("H2O_FILES_SEARCH_PATH");
+    if (searchPath == null) return Optional.empty();
 
-    final StringBuilder localizedFileNameBuilder = new StringBuilder(smallDataPathPrefix);
+    final StringBuilder localizedFileNameBuilder = new StringBuilder(searchPath);
 
-    if (!smallDataPathPrefix.endsWith("/")) {
+    if (!searchPath.endsWith("/")) {
       localizedFileNameBuilder.append('/');
     }
     
