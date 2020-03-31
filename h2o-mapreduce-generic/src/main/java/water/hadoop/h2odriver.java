@@ -2073,13 +2073,21 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputKeyClass(Text.class);
     j.setOutputValueClass(Text.class);
 
-    HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
-    if (refreshTokens && principal != null && keytabPath != null) {
-      j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
-      j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
-      byte[] payloadData = readBinaryFile(keytabPath);
-      String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
-      j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
+    boolean haveHiveToken = HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
+    if (refreshTokens) {
+      if (!haveHiveToken) {
+        // token not acquired, we need to distribute keytab to make token acquisition possible in mapper
+        if (runAsUser != null) j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
+        if (principal != null) j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
+        if (keytabPath != null) {
+          byte[] payloadData = readBinaryFile(keytabPath);
+          String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
+          j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
+        }
+      }
+      if (hiveJdbcUrlPattern != null) j.getConfiguration().set(H2O_HIVE_JDBC_URL_PATTERN, hiveJdbcUrlPattern);
+      if (hiveHost != null) j.getConfiguration().set(H2O_HIVE_HOST, hiveHost);
+      if (hivePrincipal != null) j.getConfiguration().set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     }
 
     if (outputPath != null)
