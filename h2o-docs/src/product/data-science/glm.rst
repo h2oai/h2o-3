@@ -11,6 +11,7 @@ The GLM suite includes:
 -  Gaussian regression
 -  Poisson regression
 -  Binomial regression (classification)
+-  Fractional binomial regression
 -  Quasibinomial regression 
 -  Multinomial classification
 -  Gamma regression
@@ -73,6 +74,7 @@ Defining a GLM Model
 
    -  If the family is **gaussian**, the response must be numeric (**Real** or **Int**). (default)
    -  If the family is **binomial**, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+   -  If the family is **fractionalbinomial**, the response must be a numeric between 0 and 1.
    -  If the family is **multinomial**, the response can be categorical with more than two levels/classes (**Enum**).
    -  If the family is **ordinal**, the response must be categorical with at least 3 levels.
    -  If the family is **quasibinomial**, the response must be numeric.
@@ -129,6 +131,7 @@ Defining a GLM Model
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
+   -  If the family is **Fractionalbinomial**, then **Logit** is supported.
    -  If the family is **Poisson**, then **Log** and **Identity** are supported.
    -  If the family is **Gamma**, then **Inverse**, **Log**, and **Identity** are supported.
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
@@ -218,6 +221,7 @@ The ``family`` option specifies a probability distribution from an exponential f
 
 - ``gaussian``: (See `Linear Regression (Gaussian Family)`_.) The response must be numeric (Real or Int). This is the default family.
 - ``binomial``: (See `Logistic Regression (Binomial Family)`_). The response must be categorical 2 levels/classes or binary (Enum or Int).
+- ``fractionalbinomial``: See (`Fractional Logit Model (Fraction Binomial)`_). The response must be a numeric between 0 and 1.
 - ``ordinal``: (See `Logistic Ordinal Regression (Ordinal Family)`_). Requires a categorical response with at least 3 levels. (For 2-class problems, use family="binomial".)
 - ``quasibinomial``: (See `Pseudo-Logistic Regression (Quasibinomial Family)`_). The response must be numeric.
 - ``multinomial``: (See `Multiclass Classification (Multinomial Family)`_). The response can be categorical with more than two levels/classes (Enum).
@@ -284,6 +288,18 @@ The corresponding deviance is equal to:
 .. math::
 
  D = -2 \sum_{i=1}^{n} \big( y_i \text{log}(\hat {y}_i) + (1 - y_i) \text{log}(1 - \hat {y}_i) \big)
+
+Fractional Logit Model (Fraction Binomial)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the financial service industry, there are many outcomes that are fractional in the range of [0,1]. For example, LGD (Loss Given Default in credit risk) measures the proportion of losses not recovered from a default borrower during the collection process, and this can be observed to be in the closed interval [0, 1]. The following assumptions are made for this model.
+
+- :math:`\text{Pr}(y=1|x) = E(y) = \frac{1}{1 + \text{exp}(-\beta^T x-\beta_0)}`
+- The likelihood function = :math:`\text{Pr}{(y=1|x)}^y (1-\text{Pr}(y=1|x))^{(1-y)}` for :math:`1 \geq y \geq 0`
+- :math:`var(y) = \varphi E(y)(1-E(y))` and :math:`\varphi` is estimated as :math:`\varphi = \frac{1}{n-p} \frac{\sum {(y_i - E(y))}2} {E(y)(1-E(y))}`
+
+Note that these are exactly the same as the binomial distribution.  However, the values are  calculated with the value of :math:`y` in the range of 0 and 1 instead of just 0 and 1.  Therefore, we implemented the fractional binomial family using the code of binomial.  Changes are made when needed.
+
 
 Logistic Ordinal Regression (Ordinal Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -486,29 +502,31 @@ H2O's GLM supports the following link functions: Family_Default, Identity, Logit
 
 The following table describes the allowed Family/Link combinations.
 
-+-------------------+-------------------------------------------------------------+--------+
-| **Family**        | **Link Function**                                                    |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-|                   | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Binomial          | X              |          | X     |     |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Quasibinomial     | X              |          | X     |     |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Multinomial       | X              |          |       |     |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Ordinal           | X              |          |       |     |         |         | X      |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Gaussian          | X              | X        |       | X   | X       |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Poisson           | X              | X        |       | X   |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Gamma             | X              | X        |       | X   | X       |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Tweedie           | X              |          |       |     |         | X       |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Negative Binomial | X              | X        |       | X   |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
++---------------------+-------------------------------------------------------------+--------+
+| **Family**          | **Link Function**                                                    |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+|                     | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Binomial            | X              |          | X     |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Fractional Binomial | X              |          | X     |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Quasibinomial       | X              |          | X     |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Multinomial         | X              |          |       |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Ordinal             | X              |          |       |     |         |         | X      |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gaussian            | X              | X        |       | X   | X       |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Poisson             | X              | X        |       | X   |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gamma               | X              | X        |       | X   | X       |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Tweedie             | X              |          |       |     |         | X       |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Negative Binomial   | X              | X        |       | X   |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
 
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
