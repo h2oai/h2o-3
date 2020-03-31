@@ -366,7 +366,6 @@ XGBoost
 AutoML now includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
 
 - XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__.
-- XGBoost is disabled by default in AutoML when running H2O-3 in multi-node due to current `limitations <data-science/xgboost.html#limitations>`__.  XGBoost can however be enabled experimentally in multi-node by setting the environment variable ``-Dsys.ai.h2o.automl.xgboost.multinode.enabled=true`` (when launching the H2O process from the command line) for every node of the H2O cluster.
 - You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
 
 
@@ -384,10 +383,6 @@ FAQ
 -  **How do I save AutoML runs?**
 
   Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually.  A utility for saving all of the models at once, along with a way to save the AutoML object (with leaderboard), will be added in a future release.
-
--  **Why don't I see XGBoost models when using AutoML in a multi-node H2O cluster?**
-
-  XGBoost is turned off by default for multi-node H2O clusters.
 
 -   **Can we make use of GPUs with AutoML?** 
 

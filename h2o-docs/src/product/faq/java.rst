@@ -41,13 +41,13 @@ This error message displays if the ``JAVA_HOME`` environment variable is not set
 
 If you are running OS X 10.7 or earlier, enter the following in Terminal:
 
-::
+.. code-block:: bash
 
     export JAVA_HOME=/Library/Internet\ Plug-Ins/JavaAppletPlugin.plugin/Contents/Home``
 
 If you are running OS X 10.8 or later, modify the launchd.plist by entering the following in Terminal:
 
-::
+.. code-block:: bash
 
     cat << EOF | sudo tee /Library/LaunchDaemons/setenv.JAVA_HOME.plist
     <?xml version="1.0" encoding="UTF-8"?>
