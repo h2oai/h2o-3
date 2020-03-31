@@ -741,6 +741,7 @@ SVM Hyperparameters
 
 -  ``gamma``
 -  ``hyper_param``
+-  ``rank_ratio``
 -  ``seed``
 
 XGBoost Hyperparameters
