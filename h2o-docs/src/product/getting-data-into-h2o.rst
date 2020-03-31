@@ -256,6 +256,7 @@ The ``import_sql_table`` function accepts the following parameters:
 - ``password``: The password for SQL server
 - ``optimize``: Specifies to optimize the import of SQL table for faster imports. Note that this option is experimental.
 - ``fetch_mode``: Set to DISTRIBUTED to enable distributed import. Set to SINGLE to force a sequential read by a single node from the database.
+- ``num_chunks_hint``: Optionally specify the number of chunks for the target frame.
 
 .. example-code::
    .. code-block:: r
