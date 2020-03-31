@@ -357,9 +357,9 @@ h2o.loadModel <- function(path) {
 #' (H2O model can be saved in a binary form either by saveModel() or by download_model() function.)
 #' 
 #'
-#' @param path: A path on the machine this python session is currently connected to, specifying the location of the model to upload.
-#' @return Returns a new \linkS4class{H2OEstimator} object.
-#' @seealso \code{\link{h2o.saveModel}, \link{h2o.download_model()}}
+#' @param path A path on the machine this python session is currently connected to, specifying the location of the model to upload.
+#' @return Returns a new \linkS4class{H2OModel} object.
+#' @seealso \code{\link{h2o.saveModel}}, \code{\link{h2o.download_model}}
 #' @export
 #' \dontrun{
 #' # library(h2o)
