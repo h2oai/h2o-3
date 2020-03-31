@@ -373,6 +373,24 @@ function. Change the regression by changing the family to binomial.
 \lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_binomial_example.py}
 
 
+\subsubsection{Fractional Logit Model (Fraction Binomial)}
+
+In the financial service industry, there are many outcomes that are fractional in the range of [0,1]. For example, LGD (Loss Given Default in credit risk) measures the proportion of losses not recovered from a default borrower during the collection process, and this can be observed to be in the closed interval [0, 1]. The following assumptions are made for this model.
+
+\begin{itemize}
+\item $\text{Pr}(y=1|x) = E(y) = \frac{1}{1 + \text{exp}(-\beta^T x-\beta_0)}$
+\item The likelihood function = $\text{Pr}{(y=1|x)}^y (1-\text{Pr}(y=1|x))^{(1-y)}$ for $1 \geq y \geq 0$
+\item $var(y) = \varphi E(y)(1-E(y))$ and $\varphi$ is estimated as $\varphi = \frac{1}{n-p} \frac{\sum {(y_i - E(y))}2} {E(y)(1-E(y))}$
+\end{itemize}
+
+Note that these are exactly the same as the binomial distribution.  However, the values are  calculated with the value of $y$ in the range of 0 and 1 instead of just 0 and 1.  Therefore, we implemented the fractional binomial family using the code of binomial.  Changes are made when needed.
+
+\waterExampleInR
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_fractionalbinomial_example.R}
+
+\waterExampleInPython
+\lstinputlisting[style=R]{GLM_Vignette_code_examples/glm_fractionalbinomial_example.py}
+
 \subsubsection{Logistic Ordinal Regression (Ordinal Family)}
 
 A logistic ordinal regression model is a generalized linear model that predicts ordinal variables - variables that are discreet, as in classification, but that can be ordered, as in regression.
