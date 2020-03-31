@@ -624,6 +624,7 @@ h2o.bulk_gbm <- function(x,
     segment_parms$segment_columns <- segment_columns
   if (!missing(segment_models_id))
     segment_parms$segment_models_id <- segment_models_id
+  segment_parms$parallelism <- parallelism
 
   # Error check and build segment models
   segment_models <- .h2o.segmentModelsJob('gbm', segment_parms, parms, h2oRestApiVersion=3)

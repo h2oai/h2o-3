@@ -6,8 +6,6 @@ import water.fvec.Frame;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.Log;
 
-import static hex.segments.LocalSequentialSegmentModelsBuilder.SegmentModelsStats;
-
 import java.util.List;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicLong;
@@ -27,6 +25,9 @@ public class SegmentModelsBuilder {
   }
 
   public Job<SegmentModels> buildSegmentModels() {
+    if (_parms._parallelism <= 0) {
+      throw new IllegalArgumentException("Parameter `parallelism` has to be a positive number, received=" + _parms._parallelism);
+    }
     final Frame segments;
     if (_parms._segments != null) {
       segments = validateSegmentsFrame(_parms._segments, _parms._segment_columns);
@@ -129,7 +130,7 @@ public class SegmentModelsBuilder {
     final int _parallelism;
 
     // OUT
-    LocalSequentialSegmentModelsBuilder.SegmentModelsStats _stats;
+    SegmentModelsStats _stats;
 
     private MultiNodeRunner(LocalSequentialSegmentModelsBuilder builder, SegmentModels segmentModels, int parallelism) {
       _builder = builder;
@@ -142,18 +143,21 @@ public class SegmentModelsBuilder {
       if (_parallelism == 1) {
         _stats = _builder.buildModels(_segment_models);
       } else {
-        List<Callable<SegmentModelsStats>> runnables = Stream.<Callable<SegmentModelsStats>>generate(
-                () -> (() -> _builder.clone().buildModels(_segment_models))
-        ).limit(_parallelism).collect(Collectors.toList());
-        try {
-          ExecutorService executor = Executors.newFixedThreadPool(_parallelism);
-          _stats = new SegmentModelsStats();
-          for (Future<SegmentModelsStats> f : executor.invokeAll(runnables)) {
-            _stats.reduce(f.get());
-          }
-        } catch (ExecutionException | InterruptedException e) {
-          throw new RuntimeException("Failed to build segment-models", e);
-        }
+        ExecutorService executor = Executors.newFixedThreadPool(_parallelism);
+        _stats = Stream.<Callable<SegmentModelsStats>>generate(
+                () -> (() -> _builder.clone().buildModels(_segment_models)))
+                .limit(_parallelism)
+                .map(callable -> executor.submit(callable))
+                .map(future -> {
+                  try {
+                    return future.get();
+                  } catch (ExecutionException | InterruptedException e) {
+                    throw new RuntimeException("Failed to build segment-models", e);
+                  }
+                }).reduce((a, b) -> {
+                  a.reduce(b);
+                  return a;
+                }).get();
       }
       Log.info("Finished per-segment model building on node ", H2O.SELF, "; summary: ", _stats);
     }

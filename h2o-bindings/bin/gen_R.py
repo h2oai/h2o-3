@@ -182,6 +182,7 @@ def gen_module(schema, algo, module):
         yield "    segment_parms$segment_columns <- segment_columns"
         yield "  if (!missing(segment_models_id))"
         yield "    segment_parms$segment_models_id <- segment_models_id"
+        yield "  segment_parms$parallelism <- parallelism"
         yield ""
         yield "  # Error check and build segment models"
         yield "  segment_models <- .h2o.segmentModelsJob('%s', segment_parms, parms, h2oRestApiVersion=%d)" % (algo, rest_api_version)
