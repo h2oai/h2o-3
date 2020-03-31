@@ -101,13 +101,12 @@ public class FileUtils {
    *  @param fname filename
    *  @return      Found file or null */
   public static File locateFile(String fname) {
-
+    // Search in pre-defined path, when active, overrides all other, including direct file lookup
     final Optional<File> fileInPredefinedPath = findFileInPredefinedPath(fname);
     if (fileInPredefinedPath.isPresent()) return fileInPredefinedPath.get();
     
     File file = new File(fname);
     if (file.exists()) return file;
-    
     
     file = new File("target/" + fname);
     if (!file.exists())
@@ -144,11 +143,13 @@ public class FileUtils {
     
     // If the file starts with {"./", ".\", "../", "..\"} (or multiple instances of these), strip it.
     // Does not match relative paths from top of the filesystem tree (starting with "/").
-    final Pattern pattern = Pattern.compile("\\.+[\\/]{1}(.*)");
+    final Pattern pattern = Pattern.compile("(\\.+[\\/]{1})+(.*)");
     final Matcher matcher = pattern.matcher(fileName);
-    
-    if(matcher.matches()){
-      localizedFileNameBuilder.append(matcher.group(1));
+
+    if (matcher.matches()) {
+      localizedFileNameBuilder.append(matcher.group(2));
+    } else if (fileName.startsWith("/")) {
+      return Optional.empty(); // The "/" at the beginning indicates absolute path, except for Windows. Do not attempt.
     } else {
       localizedFileNameBuilder.append(fileName);
     }
