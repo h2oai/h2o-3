@@ -23,12 +23,10 @@ public class HiveTokenGenerator {
   }
 
   public static String makeHivePrincipalJdbcUrl(String hiveJdbcUrlPattern, String hiveHost, String hivePrincipal) {
-    if (hiveJdbcUrlPattern != null) {
+    if (isPresent(hiveJdbcUrlPattern) && isPresent(hivePrincipal)) {
       String result = hiveJdbcUrlPattern;
-      if (hiveHost != null)
-        result = result.replace("{{host}}", hiveHost);
-      if (hivePrincipal != null)
-        result = result.replace("{{auth}}", "principal=" + hivePrincipal);
+      if (hiveHost != null) result = result.replace("{{host}}", hiveHost);
+      result = result.replace("{{auth}}", "principal=" + hivePrincipal);
       return result;
     } else if (isPresent(hiveHost) && isPresent(hivePrincipal)) {
       return "jdbc:hive2://" + hiveHost + "/" + ";principal=" + hivePrincipal;
@@ -38,10 +36,9 @@ public class HiveTokenGenerator {
   }
 
   public static String makeHiveDelegationTokenJdbcUrl(String hiveJdbcUrlPattern, String hiveHost) {
-    if (hiveJdbcUrlPattern != null) {
+    if (isPresent(hiveJdbcUrlPattern)) {
       String result = hiveJdbcUrlPattern;
-      if (hiveHost != null)
-        result = result.replace("{{host}}", hiveHost);
+      if (hiveHost != null) result = result.replace("{{host}}", hiveHost);
       result = result.replace("{{auth}}", "auth=delegationToken");
       return result;
     } else if (isPresent(hiveHost)) {
