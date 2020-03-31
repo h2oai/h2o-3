@@ -97,6 +97,10 @@ public class SegmentModels extends Keyed<SegmentModels> {
       return errors;
     }
 
+    public boolean isSuccessful() {
+      return _status == Job.JobStatus.SUCCEEDED;
+    }
+    
     @Override
     public String toString() {
       return "model=" + _model + ", status=" + _status;

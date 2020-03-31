@@ -1,8 +1,10 @@
 package hex.segments;
 
 import hex.ModelBuilderTest;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 import water.DKV;
 import water.Key;
 import water.Scope;
@@ -10,20 +12,30 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.BufferedString;
-import water.runner.CloudSize;
-import water.runner.H2ORunner;
 
 import static org.junit.Assert.*;
 
-@RunWith(H2ORunner.class)
-@CloudSize(1)
-public class SegmentModelsBuilderTest {
+@RunWith(Parameterized.class)
+public class SegmentModelsBuilderTest extends TestUtil {
+
+  @Parameterized.Parameter
+  public Integer parallelism;
+
+  @BeforeClass
+  public static void setup() {
+    stall_till_cloudsize(1);
+  }
+
+  @Parameterized.Parameters
+  public static Object[] data() {
+    return new Object[] { null, 2 };
+  }
 
   @Test
   public void buildSegmentModels() {
     try {
       Scope.enter();
-      Frame fr = Scope.track(TestUtil.parse_test_file("./smalldata/junit/iris.csv"));
+      Frame fr = Scope.track(parse_test_file("./smalldata/junit/iris.csv"));
 
       Frame segments = new Frame(Key.make());
       segments.add("class", Vec.makeVec(new long[]{2,0,1}, fr.vec("class").domain(), Vec.VectorGroup.VG_LEN1.addVec()));
@@ -38,6 +50,8 @@ public class SegmentModelsBuilderTest {
 
       SegmentModelsBuilder.SegmentModelsParameters smParms = new SegmentModelsBuilder.SegmentModelsParameters();
       smParms._segments = segments._key;
+      if (parallelism != null)
+        smParms._parallelism = parallelism;
       SegmentModels segmentModels = new SegmentModelsBuilder(smParms, parms).buildSegmentModels().get();
       Scope.track_generic(segmentModels);
 

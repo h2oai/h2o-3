@@ -159,6 +159,7 @@ NULL
   param_values <- .h2o.makeModelParams(algo, params, h2oRestApiVersion)
   param_values$segment_models_id <- segment_params$segment_models_id
   param_values$segment_columns <- segment_params$segment_columns
+  param_values$parallelism <- segment_params$parallelism 
   #---------- Build! ----------#
   job <- .h2o.__remoteSend(method = "POST", .h2o.__BULK_MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
   job_key  <- job$key$name

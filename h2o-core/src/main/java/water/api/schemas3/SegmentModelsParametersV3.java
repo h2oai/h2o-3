@@ -14,4 +14,7 @@ public class SegmentModelsParametersV3 extends SchemaV3<SegmentModelsBuilder.Seg
   @API(help = "List of columns to segment-by, models will be built for all segments in the data")
   public String[] segment_columns;
 
+  @API(help = "Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel")
+  public int parallelism;
+
 }
