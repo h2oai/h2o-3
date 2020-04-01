@@ -1,13 +1,13 @@
 ``lambda``
 ----------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
 
-To get the best possible model, GLM needs to find the optimal values of the regularization parameters :math:`\alpha` and :math:`\lambda`. When performing regularization, penalties are introduced to the model buidling process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties. These types of penalties are described in greater detail in the `Regularization <../glm.html#regularization>`__ section in GLM for more information. 
+To get the best possible model, GLM and GAM need to find the optimal values of the regularization parameters :math:`\alpha` and :math:`\lambda`. When performing regularization, penalties are introduced to the model buidling process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties. These types of penalties are described in greater detail in the `Regularization <../glm.html#regularization>`__ section in GLM for more information. 
 
 The ``lambda`` parameter controls the amount of regularization applied to the model. A non-negative value represents a shrinkage parameter, which multiplies :math:`P(\alpha, \beta)` in the objective. The larger lambda is, the more the coefficients are shrunk toward zero (and each other). When the value is 0, regularization is disabled, and ordinary generalized liner models are fit. The default value for ``lambda`` is calculated by H2O using a heuristic based on the training data. 
 

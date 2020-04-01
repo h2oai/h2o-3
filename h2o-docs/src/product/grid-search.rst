@@ -653,6 +653,22 @@ GLM Hyperparameters
 -  ``tweedie_link_power``
 -  ``tweedie_variance_power``
 
+GAM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+-  ``alpha``
+-  ``bs``
+-  ``gam_x``
+-  ``k``
+-  ``lambda``
+-  ``missing_values_handling``
+-  ``scale``
+-  ``seed``
+-  ``standardize``
+-  ``theta``
+-  ``tweedie_link_power``
+-  ``tweedie_variance_power``
+
 GLRM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~
 
@@ -673,6 +689,7 @@ GLRM Hyperparameters
 -  ``seed``
 -  ``svd_method``
 -  ``transform``
+
 
 Isolation Forest Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

@@ -32,6 +32,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
    
     **Note**: Cross-validation is not supported when autoencoder is enabled.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
    cross-validation predictions.
 

@@ -1,7 +1,7 @@
 ``missing_values_handling``
 ---------------------------
 
-- Available in: Deep Learning, GLM
+- Available in: Deep Learning, GLM, GAM
 - Hyperparameter: yes
 
 Description

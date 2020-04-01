@@ -3,13 +3,13 @@
 ``max_active_predictors``
 -------------------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-This option limits the number of active predictors. (Note that the actual number of non-zero predictors in the model is going to be slightly lower). It is useful when obtaining a sparse solution to avoid costly computation of models with too many predictors.
+This option limits the number of active predictors. (Note that the actual number of non-zero predictors in the model is going to be slightly lower.) It is useful when obtaining a sparse solution to avoid costly computation of models with too many predictors.
 
 When using the :math:`\lambda_1` penalty with lambda search, this option will stop the search before it completes. Models built at the beginning of the lambda search have higher lambda values, consider fewer predictors, and take less time to calculate the model. Models built at the end of the lambda search have lower lambda values, incorporate more predictors, and take a longer time to calculate the model. Set the ``nlambdas`` parameter for a lambda search to specify the number of models attempted across the search. 
 

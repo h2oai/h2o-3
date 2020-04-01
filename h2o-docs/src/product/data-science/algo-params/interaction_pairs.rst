@@ -1,7 +1,7 @@
 ``interaction_pairs``
 ---------------------
 
-- Available in: GLM, CoxPH
+- Available in: GLM, GAM, CoxPH
 - Hyperparameter: no
 
 Description

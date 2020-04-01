@@ -1,21 +1,21 @@
 ``link``
 --------
 
-- Available in: GLM
+- Available in: GLM,  GAM
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-GLM problems consist of three main components:
+GLM and GAM problems consist of three main components:
 
 - A random component :math:`f` for the dependent variable :math:`y`: The density function :math:`f(y;\theta,\phi)` has a probability distribution from the exponential family parametrized by :math:`\theta` and :math:`\phi`. This removes the restriction on the distribution of the error and allows for non-homogeneity of the variance with respect to the mean vector. 
 - A systematic component (linear model) :math:`\eta`: :math:`\eta = X\beta`, where :math:`X` is the matrix of all observation vectors :math:`x_i`.
 - A link function :math:`g`: :math:`E(y) = \mu = {g^-1}(\eta)` relates the expected value of the response :math:`\mu` to the linear component :math:`\eta`. The link function can be any monotonic differentiable function. This relaxes the constraints on the additivity of the covariates, and it allows the response to belong to a restricted range of values depending on the chosen transformation :math:`g`. 
 
-Accordingly, in order to specify a GLM problem, you must choose a family function :math:`f`, link function :math:`g`, and any parameters needed to train the model. 
+Accordingly, in order to specify a GLM or GAM problem, you must choose a family function :math:`f`, link function :math:`g`, and any parameters needed to train the model. 
 
-H2O's GLM supports the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, or Ologit.
+H2O's GLM and GAM support the following link functions: Family_Default, Identity, Logit, Log, Inverse, Tweedie, or Ologit.
 
 The following table describes the allowed Family/Link combinations.
 

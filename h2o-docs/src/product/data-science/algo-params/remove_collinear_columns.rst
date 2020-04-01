@@ -1,7 +1,7 @@
 ``remove_collinear_columns``
 ----------------------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
