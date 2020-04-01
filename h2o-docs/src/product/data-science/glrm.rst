@@ -35,7 +35,7 @@ Defining a GLRM Model
 
 -  **loading_name**: Specify the frame key to save the resulting X.
 
--  `transform <algo-params/transform.html>`__: Specify the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
 
 -  `k <algo-params/k.html>`__: (Required) Specify the rank of matrix approximation.
 

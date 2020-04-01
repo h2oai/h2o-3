@@ -466,7 +466,15 @@ def call(final pipelineContext) {
     onHadoopWithSpnegoStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - HADOOP WITH SPNEGO"
     onHadoopWithSpnegoStage.customData.mode = 'ON_HADOOP_WITH_SPNEGO'
 
-    KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage ]
+    def steamDriverStage = evaluate(stageTemplate.inspect())
+    steamDriverStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STEAM DRIVER"
+    steamDriverStage.customData.mode = 'STEAM_DRIVER'
+
+    def steamMapperStage = evaluate(stageTemplate.inspect())
+    steamMapperStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STEAM MAPPER"
+    steamMapperStage.customData.mode = 'STEAM_MAPPER'
+
+    KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage, steamDriverStage, steamMapperStage ]
   }
 
   def HADOOP_MULTINODE_STAGES = []

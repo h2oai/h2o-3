@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-Use the ``transform`` parameter to specify the transformation method used for the training data. Available options include:
+Use the ``transform`` parameter to specify the transformation method used for numeric columns in the training data. Available options include:
 
 - None: Do not perform any transformations on the data. 
 - Standardize: Standardizing subtracts the mean and then divides each variable by its standard deviation.

@@ -23,7 +23,7 @@ Defining a PCA Model
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Specify whether to ignore constant training columns, since no information can be gained from them. This option is enabled by default.
 
--  `transform <algo-params/transform.html>`__: Specify the transformation method for the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
+-  `transform <algo-params/transform.html>`__: Specify the transformation method for numeric columns in the training data: None, Standardize, Normalize, Demean, or Descale. The default is None.
 
 -  `pca_method <algo-params/pca_method.html>`__: Specify the algorithm to use for computing the principal components:
 
