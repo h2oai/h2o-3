@@ -63,7 +63,7 @@ private GString getCommandHadoop(
             ${hadoopClasspath}
             ${tokenPreparation}
             hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
-                -n 1 -mapperXmx 2g -baseport 54445 ${securityArgs} \\
+                -n 1 -mapperXmx 2g -baseport 54445 ${securityArgs} -timeout 300 \\
                 -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 -refreshTokens ${usePreparedToken} \\
                 -jks mykeystore.jks \\
                 -notify h2o_one_node -ea -proxy -port ${defaultPort} \\
