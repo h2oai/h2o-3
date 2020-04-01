@@ -39,7 +39,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
                    "gradient_epsilon", "link", "prior", "lambda_min_ratio", "beta_constraints", "max_active_predictors",
                    "interactions", "interaction_pairs", "obj_reg", "export_checkpoints_dir", "balance_classes",
                    "class_sampling_factors", "max_after_balance_size", "max_confusion_matrix_size", "max_hit_ratio_k",
-                   "max_runtime_secs", "custom_metric_func", "k", "knots_keys", "gam_x", "bs", "scale", "save_gam_cols"}
+                   "max_runtime_secs", "custom_metric_func", "num_knots", "knot_ids", "gam_columns", "bs", "scale",
+                   "keep_gam_cols"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedAdditiveEstimator, self).__init__()
@@ -289,13 +290,13 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Family. Use binomial for classification with logistic regression, others are for regression problems.
 
         One of: ``"gaussian"``, ``"binomial"``, ``"quasibinomial"``, ``"ordinal"``, ``"multinomial"``, ``"poisson"``,
-        ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``.
+        ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``, ``"fractionalbinomial"``.
         """
         return self._parms.get("family")
 
     @family.setter
     def family(self, family):
-        assert_is_type(family, None, Enum("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"))
+        assert_is_type(family, None, Enum("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"))
         self._parms["family"] = family
 
 
@@ -860,48 +861,48 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
 
 
     @property
-    def k(self):
+    def num_knots(self):
         """
         Number of knots for gam predictors
 
         Type: ``List[int]``.
         """
-        return self._parms.get("k")
+        return self._parms.get("num_knots")
 
-    @k.setter
-    def k(self, k):
-        assert_is_type(k, None, [int])
-        self._parms["k"] = k
+    @num_knots.setter
+    def num_knots(self, num_knots):
+        assert_is_type(num_knots, None, [int])
+        self._parms["num_knots"] = num_knots
 
 
     @property
-    def knots_keys(self):
+    def knot_ids(self):
         """
-        String arrays storing frame keys of knots.  One for each gam column specified in gam_x
+        String arrays storing frame keys of knots.  One for each gam column specified in gam_columns
 
         Type: ``List[str]``.
         """
-        return self._parms.get("knots_keys")
+        return self._parms.get("knot_ids")
 
-    @knots_keys.setter
-    def knots_keys(self, knots_keys):
-        assert_is_type(knots_keys, None, [str])
-        self._parms["knots_keys"] = knots_keys
+    @knot_ids.setter
+    def knot_ids(self, knot_ids):
+        assert_is_type(knot_ids, None, [str])
+        self._parms["knot_ids"] = knot_ids
 
 
     @property
-    def gam_x(self):
+    def gam_columns(self):
         """
         Predictor column names for gam
 
         Type: ``List[str]``.
         """
-        return self._parms.get("gam_x")
+        return self._parms.get("gam_columns")
 
-    @gam_x.setter
-    def gam_x(self, gam_x):
-        assert_is_type(gam_x, None, [str])
-        self._parms["gam_x"] = gam_x
+    @gam_columns.setter
+    def gam_columns(self, gam_columns):
+        assert_is_type(gam_columns, None, [str])
+        self._parms["gam_columns"] = gam_columns
 
 
     @property
@@ -935,18 +936,18 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
 
 
     @property
-    def save_gam_cols(self):
+    def keep_gam_cols(self):
         """
         Save keys of model matrix
 
         Type: ``bool``  (default: ``False``).
         """
-        return self._parms.get("save_gam_cols")
+        return self._parms.get("keep_gam_cols")
 
-    @save_gam_cols.setter
-    def save_gam_cols(self, save_gam_cols):
-        assert_is_type(save_gam_cols, None, bool)
-        self._parms["save_gam_cols"] = save_gam_cols
+    @keep_gam_cols.setter
+    def keep_gam_cols(self, keep_gam_cols):
+        assert_is_type(keep_gam_cols, None, bool)
+        self._parms["keep_gam_cols"] = keep_gam_cols
 
 
     @property

@@ -36,6 +36,8 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
     _ymu = ymu;
     switch (_glmf._family) {
       case binomial:
+      case quasibinomial:
+      case fractionalbinomial:
         _metricBuilder = new ModelMetricsBinomial.MetricBuilderBinomial(domain); break;
       case multinomial:
         _metricBuilder = new ModelMetricsMultinomial.MetricBuilderMultinomial(nclass, domain); break;
@@ -56,7 +58,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
       if (_glmf._family.equals(GLMModel.GLMParameters.Family.multinomial) || _glmf._family.equals(GLMModel.GLMParameters.Family.ordinal))
         add2(yact[0], ds[0], weight, offset);
       else if (_glmf._family.equals(binomial) || _glmf._family.equals(quasibinomial) ||
-              _glmf._family.equals(negativebinomial))
+              _glmf._family.equals(negativebinomial) || _glmf._family.equals(fractionalbinomial))
         add2(yact[0], ds[2], weight, offset);
       else
         add2(yact[0], ds[0], weight, offset);
@@ -109,6 +111,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
         _aic =  _nobs * (Math.log(_residual_deviance / _nobs * 2 * Math.PI) + 1) + 2;
         break;
       case quasibinomial:
+      case fractionalbinomial:
       case binomial:
         _aic = _residual_deviance;
         break;
@@ -143,7 +146,7 @@ public class MetricBuilderGAM extends ModelMetricsSupervised.MetricBuilderSuperv
     computeAIC();
     ModelMetrics mm=_metricBuilder.makeModelMetrics(gamM, f, null, null);
     if (_glmf._family.equals(GLMModel.GLMParameters.Family.binomial) || _glmf._family.equals(quasibinomial) ||
-    _glmf._family.equals(negativebinomial)) {
+    _glmf._family.equals(negativebinomial) ||  _glmf._family.equals(fractionalbinomial)) {
       ModelMetricsBinomial metricsBinomial = (ModelMetricsBinomial) mm;
       GainsLift gl = null;
       if (preds != null) {

@@ -16,8 +16,8 @@ def test_gam_gamColumns():
     myX = ["C1", "C2"]
     myY = "C11"
     h2o_data["C11"] = h2o_data["C11"].asfactor()
-    h2o_model = H2OGeneralizedAdditiveEstimator(family="multinomial", gam_x=["C6", "C7", "C8"],
-                                                 save_gam_cols=True, scale = [1,1,1], k=[5,5,5])
+    h2o_model = H2OGeneralizedAdditiveEstimator(family="multinomial", gam_columns=["C6", "C7", "C8"],
+                                                 keep_gam_cols=True, scale = [1,1,1], num_knots=[5,5,5])
     h2o_model.train(x=myX, y=myY, training_frame=h2o_data)
     gamFrame = h2o.get_frame(h2o_model._model_json["output"]["gam_transformed_center_key"])
     gamFrame = gamFrame.drop("C1").drop("C2").drop("C11")

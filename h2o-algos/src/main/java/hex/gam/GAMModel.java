@@ -46,7 +46,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   
   @Override public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
     if (domain==null && (_parms._family==Family.binomial || _parms._family==Family.quasibinomial || 
-            _parms._family==Family.negativebinomial))
+            _parms._family==Family.negativebinomial || _parms._family==Family.fractionalbinomial))
       domain = new String[]{"0","1"};
     GLMModel.GLMWeightsFun glmf = new GLMModel.GLMWeightsFun(_parms._family, _parms._link, _parms._tweedie_variance_power,
             _parms._tweedie_link_power, _parms._theta);
@@ -254,16 +254,16 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     public boolean _stdOverride; // standardization override by beta constraints
 
     // the following parameters are for GAM
-    public int[] _k; // array storing number of knots per basis function
+    public int[] _num_knots; // array storing number of knots per basis function
     public double[][] _knots;// store knots for each gam column specified in _gam_X
-    public String[] _knots_keys;  // store frame keys that contain knots location for each gam column in gam_X;
-    public String[] _gam_x; // array storing which predictor columns are needed
+    public String[] _knot_ids;  // store frame keys that contain knots location for each gam column in gam_X;
+    public String[] _gam_columns; // array storing which predictor columns are needed
    // public BSType _bs; // choose spline function for gam column
     public int[] _bs; // choose spline function for gam column, 0 = cr
     public double[] _scale;  // array storing scaling values to control wriggliness of fit
     public GLMType _glmType = GLMType.gam; // internal parameter
     public boolean _saveZMatrix = false;  // if asserted will save Z matrix
-    public boolean _save_gam_cols = false;  // if true will save the keys to gam Columns only
+    public boolean _keep_gam_cols = false;  // if true will save the keys to gam Columns only
     public boolean _savePenaltyMat = false; // if true will save penalty matrices as tripple array
 
     public String algoName() { return "GAM"; }
@@ -380,6 +380,25 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     
     public double dispersion(){ return _dispersion;}
 
+    @Override
+    public int nclasses() {
+      if (_family == Family.multinomial || _family == Family.ordinal)
+        return super.nclasses();
+      if (Family.binomial == _family || Family.quasibinomial == _family
+              || Family.fractionalbinomial == _family)
+        return 2;
+      return 1;
+    }
+
+    /** Names of levels for a categorical response column. */
+    @Override
+    public String[] classNames() {
+      if (_family == Family.fractionalbinomial) {
+        return new String[]{"0", "1"};
+      } else 
+        return super.classNames();
+    }
+
     public GAMModelOutput(GAM b, Frame adaptr, DataInfo dinfo) {
       super(b, adaptr);
       _dinfo = dinfo;
@@ -431,8 +450,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     int numGamCols = _output._numKnots.length;
     Vec[] gamCols = new Vec[numGamCols];
     for (int vind=0; vind<numGamCols; vind++)
-      gamCols[vind] = adptedF.vec(_parms._gam_x[vind]).clone();
-    Frame onlyGamCols = new Frame(_parms._gam_x, gamCols);
+      gamCols[vind] = adptedF.vec(_parms._gam_columns[vind]).clone();
+    Frame onlyGamCols = new Frame(_parms._gam_columns, gamCols);
     AddGamColumns genGamCols = new AddGamColumns(_output._binvD, _output._zTranspose, _output._knots, 
             _output._numKnots, _output._dinfo, onlyGamCols);
     genGamCols.doAll(genGamCols._gamCols2Add, Vec.T_NUM, onlyGamCols);
@@ -618,7 +637,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
               _m._parms._tweedie_link_power);
       if (_m._parms._family == GLMModel.GLMParameters.Family.binomial ||
               _m._parms._family == GLMModel.GLMParameters.Family.quasibinomial ||
-      _m._parms._family == Family.negativebinomial) { // threshold for prediction
+      _m._parms._family == Family.negativebinomial || _m._parms._family == Family.fractionalbinomial) { // threshold for prediction
         preds[0] = mu >= _defaultThreshold?1:0;
         preds[1] = 1.0 - mu; // class 0
         preds[2] = mu; // class 1

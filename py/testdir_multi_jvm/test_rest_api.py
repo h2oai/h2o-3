@@ -26,7 +26,7 @@ algos = ['coxph', 'kmeans', 'deeplearning', 'drf', 'glm', 'gbm', 'pca', 'naiveba
          'word2vec', 'stackedensemble', 'xgboost', 'isolationforest', 'gam', 'generic', 'targetencoder']
 algo_additional_default_params = { 'grep' : { 'regex' : '.*' },
                                    'kmeans' : { 'k' : 2 },
-                                   'gam': { 'gam_x': 'dummy_column' },
+                                   'gam': { 'gam_columns': 'dummy_column' },
                                  } # additional params to add to the default params
 
 #################

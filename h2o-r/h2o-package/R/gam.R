@@ -15,7 +15,7 @@
 #'        The response must be either a numeric or a categorical/factor variable. 
 #'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
 #' @param training_frame Id of the training data frame.
-#' @param gam_x Predictor column names for gam
+#' @param gam_columns Predictor column names for gam
 #' @param model_id Destination id for this model; auto-generated if not specified.
 #' @param validation_frame Id of the validation data frame.
 #' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
@@ -38,7 +38,7 @@
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
 #'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie",
-#'        "negativebinomial".
+#'        "negativebinomial", "fractionalbinomial".
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
 #' @param tweedie_link_power Tweedie link power Defaults to 0.
 #' @param theta Theta Defaults to 0.
@@ -103,11 +103,11 @@
 #'        Defaults to 0.
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param custom_metric_func Reference to custom evaluation function, format: `language:keyName=funcName`
-#' @param k Number of knots for gam predictors
-#' @param knots_keys String arrays storing frame keys of knots.  One for each gam column specified in gam_x
+#' @param num_knots Number of knots for gam predictors
+#' @param knot_ids String arrays storing frame keys of knots.  One for each gam column specified in gam_columns
 #' @param bs Basis function type for each gam predictors, 0 for cr
 #' @param scale Smoothing parameter for gam predictors
-#' @param save_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
+#' @param keep_gam_cols \code{Logical}. Save keys of model matrix Defaults to FALSE.
 #' @examples
 #' \dontrun{
 #' h2o.init()
@@ -116,7 +116,7 @@
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
-#' h2o.gam(y = "CAPSULE", x = c("RACE"), gam_x = c("PSA"),
+#' h2o.gam(y = "CAPSULE", x = c("RACE"), gam_columns = c("PSA"),
 #'      training_frame = prostate,family = "binomial")
 #' 
 #' }
@@ -124,7 +124,7 @@
 h2o.gam <- function(x,
                     y,
                     training_frame,
-                    gam_x,
+                    gam_columns,
                     model_id = NULL,
                     validation_frame = NULL,
                     nfolds = 0,
@@ -138,7 +138,7 @@ h2o.gam <- function(x,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 0,
                     theta = 0,
@@ -174,11 +174,11 @@ h2o.gam <- function(x,
                     max_hit_ratio_k = 0,
                     max_runtime_secs = 0,
                     custom_metric_func = NULL,
-                    k = NULL,
-                    knots_keys = NULL,
+                    num_knots = NULL,
+                    knot_ids = NULL,
                     bs = NULL,
                     scale = NULL,
-                    save_gam_cols = FALSE)
+                    keep_gam_cols = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -194,8 +194,8 @@ h2o.gam <- function(x,
      }
   }
 
-  # If gam_x is missing, then assume user wants to use all columns as features for GAM.
-  if (missing(gam_x)) {
+  # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
+  if (missing(gam_columns)) {
       stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
   }
 
@@ -220,7 +220,7 @@ h2o.gam <- function(x,
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  parms$gam_x <- gam_x
+  parms$gam_columns <- gam_columns
 
   if (!missing(model_id))
     parms$model_id <- model_id
@@ -312,18 +312,18 @@ h2o.gam <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
-  if (!missing(k))
-    parms$k <- k
-  if (!missing(knots_keys))
-    parms$knots_keys <- knots_keys
-  if (!missing(gam_x))
-    parms$gam_x <- gam_x
+  if (!missing(num_knots))
+    parms$num_knots <- num_knots
+  if (!missing(knot_ids))
+    parms$knot_ids <- knot_ids
+  if (!missing(gam_columns))
+    parms$gam_columns <- gam_columns
   if (!missing(bs))
     parms$bs <- bs
   if (!missing(scale))
     parms$scale <- scale
-  if (!missing(save_gam_cols))
-    parms$save_gam_cols <- save_gam_cols
+  if (!missing(keep_gam_cols))
+    parms$keep_gam_cols <- keep_gam_cols
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is
@@ -355,7 +355,7 @@ h2o.gam <- function(x,
 .h2o.segment_train_gam <- function(x,
                                    y,
                                    training_frame,
-                                   gam_x,
+                                   gam_columns,
                                    validation_frame = NULL,
                                    nfolds = 0,
                                    seed = -1,
@@ -368,7 +368,7 @@ h2o.gam <- function(x,
                                    score_each_iteration = FALSE,
                                    offset_column = NULL,
                                    weights_column = NULL,
-                                   family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"),
+                                   family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
                                    tweedie_variance_power = 0,
                                    tweedie_link_power = 0,
                                    theta = 0,
@@ -404,11 +404,11 @@ h2o.gam <- function(x,
                                    max_hit_ratio_k = 0,
                                    max_runtime_secs = 0,
                                    custom_metric_func = NULL,
-                                   k = NULL,
-                                   knots_keys = NULL,
+                                   num_knots = NULL,
+                                   knot_ids = NULL,
                                    bs = NULL,
                                    scale = NULL,
-                                   save_gam_cols = FALSE,
+                                   keep_gam_cols = FALSE,
                                    segment_columns = NULL,
                                    segment_models_id = NULL,
                                    parallelism = 1)
@@ -431,8 +431,8 @@ h2o.gam <- function(x,
      }
   }
 
-  # If gam_x is missing, then assume user wants to use all columns as features for GAM.
-  if (missing(gam_x)) {
+  # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
+  if (missing(gam_columns)) {
       stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
   }
 
@@ -457,7 +457,7 @@ h2o.gam <- function(x,
   if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
   parms$ignored_columns <- args$x_ignore
   parms$response_column <- args$y
-  parms$gam_x <- gam_x
+  parms$gam_columns <- gam_columns
 
   if (!missing(validation_frame))
     parms$validation_frame <- validation_frame
@@ -547,18 +547,18 @@ h2o.gam <- function(x,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(custom_metric_func))
     parms$custom_metric_func <- custom_metric_func
-  if (!missing(k))
-    parms$k <- k
-  if (!missing(knots_keys))
-    parms$knots_keys <- knots_keys
-  if (!missing(gam_x))
-    parms$gam_x <- gam_x
+  if (!missing(num_knots))
+    parms$num_knots <- num_knots
+  if (!missing(knot_ids))
+    parms$knot_ids <- knot_ids
+  if (!missing(gam_columns))
+    parms$gam_columns <- gam_columns
   if (!missing(bs))
     parms$bs <- bs
   if (!missing(scale))
     parms$scale <- scale
-  if (!missing(save_gam_cols))
-    parms$save_gam_cols <- save_gam_cols
+  if (!missing(keep_gam_cols))
+    parms$keep_gam_cols <- keep_gam_cols
 
   if( !missing(interactions) ) {
     # interactions are column names => as-is

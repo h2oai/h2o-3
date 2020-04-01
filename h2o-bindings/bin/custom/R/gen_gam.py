@@ -1,6 +1,6 @@
 
 extensions = dict(
-    required_params=['x', 'y', 'training_frame', 'gam_x'],  # empty to override defaults in gen_defaults
+    required_params=['x', 'y', 'training_frame', 'gam_columns'],  # empty to override defaults in gen_defaults
     validate_required_params="""
     # If x is missing, then assume user wants to use all columns as features.
     if (missing(x)) {
@@ -11,8 +11,8 @@ extensions = dict(
        }
     }
 
-    # If gam_x is missing, then assume user wants to use all columns as features for GAM.
-    if (missing(gam_x)) {
+    # If gam_columns is missing, then assume user wants to use all columns as features for GAM.
+    if (missing(gam_columns)) {
         stop("Columns indices to apply to GAM must be specified. If there are none, please use GLM.")
     }
     """,
@@ -24,7 +24,7 @@ extensions = dict(
     if( !missing(fold_column) && !is.null(fold_column)) args$x_ignore <- args$x_ignore[!( fold_column == args$x_ignore )]
     parms$ignored_columns <- args$x_ignore
     parms$response_column <- args$y
-    parms$gam_x <- gam_x
+    parms$gam_columns <- gam_columns
     """,
     with_model="""
     model@model$coefficients <- model@model$coefficients_table[,2]
@@ -82,7 +82,7 @@ doc = dict(
     prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
     prostate <- h2o.uploadFile(path = prostate_path)
     prostate$CAPSULE <- as.factor(prostate$CAPSULE)
-    h2o.gam(y = "CAPSULE", x = c("RACE"), gam_x = c("PSA"),
+    h2o.gam(y = "CAPSULE", x = c("RACE"), gam_columns = c("PSA"),
          training_frame = prostate,family = "binomial")
     """
 )
