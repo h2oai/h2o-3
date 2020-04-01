@@ -140,13 +140,13 @@ Defining a GAM Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
--  **num_knots**: An array that specifies the number of knots for each predictor.
+-  **num_knots**: An array that specifies the number of knots for each predictor specified in ``gam_columns``.
             
 -  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
 
--  **gam_columns**: Required. An array specifying the predictor column names for GAM.
+-  **gam_columns**: Required. An array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column. 
 
--  **bs**: An array specifying basis spline function type for each GAM predictor. You must include one value for each GAM predictor. This defaults to `0`, which specifies cubic regression spline.
+-  **bs**: An array specifying the B-Splines for each GAM predictor. You must include one value for each GAM predictor. This defaults to `0`, which specifies cubic regression spline.
 
 -  **scale**: An array specifying the smoothing parameter for GAM. 
 
