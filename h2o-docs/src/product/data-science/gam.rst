@@ -58,6 +58,7 @@ Defining a GAM Model
 
    -  If the family is **gaussian**, the response must be numeric (**Real** or **Int**). (default)
    -  If the family is **binomial**, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+   -  If the family is **fractionalbinomial**, the response must be a numeric between 0 and 1.
    -  If the family is **multinomial**, the response can be categorical with more than two levels/classes (**Enum**).
    -  If the family is **ordinal**, the response must be categorical with at least 3 levels.
    -  If the family is **quasibinomial**, the response must be numeric.
@@ -112,6 +113,7 @@ Defining a GAM Model
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
+   -  If the family is **Fractionalbinomial**, then Logit is supported.
    -  If the family is **Poisson**, then **Log** and **Identity** are supported.
    -  If the family is **Gamma**, then **Inverse**, **Log**, and **Identity** are supported.
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
@@ -431,7 +433,7 @@ Below are simple examples showing how to use GAM in R and Python.
     gam_model <- h2o.gam(x=predictors, 
                          y=response, 
                          training_frame = train,
-                         family='fractionalbinomial', 
+                         family='multinomial', 
                          gam_columns=c("C6","C7","C8"), 
                          scale=c(1,1,1), 
                          num_knots=numKnots, 
