@@ -3,14 +3,14 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-check.glm_bulk <- function() {
+check.xgboost_segment <- function() {
     iris_hex <- h2o.importFile(locate("smalldata/junit/iris.csv"))
 
-    models <- h2o.bulk_glm(y="petal_wid", training_frame=iris_hex, segment_columns="class")
+    models <- h2o.segment_train(algorithm="xgboost", y="petal_wid", training_frame=iris_hex, segment_columns="class")
 
     models_df <- as.data.frame(models)
     expect_equal(3, nrow(models_df))
     expect_equal("SUCCEEDED", unique(as.character(models_df$Status)))
 }
 
-doTest("GLM Test: Bulk Model Building", check.glm_bulk)
+doTest("XGBoost Test: Segment Model Building", check.xgboost_segment)

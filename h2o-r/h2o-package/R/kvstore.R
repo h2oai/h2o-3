@@ -287,10 +287,46 @@ h2o.getModel <- function(model_id) {
   }
 }
 
-h2o.getSegmentModels <- function(segment_models_id) {
+#' Retrieves an instance of \linkS4class{H2OSegmentModels} for a given id.
+#'
+#' @param segment_models_id A string indicating the unique segment_models_id
+#         of the collections of segment-models to retrieve.
+#' @return Returns an object that is a subclass of \linkS4class{H2OSegmentModels}.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' iris_hf <- as.h2o(iris)
+#' h2o.segment_train(algorithm = "gbm",
+#'                   segment_columns = "Species", segment_models_id="models_by_species",
+#'                   x = c(1:3), y = 4, training_frame = iris_hf, ntrees = 5, max_depth = 4)
+#' models <- h2o.get_segment_models("models_by_species")
+#' as.data.frame(models)
+#' }
+#' @export
+h2o.get_segment_models <- function(segment_models_id) {
   new("H2OSegmentModels", segment_models_id=segment_models_id)
 }
 
+#' Converts a collection of Segment Models to a data.frame
+#'
+#' @param x Object of class \linkS4class{H2OSegmentModels}.
+#' @param ... Further arguments to be passed down from other methods.
+#' @return Returns data.frame with result of segment model training.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' iris_hf <- as.h2o(iris)
+#' models <- h2o.segment_train(algorithm = "gbm",
+#'                             segment_columns = "Species",
+#'                             x = c(1:3), y = 4,
+#'                             training_frame = iris_hf,
+#'                             ntrees = 5,
+#'                             max_depth = 4)
+#' as.data.frame(models)
+#' }
+#' @export
 as.data.frame.H2OSegmentModels <- function(x, ...) {
   as.data.frame(.newExpr("segment_models_as_frame", x@segment_models_id))
 }

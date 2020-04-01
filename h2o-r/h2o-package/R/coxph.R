@@ -147,62 +147,27 @@ h2o.coxph <- function(x,
   model <- .h2o.modelJob('coxph', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-
-#'
-#' Trains coxph model for each segment of the training dataset.
-#'
-#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing, then all columns except event_column, start_column and stop_column are used.
-#' @param event_column The name of binary data column in the training frame indicating the occurrence of an event.
-#' @param training_frame Id of the training data frame.
-#' @param start_column Start Time Column.
-#' @param stop_column Stop Time Column.
-#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
-#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
-#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
-#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
-#' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
-#' @param stratify_by List of columns to use for stratification.
-#' @param ties Method for Handling Ties. Must be one of: "efron", "breslow". Defaults to efron.
-#' @param init Coefficient starting value. Defaults to 0.
-#' @param lre_min Minimum log-relative error. Defaults to 9.
-#' @param max_iterations Maximum number of iterations. Defaults to 20.
-#' @param interactions A list of predictor column indices to interact. All pairwise combinations will be computed for the list.
-#' @param interaction_pairs A list of pairwise (first order) column interactions.
-#' @param interactions_only A list of columns that should only be used to create interactions but should not itself participate in model
-#'        training.
-#' @param use_all_factor_levels \code{Logical}. (Internal. For development only!) Indicates whether to use all factor levels. Defaults to
-#'        FALSE.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param single_node_mode \code{Logical}. Run on a single node to reduce the effect of network overhead (for smaller datasets) Defaults
-#'        to FALSE.
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_coxph <- function(x,
-                           event_column,
-                           training_frame,
-                           start_column = NULL,
-                           stop_column = NULL,
-                           weights_column = NULL,
-                           offset_column = NULL,
-                           stratify_by = NULL,
-                           ties = c("efron", "breslow"),
-                           init = 0,
-                           lre_min = 9,
-                           max_iterations = 20,
-                           interactions = NULL,
-                           interaction_pairs = NULL,
-                           interactions_only = NULL,
-                           use_all_factor_levels = FALSE,
-                           export_checkpoints_dir = NULL,
-                           single_node_mode = FALSE,
-                           segment_columns = NULL,
-                           segment_models_id = NULL,
-                           parallelism = 1)
+.h2o.segment_train_coxph <- function(x,
+                                     event_column,
+                                     training_frame,
+                                     start_column = NULL,
+                                     stop_column = NULL,
+                                     weights_column = NULL,
+                                     offset_column = NULL,
+                                     stratify_by = NULL,
+                                     ties = c("efron", "breslow"),
+                                     init = 0,
+                                     lre_min = 9,
+                                     max_iterations = 20,
+                                     interactions = NULL,
+                                     interaction_pairs = NULL,
+                                     interactions_only = NULL,
+                                     use_all_factor_levels = FALSE,
+                                     export_checkpoints_dir = NULL,
+                                     single_node_mode = FALSE,
+                                     segment_columns = NULL,
+                                     segment_models_id = NULL,
+                                     parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

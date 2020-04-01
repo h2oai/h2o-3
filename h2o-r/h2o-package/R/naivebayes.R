@@ -177,84 +177,36 @@ h2o.naiveBayes <- function(x,
   model <- .h2o.modelJob('naivebayes', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-
-#'
-#' Trains Naive Bayes Model in H2O model for each segment of the training dataset.
-#'
-#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. 
-#'        The response must be either a numeric or a categorical/factor variable. 
-#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param training_frame Id of the training data frame.
-#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
-#'        Defaults to -1 (time-based random number).
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
-#'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
-#'        "Random", "Modulo", "Stratified". Defaults to AUTO.
-#' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
-#' @param validation_frame Id of the validation data frame.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param balance_classes \code{Logical}. Balance training data class counts via over/under-sampling (for imbalanced data). Defaults to
-#'        FALSE.
-#' @param class_sampling_factors Desired over/under-sampling ratios per class (in lexicographic order). If not specified, sampling factors will
-#'        be automatically computed to obtain class balance during training. Requires balance_classes.
-#' @param max_after_balance_size Maximum relative size of the training data after balancing class counts (can be less than 1.0). Requires
-#'        balance_classes. Defaults to 5.0.
-#' @param max_hit_ratio_k Max. number (top K) of predictions to use for hit ratio computation (for multi-class only, 0 to disable)
-#'        Defaults to 0.
-#' @param laplace Laplace smoothing parameter Defaults to 0.
-#' @param threshold This argument is deprecated, use `min_sdev` instead. The minimum standard deviation to use for observations without enough data.
-#'        Must be at least 1e-10.
-#' @param min_sdev The minimum standard deviation to use for observations without enough data.
-#'        Must be at least 1e-10.
-#' @param eps This argument is deprecated, use `eps_sdev` instead. A threshold cutoff to deal with numeric instability, must be positive.
-#' @param eps_sdev A threshold cutoff to deal with numeric instability, must be positive.
-#' @param min_prob Min. probability to use for observations with not enough data.
-#' @param eps_prob Cutoff below which probability is replaced with min_prob.
-#' @param compute_metrics \code{Logical}. Compute metrics on training data Defaults to TRUE.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_naiveBayes <- function(x,
-                                y,
-                                training_frame,
-                                nfolds = 0,
-                                seed = -1,
-                                fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
-                                fold_column = NULL,
-                                keep_cross_validation_models = TRUE,
-                                keep_cross_validation_predictions = FALSE,
-                                keep_cross_validation_fold_assignment = FALSE,
-                                validation_frame = NULL,
-                                ignore_const_cols = TRUE,
-                                score_each_iteration = FALSE,
-                                balance_classes = FALSE,
-                                class_sampling_factors = NULL,
-                                max_after_balance_size = 5.0,
-                                max_hit_ratio_k = 0,
-                                laplace = 0,
-                                threshold = 0.001,
-                                min_sdev = 0.001,
-                                eps = 0,
-                                eps_sdev = 0,
-                                min_prob = 0.001,
-                                eps_prob = 0,
-                                compute_metrics = TRUE,
-                                max_runtime_secs = 0,
-                                export_checkpoints_dir = NULL,
-                                segment_columns = NULL,
-                                segment_models_id = NULL,
-                                parallelism = 1)
+.h2o.segment_train_naiveBayes <- function(x,
+                                          y,
+                                          training_frame,
+                                          nfolds = 0,
+                                          seed = -1,
+                                          fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                          fold_column = NULL,
+                                          keep_cross_validation_models = TRUE,
+                                          keep_cross_validation_predictions = FALSE,
+                                          keep_cross_validation_fold_assignment = FALSE,
+                                          validation_frame = NULL,
+                                          ignore_const_cols = TRUE,
+                                          score_each_iteration = FALSE,
+                                          balance_classes = FALSE,
+                                          class_sampling_factors = NULL,
+                                          max_after_balance_size = 5.0,
+                                          max_hit_ratio_k = 0,
+                                          laplace = 0,
+                                          threshold = 0.001,
+                                          min_sdev = 0.001,
+                                          eps = 0,
+                                          eps_sdev = 0,
+                                          min_prob = 0.001,
+                                          eps_prob = 0,
+                                          compute_metrics = TRUE,
+                                          max_runtime_secs = 0,
+                                          export_checkpoints_dir = NULL,
+                                          segment_columns = NULL,
+                                          segment_models_id = NULL,
+                                          parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

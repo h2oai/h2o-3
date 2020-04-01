@@ -151,28 +151,12 @@ def gen_module(schema, algo, module):
 
     if algo != "generic":
         #
-        # Bulk model building (Segment Models)
+        # Segment model building
         #
-        yield ""
-        yield "#'"
-        yield "#' Trains %s model for each segment of the training dataset." % model_name
-        yield "#'"
-        tag = "@param"
-        for pname, pdoc in pdocs.items():
-            if pdoc and not pname in bulk_pnames_skip:
-                yield reformat_block("%s %s %s" % (tag, pname, pdoc.lstrip('\n')), indent=len(tag)+1, indent_first=False, prefix="#' ")
-        yield "#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) " \
-              "dataset by the segment-by columns\n" \
-              "#'        and train a separate model for each segment (group of rows)."
-        yield "#' @param segment_models_id Identifier for the returned collection of Segment Models. " \
-              "If not specified it will be automatically generated."
-        yield "#' @param parallelism Level of parallelism of bulk model building, it is the maximum number " \
-              "of models each H2O node will be building in parallel, defaults to 1."
-        yield "#' @export"
-        bulk_param_indent = len("h2o.bulk_%s <- function(" % module)
-        yield reformat_block("h2o.bulk_%s <- function(%s)" % (module, ',\n'.join(sig_bulk_params)), indent=bulk_param_indent, indent_first=False)
+        bulk_param_indent = len(".h2o.segment_train_%s <- function(" % module)
+        yield reformat_block(".h2o.segment_train_%s <- function(%s)" % (module, ',\n'.join(sig_bulk_params)), indent=bulk_param_indent, indent_first=False)
     
-        # start bulk-function body
+        # start segment_train-function body
         yield "{"
         yield '\n'.join(gen_set_params(algo, bulk_pnames, schema_params, required_params, bulk_pnames_skip))
         yield ""

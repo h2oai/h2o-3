@@ -161,72 +161,31 @@ h2o.kmeans <- function(training_frame,
   model <- .h2o.modelJob('kmeans', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-
-#'
-#' Trains KMeans Model in H2O model for each segment of the training dataset.
-#'
-#' @param training_frame Id of the training data frame.
-#' @param x A vector containing the \code{character} names of the predictors in the model.
-#' @param validation_frame Id of the validation data frame.
-#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
-#'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
-#'        "Random", "Modulo", "Stratified". Defaults to AUTO.
-#' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param k The max. number of clusters. If estimate_k is disabled, the model will find k centroids, otherwise it will
-#'        find up to k centroids. Defaults to 1.
-#' @param estimate_k \code{Logical}. Whether to estimate the number of clusters (<=k) iteratively and deterministically. Defaults
-#'        to FALSE.
-#' @param user_points This option allows you to specify a dataframe, where each row represents an initial cluster center. The user-
-#'        specified points must have the same number of columns as the training observations. The number of rows must
-#'        equal the number of clusters
-#' @param max_iterations Maximum training iterations (if estimate_k is enabled, then this is for each inner Lloyds iteration) Defaults
-#'        to 10.
-#' @param standardize \code{Logical}. Standardize columns before computing distances Defaults to TRUE.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
-#'        Defaults to -1 (time-based random number).
-#' @param init Initialization mode Must be one of: "Random", "PlusPlus", "Furthest", "User". Defaults to Furthest.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param cluster_size_constraints An array specifying the minimum number of points that should be in each cluster. The length of the constraints
-#'        array has to be the same as the number of clusters.
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_kmeans <- function(training_frame,
-                            x,
-                            validation_frame = NULL,
-                            nfolds = 0,
-                            keep_cross_validation_models = TRUE,
-                            keep_cross_validation_predictions = FALSE,
-                            keep_cross_validation_fold_assignment = FALSE,
-                            fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
-                            fold_column = NULL,
-                            ignore_const_cols = TRUE,
-                            score_each_iteration = FALSE,
-                            k = 1,
-                            estimate_k = FALSE,
-                            user_points = NULL,
-                            max_iterations = 10,
-                            standardize = TRUE,
-                            seed = -1,
-                            init = c("Random", "PlusPlus", "Furthest", "User"),
-                            max_runtime_secs = 0,
-                            categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                            export_checkpoints_dir = NULL,
-                            cluster_size_constraints = NULL,
-                            segment_columns = NULL,
-                            segment_models_id = NULL,
-                            parallelism = 1)
+.h2o.segment_train_kmeans <- function(training_frame,
+                                      x,
+                                      validation_frame = NULL,
+                                      nfolds = 0,
+                                      keep_cross_validation_models = TRUE,
+                                      keep_cross_validation_predictions = FALSE,
+                                      keep_cross_validation_fold_assignment = FALSE,
+                                      fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                      fold_column = NULL,
+                                      ignore_const_cols = TRUE,
+                                      score_each_iteration = FALSE,
+                                      k = 1,
+                                      estimate_k = FALSE,
+                                      user_points = NULL,
+                                      max_iterations = 10,
+                                      standardize = TRUE,
+                                      seed = -1,
+                                      init = c("Random", "PlusPlus", "Furthest", "User"),
+                                      max_runtime_secs = 0,
+                                      categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                      export_checkpoints_dir = NULL,
+                                      cluster_size_constraints = NULL,
+                                      segment_columns = NULL,
+                                      segment_models_id = NULL,
+                                      parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL
