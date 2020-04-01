@@ -78,7 +78,7 @@ public class OptimizationUtils {
       _beta = betaStart;
       _ginfo = ginfo;
       _l1pen = l1pen;
-      _objVal = _ginfo._objVal + _l1pen * ArrayUtils.l1norm(_beta,true);
+      _objVal = _ginfo._objVal + _l1pen * ArrayUtils.l1norm(_beta,true);  // gam smoothness should have been added
     }
     public int nfeval() {return -1;}
 

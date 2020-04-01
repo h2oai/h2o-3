@@ -82,6 +82,7 @@ Collate:
          'coxph.R'
          'coxphutils.R'
          'kmeans.R'
+         'gam.R'
          'gbm.R'
          'generic.R'
          'glm.R'

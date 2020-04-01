@@ -66,6 +66,10 @@ hex.schemas.PSVMModelV3
 hex.schemas.PSVMModelV3$PSVMModelOutputV3
 hex.schemas.PSVMV3
 hex.schemas.PSVMV3$PSVMParametersV3
+hex.schemas.GAMModelV3
+hex.schemas.GAMModelV3$GAMModelOutputV3
+hex.schemas.GAMV3
+hex.schemas.GAMV3$GAMParametersV3
 hex.schemas.SharedTreeModelV3
 hex.schemas.SharedTreeModelV3$SharedTreeModelOutputV3
 hex.schemas.SharedTreeV3

@@ -128,6 +128,7 @@ reference:
       - h2o.getVersion
       - h2o.giniCoef
       - h2o.glm
+      - h2o.gam
       - h2o.glrm
       - h2o.grep
       - h2o.grid
