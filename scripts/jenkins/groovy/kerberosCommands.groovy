@@ -26,7 +26,7 @@ def call(final stageConfig) {
 private GString getCommandHadoop(
         final stageConfig, final boolean spnegoAuth, 
         final boolean impersonate = false, final boolean hdpCp = true,
-        final boolean prepareToken
+        final boolean prepareToken = false
 ) {
     def defaultPort = 54321
     def loginArgs
