@@ -99,5 +99,6 @@ Collate:
          'w2vutils.R'
          'locate.R'
          'grid.R'
+         'segment.R'
          'predict.R'
          'zzz.R'
