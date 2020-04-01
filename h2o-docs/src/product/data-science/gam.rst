@@ -140,9 +140,9 @@ Defining a GAM Model
 
 -  **num_knots**: An array that specifies the number of knots for each predictor.
             
--  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_x``.
+-  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
 
--  **gam_x**: Required. An array specifying the predictor column names for GAM.
+-  **gam_columns**: Required. An array specifying the predictor column names for GAM.
 
 -  **bs**: An array specifying basis spline function type for each GAM predictor. You must include one value for each GAM predictor. This defaults to `0`, which specifies cubic regression spline.
 
@@ -432,7 +432,7 @@ Below are simple examples showing how to use GAM in R and Python.
                          y=response, 
                          training_frame = train,
                          family='fractionalbinomial', 
-                         gam_x=c("C6","C7","C8"), 
+                         gam_columns=c("C6","C7","C8"), 
                          scale=c(1,1,1), 
                          num_knots=numKnots, 
                          knot_ids=c(h2o.keyof(frameKnots1), h2o.keyof(frameKnots2), h2o.keyof(frameKnots3)))
@@ -477,7 +477,7 @@ Below are simple examples showing how to use GAM in R and Python.
 
     # build the GAM model
     h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', 
-                                                gam_x=["C6","C7","C8"], 
+                                                gam_columns=["C6","C7","C8"], 
                                                 scale=[1,1,1], 
                                                 num_knots=numKnots, 
                                                 knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
