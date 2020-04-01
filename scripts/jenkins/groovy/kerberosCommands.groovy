@@ -50,9 +50,10 @@ private GString getCommandHadoop(
     }
     def tokenPreparation = ""
     def usePreparedToken = ""
+    def h2odriverJar = "h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar"
     if (prepareToken) {
         tokenPreparation = """export HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp)
-            hadoop jar h2o-hadoop-3/h2o-cdh6.3-assembly/build/libs/h2odriver.jar 
+            hadoop jar ${h2odriverJar}
                 -command generateHiveToken -tokenFile hive.token \
                 -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000
             """
@@ -62,7 +63,7 @@ private GString getCommandHadoop(
             rm -fv h2o_one_node h2odriver.log
             ${hadoopClasspath}
             ${tokenPreparation}
-            hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
+            hadoop jar ${h2odriverJar} \\
                 -n 1 -mapperXmx 2g -baseport 54445 ${securityArgs} -timeout 300 \\
                 -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 -refreshTokens ${usePreparedToken} \\
                 -jks mykeystore.jks \\
