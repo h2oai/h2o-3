@@ -31,19 +31,7 @@ import water.util.ArrayUtils;
 import water.util.StringUtils;
 import water.webserver.iface.Credentials;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.net.*;
 import java.util.*;
@@ -70,6 +58,7 @@ import static water.util.JavaVersionUtils.JAVA_VERSION;
 public class h2odriver extends Configured implements Tool {
 
   enum CloudingMethod { CALLBACKS, FILESYSTEM }
+  enum Command { submitJob, generateHiveToken }
 
   final static String ARGS_CONFIG_FILE_PATTERN = "/etc/h2o/%s.args";
   final static String DEFAULT_ARGS_CONFIG = "h2odriver";
@@ -89,6 +78,7 @@ public class h2odriver extends Configured implements Tool {
   final static int DEFAULT_EXTRA_MEM_PERCENT = 10;
 
   // Options that are parsed by the main thread before other threads are created.
+  static Command command = Command.submitJob;
   static String jobtrackerName = null;
   static int numNodes = -1;
   static String outputPath = null;
@@ -153,10 +143,12 @@ public class h2odriver extends Configured implements Tool {
   static String hiveHost = null;
   static String hivePrincipal = null;
   static boolean refreshTokens = false;
+  static String hiveToken = null;
   static CloudingMethod cloudingMethod = CloudingMethod.CALLBACKS;
   static String cloudingDir = null;
   static boolean disableFlow = false;
   static boolean swExtBackend = false;
+  static String tokenFile = null;
 
   String proxyUrl = null;
 
@@ -1018,6 +1010,10 @@ public class h2odriver extends Configured implements Tool {
               s.equals("--help")) {
         usage();
       }
+      else if (s.equals("-command")) {
+        i++; if (i >= args.length) { usage(); }
+        command = Command.valueOf(args[i]);
+      }
       else if (s.equals("-n") ||
               s.equals("-nodes")) {
         i++; if (i >= args.length) { usage(); }
@@ -1281,6 +1277,12 @@ public class h2odriver extends Configured implements Tool {
         hivePrincipal = args[i];
       } else if (s.equals("-refreshTokens")) {
         refreshTokens = true;
+      } else if (s.equals("-tokenFile")) {
+        i++; if (i >= args.length) { usage (); }
+        tokenFile = args[i];
+      } else if (s.equals("-hiveToken")) {
+        i++; if (i >= args.length) { usage (); }
+        hiveToken = args[i];
       } else if (s.equals("-clouding_method")) {
         i++; if (i >= args.length) { usage(); }
         cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase()); 
@@ -1300,7 +1302,12 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private void validateArgs() {
-    // Check for mandatory arguments.
+    if (command == Command.submitJob) validateSubmitArgs();
+    else if (command == Command.generateHiveToken) validateHiveTokenArgs();
+  }
+
+  private void validateSubmitArgs() {
+      // Check for mandatory arguments.
     if (numNodes < 1) {
       error("Number of H2O nodes must be greater than 0 (must specify -n)");
     }
@@ -1390,6 +1397,26 @@ public class h2odriver extends Configured implements Tool {
       }
     }
 
+    validateImpersonationArgs();
+    
+    if (hivePrincipal != null && hiveHost == null && hiveJdbcUrlPattern == null) {
+      error("delegation token generator requires Hive host to be set (use the '-hiveHost' or '-hiveJdbcUrlPattern' option)");
+    }
+    
+    if (refreshTokens && hivePrincipal == null) {
+      error("delegation token refresh requires Hive principal to be set (use the '-hivePrincipal' option)");
+    }
+
+    if (client && disown) {
+      error("client mode doesn't support the '-disown' option");
+    }
+
+    if (proxy && disown) {
+      error("proxy mode doesn't support the '-disown' option");
+    }
+  }
+  
+  private void validateImpersonationArgs() {
     if (principal != null || keytabPath != null) {
       if (principal == null) {
         error("keytab requires a valid principal (use the '-principal' option)");
@@ -1401,13 +1428,18 @@ public class h2odriver extends Configured implements Tool {
         warning("will attempt secure impersonation with user from '-run_as_user', " + runAsUser);
       }
     }
+  }
 
-    if (client && disown) {
-      error("client mode doesn't support the '-disown' option");
+  private void validateHiveTokenArgs() {
+    validateImpersonationArgs();
+    if (hivePrincipal == null) {
+      error("hive principal name is required (use the '-hivePrincipal' option)");
     }
-
-    if (proxy && disown) {
-      error("proxy mode doesn't support the '-disown' option");
+    if (hiveHost == null && hiveJdbcUrlPattern == null) {
+      error("delegation token generator requires Hive host to be set (use the '-hiveHost' or '-hiveJdbcUrlPattern' option)");
+    }
+    if (tokenFile == null) {
+      error("token file path required (use the '-tokenFile' option)");
     }
   }
 
@@ -1660,6 +1692,20 @@ public class h2odriver extends Configured implements Tool {
     } else if (runAsUser != null) {
       UserGroupInformation.setConfiguration(conf);
       UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser(runAsUser));
+    }
+    
+    if (command == Command.generateHiveToken) {
+      String token = HiveTokenGenerator.getHiveDelegationTokenIfHivePresent(hiveJdbcUrlPattern, hiveHost, hivePrincipal);
+      if (token != null) {
+        System.out.println("Token generated, writing into file " + tokenFile);
+        try (PrintWriter pw = new PrintWriter(tokenFile)) {
+          pw.print(token);
+        }
+        return 0;
+      } else {
+        System.out.println("No token generated.");
+        return 1;
+      }
     }
 
     if (cloudingMethod == CloudingMethod.FILESYSTEM) {
@@ -2073,7 +2119,22 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputKeyClass(Text.class);
     j.setOutputValueClass(Text.class);
 
-    boolean haveHiveToken = HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
+    boolean haveHiveToken;
+    if (hiveToken != null) {
+      System.out.println("Using pre-generated Hive delegation token.");
+      HiveTokenGenerator.addHiveDelegationToken(j, hiveToken);
+      haveHiveToken = true;
+    } else if (tokenFile != null) {
+      System.out.println("Using pre-generated Hive delegation token from file.");
+      try (BufferedReader reader = new BufferedReader(new FileReader(tokenFile))) {
+        hiveToken = reader.readLine();
+      }
+      hiveToken = hiveToken.trim();
+      HiveTokenGenerator.addHiveDelegationToken(j, hiveToken);
+      haveHiveToken = true;
+    } else {
+      haveHiveToken = HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
+    }
     if (refreshTokens) {
       if (!haveHiveToken) {
         // token not acquired, we need to distribute keytab to make token acquisition possible in mapper
