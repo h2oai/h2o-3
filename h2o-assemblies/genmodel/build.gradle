@@ -11,7 +11,7 @@ targetCompatibility = 1.7
 // Dependencies
 dependencies {
     compile project(":h2o-genmodel")
-    compile project(":h2o-genmodel-extensions:jgrapht")
+    compile project(":h2o-genmodel-ext-jgrapht")
 }
 
 // Include optional components

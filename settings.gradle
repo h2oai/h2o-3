@@ -37,7 +37,7 @@ include 'h2o-ext-mojo-pipeline'
 include 'h2o-ext-target-encoder'
 include 'h2o-security'
 include 'h2o-logger'
-include 'h2o-genmodel-extensions:jgrapht'
+include 'h2o-genmodel-ext-jgrapht'
 include 'h2o-k8s'
 include 'h2o-genmodel-ext-deepwater'
 
