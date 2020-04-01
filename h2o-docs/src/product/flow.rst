@@ -685,7 +685,7 @@ The available options vary depending on the selected model. If an option is only
    -  *Randomized*: Uses randomized subspace iteration method
    -  *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
--  **family**: (GLM) Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, Tweedie, Negativebinomial, or Ordinal).
+-  **family**: (GLM) Select the model type (Gaussian, Binomial, Fractionalbinomial, Multinomial, Poisson, Gamma, Tweedie, Negativebinomial, or Ordinal).
 
 -  **solver**: (GLM) Select the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, or COORDINATE_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE and COORDINATE_DESCENT are currently experimental.
 
@@ -948,7 +948,7 @@ The available options vary depending on the selected model. If an option is only
 
 -  **export_checkpoints_dir**: (DL, DRF, GBM) Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
 
--  **custom_metric_func**: (GBM, DRF, GLM) Optionally specify a custom evaluation function.
+-  **custom_metric_func**: (GBM, DRF) Optionally specify a custom evaluation function.
 
 
 **Expert Options**
