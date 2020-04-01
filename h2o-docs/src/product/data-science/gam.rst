@@ -435,7 +435,7 @@ Below are simple examples showing how to use GAM in R and Python.
                          gam_x=c("C6","C7","C8"), 
                          scale=c(1,1,1), 
                          num_knots=numKnots, 
-                         knot_ids=c(h2o.getId(frameKnots1), h2o.getId(frameKnots2), h2o.getId(frameKnots3)))
+                         knot_ids=c(h2o.keyof(frameKnots1), h2o.keyof(frameKnots2), h2o.keyof(frameKnots3)))
 
     # get the model coefficients
     coefficients <- h2o.coef(gam_model)
