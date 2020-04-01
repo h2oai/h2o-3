@@ -217,60 +217,23 @@ h2o.stackedEnsemble <- function(x,
   class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
   return(model)
 }
-
-#'
-#' Trains H2O Stacked Ensemble model for each segment of the training dataset.
-#'
-#' @param x (Optional). A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing, then all columns except y are used.  Training frame is used only to compute ensemble training metrics.
-#' @param y The name or column index of the response variable in the data. 
-#'        The response must be either a numeric or a categorical/factor variable. 
-#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param training_frame Id of the training data frame.
-#' @param validation_frame Id of the validation data frame.
-#' @param blending_frame Frame used to compute the predictions that serve as the training frame for the metalearner (triggers blending
-#'        mode if provided)
-#' @param base_models List of models or grids (or their ids) to ensemble/stack together. Grids are expanded to individual models. If
-#'        not using blending frame, then models must have been cross-validated using nfolds > 1, and folds must be
-#'        identical across models.
-#' @param metalearner_algorithm Type of algorithm to use as the metalearner. Options include 'AUTO' (GLM with non negative weights; if
-#'        validation_frame is present, a lambda search is performed), 'deeplearning' (Deep Learning with default
-#'        parameters), 'drf' (Random Forest with default parameters), 'gbm' (GBM with default parameters), 'glm' (GLM
-#'        with default parameters), 'naivebayes' (NaiveBayes with default parameters), or 'xgboost' (if available,
-#'        XGBoost with default parameters). Must be one of: "AUTO", "deeplearning", "drf", "gbm", "glm", "naivebayes",
-#'        "xgboost". Defaults to AUTO.
-#' @param metalearner_nfolds Number of folds for K-fold cross-validation of the metalearner algorithm (0 to disable or >= 2). Defaults to
-#'        0.
-#' @param metalearner_fold_assignment Cross-validation fold assignment scheme for metalearner cross-validation.  Defaults to AUTO (which is
-#'        currently set to Random). The 'Stratified' option will stratify the folds based on the response variable, for
-#'        classification problems. Must be one of: "AUTO", "Random", "Modulo", "Stratified".
-#' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
-#' @param metalearner_params Parameters for metalearner algorithm
-#' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
-#' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_stackedEnsemble <- function(x,
-                                     y,
-                                     training_frame,
-                                     validation_frame = NULL,
-                                     blending_frame = NULL,
-                                     base_models = list(),
-                                     metalearner_algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"),
-                                     metalearner_nfolds = 0,
-                                     metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
-                                     metalearner_fold_column = NULL,
-                                     metalearner_params = NULL,
-                                     seed = -1,
-                                     keep_levelone_frame = FALSE,
-                                     export_checkpoints_dir = NULL,
-                                     segment_columns = NULL,
-                                     segment_models_id = NULL,
-                                     parallelism = 1)
+.h2o.segment_train_stackedEnsemble <- function(x,
+                                               y,
+                                               training_frame,
+                                               validation_frame = NULL,
+                                               blending_frame = NULL,
+                                               base_models = list(),
+                                               metalearner_algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"),
+                                               metalearner_nfolds = 0,
+                                               metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                               metalearner_fold_column = NULL,
+                                               metalearner_params = NULL,
+                                               seed = -1,
+                                               keep_levelone_frame = FALSE,
+                                               export_checkpoints_dir = NULL,
+                                               segment_columns = NULL,
+                                               segment_models_id = NULL,
+                                               parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

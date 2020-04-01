@@ -133,71 +133,30 @@ h2o.isolationForest <- function(training_frame,
   model <- .h2o.modelJob('isolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-
-#'
-#' Trains isolationforest model for each segment of the training dataset.
-#'
-#' @param training_frame Id of the training data frame.
-#' @param x A vector containing the \code{character} names of the predictors in the model.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param ntrees Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 8.
-#' @param min_rows Fewest allowed (weighted) observations in a leaf. Defaults to 1.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
-#'        Defaults to -1 (time-based random number).
-#' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
-#'        Defaults to FALSE.
-#' @param mtries Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number of
-#'        predictors)/3. Defaults to -1.
-#' @param sample_size Number of randomly sampled observations used to train each Isolation Forest tree. Only one of parameters
-#'        sample_size and sample_rate should be defined. If sample_rate is defined, sample_size will be ignored.
-#'        Defaults to 256.
-#' @param sample_rate Rate of randomly sampled observations used to train each Isolation Forest tree. Needs to be in range from 0.0
-#'        to 1.0. If set to -1, sample_rate is disabled and sample_size will be used instead. Defaults to -1.
-#' @param col_sample_rate_change_per_level Relative change of the column sampling rate for every level (must be > 0.0 and <= 2.0) Defaults to 1.
-#' @param col_sample_rate_per_tree Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
-#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "anomaly_score". Defaults to AUTO.
-#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
-#'        much) Defaults to 0.01.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_isolationForest <- function(training_frame,
-                                     x,
-                                     score_each_iteration = FALSE,
-                                     score_tree_interval = 0,
-                                     ignore_const_cols = TRUE,
-                                     ntrees = 50,
-                                     max_depth = 8,
-                                     min_rows = 1,
-                                     max_runtime_secs = 0,
-                                     seed = -1,
-                                     build_tree_one_node = FALSE,
-                                     mtries = -1,
-                                     sample_size = 256,
-                                     sample_rate = -1,
-                                     col_sample_rate_change_per_level = 1,
-                                     col_sample_rate_per_tree = 1,
-                                     categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                     stopping_rounds = 0,
-                                     stopping_metric = c("AUTO", "anomaly_score"),
-                                     stopping_tolerance = 0.01,
-                                     export_checkpoints_dir = NULL,
-                                     segment_columns = NULL,
-                                     segment_models_id = NULL,
-                                     parallelism = 1)
+.h2o.segment_train_isolationForest <- function(training_frame,
+                                               x,
+                                               score_each_iteration = FALSE,
+                                               score_tree_interval = 0,
+                                               ignore_const_cols = TRUE,
+                                               ntrees = 50,
+                                               max_depth = 8,
+                                               min_rows = 1,
+                                               max_runtime_secs = 0,
+                                               seed = -1,
+                                               build_tree_one_node = FALSE,
+                                               mtries = -1,
+                                               sample_size = 256,
+                                               sample_rate = -1,
+                                               col_sample_rate_change_per_level = 1,
+                                               col_sample_rate_per_tree = 1,
+                                               categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                               stopping_rounds = 0,
+                                               stopping_metric = c("AUTO", "anomaly_score"),
+                                               stopping_tolerance = 0.01,
+                                               export_checkpoints_dir = NULL,
+                                               segment_columns = NULL,
+                                               segment_models_id = NULL,
+                                               parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

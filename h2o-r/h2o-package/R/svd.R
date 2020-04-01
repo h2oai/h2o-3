@@ -104,51 +104,24 @@ h2o.svd <- function(training_frame,
   model <- .h2o.modelJob('svd', parms, h2oRestApiVersion=99, verbose=FALSE)
   return(model)
 }
-
-#'
-#' Trains Singular Value Decomposition model for each segment of the training dataset.
-#'
-#' @param training_frame Id of the training data frame.
-#' @param x A vector containing the \code{character} names of the predictors in the model.
-#' @param validation_frame Id of the validation data frame.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
-#'        Defaults to NONE.
-#' @param svd_method Method for computing SVD (Caution: Randomized is currently experimental and unstable) Must be one of:
-#'        "GramSVD", "Power", "Randomized". Defaults to GramSVD.
-#' @param nv Number of right singular vectors Defaults to 1.
-#' @param max_iterations Maximum iterations Defaults to 1000.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
-#'        Defaults to -1 (time-based random number).
-#' @param keep_u \code{Logical}. Save left singular vectors? Defaults to TRUE.
-#' @param u_name Frame key to save left singular vectors
-#' @param use_all_factor_levels \code{Logical}. Whether first factor level is included in each categorical expansion Defaults to TRUE.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_svd <- function(training_frame,
-                         x,
-                         validation_frame = NULL,
-                         ignore_const_cols = TRUE,
-                         score_each_iteration = FALSE,
-                         transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
-                         svd_method = c("GramSVD", "Power", "Randomized"),
-                         nv = 1,
-                         max_iterations = 1000,
-                         seed = -1,
-                         keep_u = TRUE,
-                         u_name = NULL,
-                         use_all_factor_levels = TRUE,
-                         max_runtime_secs = 0,
-                         export_checkpoints_dir = NULL,
-                         segment_columns = NULL,
-                         segment_models_id = NULL,
-                         parallelism = 1)
+.h2o.segment_train_svd <- function(training_frame,
+                                   x,
+                                   validation_frame = NULL,
+                                   ignore_const_cols = TRUE,
+                                   score_each_iteration = FALSE,
+                                   transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                                   svd_method = c("GramSVD", "Power", "Randomized"),
+                                   nv = 1,
+                                   max_iterations = 1000,
+                                   seed = -1,
+                                   keep_u = TRUE,
+                                   u_name = NULL,
+                                   use_all_factor_levels = TRUE,
+                                   max_runtime_secs = 0,
+                                   export_checkpoints_dir = NULL,
+                                   segment_columns = NULL,
+                                   segment_models_id = NULL,
+                                   parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

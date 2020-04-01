@@ -3,14 +3,15 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 
 
-check.kmeans_bulk <- function() {
+check.randomforest_segment <- function() {
     iris_hex <- h2o.importFile(locate("smalldata/junit/iris.csv"))
 
-    models <- h2o.bulk_kmeans(training_frame=iris_hex, segment_columns="class")
+    models <- h2o.segment_train(algorithm="randomForest", 
+                                y="petal_wid", training_frame=iris_hex, segment_columns="class")
 
     models_df <- as.data.frame(models)
     expect_equal(3, nrow(models_df))
     expect_equal("SUCCEEDED", unique(as.character(models_df$Status)))
 }
 
-doTest("k-means Test: Bulk Model Building", check.kmeans_bulk)
+doTest("Random Forest Test: Segment Model Building", check.randomforest_segment)

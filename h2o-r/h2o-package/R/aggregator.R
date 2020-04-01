@@ -82,41 +82,19 @@ h2o.aggregator <- function(training_frame,
   model@model$aggregated_frame_id <- model@model$output_frame$name
   return(model)
 }
-
-#'
-#' Trains H2O Aggregator Model model for each segment of the training dataset.
-#'
-#' @param training_frame Id of the training data frame.
-#' @param x A vector containing the \code{character} names of the predictors in the model.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param target_num_exemplars Targeted number of exemplars Defaults to 5000.
-#' @param rel_tol_num_exemplars Relative tolerance for number of exemplars (e.g, 0.5 is +/- 50 percents) Defaults to 0.5.
-#' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
-#'        Defaults to NORMALIZE.
-#' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param save_mapping_frame \code{Logical}. Whether to export the mapping of the aggregated frame Defaults to FALSE.
-#' @param num_iteration_without_new_exemplar The number of iterations to run before aggregator exits if the number of exemplars collected didn't change
-#'        Defaults to 500.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_aggregator <- function(training_frame,
-                                x,
-                                ignore_const_cols = TRUE,
-                                target_num_exemplars = 5000,
-                                rel_tol_num_exemplars = 0.5,
-                                transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
-                                categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                save_mapping_frame = FALSE,
-                                num_iteration_without_new_exemplar = 500,
-                                export_checkpoints_dir = NULL,
-                                segment_columns = NULL,
-                                segment_models_id = NULL,
-                                parallelism = 1)
+.h2o.segment_train_aggregator <- function(training_frame,
+                                          x,
+                                          ignore_const_cols = TRUE,
+                                          target_num_exemplars = 5000,
+                                          rel_tol_num_exemplars = 0.5,
+                                          transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                          save_mapping_frame = FALSE,
+                                          num_iteration_without_new_exemplar = 500,
+                                          export_checkpoints_dir = NULL,
+                                          segment_columns = NULL,
+                                          segment_models_id = NULL,
+                                          parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL
