@@ -5,7 +5,7 @@ from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
-def test_gbm_bulk_train_multi():
+def test_gbm_segment_train_multi():
     response = "survived"
     segment_columns = ["pclass", "sex"]
     titanic = h2o.import_file(path=pyunit_utils.locate("smalldata/gbm_test/titanic.csv"))
@@ -16,17 +16,17 @@ def test_gbm_bulk_train_multi():
         "seed": 42
     }
     titanic_gbm = H2OGradientBoostingEstimator(**params)
-    models = titanic_gbm.bulk_train(y=response, ignored_columns=["name"], training_frame=titanic,
-                                    segments=segment_columns)
+    models = titanic_gbm.segment_train(y=response, ignored_columns=["name"], training_frame=titanic,
+                                       segments=segment_columns)
     models_list = models.as_frame().sort(by=segment_columns)
 
-    assert models_list.names == [u'pclass', u'sex', u'Status', u'Model', u'Errors', u'Warnings']
+    assert models_list.names == [u'pclass', u'sex', u'model', u'status', u'errors', u'warnings']
     assert models_list.nrow == 6
 
     segments = models_list[segment_columns]
 
-    models_explicit = titanic_gbm.bulk_train(y=response, ignored_columns=["name"], training_frame=titanic,
-                                             segments=segments)
+    models_explicit = titanic_gbm.segment_train(y=response, ignored_columns=["name"], training_frame=titanic,
+                                                segments=segments)
     models_explicit_list = models_explicit.as_frame().sort(by=segment_columns)
 
     def model_comparator(frame1, frame2, col_ind, rows1, numElements):
@@ -42,10 +42,10 @@ def test_gbm_bulk_train_multi():
             pyunit_utils.check_models(model_1, model_2)
     
     assert pyunit_utils.compare_frames(models_list, models_explicit_list, 0, 
-                                       custom_comparators={"Model": model_comparator})
+                                       custom_comparators={"model": model_comparator})
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_gbm_bulk_train_multi)
+    pyunit_utils.standalone_test(test_gbm_segment_train_multi)
 else:
-    test_gbm_bulk_train_multi()
+    test_gbm_segment_train_multi()

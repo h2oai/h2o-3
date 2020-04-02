@@ -12,13 +12,13 @@ import water.api.schemas3.ModelParametersSchemaV3;
 
 import java.util.Properties;
 
-public class BulkModelBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchemaV3> extends Handler {
+public class SegmentModelsBuilderHandler<B extends ModelBuilder, S extends ModelBuilderSchema<B,S,P>, P extends ModelParametersSchemaV3> extends Handler {
 
   // Invoke the handler with parameters.  Can throw any exception the called handler can throw.
   @Override
   public JobV3 handle(int version, Route route, Properties parms, String postBody) {
-    if (! "bulk_train".equals(route._handler_method.getName())) {
-      throw new IllegalStateException("Only supports `bulk_train` handler method");
+    if (! "segment_train".equals(route._handler_method.getName())) {
+      throw new IllegalStateException("Only supports `segment_train` handler method");
     }
 
     Properties modelParms = new Properties();
@@ -37,6 +37,6 @@ public class BulkModelBuilderHandler<B extends ModelBuilder, S extends ModelBuil
   }
 
   @SuppressWarnings("unused") // formally required but never actually called because handle() is overridden
-  public S bulk_train(int version, S schema) { throw H2O.fail(); }
+  public S segment_train(int version, S schema) { throw H2O.fail(); }
 
 }
