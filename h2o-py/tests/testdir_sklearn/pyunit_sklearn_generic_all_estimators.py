@@ -60,7 +60,7 @@ def _get_default_args(estimator_cls):
         H2OSupportVectorMachineEstimator=dict(seed=seed),
         H2OTargetEncoderEstimator=dict(),
         H2OWord2vecEstimator=dict(),
-        H2OGeneralizedAdditiveEstimator=dict(family='binomial', seed=seed, gam_x = ["C1"])
+        H2OGeneralizedAdditiveEstimator=dict(family='binomial', seed=seed, gam_columns = ["C1"])
     )
     return defaults.get(estimator_cls.__name__, dict(distribution='bernoulli', seed=seed))
 

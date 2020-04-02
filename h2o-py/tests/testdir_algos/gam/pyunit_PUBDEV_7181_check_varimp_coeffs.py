@@ -41,7 +41,7 @@ def buildModelCoeffVarimpCheck(train_data, y, gamX, family):
     numKnots = [5,6,7]
     x=["C1","C2"]
     numPCoeffs = len(train_data["C1"].categories())+len(train_data["C2"].categories())+sum(numKnots)+1-len(numKnots)
-    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_x=gamX,  scale = [1,1,1], k=numKnots)
+    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [1,1,1], num_knots=numKnots)
     h2o_model.train(x=x, y=y, training_frame=train_data)
     h2oCoeffs = h2o_model.coef()
     nclass = 1

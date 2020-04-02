@@ -68,19 +68,19 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
             "max_hit_ratio_k",
             "max_runtime_secs",
             "custom_metric_func",
-            "k",  // array: number of knots for each predictor
-            "knots_keys", // string array storing frame keys that contains knot location
-            "gam_x",  // array: predictor column names array
+            "num_knots",  // array: number of knots for each predictor
+            "knot_ids", // string array storing frame keys that contains knot location
+            "gam_columns",  // array: predictor column names array
             "bs", // array, name of basis functions used
             "scale", // array, smoothing parameter for GAM,
-            "save_gam_cols"
+            "keep_gam_cols"
     };
 
     @API(help = "Seed for pseudo random number generator (if applicable)", gridable = true)
     public long seed;
 
     // Input fields
-    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasibinomial","ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial"}, level = Level.critical)
+    @API(help = "Family. Use binomial for classification with logistic regression, others are for regression problems.", values = {"gaussian", "binomial","quasibinomial","ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"}, level = Level.critical)
     // took tweedie out since it's not reliable
     public GLMParameters.Family family;
 
@@ -219,10 +219,10 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     public boolean remove_collinear_columns; // _remove_collinear_columns
 
     @API(help = "Number of knots for gam predictors", level = Level.critical, gridable = true)
-    public int[] k;
+    public int[] num_knots;
 
     @API(help = "Predictor column names for gam", required = true, level = Level.critical, gridable = true)
-    public String[] gam_x;
+    public String[] gam_columns;
 
     @API(help = "Smoothing parameter for gam predictors", level = Level.critical, gridable = true)
     public double[] scale;
@@ -232,10 +232,10 @@ public class GAMV3 extends ModelBuilderSchema<GAM, GAMV3, GAMV3.GAMParametersV3>
     //public BSType bs;
 
     @API(help="Save keys of model matrix", level = Level.secondary, direction = Direction.INPUT)
-    public boolean save_gam_cols; // if true will save keys storing GAM columns
+    public boolean keep_gam_cols; // if true will save keys storing GAM columns
     
-    @API(help="String arrays storing frame keys of knots.  One for each gam column specified in gam_x", 
+    @API(help="String arrays storing frame keys of knots.  One for each gam column specified in gam_columns", 
             level = Level.secondary, direction = Direction.INPUT)
-    public String[] knots_keys;
+    public String[] knot_ids;
   }
 }

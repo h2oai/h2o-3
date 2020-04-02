@@ -78,19 +78,19 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
   double[][] _knots;
 
   /***
-   * This method will look at the keys of knots stored in _parms._knots_keys and copy them over to double[][]
+   * This method will look at the keys of knots stored in _parms._knot_ids and copy them over to double[][]
    * array.
    *
    * @return double[][] array containing the knots specified by users
    */
   public double[][] generateKnotsFromKeys() {
-    int numGamCols = _parms._gam_x.length;
+    int numGamCols = _parms._gam_columns.length;
     double[][] knots = new double[numGamCols][];
-    boolean allNull = _parms._knots_keys==null;
+    boolean allNull = _parms._knot_ids ==null;
 
     for (int index=0; index < numGamCols; index++) {
-      final Frame predictVec = new Frame(new String[]{_parms._gam_x[index]}, new Vec[]{_parms.train().vec(_parms._gam_x[index])});
-      String tempKey = allNull?null:_parms._knots_keys[index];
+      final Frame predictVec = new Frame(new String[]{_parms._gam_columns[index]}, new Vec[]{_parms.train().vec(_parms._gam_columns[index])});
+      String tempKey = allNull?null:_parms._knot_ids[index];
       if (tempKey != null && (tempKey.length() > 0)) {  // read knots location from Frame given by user
         final Frame knotFrame = Scope.track((Frame)DKV.getGet(Key.make(tempKey)));
         double[][] knotContent = new double[(int)knotFrame.numRows()][1];
@@ -101,7 +101,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         System.arraycopy(knotCTranspose[0],0,knots[index], 0, knots[index].length);
         failVerifyKnots(knots[index]);
       } else {  // current column knotkey is null
-        knots[index] = generateKnotsOneColumn(predictVec, _parms._k[index]);
+        knots[index] = generateKnotsOneColumn(predictVec, _parms._num_knots[index]);
         failVerifyKnots(knots[index]);
       }
     }
@@ -159,61 +159,61 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       if (error_count() > 0)
         throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(GAM.this);
 
-      if (_parms._gam_x == null)  // check _gam_x contains valid columns
-        error("_gam_x", "must specify columns names to apply GAM to.  If you don't have any," +
+      if (_parms._gam_columns == null)  // check _gam_columns contains valid columns
+        error("_gam_columns", "must specify columns names to apply GAM to.  If you don't have any," +
                 " use GLM.");
-      else {  // check and make sure gam_x column types are legal
+      else {  // check and make sure gam_columns column types are legal
         Frame dataset = _parms.train();
         List<String> cNames = Arrays.asList(dataset.names());
-        for (int index = 0; index < _parms._gam_x.length; index++) {
-          String cname = _parms._gam_x[index];
+        for (int index = 0; index < _parms._gam_columns.length; index++) {
+          String cname = _parms._gam_columns[index];
           if (!cNames.contains(cname))
-            error("gam_x", "column name: " + cname + " does not exist in your dataset.");
+            error("gam_columns", "column name: " + cname + " does not exist in your dataset.");
           if (dataset.vec(cname).isCategorical())
-            error("gam_x", "column " + cname + " is categorical and cannot be used as a gam " +
+            error("gam_columns", "column " + cname + " is categorical and cannot be used as a gam " +
                     "column.");
           if (dataset.vec(cname).isBad() || dataset.vec(cname).isTime() || dataset.vec(cname).isUUID() || 
           dataset.vec(cname).isConst())
-            error("gam_x", String.format("Column '%s' of type '%s' cannot be used as GAM column. Column types " +
+            error("gam_columns", String.format("Column '%s' of type '%s' cannot be used as GAM column. Column types " +
                     "BAD, TIME, CONSTANT and UUID cannot be used.", cname, dataset.vec(cname).get_type_str()));
           if (!dataset.vec(cname).isNumeric())
-            error("gam_x", "column " + cname + " is not numerical and cannot be used as a gam" +
+            error("gam_columns", "column " + cname + " is not numerical and cannot be used as a gam" +
                     " column.");
         }
       }
-      if ((_parms._bs != null) && (_parms._gam_x.length != _parms._bs.length))  // check length
-        error("gam colum number","Number of gam columns implied from _bs and _gam_x do not match.");
+      if ((_parms._bs != null) && (_parms._gam_columns.length != _parms._bs.length))  // check length
+        error("gam colum number","Number of gam columns implied from _bs and _gam_columns do not match.");
       if (_parms._bs == null) // default to bs type 0
-        _parms._bs = new int[_parms._gam_x.length];
-      if (_parms._k == null) {  // user did not specify any knot numbers, we will use default 10
-        _parms._k = new int[_parms._gam_x.length];  // different columns may have different
-        for (int index = 0; index < _parms._gam_x.length; index++) {  // for zero value _k, set to valid number
-          if (_parms._k[index] == 0) {
-            long numRowMinusNACnt = _train.numRows() - _parms.train().vec(_parms._gam_x[index]).naCnt();
-            _parms._k[index] = numRowMinusNACnt < 10 ? (int) numRowMinusNACnt : 10;
+        _parms._bs = new int[_parms._gam_columns.length];
+      if (_parms._num_knots == null) {  // user did not specify any knot numbers, we will use default 10
+        _parms._num_knots = new int[_parms._gam_columns.length];  // different columns may have different
+        for (int index = 0; index < _parms._gam_columns.length; index++) {  // for zero value _num_knots, set to valid number
+          if (_parms._num_knots[index] == 0) {
+            long numRowMinusNACnt = _train.numRows() - _parms.train().vec(_parms._gam_columns[index]).naCnt();
+            _parms._num_knots[index] = numRowMinusNACnt < 10 ? (int) numRowMinusNACnt : 10;
           }
         }
       }
       int cindex = 0;
-      for (int numKnots : _parms._k) {  // check to make sure numKnot is valid
-        long eligibleRows = _train.numRows() - _parms.train().vec(_parms._gam_x[cindex]).naCnt();
+      for (int numKnots : _parms._num_knots) {  // check to make sure numKnot is valid
+        long eligibleRows = _train.numRows() - _parms.train().vec(_parms._gam_columns[cindex]).naCnt();
         if (numKnots > eligibleRows) {
-          error("_k", " number of knots specified in _k: " + _parms._k[cindex] + " exceed number " +
-                  "of rows in training frame minus NA rows: " + eligibleRows + ".  Reduce _k.");
+          error("_num_knots", " number of knots specified in _num_knots: " + _parms._num_knots[cindex] + " exceed number " +
+                  "of rows in training frame minus NA rows: " + eligibleRows + ".  Reduce _num_knots.");
         }
         cindex++;
       }
-      if ((_parms._k != null) && (_parms._k.length != _parms._gam_x.length))
-        error("gam colum number","Number of gam columns implied from _k and _gam_X do not match.");
-      if (_parms._knots_keys!=null) { // check knots location specification
-        if (_parms._knots_keys.length != _parms._gam_x.length)
-          error("gam colum number", "Number of gam columns implied from _k and _knots_keys do not" +
+      if ((_parms._num_knots != null) && (_parms._num_knots.length != _parms._gam_columns.length))
+        error("gam colum number","Number of gam columns implied from _num_knots and _gam_columns do not match.");
+      if (_parms._knot_ids !=null) { // check knots location specification
+        if (_parms._knot_ids.length != _parms._gam_columns.length)
+          error("gam colum number", "Number of gam columns implied from _num_knots and _knot_ids do not" +
                   " match.");
       }
       _knots = generateKnotsFromKeys(); // generate knots and verify that they are given correctly
-      if ( _parms._saveZMatrix && ((_train.numCols() - 1 + _parms._k.length) < 2))
+      if ( _parms._saveZMatrix && ((_train.numCols() - 1 + _parms._num_knots.length) < 2))
         error("_saveZMatrix", "can only be enabled if we number of predictors plus" +
-                " Gam columns in _gamX exceeds 2");
+                " Gam columns in gam_columns exceeds 2");
       if ((_parms._lambda_search || !_parms._intercept || _parms._lambda == null || _parms._lambda[0] > 0))
         _parms._use_all_factor_levels = true;
       if (_parms._link == null || _parms._link.equals(GLMParameters.Link.family_default))
@@ -256,14 +256,14 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     /***
      * This method will take the _train that contains the predictor columns and response columns only and add to it
      * the following:
-     * 1. For each predictor included in gam_x, expand it out to calculate the f(x) and attach to the frame.
+     * 1. For each predictor included in gam_columns, expand it out to calculate the f(x) and attach to the frame.
      * 2. It will calculate the ztranspose that is used to center the gam columns.
      * 3. It will calculate a penalty matrix used to control the smoothness of GAM.
      *
      * @return
      */
     Frame adaptTrain() {
-      int numGamFrame = _parms._gam_x.length;
+      int numGamFrame = _parms._gam_columns.length;
       _zTranspose = GamUtils.allocate3DArray(numGamFrame, _parms, firstOneLess);
       _penalty_mat = _parms._savePenaltyMat?GamUtils.allocate3DArray(numGamFrame, _parms, sameOrig):null;
       _penalty_mat_center = GamUtils.allocate3DArray(numGamFrame, _parms, bothOneLess);
@@ -279,18 +279,18 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     }
 
     void addGAM2Train() {
-      int numGamFrame = _parms._gam_x.length;
+      int numGamFrame = _parms._gam_columns.length;
       RecursiveAction[] generateGamColumn = new RecursiveAction[numGamFrame];
       for (int index = 0; index < numGamFrame; index++) {
-        final Frame predictVec = new Frame(new String[]{_parms._gam_x[index]}, new Vec[]{_parms.train().vec(_parms._gam_x[index])});  // extract the vector to work on
-        final int numKnots = _parms._k[index];  // grab number of knots to generate
+        final Frame predictVec = new Frame(new String[]{_parms._gam_columns[index]}, new Vec[]{_parms.train().vec(_parms._gam_columns[index])});  // extract the vector to work on
+        final int numKnots = _parms._num_knots[index];  // grab number of knots to generate
         final int numKnotsM1 = numKnots - 1;
         final int splineType = _parms._bs[index];
         final int frameIndex = index;
  //       final boolean nullKnots = _knots[frameIndex]==null;
         final String[] newColNames = new String[numKnots];
         for (int colIndex = 0; colIndex < numKnots; colIndex++) {
-          newColNames[colIndex] = _parms._gam_x[index] + "_" + splineType + "_" + colIndex;
+          newColNames[colIndex] = _parms._gam_columns[index] + "_" + splineType + "_" + colIndex;
         }
         _gamColNames[frameIndex] = new String[numKnots];
         _gamColNamesCenter[frameIndex] = new String[numKnotsM1];
@@ -326,12 +326,12 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     
     void verifyGamTransformedFrame(Frame gamTransformed) {
       int numGamCols = _gamColNamesCenter.length;
-      int numGamFrame = _parms._gam_x.length;
+      int numGamFrame = _parms._gam_columns.length;
       for (int findex = 0; findex < numGamFrame; findex++) {
         for (int index = 0; index < numGamCols; index++) {
           if (gamTransformed.vec(_gamColNamesCenter[findex][index]).isConst())
             error(_gamColNamesCenter[findex][index], "gam column transformation generated constant columns" +
-                    " for " + _parms._gam_x[findex]);
+                    " for " + _parms._gam_columns[findex]);
         }
       }
     }
@@ -367,7 +367,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         DKV.put(dinfo._key, dinfo);
         model = new GAMModel(dest(), _parms, new GAMModel.GAMModelOutput(GAM.this, dinfo._adaptedFrame, dinfo));
         model.delete_and_lock(_job);
-        if (_parms._save_gam_cols) {  // save gam column keys
+        if (_parms._keep_gam_cols) {  // save gam column keys
           model._output._gamTransformedTrainCenter = newTFrame._key;
 
         }
@@ -385,7 +385,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       } finally {
         List<Key<Vec>> keep = new ArrayList<>();
         if (model != null) {
-          if (_parms._save_gam_cols) {
+          if (_parms._keep_gam_cols) {
             addFrameKeys2Keep(keep, newTFrame._key);
           }
           model.unlock(_job);
@@ -423,7 +423,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
 
     GLMModel buildGLMModel(GAMParameters parms, Frame trainData) {
       GLMParameters glmParam = GamUtils.copyGAMParams2GLMParams(parms, trainData);  // copy parameter from GAM to GLM
-      int numGamCols = _parms._gam_x.length;
+      int numGamCols = _parms._gam_columns.length;
       for (int find = 0; find < numGamCols; find++) {
         if ((_parms._scale != null) && (_parms._scale[find] != 1.0))
           _penalty_mat_center[find] = ArrayUtils.mult(_penalty_mat_center[find], _parms._scale[find]);
@@ -442,7 +442,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       model._output._binvD = _binvD;
       model._output._knots = _knots;
       model._output._numKnots = _numKnots;
-      if (_parms._save_gam_cols)
+      if (_parms._keep_gam_cols)
         model._output._gam_transformed_center_key = model._output._gamTransformedTrainCenter.toString();
       if (_parms._savePenaltyMat) {
         model._output._penaltyMatrices_center = _penalty_mat_center;
@@ -497,7 +497,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
     }
     
     void copyGLMCoeffs(GLMModel glm, GAMModel model, DataInfo dinfo) {
-      int totCoefNumsNoCenter = dinfo.fullN()+1+_parms._gam_x.length;
+      int totCoefNumsNoCenter = dinfo.fullN()+1+_parms._gam_columns.length;
       model._output._coefficient_names_no_centering = new String[totCoefNumsNoCenter]; // copy coefficient names from GLM to GAM
       int gamNumStart = copyGLMCoeffNames2GAMCoeffNames(model, glm, dinfo);
       copyGLMCoeffs2GAMCoeffs(model, glm, dinfo, _parms._family, gamNumStart, _parms._standardize, _nclass); // obtain beta without centering

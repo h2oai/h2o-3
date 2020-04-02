@@ -24,7 +24,7 @@ public class GamUtils {
   public static double[][][] allocate3DArray(int num2DArrays, GAMParameters parms, AllocateType fileMode) {
     double[][][] array3D = new double[num2DArrays][][];
     for (int frameIdx = 0; frameIdx < num2DArrays; frameIdx++) {
-      int numKnots = parms._k[frameIdx];
+      int numKnots = parms._num_knots[frameIdx];
       switch (fileMode) {
         case firstOneLess: array3D[frameIdx] = MemoryManager.malloc8d(numKnots-1, numKnots); break;
         case sameOrig: array3D[frameIdx] = MemoryManager.malloc8d(numKnots, numKnots); break;
@@ -82,7 +82,7 @@ public class GamUtils {
 
   public static void setParamField(GAMParameters parms, GLMParameters glmParam, boolean superClassParams, Field[] gamFields) {
     // assign relevant GAMParameter fields to GLMParameter fields
-    List<String> gamOnlyList = Arrays.asList(new String[]{"_k", "_gam_X", "_bs", "_scale", "_train", "_saveZMatrix",
+    List<String> gamOnlyList = Arrays.asList(new String[]{"_num_knots", "_gam_columns", "_bs", "_scale", "_train", "_saveZMatrix",
             "_saveGamCols", "_savePenaltyMat"});
     Field glmField;
     for (Field oneField : gamFields) {

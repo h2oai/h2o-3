@@ -23,12 +23,13 @@ def test_gam_knots_key():
     x=["C1","C2"]
     h2o_data["C11"] = h2o_data["C11"].asfactor()  
     numKnots = [5,5,5]
-    h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_x=["C6","C7","C8"],  scale = [1,1,1], 
-                                                k=numKnots, knots_keys=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
+    h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"],  scale = [1,1,1], 
+                                                num_knots=numKnots, knot_ids=[frameKnots1.key, frameKnots2.key, 
+                                                                                frameKnots3.key])
     h2o_model.train(x=x, y=y, training_frame=h2o_data)
     h2oCoeffs = h2o_model.coef()
-    h2o_model2 = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_x=["C6","C7","C8"],  scale = [1,1,1],
-                                                k=numKnots)
+    h2o_model2 = H2OGeneralizedAdditiveEstimator(family='multinomial', gam_columns=["C6","C7","C8"],  scale = [1,1,1],
+                                                num_knots=numKnots)
     h2o_model2.train(x=x, y=y, training_frame=h2o_data)
     h2oCoeffs2 = h2o_model2.coef()
 

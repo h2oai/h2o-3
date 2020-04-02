@@ -1,6 +1,5 @@
 from __future__ import division
 from __future__ import print_function
-from past.utils import old_div
 import sys
 sys.path.insert(1, "../../../")
 import h2o
@@ -51,7 +50,7 @@ def buildModelCheckPredict(train_data, myy, gamX, family, searchLambda=False):
     numKnots = [5,5,5]
     x=["C1","C2"]
    
-    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_x=gamX,  scale = [0.1,0.1,0.1], k=numKnots, 
+    h2o_model = H2OGeneralizedAdditiveEstimator(family=family, gam_columns=gamX,  scale = [0.1,0.1,0.1], num_knots=numKnots, 
                                                 lambda_search = searchLambda)
     h2o_model.train(x=x, y=myy, training_frame=train_data)
     return h2o_model

@@ -18,8 +18,6 @@ public class GenerateGamMatrixOneColumn extends MRTask<GenerateGamMatrixOneColum
   int _splineType;
   public int _numKnots;      // number of knots
   public double[][] _bInvD;  // store inv(B)*D
-  double _mean;
-  double _oneOSigma;
   Frame _gamX;
   double[] _u; // store transpose(X)*1, sum across rows per column
   public double[][] _ZTransp;  // store Z matrix transpose
