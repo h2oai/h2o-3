@@ -217,23 +217,23 @@ h2o.stackedEnsemble <- function(x,
   class(model@model$model_summary) <- "h2o.stackedEnsemble.summary"
   return(model)
 }
-.h2o.segment_train_stackedEnsemble <- function(x,
-                                               y,
-                                               training_frame,
-                                               validation_frame = NULL,
-                                               blending_frame = NULL,
-                                               base_models = list(),
-                                               metalearner_algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"),
-                                               metalearner_nfolds = 0,
-                                               metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
-                                               metalearner_fold_column = NULL,
-                                               metalearner_params = NULL,
-                                               seed = -1,
-                                               keep_levelone_frame = FALSE,
-                                               export_checkpoints_dir = NULL,
-                                               segment_columns = NULL,
-                                               segment_models_id = NULL,
-                                               parallelism = 1)
+.h2o.train_segments_stackedEnsemble <- function(x,
+                                                y,
+                                                training_frame,
+                                                validation_frame = NULL,
+                                                blending_frame = NULL,
+                                                base_models = list(),
+                                                metalearner_algorithm = c("AUTO", "deeplearning", "drf", "gbm", "glm", "naivebayes", "xgboost"),
+                                                metalearner_nfolds = 0,
+                                                metalearner_fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                                metalearner_fold_column = NULL,
+                                                metalearner_params = NULL,
+                                                seed = -1,
+                                                keep_levelone_frame = FALSE,
+                                                export_checkpoints_dir = NULL,
+                                                segment_columns = NULL,
+                                                segment_models_id = NULL,
+                                                parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

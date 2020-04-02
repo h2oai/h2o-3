@@ -25,23 +25,23 @@
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
-#' models <- h2o.segment_train(algorithm = "gbm", 
-#'                             segment_columns = "Species",
-#'                             x = c(1:3), y = 4, 
-#'                             training_frame = iris_hf,
-#'                             ntrees = 5, 
-#'                             max_depth = 4)
+#' models <- h2o.train_segments(algorithm = "gbm", 
+#'                              segment_columns = "Species",
+#'                              x = c(1:3), y = 4, 
+#'                              training_frame = iris_hf,
+#'                              ntrees = 5, 
+#'                              max_depth = 4)
 #' as.data.frame(models)
 #' }
 #' @export
-h2o.segment_train <- function(algorithm,
-                              segment_columns,
-                              segment_models_id,
-                              parallelism = 1,
-                              ...)
+h2o.train_segments <- function(algorithm,
+                               segment_columns,
+                               segment_models_id,
+                               parallelism = 1,
+                               ...)
 {
-  segment_train_fun_name <- sprintf(".h2o.segment_train_%s", algorithm)
-  if (!exists(segment_train_fun_name)) {
+    train_segments_fun_name <- sprintf(".h2o.train_segments_%s", algorithm)
+  if (!exists(train_segments_fun_name)) {
     stop(sprintf("Algorithm %s is not recognized, please check the spelling. For the name to be valid, a function h2o.%s needs to exist as well).", algorithm, algorithm))
   }
     
@@ -52,7 +52,7 @@ h2o.segment_train <- function(algorithm,
     params$segment_models_id <- segment_models_id
   params$parallelism <- parallelism
 
-  return(do.call(segment_train_fun_name, args = params))
+  return(do.call(train_segments_fun_name, args = params))
 }
 
 #' @rdname H2OSegmentModels-class

@@ -108,19 +108,19 @@ h2o.targetencoder <- function(x,
   model <- .h2o.modelJob('targetencoder', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-.h2o.segment_train_targetencoder <- function(x,
-                                             y,
-                                             training_frame,
-                                             fold_column = NULL,
-                                             blending = FALSE,
-                                             k = 10,
-                                             f = 20,
-                                             data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
-                                             noise_level = 0.01,
-                                             seed = -1,
-                                             segment_columns = NULL,
-                                             segment_models_id = NULL,
-                                             parallelism = 1)
+.h2o.train_segments_targetencoder <- function(x,
+                                              y,
+                                              training_frame,
+                                              fold_column = NULL,
+                                              blending = FALSE,
+                                              k = 10,
+                                              f = 20,
+                                              data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
+                                              noise_level = 0.01,
+                                              seed = -1,
+                                              segment_columns = NULL,
+                                              segment_models_id = NULL,
+                                              parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

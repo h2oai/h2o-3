@@ -5,7 +5,7 @@ from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
 
-def test_gbm_segment_train():
+def test_gbm_train_segments():
     prostate = h2o.import_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
 
@@ -23,8 +23,8 @@ def test_gbm_segment_train():
         "seed": 42
     }
     prostate_gbm = H2OGradientBoostingEstimator(**params)
-    models = prostate_gbm.segment_train(y="CAPSULE", ignored_columns=["ID"], training_frame=prostate,
-                                        segments=segments)
+    models = prostate_gbm.train_segments(y="CAPSULE", ignored_columns=["ID"], training_frame=prostate,
+                                         segments=segments)
     models_list = models.as_frame()
     
     assert models_list.names == [u'RACE', u'model', u'status', u'errors', u'warnings']
@@ -49,6 +49,6 @@ def test_gbm_segment_train():
 
 
 if __name__ == "__main__":
-    pyunit_utils.standalone_test(test_gbm_segment_train)
+    pyunit_utils.standalone_test(test_gbm_train_segments)
 else:
-    test_gbm_segment_train()
+    test_gbm_train_segments()

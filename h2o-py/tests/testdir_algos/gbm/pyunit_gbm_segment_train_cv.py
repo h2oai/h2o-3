@@ -14,12 +14,12 @@ def test_gbm_bulk_cv():
     predictors = ["survived", "name", "sex", "age", "sibsp", "parch", "ticket", "fare", "cabin"]
     train, valid = titanic.split_frame(ratios=[.8], seed=1234)
     titanic_gbm = H2OGradientBoostingEstimator(seed=1234, nfolds=2, build_tree_one_node=True)
-    titanic_gbm.segment_train(segments=["pclass"],
-                              x=predictors,
-                              y=response,
-                              training_frame=train,
-                              validation_frame=valid,
-                              segment_models_id="titanic_by_pclass")
+    titanic_gbm.train_segments(segments=["pclass"],
+                               x=predictors,
+                               y=response,
+                               training_frame=train,
+                               validation_frame=valid,
+                               segment_models_id="titanic_by_pclass")
 
     train_cl1 = train[train["pclass"] == 1]
     valid_cl1 = valid[valid["pclass"] == 1]

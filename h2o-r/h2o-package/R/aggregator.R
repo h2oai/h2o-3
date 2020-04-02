@@ -82,19 +82,19 @@ h2o.aggregator <- function(training_frame,
   model@model$aggregated_frame_id <- model@model$output_frame$name
   return(model)
 }
-.h2o.segment_train_aggregator <- function(training_frame,
-                                          x,
-                                          ignore_const_cols = TRUE,
-                                          target_num_exemplars = 5000,
-                                          rel_tol_num_exemplars = 0.5,
-                                          transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
-                                          categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                                          save_mapping_frame = FALSE,
-                                          num_iteration_without_new_exemplar = 500,
-                                          export_checkpoints_dir = NULL,
-                                          segment_columns = NULL,
-                                          segment_models_id = NULL,
-                                          parallelism = 1)
+.h2o.train_segments_aggregator <- function(training_frame,
+                                           x,
+                                           ignore_const_cols = TRUE,
+                                           target_num_exemplars = 5000,
+                                           rel_tol_num_exemplars = 0.5,
+                                           transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                                           categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                           save_mapping_frame = FALSE,
+                                           num_iteration_without_new_exemplar = 500,
+                                           export_checkpoints_dir = NULL,
+                                           segment_columns = NULL,
+                                           segment_models_id = NULL,
+                                           parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL
