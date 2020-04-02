@@ -181,7 +181,7 @@ class H2OEstimator(ModelBase):
         parms["parallelism"] = parallelism
 
         rest_ver = self._get_rest_version(parms)
-        segment_train_response = h2o.api("POST /%d/BulkModelBuilders/%s" % (rest_ver, self.algo), data=parms)
+        segment_train_response = h2o.api("POST /%d/SegmentModelsBuilders/%s" % (rest_ver, self.algo), data=parms)
         job = H2OJob(segment_train_response, job_type=(self.algo + " Segment Models Build"))
         job.poll()
         return H2OSegmentModels(job.dest_key)

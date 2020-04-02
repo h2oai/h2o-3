@@ -21,7 +21,7 @@ public abstract class AlgoAbstractRegister extends AbstractRegister {
     String base = mbProto.getClass().getSimpleName();
     String lbase = mbProto.getName();
     Class<? extends water.api.Handler> handlerClass = water.api.ModelBuilderHandler.class;
-    Class<? extends water.api.Handler> bulkHandlerClass = water.api.BulkModelBuilderHandler.class;
+    Class<? extends water.api.Handler> segmentModelsBuilderHandlerClass = SegmentModelsBuilderHandler.class;
 
     // This is common model builder handler
     context.registerEndpoint(
@@ -33,10 +33,10 @@ public abstract class AlgoAbstractRegister extends AbstractRegister {
     );
 
     context.registerEndpoint(
-            "bulk_train_" + lbase,
-            "POST /" + version + "/BulkModelBuilders/" + lbase,
-            bulkHandlerClass,
-            "bulk_train",
+            "segment_train_" + lbase,
+            "POST /" + version + "/SegmentModelsBuilders/" + lbase,
+            segmentModelsBuilderHandlerClass,
+            "segment_train",
             "Validate a set of " + base + " model builder parameters."
     );
 
