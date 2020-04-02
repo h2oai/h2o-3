@@ -1,6 +1,8 @@
 Generalized Additive Models (GAM)
 ---------------------------------
 
+**Note**: GAM models are currently experimental.
+
 Introduction
 ~~~~~~~~~~~~
 
@@ -56,6 +58,7 @@ Defining a GAM Model
 
    -  If the family is **gaussian**, the response must be numeric (**Real** or **Int**). (default)
    -  If the family is **binomial**, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+   -  If the family is **fractionalbinomial**, the response must be a numeric between 0 and 1.
    -  If the family is **multinomial**, the response can be categorical with more than two levels/classes (**Enum**).
    -  If the family is **ordinal**, the response must be categorical with at least 3 levels.
    -  If the family is **quasibinomial**, the response must be numeric.
@@ -110,6 +113,7 @@ Defining a GAM Model
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
+   -  If the family is **Fractionalbinomial**, then Logit is supported.
    -  If the family is **Poisson**, then **Log** and **Identity** are supported.
    -  If the family is **Gamma**, then **Inverse**, **Log**, and **Identity** are supported.
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
@@ -136,17 +140,17 @@ Defining a GAM Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
--  **k**: An array that specifies the number of knots for each predictor.
+-  **num_knots**: An array that specifies the number of knots for each predictor specified in ``gam_columns``.
             
--  **knots_key**: A string array storing frame keys that contain knot locations. Specify one value for each GAM column specified in ``gam_x``.
+-  **knot_ids**: A string array storing frame keys/IDs that contain knot locations. Specify one value for each GAM column specified in ``gam_columns``.
 
--  **gam_x**: A predictor column names array.
+-  **gam_columns**: Required. An array of column names representing the smoothing terms used for prediction. GAM will build a smoother for each specified column. 
 
--  **bs**: An array specifying the name of basis functions used.
+-  **bs**: An array specifying the B-Splines for each GAM predictor. You must include one value for each GAM predictor. This defaults to `0`, which specifies cubic regression spline.
 
 -  **scale**: An array specifying the smoothing parameter for GAM. 
 
--  **save_gam_cols**: Specify whether to save keys storing GAM columns.
+-  **keep_gam_cols**: Specify whether to save keys storing GAM columns.
 
 .. _scenario1:
 
@@ -201,7 +205,7 @@ To illustrate how we can use the piecewise tent functions to approximate a predi
 The basis function values are plotted in in the figure below. Note that there are 10 basis functions. The basis function values overlap with its neighbors from the left and the right except for the first and the last basis functions.
 
 .. figure:: ../images/gam_piecewise_tent_basis.png
-   :alt: Pieceise tent basis functions
+   :alt: Piecewise tent basis functions
 
 For simplicity, let’s assume that we only have 21 predictor values uniformly spreading over the range from 0 to 1 with values 0, 0.05, 0.1, 0.15, …, 1.0. The next task is to translate each :math:`x_j` to a set of 10 basis function values. This means that for every value of :math:`x_j`, we will obtain 10 values, each one correspond to each of the basis function.
 
@@ -396,6 +400,7 @@ Below are simple examples showing how to use GAM in R and Python.
 
     library(h2o)
     h2o.init()
+
     # create frame knots
     knots1 <- c('-1.99905699', '-0.98143075', '0.02599159', '1.00770987', '1.99942290')
     frameKnots1 <- as.h2o(knots1)
@@ -405,7 +410,7 @@ Below are simple examples showing how to use GAM in R and Python.
     frameKnots3 <- as.h2o(knots3)
 
     # import the dataset
-    h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+    h2o_data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
 
     # Convert the C1, C2, and C11 columns to factors
     h2o_data["C1"] <- as.factor(h2o_data["C1"])
@@ -429,10 +434,10 @@ Below are simple examples showing how to use GAM in R and Python.
                          y=response, 
                          training_frame = train,
                          family='multinomial', 
-                         gam_x=c("C6","C7","C8"), 
+                         gam_columns=c("C6","C7","C8"), 
                          scale=c(1,1,1), 
-                         k=numKnots, 
-                         knots_keys=c(frameKnots1.key, frameKnots2.key, frameKnots3.key))
+                         num_knots=numKnots, 
+                         knot_ids=c(h2o.keyof(frameKnots1), h2o.keyof(frameKnots2), h2o.keyof(frameKnots3)))
 
     # get the model coefficients
     coefficients <- h2o.coef(gam_model)
@@ -455,7 +460,7 @@ Below are simple examples showing how to use GAM in R and Python.
     frameKnots3 = h2o.H2OFrame(python_obj=knots3)
     
     # import the dataset
-    h2o_data = h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
+    h2o_data = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
 
     # convert the C1, C2, and C11 columns to factors
     h2o_data["C1"] = h2o_data["C1"].asfactor()
@@ -474,10 +479,10 @@ Below are simple examples showing how to use GAM in R and Python.
 
     # build the GAM model
     h2o_model = H2OGeneralizedAdditiveEstimator(family='multinomial', 
-                                                gam_x=["C6","C7","C8"], 
-                                                scale = [1,1,1], 
-                                                k=numKnots, 
-                                                knots_keys=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
+                                                gam_columns=["C6","C7","C8"], 
+                                                scale=[1,1,1], 
+                                                num_knots=numKnots, 
+                                                knot_ids=[frameKnots1.key, frameKnots2.key, frameKnots3.key])
     h2o_model.train(x=x, y=y, training_frame=train)
 
     # get the model coefficients
