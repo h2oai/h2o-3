@@ -28,10 +28,17 @@ public class DelegationTokenRefresher implements Runnable {
   public static final String H2O_HIVE_JDBC_URL_PATTERN = "h2o.hive.jdbc.urlPattern";
   public static final String H2O_HIVE_HOST = "h2o.hive.jdbc.host";
   public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
+  public static final String H2O_HIVE_TOKEN = "h2o.hive.token";
 
   public static void setup(Configuration conf, String tmpDir) throws IOException {
     if (!HiveTokenGenerator.isHiveDriverPresent()) {
       return;
+    }
+    String token = conf.get(H2O_HIVE_TOKEN);
+    if (token != null) {
+      log("Adding credentials from property", null);
+      Credentials creds = HiveTokenGenerator.tokenToCredentials(token);
+      UserGroupInformation.getCurrentUser().addCredentials(creds);
     }
     String authUser = conf.get(H2O_AUTH_USER);
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
@@ -156,7 +163,7 @@ public class DelegationTokenRefresher implements Runnable {
   }
 
   private void refreshTokens() throws IOException, InterruptedException {
-    Credentials creds;
+    String token;
     if (_authKeytabPath != null) {
       log("Log in from keytab as " + _authPrincipal, null);
       UserGroupInformation realUser = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
@@ -166,12 +173,13 @@ public class DelegationTokenRefresher implements Runnable {
         // attempt to impersonate token user, this verifies that the real-user is able to impersonate tokenUser
         tokenUser = UserGroupInformation.createProxyUser(_authUser, tokenUser);
       }
-      creds = _hiveTokenGenerator.addHiveDelegationTokenAsUser(realUser, tokenUser, _hiveJdbcUrl, _hivePrincipal);
+      token = _hiveTokenGenerator.getHiveDelegationTokenAsUser(realUser, tokenUser, _hiveJdbcUrl, _hivePrincipal);
     } else {
       UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
-      creds = _hiveTokenGenerator.addHiveDelegationTokenIfPossible(currentUser, _hiveJdbcUrl, _hivePrincipal);
+      token = _hiveTokenGenerator.getHiveDelegationTokenIfPossible(currentUser, _hiveJdbcUrl, _hivePrincipal);
     }
-    if (creds != null) {
+    if (token != null) {
+      Credentials creds = HiveTokenGenerator.tokenToCredentials(token);
       distribute(creds);
     } else {
       log("Failed to refresh delegation token.", null);

@@ -474,7 +474,15 @@ def call(final pipelineContext) {
     steamMapperStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STEAM MAPPER"
     steamMapperStage.customData.mode = 'STEAM_MAPPER'
 
-    KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage, steamDriverStage, steamMapperStage ]
+    def sparklingStage = evaluate(stageTemplate.inspect())
+    sparklingStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - SPARKLING"
+    sparklingStage.customData.mode = 'SPARKLING'
+
+    def steamSparklingStage = evaluate(stageTemplate.inspect())
+    steamSparklingStage.stageName = "${distribution.name.toUpperCase()} ${distribution.version} - STEAM SPARKLING"
+    steamSparklingStage.customData.mode = 'STEAM_SPARKLING'
+
+    KERBEROS_STAGES += [ standaloneStage, onHadoopStage, onHadoopWithSpnegoStage, steamDriverStage, steamMapperStage, sparklingStage, steamSparklingStage ]
   }
 
   def HADOOP_MULTINODE_STAGES = []
