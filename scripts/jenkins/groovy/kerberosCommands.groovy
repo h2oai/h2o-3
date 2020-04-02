@@ -16,6 +16,8 @@ def call(final stageConfig) {
             return getCommandHadoop(stageConfig, false, true, false)
         case H2O_HADOOP_STARTUP_MODE_SPARKLING:
             return getCommandHadoop(stageConfig, false, false, false, true)
+        case H2O_HADOOP_STARTUP_MODE_STEAM_SPARKLING:
+            return getCommandHadoop(stageConfig, false, true, false, true)
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             return getCommandStandalone(stageConfig)
         default:
@@ -54,7 +56,7 @@ private GString getCommandHadoop(
     if (prepareToken) {
         tokenPreparation = """export HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp)
             hadoop jar ${h2odriverJar} \\
-                -command generateHiveToken -tokenFile hive.token \\
+                -command generateHiveToken -tokenFile hive.token ${securityArgs} \\
                 -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000
             """
         usePreparedToken = "-hiveToken \$(cat hive.token)"

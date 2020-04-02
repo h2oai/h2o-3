@@ -53,8 +53,7 @@ public class HiveTokenGenerator {
   ) throws IOException, InterruptedException {
     if (isHiveDriverPresent()) {
       final String hiveJdbcUrl = makeHivePrincipalJdbcUrl(hiveJdbcUrlPattern, hiveHost, hivePrincipal);
-      UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
-      return new HiveTokenGenerator().getHiveDelegationTokenAsUser(currentUser, currentUser, hiveJdbcUrl, hivePrincipal);
+      return new HiveTokenGenerator().getHiveDelegationToken(hiveJdbcUrl, hivePrincipal);
     } else {
       log("Hive driver not present, not generating token.", null);
       return null;
@@ -82,12 +81,7 @@ public class HiveTokenGenerator {
       log("Hive JDBC URL or principal not set, no token generated.", null);
       return false;
     }
-    UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
-    UserGroupInformation realUser = currentUser;
-    if (realUser.getRealUser() != null) {
-      realUser = realUser.getRealUser();
-    }
-    String token = getHiveDelegationTokenAsUser(realUser, currentUser, hiveJdbcUrl, hivePrincipal);
+    String token = getHiveDelegationToken(hiveJdbcUrl, hivePrincipal);
     if (token != null) {
       addHiveDelegationToken(job, token);
       return true;
@@ -102,12 +96,21 @@ public class HiveTokenGenerator {
     job.getCredentials().addAll(creds);
   }
 
+  private String getHiveDelegationToken(String hiveJdbcUrl, String hivePrincipal) throws IOException, InterruptedException {
+    UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
+    UserGroupInformation realUser = currentUser;
+    if (realUser.getRealUser() != null) {
+      realUser = realUser.getRealUser();
+    }
+    return getHiveDelegationTokenAsUser(realUser, currentUser, hiveJdbcUrl, hivePrincipal);
+  }
+
   public String getHiveDelegationTokenAsUser(
       UserGroupInformation realUser, final UserGroupInformation user, final String hiveJdbcUrl, final String hivePrincipal
   ) throws IOException, InterruptedException {
     return realUser.doAs(new PrivilegedExceptionAction<String>() {
       @Override
-      public String run() throws Exception {
+      public String run() {
         return getHiveDelegationTokenIfPossible(user, hiveJdbcUrl, hivePrincipal);
       }
     });
@@ -132,7 +135,7 @@ public class HiveTokenGenerator {
     }
   }
 
-  public String getHiveDelegationTokenIfPossible(UserGroupInformation tokenUser, String hiveJdbcUrl, String hivePrincipal) throws IOException {
+  public String getHiveDelegationTokenIfPossible(UserGroupInformation tokenUser, String hiveJdbcUrl, String hivePrincipal) {
     if (!isHiveDriverPresent()) {
       return null;
     }
