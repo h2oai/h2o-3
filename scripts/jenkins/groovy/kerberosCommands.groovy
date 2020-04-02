@@ -79,7 +79,7 @@ private GString getCommandHadoop(
                 break
               fi
               echo "Waiting for H2O to come up (\$i)..."
-              sleep 3
+              sleep 15
             done
             if [ ! -f 'h2o_one_node' ]; then
               echo 'H2O failed to start!'
