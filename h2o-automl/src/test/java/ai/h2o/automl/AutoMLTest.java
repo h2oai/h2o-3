@@ -14,11 +14,14 @@ import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import water.DKV;
 import water.Key;
 import water.Lockable;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.ArrayUtils;
 import water.util.Log;
 
@@ -31,13 +34,10 @@ import static junit.framework.TestCase.assertNull;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.*;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class AutoMLTest extends water.TestUtil {
-
-  @BeforeClass public static void setup() {
-    stall_till_cloudsize(1);
-//    stall_till_cloudsize(new String[] {"-log_level", "DEBUG"}, 1);
-  }
-
+  
   @Test public void test_basic_automl_behaviour_using_cv() {
     AutoML aml=null;
     Frame fr=null;
