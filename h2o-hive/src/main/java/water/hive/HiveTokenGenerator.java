@@ -47,11 +47,23 @@ public class HiveTokenGenerator {
       return null;
   }
   
+  public static String getHiveDelegationTokenIfHivePresent(
+      String hiveJdbcUrlPattern, String hiveHost, String hivePrincipal
+  ) throws IOException, InterruptedException {
+    if (isHiveDriverPresent()) {
+      final String hiveJdbcUrl = makeHivePrincipalJdbcUrl(hiveJdbcUrlPattern, hiveHost, hivePrincipal);
+      return new HiveTokenGenerator().getHiveDelegationToken(hiveJdbcUrl, hivePrincipal);
+    } else {
+      log("Hive driver not present, not generating token.", null);
+      return null;
+    }
+  }
+  
   public static boolean addHiveDelegationTokenIfHivePresent(
       Job job, String hiveJdbcUrlPattern, String hiveHost, String hivePrincipal
   ) throws IOException, InterruptedException {
-    final String hiveJdbcUrl = makeHivePrincipalJdbcUrl(hiveJdbcUrlPattern, hiveHost, hivePrincipal); 
     if (isHiveDriverPresent()) {
+      final String hiveJdbcUrl = makeHivePrincipalJdbcUrl(hiveJdbcUrlPattern, hiveHost, hivePrincipal);
       return new HiveTokenGenerator().addHiveDelegationToken(job, hiveJdbcUrl, hivePrincipal);
     } else {
       log("Hive driver not present, not generating token.", null);
@@ -68,28 +80,37 @@ public class HiveTokenGenerator {
       log("Hive JDBC URL or principal not set, no token generated.", null);
       return false;
     }
-    UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
-    UserGroupInformation realUser = currentUser;
-    if (realUser.getRealUser() != null) {
-      realUser = realUser.getRealUser();
-    }
-    Credentials creds = addHiveDelegationTokenAsUser(realUser, currentUser, hiveJdbcUrl, hivePrincipal);
-    if (creds != null) {
-      job.getCredentials().addAll(creds);
+    String token = getHiveDelegationToken(hiveJdbcUrl, hivePrincipal);
+    if (token != null) {
+      addHiveDelegationToken(job, token);
       return true;
     } else {
       log("Failed to get delegation token.", null);
       return false;
     }
   }
+  
+  public static void addHiveDelegationToken(Job job, String token) throws IOException {
+    Credentials creds = tokenToCredentials(token);
+    job.getCredentials().addAll(creds);
+  }
 
-  public Credentials addHiveDelegationTokenAsUser(
+  private String getHiveDelegationToken(String hiveJdbcUrl, String hivePrincipal) throws IOException, InterruptedException {
+    UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
+    UserGroupInformation realUser = currentUser;
+    if (realUser.getRealUser() != null) {
+      realUser = realUser.getRealUser();
+    }
+    return getHiveDelegationTokenAsUser(realUser, currentUser, hiveJdbcUrl, hivePrincipal);
+  }
+
+  public String getHiveDelegationTokenAsUser(
       UserGroupInformation realUser, final UserGroupInformation user, final String hiveJdbcUrl, final String hivePrincipal
   ) throws IOException, InterruptedException {
-    return realUser.doAs(new PrivilegedExceptionAction<Credentials>() {
+    return realUser.doAs(new PrivilegedExceptionAction<String>() {
       @Override
-      public Credentials run() throws Exception {
-        return addHiveDelegationTokenIfPossible(user, hiveJdbcUrl, hivePrincipal);
+      public String run() {
+        return getHiveDelegationTokenIfPossible(user, hiveJdbcUrl, hivePrincipal);
       }
     });
   }
@@ -113,15 +134,16 @@ public class HiveTokenGenerator {
     }
   }
 
-  public Credentials addHiveDelegationTokenIfPossible(UserGroupInformation tokenUser, String hiveJdbcUrl, String hivePrincipal) throws IOException {
+  public String getHiveDelegationTokenIfPossible(UserGroupInformation tokenUser, String hiveJdbcUrl, String hivePrincipal) {
     if (!isHiveDriverPresent()) {
       return null;
     }
-
     String tokenUserName = tokenUser.getShortUserName();
     log("Getting delegation token from " + hiveJdbcUrl + ", " + tokenUserName, null);
-
-    String tokenStr = getDelegationTokenFromConnection(hiveJdbcUrl, hivePrincipal, tokenUserName);
+    return getDelegationTokenFromConnection(hiveJdbcUrl, hivePrincipal, tokenUserName);
+  }
+  
+  public static Credentials tokenToCredentials(String tokenStr) throws IOException {
     if (tokenStr != null) {
       Token<DelegationTokenIdentifier> hive2Token = new Token<>();
       hive2Token.decodeFromUrlString(tokenStr);

@@ -3,6 +3,9 @@ H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO='ON_HADOOP_WITH_SPNEGO'
 H2O_HADOOP_STARTUP_MODE_STANDALONE='STANDALONE'
 H2O_HADOOP_STARTUP_MODE_STEAM_DRIVER='STEAM_DRIVER'
 H2O_HADOOP_STARTUP_MODE_STEAM_MAPPER='STEAM_MAPPER'
+H2O_HADOOP_STARTUP_MODE_SPARKLING='SPARKLING'
+H2O_HADOOP_STARTUP_MODE_STEAM_SPARKLING='STEAM_SPARKLING'
+
 
 def call(final pipelineContext, final stageConfig) {
     withCredentials([usernamePassword(credentialsId: 'ldap-credentials', usernameVariable: 'LDAP_USERNAME', passwordVariable: 'LDAP_PASSWORD')]) {
@@ -67,6 +70,8 @@ private String getMakeTargetSuffix(final stageConfig) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
         case H2O_HADOOP_STARTUP_MODE_STEAM_DRIVER:
         case H2O_HADOOP_STARTUP_MODE_STEAM_MAPPER:
+        case H2O_HADOOP_STARTUP_MODE_SPARKLING:
+        case H2O_HADOOP_STARTUP_MODE_STEAM_SPARKLING:
             return "-hdp"
         case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
             return "-spnego"
@@ -83,6 +88,8 @@ private String getPostFailedBuildAction(final mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
         case H2O_HADOOP_STARTUP_MODE_STEAM_DRIVER:
         case H2O_HADOOP_STARTUP_MODE_STEAM_MAPPER:
+        case H2O_HADOOP_STARTUP_MODE_SPARKLING:
+        case H2O_HADOOP_STARTUP_MODE_STEAM_SPARKLING:
             return """
                 if [ -f h2o_one_node ]; then
                     export YARN_APPLICATION_ID=\$(cat h2o_one_node | grep job | sed 's/job/application/g')
