@@ -144,6 +144,8 @@ h2o.downloadCSV <- function(data, filename) {
 #' In the case of existing files \code{force = TRUE} will overwrite the file.
 #' Otherwise, the operation will fail.
 #'
+#' The owner of the file saved is the user by which H2O cluster was executed.
+#'
 #' @param object an \linkS4class{H2OModel} object.
 #' @param path string indicating the directory the model will be written to.
 #' @param force logical, indicates how to deal with files that already exist.

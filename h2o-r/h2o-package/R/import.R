@@ -351,6 +351,41 @@ h2o.loadModel <- function(path) {
   h2o.getModel(res$model_id$name)
 }
 
+
+#'
+#' Upload a binary model from the provided local path to the H2O cluster.
+#' (H2O model can be saved in a binary form either by saveModel() or by download_model() function.)
+#' 
+#'
+#' @param path A path on the machine this python session is currently connected to, specifying the location of the model to upload.
+#' @return Returns a new \linkS4class{H2OModel} object.
+#' @seealso \code{\link{h2o.saveModel}}, \code{\link{h2o.download_model}}
+#' @export
+#' \dontrun{
+#' # library(h2o)
+#' # h2o.init()
+#' # prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
+#' # prostate = h2o.importFile(path = prostate_path)
+#' # prostate_glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' #   training_frame = prostate, family = "binomial", alpha = 0.5)
+#' # glmmodel_path = h2o.download_model(prostate_glm, dir = "/Users/UserName/Desktop")
+#' # glmmodel_load = h2o.upload_model(glmmodel_path)
+#' }
+#' @export
+h2o.upload_model <- function(path) {
+    if(!is.character(path) || length(path) != 1L || is.na(path) || !nzchar(path))
+    stop("`path` must be a non-empty character string")
+
+    .h2o.gc()  # Clear out H2O to make space for new file
+    path <- normalizePath(path, winslash = "/")
+    srcKey <- .key.make( path )
+    urlSuffix <- sprintf("PostFile.bin?destination_frame=%s", curlEscape(srcKey))
+    fileUploadInfo <- fileUpload(path)
+    .h2o.doSafePOST(h2oRestApiVersion = .h2o.__REST_API_VERSION, urlSuffix = urlSuffix, fileUploadInfo = fileUploadInfo)
+    res <- .h2o.__remoteSend(.h2o.__UPLOAD_MODEL, h2oRestApiVersion = 99, dir = srcKey, method = "POST")$models[[1L]]
+    h2o.getModel(res$model_id$name)
+}
+
 #'
 #' Creates a new Amazon S3 client internally with specified credentials.
 #'
