@@ -12,7 +12,7 @@ test.CoxPH.segment <- function() {
                                 segment_columns="rx", training_frame = ovarian.hex)
     models_df <- as.data.frame(models)
     expect_equal(2, nrow(models_df))
-    expect_equal("SUCCEEDED", unique(as.character(models_df$Status)))
+    expect_equal("SUCCEEDED", unique(as.character(models_df$status)))
 }
 
 doTest("CoxPH: Test Segment Model Building", test.CoxPH.segment)

@@ -20,7 +20,7 @@ def test_gbm_segment_train_multi():
                                        segments=segment_columns)
     models_list = models.as_frame().sort(by=segment_columns)
 
-    assert models_list.names == [u'pclass', u'sex', u'Status', u'Model', u'Errors', u'Warnings']
+    assert models_list.names == [u'pclass', u'sex', u'model', u'status', u'errors', u'warnings']
     assert models_list.nrow == 6
 
     segments = models_list[segment_columns]
@@ -42,7 +42,7 @@ def test_gbm_segment_train_multi():
             pyunit_utils.check_models(model_1, model_2)
     
     assert pyunit_utils.compare_frames(models_list, models_explicit_list, 0, 
-                                       custom_comparators={"Model": model_comparator})
+                                       custom_comparators={"model": model_comparator})
 
 
 if __name__ == "__main__":

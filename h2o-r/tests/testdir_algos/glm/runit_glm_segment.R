@@ -11,7 +11,7 @@ check.glm_segment <- function() {
 
     models_df <- as.data.frame(models)
     expect_equal(3, nrow(models_df))
-    expect_equal("SUCCEEDED", unique(as.character(models_df$Status)))
+    expect_equal("SUCCEEDED", unique(as.character(models_df$status)))
 }
 
 doTest("GLM Test: Segment Model Building", check.glm_segment)

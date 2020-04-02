@@ -18,7 +18,7 @@ test.gbm_segment_train_mutli <- function() {
 
     segment_models_df <- as.data.frame(segment_models)
     print(segment_models_df)
-    expect_equal(colnames(segment_models_df), c("segment1", "segment2", "Status", "Model", "Errors", "Warnings"))
+    expect_equal(colnames(segment_models_df), c("segment1", "segment2", "model", "status", "errors", "warnings"))
     expect_equal(nrow(segment_models_df), 2)
     for (model_id in segment_models_df$Model) {
         expect_equal(h2o.getModel(model_id)@model_id, model_id)
