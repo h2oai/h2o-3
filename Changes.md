@@ -2,6 +2,109 @@
 
 ## H2O
 
+### Zahradnik (3.30.0.1) - 4/3/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/index.html</a>
+
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7002'>PUBDEV-7002</a>] - Fixed an issue that caused performing multiple h2o.init() to fails with R on Windows.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7095'>PUBDEV-7095</a>] - Increased the default clouding time to avoid times out that resulted in a Cloud 1 under 4 error. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7341'>PUBDEV-7341</a>] - Removed obsolete exactLambdas parameter from GLM.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6037'>PUBDEV-6037</a>] - Added support for a fractional response in GLM.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6807'>PUBDEV-6807</a>] - Added support for Generalized Additive Models (GAMs) in H2O. The documentation for this newly added algorithm can be found <a href='http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gam.html'>here</a>.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6976'>PUBDEV-6976</a>] - Added support for parallel training (e.g. spark_apply in rsparkling or Python/R).
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7229'>PUBDEV-7229</a>] - Added support for Continuous Bag of Words (CBOW) models in Word2Vec.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7266'>PUBDEV-7266</a>] - H2O can now predict OOME during parsing and stop the job if OOME is imminent. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7304'>PUBDEV-7304</a>] - Add GBM POJO support for SortByResponse and enumlimited.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7347'>PUBDEV-7347</a>] - Added support for Leaf Node Assignments in XGBoost and Isolation Forest MOJOs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7352'>PUBDEV-7352</a>] - Added support for importing Stacked Ensemble MOJO models for scoring. (Note that this only applies to Stacked Ensembles that include algos with MOJO support.)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7376'>PUBDEV-7376</a>] -         Kubernetes Docker image (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7405'>PUBDEV-7405</a>] - Added support for the `single_node_mode` parameter in CoxPH.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7409'>PUBDEV-7409</a>] - H2O now provides the original algorithm name for MOJO import.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7422'>PUBDEV-7422</a>] - Created a segmented model training interface in R. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7423'>PUBDEV-7423</a>] - Added a print method for the H2OSegmentModel object type in R.
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7232'>PUBDEV-7232</a>] - Removed the previously deprecated DeepWater Estimator function.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7385'>PUBDEV-7385</a>] - Now using Java-based scoring for XGBoostModels.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-4639'>PUBDEV-4639</a>] - In the H2O R package, `data.table` is now enabled by default (if installed). 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6293'>PUBDEV-6293</a>] - In AutoML, users can try tuning the learning rate for the best model found during exploration in XGBoost and GBM. Note that the new `exploitation_ratio` parameter is still experimental. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6852'>PUBDEV-6852</a>] - Added out-of-the-box support for starting an h2o cluster on Kubernetes. Refer to this <a href='https://github.com/h2oai/h2o-3/blob/master/h2o-k8s/README.md'>README</a> for more information. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7087'>PUBDEV-7087</a>] - Improved the way AUC-PR is calculated.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7202'>PUBDEV-7202</a>] - Added an option to upload binary models from Python and R.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7206'>PUBDEV-7206</a>] - In AutML, parallel grid search is now enabled by default. (STILL OPEN)
+</li>
+</ul>
+                                                                                                                                                                                                                                                    
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7020'>PUBDEV-7020</a>] - Updated the Target Encoding topic and examples based on the newer API. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7076'>PUBDEV-7076</a>] - Added examples for Grid Search in the Python Module documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7158'>PUBDEV-7158</a>] - Added examples to the R Reference Guide.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7350'>PUBDEV-7350</a>] - Added documentation for the fractional binomial family in the GLM section.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7351'>PUBDEV-7351</a>] - Added documentation for the new GAM algorithm. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7388'>PUBDEV-7388</a>] - Updated tab formatting for the `cluster_size_constraints` parameter appendix entry.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7406'>PUBDEV-7406</a>] - Updated the Target Encoding R example.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7407'>PUBDEV-7407</a>] - Included confusion matrix threshold details for binary and multiclass classification in the Performance and Prediction chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7410'>PUBDEV-7410</a>] - Added documentation for new `upload_model` function.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7416'>PUBDEV-7416</a>] - Improved documentation around citing H2O in publications. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7428'>PUBDEV-7428</a>] - Added documentation for `single_node_mode` in CoxPH. 
+</li>
+</ul>
+
+
+
+
 ### Yule (3.28.1.3) - 4/2/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-yule/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-yule/3/index.html</a>
