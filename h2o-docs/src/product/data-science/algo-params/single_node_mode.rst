@@ -2,7 +2,7 @@
 --------------------
 
 - Available in: CoxPH, Deep Learning
-- Hyperparameter: yes
+- Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
@@ -23,6 +23,8 @@ Example
 
 		# Build and train the model:
 		coxph.model <- h2o.coxph(x="age", event_column="event", start_column="start", stop_column="stop",training_frame=heart, single_node_mode=TRUE)
+
+		# Generate predictions <- h2o.predict(object=coxph.model, newdata=heart)
 
 
 	.. code-tab:: python
