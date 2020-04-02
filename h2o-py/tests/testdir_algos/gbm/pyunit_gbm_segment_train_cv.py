@@ -31,7 +31,7 @@ def test_gbm_bulk_cv():
 
     titanic_models = H2OSegmentModels(segment_models_id="titanic_by_pclass")
     bulk_models = titanic_models.as_frame()
-    titanic_bulk_cl1_gbm_id = (bulk_models[bulk_models["pclass"] == 1]["Model"])
+    titanic_bulk_cl1_gbm_id = (bulk_models[bulk_models["pclass"] == 1]["model"])
     titanic_bulk_cl1_gbm = h2o.get_model(titanic_bulk_cl1_gbm_id.flatten())
 
     pyunit_utils.check_models(titanic_cl1_gbm, titanic_bulk_cl1_gbm, use_cross_validation=True)

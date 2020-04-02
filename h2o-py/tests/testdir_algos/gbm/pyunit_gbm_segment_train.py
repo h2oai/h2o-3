@@ -27,20 +27,20 @@ def test_gbm_segment_train():
                                         segments=segments)
     models_list = models.as_frame()
     
-    assert models_list.names == [u'RACE', u'Status', u'Model', u'Errors', u'Warnings']
+    assert models_list.names == [u'RACE', u'model', u'status', u'errors', u'warnings']
     assert models_list.nrow == 3
     
     # Check failed models
     expected_error = 'ERRR on field: _min_rows: The dataset size is too small to split for min_rows=2.0: ' \
                      'must have at least 4.0 (weighted) rows, but have only 3.0.\n'
-    assert (models_list["Errors"][models_list[segment_col] == bad_segment]).as_data_frame()["Errors"][0] == expected_error
+    assert (models_list["errors"][models_list[segment_col] == bad_segment]).as_data_frame()["errors"][0] == expected_error
 
     mp = models_list.as_data_frame()
     # Check built models
     for i in range(mp.shape[0]):
         segment = int(mp.iloc[i][segment_col])
         if segment != bad_segment:
-            model_id = mp.iloc[i]["Model"]
+            model_id = mp.iloc[i]["model"]
             model = h2o.get_model(model_id)
             prostate_segment = prostate[prostate[segment_col] == segment]
             prostate_gbm_segment = H2OGradientBoostingEstimator(**params)
