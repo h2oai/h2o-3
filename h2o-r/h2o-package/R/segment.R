@@ -54,3 +54,16 @@ h2o.segment_train <- function(algorithm,
 
   return(do.call(segment_train_fun_name, args = params))
 }
+
+#' @rdname H2OSegmentModels-class
+#' @param object an \code{H2OModel} object.
+#' @export
+setMethod("show", "H2OSegmentModels", 
+          function(object) {
+            cat("Segment Models ID:", object@segment_models_id, "\n")
+            cat("Individual Segment Models:\n")
+            df <- as.data.frame(object)
+            print(df)
+            invisible(object)
+        })
+
