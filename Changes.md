@@ -6,7 +6,6 @@
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/index.html</a>
 
-
 <h4>Bug</h4>
 
 <ul>
@@ -36,8 +35,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/in
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7347'>PUBDEV-7347</a>] - Added support for Leaf Node Assignments in XGBoost and Isolation Forest MOJOs.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7352'>PUBDEV-7352</a>] - Added support for importing Stacked Ensemble MOJO models for scoring. (Note that this only applies to Stacked Ensembles that include algos with MOJO support.)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7376'>PUBDEV-7376</a>] -         Kubernetes Docker image (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7405'>PUBDEV-7405</a>] - Added support for the `single_node_mode` parameter in CoxPH.
 </li>
@@ -71,15 +68,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/in
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7202'>PUBDEV-7202</a>] - Added an option to upload binary models from Python and R.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7206'>PUBDEV-7206</a>] - In AutML, parallel grid search is now enabled by default. (STILL OPEN)
-</li>
 </ul>
                                                                                                                                                                                                                                                     
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7020'>PUBDEV-7020</a>] - Updated the Target Encoding topic and examples based on the newer API. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7076'>PUBDEV-7076</a>] - Added examples for Grid Search in the Python Module documentation.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7158'>PUBDEV-7158</a>] - Added examples to the R Reference Guide.
