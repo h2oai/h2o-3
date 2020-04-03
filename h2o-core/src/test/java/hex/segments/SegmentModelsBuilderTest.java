@@ -63,7 +63,7 @@ public class SegmentModelsBuilderTest extends TestUtil {
       assertEquals(3, smFrame.numRows());
       Vec segmentVec = smFrame.vec("class");
       Vec.Reader segmentReader = segmentVec. new Reader();
-      Vec.Reader modelIdReader = smFrame.vec("Model"). new Reader();
+      Vec.Reader modelIdReader = smFrame.vec("model"). new Reader();
       for (int i = 0; i < 3; i++) {
         String segment = segmentVec.domain()[(int) segmentReader.at(i)];
         Key<ModelBuilderTest.DummyModel> dmKey = Key.make(modelIdReader.atStr(new BufferedString(), i).toString());
