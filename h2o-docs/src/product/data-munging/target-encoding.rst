@@ -123,7 +123,7 @@ In this example, we will be trying to predict ``survived`` using the popular tit
 
    .. code-tab:: python
 
-    library(h2o)
+    import h2o
     h2o.init()
     from h2o.estimators import H2OTargetEncoderEstimator
 
