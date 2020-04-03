@@ -56,6 +56,8 @@ Defining a CoxPH Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+- `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. Running on a single node reduces the effect of network overhead (for smaller datasets).
+
 Cox Proportional Hazards Model Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

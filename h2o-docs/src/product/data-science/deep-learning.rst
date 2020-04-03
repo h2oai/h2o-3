@@ -224,7 +224,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **replicate_training_data**: Specify whether to replicate the entire training dataset onto every node for faster training on small datasets.
 
--  **single_node_mode**: Specify whether to run on a single node for fine-tuning of model parameters.
+-  `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters.
 
 -  **shuffle_training_data**: Specify whether to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is not enabled by default.
 
