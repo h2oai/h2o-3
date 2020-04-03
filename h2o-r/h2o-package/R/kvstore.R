@@ -297,9 +297,9 @@ h2o.getModel <- function(model_id) {
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
-#' h2o.segment_train(algorithm = "gbm",
-#'                   segment_columns = "Species", segment_models_id="models_by_species",
-#'                   x = c(1:3), y = 4, training_frame = iris_hf, ntrees = 5, max_depth = 4)
+#' h2o.train_segments(algorithm = "gbm",
+#'                    segment_columns = "Species", segment_models_id="models_by_species",
+#'                    x = c(1:3), y = 4, training_frame = iris_hf, ntrees = 5, max_depth = 4)
 #' models <- h2o.get_segment_models("models_by_species")
 #' as.data.frame(models)
 #' }
@@ -318,12 +318,12 @@ h2o.get_segment_models <- function(segment_models_id) {
 #' library(h2o)
 #' h2o.init()
 #' iris_hf <- as.h2o(iris)
-#' models <- h2o.segment_train(algorithm = "gbm",
-#'                             segment_columns = "Species",
-#'                             x = c(1:3), y = 4,
-#'                             training_frame = iris_hf,
-#'                             ntrees = 5,
-#'                             max_depth = 4)
+#' models <- h2o.train_segments(algorithm = "gbm",
+#'                              segment_columns = "Species",
+#'                              x = c(1:3), y = 4,
+#'                              training_frame = iris_hf,
+#'                              ntrees = 5,
+#'                              max_depth = 4)
 #' as.data.frame(models)
 #' }
 #' @export

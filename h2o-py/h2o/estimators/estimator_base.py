@@ -114,9 +114,9 @@ class H2OEstimator(ModelBase):
                                  ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
         self._train(parms, verbose=verbose)
 
-    def segment_train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
-                      weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
-                      segments=None, segment_models_id=None, parallelism=1, verbose=False):
+    def train_segments(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
+                       weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
+                       segments=None, segment_models_id=None, parallelism=1, verbose=False):
         """
         Trains H2O model for each segment (subpopulation) of the training dataset.
 
@@ -151,11 +151,11 @@ class H2OEstimator(ModelBase):
         >>> train, valid = titanic.split_frame(ratios=[.8], seed=1234)
         >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
         >>> titanic_gbm = H2OGradientBoostingEstimator(seed=1234)
-        >>> titanic_models = titanic_gbm.segment_train(segments=["pclass"],
-        ...                                            x=predictors,
-        ...                                            y=response,
-        ...                                            training_frame=train,
-        ...                                            validation_frame=valid)
+        >>> titanic_models = titanic_gbm.train_segments(segments=["pclass"],
+        ...                                             x=predictors,
+        ...                                             y=response,
+        ...                                             training_frame=train,
+        ...                                             validation_frame=valid)
         >>> titanic_models.as_frame()
         """
         assert_is_type(segments, None, H2OFrame, [str])
@@ -181,8 +181,8 @@ class H2OEstimator(ModelBase):
         parms["parallelism"] = parallelism
 
         rest_ver = self._get_rest_version(parms)
-        segment_train_response = h2o.api("POST /%d/SegmentModelsBuilders/%s" % (rest_ver, self.algo), data=parms)
-        job = H2OJob(segment_train_response, job_type=(self.algo + " Segment Models Build"))
+        train_segments_response = h2o.api("POST /%d/SegmentModelsBuilders/%s" % (rest_ver, self.algo), data=parms)
+        job = H2OJob(train_segments_response, job_type=(self.algo + " Segment Models Build"))
         job.poll()
         return H2OSegmentModels(job.dest_key)
 

@@ -104,24 +104,24 @@ h2o.svd <- function(training_frame,
   model <- .h2o.modelJob('svd', parms, h2oRestApiVersion=99, verbose=FALSE)
   return(model)
 }
-.h2o.segment_train_svd <- function(training_frame,
-                                   x,
-                                   validation_frame = NULL,
-                                   ignore_const_cols = TRUE,
-                                   score_each_iteration = FALSE,
-                                   transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
-                                   svd_method = c("GramSVD", "Power", "Randomized"),
-                                   nv = 1,
-                                   max_iterations = 1000,
-                                   seed = -1,
-                                   keep_u = TRUE,
-                                   u_name = NULL,
-                                   use_all_factor_levels = TRUE,
-                                   max_runtime_secs = 0,
-                                   export_checkpoints_dir = NULL,
-                                   segment_columns = NULL,
-                                   segment_models_id = NULL,
-                                   parallelism = 1)
+.h2o.train_segments_svd <- function(training_frame,
+                                    x,
+                                    validation_frame = NULL,
+                                    ignore_const_cols = TRUE,
+                                    score_each_iteration = FALSE,
+                                    transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                                    svd_method = c("GramSVD", "Power", "Randomized"),
+                                    nv = 1,
+                                    max_iterations = 1000,
+                                    seed = -1,
+                                    keep_u = TRUE,
+                                    u_name = NULL,
+                                    use_all_factor_levels = TRUE,
+                                    max_runtime_secs = 0,
+                                    export_checkpoints_dir = NULL,
+                                    segment_columns = NULL,
+                                    segment_models_id = NULL,
+                                    parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

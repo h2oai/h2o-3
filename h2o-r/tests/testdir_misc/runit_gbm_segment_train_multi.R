@@ -3,16 +3,16 @@ source("../../scripts/h2o-r-test-setup.R")
 
 
 
-test.gbm_segment_train_mutli <- function() {
-    smtrees <- h2o.importFile(h2o:::.h2o.locate("smalldata/gbm_test/smtrees.csv"))
+test.gbm_train_segments_mutli <- function() {
+    smtrees <- h2o.importFile(locate("smalldata/gbm_test/smtrees.csv"))
     smtrees$segment1 <- as.factor(smtrees$C1 < 6)
     smtrees$segment2 <- as.factor(smtrees$C1 == 0)
 
-    segment_models <- h2o.segment_train(algorithm="gbm",
-                                        segment_columns=c("segment1", "segment2"), segment_models_id = "smtrees_sm_multi",
-                                        x=c("girth", "height"), y="vol", ntrees=3, max_depth=1, seed=42,
-                                        distribution="gaussian", min_rows=2,
-                                        training_frame=smtrees)
+    segment_models <- h2o.train_segments(algorithm="gbm",
+                                         segment_columns=c("segment1", "segment2"), segment_models_id = "smtrees_sm_multi",
+                                         x=c("girth", "height"), y="vol", ntrees=3, max_depth=1, seed=42,
+                                         distribution="gaussian", min_rows=2,
+                                         training_frame=smtrees)
     
     expect_equal(segment_models@segment_models_id, "smtrees_sm_multi")
 
@@ -25,4 +25,4 @@ test.gbm_segment_train_mutli <- function() {
     }
 }
 
-doTest("Segment model building with GBM (multiple columns)", test.gbm_segment_train_mutli)
+doTest("Segment model building with GBM (multiple columns)", test.gbm_train_segments_mutli)

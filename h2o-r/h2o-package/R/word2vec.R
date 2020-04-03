@@ -89,21 +89,21 @@ h2o.word2vec <- function(training_frame = NULL,
   model <- .h2o.modelJob('word2vec', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-.h2o.segment_train_word2vec <- function(training_frame = NULL,
-                                        min_word_freq = 5,
-                                        word_model = c("SkipGram", "CBOW"),
-                                        norm_model = c("HSM"),
-                                        vec_size = 100,
-                                        window_size = 5,
-                                        sent_sample_rate = 0.001,
-                                        init_learning_rate = 0.025,
-                                        epochs = 5,
-                                        pre_trained = NULL,
-                                        max_runtime_secs = 0,
-                                        export_checkpoints_dir = NULL,
-                                        segment_columns = NULL,
-                                        segment_models_id = NULL,
-                                        parallelism = 1)
+.h2o.train_segments_word2vec <- function(training_frame = NULL,
+                                         min_word_freq = 5,
+                                         word_model = c("SkipGram", "CBOW"),
+                                         norm_model = c("HSM"),
+                                         vec_size = 100,
+                                         window_size = 5,
+                                         sent_sample_rate = 0.001,
+                                         init_learning_rate = 0.025,
+                                         epochs = 5,
+                                         pre_trained = NULL,
+                                         max_runtime_secs = 0,
+                                         export_checkpoints_dir = NULL,
+                                         segment_columns = NULL,
+                                         segment_models_id = NULL,
+                                         parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL
