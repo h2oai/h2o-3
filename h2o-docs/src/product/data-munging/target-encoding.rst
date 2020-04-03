@@ -133,7 +133,7 @@ In this example, we will be trying to predict ``survived`` using the popular tit
 
     # Train a GBM (with TE) model
     ignored_columns <- c("boat", "ticket", "name", "body")
-    features_with_te <- setdiff(setdiff(setdiff(names(transformed_train), response), encoded_columns), ignored_columns)
+    features_with_te <- setdiff(names(transformed_train), c(response, encoded_columns, ignored_columns))
 
     gbm_with_te <- h2o.gbm(x = features_with_te,
                            y = response,
@@ -159,7 +159,7 @@ In this example, we will be trying to predict ``survived`` using the popular tit
 
 
     # Train a baseline GBM model
-    features <- setdiff(setdiff(names(train), response), ignored_columns)
+    features <- setdiff(names(train), c(response,ignored_columns))
 
     gbm_baseline <- h2o.gbm(x = features,
                             y = response,

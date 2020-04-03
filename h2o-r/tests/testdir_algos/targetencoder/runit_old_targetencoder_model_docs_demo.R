@@ -38,7 +38,7 @@ test.model.targetencoder <- function() {
                                                       holdout_type = "none", fold_column="fold", noise = 0.0)
 
         ignored_columns <- c("boat", "ticket", "name", "body")
-        features_with_te <- setdiff(setdiff(setdiff(names(transformed_train), response), encoded_columns), ignored_columns)
+        features_with_te <- setdiff(names(transformed_train), c(response, encoded_columns, ignored_columns))
         print(features_with_te)
 
         gbm_with_te <- h2o.gbm(x = features_with_te,
@@ -66,7 +66,7 @@ test.model.targetencoder <- function() {
 
 
         # Baseline gbm
-        features <- setdiff(setdiff(names(train), response), ignored_columns)
+        features <- setdiff(names(train), c(response,ignored_columns))
 
         gbm_baseline <- h2o.gbm(x = features,
                                 y = response,
