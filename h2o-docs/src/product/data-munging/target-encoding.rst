@@ -97,29 +97,94 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     #Import the titanic dataset
     f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
     titanic <- h2o.importFile(f)
-     
+
     # Set response column as a factor
     response <- "survived"
     titanic[response] <- as.factor(titanic[response])
-     
+
     # Split the dataset into train and test
-    splits <- h2o.splitFrame(data = titanic, ratios = .8, seed = 1234)
+    seed=1234
+    splits <- h2o.splitFrame(titanic, seed = seed, ratios = c(0.8), destination_frames = c("train", "test"))
+
     train <- splits[[1]]
     test <- splits[[2]]
-     
+
+    # For k_fold strategy we need to provide fold column
+    train$fold <- h2o.kfold_column(train, nfolds = 5, seed = 3456)
+
     # Choose which columns to encode
-    encoded_columns <- c("home.dest", "cabin", "embarked")
-     
+    encoded_columns <- c('home.dest', 'cabin', 'embarked')
+
+    # Set target encoding parameters
+    blended_avg = TRUE
+    inflection_point = 3
+    smoothing = 10
+    # In general, the less data you have the more regularisation you need
+    noise = 0.15
+
     # Train a TE model
-    te_model <- h2o.targetencoder(x = encoded_columns,
-                                  y = response, 
-                                  training_frame = train,
-                                  fold_column = "pclass", 
-                                  data_leakage_handling = "KFold")
+    target_encoder <- h2o.targetencoder(training_frame = train, x = encoded_columns, y = "survived",
+                                            fold_column="fold", data_leakage_handling="KFold",
+                                            blending=blended_avg, k=inflection_point, f=smoothing, noise=noise)
 
     # New target encoded train and test sets
-    train_te <- h2o.transform(te_model, train)
-    test_te <- h2o.transform(te_model, test)
+    transformed_train <- h2o.transform(target_encoder, train, data_leakage_handling="KFold", noise=noise)
+    transformed_test <- h2o.transform(target_encoder, test, noise=0.0)
+
+    # Train a GBM (with TE) model
+    ignored_columns <- c("boat", "ticket", "name", "body")
+    features_with_te <- setdiff(setdiff(setdiff(names(transformed_train), response), encoded_columns), ignored_columns)
+
+    gbm_with_te <- h2o.gbm(x = features_with_te,
+                           y = response,
+                           training_frame = transformed_train,
+                           fold_column="fold",
+                           score_tree_interval=5,
+                           ntrees = 10000,
+                           max_depth = 6,
+                           min_rows = 1,
+                           sample_rate=0.8,
+                           col_sample_rate=0.8,
+                           seed=1234,
+                           stopping_rounds=5,
+                           stopping_metric="auto",
+                           stopping_tolerance=0.001,
+                           model_id="gbm_with_te")
+
+    # Measuring performance on a transformed_test split
+    with_te_test_predictions <- predict(gbm_with_te, transformed_test)
+
+    auc_with_te <- h2o.auc(h2o.performance(gbm_with_te, transformed_test))
+    print(paste0("GBM AUC TEST: ", round(auc_with_te, 5)))
+
+
+    # Train a baseline GBM model
+    features <- setdiff(setdiff(names(train), response), ignored_columns)
+
+    gbm_baseline <- h2o.gbm(x = features,
+                            y = response,
+                            training_frame = train,
+                            fold_column="fold",
+                            score_tree_interval=5,
+                            ntrees = 10000,
+                            max_depth = 6,
+                            min_rows = 1,
+                            sample_rate=0.8,
+                            col_sample_rate=0.8,
+                            seed=1234,
+                            stopping_rounds=5,
+                            stopping_metric="auto",
+                            stopping_tolerance=0.001,
+                            model_id="gbm_baseline")
+
+    # Measuring performance on a test split
+    baseline_test_predictions <- predict(gbm_baseline, test)
+
+    auc_baseline <- h2o.auc(h2o.performance(gbm_baseline, test))
+    print(paste0("GBM AUC TEST: ", round(auc_baseline, 5)))
+
+    # Performance is better with target encoding being applied:
+    # auc_with_te = 0.89493   >    auc_baseline = 0.84174
 
    .. code-tab:: python
 

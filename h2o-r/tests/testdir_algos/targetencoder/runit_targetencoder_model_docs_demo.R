@@ -3,15 +3,21 @@ source("../../../scripts/h2o-r-test-setup.R")
 
 test.model.targetencoder <- function() {
     test_that_te_is_helpful_for_titanic_gbm_xval <- function() {
-        data <- h2o.importFile(path = locate('smalldata/gbm_test/titanic.csv'), col.types = list(by.col.name = c("survived"), types = c("factor")))
-        encoded_columns <- c('home.dest', 'cabin', 'embarked')
-        response = "survived"
+        f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv"
+        titanic <- h2o.importFile(f)
+
+        # Set response column as a factor
+        response <- "survived"
+        titanic[response] <- as.factor(titanic[response])
 
         seed=1234
-        splits <- h2o.splitFrame(data, seed = seed, ratios = c(0.8), destination_frames = c("train", "test"))
+        splits <- h2o.splitFrame(titanic, seed = seed, ratios = c(0.8), destination_frames = c("train", "test"))
 
         train <- splits[[1]]
         test <- splits[[2]]
+
+        # Choose which columns to encode
+        encoded_columns <- c('home.dest', 'cabin', 'embarked')
 
         train$fold <- h2o.kfold_column(train, nfolds = 5, seed = 3456)
 
@@ -75,7 +81,7 @@ test.model.targetencoder <- function() {
                                 stopping_tolerance=0.001,
                                 model_id="gbm_baseline")
 
-        baseline_test_predictions <- predict(gbm_baseline, transformed_test)
+        baseline_test_predictions <- predict(gbm_baseline, test)
 
         print(baseline_test_predictions)
 
