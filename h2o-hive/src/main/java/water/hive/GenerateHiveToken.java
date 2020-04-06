@@ -87,7 +87,7 @@ public class GenerateHiveToken extends Configured implements Tool {
             error("hive principal name is required (use the '-hivePrincipal' option)");
         }
         if (hiveHost == null && hiveJdbcUrlPattern == null) {
-            error("delegation token generator requires Hive host to be set (use the '-hiveHost' or '-hiveJdbcUrlPattern' option)");
+            error("delegation token generator requires Hive host or JDBC URL to be set (use the '-hiveHost' or '-hiveJdbcUrlPattern' option)");
         }
         if (tokenFile == null) {
             error("token file path required (use the '-tokenFile' option)");
