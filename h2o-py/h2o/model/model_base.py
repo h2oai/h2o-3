@@ -178,7 +178,7 @@ class ModelBase(h2o_meta(Keyed)):
 
     def predict_contributions(self, test_data):
         """
-        Predict feature contributions - SHAP values on an H2O Model (only GBM and XGBoost models).
+        Predict feature contributions - SHAP values on an H2O Model (only DRF, GBM and XGBoost models).
         
         Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
         feature, the last column is the model bias (same value for each row). The sum of the feature contributions
