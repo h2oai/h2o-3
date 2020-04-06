@@ -22,7 +22,12 @@ Example
 		heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
 		# Build and train the model:
-		coxph.model <- h2o.coxph(x="age", event_column="event", start_column="start", stop_column="stop",training_frame=heart, single_node_mode=TRUE)
+		coxph.model <- h2o.coxph(x="age", 
+		                         event_column="event", 
+		                         start_column="start", 
+		                         stop_column="stop",
+		                         training_frame=heart, 
+		                         single_node_mode=TRUE)
 
 		# Generate predictions: 
 		pred <- h2o.predict(object=coxph.model, newdata=heart)
@@ -38,7 +43,9 @@ Example
 		heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
 		# Build and train the model:
-		coxph = H2OCoxProportionalHazardsEstimator(start_column="start", stop_column="stop", single_node_mode=True)
+		coxph = H2OCoxProportionalHazardsEstimator(start_column="start", 
+		                                           stop_column="stop", 
+		                                           single_node_mode=True)
 		coxph.train(x="age", y="event", training_frame=heart)
 
 		# Generate predictions:
