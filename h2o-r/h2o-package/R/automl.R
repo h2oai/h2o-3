@@ -70,9 +70,11 @@
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
-#' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
-#' aml <- h2o.automl(y = "Class", training_frame = votes_hf, max_runtime_secs = 30)
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate_hf <- h2o.uploadFile(path = prostate_path, header = TRUE)
+#' y <- "CAPSULE"
+#' prostate_hf[,y] <- as.factor(prostate_hf[,y])
+#' aml <- h2o.automl(y = y, training_frame = prostate_hf, max_runtime_secs = 30)
 #' }
 #' @export
 h2o.automl <- function(x, y, training_frame,
@@ -479,11 +481,11 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
-#' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
-#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes",
-#'                   training_frame = votes_hf, max_runtime_secs = 30)
-#' automl_retrieved <- h2o.get_automl("aml_housevotes")
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate_hf <- h2o.uploadFile(path = prostate_path, header = TRUE)
+#' y <- "CAPSULE"
+#' prostate_hf[,y] <- as.factor(prostate_hf[,y])
+#' aml <- h2o.automl(y = y, training_frame = prostate_hf, max_runtime_secs = 30)
 #' }
 #' @export
 h2o.get_automl <- function(project_name) {
@@ -532,12 +534,11 @@ h2o.getAutoML <- function(project_name) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' votes_path <- system.file("extdata", "housevotes.csv", package = "h2o")
-#' votes_hf <- h2o.uploadFile(path = votes_path, header = TRUE)
-#' aml <- h2o.automl(y = "Class", project_name="aml_housevotes",
-#'                   training_frame = votes_hf, max_runtime_secs = 30)
-#' lb_all <- h2o.get_leaderboard(aml, 'ALL')
-#' lb_custom <- h2o.get_leaderboard(aml, c('predict_time_per_row_ms', 'training_time_ms'))
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate_hf <- h2o.uploadFile(path = prostate_path, header = TRUE)
+#' y <- "CAPSULE"
+#' prostate_hf[,y] <- as.factor(prostate_hf[,y])
+#' aml <- h2o.automl(y = y, training_frame = prostate_hf, max_runtime_secs = 30)
 #' }
 #' @export
 h2o.get_leaderboard <- function(object, extra_columns=NULL) {
