@@ -39,7 +39,7 @@ public class EventLogTest extends water.TestUtil {
                                     events.getColHeaders());
 
             DateTime now = DateTime.now();
-            DateTime entry_time = new DateTime(EventLogEntry.timeFormat.parse((String)events.get(0, 0)).getTime());
+            DateTime entry_time = new DateTime(EventLogEntry.timeFormat.get().parse((String)events.get(0, 0)).getTime());
             Assert.assertEquals(now.getHourOfDay(), entry_time.getHourOfDay());
             Assert.assertEquals(now.getMinuteOfHour(), entry_time.getMinuteOfHour());
             Assert.assertEquals(now.getSecondOfMinute(), entry_time.getSecondOfMinute(), 1.0);

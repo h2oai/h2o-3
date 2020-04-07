@@ -27,7 +27,7 @@ import java.util.Date;
  */
 public class AutoMLBuildSpec extends Iced {
 
-  private static final DateFormat projectTimeStampFormat = new SimpleDateFormat("yyyyMMdd_HmmssSSS");
+  private static final ThreadLocal<DateFormat> projectTimeStampFormat = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyyMMdd_HmmssSSS"));
 
   /**
    * The specification of overall build parameters for the AutoML process.
@@ -345,7 +345,7 @@ public class AutoMLBuildSpec extends Iced {
 
   public String project() {
     if (build_control.project_name == null) {
-      build_control.project_name = "AutoML_"+ projectTimeStampFormat.format(new Date());
+      build_control.project_name = "AutoML_"+ projectTimeStampFormat.get().format(new Date());
     }
     return build_control.project_name;
   }
