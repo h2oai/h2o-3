@@ -1,3 +1,8 @@
+.. figure:: images/h2o-automl-logo.jpg
+   :alt: H2O AutoML
+   :scale: 15%
+   :align: center
+
 AutoML: Automatic Machine Learning
 ==================================
 
