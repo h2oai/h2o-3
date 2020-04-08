@@ -34,6 +34,10 @@ abstract class GlmMojoModelBase extends MojoModel {
 
   abstract double[] glmScore0(double[] data, double[] preds);
 
+  public double[] beta() {
+    return _beta;
+  }
+
   private void imputeMissingWithMeans(double[] data) {
     for (int i = 0; i < _cats; ++i)
       if (Double.isNaN(data[i])) data[i] = _catModes[i];

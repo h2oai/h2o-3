@@ -2808,4 +2808,22 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     };
   }
 
+  /**
+   * Convenience method to find out if featureName is used for prediction, i.e., if it has beta == 0 in GLM,
+   * it is not considered to be used.
+   * This is mainly intended for optimizing prediction speed in StackedEnsemble.
+   * @param featureName
+   */
+  public boolean isFeatureUsed(String featureName) {
+    if (featureName.equals(_parms._response_column)) return false;
+    int featureIdx = ArrayUtils.find(_output._names, featureName);
+    if (featureIdx == -1) {
+      return false;
+    }
+    return isFeatureUsed(featureIdx);
+  }
+
+  protected boolean isFeatureUsed(int featureIdx) {
+    return true;
+  }
 }

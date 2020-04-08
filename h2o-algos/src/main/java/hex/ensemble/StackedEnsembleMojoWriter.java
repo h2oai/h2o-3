@@ -28,7 +28,7 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
         if (model._output._metalearner != null)
             subModels.add(model._output._metalearner);
         for (int i = 0; i < model._parms._base_models.length; i++)
-            if (model._parms._base_models[i] != null) {
+            if (model._parms._base_models[i] != null && model.isUsefulBaseModel(i)) {
                 Model aModel = DKV.getGet(model._parms._base_models[i]);
                 subModels.add(aModel);
             }
@@ -40,7 +40,9 @@ public class StackedEnsembleMojoWriter extends MultiModelMojoWriter<StackedEnsem
         writekv("base_models_num", model._parms._base_models.length);
         writekv("metalearner", model._output._metalearner._key);
         for (int i = 0; i < model._parms._base_models.length; i++) {
-            writekv("base_model" + i, model._parms._base_models[i]);
+            if (model.isUsefulBaseModel(i)) {
+                writekv("base_model" + i, model._parms._base_models[i]);
+            }
         }
     }
 }

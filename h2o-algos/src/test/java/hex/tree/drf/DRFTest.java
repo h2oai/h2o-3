@@ -1759,4 +1759,72 @@ public class DRFTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testIsFeatureUsed() {
+    isFeatureUsedHelper(false);
+    isFeatureUsedHelper(true);
+  }
+
+  private void isFeatureUsedHelper(boolean ignoreConstCols) {
+    Scope.enter();
+    Vec target = Vec.makeRepSeq(100, 3);
+    Vec zeros = Vec.makeCon(0d, 100);
+    Vec ones = Vec.makeCon(1, 100);
+    Frame dummyFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{zeros, zeros, zeros, zeros, target, target}
+    );
+    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsed");
+
+    Frame otherFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{ones, ones, ones, ones, target, target}
+    );
+
+    Frame reference = null;
+    Frame prediction = null;
+    DRFModel model = null;
+    try {
+      DKV.put(dummyFrame);
+      DRFModel.DRFParameters drf = new DRFModel.DRFParameters();
+      drf._train = dummyFrame._key;
+      drf._response_column = "target";
+      drf._ntrees = 5;
+      drf._max_depth = 3;
+      drf._min_rows = 1;
+      drf._nbins = 3;
+      drf._nbins_cats = 3;
+      drf._seed = 1;
+      drf._ignore_const_cols = ignoreConstCols;
+
+      DRF job = new DRF(drf);
+      model = job.trainModel().get();
+
+      String lastUsedFeature = "";
+      int usedFeatures = 0;
+      for(String feature : model._output._names) {
+        if (model.isFeatureUsed(feature)) {
+          usedFeatures ++;
+          lastUsedFeature = feature;
+        }
+      }
+      assertEquals(1, usedFeatures);
+      assertEquals("e", lastUsedFeature);
+
+      reference = model.score(dummyFrame);
+      prediction = model.score(otherFrame);
+      for (int i = 0; i < reference.numRows(); i++) {
+        assertEquals(reference.vec(0).at(i), prediction.vec(0).at(i), 1e-10);
+      }
+    } finally {
+      dummyFrame.delete();
+      if (model != null) model.delete();
+      if (reference != null) reference.delete();
+      if (prediction != null) prediction.delete();
+      target.remove();
+      zeros.remove();
+      ones.remove();
+      Scope.exit();
+    }
+  }
 }

@@ -2298,5 +2298,15 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public DeepLearningMojoWriter getMojo() {
     return new DeepLearningMojoWriter(this);
   }
+
+
+  @Override
+  protected boolean isFeatureUsed(int featureIdx) {
+    Storage.DenseRowMatrix weights = model_info().get_weights(0);
+    for (int j = 0; j < weights.rows(); j++) {
+      if (weights.get(j, featureIdx) != 0) return true;
+    }
+    return false;
+  }
 }
 

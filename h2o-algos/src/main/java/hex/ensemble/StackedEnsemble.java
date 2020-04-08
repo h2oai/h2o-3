@@ -344,7 +344,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           throw new H2OIllegalArgumentException("Failed to find the xval predictions frame. . .  Looks like keep_cross_validation_predictions wasn't set when building the models, or the frame was deleted.");
 
       } else {
-        fr = buildPredictionsForBaseModel(model, actualsFrame);
+        if (_model.isUsefulBaseModel(model)) {
+          fr = buildPredictionsForBaseModel(model, actualsFrame);
+        } else {
+          fr = _model.getDummyPredictions(actualsFrame);
+        }
       }
       return fr;
     }
@@ -365,7 +369,15 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     @Override
     protected Frame getPredictionsForBaseModel(Model model, Frame actualsFrame, boolean isTrainingFrame) {
-      return buildPredictionsForBaseModel(model, actualsFrame);
+      if (isTrainingFrame) {
+        return buildPredictionsForBaseModel(model, actualsFrame);
+      } else {
+        if (_model.isUsefulBaseModel(model)) {
+          return buildPredictionsForBaseModel(model, actualsFrame);
+        } else {
+          return _model.getDummyPredictions(actualsFrame);
+        }
+      }
     }
   }
 

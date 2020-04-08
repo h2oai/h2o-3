@@ -6,7 +6,9 @@ import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
+import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -116,21 +118,24 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
 
-    // TODO: don't score models that have 0 coefficients / aren't used by the metalearner.
-    //   also we should be able to parallelize scoring of base models
-    for (Key<Model> baseKey : this._parms._base_models) {
-      Model base = baseKey.get(); 
+    // TODO: we should be able to parallelize scoring of base models
+    for (int i = 0; i < _parms._base_models.length; i++) {
+      if (isUsefulBaseModel(i)) {
+        Model base = _parms._base_models[i].get();
 
-      Frame basePreds = base.score(
-          fr,
-          "preds_base_" + this._key.toString() + fr._key,
-          j,
-          false
-      );
-      
-      StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
-      DKV.remove(basePreds._key); //Cleanup
-      Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
+        Frame basePreds = base.score(
+                fr,
+                "preds_base_" + this._key.toString() + fr._key,
+                j,
+                false
+        );
+
+        StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
+        DKV.remove(basePreds._key); //Cleanup
+        Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
+      } else {
+        levelOneFrame.add(getDummyPredictions(fr));
+      }
     }
 
     // Add response column to level one frame
@@ -166,7 +171,57 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     return predictFr;
   }
 
+  /**
+   * Is the indexth model's prediction used in the metalearner?
+   *
+   * @param index
+   */
+  boolean isUsefulBaseModel(int index) {
+    Model metalearner = _output._metalearner;
+    if (metalearner == null) return true; // training phase
+    if (modelCategory == ModelCategory.Multinomial) {
+      // Multinomial models output multiple columns and a base model
+      // might be useful just for one category...
+      int colsPerModel = metalearner._output.nfeatures() / _parms._base_models.length;
+      for (int i = index * colsPerModel; i < (index + 1) * colsPerModel; i++) {
+        if (metalearner.isFeatureUsed(metalearner._output._names[i]))
+          return true;
+      }
+      return false;
+    } else {
+      return metalearner.isFeatureUsed(metalearner._output._names[index]);
+    }
 
+  }
+
+  /**
+   * Is the baseModel's prediction used in the metalearner?
+   *
+   * @param baseModel
+   */
+  boolean isUsefulBaseModel(Model baseModel) {
+    // Get index of the baseModel
+    for (int i = 0; i < _parms._base_models.length; i++) {
+      if (baseModel._key == _parms._base_models[i]) {
+        return isUsefulBaseModel(i);
+      }
+    }
+    throw new H2OKeyNotFoundArgumentException(baseModel._key);
+  }
+
+  /**
+   * Returns a frame full of zeros that should have the same dimensions as the base model's prediction used
+   * by metalearner, i.e., this frame is supposed to be used directly for the metalearner's input.
+   * For example, it doesn't contain "predict" column for multinomial models as this column is not used by metalearner.
+   *
+   * @param actualsFrame this frame is used to get the number of instances
+   */
+  Frame getDummyPredictions(Frame actualsFrame) {
+    int colsPerModel = _output._metalearner._output.nfeatures() / _parms._base_models.length;
+    Vec[] ignoredVecs = new Vec[colsPerModel];
+    Arrays.fill(ignoredVecs, actualsFrame.vec(0).makeCon(0d));
+    return new Frame(ignoredVecs);
+  }
 
   /**
    * Should never be called: the code paths that normally go here should call predictScoreImpl().

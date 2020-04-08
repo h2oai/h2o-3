@@ -7,10 +7,13 @@ import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
+import water.fvec.Vec;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assert.assertEquals;
 
 public class NaiveBayesTest extends TestUtil {
   @BeforeClass public static void setup() { stall_till_cloudsize(1); }
@@ -130,6 +133,70 @@ public class NaiveBayesTest extends TestUtil {
       if (train != null) train.delete();
       if (score != null) score.delete();
       if (model != null) model.delete();
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testIsFeatureUsed() {
+    isFeatureUsedHelper(false);
+    isFeatureUsedHelper(true);
+  }
+
+  private void isFeatureUsedHelper(boolean ignoreConstCols) {
+    Scope.enter();
+    Vec target = Vec.makeRepSeq(100, 3).toCategoricalVec();
+    Vec zeros = Vec.makeCon(0d, 100);
+    Vec ones = Vec.makeCon(1, 100);
+    Frame dummyFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{zeros, zeros, zeros, zeros, target, target}
+    );
+    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsed");
+
+    Frame otherFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{ones, ones, ones, ones, target, target}
+    );
+
+    Frame reference = null;
+    Frame prediction = null;
+    NaiveBayesModel model = null;
+    try {
+      DKV.put(dummyFrame);
+      NaiveBayesModel.NaiveBayesParameters nb = new NaiveBayesModel.NaiveBayesParameters();
+      nb._train = dummyFrame._key;
+      nb._response_column = "target";
+      nb._seed = 1;
+      nb._ignore_const_cols = ignoreConstCols;
+
+      NaiveBayes job = new NaiveBayes(nb);
+      model = job.trainModel().get();
+
+      String lastUsedFeature = "";
+      int usedFeatures = 0;
+      for(String feature : model._output._names) {
+        if (model.isFeatureUsed(feature)) {
+          usedFeatures ++;
+          lastUsedFeature = feature;
+        }
+      }
+      assertEquals(1, usedFeatures);
+      assertEquals("e", lastUsedFeature);
+
+      reference = model.score(dummyFrame);
+      prediction = model.score(otherFrame);
+      for (int i = 0; i < reference.numRows(); i++) {
+        assertEquals(reference.vec(0).at(i), prediction.vec(0).at(i), 1e-10);
+      }
+    } finally {
+      dummyFrame.delete();
+      if (model != null) model.delete();
+      if (reference != null) reference.delete();
+      if (prediction != null) prediction.delete();
+      target.remove();
+      zeros.remove();
+      ones.remove();
       Scope.exit();
     }
   }

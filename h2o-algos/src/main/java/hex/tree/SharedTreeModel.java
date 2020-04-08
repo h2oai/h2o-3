@@ -727,4 +727,38 @@ public abstract class SharedTreeModel<
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
 
+  @Override
+  protected boolean isFeatureUsed(int featureIdx) {
+    // Maybe using variable importance would be enough? {
+    // // Assumption is that varimp keeps the ordering and that the algorithm is the same as in
+    // // http://docs.h2o.ai/h2o/latest-stable/h2o-docs/variable-importance.html
+    // return _output._varimp._varimp[featureIdx] != 0;
+    // }
+    for (int treeIdx = 0; treeIdx < _output._ntrees; treeIdx++) {
+      Key[] keys = _output._treeKeys[treeIdx];
+      for (Key key : keys) {
+        if (key != null) {
+          CompressedTree ct = DKV.getGet(key);
+          TreeVisitor<RuntimeException> tv = new TreeVisitor<RuntimeException>(ct) {
+            boolean isUsed;
+
+            @Override
+            protected void pre(int col, float fcmp, IcedBitSet gcmp, int equal, int naSplitDirInt) throws RuntimeException {
+              isUsed |= col == featureIdx;
+            }
+
+            @Override
+            long result() {
+              return isUsed ? 1 : 0;
+            }
+          };
+          tv.visit();
+          if (tv.result() == 1) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
 }
