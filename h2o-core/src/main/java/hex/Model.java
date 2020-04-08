@@ -114,6 +114,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface GetNTrees {
     int getNTrees();
   }
+  
+  public boolean isThresholdReset(){
+    return _output.isThresholdReset();
+  }
 
   /**
    * Default threshold for assigning class labels to the target class (for binomial models)
@@ -883,14 +887,30 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       return 0.5;
     }
     
+    public boolean isThresholdReset(){
+      if (nclasses() != 2 || _training_metrics == null)
+        return false;
+      if (_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null)
+        return ((ModelMetricsBinomial) _validation_metrics)._auc.isThresholdReset();
+      if (((ModelMetricsBinomial) _training_metrics)._auc != null)
+        return ((ModelMetricsBinomial) _training_metrics)._auc.isThresholdReset();
+      return false;
+    }
+    
     public void resetThreshold(double threshold){
-      if(nclasses() == 2){
-        if(_training_metrics != null && ((ModelMetricsBinomial) _training_metrics)._auc != null){
-          ((ModelMetricsBinomial) _training_metrics).resetThreshold(threshold);
+      if(isBinomialClassifier()){
+        if(_training_metrics != null && ((ModelMetricsBinomial) _training_metrics)._auc != null){ 
+            ((ModelMetricsBinomial) _training_metrics)._auc.resetThreshold(threshold);
+            DKV.put(_training_metrics._key,  _training_metrics);
         } 
         if(_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null){
-          ((ModelMetricsBinomial) _validation_metrics).resetThreshold(threshold);
+          ((ModelMetricsBinomial) _validation_metrics)._auc.resetThreshold(threshold);
+          DKV.put( _training_metrics._key,  _training_metrics);
         }
+        if(_cross_validation_metrics != null && ((ModelMetricsBinomial) _cross_validation_metrics)._auc != null){
+            ((ModelMetricsBinomial) _cross_validation_metrics)._auc.resetThreshold(threshold);
+            DKV.put(_cross_validation_metrics._key, _cross_validation_metrics);
+          }
       }
     }
     

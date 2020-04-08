@@ -3913,7 +3913,7 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
-
+  
   @Test
   public void testIsFeatureUsedInPredict() {
     isFeatureUsedInPredictHelper(false, false);
@@ -3985,8 +3985,57 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
-
+  
   @Test
-  public void testResetThreshold(){
+  public void testResetThreshold() throws Exception {
+    GBMModel gbm = null;
+    try {
+      Scope.enter();
+      Frame frame = new TestFrameBuilder()
+              .withName("data")
+              .withColNames("ColA", "ColB", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(0, 1, 0, 1, 0, 1, 0))
+              .withDataForCol(1, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
+              .withDataForCol(2, ard(1, 0, 1, 1, 1, 0, 1))
+              .build();
+
+      frame = frame.toCategoricalCol(2);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._ntrees = 1;
+      parms._min_rows = 0.1;
+      parms._distribution = bernoulli;
+
+      gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+      double oldTh = gbm._output.defaultThreshold();
+      ModelMetrics oldMM = gbm._output._training_metrics;
+      double[][] oldCM = oldMM.auc_obj().defaultCM();
+
+      double newTh = 0.6379068421037659;
+      gbm.resetThreshold(newTh);
+      double resetTh = gbm._output.defaultThreshold();
+      assert newTh == resetTh : "The new model (" +newTh+ ") is not the same as reseted model ("+resetTh+").";
+
+      // check metrics
+      ModelMetrics newMM = gbm._output._training_metrics;
+      double[][] newCM = newMM.auc_obj().defaultCM();
+      assert oldCM[0][0] != newCM[0][0] : "New CM is the same as the old CM.";
+
+      // check mojo
+      MojoModel mojo = gbm.toMojo();
+      double mojoTh = mojo._defaultThreshold;
+      assert newTh == mojoTh : "The new model is not same in MOJO after reset.";
+
+    } finally {
+      if (gbm != null) {
+        gbm.deleteCrossValidationModels();
+        gbm.deleteCrossValidationPreds();
+      }
+      Scope.exit();
+    }
   }
 }

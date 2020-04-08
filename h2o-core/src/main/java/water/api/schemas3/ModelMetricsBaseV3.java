@@ -58,7 +58,6 @@ public class ModelMetricsBaseV3<I extends ModelMetrics, S extends ModelMetricsBa
   @API(help="Value of custom metric", direction = API.Direction.OUTPUT)
   public double custom_metric_value;
 
-
   public ModelMetricsBaseV3() {}
   public ModelMetricsBaseV3(I impl) { super(impl); }
 

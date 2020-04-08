@@ -74,11 +74,6 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     return cm == null ? null : new ConfusionMatrix(cm, _domain);
   }
   
-  public void resetThreshold(double threshold){
-    _auc.resetThreshold(threshold);
-    
-  }
-  
   public GainsLift gainsLift() { return _gainsLift; }
 
   // expose simple metrics criteria for sorting
@@ -234,6 +229,9 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
         auc = new AUC2(_auc);
+        if(m._output.isThresholdReset()) {
+          auc.resetThreshold(m.defaultThreshold());
+        }
       } else {
         auc = new AUC2();
       }

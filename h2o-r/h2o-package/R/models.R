@@ -2444,6 +2444,35 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 }
 
 #'
+#' Reset model threshold and return new model
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#'                         training_frame = prostate, family = "binomial", 
+#'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
+#' h2o.reset_threshold(prostate_glm, 0.9)
+#' }
+#' @export
+h2o.reset_threshold <- function(object, threshold) {
+    o <- object
+    if( is(o, "H2OModel") ) {
+        expr <- .newExpr("model.reset.threshold", list(o@model_id, threshold))
+        .eval.scalar(expr)
+    } else {
+        warning( paste0("Threshold cannot be reset for class ", class(o)) )
+        return(NULL)
+    }
+}
+
+#'
 #' Retrieve the Model Centers
 #'
 #' @param object An \linkS4class{H2OClusteringModel} object.

@@ -124,9 +124,38 @@ public class AUC2 extends Iced {
 
   public double threshold( int idx ) { return _ths[idx]; }
   
-  public void resetThreshold(double threshold){
-    _custom_max_idx = Arrays.binarySearch(_ths, 0, _ths.length, threshold);
+  public boolean isThresholdReset(){
+    return _custom_max_idx != -1;
   }
+
+  public void resetThreshold(double threshold){
+    double[] ths = Arrays.copyOf(_ths, _ths.length);
+    boolean reversed = false;
+    // if the thresholds are reversed, reverse back
+    if(ths[0] > ths[ths.length-1]) {
+      for (int i = 0; i < ((_nBins) >> 1); i++) {
+        double tmp = ths[i];
+        ths[i] = ths[_nBins - 1 - i];
+        ths[_nBins - 1 - i] = tmp;
+      }
+      reversed = true;
+    }
+    int index = Arrays.binarySearch(ths, threshold);
+    //index of the search key, if it is contained in the array; otherwise, (-(insertion point) - 1).
+    if(index < 0){
+      index = - index - 1;
+      if(index == ths.length){
+        index--;
+      }
+    }
+    if(reversed) {
+      index = _ths.length - index - 1;
+    }
+    if(index != _max_idx) {
+      _custom_max_idx = index;
+    }
+  }
+
   public double tp( int idx ) { return _tps[idx]; }
   public double fp( int idx ) { return _fps[idx]; }
   public double tn( int idx ) { return _n-_fps[idx]; }

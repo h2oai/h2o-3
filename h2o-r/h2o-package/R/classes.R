@@ -604,10 +604,15 @@ setMethod("show", "H2OBinomialMetrics", function(object) {
       if (!is.null(object@metrics$AIC)) cat("AIC:  ", object@metrics$AIC,"\n", sep="")
     }
     cat("\n")
-    cm <- h2o.confusionMatrix(object)
+    th = object@metrics$threshold
+    cm <- h2o.confusionMatrix(object, threshold=th)
     if( is.null(cm) ) print(NULL)
     else {
-      attr(cm, "header") <- "Confusion Matrix (vertical: actual; across: predicted) for F1-optimal threshold"
+      th_desc = "Max F1"
+      if(abs(th - object@metrics$max_criteria_and_metric_scores[[2]][1]) > 1e-5){
+        th_desc = "custom"
+      }
+      attr(cm, "header") <- paste0("Confusion Matrix (vertical: actual; across: predicted) for ", th_desc," threshold ", th)
       print(cm)
       cat("\n")
     }

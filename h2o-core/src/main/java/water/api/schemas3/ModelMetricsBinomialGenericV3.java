@@ -15,6 +15,7 @@ public class ModelMetricsBinomialGenericV3<I extends ModelMetricsBinomialGeneric
       final ConfusionMatrixV3 convertedConfusionMatrix = new ConfusionMatrixV3();
       convertedConfusionMatrix.table = new TwoDimTableV3().fillFromImpl(modelMetrics._confusion_matrix);
       this.cm = convertedConfusionMatrix;
+      this.threshold = modelMetrics._auc.defaultThreshold();
     }
     
     if (modelMetrics._thresholds_and_metric_scores != null) { // Possibly overwrites whatever has been set in the ModelMetricsBinomialV3

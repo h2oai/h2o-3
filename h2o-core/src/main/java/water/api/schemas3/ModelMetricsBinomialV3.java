@@ -44,6 +44,9 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
 
   @API(help = "Gains and Lift table.", direction = API.Direction.OUTPUT, level = API.Level.secondary)
   public TwoDimTableV3 gains_lift_table;
+  
+  @API(help="Threshold used for calculation Confusion Matrix (maximum F1 or custom threshold)", direction = API.Direction.OUTPUT)
+  public double threshold;
 
   @Override
   public S fillFromImpl(ModelMetricsBinomial modelMetrics) {
@@ -65,6 +68,7 @@ public class ModelMetricsBinomialV3<I extends ModelMetricsBinomial, S extends Mo
       AUC  = auc._auc;
       Gini = auc._gini;
       pr_auc = auc._pr_auc;
+      threshold = auc.defaultThreshold();
 
       // Fill TwoDimTable
       String[] thresholds = new String[auc._nBins];
