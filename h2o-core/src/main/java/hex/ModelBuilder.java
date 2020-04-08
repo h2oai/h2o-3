@@ -159,7 +159,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    *
    * @return TE model's key if one was assigned to a model builder, null otherwise
    */
-  public Key<Model> getTEModelKey() {
+  public Key<Model> internal_getTEModelKey() {
     return _parms._te_model;
   }
 
@@ -370,7 +370,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
     startClock();
-
     if( !nFoldCV() )
       return _job.start(trainModelImpl(), _parms.progressUnits(), _parms._max_runtime_secs);
 
@@ -1363,7 +1362,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     if (expensive) {
-      Model teModel = DKV.getGet(getTEModelKey());
+      Model teModel = DKV.getGet(internal_getTEModelKey());
       setTrain(encodeCategoricalsWithTE(teModel, train()));
 
       Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
@@ -1474,7 +1473,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   private Frame encodeCategoricalsWithTE(Model teModel, Frame fr) {
     if (teModel != null && fr != null) {
-      Frame encodedWithTE = FrameUtils.applyTargetEncoder(teModel, fr, _parms._is_cv_model);
+      Frame encodedWithTE = FrameUtils.internal_applyTargetEncoder(teModel, fr, _parms._is_cv_model);
       _toDelete.put(encodedWithTE._key, Arrays.toString(Thread.currentThread().getStackTrace()));
       return encodedWithTE;
     } else

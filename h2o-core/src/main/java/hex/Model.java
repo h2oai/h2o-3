@@ -728,7 +728,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasFold = b.hasFoldCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
-      _te_model_key = b.getTEModelKey();
+      _te_model_key = b.internal_getTEModelKey();
       assert(_job==null);  // only set after job completion
     }
 
@@ -1519,7 +1519,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   private Frame applyTEIfModelAvailable(Frame newFr) {
     if(_output._te_model_key != null ) {
-      Frame encodedFrame = FrameUtils.applyTargetEncoder(DKV.getGet(_output._te_model_key), newFr, false);
+      Frame encodedFrame = FrameUtils.internal_applyTargetEncoder(DKV.getGet(_output._te_model_key), newFr, false);
       Arrays.stream(encodedFrame.keys()).forEach(key -> {
         _toDelete.put(key, "track encoded by TE frame");
       });
@@ -1872,7 +1872,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       deleteCrossValidationFoldAssignment();
       deleteCrossValidationPreds();
       deleteCrossValidationModels();
-      deleteTEModel();
+      internal_deleteTEModel();
     }
     cleanUp(_toDelete);
     return super.remove_impl(fs, cascade);
@@ -2536,7 +2536,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   /**
    * delete from the output TE model stored in DKV.
    */
-  public void deleteTEModel() {
+  public void internal_deleteTEModel() {
     if (_output._te_model_key != null) {
       Log.info("Cleaning up TE Model for " + _key);
       int count = deleteAll(new Key[]{_output._te_model_key});
