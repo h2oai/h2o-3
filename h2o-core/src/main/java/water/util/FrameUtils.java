@@ -118,7 +118,7 @@ public class FrameUtils {
    * @param scopeTrack `true` if Scope is tracking keys
    * @return a Frame with encodings
    */
-  public static Frame applyTargetEncoder(Model teModel, Frame inputFrame, boolean scopeTrack) {
+  public static Frame internal_applyTargetEncoder(Model teModel, Frame inputFrame, boolean scopeTrack) {
     Frame transformed = teModel.score(inputFrame);
     if (scopeTrack) Scope.untrack(transformed.keys());
 
