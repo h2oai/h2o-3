@@ -45,7 +45,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
   }
 
   static String nowStr() {
-    return dateTimeFormat.format(new Date());
+    return dateTimeFormat.get().format(new Date());
   }
 
   static abstract class SimpleFormat<T> extends Format {
@@ -65,17 +65,20 @@ public class EventLogEntry<V extends Serializable> extends Iced {
     }
   }
 
-  public static final Format epochFormat = new SimpleFormat<Date>() {
+  public static final ThreadLocal<Format> epochFormat = ThreadLocal.withInitial(() -> new SimpleFormat<Date>() {
     @Override
     public StringBuffer format(Date date, StringBuffer toAppendTo) {
         long epoch = Math.round(date.getTime() / 1e3);
         toAppendTo.append(epoch);
         return toAppendTo;
     }
-  };
-  public static final SimpleDateFormat dateTimeISOFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS"); // uses local timezone
-  public static final SimpleDateFormat dateTimeFormat = new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S"); // uses local timezone
-  public static final SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm:ss.S");  // uses local timezone
+  });
+  // uses local timezone
+  public static final ThreadLocal<SimpleDateFormat> dateTimeISOFormat = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS"));
+  // uses local timezone
+  public static final ThreadLocal<SimpleDateFormat> dateTimeFormat = ThreadLocal.withInitial(() -> new SimpleDateFormat("yyyy.MM.dd HH:mm:ss.S"));
+  // uses local timezone
+  public static final ThreadLocal<SimpleDateFormat> timeFormat = ThreadLocal.withInitial(() ->new SimpleDateFormat("HH:mm:ss.S"));
 
   private static final String[] colHeaders = {
           "timestamp",
@@ -173,7 +176,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
 
   void addTwoDimTableRow(TwoDimTable table, int row) {
     int col = 0;
-    table.set(row, col++, timeFormat.format(new Date(_timestamp)));
+    table.set(row, col++, timeFormat.get().format(new Date(_timestamp)));
     table.set(row, col++, _level);
     table.set(row, col++, _stage);
     table.set(row, col++, _message);
@@ -184,7 +187,7 @@ public class EventLogEntry<V extends Serializable> extends Iced {
   @Override
   public String toString() {
     return String.format("%-12s %-"+longestLevel+"s %-"+longestStage+"s %s %s %s",
-            timeFormat.format(new Date(_timestamp)),
+            timeFormat.get().format(new Date(_timestamp)),
             _level,
             _stage,
             Objects.toString(_message, ""),

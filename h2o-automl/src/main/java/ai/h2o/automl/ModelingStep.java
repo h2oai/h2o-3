@@ -57,7 +57,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final HyperSpaceSearchCriteria searchCriteria)
     {
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" hyperparameter search")
-                .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat);
+                .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         return GridSearch.startGridSearch(
                 resultKey,
                 baseParams,
@@ -76,7 +76,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
         ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
         builder._parms = params;
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
-                .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat);
+                .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         builder.init(false);          // validate parameters
         try {
             return builder.trainModelOnH2ONode();
