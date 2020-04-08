@@ -893,3 +893,118 @@ After obtaining the IP address, point your browser to the specified ip address a
         # Initialize H2O 
         import h2o
         docker_h2o = h2o.init(ip = "192.168.59.103", port = 54321) 
+
+
+Kubernetes Integration
+----------------------
+
+H2O Pods deployed on Kubernetes cluster require a `headless service <https://kubernetes.io/docs/concepts/services-networking/service/#headless-services>`__ for H2O Node discovery. The headless service, instead of load-balancing incoming requests to the underlying H2O pods, returns a set of adresses of all the underlying pods.
+
+.. figure:: images/h2o-k8s-clustering.png
+
+To spawn an H2O cluster inside of a Kubernetes cluster, the following are needed:
+
+- A Kubernetes cluster: either local development (e.g. `ks3 <https://k3s.io/>`__) or easy start (e.g. `OpenShift <https://www.openshift.com/>`__ by RedHat).
+- A Docker image with H2O inside.
+- A Kubernetes deployment definition with a Stateful Set of H2O pods and a headless service.
+
+Creating the Docker Image
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A simple Docker container with H2O running on startup is enough:
+
+::
+
+  FROM ubuntu:latest
+  ARG H2O_VERSION
+  RUN apt-get update \
+    && apt-get install default-jdk unzip wget -y
+  RUN wget http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/1/h2o-${H2O_VERSION}
+    && unzip h2o-${H2O_VERSION}.zip
+  ENV H2O_VERSION ${H2O_VERSION}
+  CMD java -jar h2o-${H2O_VERSION}/h2o.jar
+
+To build the Docker image, use ``docker build . -t {image-name} --build-arg H2O_VERSION=3.30.0.1``. Make sure to replace ``{image-name}`` with the meaningful H2O deployment name. **Note:** For the rest of this example, the docker image will be named ``h2o-k8s``.
+
+Creating the Headless Service
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+First, a headless service must be created on Kubernetes:
+
+::
+
+  apiVersion: v1
+  kind: Service
+  metadata:
+    name: h2o-service
+  spec:
+    type: ClusterIP
+    clusterIP: None
+    selector:
+      app: h2o-k8s
+    ports:
+    - protocol: TCP
+      port: 54321
+
+The ``clusterIP: None`` defines the service as headless. ``The port: 54321`` is the default H2O port. Users and client libraries use this port to talk to the H2O cluster.
+
+The ``app: h2o-k8s`` setting is of **great importance** because it is the name of the application with H2O pods inside. While the name is arbitrarily chosen for this example, it **must** correspond to the chosen H2O deployment name. 
+
+Creating the H2O Deployment
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+It is strongly recommended to run H2O as a `Stateful Set <https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/>`__ on a Kubernetes cluster. Treating H2O nodes as stateful ensures that:
+
+- H2O Nodes are treated as a single unit. They will be brought up and down gracefully and together.
+- No attempts will be made by a K8S healthcheck to restart individual H2O Node in case of an error.
+- The cluster will be restared as a whole (if required).
+- Persistent storages and volumes associated with the Stateful Set of H2O Nodes will not be deleted once the cluster is brought down.
+
+::
+
+  apiVersion: apps/v1
+  kind: StatefulSet
+  metadata:
+    name: h2o-stateful-set
+    namespace: h2o-statefulset
+  spec:
+    serviceName: h2o-service
+    replicas: 3
+    selector:
+      matchLabels:
+        app: h2o-k8s
+    template:
+      metadata:
+        labels:
+          app: h2o-k8s
+      spec:
+        terminationGracePeriodSeconds: 10
+        containers:
+          - name: h2o-k8s
+            image: '<someDockerImageWithH2OInside>'
+            resources:
+              requests:
+                memory: "4Gi"
+            ports:
+              - containerPort: 54321
+                protocol: TCP
+            env:
+            - name: H2O_KUBERNETES_SERVICE_DNS
+              value: h2o-service.h2o-statefulset.svc.cluster.local
+            - name: H2O_NODE_LOOKUP_TIMEOUT
+              value: '180'
+            - name: H2O_NODE_EXPECTED_COUNT
+              value: '3'
+
+There are several other environment variables:
+
+- ``H2O_KUBERNETES_SERVICE_DNS`` - **[MANDATORY]** Crucial for the clustering to work: the format usually follows the ``<service-name>.<project-name>.svc.cluster.local`` pattern. This setting enables H2O node discovery via DNS. It must be modified to match the name of the headless service created.
+- ``H2O_NODE_LOOKUP_TIMEOUT`` - **[OPTIONAL]** Node lookup constraint: time before the node lookup is ended (defaults to 3 minutes).
+- ``H2O_NODE_EXPECTED_COUNT`` - **[OPTIONAL]** Node lookup constraint: expected number of H2O pods to be discovered. 
+
+Exposing the H2O Cluster
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Exposing the H2O cluster is the responsibility of the Kubernetes administrator. By default, an `Ingress <https://kubernetes.io/docs/concepts/services-networking/ingress/>`__ can be created. Different platforms offer different capabilities (e.g. OpenShift offers `Routes <https://docs.openshift.com/container-platform/4.3/networking/routes/route-configuration.html>`__).
+
+For more information on running an H2O cluster on a Kubernetes cluster, refer to this `link <https://www.pavel.cool/h2o-3/h2o-kubernetes-support/>`__.
