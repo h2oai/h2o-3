@@ -279,6 +279,7 @@ reference:
       - h2o.tot_withinss
       - h2o.totss 
       - h2o.toupper
+      - h2o.train_segments
       - h2o.transform
       - h2o.trim
       - h2o.trunc
