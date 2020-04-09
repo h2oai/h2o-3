@@ -164,7 +164,7 @@ The H2O Aggregator method is a clustering-based method for reducing a numerical/
 The following demos are available for constrained KMeans with the Aggregator model:
 
 - https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo_cluto.ipynb
-- https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/data-science/k-means.rst#constrained-k-means-with-the-aggregator-model 
+- https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo_chicago.ipynb
 
 FAQ
 ~~~
