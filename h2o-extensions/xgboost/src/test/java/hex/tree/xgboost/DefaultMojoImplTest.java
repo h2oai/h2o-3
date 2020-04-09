@@ -5,13 +5,13 @@ import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.tree.xgboost.XGBoostModel.XGBoostParameters.Booster;
+import org.apache.log4j.Logger;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.DKV;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-import water.util.Log;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -19,6 +19,8 @@ import java.io.InputStream;
 import static org.junit.Assert.assertEquals;
 
 public class DefaultMojoImplTest extends TestUtil {
+
+  private static final Logger LOG = Logger.getLogger(DefaultMojoImplTest.class);
 
   @BeforeClass
   public static void setup() {
@@ -95,7 +97,7 @@ public class DefaultMojoImplTest extends TestUtil {
 
     XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
     Scope.track_generic(model);
-    Log.info(model);
+    LOG.info(model);
     return model;
   }
 

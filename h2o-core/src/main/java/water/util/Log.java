@@ -1,16 +1,13 @@
 package water.util;
 
-import org.apache.log4j.H2OPropertyConfigurator;
-import org.apache.log4j.LogManager;
-import org.apache.log4j.PropertyConfigurator;
+import org.apache.log4j.*;
 import water.H2O;
 import water.persist.PersistManager;
 
 import java.io.File;
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Properties;
 
 /** Log for H2O. 
  *
@@ -31,16 +28,20 @@ abstract public class Log {
   public static final byte DEBUG= 4;
   public static final byte TRACE= 5;
   public static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
+  public static final Level[] L4J_LVLS = { Level.FATAL, Level.ERROR, Level.WARN, Level.INFO, Level.DEBUG, Level.TRACE };
   static String LOG_DIR = null;
   static int _level=INFO;
   static boolean _quiet = false;
   static String _maxLogFileSize = "3MB";
-  private static org.apache.log4j.Logger _logger = null;
+  private static Logger _logger = null;
   private static boolean _bufferMessages = true;
-  // Common pre-header
-  private static String _preHeader;
+
   // A little bit of startup buffering
-  private static ArrayList<String> INIT_MSGS = new ArrayList<>();
+  private static class BufferedMsg { 
+    private final int lvl; private final String msg; private final Throwable t;
+    BufferedMsg(int l, String m, Throwable t) { this.lvl = l; this.msg = m; this.t = t; }
+  }
+  private static ArrayList<BufferedMsg> INIT_MSGS = new ArrayList<>();
   
   public static byte valueOf( String slvl ) {
     if( slvl == null ) return -1;
@@ -71,10 +72,9 @@ abstract public class Log {
   
   public static void notifyAboutProcessExiting() {
     // make sure we write out whatever we have right now 
-    Log.flushStdout();
+    Log.flushBufferedMessages();
 
     // if there are any other log messages after this call, we want to preserve them as well
-    _preHeader = "(exiting) ";
     setQuiet(false);
     INIT_MSGS = null;
   }
@@ -97,28 +97,9 @@ abstract public class Log {
   
   public static void err  ( Object... objs ) { log(ERRR ,objs); }
   
-  public static void err(Throwable ex) {
-    StringWriter sw = new StringWriter();
-    ex.printStackTrace(new PrintWriter(sw));
-    err(sw.toString());
-  }
-  
   public static void fatal( Object... objs ) { log(FATAL,objs); }
   
-  public static void log  ( int level, Object... objs ) { if( _level >= level ) write(level, objs); }
-
-  public static void httpd( String msg ) {
-    // This is never called anymore.
-    throw H2O.fail();
-  }
-
-  public static void httpd( String method, String uri, int status, long deltaMillis ) {
-    org.apache.log4j.Logger l = LogManager.getLogger(water.api.RequestServer.class);
-    String s = String.format("  %-6s  %3d  %6d ms  %s", method, status, deltaMillis, uri);
-    l.info(s);
-  }
-
-  public static void info( String s, boolean stdout ) { if( _level >= INFO ) write0(INFO, stdout, new String[]{s}); }
+  public static void log  ( int level, Object... objs ) { write(level, objs); }
 
   // This call *throws* an unchecked exception and never returns (after logging).
   public static RuntimeException throwErr( Throwable e ) {
@@ -126,76 +107,37 @@ abstract public class Log {
     throw e instanceof RuntimeException ? (RuntimeException)e : new RuntimeException(e); // Throw it
   }
 
-  private static void write( int lvl, Object objs[] ) {
-    boolean writeToStdout = (lvl <= _level);
-    write0(lvl, writeToStdout, objs);
+  private static void write(int lvl, Object[] objs) {
+    write0(lvl, objs);
   }
 
-  private static void write0( int lvl, boolean stdout, Object objs[] ) {
-    StringBuilder sb = new StringBuilder();
-    for( Object o : objs ) sb.append(o);
-    String res = sb.toString();
-    if( _bufferMessages ) { // Oops, need to buffer until we can do a proper header
-      INIT_MSGS.add(res);
+  private static void write0(int lvl, Object[] objs) {
+    StringBuilder msgBuff = new StringBuilder();
+    Throwable t = null;
+    for (int i = 0; i < objs.length - 1; i++) msgBuff.append(objs[i]);
+    if (objs.length > 0 && objs[objs.length - 1] instanceof Throwable) {
+      t = (Throwable) objs[objs.length-1];
+    } else {
+      msgBuff.append(objs[objs.length-1]);
+    }
+    String msg = msgBuff.toString();
+    if (_bufferMessages) { // Oops, need to buffer until we can do a proper header
+      INIT_MSGS.add(new BufferedMsg(lvl, msg, t));
       return;
     }
-    if( INIT_MSGS != null ) {   // Ahh, dump any initial buffering
-      String host = H2O.SELF_ADDRESS.getHostAddress();
-      _preHeader = fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
-      ArrayList<String> bufmsgs = INIT_MSGS;  INIT_MSGS = null;
-      if (bufmsgs != null) for( String s : bufmsgs ) write0(INFO, true, s);
-    }
-    write0(lvl, stdout, res);
+    flushBufferedMessages();
+    write0(lvl, msg, t);
   }
 
-  private static void write0( int lvl, boolean stdout, String s ) {
-    StringBuilder sb = new StringBuilder();
-    String hdr = header(lvl);   // Common header for all lines
-    write0(sb, hdr, s);
-
-    // stdout first - in case log4j dies failing to init or write something
-    if(stdout && !_quiet) System.out.println(sb);
-
-    // log something here
-    org.apache.log4j.Logger l4j = _logger != null ? _logger : createLog4j();
-    switch( lvl ) {
-    case FATAL:l4j.fatal(sb); break;
-    case ERRR: l4j.error(sb); break;
-    case WARN: l4j.warn (sb); break;
-    case INFO: l4j.info (sb); break;
-    case DEBUG:l4j.debug(sb); break;
-    case TRACE:l4j.trace(sb); break;
-    default:
-      l4j.error("Invalid log level requested");
-      l4j.error(s);
-    }
+  private static void write0(int lvl, String s, Throwable t) {
+    (_logger != null ? _logger : createLog4j()).log(L4J_LVLS[lvl], s, t);
   }
 
-  private static void write0( StringBuilder sb, String hdr, String s ) {
-    if( s.contains("\n") ) {
-      for( String s2 : s.split("\n") ) { write0(sb,hdr,s2); sb.append("\n"); }
-      sb.setLength(sb.length()-1);
-    } else {
-      sb.append(hdr).append(s);
-    }
-  }
-
-  // Build a header for all lines in a single message
-  private static String header( int lvl ) {
-    String nowString = Timer.nowAsLogString();
-    String s = nowString +" "+_preHeader+" "+
-      fixedLength(Thread.currentThread().getName() + " ", 10)+
-      LVLS[lvl]+": ";
-    return s;
-  }
-
-  public static void flushStdout() {
-    if (INIT_MSGS != null) {
-      for (String s : INIT_MSGS) {
-        System.out.println(s);
-      }
-
-      INIT_MSGS.clear();
+  public static void flushBufferedMessages() {
+    if (INIT_MSGS != null) {   // Ahh, dump any initial buffering
+      ArrayList<BufferedMsg> buff = INIT_MSGS;
+      INIT_MSGS = null;
+      if (buff != null) for (BufferedMsg m : buff) write0(m.lvl, m.msg, m.t);
     }
   }
 
@@ -269,17 +211,24 @@ abstract public class Log {
   private static void setLog4jProperties(String logDir, java.util.Properties p) throws Exception {
     LOG_DIR = logDir;
 
+    String host = H2O.SELF_ADDRESS.getHostAddress();
+    String hostPortPid = fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
+    String patternTail = hostPortPid + " [%10t] %p %c: %m%n";
+    String pattern = "%d{MM-dd HH:mm:ss.SSS} " + patternTail;
+
+    p.setProperty("log4j.rootLogger", "INFO, CONSOLE");
+
     // H2O-wide logging
-    String appenders = new String[]{
-      "TRACE, R6",
-      "TRACE, R5, R6",
-      "TRACE, R4, R5, R6",
-      "TRACE, R3, R4, R5, R6",
-      "TRACE, R2, R3, R4, R5, R6",
-      "TRACE, R1, R2, R3, R4, R5, R6",
-    }[_level];
-    p.setProperty("log4j.logger.water.default", appenders);
-    p.setProperty("log4j.additivity.water.default",   "false");
+    String appenders = L4J_LVLS[_level] + ", R1, R2, R3, R4, R5, R6";
+    for (String packageName : new String[] {"water", "ai.h2o", "hex"}) {
+      p.setProperty("log4j.logger." + packageName, appenders);
+      p.setProperty("log4j.logger.additivity." + packageName, "false");
+    }
+
+    p.setProperty("log4j.appender.CONSOLE",                     "org.apache.log4j.ConsoleAppender");
+    p.setProperty("log4j.appender.CONSOLE.Threshold",           "TRACE");
+    p.setProperty("log4j.appender.CONSOLE.layout",              "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.CONSOLE.layout.ConversionPattern", pattern);
 
     p.setProperty("log4j.appender.R1",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R1.Threshold",                "TRACE");
@@ -287,7 +236,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R1.MaxFileSize",              "1MB");
     p.setProperty("log4j.appender.R1.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R1.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R1.layout.ConversionPattern", "%m%n");
+    p.setProperty("log4j.appender.R1.layout.ConversionPattern", pattern);
 
     p.setProperty("log4j.appender.R2",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R2.Threshold",                "DEBUG");
@@ -295,7 +244,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R2.MaxFileSize",              _maxLogFileSize);
     p.setProperty("log4j.appender.R2.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R2.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R2.layout.ConversionPattern", "%m%n");
+    p.setProperty("log4j.appender.R2.layout.ConversionPattern", pattern);
 
     p.setProperty("log4j.appender.R3",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R3.Threshold",                "INFO");
@@ -303,7 +252,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R3.MaxFileSize",              _maxLogFileSize);
     p.setProperty("log4j.appender.R3.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R3.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R3.layout.ConversionPattern", "%m%n");
+    p.setProperty("log4j.appender.R3.layout.ConversionPattern", pattern);
 
     p.setProperty("log4j.appender.R4",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R4.Threshold",                "WARN");
@@ -311,7 +260,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R4.MaxFileSize",              "256KB");
     p.setProperty("log4j.appender.R4.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R4.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R4.layout.ConversionPattern", "%m%n");
+    p.setProperty("log4j.appender.R4.layout.ConversionPattern", pattern);
 
     p.setProperty("log4j.appender.R5",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R5.Threshold",                "ERROR");
@@ -319,7 +268,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R5.MaxFileSize",              "256KB");
     p.setProperty("log4j.appender.R5.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R5.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R5.layout.ConversionPattern", "%m%n");
+    p.setProperty("log4j.appender.R5.layout.ConversionPattern", pattern);
 
     p.setProperty("log4j.appender.R6",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R6.Threshold",                "FATAL");
@@ -327,7 +276,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.R6.MaxFileSize",              "256KB");
     p.setProperty("log4j.appender.R6.MaxBackupIndex",           "3");
     p.setProperty("log4j.appender.R6.layout",                   "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.R6.layout.ConversionPattern", "%m%n");
+    p.setProperty("log4j.appender.R6.layout.ConversionPattern", pattern);
 
     // HTTPD logging
     p.setProperty("log4j.logger.water.api.RequestServer",       "TRACE, HTTPD");
@@ -339,7 +288,7 @@ abstract public class Log {
     p.setProperty("log4j.appender.HTTPD.MaxFileSize",           "1MB");
     p.setProperty("log4j.appender.HTTPD.MaxBackupIndex",        "3");
     p.setProperty("log4j.appender.HTTPD.layout",                "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.HTTPD.layout.ConversionPattern", "%d{ISO8601} %m%n");
+    p.setProperty("log4j.appender.HTTPD.layout.ConversionPattern", "%d{ISO8601} " + patternTail);
 
     // Turn down the logging for some class hierarchies.
     p.setProperty("log4j.logger.org.apache.http",               "WARN");
@@ -351,19 +300,13 @@ abstract public class Log {
 
     // Turn down the logging for external libraries that Orc parser depends on
     p.setProperty("log4j.logger.org.apache.hadoop.util.NativeCodeLoader", "ERROR");
-
-    // See the following document for information about the pattern layout.
-    // http://logging.apache.org/log4j/1.2/apidocs/org/apache/log4j/PatternLayout.html
-    //
-    //  Uncomment this line to find the source of unwanted messages.
-    //     p.setProperty("log4j.appender.R1.layout.ConversionPattern", "%p %C %m%n");
   }
 
-  private static synchronized org.apache.log4j.Logger createLog4j() {
+  private static synchronized Logger createLog4j() {
     if( _logger != null ) return _logger; // Test again under lock
 
     boolean launchedWithHadoopJar = H2O.ARGS.launchedWithHadoopJar();
-    String h2oLog4jConfiguration = System.getProperty ("h2o.log4j.configuration");
+    String h2oLog4jConfiguration = System.getProperty("h2o.log4j.configuration");
 
     if (h2oLog4jConfiguration != null) {
       // Try to configure via a file on local filesystem
@@ -379,15 +322,13 @@ abstract public class Log {
     } else {
       // Create some default properties on the fly if we aren't using a provided configuration.
       // H2O creates the log setup itself on the fly in code.
-      java.util.Properties p = new java.util.Properties();
+      Properties p = new Properties();
       try {
         File dir;
         if (H2O.ARGS.log_dir != null) {
           dir = new File(H2O.ARGS.log_dir);
-        }
-        else {
+        } else {
           boolean windowsPath = H2O.ICE_ROOT.toString().matches("^[a-zA-Z]:.*");
-
           // Use ice folder if local, or default
           if (windowsPath)
             dir = new File(H2O.ICE_ROOT.toString());
@@ -398,7 +339,6 @@ abstract public class Log {
 
           dir = new File(dir, "h2ologs");
         }
-
         setLog4jProperties(dir.toString(), p);
       }
       catch (Exception e) {
@@ -421,7 +361,7 @@ abstract public class Log {
       }
     }
     
-    return (_logger = LogManager.getLogger("water.default"));
+    return (_logger = Logger.getLogger("water.default"));
   }
 
   public static String fixedLength(String s, int length) {

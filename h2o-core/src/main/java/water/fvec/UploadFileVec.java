@@ -107,8 +107,7 @@ public class UploadFileVec extends FileVec {
     }
     catch (IOException e) {
       // Clean up and do not leak keys.
-      Log.err("Exception caught in Frame::readPut; attempting to clean up the new frame and vector");
-      Log.err(e);
+      Log.err("Exception caught in Frame::readPut; attempting to clean up the new frame and vector", e);
       Lockable.delete(key);
       if( uv != null ) uv.remove(newVecKey);
       Log.err("Frame::readPut cleaned up new frame and vector successfully");

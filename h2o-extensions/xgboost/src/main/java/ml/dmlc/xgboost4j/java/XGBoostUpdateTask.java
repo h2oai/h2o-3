@@ -1,11 +1,13 @@
 package ml.dmlc.xgboost4j.java;
 
-import hex.tree.xgboost.XGBoost;
 import hex.tree.xgboost.XGBoostModel;
+import hex.tree.xgboost.matrix.DenseMatrixFactory;
+import org.apache.log4j.Logger;
 import water.*;
-import water.util.Log;
 
 public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
+
+    private static final Logger LOG = Logger.getLogger(DenseMatrixFactory.class);
 
     private final int _tid;
 
@@ -28,7 +30,7 @@ public class XGBoostUpdateTask extends AbstractXGBoostTask<XGBoostUpdateTask> {
         if (H2O.SELF.equals(boosterNode)) {
             boosterBytes = XGBoostUpdater.getUpdater(_modelKey).getBoosterBytes();
         } else {
-            Log.debug("Booster will be retrieved from a remote node, node=" + boosterNode);
+            LOG.debug("Booster will be retrieved from a remote node, node=" + boosterNode);
             FetchBoosterTask t = new FetchBoosterTask(_modelKey);
             boosterBytes = new RPC<>(boosterNode, t).call().get()._boosterBytes;
         }

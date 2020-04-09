@@ -6,10 +6,10 @@ import hex.tree.xgboost.matrix.SparseMatrixFactory;
 import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+import org.apache.log4j.Logger;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
 import water.util.VecUtils;
 
 import java.util.Arrays;
@@ -20,6 +20,8 @@ import static water.H2O.technote;
 import static water.MemoryManager.malloc4f;
 
 public class XGBoostUtils {
+
+    private static final Logger LOG = Logger.getLogger(XGBoostUtils.class);
 
     public static String makeFeatureMap(Frame f, DataInfo di) {
         // set the names for the (expanded) columns
@@ -84,10 +86,10 @@ public class XGBoostUtils {
             offsets = malloc4f(nRows);
         }
         if (sparse) {
-            Log.debug("Treating matrix as sparse.");
+            LOG.debug("Treating matrix as sparse.");
             trainMat = SparseMatrixFactory.csr(frame, chunks, weightVec, offsetsVec, responseVec, di, resp, weights, offsets);
         } else {
-            Log.debug("Treating matrix as dense.");
+            LOG.debug("Treating matrix as dense.");
             trainMat = DenseMatrixFactory.dense(frame, chunks, nRows, nRowsByChunk, weightVec, offsetsVec, responseVec, di, resp, weights, offsets);
         }
 
@@ -151,7 +153,7 @@ public class XGBoostUtils {
         } 
         try {
             if (sparse) {
-                Log.debug("Treating matrix as sparse.");
+                LOG.debug("Treating matrix as sparse.");
                 trainMat = SparseMatrixFactory.csr(chunks, -1, response, offset, di, resp, null, off);
             } else {
                 trainMat = DenseMatrixFactory.dense(chunks, di, response, resp, null, offset, off);

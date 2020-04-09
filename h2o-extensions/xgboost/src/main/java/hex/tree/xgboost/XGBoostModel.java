@@ -14,17 +14,21 @@ import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.PredictConfiguration;
-import ml.dmlc.xgboost4j.java.*;
+import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.PredictorFactory;
+import ml.dmlc.xgboost4j.java.XGBoostModelInfo;
+import org.apache.log4j.Logger;
 import water.*;
 import water.codegen.CodeGeneratorPipeline;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.JCodeGen;
-import water.util.Log;
 import water.util.SBPrintStream;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.util.*;
 import java.util.stream.Stream;
 
@@ -34,6 +38,8 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> 
         implements SharedTreeGraphConverter, Model.LeafNodeAssignment, Model.Contributions {
+
+  private static final Logger LOG = Logger.getLogger(XGBoostModel.class);
 
   private static final String PROP_VERBOSITY = H2O.OptArgs.SYSTEM_PROP_PREFIX + ".xgboost.verbosity";
   private static final String PROP_NTHREAD = SYSTEM_PROP_PREFIX + "xgboost.nthreadMax";
@@ -242,7 +248,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
         System.out.println(l);
       }
     } catch (Exception e) {
-      Log.err(e);
+      LOG.error(e);
     } finally {
       if (fmFile != null) {
         fmFile.delete();
@@ -253,20 +259,20 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p) {
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
       if (H2O.getCloudSize() > 1) {
-        Log.info("GPU backend not supported in distributed mode. Using CPU backend.");
+        LOG.info("GPU backend not supported in distributed mode. Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
       } else if (! p.gpuIncompatibleParams().isEmpty()) {
-        Log.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
+        LOG.info("GPU backend not supported for the choice of parameters (" + p.gpuIncompatibleParams() + "). Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
       } else if (XGBoost.hasGPU(H2O.CLOUD.members()[0], p._gpu_id)) {
-        Log.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
+        LOG.info("Using GPU backend (gpu_id: " + p._gpu_id + ").");
         return XGBoostParameters.Backend.gpu;
       } else {
-        Log.info("No GPU (gpu_id: " + p._gpu_id + ") found. Using CPU backend.");
+        LOG.info("No GPU (gpu_id: " + p._gpu_id + ") found. Using CPU backend.");
         return XGBoostParameters.Backend.cpu;
       }
     } else {
-      Log.info("Using CPU backend.");
+      LOG.info("Using CPU backend.");
       return XGBoostParameters.Backend.cpu;
     }
   }
@@ -276,7 +282,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     // Common parameters with H2O GBM
     if (p._n_estimators != 0) {
-      Log.info("Using user-provided parameter n_estimators instead of ntrees.");
+      LOG.info("Using user-provided parameter n_estimators instead of ntrees.");
       params.put("nround", p._n_estimators);
       p._ntrees = p._n_estimators;
     } else {
@@ -284,7 +290,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._n_estimators = p._ntrees;
     }
     if (p._eta != 0.3) {
-      Log.info("Using user-provided parameter eta instead of learn_rate.");
+      LOG.info("Using user-provided parameter eta instead of learn_rate.");
       params.put("eta", p._eta);
       p._learn_rate = p._eta;
     } else {
@@ -298,7 +304,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("silent", p._quiet_mode);
     }
     if (p._subsample != 1.0) {
-      Log.info("Using user-provided parameter subsample instead of sample_rate.");
+      LOG.info("Using user-provided parameter subsample instead of sample_rate.");
       params.put("subsample", p._subsample);
       p._sample_rate = p._subsample;
     } else {
@@ -306,7 +312,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._subsample = p._sample_rate;
     }
     if (p._colsample_bytree != 1.0) {
-      Log.info("Using user-provided parameter colsample_bytree instead of col_sample_rate_per_tree.");
+      LOG.info("Using user-provided parameter colsample_bytree instead of col_sample_rate_per_tree.");
       params.put("colsample_bytree", p._colsample_bytree);
       p._col_sample_rate_per_tree = p._colsample_bytree;
     } else {
@@ -314,7 +320,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._colsample_bytree = p._col_sample_rate_per_tree;
     }
     if (p._colsample_bylevel != 1.0) {
-      Log.info("Using user-provided parameter colsample_bylevel instead of col_sample_rate.");
+      LOG.info("Using user-provided parameter colsample_bylevel instead of col_sample_rate.");
       params.put("colsample_bylevel", p._colsample_bylevel);
       p._col_sample_rate = p._colsample_bylevel;
     } else {
@@ -322,7 +328,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._colsample_bylevel = p._col_sample_rate;
     }
     if (p._max_delta_step != 0) {
-      Log.info("Using user-provided parameter max_delta_step instead of max_abs_leafnode_pred.");
+      LOG.info("Using user-provided parameter max_delta_step instead of max_abs_leafnode_pred.");
       params.put("max_delta_step", p._max_delta_step);
       p._max_abs_leafnode_pred = p._max_delta_step;
     } else {
@@ -352,30 +358,30 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("gpu_id", p._gpu_id);
       // we are setting updater rather than tree_method here to keep CPU predictor, which is faster
       if (p._booster == XGBoostParameters.Booster.gblinear) {
-        Log.info("Using gpu_coord_descent updater."); 
+        LOG.info("Using gpu_coord_descent updater."); 
         params.put("updater", "gpu_coord_descent");
       } else {
-        Log.info("Using gpu_hist tree method.");
+        LOG.info("Using gpu_hist tree method.");
         params.put("max_bin", p._max_bins);
         params.put("updater", "grow_gpu_hist");
       }
     } else if (p._booster == XGBoostParameters.Booster.gblinear) {
-      Log.info("Using coord_descent updater.");
+      LOG.info("Using coord_descent updater.");
       params.put("updater", "coord_descent");
     } else if (H2O.CLOUD.size() > 1 && p._tree_method == XGBoostParameters.TreeMethod.auto &&
         p._monotone_constraints != null) {
-      Log.info("Using hist tree method for distributed computation with monotone_constraints.");
+      LOG.info("Using hist tree method for distributed computation with monotone_constraints.");
       params.put("tree_method", XGBoostParameters.TreeMethod.hist.toString());
       params.put("max_bin", p._max_bins);
     } else {
-      Log.info("Using " + p._tree_method.toString() + " tree method.");
+      LOG.info("Using " + p._tree_method.toString() + " tree method.");
       params.put("tree_method", p._tree_method.toString());
       if (p._tree_method == XGBoostParameters.TreeMethod.hist) {
         params.put("max_bin", p._max_bins);
       }
     }
     if (p._min_child_weight != 1) {
-      Log.info("Using user-provided parameter min_child_weight instead of min_rows.");
+      LOG.info("Using user-provided parameter min_child_weight instead of min_rows.");
       params.put("min_child_weight", p._min_child_weight);
       p._min_rows = p._min_child_weight;
     } else {
@@ -383,7 +389,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       p._min_child_weight = p._min_rows;
     }
     if (p._gamma != 0) {
-      Log.info("Using user-provided parameter gamma instead of min_split_improvement.");
+      LOG.info("Using user-provided parameter gamma instead of min_split_improvement.");
       params.put("gamma", p._gamma);
       p._min_split_improvement = p._gamma;
     } else {
@@ -418,7 +424,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     final int nthreadMax = getMaxNThread();
     final int nthread = p._nthread != -1 ? Math.min(p._nthread, nthreadMax) : nthreadMax;
     if (nthread < p._nthread) {
-      Log.warn("Requested nthread=" + p._nthread + " but the cluster has only " + nthreadMax + " available." +
+      LOG.warn("Requested nthread=" + p._nthread + " but the cluster has only " + nthreadMax + " available." +
               "Training will use nthread=" + nthread + " instead of the user specified value.");
     }
     params.put("nthread", nthread);
@@ -444,11 +450,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       assert constraintsUsed == monotoneConstraints.size();
     }
 
-    Log.info("XGBoost Parameters:");
+    LOG.info("XGBoost Parameters:");
     for (Map.Entry<String,Object> s : params.entrySet()) {
-      Log.info(" " + s.getKey() + " = " + s.getValue());
+      LOG.info(" " + s.getKey() + " = " + s.getValue());
     }
-    Log.info("");
+    LOG.info("");
 
     return BoosterParms.fromMap(Collections.unmodifiableMap(params));
   }
@@ -500,7 +506,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
   }
 
   private ModelMetrics makeMetrics(Frame data, Frame originalData, boolean isTrain, String description) {
-    Log.debug("Making metrics: " + description);
+    LOG.debug("Making metrics: " + description);
     return new XGBoostModelMetrics(_output, data, originalData, isTrain, this).compute();
   }
 

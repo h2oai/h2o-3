@@ -2,20 +2,22 @@ package ml.dmlc.xgboost4j.java;
 
 import hex.DataInfo;
 import hex.tree.xgboost.XGBoostModel;
+import org.apache.log4j.Logger;
 import water.Iced;
 import water.Key;
-import water.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
-
 
 /**
  * This class contains the state of the Deep Learning model
  * This will be shared: one per node
  */
 final public class XGBoostModelInfo extends Iced {
+
+  private static final Logger LOG = Logger.getLogger(XGBoostModelInfo.class);
+  
   public final XGBoostModel.XGBoostParameters _parameters; // not used, kept for debugging purposes
   private final Key<DataInfo> _dataInfoKey;
 
@@ -49,7 +51,7 @@ final public class XGBoostModelInfo extends Iced {
     }
     try {
       Booster booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
-      Log.debug("Booster created from bytes, raw size = " + _boosterBytes.length);
+      LOG.debug("Booster created from bytes, raw size = " + _boosterBytes.length);
       return booster;
     } catch (XGBoostError | IOException exception) {
       throw new IllegalStateException("Failed to load the booster.", exception);

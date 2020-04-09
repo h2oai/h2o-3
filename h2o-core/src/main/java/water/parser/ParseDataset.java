@@ -1127,11 +1127,16 @@ public final class ParseDataset {
         }
       }
 
-      if (printLogSeparatorToStdout)
+      if (printLogSeparatorToStdout) {
         Log.info("Additional column information only sent to log file...");
+      }
 
       String s = String.format(format, CStr, typeStr, minStr, maxStr, meanStr, sigmaStr, naStr, isConstantStr, numLevelsStr);
-      Log.info(s,printColumnToStdout);
+      if (printColumnToStdout) {
+        Log.info(s);
+      } else {
+        Log.trace(s);
+      }
     }
     Log.info(FrameUtils.chunkSummary(fr).toString());
   }

@@ -131,9 +131,6 @@ public class OOMTest extends TestUtil {
       //new OOMTest().testParseMemoryStress();    // Throws on assertion error
     } catch( Throwable e ) {
       Log.err(e);
-      StringWriter sw = new StringWriter();
-      e.printStackTrace(new PrintWriter(sw));
-      Log.err(sw);
       System.exit(-1);
     }
     System.exit(0);

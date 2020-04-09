@@ -56,8 +56,7 @@ public class H2OSecurityManager implements WrappingSecurityManager {
             }
         } catch (SSLContextException e) {
             Log.err("Node initialized with SSL enabled but failed to create SSLContext. " +
-                    "Node initialization aborted.");
-            Log.err(e);
+                    "Node initialization aborted.", e);
             H2O.exit(1);
         }
     }

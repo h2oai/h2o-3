@@ -2,9 +2,10 @@ package ml.dmlc.xgboost4j.java;
 
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
-import water.*;
+import org.apache.log4j.Logger;
+import water.H2O;
+import water.Key;
 import water.nbhm.NonBlockingHashMap;
-import water.util.Log;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -14,6 +15,8 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
 
 public class XGBoostUpdater extends Thread {
+
+  private static final Logger LOG = Logger.getLogger(XGBoostUpdater.class);
 
   private static long WORK_START_TIMEOUT_SECS = 5 * 60; // Each Booster task should start before this timer expires
   private static long INACTIVE_CHECK_INTERVAL_SECS = 60;
@@ -58,15 +61,13 @@ public class XGBoostUpdater extends Thread {
     } catch (InterruptedException e) {
       XGBoostUpdater self = updaters.get(_modelKey);
       if (self != null) {
-        Log.err("Updater thread was interrupted while it was still registered, name=" + self.getName());
-        Log.err(e);
+        LOG.error("Updater thread was interrupted while it was still registered, name=" + self.getName(), e);
       } else {
-        Log.debug("Updater thread interrupted.", e);
+        LOG.debug("Updater thread interrupted.", e);
       }
       Thread.currentThread().interrupt();
     } catch (XGBoostError e) {
-      Log.err("XGBoost training iteration failed");
-      Log.err(e);
+      LOG.error("XGBoost training iteration failed", e);
     } finally {
       _in = null; // Will throw NPE if used wrong
       _out = null;
@@ -76,12 +77,12 @@ public class XGBoostUpdater extends Thread {
         if (_booster != null)
           _booster.dispose();
       } catch (Exception e) {
-        Log.warn("Failed to dispose of training matrix/booster", e);
+        LOG.warn("Failed to dispose of training matrix/booster", e);
       }
       try {
         Rabit.shutdown();
       } catch (Exception xgBoostError) {
-        Log.warn("Rabit shutdown during update failed", xgBoostError);
+        LOG.warn("Rabit shutdown during update failed", xgBoostError);
       }
     }
   }
@@ -101,7 +102,7 @@ public class XGBoostUpdater extends Thread {
       if (result != null) {
         return result;
       } else if (i > 5) {
-        Log.warn(String.format("XGBoost task of type '%s' is taking unexpectedly long, it didn't finish in %d seconds.",
+        LOG.warn(String.format("XGBoost task of type '%s' is taking unexpectedly long, it didn't finish in %d seconds.",
                 callable, INACTIVE_CHECK_INTERVAL_SECS * i));
       }
     }
@@ -138,7 +139,7 @@ public class XGBoostUpdater extends Thread {
               );
         // Force Booster initialization; we can call any method that does "lazy init"
         byte[] boosterBytes = _booster.toByteArray();
-        Log.info("Initial Booster created, size=" + boosterBytes.length);
+        LOG.info("Initial Booster created, size=" + boosterBytes.length);
       } else {
         // Do one iteration
         assert _booster != null;
@@ -193,7 +194,7 @@ public class XGBoostUpdater extends Thread {
   static void terminate(Key<XGBoostModel> modelKey) {
     XGBoostUpdater updater = updaters.remove(modelKey);
     if (updater == null)
-      Log.debug("XGBoostUpdater for modelKey=" + modelKey + " was already clean-up on node " + H2O.SELF);
+      LOG.debug("XGBoostUpdater for modelKey=" + modelKey + " was already clean-up on node " + H2O.SELF);
     else
       updater.interrupt();
   }
@@ -214,8 +215,7 @@ public class XGBoostUpdater extends Thread {
     private static LoggingExceptionHandler INSTANCE = new LoggingExceptionHandler();
     @Override
     public void uncaughtException(Thread t, Throwable e) {
-      Log.err("Uncaught exception in " + t.getName());
-      Log.err(e);
+      LOG.error("Uncaught exception in " + t.getName(), e);
     }
   }
   
