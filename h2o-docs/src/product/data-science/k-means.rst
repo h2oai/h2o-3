@@ -161,7 +161,10 @@ However, there are some assumptions:
 
 The H2O Aggregator method is a clustering-based method for reducing a numerical/categorical dataset into a dataset with fewer rows. Aggregator maintains outliers as outliers but lumps together dense clusters into exemplars with an attached count column showing the member points.
 
-A demo for the Constrained K-means with Aggregator model is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo_cluto.ipynb>`__ or `here <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/data-science/k-means.rst#constrained-k-means-with-the-aggregator-model>`__. 
+The following demos are available for constrained KMeans with the Aggregator model:
+
+- https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo_cluto.ipynb
+- https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/data-science/k-means.rst#constrained-k-means-with-the-aggregator-model 
 
 FAQ
 ~~~
