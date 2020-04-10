@@ -156,21 +156,22 @@ try {
                                 cd ${env.BUILD_NUMBER_DIR}
                                 git tag -a jenkins-${env.BRANCH_NAME}-${currentBuild.number} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
                             """
-                            if ((env.NIGHTLY_BUILD == null || env.NIGHTLY_BUILD.toLowerCase() == 'false')) {
+                            sshagent (credentials: ['h2oOpsGitPrivateKey']) {
+                                if ((env.NIGHTLY_BUILD == null || env.NIGHTLY_BUILD.toLowerCase() == 'false')) {
+                                    sh """
+                                        cd ${env.BUILD_NUMBER_DIR}
+                                        echo "Process release tags"
+                                        git tag -d jenkins-rel-latest-stable
+                                        git push origin :refs/tags/jenkins-rel-latest-stable
+                                        git tag -a jenkins-${env.PROJECT_VERSION} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+                                        git tag -a jenkins-rel-latest-stable -f -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+                                    """
+                                }
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
-
-                                    echo "Process release tags"
-                                    git tag -d jenkins-rel-latest-stable
-                                    git push origin :refs/tags/jenkins-rel-latest-stable
-                                    git tag -a jenkins-${env.PROJECT_VERSION} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
-                                    git tag -a jenkins-rel-latest-stable -f -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+                                    git push --tags
                                 """
                             }
-                            sh """
-                                cd ${env.BUILD_NUMBER_DIR}
-                                git push --tags
-                            """
                             pipelineContext.getBuildSummary().markStageSuccessful(this, TAG_STAGE_NAME)
                         } catch (Exception e) {
                             pipelineContext.getBuildSummary().markStageFailed(this, TAG_STAGE_NAME)
