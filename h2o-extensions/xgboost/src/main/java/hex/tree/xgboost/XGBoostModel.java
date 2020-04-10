@@ -573,10 +573,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
-    return scoreContributions(frame, destination_key, false);
-  }
-
-  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, boolean approx) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
@@ -584,13 +580,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     assert di != null;
     final String[] outputNames = ArrayUtils.append(di.coefNames(), "BiasTerm");
 
-    return makePredictContribTask(di, approx)
+    return new PredictTreeSHAPTask(di, model_info(), _output)
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);
-  }
-  
-  private MRTask<?> makePredictContribTask(DataInfo di, boolean approx) {
-    return approx ? new PredictContribApproxTask(_parms, model_info, _output, di) : new PredictTreeSHAPTask(di, model_info(), _output);
   }
 
   @Override

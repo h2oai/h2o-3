@@ -1556,7 +1556,7 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void testScoreApproxContributions() throws IOException, XGBoostError {
+  public void testScoreContributions() throws IOException, XGBoostError {
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/junit/weather.csv"));
@@ -1580,7 +1580,7 @@ public class XGBoostTest extends TestUtil {
       Scope.track_generic(model);
       Log.info(model);
 
-      Frame contributions = model.scoreContributions(tfr, Key.<Frame>make(), true);
+      Frame contributions = model.scoreContributions(tfr, Key.make());
       Scope.track(contributions);
 
       assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
@@ -1635,12 +1635,15 @@ public class XGBoostTest extends TestUtil {
     @Override
     public void map(Chunk[] cs) {
       for (int i = 0; i < cs[0]._len; i++) {
-        for (int j = 0; j < cs.length; j++) {
+        int row = (int) cs[0].start() + i;
+        for (int j = 0; j < cs.length - 1; j++) {
           float contrib = (float) cs[j].atd(i);
-          int row = (int) cs[0].start() + i;
           assertEquals("Contribution in row=" + row + " on position=" + j + " should match.",
                   _expectedContribs[row][j], contrib, 1e-6);
         }
+        float biasTerm = (float) cs[cs.length - 1].atd(i);
+        float expectedBiasTerm = _expectedContribs[row][cs.length - 1];
+        assertEquals("BiasTerm in row=" + row + " should match.",  expectedBiasTerm, biasTerm, 1e-6);
       }
     }
   }

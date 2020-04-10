@@ -75,7 +75,7 @@ public class XgbPredictContribsTest {
     // 1. Train an XGBoost model & parse using Predictor
     final Booster booster = XGBoost.train(trainMat, params, 10, watches, null, null);
     final Predictor predictor = new Predictor(new ByteArrayInputStream(booster.toByteArray()));
-    final double baseMargin = baseMargin(predictor);
+    final double baseMargin = predictor.getBaseScore();
     
     // 2. Sanity check - make sure booster & predictor agree on predictions
     float[][] preds = booster.predict(trainMat, true);
@@ -97,6 +97,7 @@ public class XgbPredictContribsTest {
     RegTree[] trees = gbTree.getGroupedTrees()[0];
     for (int i = 0; i < 100; i++) {
       double[] contribsNaive = new double[ctrbs[0].length]; // contributions calculated naive approach (exponential complexity)
+      contribsNaive[contribsNaive.length - 1] = baseMargin;
       float[] contribsPredictor = new float[ctrbs[0].length]; // contributions calculated by Predictor
       FVec row = new MapBackedFVec(trainData.get(i));
       float[] predicted = predictor.predict(row, true);
@@ -110,7 +111,7 @@ public class XgbPredictContribsTest {
         contribsPredictor = treeSHAP.calculateContributions(row, contribsPredictor);
         // B) Calculate contributions the hard way
         final NaiveTreeSHAP<FVec, RegTreeImpl.Node, RegTreeImpl.RTreeNodeStat> naiveTreeSHAP = new NaiveTreeSHAP<>(
-                tree.getNodes(), tree.getStats(), 0, baseMargin);
+                tree.getNodes(), tree.getStats(), 0);
         predExpVal += naiveTreeSHAP.calculateContributions(row, contribsNaive);  
       }
       // sanity check - contributions should sum-up to the prediction
@@ -120,10 +121,6 @@ public class XgbPredictContribsTest {
       // contributions should match!
       assertArrayEquals(contribsNaive, ArrayUtils.toDouble(contribsPredictor), 1e-6);
     }
-  }
-
-  private static float baseMargin(Predictor predictor) {
-    return ReflectionUtils.getFieldValue(predictor, "base_score");
   }
   
   private static class MapBackedFVec implements FVec {

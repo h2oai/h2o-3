@@ -218,7 +218,7 @@ public class DRFPredictContribsTest extends TestUtil {
         @Override
         public void map(Chunk[] cs) {
             final TreeSHAP<double[], SharedTreeNode, SharedTreeNode> treeSHAP = new TreeSHAP<>(_nodes, _nodes, 0);
-            final NaiveTreeSHAP<double[], SharedTreeNode, SharedTreeNode> naiveTreeSHAP = new NaiveTreeSHAP<>(_nodes, _nodes, 0, 0);
+            final NaiveTreeSHAP<double[], SharedTreeNode, SharedTreeNode> naiveTreeSHAP = new NaiveTreeSHAP<>(_nodes, _nodes, 0);
 
             final double[] row = MemoryManager.malloc8d(cs.length);
             final float[] contribs = MemoryManager.malloc4f(cs.length);
