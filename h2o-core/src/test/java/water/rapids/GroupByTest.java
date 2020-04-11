@@ -6,8 +6,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
+import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.vals.ValFrame;
 import water.util.Log;
+import water.util.Pair;
+
+import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
@@ -327,6 +333,72 @@ public class GroupByTest extends TestUtil {
       if( !expectThrow ) throw iae; // If not expecting a throw, then throw which fails the junit
       fr.delete();                  // If expecting, then cleanup
       return null;
+    }
+  }
+  
+  private static Frame getSimpleTestFrame(final String frameName) {
+    String[] strings = new String[] { "a", "b", "a", "c", "b" };
+    long[] nums0 = new long[] { 0, 1, 2, 1, 1 };
+    long[] nums1 = new long[] { 2, 3, 2, 4, 3 };
+
+    return new TestFrameBuilder()
+                .withName(frameName)
+                .withColNames("Str", "Num_0", "Num_1")
+                .withVecTypes(Vec.T_STR, Vec.T_NUM, Vec.T_NUM)
+                .withDataForCol(0, strings)
+                .withDataForCol(1, nums0)
+                .withDataForCol(2, nums1)
+                .withChunkLayout(1, 1, 2, 1)
+                .build();
+  }
+
+  @Test
+  public void testGroupByStringNrow() {
+    String inputFrameName = "testInputFrame";
+    Frame inputFrame = getSimpleTestFrame(inputFrameName);
+
+    Frame expectedResFrame = new TestFrameBuilder()
+                                  .withColNames("Str", "Num_0", "nrow")
+                                  .withVecTypes(Vec.T_STR, Vec.T_NUM, Vec.T_NUM)
+                                  .withDataForCol(0, new String[] { "a", "a", "b", "c" })
+                                  .withDataForCol(1, new long[] { 0, 2, 1, 1 })
+                                  .withDataForCol(2, new long[] { 1, 1, 2, 1 })
+                                  .build();
+    
+    try {
+      System.out.println("Input frame:");
+      System.out.println(inputFrame.toTwoDimTable().toString());
+
+      AstGroup.AGG[] aggs = new AstGroup.AGG[1];
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.nrow, 2, AstGroup.NAHandling.ALL, -1);
+
+      int[] groupByColumnsNum = new int[]{1};
+      int[] groupByColumnsStr = new int[]{0};
+
+      Frame resFrame = new AstGroup().performGroupingWithAggregations(inputFrame,
+                                                                      groupByColumnsNum,
+                                                                      groupByColumnsStr,
+                                                                      aggs).getFrame();
+
+      System.out.println("GroupBy result:");
+      System.out.println(resFrame.toTwoDimTable().toString());
+
+      Assert.assertEquals(expectedResFrame.numCols(), resFrame.numCols());
+      Assert.assertEquals(expectedResFrame.numRows(), resFrame.numRows());
+
+      for(int i = 0; i < expectedResFrame.numCols(); i++) {
+        Vec expectedVec = expectedResFrame.vec(i);
+
+        if (expectedVec.get_type() == Vec.T_STR)
+          assertStringVecEquals(expectedVec, resFrame.vec(i));
+        else
+          assertVecEquals(expectedVec, resFrame.vec(i), 0);
+      }
+
+      resFrame.remove();
+    } finally {
+      inputFrame.remove();
+      expectedResFrame.remove();
     }
   }
 }
