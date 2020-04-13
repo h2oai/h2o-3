@@ -12,6 +12,11 @@ Common
 .. toctree::
    :maxdepth: 1
 
+   data-science/supported-data-types
+
+.. toctree::
+   :maxdepth: 1
+
    data-science/common
 
 Supervised
