@@ -55,6 +55,11 @@ Aggregator Output
 
 The output of the aggregation is a new aggregated frame that can be accessed in R and Python.
 
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Aggregator model.
+
 .. tabs::
    .. code-tab:: r R
 

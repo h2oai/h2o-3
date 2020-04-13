@@ -103,8 +103,10 @@ Defining a Stacked Ensemble Model
 
 You can follow the progress of H2O's Stacked Ensemble development `here <https://0xdata.atlassian.net/issues/?filter=19301>`__.
 
-Example
-~~~~~~~
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Stacked Ensembles model.
 
 .. tabs::
    .. code-tab:: r R

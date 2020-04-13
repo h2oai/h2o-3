@@ -277,6 +277,77 @@ predictions from Flow. Those leaf nodes represent decision rules that
 can be fed to other models (i.e., GLM with lambda search and strong
 rules) to obtain a limited set of the most important rules. 
 
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Random Forest model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the cars dataset into H2O:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # Set the predictors and response; 
+    # set the response as a factor:
+    cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+    predictors <- c("displacement","power","weight","acceleration","year")
+    response <- "economy_20mpg"
+
+    # Split the dataset into a train and valid set:
+    cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+    train <- cars.split[[1]]
+    valid <- cars.split[[2]]
+
+    # Build and train the model:
+    cars_drf <- h2o.randomForest(x = predictors, 
+                                 y = response, 
+                                 training_frame = train, 
+                                 validation_frame = valid, 
+                                 seed = 1234)
+
+    # Eval performance:
+    perf <- h2o.performance(cars_drf)
+
+    # Generate predictions on a validation set (if necessary):
+    predict <- h2o.predict(cars_drf, newdata = valid)
+
+
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators import H2ORandomForestEstimator
+    h2o.init()
+
+    # Import the cars dataset into H2O:
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # Set the predictors and response; 
+    # set the response as a factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    predictors = ["displacement","power","weight","acceleration","year"]
+    response = "economy_20mpg"
+
+    # Split the dataset into a train and valid set:
+    train, valid = cars.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    cars_drf = H2ORandomForestEstimator(seed=1234)
+    cars_drf.train(x=predictors, 
+                   y=response, 
+                   training_frame=train, 
+                   validation_frame=valid
+
+    # Eval performance:
+    perf = cars_drf.model_performance()
+
+    # Generate predictions on a validation set (if necessary):
+    pred = cars_drf.predict(valid)
+
+
 FAQ
 ~~~
 
