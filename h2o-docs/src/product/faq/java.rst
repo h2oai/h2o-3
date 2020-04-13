@@ -29,7 +29,7 @@ There are two ways to use H2O with Java: using the REST API or embedding H2O wit
 How do I communicate with a remote cluster using the REST API?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Download the H2O distribution zip file from https://www.h2o.ai/downloads. The distribution zip includes a file named **h2o-bindings-<version>.zip**. This file contains all of the Java bindings necessary for communicating with a remote cluster via the REST API. The REST API documentation is available `here <../rest-api-reference.html>`__.
+Download the H2O distribution zip file from https://www.h2o.ai/download. The distribution zip includes a file named h2o-bindings-|version|.zip. This file contains all of the Java bindings necessary for communicating with a remote cluster via the REST API. The REST API documentation is available `here <../rest-api-reference.html>`__.
 
 
 --------------

@@ -23,25 +23,32 @@ but always shows user-added customer algorithm code as gray.
 
 REST API Clients
 ------------------
+
 All REST API clients communicate with H2O over a socket connection.
 
 
 **JavaScript**
+
  The embedded H2O Web UI is written in JavaScript, and uses the standard REST API.
 
 **R**
+
  R scripts can use the H2O R package ['library(h2o)']. Users can write their own R functions that run on H2O with 'apply' or 'ddply'.
 
 **Python**
+
  Python scripts currently must use the REST API directly. An H2O client API for python is planned.
 
 **Excel**
+
  An H2O worksheet for Microsoft Excel is available. It allows you to import big datasets into H2O and run algorithms like GLM directly from Excel.
 
 **Tableau**
+
  Users can pull results from H2O for visualization in Tableau.
 
 **Flow**
+
  H2O Flow is the notebook style Web UI for H2O.
 
 
@@ -69,24 +76,30 @@ Memory Management
 ^^^^^^^^^^^^^^^^^
 
 **Fluid Vector Frame**
+
  A Frame is an H2O Data Frame, the basic unit of data storage exposed to users. "Fluid Vector" is an internal engineering term that caught on. It refers to the ability to add and update and remove columns in a frame "fluidly" (as opposed to the frame being rigid and immutable). The Frame->Vector->Chunk->Element taxonomy that stores data in memory is described in Javadoc. The Fluid Vector (or fvec) code is the column-compressed store implementation.
 
 **Distributed K/V store**
+
  Atomic and distributed in-memory storage spread across the cluster.
 
 **Non-blocking Hash Map**
+
  Used in the K/V store implementation.
 
 CPU Management
 ^^^^^^^^^^^^^^
 
 **Job**
+
  Jobs are large pieces of work that have progress bars and can be monitored in the Web UI. Model creation is an example of a job.
 
 **MRTask**
+
  MRTask stands for MapReduce Task. This is an H2O in-memory MapReduce Task, not to be confused with a Hadoop MapReduce task.
 
 **Fork/Join**
+
  A modified JSR166y lightweight task execution framework.
 
 

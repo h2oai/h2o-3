@@ -381,7 +381,7 @@ For older versions of IDEA IntelliJ, run ``./gradlew idea``, then **Import Proje
 
 For JUnit tests to pass, you may need multiple H2O nodes. Create a "Run/Debug" configuration with the following parameters:
 
-::
+.. code-block:: bash
 
     Type: Application
     Main class: H2OApp

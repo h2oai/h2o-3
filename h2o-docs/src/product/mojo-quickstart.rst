@@ -630,7 +630,7 @@ FAQ
 
   If you declare a dependency on h2o-genmodel, then you also have to include the h2o-genmodel-ext-xgboost dependency if you are planning to use XGBoost models. For example:
 
-  ::
+  .. substitution-code-block:: bash
 
     <groupId>ai.h2o</groupId>
     <artifactId>xgboost-mojo-example</artifactId>
@@ -639,10 +639,10 @@ FAQ
     dependency>
         <groupId>ai.h2o</groupId>
         <artifactId>h2o-genmodel-ext-xgboost</artifactId>
-        <version>3.18.0.8</version>
+        <version>|version|</version>
     </dependency>
     <dependency>
         <groupId>ai.h2o</groupId>
         <artifactId>h2o-genmodel</artifactId>
-        <version>3.18.0.8</version>
+        <version>|version|</version>
     </dependency>

@@ -20,20 +20,20 @@ While H2O Flow supports REST API, R scripts, and CoffeeScript, no programming ex
 Download Flow
 -------------
 
-1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line, replacing "{version}" with the appropriate version (for example, 3.20.0.2):
+1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line.
 
-  ::
+  .. substitution-code-block:: bash
 
-    curl -o h2o.zip http://download.h2o.ai/versions/h2o-{version}.zip
+    curl -o h2o.zip http://download.h2o.ai/versions/h2o-|version|.zip
         
 
-2. Next in your terminal, enter the following command lines one at a time:
+2. Next in your terminal, enter the following command lines one at a time. The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3-|version| folder, and the fourth line runs your jar file.
 
-  *(The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3.20.0.2 folder, and the fourth line runs your jar file.)*::
+  .. substitution-code-block:: bash
 
     cd ~/Downloads
-    unzip h2o-3.20.0.2.zip
-    cd h2o-3.20.0.2
+    unzip h2o-|version|.zip
+    cd h2o-|version|
     java -jar h2o.jar
 
 3. Finally, to start Flow point your browser to http://localhost:54321.
@@ -44,9 +44,11 @@ Launch Flow
 
 The next time you want to launch Flow, change into the directory that contains your H2O package and run the JAR file from the command line.
 
-**Note**: If your H2O package is not in the Downloads folder, replace the following path  ~/Downloads/h2o-{version} with the correct path to your h2o-{version} package)::
+**Note**: If your H2O package is not in the Downloads folder, replace the following path  ~/Downloads/h2o-|version| with the correct path to your h2o-|version| package.
 
-  cd ~/Downloads/h2o-{version} 
+.. substitution-code-block:: bash
+
+  cd ~/Downloads/h2o-|version| 
   java -jar h2o.jar
 
 

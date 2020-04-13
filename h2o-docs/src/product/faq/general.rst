@@ -277,12 +277,12 @@ I am writing an academic research paper and I would like to cite H2O in my bibli
 To cite our software (insert correct H2O version & year):
 
 -  H2O.ai. (2020) *h2o: R Interface for H2O*. R package version
-   3.30.0.1. https://github.com/h2oai/h2o-3.
+   |version|. https://github.com/h2oai/h2o-3.
 
 -  H2O.ai. (2020) *h2o: Python Interface for H2O*. Python
-   package version 3.30.0.1. https://github.com/h2oai/h2o-3.
+   package version |version|. https://github.com/h2oai/h2o-3.
 
--  H2O.ai. (2020) *H2O: Scalable Machine Learning Platform*. Version 3.30.0.1. https://github.com/h2oai/h2o-3.
+-  H2O.ai. (2020) *H2O: Scalable Machine Learning Platform*. Version |version|. https://github.com/h2oai/h2o-3.
 
 To cite one of our booklets:
 
@@ -309,14 +309,14 @@ To cite H2O AutoML, please use the instructions `here <../automl.html#citation>`
 
 If you are using Bibtex:
 
-::
+.. substitution-code-block:: bash
 
 
     @Manual{h2o_R_package,
         title = {h2o: R Interface for H2O},
         year = {2020},
         month = {March},
-        note = {R package version 3.30.0.1},
+        note = {R package version |version|},
         url = {http://www.h2o.ai},
     }
 
@@ -324,7 +324,7 @@ If you are using Bibtex:
         title = {h2o: Python Interface for H2O},
         author = {H2O.ai},
         year = {2020},
-        note = {Python package version 3.30.0.1},
+        note = {Python package version |version|},
         url = {https://github.com/h2oai/h2o-3},
     }
 
@@ -332,7 +332,7 @@ If you are using Bibtex:
         title = {H2O: Scalable Machine Learning Platform},
         author = {H2O.ai},
         year = {2020},
-        note = {version 3.30.0.1},
+        note = {version |version|},
         url = {https://github.com/h2oai/h2o-3},
     }
 
