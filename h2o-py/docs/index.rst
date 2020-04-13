@@ -1,6 +1,6 @@
 
-H2O Documentation
-=================
+H2O Python Client Documentation
+===============================  
 
 .. toctree::
 
