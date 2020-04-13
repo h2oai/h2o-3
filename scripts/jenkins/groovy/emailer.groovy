@@ -4,8 +4,9 @@ def call() {
 
 class Emailer {
 
-    private static final List<String> PIPELINE_ALWAYS_RECIPIENTS = ['michalr@h2o.ai']
-    private static final List<String> PIPELINE_FAILURE_RECIPIENTS = ['michalk@h2o.ai'] + PIPELINE_ALWAYS_RECIPIENTS
+    private static final List<String> BUILD_RANGER_RECIPIENT = ['andrey.spiridonov@h2o.ai']
+    private static final List<String> PIPELINE_ALWAYS_RECIPIENTS = [] + BUILD_RANGER_RECIPIENT // BR probably need only notifications about failures
+    private static final List<String> PIPELINE_FAILURE_RECIPIENTS = [] + PIPELINE_ALWAYS_RECIPIENTS
     private static final String LOGO_URL = 'https://pbs.twimg.com/profile_images/501572396810129408/DTgFCs-n.png'
     private static final BACKGROUND_COLORS = [
             'success': '#84e03e',
