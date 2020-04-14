@@ -898,6 +898,8 @@ After obtaining the IP address, point your browser to the specified ip address a
 Kubernetes Integration
 ----------------------
 
+H2O nodes must be treated as stateful by the Kubernetes environment because H2O is a stateful application. H2O nodes are, therefore, spawned together and deallocated together as a single unit. Subsequently, Kubernetes tooling for stateless applications is not applicable to H2O. In Kubernetes, a set of pods sharing a common state is named as a StatefulSet.
+
 H2O Pods deployed on Kubernetes cluster require a `headless service <https://kubernetes.io/docs/concepts/services-networking/service/#headless-services>`__ for H2O Node discovery. The headless service, instead of load-balancing incoming requests to the underlying H2O pods, returns a set of adresses of all the underlying pods.
 
 .. figure:: images/h2o-k8s-clustering.png
