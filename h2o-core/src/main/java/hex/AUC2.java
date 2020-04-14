@@ -6,7 +6,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.fp.Function;
-import water.util.fp.Functions;
 
 import java.util.Arrays;
 
@@ -576,61 +575,100 @@ public class AUC2 extends Iced {
   // ==========
   // Given the probabilities of a 1, and the actuals (0/1) report the perfect
   // AUC found by sorting the entire dataset.  Expensive, and only works for
-  // small data (probably caps out at about 10M rows).
+  // smaller data (hundreds of millions of observations).
   public static double perfectAUC( Vec vprob, Vec vacts ) {
     if( vacts.min() < 0 || vacts.max() > 1 || !vacts.isInt() )
       throw new IllegalArgumentException("Actuals are either 0 or 1");
     if( vprob.min() < 0 || vprob.max() > 1 )
       throw new IllegalArgumentException("Probabilities are between 0 and 1");
-    // Horrible data replication into array of structs, to sort.  
-    Pair[] ps = new Pair[(int)vprob.length()];
+
     Vec.Reader rprob = vprob.new Reader();
     Vec.Reader racts = vacts.new Reader();
-    for( int i=0; i<ps.length; i++ )
-      ps[i] = new Pair(rprob.at(i),(byte)racts.at8(i));
-    return perfectAUC(ps);
-  }
-  public static double perfectAUC( double ds[], double[] acts ) {
-    Pair[] ps = new Pair[ds.length];
-    for( int i=0; i<ps.length; i++ )
-      ps[i] = new Pair(ds[i],(byte)acts[i]);
-    return perfectAUC(ps);
+
+    final int posCnt = (int) vacts.nzCnt();
+    final int negCnt = (int) (vacts.length() - posCnt);
+    double[] posProbs = new double[posCnt];
+    double[] negProbs = new double[negCnt];
+
+    int pc = 0;
+    int nc = 0;
+    for (int i = 0; i < posCnt + negCnt; i++) {
+      byte actual = (byte) racts.at8(i);
+      double prob = rprob.at(i);
+      if (actual == 1) {
+        posProbs[pc++] = prob;
+      } else {
+        negProbs[nc++] = prob;
+      }
+    }
+    assert pc == posProbs.length;
+    assert nc == negProbs.length;
+
+    return perfectAUCFromComponents(negProbs, posProbs);
   }
 
-  private static double perfectAUC( Pair[] ps ) {
-    // Sort by probs, then actuals - so tied probs have the 0 actuals before
-    // the 1 actuals.  Sort probs from largest to smallest - so both the True
-    // and False Positives are zero to start.
-    Arrays.sort(ps,new java.util.Comparator<Pair>() {
-        @Override public int compare( Pair a, Pair b ) {
-          return a._prob<b._prob ? 1 : (a._prob==b._prob ? (b._act-a._act) : -1);
-        }
-      });
+  static double perfectAUC(double ds[], double[] acts) {
+    int posCnt = 0;
+    for (double act : acts) {
+      if (act == 1.0d)
+        posCnt++;
+    }
+    double[] posProbs = new double[posCnt];
+    double[] negProbs = new double[acts.length - posCnt];
+    int pi = 0;
+    int ni = 0;
+    for (int i = 0; i < acts.length; i++) {
+      if (acts[i] == 1.0d)
+        posProbs[pi++] = ds[i];
+      else
+        negProbs[ni++] = ds[i];
+    }
+    return perfectAUCFromComponents(negProbs, posProbs);
+  }
 
+  private static double perfectAUCFromComponents(double[] negProbs, double[] posProbs) {
+    Arrays.sort(posProbs);
+    Arrays.sort(negProbs);
+
+    double[] probs = new double[negProbs.length + posProbs.length];
+    byte[] acts = new byte[probs.length];
+
+    int pi = 0;
+    int ni = 0;
+    for (int i = 0; i < probs.length; i++) {
+      boolean takeNeg = pi == posProbs.length || (ni < negProbs.length && negProbs[ni] <= posProbs[pi]);
+      if (takeNeg) {
+        probs[i] = negProbs[ni++];
+        acts[i] = 0;
+      } else {
+        probs[i] = posProbs[pi++];
+        acts[i] = 1;
+      }
+    }
+
+    return perfectAUC(probs, acts);
+  }
+  
+  private static double perfectAUC(double[] sortedProbs, byte[] sortedActs) {
     // Compute Area Under Curve.  
     // All math is computed scaled by TP and FP.  We'll descale once at the
     // end.  Trapezoids from (tps[i-1],fps[i-1]) to (tps[i],fps[i])
     int tp0=0, fp0=0, tp1=0, fp1=0;
     double prob = 1.0;
     double area = 0;
-    for( Pair p : ps ) {
-      if( p._prob!=prob ) { // Tied probabilities: build a diagonal line
+    for (int i = sortedProbs.length - 1; i >= 0; i--) {
+      if( sortedProbs[i]!=prob ) { // Tied probabilities: build a diagonal line
         area += (fp1-fp0)*(tp1+tp0)/2.0; // Trapezoid
         tp0 = tp1; fp0 = fp1;
-        prob = p._prob;
+        prob = sortedProbs[i];
       }
-      if( p._act==1 ) tp1++; else fp1++;
+      if( sortedActs[i]==1 ) tp1++; else fp1++;
     }
     area += (double)tp0*(fp1-fp0); // Trapezoid: Rectangle + 
     area += (double)(tp1-tp0)*(fp1-fp0)/2.0; // Right Triangle
 
     // Descale
     return area/tp1/fp1;
-  }
-
-  private static class Pair {
-    final double _prob; final byte _act;
-    Pair( double prob, byte act ) { _prob = prob; _act = act; }
   }
 
 }

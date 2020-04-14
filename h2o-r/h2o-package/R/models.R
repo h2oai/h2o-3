@@ -1078,6 +1078,18 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
   invisible(NULL)
 }
 
+#' Internal function that calculates a precise AUC from given
+#' probabilities and actual responses.
+#' 
+#' Note: The underlying implementation is not distributed and can
+#' only handle limited size of data. For internal use only.
+#' 
+#' @param probs An \linkS4class{H2OFrame} holding vector of probabilities.
+#' @param acts An \linkS4class{H2OFrame} holding vector of actuals.
+.h2o.perfect_auc <- function(probs, acts) {
+  .newExpr("perfectAUC", probs, acts)[1, 1]
+}
+
 #' Retrieve the AUCPR (Area Under Precision Recall Curve)
 #'
 #' Retrieves the AUCPR value from an \linkS4class{H2OBinomialMetrics}.

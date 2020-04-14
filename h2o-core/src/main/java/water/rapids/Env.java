@@ -10,6 +10,7 @@ import water.rapids.ast.prims.assign.*;
 import water.rapids.ast.prims.math.*;
 import water.rapids.ast.prims.matrix.*;
 import water.rapids.ast.prims.misc.*;
+import water.rapids.ast.prims.models.AstPerfectAUC;
 import water.rapids.ast.prims.models.AstSegmentModelsAsFrame;
 import water.rapids.ast.prims.mungers.*;
 import water.rapids.ast.prims.operators.*;
@@ -288,6 +289,7 @@ public class Env extends Iced {
     init(new AstComma());
     init(new AstLs());
     init(new AstSetProperty());
+    init(new AstPerfectAUC());
 
     // Search
     init(new AstMatch());
