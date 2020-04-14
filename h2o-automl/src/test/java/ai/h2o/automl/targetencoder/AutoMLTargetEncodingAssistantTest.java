@@ -24,6 +24,7 @@ import static ai.h2o.automl.targetencoder.AutoMLBenchmarkHelper.getPreparedTitan
 import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
+/*
 @RunWith(Enclosed.class)
 public class AutoMLTargetEncodingAssistantTest {
 
@@ -153,4 +154,4 @@ public class AutoMLTargetEncodingAssistantTest {
       }
     }
   }
-}
+}*/

@@ -14,8 +14,6 @@ import hex.Model;
 import hex.Model.Parameters.FoldAssignmentScheme;
 import hex.ModelBuilder;
 import hex.ModelContainer;
-import hex.PipelineModelBuilder;
-import hex.PipelineModel;
 import hex.ScoreKeeper.StoppingMetric;
 import hex.ensemble.StackedEnsembleModel;
 import hex.grid.Grid;
@@ -30,17 +28,14 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.util.ArrayUtils;
 import water.util.Countdown;
 import water.fvec.Frame;
-import water.util.ArrayUtils;
 import water.util.EnumUtils;
 import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.util.Arrays;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.Map;
 import java.util.function.Predicate;
-import java.util.Optional;
 
 /**
  * Parent class defining common properties and common logic for actual {@link AutoML} training steps.
@@ -81,9 +76,7 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             final Key<M> resultKey,
             final MP params
     ) {
-        Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
-        ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
-        builder._parms = params;
+        ModelBuilder builder = getModelBuilder(resultKey, params);
         aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+resultKey+" model training")
                 .setNamedValue("start_"+_algo+"_"+_id, new Date(), EventLogEntry.epochFormat.get());
         builder.init(false);          // validate parameters
@@ -94,6 +87,13 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
             return null;
         }
 
+    }
+
+    protected  <M extends Model, MP extends Model.Parameters> ModelBuilder getModelBuilder(Key<M> resultKey, MP params) {
+        Job<M> job = new Job<>(resultKey, ModelBuilder.javaName(_algo.urlName()), _description);
+        ModelBuilder builder = ModelBuilder.make(_algo.urlName(), job, (Key<Model>) resultKey);
+        builder._parms = params;
+        return builder;
     }
 
     private transient AutoML _aml;
@@ -332,77 +332,54 @@ public abstract class ModelingStep<M extends Model> extends Iced<ModelingStep> {
                         : Math.min(parms._max_runtime_secs, maxAssignedTimeSecs);
             }
 
-            Job<M> baselineModelJob = runModelTrainingJob(key, algoName, builder);
+            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
+            aml().eventLog().debug(Stage.ModelTraining, parms._max_runtime_secs == 0
+                    ? "No time limitation for "+key
+                    : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
+            Job<M> baselineModelJob = startModel(key, parms);;
             baselineModelJob.get();
-            Model retrievedBaselineModel = DKV.getGet(builder.dest());
+            Model retrievedBaselineModel = DKV.getGet(key);
             double baselineLoss = retrievedBaselineModel.loss();
 
-            // Attempt to beat base line model performance with data preprocessing
-            ModelBuilder clonedModelBuilder = ModelBuilder.make(builder._parms);
+            // getModelBuilder can probably be moved from startModel() and be passed as parameter
+            ModelBuilder builder = getModelBuilder(key, parms);
 
-            PipelineModel.PipelineModelParameters pipelineModelParameters = new PipelineModel.PipelineModelParameters();
-            PipelineModelBuilder pipelineModelBuilder = new PipelineModelBuilder(pipelineModelParameters, clonedModelBuilder);
+            // Attempt to beat base line model performance with data preprocessing
+            ModelBuilder clonedModelBuilder = ModelBuilder.make(builder._parms); // TODO can we substitute with just `parms`?
 
             // for now we use universal preprocessing which does not depend on type of model at this particular ModelingStep. Can be instantiated once.
             PreprocessingStep[] steps = new UniversalPreprocessingSteps(aml()).getSteps();
             Arrays.stream(steps).forEach(preprocessingStep -> {
-                preprocessingStep.applyIfUseful(clonedModelBuilder, pipelineModelBuilder, baselineLoss);
+                preprocessingStep.applyIfUseful(clonedModelBuilder, baselineLoss);
             });
 
-            // At this point builder should have information about which Preprocessing steps are going to be beneficial to applyIfUseful.
-            // If preprocessing step was not usefull during evaluation phase it will be ignored overall as a fallback strategy.
-//            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
-//            aml().eventLog().debug(Stage.ModelTraining, parms._max_runtime_secs == 0
-//                    ? "No time limitation for "+key
-//                    : "Time assigned for "+key+": "+parms._max_runtime_secs+"s");
-//            return startModel(key, parms);
-            if(pipelineModelBuilder.getPreprocessingModels().size() > 0 ) {
-                final Key<M> keyModelPipeline = Key.make(key + "_pipeline");
-                return runModelTrainingJob(keyModelPipeline, algoName, pipelineModelBuilder);
+            //TODO FIX. steps length does not guarantee that we applied usefull preprocessing
+            if(steps.length > 0 ) {
+                final Key<M> keyModelWithPreprocessing = Key.make(key + "_te");
+                return runModelTrainingWithTEJob(
+                        keyModelWithPreprocessing,
+                        algoName,
+                        clonedModelBuilder,
+                        parms.train(), // TODO check whether it is original train that is being passed
+                        parms._ignored_columns,
+                        aml()
+                        );
             } else {
                 return baselineModelJob;
             }
-        }
-
-        private Job<M> runModelTrainingJob(Key<M> key, String algoName, ModelBuilder builder) {
-            aml().eventLog().info(Stage.ModelTraining, "AutoML: starting "+key+" model training");
-            builder.init(false);          // validate parameters
-            Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml().timeRemainingMs());
-            try {
-                return builder.trainModelOnH2ONode();
-            } catch (H2OIllegalArgumentException exception) {
-                aml().eventLog().warn(Stage.ModelTraining, "Skipping training of model "+key+" due to exception: "+exception);
-                return null;
-            }
-        }
-
-        //TODO maybe it is better to return ModelBuilder with new encoded frames so that we can explicitly pass it to `trainModel` method
-        private void performAutoTargetEncoding(ModelBuilder modelBuilder, AutoMLBuildSpec buildSpec, AutoML aml) throws AutoMLTargetEncoderAssistant.NoColumnsToEncodeException {
-
-            AutoMLTargetEncoderAssistant teAssistant = new AutoMLTargetEncoderAssistant(aml.getTrainingFrame(),
-                    aml.getValidationFrame(),
-                    aml.getLeaderboardFrame(),
-                    buildSpec,
-                    modelBuilder);
-
-            TargetEncoderModel.TargetEncoderParameters bestTEParams = teAssistant.findBestTEParams();
-
-            teAssistant.applyTE(bestTEParams);
         }
 
         private Job<M> runModelTrainingWithTEJob(final Key<M> key, String algoName,
                                                  ModelBuilder builder,
                                                  Frame originalTrain,
                                                  String[] originalIgnoredColumns,
-                                                 AutoMLBuildSpec buildSpec,
                                                  AutoML aml) {
-
+            AutoMLBuildSpec buildSpec = aml.getBuildSpec();
             builder._parms._ignored_columns = buildSpec.input_spec.ignored_columns; //TODO maybe it is better to directly change builder from assistant
 
             Log.debug("Training model: " + algoName + ", time remaining (ms): " + aml.timeRemainingMs());
             Job trainingModelJob = null;
             try {
-//                printOutFrameAsTable(builder._parms.train(), false, 50);
                 trainingModelJob = builder.trainModelOnH2ONode();
                 trainingModelJob.get();
                 return trainingModelJob;

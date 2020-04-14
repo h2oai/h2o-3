@@ -7,7 +7,6 @@ import org.junit.runners.Suite;
 @Ignore
 @RunWith(Suite.class)
 @Suite.SuiteClasses({
-        AutoMLTargetEncodingAssistantTest.class,
         TEIntegrationWithAutoMLTest.class,
 //        AllCategoricalTEApplicationStrategyTest.class, // TODO move test from targetencider ext module
         GridSearchModelParametersSelectionStrategyTest.class,

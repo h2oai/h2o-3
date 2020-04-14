@@ -11,7 +11,6 @@ import ai.h2o.targetencoding.TargetEncoderModel;
 import ai.h2o.targetencoding.strategy.AllCategoricalTEApplicationStrategy;
 import ai.h2o.targetencoding.strategy.TEApplicationStrategy;
 import hex.ModelBuilder;
-import hex.PipelineModelBuilder;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.StringUtils;
@@ -27,7 +26,7 @@ public class TEPreprocessingStep extends PreprocessingStep<TargetEncoderModel> {
   }
 
   @Override
-  protected void applyIfUseful(ModelBuilder modelBuilder, PipelineModelBuilder pipelineModelBuilder, double baseLineLoss) {
+  protected void applyIfUseful(ModelBuilder modelBuilder, double baseLineLoss) {
 
     Optional<ModelParametersSelectionStrategy.Evaluated> bestTEParamsOpt = findBestPreprocessingParams(modelBuilder);
 
@@ -36,7 +35,8 @@ public class TEPreprocessingStep extends PreprocessingStep<TargetEncoderModel> {
       boolean scoreIsBetterThanBaseline = evaluatedBest.getScore() < baseLineLoss;
 
       if (scoreIsBetterThanBaseline) {
-        pipelineModelBuilder.addPreprocessorModel(evaluatedBest.getModel()._key);
+//        pipelineModelBuilder.addPreprocessorModel(evaluatedBest.getModel()._key); //TODO here we should add te model to original modelBuilder( this ability is coming from separate PR)
+
         _modelParametersSelectionStrategy.removeAllButBest();
       } else {
         _modelParametersSelectionStrategy.removeAll();
