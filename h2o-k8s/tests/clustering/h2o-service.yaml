@@ -16,7 +16,7 @@ spec:
       terminationGracePeriodSeconds: 10
       containers:
         - name: h2o-k8s
-          image: 'pscheidl/h2o-3-k8s-runner'
+          image: 'harbor.h2o.ai/opsh2oai/h2o-3-k8s-runner'
           ports:
             - containerPort: 54321
               protocol: TCP
