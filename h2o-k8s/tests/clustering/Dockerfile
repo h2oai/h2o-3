@@ -13,5 +13,9 @@ RUN curl -LO https://storage.googleapis.com/kubernetes-release/release/`curl -s 
 
 RUN curl -s https://raw.githubusercontent.com/rancher/k3d/master/install.sh | bash
 
+RUN \
+    groupadd -g 2117 jenkins && \
+    adduser --uid 2117 -gid 2117 --disabled-password --gecos "" jenkins
+
 CMD \
   ["/bin/bash"]
