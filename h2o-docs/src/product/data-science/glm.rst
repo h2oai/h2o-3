@@ -956,7 +956,12 @@ Below is a simple example showing how to build a Generalized Linear model.
     predictors <- c("AGE", "RACE", "VOL", "GLEASON")
     response <- "CAPSULE"
 
-    prostate.glm <- h2o.glm(family= "binomial", x= predictors, y=response, training_frame=df, lambda = 0, compute_p_values = TRUE)
+    prostate.glm <- h2o.glm(family= "binomial", 
+                            x= predictors, 
+                            y=response, 
+                            training_frame=df, 
+                            lambda = 0, 
+                            compute_p_values = TRUE)
 
     # Coefficients that can be applied to the non-standardized data
     h2o.coef(prostate.glm)
@@ -1010,7 +1015,9 @@ Below is a simple example showing how to build a Generalized Linear model.
     predictors = ["AGE", "RACE", "VOL", "GLEASON"]
     response_col = "CAPSULE"
 
-    glm_model = H2OGeneralizedLinearEstimator(family= "binomial", lambda_ = 0, compute_p_values = True)
+    glm_model = H2OGeneralizedLinearEstimator(family= "binomial", 
+                                              lambda_ = 0, 
+                                              compute_p_values = True)
     glm_model.train(predictors, response_col, training_frame= prostate)
     
     # Coefficients that can be applied to the non-standardized data.

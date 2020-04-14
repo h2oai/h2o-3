@@ -304,30 +304,41 @@ Below is a simple example showing how to build a Deep Learning model.
     library(h2o)
     h2o.init()
 
-    # Import the iris dataset into H2O:
-    iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    # Import the insurance dataset into H2O:
+    insurance <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
 
-    # Set the predictors and response:
-    predictors <- c("petal_len", "petal_wid", "sepal_len", "sepal_wid")
-    response = "class"
+    # Set the factors:
+    offset = log(insurance$Holders) 
+    insurance$Holders <- as.factor(insurance$Holders)
+    insurance$Age <- as.factor(insurance$Age)
+    insurance$Group <- as.factor(insurance$Group)
+    insurance$District <- as.factor(insurance$District)
 
-    # Split the dataset into a train and test set:
-    iris.split <- h2o.splitFrame(data=iris, ratios=.8, seed=1234)
-    train <- iris.split[[1]]
-    test <- iris.split[[2]]
 
     # Build and train the model:
-    iris_dl <- h2o.deeplearning(x = predictors, 
-                                y = response, 
-                                training_frame = train, 
-                                validation_frame = test, 
-                                seed = 123456)
+    dl <- h2o.deeplearning(x = 1:3, 
+                           y = "Claims", 
+                           distribution = "tweedie", 
+                           hidden = c(1), 
+                           epochs = 1000, 
+                           train_samples_per_iteration = -1, 
+                           reproducible = TRUE, 
+                           activation = "Tanh", 
+                           single_node_mode = FALSE, 
+                           balance_classes = FALSE, 
+                           force_load_balance = FALSE, 
+                           seed = 23123, 
+                           tweedie_power = 1.5, 
+                           score_training_samples = 0, 
+                           score_validation_samples = 0, 
+                           training_frame = insurance, 
+                           stopping_rounds = 0)
 
     # Eval performance:
-    perf <- h2o.performance(iris_dl)
+    perf <- h2o.performance(dl)
 
     # Generate predictions on a test set (if necessary):
-    pred <- h2o.predict(iris_dl, newdata = test)
+    pred <- h2o.predict(dl, newdata = insurance)
 
 
 
@@ -337,24 +348,39 @@ Below is a simple example showing how to build a Deep Learning model.
     from h2o.estimators import H2ODeepLearningEstimator
     h2o.init()
 
-    # Import the iris dataset into H2O:
-    iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    # Import the insurance dataset into H2O:
+    insurance = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
 
-    # Split the dataset into train and test:
-    train, test = iris.split_frame(ratios = [.8], seed = 1234)
+    # Set the factors:
+     insurance["offset"] = insurance["Holders"].log()
+     insurance["Group"] = insurance["Group"].asfactor()
+     insurance["Age"] = insurance["Age"].asfactor()
+     insurance["District"] = insurance["District"].asfactor()
 
     # Build and train the model:
-    iris_dl = H2ODeepLearningEstimator(seed=123456)
-    iris_dl.train(x=list(range(4)), 
-                  y=4, 
-                  training_frame=train, 
-                  validation_frame=test)
+     dl = H2ODeepLearningEstimator(distribution="tweedie",
+                                   hidden=[1],
+                                   epochs=1000,
+                                   train_samples_per_iteration=-1,
+                                   reproducible=True, 
+                                   activation="Tanh",
+                                   single_node_mode=False, 
+                                   balance_classes=False,
+                                   force_load_balance=False,
+                                   seed=23123,
+                                   tweedie_power=1.5,
+                                   score_training_samples=0,
+                                   score_validation_samples=0,
+                                   stopping_rounds=0)
+     dl.train(x=list(range(3)),
+              y="Claims", 
+              training_frame=insurance)
 
     # Eval performance:
-    perf = iris_dl.model_performance()
+    perf = dl.model_performance()
 
     # Generate predictions on a test set (if necessary):
-    pred = iris_dl.predict(test) 
+    pred = dl.predict(insurance)
 
 
    .. code-tab:: scala

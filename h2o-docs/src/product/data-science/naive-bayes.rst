@@ -102,32 +102,27 @@ Below is a simple example showing how to build a Naïve Bayes Classifier model.
 .. tabs::
    .. code-tab:: r R
 
-    # Import the cars dataset into H2O:
-    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    # Import the prostate dataset into H2O:
+    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
     # Set the predictors and response; set the response as a factor:
-    cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-    predictors <- c("displacement","power","weight","acceleration","year")
-    response <- "economy_20mpg"
-
-    # Split the dataset into train and valid sets"
-    cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-    train <- cars.split[[1]]
-    valid <- cars.split[[2]]
+    prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+    predictors <- c("ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    response <- "CAPSULE"
 
     # Build and train the model:
-    cars_nb <- h2o.naiveBayes(x=predictors, 
-                              y=response, 
-                              training_frame=train, 
-                              validation_frame=valid, 
-                              nfolds=5, 
-                              seed=1234)
+    pros_nb <- h2o.naiveBayes(x = predictors, 
+                              y = response, 
+                              training_frame = prostate, 
+                              laplace = 0, 
+                              nfolds = 5, 
+                              seed = 1234)
 
     # Eval performance:
-    perf <- h2o.performance(cars_nb)
+    perf <- h2o.performance(pros_nb)
 
     # Generate the predictions on a test set (if necessary):
-    pred <- h2o.predict(cars_nb, newdata = valid)
+    pred <- h2o.predict(pros_nb, newdata = prostate)
     
 
 
@@ -137,23 +132,21 @@ Below is a simple example showing how to build a Naïve Bayes Classifier model.
     from h2o.estimators import H2ONaiveBayesEstimator
     h2o.init()
 
-    # Import the cars dataset into H2O:
-    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+    # Import the prostate dataset into H2O:
+    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
     # Set predictors and response; set the response as a factor:
-    predictors = ["displacement","power","weight","acceleration","year"]
-    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
-    response = "economy_20mpg"
-
-    # Split the dataset into train and valid sets:
-    train, valid = cars.split_frame(ratios=[.8], seed=1234)
+    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+    predictors = ("ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    response = "CAPSULE"
 
     # Build and train the model:
-    cars_nb = H2ONaiveBayesEstimator(nfolds=5, seed=1234)
-    cars_nb.train(x=predictors, 
+    pros_nb = H2ONaiveBayesEstimator(laplace=0, 
+                                     nfolds=5, 
+                                     seed=1234)
+    pros_nb.train(x=predictors, 
                   y=response, 
-                  training_frame=train, 
-                  validation_frame=valid)
+                  training_frame=prostate)
 
     # Eval performance:
     perf = cars_nb.model_performance()

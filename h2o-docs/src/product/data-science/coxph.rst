@@ -211,11 +211,11 @@ Below is a simple example showing how to build a CoxPH model.
 
     # Build and train the model:
     coxph.model <- h2o.coxph(x = "age", 
-                             event_column = "event", 
-                             start_column = "start", 
+                             event_column = "event",
+                             start_column="start", 
                              stop_column = "stop", 
-                             training_frame = heart, 
-                             init = 3)
+                             ties = "breslow", 
+                             training_frame = train)
 
     # Eval performance:
     perf <- h2o.performance(coxph_model)
@@ -242,8 +242,7 @@ Below is a simple example showing how to build a CoxPH model.
                                                ties="breslow")
     coxph.train(x="age", 
                 y="event", 
-                training_frame=train, 
-                validation_frame=test)
+                training_frame=train)
 
     # Generate predictions on a test set (if necessary):
     pred = coxph.predict(test)

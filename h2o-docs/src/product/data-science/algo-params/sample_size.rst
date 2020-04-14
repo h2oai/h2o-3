@@ -83,5 +83,5 @@ Example
 	 0.2        	 1.14286
 	-0.1        	 1.57143
 
-	    [23 rows x 2 columns]
+	[23 rows x 2 columns]
 

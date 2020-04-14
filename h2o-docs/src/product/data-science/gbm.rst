@@ -366,36 +366,27 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
     library(h2o)
     h2o.init()
 
-    # Import the airlines dataset into H2O:
-    airlines <-  h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    # Import the prostate dataset into H2O:
+    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
     # Set the predictors and response; set the factors:
-    airlines["Year"] <- as.factor(airlines["Year"])
-    airlines["Month"] <- as.factor(airlines["Month"])
-    airlines["DayOfWeek"] <- as.factor(airlines["DayOfWeek"])
-    airlines["Cancelled"] <- as.factor(airlines["Cancelled"])
-    airlines['FlightNum'] <- as.factor(airlines['FlightNum'])
-    predictors <- c("Origin", "Dest", "Year", "UniqueCarrier", 
-                    "DayOfWeek", "Month", "Distance", "FlightNum")
-    response <- "IsDepDelayed"
-
-    # Split the dataset into a train and valid set:
-    airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-    train <- airlines.splits[[1]]
-    valid <- airlines.splits[[2]]
+    prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+    predictors <- c("ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    response <- "CAPSULE"
 
     # Build and train the model:
-    airlines_gbm <- h2o.gbm(x = predictors, 
-                            y = response, 
-                            training_frame = train, 
-                            validation_frame = valid, 
-                            seed = 1234)
+    pros_gbm <- h2o.gbm(x = predictors, 
+                        y = response, 
+                        nfolds = 5, 
+                        seed = 1111, 
+                        keep_cross_validation_predictions = TRUE, 
+                        training_frame = prostate)
 
     # Eval performance:
-    perf <- h2o.performance(airlines_gbm)
+    perf <- h2o.performance(pros_gbm)
 
     # Generate predictions on a validation set (if necessary):
-    pred <- h2o.predict(airlines_gbm, newdata = valid)
+    pred <- h2o.predict(pros_gbm, newdata = prostate)
 
 
    .. code-tab:: python
@@ -404,34 +395,25 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
     from h2o.estimators import H2OGradientBoostingEstimator
     h2o.init()
 
-    # Import the airlines dataset into H2O:
-    airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+    # Import the prostate dataset into H2O:
+    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
 
     # Set the predictors and response; set the factors:
-    airlines["Year"] = airlines["Year"].asfactor()
-    airlines["Month"] = airlines["Month"].asfactor()
-    airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
-    airlines["Cancelled"] = airlines["Cancelled"].asfactor()
-    airlines["FlightNum"] = airlines["FlightNum"].asfactor()
-    predictors = ["Origin", "Dest", "Year", "UniqueCarrier", 
-                  "DayOfWeek", "Month", "Distance", "FlightNum"]
-    response = "IsDepDelayed"
-
-    # Split the dataset into a train and valid set:
-    train, valid = airlines.split_frame(ratios=[.8], seed=1234)
+    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+    predictors = ["ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
 
     # Build and train the model:
-    airlines_gbm = H2OGradientBoostingEstimator(seed=1234)
-    airlines_gbm.train(x=predictors, 
-                       y=response, 
-                       training_frame=train, 
-                       validation_frame=valid)
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=5, 
+                                            seed=1111, 
+                                            keep_cross_validation_predictions = True)
+    pros_gbm.train(x=predictors, y=response, training_frame=prostate)
 
     # Eval performance:
-    perf = airlines_gbm.model_performance()
+    perf = pros_gbm.model_performance()
 
     # Generate predictions on a test set (if necessary):
-    pred = airlines_gbm.predict(valid)
+    pred = pros_gbm.predict(prostate)
 
 
    .. code-tab:: scala

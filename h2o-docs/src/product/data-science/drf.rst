@@ -305,9 +305,14 @@ Below is a simple example showing how to build a Random Forest model.
     # Build and train the model:
     cars_drf <- h2o.randomForest(x = predictors, 
                                  y = response, 
+                                 ntrees = 10, 
+                                 max_depth = 5, 
+                                 min_rows = 10, 
+                                 calibrate_model = TRUE, 
+                                 calibration_frame = valid,
+                                 binomial_double_trees = TRUE, 
                                  training_frame = train, 
-                                 validation_frame = valid, 
-                                 seed = 1234)
+                                 validation_frame = valid)
 
     # Eval performance:
     perf <- h2o.performance(cars_drf)
@@ -335,7 +340,12 @@ Below is a simple example showing how to build a Random Forest model.
     train, valid = cars.split_frame(ratios=[.8], seed=1234)
 
     # Build and train the model:
-    cars_drf = H2ORandomForestEstimator(seed=1234)
+    cars_drf = H2ORandomForestEstimator(ntrees=10, 
+                                        max_depth=5, 
+                                        min_rows=10, 
+                                        calibrate_model=True, 
+                                        calibration_frame=valid,
+                                        binomial_double_trees=True)
     cars_drf.train(x=predictors, 
                    y=response, 
                    training_frame=train, 
