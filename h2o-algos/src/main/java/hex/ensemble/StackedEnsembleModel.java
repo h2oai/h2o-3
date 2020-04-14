@@ -6,9 +6,7 @@ import hex.glm.GLMModel;
 import hex.tree.drf.DRFModel;
 import water.*;
 import water.exceptions.H2OIllegalArgumentException;
-import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
-import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.Log;
 import water.util.ReflectionUtils;
@@ -119,22 +117,20 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
 
     // TODO: we should be able to parallelize scoring of base models
-    for (int i = 0; i < _parms._base_models.length; i++) {
-      if (isUsefulBaseModel(i)) {
-        Model base = _parms._base_models[i].get();
+    for (Key<Model> baseModelKey : _parms._base_models) {
+      if (isUsefulBaseModel(baseModelKey)) {
+        Model baseModel = baseModelKey.get();
 
-        Frame basePreds = base.score(
+        Frame basePreds = baseModel.score(
                 fr,
                 "preds_base_" + this._key.toString() + fr._key,
                 j,
                 false
         );
 
-        StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
+        StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, basePreds, levelOneFrame);
         DKV.remove(basePreds._key); //Cleanup
         Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
-      } else {
-        levelOneFrame.add(getDummyPredictions(fr));
       }
     }
 
@@ -172,55 +168,27 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   }
 
   /**
-   * Is the indexth model's prediction used in the metalearner?
+   * Is the baseModel's prediction used in the metalearner?
    *
-   * @param index
+   * @param baseModelKey
    */
-  boolean isUsefulBaseModel(int index) {
+  boolean isUsefulBaseModel(Key<Model> baseModelKey) {
     Model metalearner = _output._metalearner;
-    if (metalearner == null) return true; // training phase
+    assert metalearner != null : "can't use isUsefulBaseModel during training";
     if (modelCategory == ModelCategory.Multinomial) {
       // Multinomial models output multiple columns and a base model
       // might be useful just for one category...
-      int colsPerModel = metalearner._output.nfeatures() / _parms._base_models.length;
-      for (int i = index * colsPerModel; i < (index + 1) * colsPerModel; i++) {
-        if (metalearner.isFeatureUsed(metalearner._output._names[i]))
-          return true;
+      for (String feature : metalearner._output._names) {
+        if (feature.startsWith(baseModelKey.toString().concat("/"))){
+          if (metalearner.isFeatureUsedInPredict(feature)) {
+            return true;
+          }
+        }
       }
       return false;
     } else {
-      return metalearner.isFeatureUsed(metalearner._output._names[index]);
+      return metalearner.isFeatureUsedInPredict(baseModelKey.toString());
     }
-
-  }
-
-  /**
-   * Is the baseModel's prediction used in the metalearner?
-   *
-   * @param baseModel
-   */
-  boolean isUsefulBaseModel(Model baseModel) {
-    // Get index of the baseModel
-    for (int i = 0; i < _parms._base_models.length; i++) {
-      if (baseModel._key == _parms._base_models[i]) {
-        return isUsefulBaseModel(i);
-      }
-    }
-    throw new H2OKeyNotFoundArgumentException(baseModel._key);
-  }
-
-  /**
-   * Returns a frame full of zeros that should have the same dimensions as the base model's prediction used
-   * by metalearner, i.e., this frame is supposed to be used directly for the metalearner's input.
-   * For example, it doesn't contain "predict" column for multinomial models as this column is not used by metalearner.
-   *
-   * @param actualsFrame this frame is used to get the number of instances
-   */
-  Frame getDummyPredictions(Frame actualsFrame) {
-    int colsPerModel = _output._metalearner._output.nfeatures() / _parms._base_models.length;
-    Vec[] ignoredVecs = new Vec[colsPerModel];
-    Arrays.fill(ignoredVecs, actualsFrame.vec(0).makeCon(0d));
-    return new Frame(ignoredVecs);
   }
 
   /**

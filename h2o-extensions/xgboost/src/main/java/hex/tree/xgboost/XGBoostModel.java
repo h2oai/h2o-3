@@ -716,6 +716,22 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return treeClassIndex;
   }
 
+  @Override
+  public boolean isFeatureUsedInPredict(String featureName) {
+    int featureIdx = ArrayUtils.find(_output._varimp._names, featureName);
+    if (featureIdx == -1 && _output._catOffsets.length > 1) { // feature is possibly categorical
+      featureIdx = ArrayUtils.find(_output._names, featureName);
+      if (featureIdx == -1 || !_output._column_types[featureIdx].equals("Enum")) return false;
+      for (int i = 0; i < _output._varimp._names.length; i++) {
+        if (_output._varimp._names[i].startsWith(featureName.concat(".")) && _output._varimp._varimp[i] != 0){
+          return true;
+        }
+      }
+      return false;
+    }
+    return featureIdx != -1 && _output._varimp._varimp[featureIdx] != 0d;
+  }
+
   //--------------------------------------------------------------------------------------------------------------------
   // Serialization into a POJO
   //--------------------------------------------------------------------------------------------------------------------

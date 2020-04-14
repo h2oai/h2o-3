@@ -2299,14 +2299,11 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     return new DeepLearningMojoWriter(this);
   }
 
-
   @Override
-  protected boolean isFeatureUsed(int featureIdx) {
-    Storage.DenseRowMatrix weights = model_info().get_weights(0);
-    for (int j = 0; j < weights.rows(); j++) {
-      if (weights.get(j, featureIdx) != 0) return true;
-    }
-    return false;
+  public boolean isFeatureUsedInPredict(String featureName) {
+    if (!_parms._variable_importances) return true;
+    int featureIdx = ArrayUtils.find(varImp()._names, featureName);
+    return featureIdx != -1 && (double) varImp()._varimp[featureIdx] != 0d;
   }
 }
 

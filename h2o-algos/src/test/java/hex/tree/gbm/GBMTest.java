@@ -3915,21 +3915,24 @@ public class GBMTest extends TestUtil {
   }
 
   @Test
-  public void testIsFeatureUsed() {
-    isFeatureUsedHelper(false);
-    isFeatureUsedHelper(true);
+  public void testIsFeatureUsedInPredict() {
+    isFeatureUsedInPredictHelper(false, false);
+    isFeatureUsedInPredictHelper(true, false);
+    isFeatureUsedInPredictHelper(false, true);
+    isFeatureUsedInPredictHelper(true, true);
   }
 
-  private void isFeatureUsedHelper(boolean ignoreConstCols) {
+  private void isFeatureUsedInPredictHelper(boolean ignoreConstCols, boolean multinomial) {
     Scope.enter();
     Vec target = Vec.makeRepSeq(100, 3);
+    if (multinomial) target = target.toCategoricalVec();
     Vec zeros = Vec.makeCon(0d, 100);
-    Vec ones = Vec.makeCon(1, 100);
+    Vec ones = Vec.makeCon(1e10d, 100);
     Frame dummyFrame = new Frame(
             new String[]{"a", "b", "c", "d", "e", "target"},
             new Vec[]{zeros, zeros, zeros, zeros, target, target}
     );
-    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsed");
+    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsedInPredict");
 
     Frame otherFrame = new Frame(
             new String[]{"a", "b", "c", "d", "e", "target"},

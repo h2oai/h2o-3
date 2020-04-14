@@ -18,6 +18,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -126,6 +127,11 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     } else if (aModel._output.isMultinomialClassifier()) { //Multinomial
       //Need to remove 'predict' column from multinomial since it contains outcome
       Frame probabilities = aModelsPredictions.subframe(ArrayUtils.remove(aModelsPredictions.names(), "predict"));
+      probabilities.setNames(
+              Stream.of(probabilities.names())
+                      .map((name) -> aModel._key.toString().concat("/").concat(name))
+                      .toArray(String[]::new)
+      );
       levelOneFrame.add(probabilities);
     } else if (aModel._output.isAutoencoder()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
@@ -208,13 +214,15 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       List<Frame> baseModelPredictions = new ArrayList<>();
 
       for (Key<Model> k : baseModelKeys) {
-        Model aModel = DKV.getGet(k);
-        if (null == aModel)
-          throw new H2OIllegalArgumentException("Failed to find base model: " + k);
+        if (_model._output._metalearner == null || _model.isUsefulBaseModel(k)) {
+          Model aModel = DKV.getGet(k);
+          if (null == aModel)
+            throw new H2OIllegalArgumentException("Failed to find base model: " + k);
 
-        Frame predictions = getPredictionsForBaseModel(aModel, actuals, isTraining);
-        baseModels.add(aModel);
-        baseModelPredictions.add(predictions);
+          Frame predictions = getPredictionsForBaseModel(aModel, actuals, isTraining);
+          baseModels.add(aModel);
+          baseModelPredictions.add(predictions);
+        }
       }
       boolean keepLevelOneFrame = isTraining && _parms._keep_levelone_frame;
       Frame levelOneFrame = prepareLevelOneFrame(levelOneKey, baseModels.toArray(new Model[0]), baseModelPredictions.toArray(new Frame[0]), actuals);
@@ -344,11 +352,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
           throw new H2OIllegalArgumentException("Failed to find the xval predictions frame. . .  Looks like keep_cross_validation_predictions wasn't set when building the models, or the frame was deleted.");
 
       } else {
-        if (_model.isUsefulBaseModel(model)) {
-          fr = buildPredictionsForBaseModel(model, actualsFrame);
-        } else {
-          fr = _model.getDummyPredictions(actualsFrame);
-        }
+        fr = buildPredictionsForBaseModel(model, actualsFrame);
       }
       return fr;
     }
@@ -369,15 +373,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     @Override
     protected Frame getPredictionsForBaseModel(Model model, Frame actualsFrame, boolean isTrainingFrame) {
-      if (isTrainingFrame) {
-        return buildPredictionsForBaseModel(model, actualsFrame);
-      } else {
-        if (_model.isUsefulBaseModel(model)) {
-          return buildPredictionsForBaseModel(model, actualsFrame);
-        } else {
-          return _model.getDummyPredictions(actualsFrame);
-        }
-      }
+      return buildPredictionsForBaseModel(model, actualsFrame);
     }
   }
 

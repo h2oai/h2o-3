@@ -9,8 +9,6 @@ import water.fvec.Frame;
 import hex.naivebayes.NaiveBayesModel.NaiveBayesParameters;
 import water.fvec.Vec;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertEquals;
@@ -138,25 +136,28 @@ public class NaiveBayesTest extends TestUtil {
   }
 
   @Test
-  public void testIsFeatureUsed() {
-    isFeatureUsedHelper(false);
-    isFeatureUsedHelper(true);
+  public void testIsFeatureUsedInPredict() {
+    isFeatureUsedInPredictHelper(false, false);
+    isFeatureUsedInPredictHelper(true, false);
+    isFeatureUsedInPredictHelper(false, true);
+    isFeatureUsedInPredictHelper(true, true);
   }
 
-  private void isFeatureUsedHelper(boolean ignoreConstCols) {
+  private void isFeatureUsedInPredictHelper(boolean ignoreConstCols, boolean multinomial) {
     Scope.enter();
-    Vec target = Vec.makeRepSeq(100, 3).toCategoricalVec();
+    Vec target = Vec.makeRepSeq(100, 3);
+    if (multinomial) target = target.toCategoricalVec();
     Vec zeros = Vec.makeCon(0d, 100);
     Vec ones = Vec.makeCon(1, 100);
     Frame dummyFrame = new Frame(
             new String[]{"a", "b", "c", "d", "e", "target"},
-            new Vec[]{zeros, zeros, zeros, zeros, target, target}
+            new Vec[]{zeros, zeros, zeros, zeros, target, target.toCategoricalVec()}
     );
-    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsed");
+    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsedInPredict");
 
     Frame otherFrame = new Frame(
             new String[]{"a", "b", "c", "d", "e", "target"},
-            new Vec[]{ones, ones, ones, ones, target, target}
+            new Vec[]{ones, ones, ones, ones, target, target.toCategoricalVec()}
     );
 
     Frame reference = null;
@@ -176,7 +177,7 @@ public class NaiveBayesTest extends TestUtil {
       String lastUsedFeature = "";
       int usedFeatures = 0;
       for(String feature : model._output._names) {
-        if (model.isFeatureUsed(feature)) {
+        if (model.isFeatureUsedInPredict(feature)) {
           usedFeatures ++;
           lastUsedFeature = feature;
         }

@@ -32,6 +32,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -2814,16 +2815,29 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    * This is mainly intended for optimizing prediction speed in StackedEnsemble.
    * @param featureName
    */
-  public boolean isFeatureUsed(String featureName) {
+  public boolean isFeatureUsedInPredict(String featureName) {
     if (featureName.equals(_parms._response_column)) return false;
     int featureIdx = ArrayUtils.find(_output._names, featureName);
     if (featureIdx == -1) {
       return false;
     }
-    return isFeatureUsed(featureIdx);
+    return isFeatureUsedInPredict(featureIdx);
   }
 
-  protected boolean isFeatureUsed(int featureIdx) {
+  protected boolean isFeatureUsedInPredict(int featureIdx) {
     return true;
+  }
+
+  /**
+   * Returns features that are used during prediction. This might be a superset of the features that are actually used,
+   * but it should not be a subset.
+   * @return
+   */
+  public String[] getUsedFeaturesInPrediction() {
+    return Stream
+
+            .of(_output._names)
+            .filter(this::isFeatureUsedInPredict)
+            .toArray(String[]::new);
   }
 }
