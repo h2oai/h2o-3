@@ -19,7 +19,14 @@ def call(customEnv, image, registry, buildConfig, timeoutValue, timeoutUnit, cus
     timeout(time: timeoutValue, unit: timeoutUnit) {
       docker.withRegistry("https://${registry}") {
         withCredentials([file(credentialsId: 'c096a055-bb45-4dac-ba5e-10e6e470f37e', variable: 'JUNIT_CORE_SITE_PATH'), [$class: 'AmazonWebServicesCredentialsBinding', accessKeyVariable: 'AWS_ACCESS_KEY_ID', credentialsId: 'AWS S3 Credentials', secretKeyVariable: 'AWS_SECRET_ACCESS_KEY']]) {
-          docker.image(image).inside("--init --add-host=nexus:172.17.0.53 --dns ${DEFAULT_DNS} -e AWS_ACCESS_KEY_ID=\${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=\${AWS_SECRET_ACCESS_KEY} -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
+          def groupAddArg = ""
+          dockerGroupName = "docker"
+
+          dockerGroupId = sh(script: "awk -F: '/$dockerGroupName/ {print \$3}' /etc/group", returnStdout: true).trim()
+          if (dockerGroupId == "") {
+            error "cannot find gid of $dockerGroupName"
+          }
+          docker.image(image).inside("--init --group-add ${dockerGroupId} --add-host=nexus:172.17.0.53 --dns ${DEFAULT_DNS} -e AWS_ACCESS_KEY_ID=\${AWS_ACCESS_KEY_ID} -e AWS_SECRET_ACCESS_KEY=\${AWS_SECRET_ACCESS_KEY} -v /home/0xdiag:/home/0xdiag -v /home/jenkins/repos:/home/jenkins/repos ${customArgs}") {
             sh """
               id
               printenv | sort
