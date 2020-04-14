@@ -265,12 +265,25 @@ public class ModelBuilderTest extends TestUtil {
     }
   }
 
+  public static class DummyModelMetrics extends ModelMetrics {
+
+    public DummyModelMetrics(final Frame trainingFrame) {
+      super(null, trainingFrame, 0, 0, "Dummy model Metrics", null);
+    }
+  }
+
   public static class DummyModelOutput extends Model.Output {
     public final String _msg;
-    public DummyModelOutput(ModelBuilder b, Frame train, String msg) {
+
+    public DummyModelOutput(DummyModelBuilder b, Frame train, String msg) {
       super(b, train);
+      if (b._parms._makeModelMetrics) {
+        _training_metrics = new DummyModelMetrics(b.train());
+        _model_metrics= new Key[]{_training_metrics._key};
+      }
       _msg = msg;
     }
+
     @Override
     public ModelCategory getModelCategory() {
       return ModelCategory.Binomial;
@@ -294,6 +307,7 @@ public class ModelBuilderTest extends TestUtil {
   public static class DummyModelParameters extends Model.Parameters {
     public DummyAction _action;
     public boolean _makeModel;
+    public boolean _makeModelMetrics;
     public boolean _cancel_job;
     public DummyModelParameters() {}
     public DummyModelParameters(String msg, Key trgt) {

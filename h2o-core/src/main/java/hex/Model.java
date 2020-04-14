@@ -847,10 +847,11 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         if (_validation_metrics != null) kept = ArrayUtils.append(kept, _validation_metrics._key);
         if (_cross_validation_metrics != null) kept = ArrayUtils.append(kept, _cross_validation_metrics._key);
 
-        removed = new Key[0];
+        removed = new Key[_model_metrics.length - kept.length];
+        int removedIndex = 0;
         for (Key<ModelMetrics> k : _model_metrics) {
           if (!ArrayUtils.contains(kept, k))
-            removed = ArrayUtils.append(removed, k);
+            removed[removedIndex++] = k;
         }
         _model_metrics = kept;
       } else {
