@@ -111,6 +111,37 @@ public class FrameUtils {
     }
   }
 
+  /**
+   * Helper method to apply TargetEncoderModel
+   * @param teModel trained TargetEncoderModel
+   * @param inputFrame frame to apply target encoding to
+   * @param scopeTrack `true` if Scope is tracking keys
+   * @return a Frame with encodings
+   */
+  public static Frame internal_applyTargetEncoder(Model teModel, Frame inputFrame, boolean scopeTrack) {
+    Frame transformed = teModel.score(inputFrame);
+    if (scopeTrack) Scope.untrack(transformed.keys());
+
+    // following manipulations with columns is a responsibility of a future pipeline concept. Support for input/output columns' names for the models would be helpful as well.
+    Frame train = teModel._parms.train();
+    List<String> catColumnNames = new ArrayList<>();
+    for(String name : train.names() ) {
+      if(train.vec(name).isCategorical()) catColumnNames.add(name);
+    }
+    String[] predictorColumns = ArrayUtils.difference(catColumnNames.toArray(new String[0]), teModel._parms._ignored_columns);
+    final String[] encodedColumns = ArrayUtils.remove(ArrayUtils.remove(predictorColumns, teModel._parms._fold_column), teModel._parms._response_column);
+
+    // We need to rearrange columns ( as some logic relies on response being a last column etc)
+    final String TE_ENCODED_COLUMN_POSTFIX = "_te";
+    Arrays.stream(encodedColumns).forEach(ec -> {
+      transformed
+        .swap(transformed.find(ec), transformed.find(ec + TE_ENCODED_COLUMN_POSTFIX));
+      transformed.remove(ec).remove();
+    });
+    DKV.put(transformed);
+    return transformed;
+  }
+
   public static void printTopCategoricalLevels(Frame fr, boolean warn, int topK) {
     String[][] domains = fr.domains();
     String[] names = fr.names();

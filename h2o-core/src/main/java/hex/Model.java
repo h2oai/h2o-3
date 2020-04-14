@@ -235,6 +235,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       final boolean _needResponse;
       boolean needsResponse() { return _needResponse; }
     }
+
+    public Key<Model> _te_model;
+
     public long _seed = -1;
     public long getOrMakeRealSeed(){
       while (_seed==-1) {
@@ -683,7 +686,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public Key _cross_validation_predictions[];
     public Key<Frame> _cross_validation_holdout_predictions_frame_id;
     public Key<Frame> _cross_validation_fold_assignment_frame_id;
-    
+
+    // Key to a TE model
+    public Key<Model> _te_model_key;
+
     // Model-specific start/end/run times
     // Each individual model's start/end/run time is reported here, not the total time to build N+1 cross-validation models, or all grid models
     public long _start_time;
@@ -726,6 +732,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasFold = b.hasFoldCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
+      _te_model_key = b.internal_getTEModelKey();
       assert(_job==null);  // only set after job completion
     }
 
@@ -1468,11 +1475,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
-    Frame adaptFr = new Frame(fr);
-    return score(fr, destination_key, j, computeMetrics, customMetricFunc,  adaptFr);
-  }
-
-  public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc, Frame adaptFr) throws IllegalArgumentException {
+    Frame newFr = new Frame(fr);
+    Frame adaptFr = applyTEIfModelAvailable(newFr);
     computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     // clean up the previous score warning messages
@@ -1516,6 +1520,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     Frame.deleteTempFrameAndItsNonSharedVecs(adaptFr, fr);
     return output;
+  }
+
+  private Frame applyTEIfModelAvailable(Frame newFr) {
+    if(_output._te_model_key != null ) {
+      Frame encodedFrame = FrameUtils.internal_applyTargetEncoder(DKV.getGet(_output._te_model_key), newFr, false);
+      Arrays.stream(encodedFrame.keys()).forEach(key -> {
+        _toDelete.put(key, "track encoded by TE frame");
+      });
+      return encodedFrame;
+    } else {
+      return newFr;
+    }
   }
 
   /**
@@ -1861,6 +1877,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       deleteCrossValidationFoldAssignment();
       deleteCrossValidationPreds();
       deleteCrossValidationModels();
+      internal_deleteTEModel();
     }
     cleanUp(_toDelete);
     return super.remove_impl(fs, cascade);
@@ -2522,6 +2539,17 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   /**
+   * delete from the output TE model stored in DKV.
+   */
+  public void internal_deleteTEModel() {
+    if (_output._te_model_key != null) {
+      Log.info("Cleaning up TE Model for " + _key);
+      int count = deleteAll(new Key[]{_output._te_model_key});
+      Log.info(count+" TE model was removed");
+    }
+  }
+
+  /**
    * delete from the output all associated CV predictions from DKV.
    */
   public void deleteCrossValidationPreds() {
@@ -2704,7 +2732,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           M model = (M) Keyed.readAll(ab);
           ab.close();
           return model;
-        } 
+        }
     }
 
   /**
