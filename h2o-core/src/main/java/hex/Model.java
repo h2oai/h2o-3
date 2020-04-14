@@ -2831,11 +2831,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   /**
    * Returns features that are used during prediction. This might be a superset of the features that are actually used,
    * but it should not be a subset.
-   * @return
+   * @return Array of features used during prediction
    */
-  public String[] getUsedFeaturesInPrediction() {
+  public String[] getFeaturesUsedInPrediction() {
     return Stream
-
             .of(_output._names)
             .filter(this::isFeatureUsedInPredict)
             .toArray(String[]::new);

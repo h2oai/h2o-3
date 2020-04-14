@@ -3927,7 +3927,7 @@ public class GBMTest extends TestUtil {
     Vec target = Vec.makeRepSeq(100, 3);
     if (multinomial) target = target.toCategoricalVec();
     Vec zeros = Vec.makeCon(0d, 100);
-    Vec ones = Vec.makeCon(1e10d, 100);
+    Vec nonzeros = Vec.makeCon(1e10d, 100);
     Frame dummyFrame = new Frame(
             new String[]{"a", "b", "c", "d", "e", "target"},
             new Vec[]{zeros, zeros, zeros, zeros, target, target}
@@ -3936,7 +3936,7 @@ public class GBMTest extends TestUtil {
 
     Frame otherFrame = new Frame(
             new String[]{"a", "b", "c", "d", "e", "target"},
-            new Vec[]{ones, ones, ones, ones, target, target}
+            new Vec[]{nonzeros, nonzeros, nonzeros, nonzeros, target, target}
     );
 
     Frame reference = null;
@@ -3961,7 +3961,7 @@ public class GBMTest extends TestUtil {
       String lastUsedFeature = "";
       int usedFeatures = 0;
       for(String feature : model._output._names) {
-        if (model.isFeatureUsed(feature)) {
+        if (model.isFeatureUsedInPredict(feature)) {
           usedFeatures ++;
           lastUsedFeature = feature;
         }
@@ -3981,7 +3981,7 @@ public class GBMTest extends TestUtil {
       if (prediction != null) prediction.delete();
       target.remove();
       zeros.remove();
-      ones.remove();
+      nonzeros.remove();
       Scope.exit();
     }
   }
