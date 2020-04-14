@@ -100,12 +100,40 @@ class ExprNode(object):
         assert self._cache.is_scalar()
         return self._cache._data
 
+    def _eager_scalar_tmp(self):  # returns a scalar (or a list of scalars)
+        if not self._cache.is_empty():
+            assert self._cache.is_scalar()
+            return self
+        assert self._cache._id is None
+        self._eval_driver_tmp(False)
+        assert self._cache._id is None
+        assert self._cache.is_scalar()
+        return self._cache._data
+
     def _eager_map_frame(self):  # returns a scalar (or a list of scalars)
         self._eval_driver(False)
         return self._cache
 
     def _eval_driver(self, top):
         exec_str = self._get_ast_str(top)
+        res = ExprNode.rapids(exec_str)
+        if 'scalar' in res:
+            if isinstance(res['scalar'], list):
+                self._cache._data = [float(x) for x in res['scalar']]
+            else:
+                self._cache._data = None if res['scalar'] is None else float(res['scalar'])
+        if 'string' in res: self._cache._data = res['string']
+        if 'funstr' in res: raise NotImplementedError
+        if 'key' in res:
+            self._cache.nrows = res['num_rows']
+            self._cache.ncols = res['num_cols']
+        if 'map_keys' in res:
+            self._cache.map_keys = res['map_keys']
+            self._cache.frames = res['frames']
+        return self
+
+    def _eval_driver_tmp(self, top):
+        exec_str = self._get_ast_str_tmp(top)
         res = ExprNode.rapids(exec_str)
         if 'scalar' in res:
             if isinstance(res['scalar'], list):
@@ -165,6 +193,15 @@ class ExprNode(object):
         if top or ref_cnt > 1:
             self._cache._id = _py_tmp_key(append=h2o.connection().session_id)
             exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
+        return exec_str
+
+    def _get_ast_str_tmp(self, top):
+        if not self._cache.is_empty():  # Data already computed and cached; could a "false-like" cached value
+            return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
+        if self._cache._id is not None:
+            return self._cache._id  # Data already computed under ID, but not cached
+        assert isinstance(self._children,tuple)
+        exec_str = "({} {})".format(self._op, " ".join([ExprNode._arg_to_expr(ast) for ast in self._children]))
         return exec_str
 
     @staticmethod
