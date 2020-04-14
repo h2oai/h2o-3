@@ -52,11 +52,11 @@ Use ``.asfactor()`` to specify a value as an enum.
 I received the following error when I tried to install H2O using the Python instructions on the downloads page. What should I do to resolve it?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-::
+  .. substitution-code-block:: bash
 
-    Downloading/unpacking http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-3.0.0.12-py2.py3-none-any.whl 
-      Downloading h2o-3.0.0.12-py2.py3-none-any.whl (43.1Mb): 43.1Mb downloaded 
-      Running setup.py egg_info for package from http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-3.0.0.12-py2.py3-none-any.whl 
+    Downloading/unpacking http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-|version|-py2.py3-none-any.whl 
+      Downloading h2o-|version|-py2.py3-none-any.whl (43.1Mb): 43.1Mb downloaded 
+      Running setup.py egg_info for package from http://h2o-release.s3.amazonaws.com/h2o/rel-shannon/12/Python/h2o-|version|-py2.py3-none-any.whl 
         Traceback (most recent call last): 
           File "<string>", line 14, in <module> 
         IOError: [Errno 2] No such file or directory: '/tmp/pip-nTu3HK-build/setup.py' 
