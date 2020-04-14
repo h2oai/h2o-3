@@ -28,21 +28,10 @@ def call(final pipelineContext) {
   // Job will execute PR_STAGES only if these are green.
   def SMOKE_STAGES = [
     [
-      stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'R3.5 Smoke', target: 'test-r-smoke', rVersion: '3.5.3',timeoutValue: 8,
-      component: pipelineContext.getBuildConfig().COMPONENT_R
-    ],
-    [
-      stageName: 'Flow Headless Smoke', target: 'test-flow-headless-smoke',timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JS
-    ],
-    [
-      stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ],
+      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, image: 'harbor.h2o.ai/opsh2oai/h2o-3-k8s:latest',
+      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host']
+    ]
   ]
 
   // Stages executed after each push to PR branch.
