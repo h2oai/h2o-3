@@ -9,7 +9,8 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.Properties;
 
-/** Log for H2O. 
+/** 
+ * Log for H2O. 
  *
  *  OOME: when the VM is low on memory, OutOfMemoryError can be thrown in the
  *  logging framework while it is trying to print a message. In this case the
@@ -27,14 +28,16 @@ abstract public class Log {
   public static final byte INFO = 3;
   public static final byte DEBUG= 4;
   public static final byte TRACE= 5;
+
   public static final String[] LVLS = { "FATAL", "ERRR", "WARN", "INFO", "DEBUG", "TRACE" };
   public static final Level[] L4J_LVLS = { Level.FATAL, Level.ERROR, Level.WARN, Level.INFO, Level.DEBUG, Level.TRACE };
-  static String LOG_DIR = null;
-  static int _level=INFO;
-  static boolean _quiet = false;
-  static String _maxLogFileSize = "3MB";
+
+  private static int _level = INFO;
+  private static boolean _quiet = false;
   private static Logger _logger = null;
   private static boolean _bufferMessages = true;
+  private static String _logDir = null;
+  private static String _maxLogFileSize = "3MB";
 
   // A little bit of startup buffering
   private static class BufferedMsg { 
@@ -60,13 +63,16 @@ abstract public class Log {
     if( lvl != -1 ) _level = lvl;
     _quiet = quiet;
     _logger = null;
-    if(maxLogFileSize != null) {
+    if (maxLogFileSize != null) {
       _maxLogFileSize = maxLogFileSize;
     }
   }
   
   public static void notifyAboutNetworkingInitialized() {
     _bufferMessages = false; // at this point we can create the log files and use a correct prefix ip:port for each log message
+    MDC.put("H2OServerInfo",
+        fixedLength(H2O.SELF_ADDRESS.getHostAddress() + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6)
+    );
     assert H2O.SELF_ADDRESS != null && H2O.H2O_PORT != 0;
   }
   
@@ -75,16 +81,19 @@ abstract public class Log {
     Log.flushBufferedMessages();
 
     // if there are any other log messages after this call, we want to preserve them as well
-    setQuiet(false);
+    if (_quiet) {
+      _quiet = false;
+      _logger = null;
+    }
     INIT_MSGS = null;
   }
   
-  public static void setLogLevel(String sLvl, boolean quiet) {
-    init(sLvl, quiet, null);
+  public static void setLogLevel(String level, boolean quiet) {
+    init(level, quiet, null);
   }
   
-  public static void setLogLevel(String sLvl) {
-    setLogLevel(sLvl, true);
+  public static void setLogLevel(String level) {
+    setLogLevel(level, true);
   }
 
   public static void trace( Object... objs ) { log(TRACE,objs); }
@@ -130,11 +139,21 @@ abstract public class Log {
   }
 
   private static void write0(int lvl, String s, Throwable t) {
-    (_logger != null ? _logger : createLog4j()).log(L4J_LVLS[lvl], s, t);
+    Logger log = (_logger != null ? _logger : createLog4j());
+    if (s.contains("\n")) {
+      for (String line : s.split("\n")) {
+        log.log(L4J_LVLS[lvl], line);
+      }
+      if (t != null) {
+        log.log(L4J_LVLS[lvl], t);
+      }
+    } else {
+      log.log(L4J_LVLS[lvl], s, t);
+    }
   }
 
   public static void flushBufferedMessages() {
-    if (INIT_MSGS != null) {   // Ahh, dump any initial buffering
+    if (INIT_MSGS != null) {
       ArrayList<BufferedMsg> buff = INIT_MSGS;
       INIT_MSGS = null;
       if (buff != null) for (BufferedMsg m : buff) write0(m.lvl, m.msg, m.t);
@@ -161,10 +180,10 @@ abstract public class Log {
    * Get the directory where the logs are stored.
    */
   public static String getLogDir() throws Exception {
-    if (LOG_DIR == null) {
+    if (_logDir == null) {
       throw new Exception("LOG_DIR not yet defined");
     }
-    return LOG_DIR;
+    return _logDir;
   }
 
   private static String getLogFileNamePrefix() throws Exception {
@@ -208,15 +227,15 @@ abstract public class Log {
   }
   
   
-  private static void setLog4jProperties(String logDir, java.util.Properties p) throws Exception {
-    LOG_DIR = logDir;
+  private static void setLog4jProperties(String logDir, Properties p) throws Exception {
+    _logDir = logDir;
 
     String host = H2O.SELF_ADDRESS.getHostAddress();
     String hostPortPid = fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
     String patternTail = hostPortPid + " [%10t] %p %c: %m%n";
     String pattern = "%d{MM-dd HH:mm:ss.SSS} " + patternTail;
 
-    p.setProperty("log4j.rootLogger", "INFO, CONSOLE");
+    p.setProperty("log4j.rootLogger", "INFO, console");
 
     // H2O-wide logging
     String appenders = L4J_LVLS[_level] + ", R1, R2, R3, R4, R5, R6";
@@ -225,10 +244,10 @@ abstract public class Log {
       p.setProperty("log4j.logger.additivity." + packageName, "false");
     }
 
-    p.setProperty("log4j.appender.CONSOLE",                     "org.apache.log4j.ConsoleAppender");
-    p.setProperty("log4j.appender.CONSOLE.Threshold",           "TRACE");
-    p.setProperty("log4j.appender.CONSOLE.layout",              "org.apache.log4j.PatternLayout");
-    p.setProperty("log4j.appender.CONSOLE.layout.ConversionPattern", pattern);
+    p.setProperty("log4j.appender.console",                     "org.apache.log4j.ConsoleAppender");
+    p.setProperty("log4j.appender.console.Threshold",           "TRACE");
+    p.setProperty("log4j.appender.console.layout",              "org.apache.log4j.PatternLayout");
+    p.setProperty("log4j.appender.console.layout.ConversionPattern", pattern);
 
     p.setProperty("log4j.appender.R1",                          "org.apache.log4j.RollingFileAppender");
     p.setProperty("log4j.appender.R1.Threshold",                "TRACE");
@@ -355,8 +374,7 @@ abstract public class Log {
       if (!launchedWithHadoopJar && H2O.haveInheritedLog4jConfiguration()) {
         // Use a modified log4j property configurator to append rather than create a new log4j configuration.
         H2OPropertyConfigurator.configure(p);
-      }
-      else {
+      } else {
         PropertyConfigurator.configure(p);
       }
     }
@@ -445,9 +463,4 @@ abstract public class Log {
     }
   }
 
-  public static boolean getQuiet() { return _quiet; }
-  
-  public static void setQuiet(boolean q) {
-    _quiet = q;
-  }
 }

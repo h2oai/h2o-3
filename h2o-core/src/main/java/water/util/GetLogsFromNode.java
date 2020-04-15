@@ -68,7 +68,7 @@ public class GetLogsFromNode extends Iced {
       try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
            LogArchiveWriter archiveWriter = _container.createLogArchiveWriter(baos)) {
         String archiveRoot = String.format("h2ologs_node%d_%s_%d", H2O.SELF.index(),  H2O.SELF_ADDRESS.getHostAddress(), H2O.API_PORT);
-        archiveDir(Log.LOG_DIR, archiveRoot, baos, archiveWriter);
+        archiveDir(Log.getLogDir(), archiveRoot, baos, archiveWriter);
         archiveWriter.close(); // need to close before we extract the bytes
         _bytes = baos.toByteArray();
       }

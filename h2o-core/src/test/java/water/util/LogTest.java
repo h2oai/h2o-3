@@ -26,8 +26,7 @@ public class LogTest {
         final String originalLogDir = H2O.ARGS.log_dir;
         try {
             final File temporaryLogDirectory = temporaryFolder.newFolder();
-            Log.LOG_DIR = temporaryLogDirectory.getAbsolutePath();
-            H2O.ARGS.log_dir = Log.LOG_DIR;
+            H2O.ARGS.log_dir = temporaryLogDirectory.getAbsolutePath();
             Log.init(null, true, "1MB");
 
             assertEquals(temporaryLogDirectory.getAbsolutePath(), Log.getLogDir());
@@ -42,7 +41,6 @@ public class LogTest {
             assertEquals(0, infoLoggingFile.length()); // Freshly rotated file
         } finally {
             H2O.ARGS.log_dir = originalLogDir;
-            Log.LOG_DIR = originalLogDir;
             Log.init(H2O.ARGS.log_level, H2O.ARGS.quiet, H2O.ARGS.max_log_file_size);
         }
     }
