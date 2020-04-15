@@ -377,6 +377,9 @@ test-xgb-smoke-gpu:
 	scripts/test-xgb-gpu-smoke.sh
 	$(call check_xgb_backend,'xgboost4j_gpu')
 
+test-dist:
+    ./gradlew buildH2oDevDistTest $$ADDITIONAL_GRADLE_OPTS
+
 define check_xgb_backend
 	@if [ ! "$$(egrep 'Found XGBoost backend with library: $(1)' h2o-extensions/xgboost/sandbox/single/*)" ]; then \
 		echo "Cannot find XGBoost backend $(1) in the logs."; \

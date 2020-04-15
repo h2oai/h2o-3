@@ -160,6 +160,10 @@ def call(final pipelineContext) {
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo) 
       imageSpecifier: "mojocompat",
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
+    ],
+    [
+      stageName: 'Dist', target: 'test-dist', archiveFiles: false,
+      timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY
     ]
   ]
 

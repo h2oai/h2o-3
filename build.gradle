@@ -371,6 +371,29 @@ task buildH2oDevDist(type: Exec) {
     commandLine './make-dist.sh'
 }
 
+// TODO Reuse code with buildH2oDevDist or use parameter to switch sh file
+task buildH2oDevDistTest(type: Exec) {
+    group='Dist'
+    H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
+    def buildTimeMillis = System.currentTimeMillis()
+    def buildTimeIso8601 = new Date().format("yyyy-MM-dd'T'HH:mm:ss'Z'", TimeZone.getTimeZone("UTC"))
+    def buildTimeLocal = new Date()
+    def projectVersion = bv.getProjectVersion()
+    def branchName = bv.getBranch()
+    def buildNumber = bv.getBuildNumber()
+    def lastCommitHash = bv.getLastCommitHash()
+
+    environment['BUILD_TIME_MILLIS'] = buildTimeMillis
+    environment['BUILD_TIME_ISO8601'] = buildTimeIso8601
+    environment['BUILD_TIME_LOCAL'] = buildTimeLocal
+    environment['PROJECT_VERSION'] = projectVersion
+    environment['BRANCH_NAME'] = branchName
+    environment['BUILD_NUMBER'] = buildNumber
+    environment['LAST_COMMIT_HASH'] = lastCommitHash
+
+    commandLine './make-dist-test.sh'
+}
+
 
 task dist(dependsOn: buildH2oDevDist) 
 
