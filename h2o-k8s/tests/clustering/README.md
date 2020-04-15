@@ -27,7 +27,25 @@ A new **nightly** stage named `Kubernetes` has been created in `{h2o-home}/scrip
 Every stages in H2O runes inside an H2O container. The `Kubernetes` stage has it's own container named `harbor.h2o.ai/opsh2oai/h2o-3-k8s`. Latest
 revision is always used. The image of that docker container is represented by the `Dockerfile` file in this very folder.
 Changes can be done by building the container with `docker build . -t harbor.h2o.ai/opsh2oai/h2o-3-k8s` and pushing to `harbor.h2o.ai`.
+An automated build has been set-up for that purpose: `Jenkins` -> `H2O-3` -> `docker-images` -> `h2o-3-k8s-docker-build`.
+The build is defined in `{h2o-home}/docker/Jenkinsfile-build-k8s-docker`.
 
 In that image, a `Docker` is installed together with [k3d](https://github.com/rancher/k3d) by Rancher.
-K3S serves as a convenience tool to install [k3s](https://k3s.io/), a lightweight
+K3D serves as a convenience tool to install [k3s](https://k3s.io/), a lightweight Kubernetes implementation.
+After the cluster is started, H2O Deployment is applied, together with a headless service and an Ingress. The deployment of
+`n` together with the headless service is present to test H2O is capable to form a cluster. The Ingress is set-up to make
+the H2O cluster size testable from outside of the K8S cluster, using `h2o-cluster-check.sh`. Before the cluster-size check is
+started, `kubectl wait` is used to wait for the pods to be deployed. 
+
+The deployment speed of H2O pods depends heavily on connection to `harbor.h2o.ai`, as there is a secondary Docker image to run H2O pods,
+and this image is downloaded from `harbor.h2o.ai` every single time. As the whole Kubernetes docker runs inside a Docker and
+is intended to be used only once, there is no cache. Usually, this stage is a matter of seconds. 
+
+As soon as H2O pods are deployed, the `h2o-cluster-check.sh` is started.This queries H2O for cluster info by `curl http://localhost:8080/3/Cloud`.
+The cloud size in the JSON returned must be equal to the expected value. If it is equal, then the test is considered to be a pass
+and an exit value of `0` is returned, indicating a passed test to Jenkins. Otherwise, a value of `1` is returned, signaling a 
+failed test to Jenkins. In both cases, before the script exists, a cleanup of the Kubernetes cluster is done using `k3d delete`
+before the outer Docker is killed. This is an important step, as in case host Docker is used, the container with K3S Kubernetes
+cluster could have lived on.
+
 
