@@ -222,6 +222,61 @@ Singular values: :math:`\Sigma \in \rm \Bbb I \!\Bbb R^{k \times k}` diagonal
 
 Left singular vectors: :math:`QU \in \rm \Bbb I \!\Bbb R^{n \times k}`
 
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Principal Component Analysis model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the birds dataset into H2O:
+    birds <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
+
+    # Split the dataset into a train and valid set:
+    birds_split <- h2o.splitFrame(birds, ratios=.8, seed=1234)
+    train <- birds_split[[1]]
+    valid <- birds_split[[2]]
+
+    # Build and train the model:
+    birds_pca <- h2o.prcomp(training_frame=train, 
+                            k=5, 
+                            use_all_factor_levels=TRUE, 
+                            pca_method="GLRM", 
+                            transform="STANDARDIZE", 
+                            impute_missing=TRUE)
+
+    # Generate predictions on a validation set (if necessary):
+    pred <- h2o.predict(birds_pca, newdata = valid)
+
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2OPrincipalComponentAnalysisEstimator
+    h2o.init()
+
+    # Import the birds dataset into H2O:
+    birds = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
+
+    # Split the dataset into a train and valid set:
+    train, valid = birds.split_frame(ratios = [.8], seed = 1234)
+
+    # Build and train the model:
+    birds_pca = H2OPrincipalComponentAnalysisEstimator(k = 5, 
+                                                       use_all_factor_levels = True, 
+                                                       pca_method = "glrm", 
+                                                       transform = "standardize", 
+                                                       impute_missing = True)
+    birds_pca.train(training_frame = train)
+
+    # Generate predictions on a validation set (if necessary):
+    pred = birds_pca.predict(valid)
+
+
 References
 ~~~~~~~~~~
 

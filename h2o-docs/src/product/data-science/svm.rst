@@ -81,6 +81,53 @@ The main idea of the SVM algorithm is to approximate the (potentially very large
 
 An approximation of the :math:`\mathbf{Q}` matrix is used in the IPM algorithm in order to speed up the bottleneck of the Newton step and leverage the parallel execution environment.
 
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Support Vector Machine model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the splice dataset into H2O:
+    splice <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/splice/splice.svm")
+
+    # Build and train the model:
+    svm_model <- h2o.psvm(gamma = 0.01, 
+                          rank_ratio = 0.1, 
+                          y = "C1", 
+                          training_frame = splice, 
+                          disable_training_metrics = FALSE)
+
+    # Eval performance:
+    perf <- h2o.performance(svm_model)
+
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2OSupportVectorMachineEstimator
+    h2o.init()
+
+    # Import the splice dataset into H2O:
+    splice = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/splice/splice.svm")
+
+    # Build and train the model:
+    svm_model = H2OSupportVectorMachineEstimator(gamma=0.01, 
+                                                 rank_ratio = 0.1, 
+                                                 disable_training_metrics = False)
+    svm_model.train(y = "C1", training_frame = splice)
+
+    # Eval performance:
+    perf = svm_model.model_performance()
+
+    # Generate predictions (if necessary):
+    pred = svm_model.predict(splice)
+
+
 References
 ~~~~~~~~~~
 
