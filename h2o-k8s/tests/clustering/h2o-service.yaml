@@ -1,7 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: h2o-deployment
+  name: h2o-deployment # Deployment used for better job observability during tests, do not use in production.
   namespace: default
 spec:
   replicas: 2
