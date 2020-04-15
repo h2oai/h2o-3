@@ -12,20 +12,18 @@ public class NaiveTreeSHAP<R, N extends INode<R>, S extends INodeStat> {
   private final int rootNodeId;
   private final N[] nodes;
   private final S[] stats;
-  private final double baseMargin;
 
-  public NaiveTreeSHAP(N[] nodes, S[] stats, int rootNodeId, double baseMargin) {
+  public NaiveTreeSHAP(N[] nodes, S[] stats, int rootNodeId) {
     this.rootNodeId = rootNodeId;
     this.nodes = nodes;
     this.stats = stats;
-    this.baseMargin = baseMargin;
   }
 
   public double calculateContributions(R row, double[] contribsNaive) {
     final Set<Integer> usedFeatures = usedFeatures();
     final int M = usedFeatures.size();
     // last element is the bias term
-    contribsNaive[contribsNaive.length - 1] += treeMeanValue() /* tree bias */ + baseMargin;
+    contribsNaive[contribsNaive.length - 1] += treeMeanValue() /* tree bias */;
     // pre-calculate expValue for each subset
     Map<Set<Integer>, Double> expVals = new HashMap<>();
     for (Set<Integer> subset : allSubsets(usedFeatures)) {
