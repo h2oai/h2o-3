@@ -9,7 +9,8 @@ test.XGBoost.predict_contribs <- function() {
     housing_hex <- h2o.importFile(locate("smalldata/gbm_test/BostonHousing.csv"))
 
     # Train an H2O model
-    h2o_model <- h2o.xgboost(training_frame = housing_hex, y = "medv", seed = 42)
+    set.seed(42)
+    h2o_model <- h2o.xgboost(training_frame = housing_hex, y = "medv")
     h2o_predict <- h2o.predict(h2o_model, housing_hex)
     
     # Train a native XGBoost model
@@ -35,7 +36,7 @@ test.XGBoost.predict_contribs <- function() {
     # Rename BiasTerm to match XGBoost
     colnames(h2o_contribs) <- c(colnames(h2o_contribs)[1:(ncol(h2o_contribs)-1)], "BIAS")
     
-    expect_equal(h2o_contribs, xgb_contribs)
+    expect_equal(h2o_contribs, xgb_contribs, 1e-6)
 }
 
 doTest("GBM Test: Classification with 50 categorical level predictor", test.XGBoost.predict_contribs)
