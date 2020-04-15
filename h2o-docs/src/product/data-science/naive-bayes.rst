@@ -149,10 +149,10 @@ Below is a simple example showing how to build a Naïve Bayes Classifier model.
                   training_frame=prostate)
 
     # Eval performance:
-    perf = cars_nb.model_performance()
+    perf = pros_nb.model_performance()
 
     # Generate predictions on a test set (if necessary):
-    pred = cars_nb.predict(valid)
+    pred = pros_nb.predict(prostate)
 
 
 FAQ
