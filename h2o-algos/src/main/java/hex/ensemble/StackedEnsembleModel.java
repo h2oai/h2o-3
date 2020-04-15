@@ -116,21 +116,22 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
 
-    // TODO: don't score models that have 0 coefficients / aren't used by the metalearner.
-    //   also we should be able to parallelize scoring of base models
-    for (Key<Model> baseKey : this._parms._base_models) {
-      Model base = baseKey.get(); 
+    // TODO: we should be able to parallelize scoring of base models
+    for (Key<Model> baseModelKey : _parms._base_models) {
+      if (isUsefulBaseModel(baseModelKey)) {
+        Model baseModel = baseModelKey.get();
 
-      Frame basePreds = base.score(
-          fr,
-          "preds_base_" + this._key.toString() + fr._key,
-          j,
-          false
-      );
-      
-      StackedEnsemble.addModelPredictionsToLevelOneFrame(base, basePreds, levelOneFrame);
-      DKV.remove(basePreds._key); //Cleanup
-      Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
+        Frame basePreds = baseModel.score(
+                fr,
+                "preds_base_" + this._key.toString() + fr._key,
+                j,
+                false
+        );
+
+        StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, basePreds, levelOneFrame);
+        DKV.remove(basePreds._key); //Cleanup
+        Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
+      }
     }
 
     // Add response column to level one frame
@@ -166,7 +167,29 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     return predictFr;
   }
 
-
+  /**
+   * Is the baseModel's prediction used in the metalearner?
+   *
+   * @param baseModelKey
+   */
+  boolean isUsefulBaseModel(Key<Model> baseModelKey) {
+    Model metalearner = _output._metalearner;
+    assert metalearner != null : "can't use isUsefulBaseModel during training";
+    if (modelCategory == ModelCategory.Multinomial) {
+      // Multinomial models output multiple columns and a base model
+      // might be useful just for one category...
+      for (String feature : metalearner._output._names) {
+        if (feature.startsWith(baseModelKey.toString().concat("/"))){
+          if (metalearner.isFeatureUsedInPredict(feature)) {
+            return true;
+          }
+        }
+      }
+      return false;
+    } else {
+      return metalearner.isFeatureUsedInPredict(baseModelKey.toString());
+    }
+  }
 
   /**
    * Should never be called: the code paths that normally go here should call predictScoreImpl().

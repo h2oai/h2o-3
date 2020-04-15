@@ -2298,5 +2298,12 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
   public DeepLearningMojoWriter getMojo() {
     return new DeepLearningMojoWriter(this);
   }
+
+  @Override
+  public boolean isFeatureUsedInPredict(String featureName) {
+    if (!_parms._variable_importances) return true;
+    int featureIdx = ArrayUtils.find(varImp()._names, featureName);
+    return featureIdx != -1 && (double) varImp()._varimp[featureIdx] != 0d;
+  }
 }
 

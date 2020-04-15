@@ -21,6 +21,8 @@ public class StackedEnsembleMojoReader extends MultiModelMojoReader<StackedEnsem
         final String[] columnNames = readkv("[columns]");
         for (int i = 0; i < baseModelNum; i++) {
             String modelKey = readkv("base_model" + i);
+            if (modelKey == null)
+                continue;
             final MojoModel model = getModel(modelKey);
             _model._baseModels[i] = new StackedEnsembleMojoModel.StackedEnsembleMojoSubModel(model,
                     createMapping(model, columnNames, modelKey));

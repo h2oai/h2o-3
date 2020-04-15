@@ -1774,4 +1774,19 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return new GLMMojoWriter(this);
   }
 
+  @Override
+  protected boolean isFeatureUsedInPredict(int featureIdx) {
+    if (featureIdx < _output._dinfo._catOffsets.length - 1 && _output._column_types[featureIdx].equals("Enum")) {
+      for (int i = _output._dinfo._catOffsets[featureIdx];
+           i < _output._dinfo._catOffsets[featureIdx + 1];
+           i++) {
+        if (beta()[i] != 0) return true;
+      }
+      return false;
+    } else {
+      featureIdx += _output._dinfo._numOffsets[0] - _output._dinfo._catOffsets.length + 1;
+    }
+    return beta()[featureIdx] != 0;
+
+  }
 }
