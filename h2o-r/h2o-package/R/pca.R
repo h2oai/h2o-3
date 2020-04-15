@@ -36,7 +36,6 @@
 #'        Defaults to -1 (time-based random number).
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param te_model Key of H2OTargetEncoderEstimator or H2OTargetEncoderEstimator
 #' @return an object of class \linkS4class{H2ODimReductionModel}.
 #' @seealso \code{\link{h2o.svd}}, \code{\link{h2o.glrm}}
 #' @references N. Halko, P.G. Martinsson, J.A. Tropp. {Finding structure with randomness: Probabilistic algorithms for constructing approximate matrix decompositions}[http://arxiv.org/abs/0909.4061]. SIAM Rev., Survey and Review section, Vol. 53, num. 2, pp. 217-288, June 2011.
@@ -65,8 +64,7 @@ h2o.prcomp <- function(training_frame,
                        impute_missing = FALSE,
                        seed = -1,
                        max_runtime_secs = 0,
-                       export_checkpoints_dir = NULL,
-                       te_model = NULL)
+                       export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -108,8 +106,6 @@ h2o.prcomp <- function(training_frame,
     parms$max_runtime_secs <- max_runtime_secs
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
-  if (!missing(te_model))
-    parms$te_model <- te_model
 
   # Error check and build model
   model <- .h2o.modelJob('pca', parms, h2oRestApiVersion=3, verbose=FALSE)
