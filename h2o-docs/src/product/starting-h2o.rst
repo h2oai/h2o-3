@@ -18,11 +18,11 @@ Use the ``h2o.init()`` method to initialize H2O. This method accepts the followi
 - ``max_log_file_size``: Maximum size of INFO and DEBUG log files. The file is rolled over after the specifized size has been reached. The range for this option is 1MB to 99999MB. The value defaults to 3MB.
 - ``max_mem_size``: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must be a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes. 
 
-    **Note:** If not defined, (-Xmx<Heap Size> for command line) then H2O will allocate memory determined by default memory of Java Virtual Machine (JVM). The amount is dependent on the Java version, but generally 25% of the machine's physical memory.
+    **Note:** If ``max_mem_size`` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
 
 - ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes. 
 
-    **Note:** If not defined, (-Xmx<Heap Size> for command line) then H2O will allocate memory determined by default memory of Java Virtual Machine (JVM). The amount is dependent on the Java version, but generally 25% of the machine's physical memory.
+    **Note:** If ``min_mem_size`` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
     
 - ``ice_root``: (Optional) A directory to handle object spillage. The default varies by OS.
 - ``strict_version_check``: (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
@@ -258,7 +258,7 @@ JVM Options
 -  ``-version``: Display Java version info.
 -  ``-Xmx<Heap Size>``: To set the total heap size for an H2O node, configure the memory allocation option ``-Xmx``. By default, this option is set to 1 Gb (``-Xmx1g``). When launching nodes, we recommend allocating a total of four times the memory of your data.
 
-    **Note**: Do not try to launch H2O with more memory than you have available.
+    **Note**: Do not try to launch H2O with more memory than you have available. If ``-Xmx<Heap Size>`` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the JVM. This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
 
 H2O Options
 ~~~~~~~~~~~
