@@ -35,6 +35,8 @@
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param metalearner_params Parameters for metalearner algorithm
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
+#' @param training_scoring_subsample_size Size of training subsample used to compute training metrics. Use -1 to use the whole training frame. Defaults
+#'        to 10000.
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @examples
@@ -102,6 +104,7 @@ h2o.stackedEnsemble <- function(x,
                                 metalearner_fold_column = NULL,
                                 metalearner_params = NULL,
                                 seed = -1,
+                                training_scoring_subsample_size = 10000,
                                 keep_levelone_frame = FALSE,
                                 export_checkpoints_dir = NULL)
 {
@@ -161,6 +164,8 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_column <- metalearner_fold_column
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(training_scoring_subsample_size))
+    parms$training_scoring_subsample_size <- training_scoring_subsample_size
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
   if (!missing(export_checkpoints_dir))
@@ -229,6 +234,7 @@ h2o.stackedEnsemble <- function(x,
                                                 metalearner_fold_column = NULL,
                                                 metalearner_params = NULL,
                                                 seed = -1,
+                                                training_scoring_subsample_size = 10000,
                                                 keep_levelone_frame = FALSE,
                                                 export_checkpoints_dir = NULL,
                                                 segment_columns = NULL,
@@ -293,6 +299,8 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_column <- metalearner_fold_column
   if (!missing(seed))
     parms$seed <- seed
+  if (!missing(training_scoring_subsample_size))
+    parms$training_scoring_subsample_size <- training_scoring_subsample_size
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
   if (!missing(export_checkpoints_dir))

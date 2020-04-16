@@ -63,8 +63,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
     param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
                    "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                   "metalearner_fold_column", "metalearner_params", "seed", "keep_levelone_frame",
-                   "export_checkpoints_dir"}
+                   "metalearner_fold_column", "metalearner_params", "seed", "training_scoring_subsample_size",
+                   "keep_levelone_frame", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
@@ -595,6 +595,21 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def seed(self, seed):
         assert_is_type(seed, None, int)
         self._parms["seed"] = seed
+
+
+    @property
+    def training_scoring_subsample_size(self):
+        """
+        Size of training subsample used to compute training metrics. Use -1 to use the whole training frame.
+
+        Type: ``int``  (default: ``10000``).
+        """
+        return self._parms.get("training_scoring_subsample_size")
+
+    @training_scoring_subsample_size.setter
+    def training_scoring_subsample_size(self, training_scoring_subsample_size):
+        assert_is_type(training_scoring_subsample_size, None, int)
+        self._parms["training_scoring_subsample_size"] = training_scoring_subsample_size
 
 
     @property

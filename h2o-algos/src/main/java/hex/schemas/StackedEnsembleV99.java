@@ -45,6 +45,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "metalearner_fold_column",
       "metalearner_params",
       "seed",
+      "training_scoring_subsample_size",
       "keep_levelone_frame",
       "export_checkpoints_dir"
     };
@@ -108,6 +109,11 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
     @API(help = "Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)", gridable = true)
     public long seed;
+
+    @API(help = "Size of training subsample used to compute training metrics. Use -1 to use the whole training frame.",
+            level = API.Level.secondary,
+            direction = API.Direction.INOUT)
+    public long training_scoring_subsample_size;
 
     @Override
     public StackedEnsembleParametersV99 fillFromImpl(StackedEnsembleModel.StackedEnsembleParameters impl) {

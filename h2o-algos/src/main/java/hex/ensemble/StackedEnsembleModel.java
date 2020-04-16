@@ -9,10 +9,13 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.Log;
+import water.util.MRUtils;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
@@ -65,6 +68,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String _metalearner_params = new String(); //used for clients code-gen only.
     public Model.Parameters _metalearner_parameters;
     public long _seed;
+    public long _training_scoring_subsample_size = 10_000;
 
     /**
      * initialize {@link #_metalearner_parameters} with default parameters for the current {@link #_metalearner_algorithm}.
@@ -116,22 +120,38 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
 
-    // TODO: we should be able to parallelize scoring of base models
+    List<H2O.H2OCountedCompleter> tasks = new ArrayList<>();
+    final String seKey = this._key.toString();
+
+    // Run scoring of base models in parallel
     for (Key<Model> baseModelKey : _parms._base_models) {
       if (isUsefulBaseModel(baseModelKey)) {
-        Model baseModel = baseModelKey.get();
+        tasks.add(
+                H2O.submitTask(
+                        new H2O.H2OCountedCompleter() {
+                          @Override
+                          public void compute2() {
+                            Model baseModel = baseModelKey.get();
 
-        Frame basePreds = baseModel.score(
-                fr,
-                "preds_base_" + this._key.toString() + fr._key,
-                j,
-                false
-        );
+                            Frame basePreds = baseModel.score(
+                                    fr,
+                                    "preds_base_" + seKey + fr._key,
+                                    j,
+                                    false
+                            );
 
-        StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, basePreds, levelOneFrame);
-        DKV.remove(basePreds._key); //Cleanup
-        Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
+                            StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, basePreds, levelOneFrame);
+                            DKV.remove(basePreds._key); //Cleanup
+                            Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
+                            tryComplete();
+                          }
+                        }));
       }
+    }
+
+    // Wait for the completion of the base model scoring
+    for (H2O.H2OCountedCompleter task : tasks) {
+      task.join();
     }
 
     // Add response column to level one frame
@@ -205,10 +225,18 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   }
 
   ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
+    if (_parms._training_scoring_subsample_size > 0 && _parms._training_scoring_subsample_size < frame.numRows()) { 
+      frame =  MRUtils.sampleFrame(frame, _parms._training_scoring_subsample_size, _parms._seed);
       Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
-//      Frame pred = this.score(frame, null, job, true,  CFuncRef.from(_parms._custom_metric_func));
+      pred.delete();
+      ModelMetrics metrics = ModelMetrics.getFromDKV(this, frame);
+      frame.delete();
+      return metrics;
+    } else {
+      Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
       pred.delete();
       return ModelMetrics.getFromDKV(this, frame);
+    }
   }
 
   void doScoreOrCopyMetrics(Job job) {
