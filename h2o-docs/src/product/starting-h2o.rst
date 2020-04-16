@@ -16,8 +16,14 @@ Use the ``h2o.init()`` method to initialize H2O. This method accepts the followi
 - ``enable_assertions``:  (Optional) A logical value indicating whether H2O should be launched with assertions enabled. This is used mainly for error checking and debugging purposes. 
 - ``license``: (Optional) A character string value specifying the full path of the license file. 
 - ``max_log_file_size``: Maximum size of INFO and DEBUG log files. The file is rolled over after the specifized size has been reached. The range for this option is 1MB to 99999MB. The value defaults to 3MB.
-- ``max_mem_size``: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
-- ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
+- ``max_mem_size``: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must be a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes. 
+
+    **Note:** If not defined, (-Xmx<Heap Size> for command line) then H2O will allocate memory determined by default memory of Java Virtual Machine (JVM). The amount is dependent on the Java version, but generally 25% of the machine's physical memory.
+
+- ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes. 
+
+    **Note:** If not defined, (-Xmx<Heap Size> for command line) then H2O will allocate memory determined by default memory of Java Virtual Machine (JVM). The amount is dependent on the Java version, but generally 25% of the machine's physical memory.
+    
 - ``ice_root``: (Optional) A directory to handle object spillage. The default varies by OS.
 - ``strict_version_check``: (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
 - ``ignore_config``: (Optional) This option allows you to specify whether to perform processing of a .h2oconfig file. When h2o.init() is specified, a call to a config reader method is invoked. This call can result in path issues when there is no "root" (for example, with a Windows network drive) because the config file reader searches up to "root." When there is no "root", the path to search will continue to expand, eventually result in an error. This value defaults to False.
