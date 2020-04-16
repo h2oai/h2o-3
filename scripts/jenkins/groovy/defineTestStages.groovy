@@ -362,7 +362,7 @@ def call(final pipelineContext) {
       stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
       image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
-      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], dind: true
+      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], addToDockerGroup: true
     ]
   ]
 
@@ -649,6 +649,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           imageSpecifier = c['imageSpecifier']
           dockerImageSuffix = c['dockerImageSuffix']
           healthCheckSuppressed = c['healthCheckSuppressed']
+          addToDockerGroup = c['addToDockerGroup']
         }
       }
     ]

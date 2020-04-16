@@ -5,7 +5,8 @@ def call(final pipelineContext, final stageConfig) {
     def buildEnv = pipelineContext.getBuildConfig().getBuildEnv() + ["PYTHON_VERSION=${stageConfig.pythonVersion}", "R_VERSION=${stageConfig.rVersion}", "JAVA_VERSION=${stageConfig.javaVersion}"]
 
     echo "###### Changes for ${stageConfig.component} detected, starting ${stageConfig.stageName} ######"
-    insideDocker(buildEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), stageConfig.timeoutValue, 'MINUTES', stageConfig.customDockerArgs.join(' '), dind = stageConfig.dind) {
+    print(stageConfig.addToDockerGroup)
+    insideDocker(buildEnv, stageConfig.image, pipelineContext.getBuildConfig().DOCKER_REGISTRY, pipelineContext.getBuildConfig(), stageConfig.timeoutValue, 'MINUTES', stageConfig.customDockerArgs.join(' '), stageConfig.addToDockerGroup) {
         def h2oFolder = stageConfig.stageDir + '/h2o-3'
 
         // pull the test package unless this is a COMPONENT_ANY stage
