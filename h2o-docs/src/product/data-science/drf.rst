@@ -463,7 +463,7 @@ DRF Algorithm
    :target: http://www.slideshare.net/0xdata/rf-brighttalk
 
 
-`Building Random Forest at Scale <http://www.slideshare.net/0xdata/rf-brighttalk>`_ from Sri Ambati
+`Building Random Forest at Scale <https://www.slideshare.net/0xdata/rf-brighttalk>`_ from Sri Ambati
 
 References
 ~~~~~~~~~~
