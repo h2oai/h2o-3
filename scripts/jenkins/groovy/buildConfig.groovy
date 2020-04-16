@@ -22,7 +22,6 @@ class BuildConfig {
   private static final String HADOOP_IMAGE_VERSION_TAG = '79'
   
   private static final String K8S_TEST_IMAGE_VERSION_TAG = '1'
-  private static final String K8S_TEST_H2O_IMAGE_VERSION_TAG = '1'
 
   public static final String XGB_TARGET_MINIMAL = 'minimal'
   public static final String XGB_TARGET_OMP = 'omp'
@@ -206,10 +205,6 @@ class BuildConfig {
   
   String getK8STestImageVersion() {
     return K8S_TEST_IMAGE_VERSION_TAG
-  }
-  
-    String getK8STestH2OImageVersion() {
-    return K8S_TEST_H2O_IMAGE_VERSION_TAG
   }
 
   Map getSupportedXGBEnvironments() {
