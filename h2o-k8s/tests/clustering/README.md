@@ -27,7 +27,6 @@ A new **nightly** stage named `Kubernetes` has been created in `{h2o-home}/scrip
 Every stages in H2O runes inside an H2O container. The `Kubernetes` stage has it's own container named `harbor.h2o.ai/opsh2oai/h2o-3-k8s`. Latest
 revision is always used. The image of that docker container is represented by the `Dockerfile` file in this very folder.
 Changes can be done by building the container with `docker build . -t harbor.h2o.ai/opsh2oai/h2o-3-k8s` and pushing to `harbor.h2o.ai`.
-An automated build has been set-up for that purpose: `Jenkins` -> `H2O-3` -> `docker-images` -> `h2o-3-k8s-test-docker-build`.
 The build is defined in `{h2o-home}/docker/Jenkinsfile-build-k8s-test-docker`.
 
 In that image, a `Docker` is installed together with [k3d](https://github.com/rancher/k3d) by Rancher.
@@ -37,8 +36,10 @@ After the cluster is started, H2O Deployment is applied, together with a headles
 the H2O cluster size testable from outside of the K8S cluster, using `h2o-cluster-check.sh`. Before the cluster-size check is
 started, `kubectl wait` is used to wait for the pods to be deployed. The pod with H2O consists of a single Docker container,
 with JDK and `h2o.jar` mounted from the build that is running. This docker container build is defined in
-`{h2o-home}/docker/Jenkinsfile-build-k8s-test-h2o-docker`. This job is to be found in Jenkins under
-Jenkins -> `H2O-3` -> `docker-images` -> `h2o-3-k8s-test-h2o-docker-build`.
+`{h2o-home}/docker/Jenkinsfile-build-k8s-test-h2o-docker`.
+
+An automated build has been set-up in Jenkins to build both images: `Jenkins` -> `H2O-3` -> `docker-images` -> `h2o-3-k8s-test-docker-build`.
+
 The deployment speed of H2O pods depends heavily on connection to `harbor.h2o.ai`, as there is a secondary Docker image to run H2O pods,
 and this image is downloaded from `harbor.h2o.ai` every single time. As the whole Kubernetes docker runs inside a Docker and
 is intended to be used only once, there is no cache. Usually, this stage is a matter of seconds. 
