@@ -7,14 +7,12 @@ Rapids expressions. These are helper classes for H2OFrame.
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 
-from collections import Iterable, OrderedDict
+from collections import OrderedDict
 import copy
 import gc
 import inspect
 import math
-import sys
 import time
-import traceback
 import numbers
 
 import tabulate
