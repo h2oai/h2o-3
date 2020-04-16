@@ -70,9 +70,6 @@ abstract public class Log {
   
   public static void notifyAboutNetworkingInitialized() {
     _bufferMessages = false; // at this point we can create the log files and use a correct prefix ip:port for each log message
-    MDC.put("H2OServerInfo",
-        fixedLength(H2O.SELF_ADDRESS.getHostAddress() + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6)
-    );
     assert H2O.SELF_ADDRESS != null && H2O.H2O_PORT != 0;
   }
   
@@ -226,13 +223,15 @@ abstract public class Log {
     return getLogDir() + File.separator + getLogFileName(level);
   }
   
+  private static String getHostPortPid() {
+    String host = H2O.SELF_ADDRESS.getHostAddress();
+    return fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
+  }
   
   private static void setLog4jProperties(String logDir, Properties p) throws Exception {
     _logDir = logDir;
 
-    String host = H2O.SELF_ADDRESS.getHostAddress();
-    String hostPortPid = fixedLength(host + ":" + H2O.API_PORT + " ", 22) + fixedLength(H2O.PID + " ", 6);
-    String patternTail = hostPortPid + " [%10t] %p %c: %m%n";
+    String patternTail = getHostPortPid() + " %10.10t %5.5p %c: %m%n";
     String pattern = "%d{MM-dd HH:mm:ss.SSS} " + patternTail;
 
     p.setProperty("log4j.rootLogger", "INFO, console");
@@ -322,7 +321,7 @@ abstract public class Log {
   }
 
   private static synchronized Logger createLog4j() {
-    if( _logger != null ) return _logger; // Test again under lock
+    if (_logger != null) return _logger; // Test again under lock
 
     boolean launchedWithHadoopJar = H2O.ARGS.launchedWithHadoopJar();
     String h2oLog4jConfiguration = System.getProperty("h2o.log4j.configuration");
