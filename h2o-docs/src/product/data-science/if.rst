@@ -115,10 +115,10 @@ Defining an Isolation Forest Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
-Simple Example
-~~~~~~~~~~~~~~
+Examples
+~~~~~~~~
 
-Below is a simple example showing Isolation Forest from model training through prediction and predicted leaf node assignment. 
+Below is a simple example showing how to build an Isolation Forest model. 
 
 .. tabs::
    .. code-tab:: r R

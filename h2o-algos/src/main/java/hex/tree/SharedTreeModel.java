@@ -727,4 +727,10 @@ public abstract class SharedTreeModel<
     return (T) sb.p(mname).p("_Forest_").p(t);
   }
 
+  @Override
+  public boolean isFeatureUsedInPredict(String featureName) {
+    if (featureName.equals(_output.responseName())) return false;
+    int featureIdx = ArrayUtils.find(_output._varimp._names, featureName);
+    return featureIdx != -1 && (double) _output._varimp._varimp[featureIdx] != 0d;
+  }
 }

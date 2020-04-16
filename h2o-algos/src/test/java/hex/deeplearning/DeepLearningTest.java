@@ -2625,6 +2625,57 @@ public class DeepLearningTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testIsFeatureUsedInPredict() {
+    isFeatureUsedInPredictHelper(false, false);
+    isFeatureUsedInPredictHelper(true, false);
+    isFeatureUsedInPredictHelper(false, true);
+    isFeatureUsedInPredictHelper(true, true);
+  }
 
+  private void isFeatureUsedInPredictHelper(boolean ignoreConstCols, boolean multinomial) {
+    Scope.enter();
+    Vec target = Vec.makeRepSeq(100, 3);
+    if (multinomial) target = target.toCategoricalVec();
+    Vec zeros = Vec.makeCon(0d, 100);
+    Frame dummyFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{zeros, zeros, zeros, zeros, target, target}
+    );
+    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsedInPredict");
+
+    Frame reference = null;
+    Frame prediction = null;
+    DeepLearningModel model = null;
+    try {
+      DKV.put(dummyFrame);
+      DeepLearningModel.DeepLearningParameters dl = new DeepLearningModel.DeepLearningParameters();
+      dl._train = dummyFrame._key;
+      dl._response_column = "target";
+      dl._seed = 1;
+      dl._ignore_const_cols = ignoreConstCols;
+
+      DeepLearning job = new DeepLearning(dl);
+      model = job.trainModel().get();
+
+      int usedFeatures = 0;
+      for(String feature : model._output._names) {
+        if (model.isFeatureUsedInPredict(feature)) {
+          usedFeatures ++;
+        }
+      }
+      // Unfortunately DeepLearning seems to use even the non-informative columns so this test just that
+      // we didn't use more features than there are (e.g., wrong handling of categorical features, etc.)
+      assertTrue(usedFeatures <= 5);
+    } finally {
+      dummyFrame.delete();
+      if (model != null) model.delete();
+      if (reference != null) reference.delete();
+      if (prediction != null) prediction.delete();
+      target.remove();
+      zeros.remove();
+      Scope.exit();
+    }
+  }
 }
 

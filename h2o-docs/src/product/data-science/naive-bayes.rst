@@ -94,6 +94,67 @@ By default, the following output displays:
 -  A Priori response probabilities
 -  P-conditionals
 
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Naïve Bayes Classifier model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    # Import the prostate dataset into H2O:
+    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+    # Set the predictors and response; set the response as a factor:
+    prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+    predictors <- c("ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    response <- "CAPSULE"
+
+    # Build and train the model:
+    pros_nb <- h2o.naiveBayes(x = predictors, 
+                              y = response, 
+                              training_frame = prostate, 
+                              laplace = 0, 
+                              nfolds = 5, 
+                              seed = 1234)
+
+    # Eval performance:
+    perf <- h2o.performance(pros_nb)
+
+    # Generate the predictions on a test set (if necessary):
+    pred <- h2o.predict(pros_nb, newdata = prostate)
+    
+
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2ONaiveBayesEstimator
+    h2o.init()
+
+    # Import the prostate dataset into H2O:
+    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+    # Set predictors and response; set the response as a factor:
+    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+    predictors = ("ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    response = "CAPSULE"
+
+    # Build and train the model:
+    pros_nb = H2ONaiveBayesEstimator(laplace=0, 
+                                     nfolds=5, 
+                                     seed=1234)
+    pros_nb.train(x=predictors, 
+                  y=response, 
+                  training_frame=prostate)
+
+    # Eval performance:
+    perf = pros_nb.model_performance()
+
+    # Generate predictions on a test set (if necessary):
+    pred = pros_nb.predict(prostate)
+
+
 FAQ
 ~~~
 

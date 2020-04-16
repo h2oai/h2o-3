@@ -161,7 +161,10 @@ However, there are some assumptions:
 
 The H2O Aggregator method is a clustering-based method for reducing a numerical/categorical dataset into a dataset with fewer rows. Aggregator maintains outliers as outliers but lumps together dense clusters into exemplars with an attached count column showing the member points.
 
-A demo for the Constrained K-means with Aggregator model is available here: https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo.ipynb
+The following demos are available for constrained KMeans with the Aggregator model:
+
+- https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo_cluto.ipynb
+- https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/constrained_kmeans_demo_chicago.ipynb
 
 FAQ
 ~~~
@@ -263,6 +266,76 @@ The number of clusters :math:`K` is user-defined and is determined a priori.
    :math:`m_{k}`. Repeat steps 2 through 5 until the specified number of max
    iterations is reached or cluster assignments of the :math:`x_{i}` are
    stable.
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a KMeans model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+    # Set the predictors:
+    predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+
+    # Split the dataset into a train and valid set:
+    iris.split <- h2o.splitFrame(data = iris, ratios = .8, seed = 1234)
+    train <- iris.split[[1]]
+    valid <- iris.split[[2]]
+
+    # Build and train the model:
+    iris_kmeans <- h2o.kmeans(k = 10, 
+                              estimate_k = TRUE, 
+                              standardize = FALSE, 
+                              seed = 1234, 
+                              x = predictors, 
+                              training_frame = train, 
+                              validation_frame = valid)
+
+    # Eval performance:
+    perf <- h2o.performance(iris_kmeans)
+
+    # Generate predictions on a validation set (if necessary):
+    pred <- h2o.predict(iris_kmeans, newdata = valid)
+
+
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2OKMeansEstimator
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+    # Set the predictors:
+    predictors = ["sepal_len", "sepal_wid", "petal_len", "petal_wid"]
+
+    # Split the dataset into a train and valid set:
+    train, valid = iris.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    iris_kmeans = H2OKMeansEstimator(k=10, 
+                                     estimate_k=True, 
+                                     standardize=False, 
+                                     seed=1234)
+    iris_kmeans.train(x=predictors, 
+                      training_frame=train, 
+                      validation_frame=valid)
+
+    # Eval performance:
+    perf = iris_kmeans.model_performance()
+
+    #  Generate predictions on a validation set (if necessary):
+    pred = iris_kmeans.predict(valid)
+
 
 References
 ~~~~~~~~~~

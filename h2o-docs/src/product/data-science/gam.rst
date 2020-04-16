@@ -390,8 +390,8 @@ The following procedure is used to estimate the GAM coefficients:
 - Convert :math:`\beta_z` to :math:`\beta` using :math:`\beta = Z\beta_z` and performing scoring with :math:`\beta` and the original model matrix :math:`X`.
 
 
-Example
-~~~~~~~
+Examples
+~~~~~~~~
 
 Below are simple examples showing how to use GAM in R and Python.
 
