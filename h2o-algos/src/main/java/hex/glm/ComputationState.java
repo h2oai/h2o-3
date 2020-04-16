@@ -768,7 +768,7 @@ public final class ComputationState {
         if (activeColumns.length<_dinfo.fullN()) { // columns are deleted
           activeCols = ArrayUtils.toIntegers(activeColumns, 0, activeColumns.length);
         }
-        gt._gram.addGAMPenalty(activeCols , _penaltyMatrix, _gamBetaIndices, 0);
+        gt._gram.addGAMPenalty(activeCols , _penaltyMatrix, _gamBetaIndices);
     }
     ArrayUtils.mult(gt._xy,obj_reg);
     int [] activeCols = activeData.activeCols();
