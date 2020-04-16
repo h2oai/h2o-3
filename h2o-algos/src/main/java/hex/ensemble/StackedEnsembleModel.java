@@ -226,7 +226,16 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
     if (_parms._training_scoring_subsample_size > 0 && _parms._training_scoring_subsample_size < frame.numRows()) { 
-      frame =  MRUtils.sampleFrame(frame, _parms._training_scoring_subsample_size, _parms._seed);
+Frame scoredFrame = (_parms._training_scoring_subsample_size > 0 && _parms._training_scoring_subsample_size < frame.numRows()) 
+        ? MRUtils.sampleFrame(frame, _parms._training_scoring_subsample_size, _parms._seed)
+        : frame;
+try {
+      Frame pred = this.predictScoreImpl(frame, new Frame(scoredFrame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
+      pred.delete();
+      return ModelMetrics.getFromDKV(this, frame);
+} finally {
+     if (scoredFrame != frame) scoredFrame.delete();
+}  
       Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
       pred.delete();
       ModelMetrics metrics = ModelMetrics.getFromDKV(this, frame);
@@ -499,4 +508,3 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     _output._metalearner.deleteCrossValidationFoldAssignment();
   }
 }
-
