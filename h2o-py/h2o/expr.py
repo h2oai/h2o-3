@@ -12,6 +12,7 @@ import copy
 import gc
 import inspect
 import math
+import sys
 import time
 import traceback
 import numbers
@@ -149,12 +150,17 @@ class ExprNode(object):
         def is_ast_expr(ref):
             return isinstance(ref, list) and any(map(lambda r: isinstance(r, ASTId), ref))
 
+        def is_debug_ref(ref):
+            # if ref is a dict, then it is a `locals` scope: most of those are added in debug mode.
+            # However, keeping it if this scope refers to an H2OFrame (has `_ex` attribute`
+            return isinstance(ref, dict) and '_ex' not in ref
+
         referrers = gc.get_referrers(self)
         # removing frames from the referrers to get a consistent behaviour accross Py versions
         #  as stack frames don't appear in the referrers from Py 3.7.
         # also removing the AST expressions built in astfun.py
         #  as they keep a reference to self if the lambda itself is using a free variable.
-        proper_ref = [r for r in referrers if not (inspect.isframe(r) or is_ast_expr(r))]
+        proper_ref = [r for r in referrers if not (inspect.isframe(r) or is_ast_expr(r) or is_debug_ref(r))]
         ref_cnt = len(proper_ref)
         del referrers, proper_ref
         # if this self node is referenced by at least one other node (nested expr), then create a tmp frame
