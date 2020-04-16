@@ -116,6 +116,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   
   public boolean isThresholdReset(){
+    if(_output == null) return false;
     return _output.isThresholdReset();
   }
 
