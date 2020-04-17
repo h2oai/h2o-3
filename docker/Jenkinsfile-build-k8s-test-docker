@@ -30,7 +30,7 @@ node(NODE_LABEL) {
                 branch: params.gitBranch
 
         def pipelineContextFactory = load('scripts/jenkins/groovy/pipelineContext.groovy')
-        pipelineContext = pipelineContextFactory('.', 'MODE_HADOOP', scmEnv, true)
+        pipelineContext = pipelineContextFactory('.', '', scmEnv, true)
 
         try {
             version = pipelineContext.getBuildConfig().getK8STestImageVersion()
