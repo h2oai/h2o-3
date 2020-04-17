@@ -45,7 +45,7 @@ public class PrintMojo implements MojoPrinter {
         }
       }
       if (mojoPrinter == null) {
-        System.out.println("No supported MojoPrinter for format required found. Please make sure you are using h2o-genmodel.jar for executing this tool.");
+        System.out.println("No supported MojoPrinter for the format required found. Please make sure you are using h2o-genmodel.jar for executing this tool.");
         System.exit(1);
       }
     } else {
