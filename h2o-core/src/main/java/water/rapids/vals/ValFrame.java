@@ -2,6 +2,7 @@ package water.rapids.vals;
 
 import water.fvec.Frame;
 import water.rapids.Val;
+import water.fvec.Vec;
 
 /**
  * Value that represents an H2O dataframe ({@link Frame}).
@@ -32,4 +33,15 @@ public class ValFrame extends Val {
       res[i] = _fr.vec(i).at(0);
     return res;
   }
+
+  public static ValFrame fromRow(double... values) {
+    Vec[] vecs = new Vec[values.length];
+    for (int i = 0; i < values.length; i++) {
+      vecs[i] = Vec.makeCon(values[i], 1);
+    }
+    Frame fr = new Frame(vecs);
+    return new ValFrame(fr);
+  }
+
+
 }

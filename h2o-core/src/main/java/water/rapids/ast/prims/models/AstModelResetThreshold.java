@@ -1,13 +1,15 @@
-package water.rapids.prims.model;
+package water.rapids.ast.prims.models;
 
 
 import hex.Model;
 import water.rapids.Env;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
-import water.rapids.vals.ValModel;
-import water.rapids.vals.ValNum;
+import water.rapids.vals.ValFrame;
 
+/**
+ * Reset a model threshold and return the old one.
+ */
 public class AstModelResetThreshold extends AstPrimitive {
     
     @Override
@@ -26,10 +28,11 @@ public class AstModelResetThreshold extends AstPrimitive {
     }
 
     @Override
-    public ValNum apply(Env env, Env.StackHelp stk, AstRoot asts[]) { Model model = stk.track(asts[1].exec(env)).getModel();
+    public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
+        Model model = stk.track(asts[1].exec(env)).getModel();
         double oldTh = model._output.defaultThreshold();
         double threshold = stk.track(asts[2].exec(env)).getNum();
         model.resetThreshold(threshold);
-        return new ValNum(oldTh);
+        return ValFrame.fromRow(oldTh);
     }
 }

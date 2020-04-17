@@ -2444,7 +2444,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 }
 
 #'
-#' Reset model threshold and return new model
+#' Reset model threshold and return old threshold value.
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @examples 
@@ -2458,14 +2458,13 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", 
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
-#' h2o.reset_threshold(prostate_glm, 0.9)
+#' old_threshold <- h2o.reset_threshold(prostate_glm, 0.9)
 #' }
 #' @export
 h2o.reset_threshold <- function(object, threshold) {
     o <- object
     if( is(o, "H2OModel") ) {
-        expr <- .newExpr("model.reset.threshold", list(o@model_id, threshold))
-        .eval.scalar(expr)
+        .newExpr("model.reset.threshold", list(o@model_id, threshold))[1,1]
     } else {
         warning( paste0("Threshold cannot be reset for class ", class(o)) )
         return(NULL)

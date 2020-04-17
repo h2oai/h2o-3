@@ -25,7 +25,7 @@ water.rapids.ast.prims.reducers.AstCumMax
 water.rapids.ast.prims.time.AstListTimeZones
 water.rapids.ast.prims.math.AstCeiling
 water.rapids.prims.word2vec.AstWord2VecToFrame
-water.rapids.prims.model.AstModelResetThreshold
+water.rapids.ast.prims.models.AstModelResetThreshold
 water.rapids.ast.prims.string.AstTrim
 water.rapids.ast.params.AstNumList
 water.rapids.ast.prims.mungers.AstIsCharacter

@@ -10,6 +10,7 @@ import water.rapids.ast.prims.assign.*;
 import water.rapids.ast.prims.math.*;
 import water.rapids.ast.prims.matrix.*;
 import water.rapids.ast.prims.misc.*;
+import water.rapids.ast.prims.models.AstModelResetThreshold;
 import water.rapids.ast.prims.models.AstSegmentModelsAsFrame;
 import water.rapids.ast.prims.mungers.*;
 import water.rapids.ast.prims.operators.*;
@@ -302,6 +303,9 @@ public class Env extends Iced {
 
     // Segment Models
     init(new AstSegmentModelsAsFrame());
+    
+    // Reset threshold
+    init(new AstModelResetThreshold());
     
     // Custom (eg. algo-specific)
     for (AstPrimitive prim : PrimsService.INSTANCE.getAllPrims())
