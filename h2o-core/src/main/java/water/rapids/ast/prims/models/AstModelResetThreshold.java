@@ -30,9 +30,9 @@ public class AstModelResetThreshold extends AstPrimitive {
     @Override
     public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]) {
         Model model = stk.track(asts[1].exec(env)).getModel();
-        double oldTh = model._output.defaultThreshold();
-        double threshold = stk.track(asts[2].exec(env)).getNum();
-        model.resetThreshold(threshold);
-        return ValFrame.fromRow(oldTh);
+        double oldThreshold = model._output.defaultThreshold();
+        double newThreshold = stk.track(asts[2].exec(env)).getNum();
+        model.resetThreshold(newThreshold);
+        return ValFrame.fromRow(oldThreshold);
     }
 }

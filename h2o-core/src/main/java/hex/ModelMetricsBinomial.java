@@ -229,7 +229,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
         mse = _sumsqe / _wcount;
         logloss = _logloss / _wcount;
         auc = new AUC2(_auc);
-        if(m.isThresholdReset()) {
+        if(m != null && m.isThresholdReset()) {
           auc.resetThreshold(m.defaultThreshold());
         }
       } else {

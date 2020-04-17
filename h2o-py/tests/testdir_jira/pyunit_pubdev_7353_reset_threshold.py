@@ -1,5 +1,6 @@
 import sys
 sys.path.insert(1,"../../")
+
 import h2o
 from tests import pyunit_utils
 from h2o.estimators.gbm import H2OGradientBoostingEstimator
@@ -13,7 +14,7 @@ def test_reset_threshold():
     """
     
     # import data
-    airlines= h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/modified_airlines.csv"))
+    airlines = h2o.import_file(path=pyunit_utils.locate("smalldata/airlines/modified_airlines.csv"))
 
     # convert columns to factors
     airlines["Year"] = airlines["Year"].asfactor()
@@ -66,4 +67,3 @@ if __name__ == "__main__":
     pyunit_utils.standalone_test(test_reset_threshold)
 else:
     test_reset_threshold()
- 
