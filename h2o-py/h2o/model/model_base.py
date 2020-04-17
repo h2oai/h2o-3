@@ -193,9 +193,10 @@ class ModelBase(h2o_meta(Keyed)):
         :returns: A new H2OFrame made of feature contributions.
         """
         if not isinstance(test_data, h2o.H2OFrame): raise ValueError("test_data must be an instance of H2OFrame")
-        j = h2o.api("POST /3/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
-                    data={"predict_contributions": True})
-        return h2o.get_frame(j["predictions_frame"]["name"])
+        j = H2OJob(h2o.api("POST /4/Predictions/models/%s/frames/%s" % (self.model_id, test_data.frame_id),
+                           data={"predict_contributions": True}), "contributions")
+        j.poll()
+        return h2o.get_frame(j.dest_key)
 
     def feature_frequencies(self, test_data):
         """
