@@ -12,7 +12,7 @@ Oftentimes, the process of clustering is also referred to as "clouding".
 
 ## DNS Test Scenario
 
-Tests clustering by mens of DNS records of a [Kubernetes service](https://kubernetes.io/docs/concepts/services-networking/service/).
+Tests clustering by means of DNS records of a [Kubernetes service](https://kubernetes.io/docs/concepts/services-networking/service/).
 Currently, this is the only scenario tests, as there are no other scenarios supported yet.
 
 ![Test scenario](readme/h2o-k8s-clustering.png)
