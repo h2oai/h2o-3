@@ -234,7 +234,7 @@ abstract public class Log {
     String patternTail = getHostPortPid() + " %10.10t %5.5p %c: %m%n";
     String pattern = "%d{MM-dd HH:mm:ss.SSS} " + patternTail;
 
-    p.setProperty("log4j.rootLogger", "INFO, console");
+    p.setProperty("log4j.rootLogger", L4J_LVLS[_level] + ", console");
 
     // H2O-wide logging
     String appenders = L4J_LVLS[_level] + ", R1, R2, R3, R4, R5, R6";
@@ -244,7 +244,7 @@ abstract public class Log {
     }
 
     p.setProperty("log4j.appender.console",                     "org.apache.log4j.ConsoleAppender");
-    p.setProperty("log4j.appender.console.Threshold",           "TRACE");
+    p.setProperty("log4j.appender.console.Threshold",           L4J_LVLS[_level].toString());
     p.setProperty("log4j.appender.console.layout",              "org.apache.log4j.PatternLayout");
     p.setProperty("log4j.appender.console.layout.ConversionPattern", pattern);
 
@@ -383,7 +383,7 @@ abstract public class Log {
 
   public static String fixedLength(String s, int length) {
     String r = padRight(s, length);
-    if( r.length() > length ) {
+    if (r.length() > length) {
       int a = Math.max(r.length() - length + 1, 0);
       int b = Math.max(a, r.length());
       r = "#" + r.substring(a, b);
@@ -393,8 +393,8 @@ abstract public class Log {
   
   static String padRight(String stringToPad, int size) {
     StringBuilder strb = new StringBuilder(stringToPad);
-    while( strb.length() < size )
-      if( strb.length() < size ) strb.append(' ');
+    while (strb.length() < size)
+      if (strb.length() < size) strb.append(' ');
     return strb.toString();
   }
 
@@ -421,36 +421,10 @@ abstract public class Log {
    * @param n POST code.
    * @param s String to emit.
    */
-//  private static final Object postLock = new Object();
   public static void POST(int n, String s) {
-    // DO NOTHING UNLESS ENABLED BY REMOVING THIS RETURN!
     System.out.println("POST " + n + ": " + s);
-    return;
-
-//      synchronized (postLock) {
-//          File f = new File ("/tmp/h2o.POST");
-//          if (! f.exists()) {
-//              boolean success = f.mkdirs();
-//              if (! success) {
-//                  try { System.err.print ("Exiting from POST now!"); } catch (Exception _) {}
-//                  H2O.exit (0);
-//              }
-//          }
-//
-//          f = new File ("/tmp/h2o.POST/" + n);
-//          try {
-//              f.createNewFile();
-//              FileWriter fstream = new FileWriter(f.getAbsolutePath(), true);
-//              BufferedWriter out = new BufferedWriter(fstream);
-//              out.write(s + "\n");
-//              out.close();
-//          }
-//          catch (Exception e) {
-//              try { System.err.print ("Exiting from POST now!"); } catch (Exception _) {}
-//              H2O.exit (0);
-//          }
-//      }
   }
+
   public static void POST(int n, Exception e) {
     if (e.getMessage() != null) {
       POST(n, e.getMessage());
