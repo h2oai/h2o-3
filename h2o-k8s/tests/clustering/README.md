@@ -44,7 +44,7 @@ The deployment speed of H2O pods depends heavily on connection to `harbor.h2o.ai
 and this image is downloaded from `harbor.h2o.ai` every single time. As the whole Kubernetes docker runs inside a Docker and
 is intended to be used only once, there is no cache. Usually, this stage is a matter of seconds. 
 
-As soon as H2O pods are deployed, the `h2o-cluster-check.sh` is started.This queries H2O for cluster info by `curl http://localhost:8080/3/Cloud`.
+As soon as H2O pods are deployed, the `h2o-cluster-check.sh` is started. This queries H2O for cluster info by `curl http://localhost:8080/3/Cloud`.
 The cloud size in the JSON returned must be equal to the expected value. If it is equal, then the test is considered to be a pass
 and an exit value of `0` is returned, indicating a passed test to Jenkins. Otherwise, a value of `1` is returned, signaling a 
 failed test to Jenkins. In both cases, before the script exists, a cleanup of the Kubernetes cluster is done using `k3d delete`
