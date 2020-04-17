@@ -150,7 +150,7 @@ class ExprNode(object):
 
         def is_debug_ref(ref):
             # if ref is a dict, then it is a `locals` scope: most of those are added in debug mode.
-            # However, keeping it if this scope refers to an H2OFrame (has `_ex` attribute`
+            # However, keeping it if this scope refers to an H2OFrame (has `_ex` entry)
             return isinstance(ref, dict) and '_ex' not in ref
 
         referrers = gc.get_referrers(self)
