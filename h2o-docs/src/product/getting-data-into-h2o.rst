@@ -219,14 +219,30 @@ Importing Examples
 Example 1: Access Metadata via Metastore (preferred)
 ####################################################
 
-.. tabs::
+This example shows how to access metadata via the metastore. 
+
+1. Add the Hive JDBC driver to H2O's classpath.
+
+ .. code-block:: bash
+
+      # Add the Hive JDBC driver to H2O's classpath
+      java -cp hive-jdbc.jar:<path_to_h2o_jar> water.H2OApp
+
+
+2. Start the H2O jar in the terminal with your downloaded Hive JDBC driver in the classpath
+
+ .. code-block:: bash
+
+      # start the h2o.jar 
+      hadoop jar h2odriver.jar -libjars hive-jdbc-standalone.jar -nodes 3 -mapperXmx 6g
+
+3. Initialize H2O in either R or Python and import data.
+
+ .. tabs::
 
    .. code-tab:: r R
 
-        # Add the Hive JDBC driver to H2O's classpath
-        java -cp hive-jdbc.jar:<path_to_h2o_jar>: water.H2OApp
-
-        # start the h2o.jar in R
+        # initialize h2o in R
         library(h2o)
         h2o.init(extra_classpath=["hive-jdbc-standalone.jar"])
 
@@ -238,17 +254,14 @@ Example 1: Access Metadata via Metastore (preferred)
                                                       "table_name", 
                                                       allow_multi_format=True)
 
-        # import with partitioned filter
+        # import with partition filter
         with_partition_filter <- h2o.import_hive_table("default", 
                                                        "table_name", 
                                                        [["2017", "02"]])
 
    .. code-tab:: python
 
-        # Add the Hive JDBC driver to H2O's classpath
-        java -cp hive-jdbc.jar:<path_to_h2o_jar>: water.H2OApp
-
-        # start the h2o.jar in Python
+        # initialize h2o in Python
         import h2o
         h2o.init(extra_classpath = ["hive-jdbc-standalone.jar"])
 
@@ -260,7 +273,7 @@ Example 1: Access Metadata via Metastore (preferred)
                                                      "table_name", 
                                                      allow_multi_format=True)
 
-        # import with partitioned filter
+        # import with partition filter
         with_partition_filter = h2o.import_hive_table("default", 
                                                       "table_name", 
                                                       [["2017", "02"]])
@@ -269,12 +282,28 @@ Example 1: Access Metadata via Metastore (preferred)
 Example 2: Access Metadata via JDBC
 ###################################
 
-.. tabs::
+This example shows how to access metadata via JDBC.  
+
+1. Add the Hive JDBC driver to H2O's classpath.
+
+ .. code-block:: bash
+
+      # Add the Hive JDBC driver to H2O's classpath
+      java -cp hive-jdbc.jar:<path_to_h2o_jar> water.H2OApp
+
+
+2. Start the H2O jar in the terminal with your downloaded Hive JDBC driver in the classpath
+
+ .. code-block:: bash
+
+      # start the h2o.jar 
+      hadoop jar h2odriver.jar -libjars hive-jdbc-standalone.jar -nodes 3 -mapperXmx 6g
+
+3. Initialize H2O in either R or Python and import data.
+
+ .. tabs::
 
    .. code-tab:: r R
-
-        # Add the Hive JDBC driver to H2O's classpath
-        java -cp hive-jdbc.jar:<path_to_h2o_jar>: water.H2OApp
 
         # start the h2o.jar in R
         library(h2o)
@@ -285,9 +314,6 @@ Example 2: Access Metadata via JDBC
 
 
    .. code-tab:: python
-
-        # Add the Hive JDBC driver to H2O's classpath
-        java -cp hive-jdbc.jar:<path_to_h2o_jar>: water.H2OApp
 
         # start the h2o.jar in Python
         import h2o
@@ -401,42 +427,42 @@ H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O w
 
 1. Set up a table with data. 
 
-    a. Retrieve the AirlinesTest dataset from `S3 <https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip>`__.
+  a. Retrieve the AirlinesTest dataset from `S3 <https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/AirlinesTest.csv.zip>`__.
 
-    b. Run the CLI client for Hive: 
+  b. Run the CLI client for Hive: 
 
-     .. code-block:: bash
+   .. code-block:: bash
 
-       beeline -u jdbc:hive2://hive-host:10000/db-name
+     beeline -u jdbc:hive2://hive-host:10000/db-name
 
-    c. Create the DB table:
+  c. Create the DB table:
 
-     .. code-block:: bash
+   .. code-block:: sql
 
-       CREATE EXTERNAL TABLE IF IT DOES NOT EXIST AirlinesTest(
-         fYear STRING ,
-         fMonth STRING ,
-         fDayofMonth STRING ,
-         fDayOfWeek STRING ,
-         DepTime INT ,
-         ArrTime INT ,
-         UniqueCarrier STRING ,
-         Origin STRING ,
-         Dest STRING ,
-         Distance INT ,
-         IsDepDelayed STRING ,
-         IsDepDelayed_REC INT
-       )
-           COMMENT 'test table'
-           ROW FORMAT DELIMITED
-           FIELDS TERMINATED BY ','
-           LOCATION '/tmp';
+     CREATE EXTERNAL TABLE IF IT DOES NOT EXIST AirlinesTest(
+       fYear STRING ,
+       fMonth STRING ,
+       fDayofMonth STRING ,
+       fDayOfWeek STRING ,
+       DepTime INT ,
+       ArrTime INT ,
+       UniqueCarrier STRING ,
+       Origin STRING ,
+       Dest STRING ,
+       Distance INT ,
+       IsDepDelayed STRING ,
+       IsDepDelayed_REC INT
+     )
+         COMMENT 'test table'
+         ROW FORMAT DELIMITED
+         FIELDS TERMINATED BY ','
+         LOCATION '/tmp';
 
-    d. Import the data from the dataset: 
+  d. Import the data from the dataset. Note that the file must be present on HDFS in /tmp.
 
-    .. code-block:: bash
+   .. code-block:: sql
 
-      LOAD DATA INPATH '/tmp/AirlinesTest.csv' OVERWRITE INTO TABLE AirlinesTest
+     LOAD DATA INPATH '/tmp/AirlinesTest.csv' OVERWRITE INTO TABLE AirlinesTest
 
 2. Retrieve the Hive JDBC client jar.
 
@@ -444,7 +470,22 @@ H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O w
   - For Cloudera, install the JDBC package for your operating system, and then add ``/usr/lib/hive/lib/hive-jdbc-<version>-standalone.jar`` to your classpath. More information is available `here: <https://www.cloudera.com/documentation/enterprise/5-3-x/topics/cdh_ig_hive_jdbc_install.html>`__.
   - You can also retrieve this from Maven for the desire version using ``mvn dependency:get -Dartifact=groupId:artifactId:version``.
 
-3. Add the Hive JDBC driver to H2O's classpath, then start the h2o.jar in the terminal with your downloaded JDBC driver in the classpath
+3. Add the Hive JDBC driver to H2O's classpath.
+
+ .. code-block:: bash
+
+        # Add the Hive JDBC driver to H2O's classpath
+        java -cp hive-jdbc.jar:<path_to_h2o_jar> water.H2OApp
+
+
+4. Start the H2O jar in the terminal with your downloaded Hive JDBC driver in the classpath
+
+ .. code-block:: bash
+
+        # start the h2o.jar 
+        hadoop jar h2odriver.jar -libjars hive-jdbc-standalone.jar -nodes 3 -mapperXmx 6g
+
+5. Initialize H2O in either R or Python and import data.
 
  .. tabs::
 
@@ -452,10 +493,7 @@ H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O w
 
      .. code-block:: r
 
-        # Add the Hive JDBC driver to H2O's classpath
-        java -cp hive-jdbc.jar:<path_to_h2o_jar>: water.H2OApp
-
-        # start the h2o.jar in R
+        # initialize h2o in R
         library(h2o)
         h2o.init(extra_classpath=["hive-jdbc-standalone.jar"])
 
@@ -463,23 +501,12 @@ H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O w
 
      .. code-block:: python
 
-        # Add the Hive JDBC driver to H2O's classpath
-        java -cp hive-jdbc.jar:<path_to_h2o_jar>: water.H2OApp
-
-        # start the h2o.jar in Python
+        # initialize h2o in Python
         import h2o
         h2o.init(extra_classpath = ["hive-jdbc-standalone.jar"])
 
-   .. group-tab:: Terminal
 
-     .. code-block:: bash
-
-        # Add the Hive JDBC driver to H2O's classpath for running clustered 
-        # H2O on Hadoop from terminal 
-        hadoop jar h2odriver.jar -libjars hive-jdbc-standalone.jar -nodes 3 -mapperXmx 6g
-
-
-4. After the jar file with JDBC driver is added, then data from the Hive databases can be pulled into H2O using the aforementioned ``import_sql_table`` and ``import_sql_select`` functions. 
+6. After the jar file with JDBC driver is added, then data from the Hive databases can be pulled into H2O using the aforementioned ``import_sql_table`` and ``import_sql_select`` functions. 
 
  .. tabs::
 
