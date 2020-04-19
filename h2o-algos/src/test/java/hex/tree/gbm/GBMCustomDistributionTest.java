@@ -10,7 +10,7 @@ import water.TestUtil;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
-import water.udf.TestBernoulliCustomDistribution;
+import water.udf.metric.BernoulliCustomDistribution;
 import water.util.FrameUtils;
 
 import java.io.IOException;
@@ -97,6 +97,6 @@ public class GBMCustomDistributionTest extends TestUtil {
     }
 
     private CFuncRef bernoulliCustomDistribution() throws IOException {
-        return loadTestFunc("customDistribution.key", TestBernoulliCustomDistribution.class);
+        return loadTestFunc("customDistribution.key", BernoulliCustomDistribution.class);
     }
 }

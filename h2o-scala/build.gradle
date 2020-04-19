@@ -6,10 +6,9 @@ description = "H2O Scala API (Scala version ${scalaVersion})"
 dependencies {
   compile project(":h2o-core")
   compile "org.scala-lang:scala-library:$scalaVersion"
-  
-  testCompile project(path: ":h2o-core", configuration: "testArchives")
+
+  testCompile project(":h2o-test-support")
   testRuntimeOnly project(":${defaultWebserverModule}")
-  testCompile "junit:junit:${junitVersion}"
   testCompile "org.scalatest:scalatest_${scalaBaseVersion}:2.2.1"
 }
 

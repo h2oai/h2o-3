@@ -4,9 +4,9 @@ import static org.junit.Assert.assertFalse;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.api.schemas3.TwoDimTableV3;
+import water.fvec.FVecFactory;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
-import water.parser.ParserTest;
 import water.util.Log;
 import water.util.TwoDimTable;
 
@@ -278,7 +278,7 @@ public class TwoDimTableTest extends TestUtil {
       int OFFSET = 5;
       int firstVal = 1;
       String data = "1\nNA\n";
-      Key k1 = ParserTest.makeByteVec(data);
+      Key k1 = FVecFactory.makeByteVec(data);
       Key r1 = Key.make();
       fr = ParseDataset.parse(r1, k1);
       assertTrue(fr.numRows() == 2);
@@ -302,7 +302,7 @@ public class TwoDimTableTest extends TestUtil {
     try {
       int OFFSET = 5;
       String data = "1\n3\n4\nNA\n";
-      Key k1 = ParserTest.makeByteVec(data);
+      Key k1 = FVecFactory.makeByteVec(data);
       Key r1 = Key.make();
       fr = ParseDataset.parse(r1, k1);
       assertTrue(fr.numRows() == 4);

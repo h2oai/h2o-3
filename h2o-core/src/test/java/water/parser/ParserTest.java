@@ -10,7 +10,6 @@ import water.*;
 import water.api.schemas3.ParseSetupV3;
 import water.fvec.*;
 import water.util.Log;
-import water.util.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,25 +19,11 @@ import java.util.List;
 import java.util.Queue;
 
 public class ParserTest extends TestUtil {
-  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
+
   private final double NaN = Double.NaN;
   private final char[] SEPARATORS = new char[] {',', ' '};
 
-  // Make a ByteVec with the specific Chunks
-  public static Key makeByteVec(String... data) {
-    Futures fs = new Futures();
-    long[] espc  = new long[data.length+1];
-    for( int i = 0; i < data.length; ++i ) espc[i+1] = espc[i]+data[i].length();
-    Key k = Vec.newKey();
-    ByteVec bv = new ByteVec(k,Vec.ESPC.rowLayout(k,espc));
-    DKV.put(k,bv,fs);
-    for( int i = 0; i < data.length; ++i ) {
-      Key ck = bv.chunkKey(i);
-      DKV.put(ck, new Value(ck,new C1NChunk(StringUtils.bytesOf(data[i]))),fs);
-    }
-    fs.blockForPending();
-    return k;
-  }
+  @BeforeClass static public void setup() { stall_till_cloudsize(1); }
 
   private static boolean compareDoubles(double a, double b, double threshold) {
     if( a==b ) return true;
@@ -95,14 +80,14 @@ public class ParserTest extends TestUtil {
 
       StringBuilder sb1 = new StringBuilder();
       for( String ds : dataset ) sb1.append(ds).append("\n");
-      Key k1 = makeByteVec(sb1.toString());
+      Key k1 = FVecFactory.makeByteVec(sb1.toString());
       Key r1 = Key.make("r1");
       ParseDataset.parse(r1, k1);
       testParsed(r1,exp);
 
       StringBuilder sb2 = new StringBuilder();
       for( String ds : dataset ) sb2.append(ds).append("\r\n");
-      Key k2 = makeByteVec(sb2.toString());
+      Key k2 = FVecFactory.makeByteVec(sb2.toString());
       Key r2 = Key.make("r2");
       ParseDataset.parse(r2, k2);
       testParsed(r2,exp);
@@ -130,7 +115,7 @@ public class ParserTest extends TestUtil {
     String[] dataset = getDataForSeparator(' ', data);
     StringBuilder sb1 = new StringBuilder();
     for( String ds : dataset ) sb1.append(ds).append("\n");
-    Key k1 = makeByteVec(sb1.toString());
+    Key k1 = FVecFactory.makeByteVec(sb1.toString());
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Enum"));
@@ -165,7 +150,7 @@ public class ParserTest extends TestUtil {
 
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key k = makeByteVec(dataset);
+      Key k = FVecFactory.makeByteVec(dataset);
       Key r3 = Key.make();
       ParseDataset.parse(r3, k);
       testParsed(r3,exp);
@@ -196,7 +181,7 @@ public class ParserTest extends TestUtil {
 
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key k = makeByteVec(dataset);
+      Key k = FVecFactory.makeByteVec(dataset);
       Key r4 = Key.make();
       ParseDataset.parse(r4, k);
       testParsed(r4,exp);
@@ -232,7 +217,7 @@ public class ParserTest extends TestUtil {
 
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key key = makeByteVec(dataset);
+      Key key = FVecFactory.makeByteVec(dataset);
       Key r = Key.make();
       ParseDataset.parse(r, key);
       Frame fr = DKV.get(r).get();
@@ -247,7 +232,7 @@ public class ParserTest extends TestUtil {
 
   @Test public void testSingleEntryDatasets() {
     String[] numericDataset = new String[]{"10.9533122476"};
-    Key k1 = makeByteVec(numericDataset);
+    Key k1 = FVecFactory.makeByteVec(numericDataset);
     Key r1 = Key.make();
     ParseDataset.parse(r1, k1);
     Frame fr1 = DKV.get(r1).get();
@@ -257,7 +242,7 @@ public class ParserTest extends TestUtil {
     fr1.delete();
 
     String[] dateDataset = new String[]{"3-Jan-06"};
-    Key k2 = makeByteVec(dateDataset);
+    Key k2 = FVecFactory.makeByteVec(dateDataset);
     Key r2 = Key.make();
     ParseDataset.parse(r2, k2);
     Frame fr2 = DKV.get(r2).get();
@@ -267,7 +252,7 @@ public class ParserTest extends TestUtil {
     fr2.delete();
 
     String[] UUIDDataset = new String[]{"9ff4ed3a-6b00-4130-9aca-2ed897305fd1"};
-    Key k3 = makeByteVec(UUIDDataset);
+    Key k3 = FVecFactory.makeByteVec(UUIDDataset);
     Key r3 = Key.make();
     ParseDataset.parse(r3, k3);
     Frame fr3 = DKV.get(r3).get();
@@ -277,7 +262,7 @@ public class ParserTest extends TestUtil {
     fr3.delete();
 
     String[] categoricalDataset = new String[]{"Foo-bar"};
-    Key k4 = makeByteVec(categoricalDataset);
+    Key k4 = FVecFactory.makeByteVec(categoricalDataset);
     Key r4 = Key.make();
     ParseDataset.parse(r4, k4);
     Frame fr4 = DKV.get(r4).get();
@@ -298,7 +283,7 @@ public class ParserTest extends TestUtil {
     };
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key key = makeByteVec(dataset);
+      Key key = FVecFactory.makeByteVec(dataset);
       Key r = Key.make();
       ParseDataset.parse(r, key);
       testParsed(r, expDouble);
@@ -309,7 +294,7 @@ public class ParserTest extends TestUtil {
     String data = 
       "a,b,c,d,e,f,g,h,i,j,k,space 1,l,space 2,m,space 3,n,o,p,q,r,s,t,u,v,w,x,y,z\n"+ // 26+3 cols, exactly 3 spaces
       "1,2,3,4,5,6,7,8,9,0,1,catag 1,2,catag 2,3,catag 3,4,5,6,7,8,9,0,1,2,3,4,5,6,7,8,9\n"; // a few extra cols, exactly 3 spaces
-    Key k1 = ParserTest.makeByteVec(data);
+    Key k1 = FVecFactory.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.numCols()==26+3);
@@ -339,7 +324,7 @@ public class ParserTest extends TestUtil {
 
     for (char separator : SEPARATORS) {
       String[] dataset = getDataForSeparator(separator, data);
-      Key key = makeByteVec(dataset);
+      Key key = FVecFactory.makeByteVec(dataset);
       Key r = Key.make();
       ParseDataset.parse(r, key);
       Frame fr = DKV.get(r).get();
@@ -386,7 +371,7 @@ public class ParserTest extends TestUtil {
     final char separator = ',';
 
     String[] dataset = getDataForSeparator(separator, data);
-    Key key = makeByteVec(dataset);
+    Key key = FVecFactory.makeByteVec(dataset);
     Key r = Key.make();
     ParseDataset.parse(r, key);
     Frame fr = DKV.get(r).get();
@@ -420,7 +405,7 @@ public class ParserTest extends TestUtil {
       String[] dataset = getDataForSeparator(separator, data);
       StringBuilder sb = new StringBuilder();
       for( String ds : dataset ) sb.append(ds).append("\n");
-      Key k = makeByteVec(sb.toString());
+      Key k = FVecFactory.makeByteVec(sb.toString());
       Key r5 = Key.make();
       ParseDataset.parse(r5, k);
       testParsed(r5, exp);
@@ -594,11 +579,11 @@ public class ParserTest extends TestUtil {
     };
     StringBuilder sb = new StringBuilder();
     for( String ds : dataset0 ) sb.append(ds).append("\n");
-    Key k = makeByteVec(sb.toString());
+    Key k = FVecFactory.makeByteVec(sb.toString());
     Key r1 = Key.make("r1");
     sb = new StringBuilder();
     for( String ds : dataset1 ) sb.append(ds).append("\n");
-    Key k2 = makeByteVec(sb.toString());
+    Key k2 = FVecFactory.makeByteVec(sb.toString());
     ParseDataset.parse(r1, k,k2);
     testParsed(r1,exp);
   }
@@ -652,7 +637,7 @@ public class ParserTest extends TestUtil {
     };
     StringBuilder sb = new StringBuilder();
     for( String ds : dataset ) sb.append(ds).append("\n");
-    Key k = makeByteVec(sb.toString());
+    Key k = FVecFactory.makeByteVec(sb.toString());
     Key r1 = Key.make("r1");
     ParseDataset.parse(r1, k);
     testParsed(r1,exp);
@@ -732,7 +717,7 @@ public class ParserTest extends TestUtil {
       ard(1e10), ard(1e11), ard(1e12), ard(1e13), ard(1e14), ard(1e15), ard(1e16), ard(1e17), ard(1e18), ard(1e19),
       ard(1e20), ard(1e21), ard(1e22), ard(1e23),
     };
-    Key k = makeByteVec(pows10);
+    Key k = FVecFactory.makeByteVec(pows10);
     Key r1 = Key.make("r1");
     ParseDataset.parse(r1, k);
     testParsed(r1,pows10_exp);
@@ -791,7 +776,7 @@ public class ParserTest extends TestUtil {
       ard(9.99999999999999999e22),
       ard(9.99999999999999999e23),
     };
-    Key k = makeByteVec(pows10);
+    Key k = FVecFactory.makeByteVec(pows10);
     Key r1 = Key.make("r1");
     ParseDataset.parse(r1, k);
     testParsed(r1,pows10_exp);
@@ -809,7 +794,7 @@ public class ParserTest extends TestUtil {
       ard(1000001L),
       ard(2000001L),
     };
-    Key k = makeByteVec(pows10);
+    Key k = FVecFactory.makeByteVec(pows10);
     Key r1 = Key.make("r1");
     ParseDataset.parse(r1, k);
     testParsed(r1,pows10_exp);
@@ -827,7 +812,7 @@ public class ParserTest extends TestUtil {
       ard(1e-18),
       ard(1e-34),
     };
-    Key k = makeByteVec(pows10);
+    Key k = FVecFactory.makeByteVec(pows10);
     Key r1 = Key.make("r1");
     ParseDataset.parse(r1, k);
     testParsed(r1,pows10_exp);
@@ -847,7 +832,7 @@ public class ParserTest extends TestUtil {
       ard(1399008600149269883L),
       ard(1399008600149269880L),
     };
-    Key k = makeByteVec(pows10);
+    Key k = FVecFactory.makeByteVec(pows10);
     Key r1 = Key.make("r1");
     ParseDataset.parse(r1, k);
     testParsed(r1,pows10_exp);
@@ -878,14 +863,14 @@ public class ParserTest extends TestUtil {
 
       StringBuilder sb1 = new StringBuilder();
       for( String ds : dataset ) sb1.append(ds).append("\n");
-      Key k1 = makeByteVec(sb1.toString());
+      Key k1 = FVecFactory.makeByteVec(sb1.toString());
       Key r1 = Key.make("r1");
       ParseDataset.parse(r1, k1);
       testParsed(r1,exp);
 
       StringBuilder sb2 = new StringBuilder();
       for( String ds : dataset ) sb2.append(ds).append("\r\n");
-      Key k2 = makeByteVec(sb2.toString());
+      Key k2 = FVecFactory.makeByteVec(sb2.toString());
       Key r2 = Key.make("r2");
       ParseDataset.parse(r2, k2);
       testParsed(r2,exp);
@@ -1044,7 +1029,7 @@ public class ParserTest extends TestUtil {
     // mock StreamParseWriter
     MockStreamParseWriter w = new MockStreamParseWriter(chunkSize);
     // Vec made of 3 chunks
-    Key k = makeByteVec(
+    Key k = FVecFactory.makeByteVec(
             RandomStringUtils.randomAscii(chunkSize),
             RandomStringUtils.randomAscii(chunkSize),
             RandomStringUtils.randomAscii(chunkSize)

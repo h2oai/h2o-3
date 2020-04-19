@@ -223,6 +223,8 @@ test-package-java:
 		h2o-parsers/h2o-orc-parser/build/libs/h2o-orc-parser-*.jar \
 		h2o-parsers/h2o-parquet-parser/src/ \
 		h2o-parsers/h2o-parquet-parser/build/libs/h2o-parquet-parser-*.jar \
+		h2o-parsers/h2o-parquet-parser-tests/src/ \
+		h2o-parsers/h2o-parquet-parser-tests/build/libs/h2o-parquet-parser-tests-*.jar \
 		h2o-persist-gcs/src/ \
 		h2o-persist-gcs/build/libs/h2o-persist-gcs-*.jar \
 		h2o-persist-hdfs/src/ \
@@ -248,6 +250,8 @@ test-package-java:
 		h2o-jetty-9/build/libs/h2o-jetty-9-*.jar \
 		h2o-extensions/target-encoder/src/ \
 		h2o-extensions/target-encoder/build/libs/h2o-ext-target-encoder*.jar \
+		h2o-test-support/src/ \
+		h2o-test-support/build/libs/h2o-test-support-*.jar \
 		h2o-k8s/src/ \
 		h2o-k8s/build/libs/h2o-k8s-*.jar \
 		h2o-k8s/tests/ \

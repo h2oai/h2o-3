@@ -1,7 +1,7 @@
 package hex.segments;
 
-import hex.ModelBuilderTest;
-import hex.segments.SegmentModels;
+import water.test.dummy.DummyModel;
+import water.test.dummy.DummyModelBuilder;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import water.*;
@@ -10,6 +10,7 @@ import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
+import water.test.dummy.DummyModelParameters;
 
 import static org.junit.Assert.*;
 
@@ -54,16 +55,16 @@ public class SegmentModelsTest {
       SegmentModels sm = SegmentModels.make(dest, segments);
 
       // seg_C - not started
-      ModelBuilderTest.DummyModelBuilder dmbC = new ModelBuilderTest.DummyModelBuilder(new ModelBuilderTest.DummyModelParameters());
+      DummyModelBuilder dmbC = new DummyModelBuilder(new DummyModelParameters());
       sm.addResult(2, dmbC, null);
 
       // seg_A - finished ok
-      ModelBuilderTest.DummyModelParameters parmsA = new ModelBuilderTest.DummyModelParameters();
+      DummyModelParameters parmsA = new DummyModelParameters();
       parmsA._makeModel = true;
       parmsA._response_column = "col_0";
       parmsA._train = TestFrameCatalog.oneChunkFewRows()._key;
-      ModelBuilderTest.DummyModelBuilder dmbA = new ModelBuilderTest.DummyModelBuilder(parmsA);
-      ModelBuilderTest.DummyModel dm = dmbA.trainModel().get();
+      DummyModelBuilder dmbA = new DummyModelBuilder(parmsA);
+      DummyModel dm = dmbA.trainModel().get();
       Scope.track_generic(dm);
       sm.addResult(0, dmbA, null);
 

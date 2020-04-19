@@ -15,6 +15,10 @@ import water.Key;
 import water.Value;
 import water.util.ArrayUtils;
 
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 @Ignore("Support for tests, but no actual tests here")
 public class JFuncUtils {
 
@@ -119,5 +123,13 @@ public class JFuncUtils {
         return ArrayUtils.contains(skipResources, name) ? null : super.getResource(name);
       }
     };
+  }
+
+  static CBlock.CRow mockedRow(int len, double value) {
+    CBlock.CRow row = mock(CBlock.CRow.class);
+    when(row.len()).thenReturn(len);
+    when(row.readDouble(anyInt())).thenReturn(value);
+    when(row.readDoubles()).thenReturn(ArrayUtils.constAry(len, value));
+    return row;
   }
 }

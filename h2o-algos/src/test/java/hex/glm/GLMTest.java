@@ -244,7 +244,7 @@ public class GLMTest  extends TestUtil {
     Frame fr = null, res = null;
     try {
       // make data so that the expected coefficients is icept = col[0] = 1.0
-      FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
+      FVecFactory.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
       fr = ParseDataset.parse(parsed, raw);
       GLMParameters params = new GLMParameters(Family.gaussian);
       params._train = fr._key;
@@ -277,7 +277,7 @@ public class GLMTest  extends TestUtil {
     Frame fr = null, res = null;
     try {
       // make data so that the expected coefficients is icept = col[0] = 1.0
-      FVecTest.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
+      FVecFactory.makeByteVec(raw, "x,y\n0,2\n1,4\n2,8\n3,16\n4,32\n5,64\n6,128\n7,256");
       fr = ParseDataset.parse(parsed, raw);
       Vec v = fr.vec(0);
       System.out.println(v.min() + ", " + v.max() + ", mean = " + v.mean());
@@ -295,7 +295,7 @@ public class GLMTest  extends TestUtil {
       fr.delete();
 
       // Test 2, example from http://www.biostat.umn.edu/~dipankar/bmtry711.11/lecture_13.pdf
-      FVecTest.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n150,7.193936e+16\n");
+      FVecFactory.makeByteVec(raw, "x,y\n1,0\n2,1\n3,2\n4,3\n5,1\n6,4\n7,9\n8,18\n9,23\n10,31\n11,20\n12,25\n13,37\n14,45\n150,7.193936e+16\n");
       fr = ParseDataset.parse(parsed, raw);
       GLMParameters params2 = new GLMParameters(Family.poisson);
       params2._train = fr._key;
@@ -332,7 +332,7 @@ public class GLMTest  extends TestUtil {
       // make data so that the expected coefficients is icept = col[0] = 1.0
       Key raw = Key.make("gamma_test_data_raw");
       Key parsed = Key.make("gamma_test_data_parsed");
-      FVecTest.makeByteVec(raw, "x,y\n0,1\n1,0.5\n2,0.3333333\n3,0.25\n4,0.2\n5,0.1666667\n6,0.1428571\n7,0.125");
+      FVecFactory.makeByteVec(raw, "x,y\n0,1\n1,0.5\n2,0.3333333\n3,0.25\n4,0.2\n5,0.1666667\n6,0.1428571\n7,0.125");
       fr = ParseDataset.parse(parsed, raw);
 //      /public GLM2(String desc, Key dest, Frame src, Family family, Link link, double alpha, double lambda) {
 //      double [] vals = new double[] {1.0,1.0};
@@ -362,7 +362,7 @@ public class GLMTest  extends TestUtil {
 //    GLMModel model = null;
 //    try {
 //      // make data so that the expected coefficients is icept = col[0] = 1.0
-//      FVecTest.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9\n0,0\n1,0\n2,0\n3,0\n4,0\n5,0\n6,0\n7,0\n8,0\n9,0");
+//      FVecFactory.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9\n0,0\n1,0\n2,0\n3,0\n4,0\n5,0\n6,0\n7,0\n8,0\n9,0");
 //      fr = ParseDataset.parse(parsed, new Key[]{raw});
 //      double [] powers = new double [] {1.5,1.1,1.9};
 //      double [] intercepts = new double []{3.643,1.318,9.154};
@@ -389,7 +389,7 @@ public class GLMTest  extends TestUtil {
   public void testAllNAs() {
     Key raw = Key.make("gamma_test_data_raw");
     Key parsed = Key.make("gamma_test_data_parsed");
-    FVecTest.makeByteVec(raw, "x,y,z\n1,0,NA\n2,NA,1\nNA,3,2\n4,3,NA\n5,NA,1\nNA,6,4\n7,NA,9\n8,NA,18\nNA,9,23\n10,31,NA\nNA,11,20\n12,NA,25\nNA,13,37\n14,45,NA\n");
+    FVecFactory.makeByteVec(raw, "x,y,z\n1,0,NA\n2,NA,1\nNA,3,2\n4,3,NA\n5,NA,1\nNA,6,4\n7,NA,9\n8,NA,18\nNA,9,23\n10,31,NA\nNA,11,20\n12,NA,25\nNA,13,37\n14,45,NA\n");
     Frame fr = ParseDataset.parse(parsed, raw);
     GLM job = null;
     try {
@@ -744,7 +744,7 @@ public class GLMTest  extends TestUtil {
     double[] vals = new double[]{-0.006502588, -0.500000000, 0.500000000, 0.400000000, 0.034826559, -0.011661747, 0.500000000, -4.564024};
 
 //    [AGE, RACE, DPROS, DCAPS, PSA, VOL, GLEASON, Intercept]
-    FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
+    FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n AGE, -.5, .5\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5\nGLEASON, -.5, .5");
     Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
 
     try {
@@ -773,7 +773,7 @@ public class GLMTest  extends TestUtil {
       model.delete();
       params._lambda = new double[]{0};
       params._alpha = new double[]{0};
-      FVecTest.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5");
+      FVecFactory.makeByteVec(betaConsKey, "names, lower_bounds, upper_bounds\n RACE, -.5, .5\n DCAPS, -.4, .4\n DPROS, -.5, .5 \nPSA, -.5, .5\n VOL, -.5, .5");
       betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
       glm = new GLM( params, modelKey);
       model = glm.trainModel().get();
@@ -939,7 +939,7 @@ public class GLMTest  extends TestUtil {
     DKV.put(fr._key, fr);
     Key betaConsKey = Key.make("beta_constraints");
 
-    FVecTest.makeByteVec(betaConsKey, "names, beta_given, rho\n AGE, 0.1, 1\n RACE, -0.1, 1 \n DPROS, 10, 1 \n DCAPS, -10, 1 \n PSA, 0, 1\n VOL, 0, 1\nGLEASON, 0, 1\n Intercept, 0, 0 \n");
+    FVecFactory.makeByteVec(betaConsKey, "names, beta_given, rho\n AGE, 0.1, 1\n RACE, -0.1, 1 \n DPROS, 10, 1 \n DCAPS, -10, 1 \n PSA, 0, 1\n VOL, 0, 1\nGLEASON, 0, 1\n Intercept, 0, 0 \n");
     Frame betaConstraints = ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey);
     try {
       // H2O differs on intercept and race, same residual deviance though

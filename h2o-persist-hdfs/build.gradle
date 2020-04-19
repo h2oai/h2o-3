@@ -14,9 +14,8 @@ dependencies {
         transitive = true
     }
     compile("org.apache.hadoop:hadoop-aws:$defaultHadoopVersion")
-    testCompile "junit:junit:${junitVersion}"
-    testCompile "org.hamcrest:hamcrest-junit:2.0.0.0"
-    testCompile project(path: ":h2o-core", configuration: "testArchives")
+
+    testCompile project(":h2o-test-support")
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

@@ -8,7 +8,6 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.Rapids;
-import water.rapids.Val;
 
 import static org.junit.Assert.*;
 

@@ -1,6 +1,7 @@
 rootProject.name = 'h2o-3'
 
 include 'h2o-core'
+include 'h2o-test-support'
 include 'h2o-algos'
 include 'h2o-web'
 include 'h2o-app'
@@ -23,6 +24,7 @@ include 'h2o-test-accuracy'
 include 'h2o-avro-parser'
 include 'h2o-orc-parser'
 include 'h2o-parquet-parser'
+include 'h2o-parquet-parser-tests'
 include 'h2o-parquet-v17-compat'
 include 'h2o-jaas-pam'
 include 'h2o-automl'
@@ -59,7 +61,7 @@ scalaCrossCompile {
 
 // Make structure flat and avoid annoying dummy modules
 rootProject.children.each { project ->
-  if (project.name.startsWith("h2o-") && project.name.endsWith("-parser")) {
+  if (project.name.startsWith("h2o-") && (project.name.endsWith("-parser") || project.name.endsWith("-tests"))) {
     String projectDirName = "h2o-parsers/${project.name}"
     project.projectDir = new File(settingsDir, projectDirName)
   }

@@ -24,7 +24,6 @@ import water.*;
 import water.fvec.Frame;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
-import water.util.FrameUtilsTest;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -83,7 +82,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track_generic(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, originalModelPredictions));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -129,7 +128,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, originalModelPredictions));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -175,7 +174,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track_generic(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, new Frame(originalModelPredictions.vec("predict"))));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, new Frame(originalModelPredictions.vec("predict"))));
         } finally {
             Scope.exit();
         }
@@ -221,7 +220,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, originalModelPredictions));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -267,7 +266,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, originalModelPredictions));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -313,7 +312,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, new Frame(originalModelPredictions.vec("predict"))));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, new Frame(originalModelPredictions.vec("predict"))));
         } finally {
             Scope.exit();
         }
@@ -358,7 +357,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, originalModelPredictions));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -406,7 +405,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, originalModelPredictions));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -452,7 +451,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, originalModelPredictions));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
         } finally {
             Scope.exit();
         }
@@ -498,7 +497,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, new Frame(originalModelPredictions.vec("predict"))));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, new Frame(originalModelPredictions.vec("predict"))));
         } finally {
             Scope.exit();
         }
@@ -759,7 +758,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = model.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(genericModelPredictions, originalModelPredictions));
+            assertTrue(TestUtil.compareFrames(genericModelPredictions, originalModelPredictions));
 
         } finally {
             Scope.exit();
@@ -884,7 +883,7 @@ public class GenericModelTest extends TestUtil {
 
             final Frame originalModelPredictions = stackedEnsembleModel.score(testFrame);
             Scope.track(originalModelPredictions);
-            assertTrue(FrameUtilsTest.compareFrames(predictions, originalModelPredictions));
+            assertTrue(TestUtil.compareFrames(predictions, originalModelPredictions));
             
             assertTrue(equallyScored);
         } finally {

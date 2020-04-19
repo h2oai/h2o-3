@@ -4,10 +4,8 @@ dependencies {
     compile project(":h2o-core")
     compile "ai.h2o:mojo2-runtime-api:0.13.7"
 
-    testCompile "junit:junit:${junitVersion}"
+    testCompile project(":h2o-test-support")
     testCompile "net.sf.opencsv:opencsv:2.3"
-    testCompile project(path: ":h2o-core", configuration: "testArchives")
-
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

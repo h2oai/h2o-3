@@ -15,7 +15,7 @@ import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
 import water.api.SchemaServer;
-import water.fvec.FVecTest;
+import water.fvec.FVecFactory;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
 import hex.schemas.HyperSpaceSearchCriteriaV99.RandomDiscreteValueSearchCriteriaV99;
@@ -27,7 +27,6 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-
 
 public class TestCase {
 
@@ -500,7 +499,7 @@ public class TestCase {
       }
     }
     Key betaConsKey = Key.make("beta_constraints");
-    FVecTest.makeByteVec(betaConsKey, betaConstraintsString);
+    FVecFactory.makeByteVec(betaConsKey, betaConstraintsString);
     return ParseDataset.parse(Key.make("beta_constraints.hex"), betaConsKey)._key;
   }
 

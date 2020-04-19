@@ -1,15 +1,12 @@
 package hex;
 
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
-import water.MRTask;
 import water.Scope;
 import water.TestUtil;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.Vec;
+import water.test.util.ConfusionMatrixUtils;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.VecUtils;
@@ -217,7 +214,7 @@ public class ConfusionMatrixTest extends TestUtil {
   private void simpleCMTest(Frame v1, Frame v2, String[] actualDomain, String[] predictedDomain, String[] expectedDomain, double[][] expectedCM, boolean debug) {
     Scope.enter();
     try {
-      ConfusionMatrix cm = buildCM(VecUtils.toCategoricalVec(v1.vecs()[0]), VecUtils.toCategoricalVec(v2.vecs()[0]));
+      ConfusionMatrix cm = ConfusionMatrixUtils.buildCM(VecUtils.toCategoricalVec(v1.vecs()[0]), VecUtils.toCategoricalVec(v2.vecs()[0]));
 
       // -- DEBUG --
       if (debug) {
@@ -231,57 +228,12 @@ public class ConfusionMatrixTest extends TestUtil {
         System.err.println(cm.toASCII());
       }
       // -- -- --
-      assertCMEqual(expectedDomain, expectedCM, cm);
+      ConfusionMatrixUtils.assertCMEqual(expectedDomain, expectedCM, cm);
     } finally {
       if (v1 != null) v1.delete();
       if (v2 != null) v2.delete();
       Scope.exit();
     }
   }
-
-  public static void assertCMEqual(String[] expectedDomain, double[][] expectedCM, ConfusionMatrix actualCM) {
-    Assert.assertArrayEquals("Expected domain differs",     expectedDomain,        actualCM._domain);
-    double[][] acm = actualCM._cm;
-    Assert.assertEquals("CM dimension differs", expectedCM.length, acm.length);
-    for (int i=0; i < acm.length; i++) Assert.assertArrayEquals("CM row " +i+" differs!", expectedCM[i], acm[i],1e-10);
-  }
-
-  /** Build the CM data from the actuals and predictions, using the default
-   *  threshold.  Print to Log.info if the number of classes is below the
-   *  print_threshold.  Actuals might have extra levels not trained on (hence
-   *  never predicted).  Actuals with NAs are not scored, and their predictions
-   *  ignored. */
-  public static ConfusionMatrix buildCM(Vec actuals, Vec predictions) {
-    if (!actuals.isCategorical()) throw new IllegalArgumentException("actuals must be categorical.");
-    if (!predictions.isCategorical()) throw new IllegalArgumentException("predictions must be categorical.");
-    Scope.enter();
-    try {
-      Vec adapted = predictions.adaptTo(actuals.domain());
-      int len = actuals.domain().length;
-      CMBuilder cm = new CMBuilder(len).doAll(actuals, adapted);
-      return new ConfusionMatrix(cm._arr, actuals.domain());
-    } finally {
-      Scope.exit();
-    }
-  }
-
-  private static class CMBuilder extends MRTask<CMBuilder> {
-    final int _len;
-    double _arr[/*actuals*/][/*predicted*/];
-    CMBuilder(int len) { _len = len; }
-    @Override public void map(Chunk ca, Chunk cp ) {
-      // After adapting frames, the Actuals have all the levels in the
-      // prediction results, plus any extras the model was never trained on.
-      // i.e., Actual levels are at least as big as the predicted levels.
-      _arr = new double[_len][_len];
-      for( int i=0; i < ca._len; i++ )
-        if( !ca.isNA(i) )
-          _arr[(int)ca.at8(i)][(int)cp.at8(i)]++;
-    }
-    @Override public void reduce( CMBuilder cm ) {
-      ArrayUtils.add(_arr,cm._arr);
-    }
-  }
-
 
 }

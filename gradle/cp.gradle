@@ -1,7 +1,7 @@
 task cpLibs(type:Sync) {
     def skipFiles = {
       // Use parent property containing all artifacts 
-        allArchives + allTestArchives
+        allArchives
     }
 
     from { project.configurations.runtime.minus(skipFiles()) }

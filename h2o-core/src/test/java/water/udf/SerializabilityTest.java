@@ -38,7 +38,7 @@ public class SerializabilityTest extends UdfTestBase {
   }
 
   private DataColumn<Double> someDoubles() throws java.io.IOException {
-    return willDrop(Doubles.newColumn(5, new Function<Long, Double>() {
+    return UdfUtils.willDrop(Doubles.newColumn(5, new Function<Long, Double>() {
       public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
     }));
   }
@@ -46,7 +46,7 @@ public class SerializabilityTest extends UdfTestBase {
   @Test
   @SuppressWarnings("unchecked")
   public void testDateColumnSerializable() throws Exception {
-    Column<Date> c = willDrop(Dates.newColumn(7, new Function<Long, Date>() {
+    Column<Date> c = UdfUtils.willDrop(Dates.newColumn(7, new Function<Long, Date>() {
       public Date apply(Long i) {
         return new Date(i*3600000L*24);
       }
@@ -57,7 +57,7 @@ public class SerializabilityTest extends UdfTestBase {
   @Test
   @SuppressWarnings("unchecked")
   public void testStringColumnSerializable() throws Exception {
-    Column<String> c = willDrop(Strings.newColumn(7, new Function<Long, String>() {
+    Column<String> c = UdfUtils.willDrop(Strings.newColumn(7, new Function<Long, String>() {
       public String apply(Long i) {
         return "<<" + i + ">>";
       }
@@ -68,7 +68,7 @@ public class SerializabilityTest extends UdfTestBase {
   @Test
   @SuppressWarnings("unchecked")
   public void testEnumColumnSerializable() throws Exception {
-    Column<Integer> c = willDrop(Enums.enums(new String[]{"Red", "White", "Blue"}).newColumn(7, new Function<Long, Integer>() {
+    Column<Integer> c = UdfUtils.willDrop(Enums.enums(new String[]{"Red", "White", "Blue"}).newColumn(7, new Function<Long, Integer>() {
       public Integer apply(Long i) {
         return (int)(i % 3);
       }
@@ -80,7 +80,7 @@ public class SerializabilityTest extends UdfTestBase {
   @SuppressWarnings("unchecked")
   public void tesFunColumnSerializable() throws Exception {
     Column<Double> source = someDoubles();
-    Column<Double> c = willDrop(new FunColumn<>(PureFunctions.SQUARE, source));
+    Column<Double> c = UdfUtils.willDrop(new FunColumn<>(PureFunctions.SQUARE, source));
 
     checkSerialization(c);
   }
@@ -89,7 +89,7 @@ public class SerializabilityTest extends UdfTestBase {
   @SuppressWarnings("unchecked")
   public void tesFun2ColumnSerializable() throws Exception {
     Column<Double> x = someDoubles();
-    Column<Double> c = willDrop(new Fun2Column<>(PureFunctions.PLUS, x, x));
+    Column<Double> c = UdfUtils.willDrop(new Fun2Column<>(PureFunctions.PLUS, x, x));
 
     checkSerialization(c);
   }
@@ -99,7 +99,7 @@ public class SerializabilityTest extends UdfTestBase {
   public void tesFun3ColumnSerializable() throws Exception {
     Column<Double> x = someDoubles();
     Column<Double> y = someDoubles();
-    Column<Double> c = willDrop(new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, y, x));
+    Column<Double> c = UdfUtils.willDrop(new Fun3Column<>(PureFunctions.X2_PLUS_Y2_PLUS_Z2, x, y, x));
 
     checkSerialization(c);
   }
@@ -109,7 +109,7 @@ public class SerializabilityTest extends UdfTestBase {
   public void tesFoldingSerializable() throws Exception {
     Column<Double> x = someDoubles();
     Column<Double> y = someDoubles();
-    Column<Double> c = willDrop(new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x, y, x));
+    Column<Double> c = UdfUtils.willDrop(new FoldingColumn<>(PureFunctions.SUM_OF_SQUARES, x, y, x));
 
     checkSerialization(c);
   }
@@ -117,7 +117,7 @@ public class SerializabilityTest extends UdfTestBase {
   @Test
   @SuppressWarnings("unchecked")
   public void testUnfoldingColumnSerializable() throws Exception {
-    Column<String> source = willDrop(Strings.newColumn(Arrays.asList("line 1; line 2; lin 3".split("; "))));
+    Column<String> source = UdfUtils.willDrop(Strings.newColumn(Arrays.asList("line 1; line 2; lin 3".split("; "))));
 
     // produce another (virtual) column that stores a list of strings as a row value
     Column<List<String>> c = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);

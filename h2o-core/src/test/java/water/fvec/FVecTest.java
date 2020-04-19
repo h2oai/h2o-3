@@ -7,7 +7,6 @@ import water.*;
 import water.exceptions.H2OConcurrentModificationException;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
-import water.util.StringUtils;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,38 +14,11 @@ import java.io.IOException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-
 public class FVecTest extends TestUtil {
-  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
+
   static final double EPSILON = 1e-6;
 
-  public static  Key makeByteVec(Key k, String... data) {
-    byte [][] chunks = new byte[data.length][];
-    long [] espc = new long[data.length+1];
-    for(int i = 0; i < chunks.length; ++i){
-      chunks[i] = StringUtils.bytesOf(data[i]);
-      espc[i+1] = espc[i] + data[i].length();
-    }
-    Futures fs = new Futures();
-    Key key = Vec.newKey();
-    ByteVec bv = new ByteVec(key,Vec.ESPC.rowLayout(key,espc));
-    for(int i = 0; i < chunks.length; ++i){
-      Key chunkKey = bv.chunkKey(i);
-      DKV.put(chunkKey, new Value(chunkKey,chunks[i].length,chunks[i],TypeMap.C1NCHUNK,Value.ICE),fs);
-    }
-    DKV.put(bv._key,bv,fs);
-    Frame fr = new Frame(k,new String[]{"makeByteVec"},new Vec[]{bv});
-    DKV.put(k, fr, fs);
-    fs.blockForPending();
-    return k;
-  }
-
-/*
-  Test that we actually fail on failures.  :-)
-  @Test public void testBlammo() {
-    assertEquals(1, 2);
-  }
-*/
+  @BeforeClass public static void setup() { stall_till_cloudsize(1); }
 
   // ==========================================================================
   @Test public void testBasicCRUD() throws IOException {

@@ -1,7 +1,6 @@
 package hex.grid;
 
 import hex.Model;
-import hex.ModelBuilderTest;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.gbm.GBMModel;
 import org.junit.Before;
@@ -10,7 +9,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import water.*;
 import water.fvec.Frame;
-import water.util.Log;
+import water.test.dummy.DummyModelParameters;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -566,7 +565,7 @@ public class GridTest extends TestUtil {
         "_cancel_job", new Boolean[]{true}
       );
 
-      ModelBuilderTest.DummyModelParameters params = new ModelBuilderTest.DummyModelParameters();
+      DummyModelParameters params = new DummyModelParameters();
       params._train = trainingFrame._key;
       
       Grid grid = GridSearch.startGridSearch(null, params, hyperParms).get();

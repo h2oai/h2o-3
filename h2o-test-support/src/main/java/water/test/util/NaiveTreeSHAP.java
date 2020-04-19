@@ -1,4 +1,4 @@
-package hex.util;
+package water.test.util;
 
 import ai.h2o.algos.tree.INode;
 import ai.h2o.algos.tree.INodeStat;

@@ -1,8 +1,6 @@
 package hex.tree.xgboost;
 
 import hex.*;
-import hex.deeplearning.DeepLearning;
-import hex.deeplearning.DeepLearningModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;

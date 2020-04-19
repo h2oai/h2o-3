@@ -1,6 +1,5 @@
 package water.fvec;
 
-import org.apache.commons.lang.ArrayUtils;
 import org.junit.Ignore;
 import water.DKV;
 import water.Key;
@@ -8,8 +7,6 @@ import water.Scope;
 import water.rapids.Env;
 import water.rapids.Session;
 
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.Random;
 

@@ -12,7 +12,7 @@ class Test0 extends FunSuite {
     getClass.getClassLoader.setDefaultAssertionStatus(true)
   }
   
-  def willDrop[T](t:T) = water.udf.UdfTestBase.willDrop[T](t)
+  def willDrop[T](t:T) = water.udf.UdfUtils.willDrop[T](t)
   
   test("just making sure that this code is accepted by gradle") {
     assert(true)

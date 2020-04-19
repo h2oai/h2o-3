@@ -101,6 +101,7 @@ ext {
 
     javaProjects = [
       project(':h2o-core'),
+      project(':h2o-test-support'),
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
@@ -115,6 +116,7 @@ ext {
       project(':h2o-avro-parser'),
       project(':h2o-orc-parser'),
       project(':h2o-parquet-parser'),
+      project(':h2o-parquet-parser-tests'),
       project(':h2o-parquet-v17-compat'),
       project(':h2o-jaas-pam'),
       project(':h2o-automl'),
@@ -327,17 +329,7 @@ ext {
           else
             acc
     })
-    // Collect all test artifacts
-    allTestArchives = files() // filed lazily below
 
-}
-
-// After evaluation of all projects collect all artifacts produced by testArchives configuration
-subprojects {
-    afterEvaluate( { pj ->
-        def testCnf = pj.configurations.findAll().find({ it.getName().equals("testArchives") })
-        if (testCnf != null) allTestArchives = allTestArchives + testCnf.allArtifacts.getFiles()
-    } )
 }
 
 // Include support for S3 syncing

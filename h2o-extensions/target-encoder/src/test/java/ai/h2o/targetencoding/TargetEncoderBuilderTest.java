@@ -1,7 +1,6 @@
 package ai.h2o.targetencoding;
 
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import water.*;
 import water.fvec.*;

@@ -6,13 +6,10 @@ dependencies {
     compile project(":h2o-core")
     compile project(":h2o-algos")
     compile project(":h2o-genmodel")
-        
-    testCompile "junit:junit:${junitVersion}"
-    testCompile "org.mockito:mockito-core:2.23.0"
+
+    testCompile project(":h2o-test-support")
     testCompile "com.pholser:junit-quickcheck-core:0.9"
     testCompile 'com.pholser:junit-quickcheck-generators:0.9'
-    testCompile project(path: ":h2o-core", configuration: "testArchives")
-    testCompile project(path: ":h2o-algos", configuration: "testArchives")
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
 

@@ -17,15 +17,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.net.DatagramPacket;
-import java.net.Inet6Address;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
-import java.net.NetworkInterface;
-import java.net.ServerSocket;
-import java.net.SocketException;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.ServerSocketChannel;
 import java.security.GeneralSecurityException;
@@ -116,11 +108,7 @@ public class NetworkInit {
 
         break;
 
-      } catch (Exception e) {
-        for (Throwable ee = e; ee != null; ee = ee.getCause()) {
-          if (ee instanceof GeneralSecurityException)
-            throw new RuntimeException("Jetty Server initialization failed (check keystore password)", e);
-        }
+      } catch (IOException e) {
         Log.trace("Cannot allocate API port " + H2O.API_PORT + " because of following exception: ", e);
         if( apiSocket != null ) try { apiSocket.close(); } catch( IOException ohwell ) { Log.err(ohwell); }
         if( _tcpSocket != null ) try { _tcpSocket.close(); } catch( IOException ie ) { }

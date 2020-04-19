@@ -20,10 +20,9 @@ dependencies {
     transitive = false
   }
 
-  testCompile "junit:junit:${junitVersion}"
-  testCompile project(path: ":h2o-core", configuration: "testArchives")
+  testCompile project(":h2o-test-support")
+  testCompile project(":h2o-parquet-parser-tests")
   testRuntimeOnly project(":${defaultWebserverModule}")
-  testCompile project(path: ":h2o-parquet-parser", configuration: "testArchives")
   testCompile("org.apache.parquet:parquet-avro:1.7.0")
   // We need correct version of MapRe Hadoop to run JUnits
   testCompile("org.apache.hadoop:hadoop-client:${parquetHadoopVersion}") {

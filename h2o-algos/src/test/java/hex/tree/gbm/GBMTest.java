@@ -37,7 +37,7 @@ import java.util.*;
 
 import static hex.genmodel.utils.DistributionFamily.*;
 import static org.junit.Assert.*;
-import static water.fvec.FVecTest.makeByteVec;
+import static water.fvec.FVecFactory.makeByteVec;
 
 @RunWith(Parameterized.class)
 public class GBMTest extends TestUtil {

@@ -6,6 +6,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import water.Key;
 import water.TestUtil;
+import water.fvec.FVecFactory;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.PrettyPrint;
@@ -54,7 +55,7 @@ public class ParserTest2 extends TestUtil {
       "?,        NA,          ?,           ?,           ?,           ?,          ?,       ?,                \n" ,
     };
 
-    Key rkey = ParserTest.makeByteVec(data);
+    Key rkey = FVecFactory.makeByteVec(data);
     ParseSetup ps = new ParseSetup(CSV_INFO, (byte)',', false, ParseSetup.HAS_HEADER, 9,
             new String[]{"'C1Chunk'","C1SChunk", "'C2Chunk'", "'C2SChunk'", "'C4Chunk'", "'C4FChunk'", "'C8Chunk'", "'C8DChunk'", "'Categorical'"},
             ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Numeric", "Enum"}), null, null, null);
@@ -96,7 +97,7 @@ public class ParserTest2 extends TestUtil {
         "\t\t\t\n"+
         " \t"+"\n",
     };
-    Key dataKey = ParserTest.makeByteVec(data);
+    Key dataKey = FVecFactory.makeByteVec(data);
     ParseSetup ps = new ParseSetup(CSV_INFO, (byte)',', false, ParseSetup.HAS_HEADER, 4,
         new String[]{"'C1'","'C2'", "'C3'", "'C4'"},
         ParseSetup.strToColumnTypes(new String[]{"Numeric", "Numeric", "Numeric", "Numeric"}),
@@ -121,7 +122,7 @@ public class ParserTest2 extends TestUtil {
     String[][] expectFalse = new String[][] { ar("'Tomass"  ,"test"  ,"first","line'"),
                                               ar("'Tomas''s","test2'","test2",null),
                                               ar("last","'line''s","trailing","piece'") };
-    Key k = ParserTest.makeByteVec(data);
+    Key k = FVecFactory.makeByteVec(data);
 
     ParseSetup gSetupF = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', false/*single quote*/, 4, ParseSetup.NO_HEADER, null, null));
     gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"Enum", "Enum", "Enum", "Enum"});
@@ -149,7 +150,7 @@ public class ParserTest2 extends TestUtil {
     Frame fr = null;
    try {
     String[] data  = new String[]{"Tomass,test,\"Feline says \"\"meh\"\".\",line\nTomass,test2,second,line\nTomass,test3,last,line"};
-    Key k = ParserTest.makeByteVec(data);
+    Key k = FVecFactory.makeByteVec(data);
     ParseSetup gSetupF = ParseSetup.guessSetup(null, StringUtils.bytesOf(data[0]), new ParseSetup(CSV_INFO, (byte)',', false/*single quote*/, ParseSetup.NO_HEADER, 4, null, null));
     gSetupF._column_types = ParseSetup.strToColumnTypes(new String[]{"String", "String", "String", "String"});
     fr = ParseDataset.parse(Key.make(), new Key[]{k}, true, gSetupF);
@@ -174,7 +175,7 @@ public class ParserTest2 extends TestUtil {
     for( int i=0; i<50; i++ ) sb.append("0.0\n");
     sb.append("1.0\n");
     for( int i=0; i<50; i++ ) sb.append("0.0\n");
-    Key k = ParserTest.makeByteVec(sb.toString());
+    Key k = FVecFactory.makeByteVec(sb.toString());
     ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,101);
   
     // Build 100 zero's and 1 non-zero.
@@ -184,7 +185,7 @@ public class ParserTest2 extends TestUtil {
     for( int i=0; i<50; i++ ) sb.append("0\n");
     sb.append("2\n");
     for( int i=0; i<50; i++ ) sb.append("0\n");
-    k = ParserTest.makeByteVec(sb.toString());
+    k = FVecFactory.makeByteVec(sb.toString());
     ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,101);
 
     // Build 100 zero's and some non-zeros.  Last line is truncated.
@@ -199,7 +200,7 @@ public class ParserTest2 extends TestUtil {
       sb.append("2").append(sep).append("3\n");
       for( int i=0; i<49; i++ ) sb.append("0").append(sep).append("0\n");
       sb.append("0");           // Truncated final line
-      k = ParserTest.makeByteVec(sb.toString());
+      k = FVecFactory.makeByteVec(sb.toString());
       ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,101);
     }
   
@@ -212,7 +213,7 @@ public class ParserTest2 extends TestUtil {
       sb.append("1\n");
       exp[i*1001+1000][0]=1;
     }
-    k = ParserTest.makeByteVec(sb.toString());
+    k = FVecFactory.makeByteVec(sb.toString());
     ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,100100);
   
     // Build 100 zero's, then 100 mix of -1001 & 1001's (to force a
@@ -222,7 +223,7 @@ public class ParserTest2 extends TestUtil {
     for( int i=0; i<100; i+=2 ) sb.append("-1001\n1001\n");
     exp = new double[200][1];
     for( int i=0; i<100; i+=2 ) { exp[i+100][0]=-1001; exp[i+101][0]= 1001; }
-    k = ParserTest.makeByteVec(sb.toString());
+    k = FVecFactory.makeByteVec(sb.toString());
     ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,200);
   }
   
@@ -302,7 +303,7 @@ public class ParserTest2 extends TestUtil {
         ard(0,0,0,0,0,0),
         ard(0,0,0,0,0,0),
     };
-    Key k = ParserTest.makeByteVec(data);
+    Key k = FVecFactory.makeByteVec(data);
     ParserTest.testParsed(ParseDataset.parse(Key.make(), k),exp,33);
   }
 

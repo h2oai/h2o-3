@@ -1,6 +1,5 @@
 package water.parser.orc;
 
-
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -9,8 +8,6 @@ import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.parser.ParseSetup;
-
-import static org.junit.Assert.assertTrue;
 
 /**
  * Test suite for orc parser.

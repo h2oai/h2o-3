@@ -4,14 +4,13 @@ import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.algos.tree.TreeSHAP;
-import hex.util.NaiveTreeSHAP;
 import ml.dmlc.xgboost4j.java.*;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import water.test.util.NaiveTreeSHAP;
 import water.util.ArrayUtils;
-import water.util.ReflectionUtils;
 
 import java.io.*;
 import java.util.*;
