@@ -123,7 +123,7 @@ abstract public class Log {
     for (int i = 0; i < objs.length - 1; i++) msgBuff.append(objs[i]);
     if (objs.length > 0 && objs[objs.length - 1] instanceof Throwable) {
       t = (Throwable) objs[objs.length-1];
-    } else {
+    } else if (objs.length > 0) {
       msgBuff.append(objs[objs.length-1]);
     }
     String msg = msgBuff.toString();
