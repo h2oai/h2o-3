@@ -100,8 +100,10 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
   @Override public void init(boolean expensive) {
     super.init(expensive);
     if (H2O.CLOUD.size() > 1) {
-      if(H2O.SELF.getSecurityManager().securityEnabled && !H2O.ARGS.allow_insecure_xgboost) {
+      if (H2O.SELF.getSecurityManager().securityEnabled && !H2O.ARGS.allow_insecure_xgboost) {
         throw new H2OIllegalArgumentException("Cannot run XGBoost on an SSL enabled cluster larger than 1 node. XGBoost does not support SSL encryption.");
+      } else {
+        Log.info("Executing XGBoost on an secured cluster might compromise security.");
       }
     }
     if (H2O.ARGS.client && _parms._build_tree_one_node)

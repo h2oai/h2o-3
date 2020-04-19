@@ -1191,7 +1191,7 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         securityConf = args[i];
       }
-      else if (s.equals("allow_insecure_xgboost")) {
+      else if (s.equals("-allow_insecure_xgboost")) {
         allow_insecure_xgboost = true;
       }
       else if (s.equals("-hash_login")) {
