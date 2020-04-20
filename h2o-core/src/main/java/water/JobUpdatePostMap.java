@@ -22,5 +22,4 @@ public class JobUpdatePostMap extends MRTask.PostMapAction<JobUpdatePostMap> {
   public static JobUpdatePostMap forJob(Job<?> job) {
     return job != null ? new JobUpdatePostMap(job) : null;
   }
-
 }
