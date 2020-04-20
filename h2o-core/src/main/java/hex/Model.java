@@ -173,7 +173,14 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
 
   public ToEigenVec getToEigenVec() { return null; }
-
+  
+  /**
+   * Intended for overriding in SharedTreeModel for tree visualization.
+   */
+  public void visualize(String output) {
+    Log.warn("Trying to visualize model that does not support it.");
+  }
+  
   /** Model-specific parameter class.  Each model sub-class contains
    *  instance of one of these containing its builder parameters, with
    *  model-specific parameters.  E.g. KMeansModel extends Model and has a

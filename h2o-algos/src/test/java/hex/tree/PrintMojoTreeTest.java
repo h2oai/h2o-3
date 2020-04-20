@@ -334,6 +334,40 @@ public class PrintMojoTreeTest {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testVisualizeCategoricalOneHotPng() throws IOException {
+    try {
+      Scope.enter();
+      String[] expectedFileNames = new String[2];
+      expectedFileNames[0]="Tree1_ClassNO.png";
+      expectedFileNames[1]="Tree0_ClassNO.png";
+
+      Frame train = Scope.track(TestUtil.parse_test_file("smalldata/testng/airlines.csv"));
+
+      GBMModel.GBMParameters p = new GBMModel.GBMParameters();
+      p._train = train._key;
+      p._seed = 0xFEED;
+      p._response_column = "IsDepDelayed";
+      p._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+      p._ntrees = 2;
+      p._max_depth = 3;
+      p._ignored_columns = new String[] { "Origin", "Dest" };
+      
+      Model model = new GBM(p).trainModel().get();
+      final Path treeOutputPath = folder.newFile("exampleh2o.png").toPath();
+      model.visualize(treeOutputPath.toAbsolutePath().toString());
+      
+      List<Path> fileNames = Files.list(treeOutputPath)
+              .sorted(Comparator.reverseOrder())
+              .collect(Collectors.toList());
+      for (int i = 0; i < expectedFileNames.length; i++) {
+        assertTrue(fileNames.get(i).endsWith(expectedFileNames[i]));
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
   
   @Test
   public void testMojoGBMPng() throws IOException {

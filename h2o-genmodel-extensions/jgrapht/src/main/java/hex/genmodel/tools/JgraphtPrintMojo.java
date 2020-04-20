@@ -42,6 +42,16 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
             }
         } 
     }
+    
+    public void runFromFlow(SharedTreeGraph g, String outputPath){
+        try {
+            destination = outputPath;
+            pTreeOptions = new PrintTreeOptions(setDecimalPlaces, nPlaces, fontSize, internal);    
+            printPng(g);
+        } catch (ImportException | IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     @Override
     public boolean supportsFormat(Format format){
@@ -49,11 +59,11 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
     }
     
     private void printPng(SharedTreeGraph trees) throws IOException, ImportException {
-        Path outputDirectoryPath = Paths.get(outputFileName);
+        Path outputDirectoryPath = Paths.get(destination);
         int numberOfTrees = trees.subgraphArray.size();
         if (numberOfTrees > 1) { 
-            if (outputFileName == null) {
-                outputFileName = Paths.get("").toString();
+            if (destination == null) {
+                destination = Paths.get("").toString();
             }
             if (Files.exists(outputDirectoryPath) && !Files.isDirectory(outputDirectoryPath)) {
                 Files.delete(outputDirectoryPath);
@@ -86,7 +96,7 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
             treeLayout.execute(graphAdapter.getDefaultParent());
             nonOverlappingEdgesLayout.execute(graphAdapter.getDefaultParent());
             BufferedImage image = mxCellRenderer.createBufferedImage(graphAdapter, null, 2, Color.WHITE, true, null);
-            if (outputFileName != null) {
+            if (destination != null) {
                 ImageIO.write(image, "PNG", new File(treeName));
             } else {
                 ImageIO.write(image, "PNG", System.out);
@@ -96,11 +106,10 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
 
     protected String getPngName(int numberOfTrees, String treeName) {
         if (numberOfTrees == 1) {
-            return outputFileName;
+            return destination;
         } else {
-            return outputFileName + "/" + treeName.replaceAll("\\s+", "").replaceAll(",", "_") + ".png";
-        }
-
+            return destination + "/" + treeName.replaceAll("\\s+", "").replaceAll(",", "_") + ".png";
+       }
     }
 
     private class LabeledVertexProvider implements VertexProvider<LabeledVertex> {

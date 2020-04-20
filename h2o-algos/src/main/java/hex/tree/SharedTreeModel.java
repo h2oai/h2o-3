@@ -5,9 +5,11 @@ import hex.*;
 import static hex.genmodel.GenModel.createAuxKey;
 
 import hex.genmodel.CategoricalEncoding;
+import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
+import hex.genmodel.tools.JgraphtPrintMojo;
 import hex.glm.GLMModel;
 import hex.util.LinearAlgebraUtils;
 import water.*;
@@ -23,6 +25,7 @@ import water.util.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 
 public abstract class SharedTreeModel<
         M extends SharedTreeModel<M, P, O>,
@@ -620,6 +623,21 @@ public abstract class SharedTreeModel<
     }
     final CompressedTree auxCompressedTree = _output._treeKeysAux[tidx][cls].get();
     return _output._treeKeys[tidx][cls].get().toSharedTreeSubgraph(auxCompressedTree, _output._names, _output._domains);
+  }
+
+  /**
+   * Provides a visualization of tree based models when called from Flow.
+   * @param output output file name
+   */
+  @Override
+  public void visualize(String output) {
+    JgraphtPrintMojo jgraphtPrintMojo = new JgraphtPrintMojo();
+    List<SharedTreeSubgraph> subgraphArray = new ArrayList<>();
+    for (int i = 0; i < this._parms._ntrees; i++) {
+      subgraphArray.add(this.getSharedTreeSubgraph(i, 0));
+    }
+    SharedTreeGraph sharedTreeGraph = new SharedTreeGraph(subgraphArray);
+    jgraphtPrintMojo.runFromFlow(sharedTreeGraph, output);
   }
 
   //--------------------------------------------------------------------------------------------------------------------

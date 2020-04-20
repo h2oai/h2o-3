@@ -11,7 +11,7 @@ import java.util.*;
  */
 public class SharedTreeGraph {
 
-  public final ArrayList<SharedTreeSubgraph> subgraphArray = new ArrayList<>();
+  public List<SharedTreeSubgraph> subgraphArray = new ArrayList<>();
 
   /**
    * Make a new forest.
@@ -19,6 +19,10 @@ public class SharedTreeGraph {
   public SharedTreeGraph() {
   }
 
+  public SharedTreeGraph(List<SharedTreeSubgraph> subgraphArray) {
+    this.subgraphArray = subgraphArray;
+  }
+  
   /**
    * Make a new tree.
    * @param name Tree name.

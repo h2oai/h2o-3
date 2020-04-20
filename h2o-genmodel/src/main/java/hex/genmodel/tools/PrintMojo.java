@@ -28,11 +28,14 @@ public class PrintMojo implements MojoPrinter {
   protected int treeToPrint = -1;
   protected int maxLevelsToPrintPerEdge = 10;
   protected boolean detail = false;
-  protected String outputFileName = null;
+  protected String destination = null;
   protected String optionalTitle = null;
   protected PrintTreeOptions pTreeOptions;
   protected boolean internal;
   protected final String tmpOutputFileName = "tmpOutputFileName.gv";
+  protected int nPlaces = -1;
+  protected int fontSize = 14; // default size is 14
+  protected boolean setDecimalPlaces = false;
 
   public static void main(String[] args) {
     MojoPrinter mojoPrinter = null;
@@ -60,20 +63,16 @@ public class PrintMojo implements MojoPrinter {
       mojoPrinter.run();
     } catch (Exception e) {
       e.printStackTrace();
-      //System.exit(2);
+      System.exit(2);
     }
 
     // Success
-    //System.exit(0);
+    System.exit(0);
   }
 
   @Override
   public boolean supportsFormat(Format format) {
-    if (Format.png.equals(format)){
-      return false;
-    } else {
-      return true;
-    }
+    return !Format.png.equals(format);
   }
   
   static Format getFormat(String[] args) {
@@ -136,9 +135,6 @@ public class PrintMojo implements MojoPrinter {
   }
 
   public void parseArgs(String[] args) {
-    int nPlaces = -1;
-    int fontSize = 14; // default size is 14
-    boolean setDecimalPlaces = false;
     try {
       for (int i = 0; i < args.length; i++) {
         String s = args[i];
@@ -229,7 +225,7 @@ public class PrintMojo implements MojoPrinter {
           case "--output":
             i++;
             if (i >= args.length) usage();
-            outputFileName = args[i];
+            destination = args[i];
             break;
 
           default:
@@ -254,34 +250,28 @@ public class PrintMojo implements MojoPrinter {
 
   public void run() throws Exception {
     validateArgs();
-    PrintStream os;
-    if (outputFileName != null) {
-      os = new PrintStream(new FileOutputStream(new File(outputFileName)));
-    }
-    else {
-      os = System.out;
-    }
     if (genModel instanceof SharedTreeGraphConverter) {
-      SharedTreeGraphConverter treeBackedModel = (SharedTreeGraphConverter) genModel;
-      ConvertTreeOptions options = new ConvertTreeOptions().withTreeConsistencyCheckEnabled();
-      final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null, options);
-      switch (format) {
-        case raw:
-          g.print();
-          break;
-        case dot:
-          g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
-          break;
-        case json:
-          if (!(treeBackedModel instanceof TreeBackedMojoModel)) {
-            System.out.println("ERROR: Printing XGBoost MOJO as JSON not supported");
-            System.exit(1);
-          }
-          printJson((TreeBackedMojoModel) treeBackedModel, g, os);
-          break;
+      try (PrintStream os = destination != null ? new PrintStream(new FileOutputStream(new File(destination))) : System.out) {
+        SharedTreeGraphConverter treeBackedModel = (SharedTreeGraphConverter) genModel;
+        ConvertTreeOptions options = new ConvertTreeOptions().withTreeConsistencyCheckEnabled();
+        final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null, options);
+        switch (format) {
+          case raw:
+            g.print();
+            break;
+          case dot:
+            g.printDot(os, maxLevelsToPrintPerEdge, detail, optionalTitle, pTreeOptions);
+            break;
+          case json:
+            if (!(treeBackedModel instanceof TreeBackedMojoModel)) {
+              System.out.println("ERROR: Printing XGBoost MOJO as JSON not supported");
+              System.exit(1);
+            }
+            printJson((TreeBackedMojoModel) treeBackedModel, g, os);
+            break;
+        }
       }
-    }
-    else {
+    } else {
       System.out.println("ERROR: Unsupported MOJO type");
       System.exit(1);
     }
