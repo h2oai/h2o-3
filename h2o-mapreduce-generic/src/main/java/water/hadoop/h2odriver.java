@@ -122,6 +122,7 @@ public class h2odriver extends Configured implements Tool {
   static String jksAlias = null;
   static String securityConf = null;
   static boolean internal_secure_connections = false;
+  static boolean allow_insecure_xgboost = false;
   static boolean hashLogin = false;
   static boolean ldapLogin = false;
   static boolean kerberosLogin = false;
@@ -1207,6 +1208,9 @@ public class h2odriver extends Configured implements Tool {
         i++; if (i >= args.length) { usage(); }
         securityConf = args[i];
       }
+      else if (s.equals("-allow_insecure_xgboost")) {
+        allow_insecure_xgboost = true;
+      }
       else if (s.equals("-hash_login")) {
         hashLogin = true;
       }
@@ -1939,6 +1943,9 @@ public class h2odriver extends Configured implements Tool {
       securityConf = SecurityUtils.generateSSLConfig(credentials);
       addMapperConf(conf, "", credentials.jks.name, credentials.jks.getLocation());
       addMapperConf(conf, "-internal_security_conf", "default-security.config", securityConf);
+    }
+    if (allow_insecure_xgboost) {
+      addMapperArg(conf, "-allow_insecure_xgboost");
     }
 
     conf.set(h2omapper.H2O_MAPPER_CONF_LENGTH, Integer.toString(mapperConfLength));
