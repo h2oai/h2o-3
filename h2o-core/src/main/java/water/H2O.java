@@ -262,6 +262,9 @@ final public class H2O {
     /** -internal_security_enabled is a boolean that indicates if internal communication paths are secured*/
     public boolean internal_security_enabled = false;
 
+    /** -allow_insecure_xgboost is a boolean that allows xgboost to run in a secured cluster */
+    public boolean allow_insecure_xgboost;
+
     /** -decrypt_tool specifies the DKV key where a default decrypt tool will be installed*/
     public String decrypt_tool = null;
 
@@ -699,6 +702,9 @@ final public class H2O {
       }
       else if (s.matches("internal_security_conf_rel_paths")) {
         trgt.internal_security_conf_rel_paths = true;
+      }
+      else if (s.matches("allow_insecure_xgboost")) {
+        trgt.allow_insecure_xgboost = true;
       }
       else if (s.matches("decrypt_tool")) {
         i = s.incrementAndCheck(i, args);
