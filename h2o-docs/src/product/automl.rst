@@ -223,6 +223,11 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         pred <- h2o.predict(aml@leader, test)
 
 
+        # Get leaderboard with 'extra_columns = 'ALL'
+        lb_all <- h2o.get_leaderboard(object = aml, extra_columns = 'ALL')
+        lb_all
+
+
 
    .. code-tab:: python
 
@@ -293,6 +298,11 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         preds = aml.leader.predict(test)
 
 
+        # Get leaderboard with `extra_columns` = 'ALL'
+        lb_all = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
+        lb_all
+
+
 
 The code above is the quickest way to get started, however to learn more about H2O AutoML we recommend taking a look at our more in-depth `AutoML tutorial <https://github.com/h2oai/h2o-tutorials/tree/master/h2o-world-2017/automl>`__ (available in R and Python).
 
@@ -303,6 +313,13 @@ AutoML Output
 The AutoML object includes a "leaderboard" of models that were trained in the process, including the 5-fold cross-validated model performance (by default).  The number of folds used in the model evaluation process can be adjusted using the ``nfolds`` parameter.  If the user would like to score the models on a specific dataset, they can specify the ``leaderboard_frame`` argument, and then the leaderboard will show scores on that dataset instead. 
 
 The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
+
+To help users assess the complexity of ``AutoML`` models, the ``h2o.get_leaderboard`` function has been been expanded. This extension allows users to access extra leaderboard columns by setting ``extra_columns = ‘ALL’``. The leaderboard extension (not rendered by default) now includes the following information:
+
+- Model training time (in ms)
+- Model average scoring time per row (in ms)
+   
+   - If provided, this is based on the prediction of the leaderboard frame; otherwise, it is based on the entire training frame. 
 
 Here is an example leaderboard for a binary classification task:
 
