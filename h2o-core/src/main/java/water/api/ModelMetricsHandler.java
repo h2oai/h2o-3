@@ -357,7 +357,7 @@ class ModelMetricsHandler extends Handler {
 
     final ModelMetricsList parms = s.createAndFillImpl();
     
-    long workAmount = -1;
+    long workAmount = parms._frame.anyVec().nChunks();
     if (s.predict_contributions) {
       workAmount = parms._frame.anyVec().length();
       if (null == parms._predictions_name)
@@ -407,7 +407,7 @@ class ModelMetricsHandler extends Handler {
         tryComplete();
       }
     };
-    j.start(work, workAmount >= 0 ? workAmount : parms._frame.anyVec().nChunks());
+    j.start(work, workAmount);
     return new JobV3().fillFromImpl(j);
   }
 
