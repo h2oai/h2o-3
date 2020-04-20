@@ -20,20 +20,20 @@ While H2O Flow supports REST API, R scripts, and CoffeeScript, no programming ex
 Download Flow
 -------------
 
-1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line, replacing "{version}" with the appropriate version (for example, 3.20.0.2):
+1. First `Download H2O <http://www.h2o.ai/download/>`_. This will download a zip file in your Downloads folder that contains everything you need to get started. Alternatively, you can run the following from your command line.
 
-  ::
+  .. substitution-code-block:: bash
 
-    curl -o h2o.zip http://download.h2o.ai/versions/h2o-{version}.zip
+    curl -o h2o.zip http://download.h2o.ai/versions/h2o-|version|.zip
         
 
-2. Next in your terminal, enter the following command lines one at a time:
+2. Next in your terminal, enter the following command lines one at a time. The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3-|version| folder, and the fourth line runs your jar file.
 
-  *(The first line changes into your Downloads folder, the second line unzips your zipfile, the third line changes into your h2o-3.20.0.2 folder, and the fourth line runs your jar file.)*::
+  .. substitution-code-block:: bash
 
     cd ~/Downloads
-    unzip h2o-3.20.0.2.zip
-    cd h2o-3.20.0.2
+    unzip h2o-|version|.zip
+    cd h2o-|version|
     java -jar h2o.jar
 
 3. Finally, to start Flow point your browser to http://localhost:54321.
@@ -44,9 +44,11 @@ Launch Flow
 
 The next time you want to launch Flow, change into the directory that contains your H2O package and run the JAR file from the command line.
 
-**Note**: If your H2O package is not in the Downloads folder, replace the following path  ~/Downloads/h2o-{version} with the correct path to your h2o-{version} package)::
+**Note**: If your H2O package is not in the Downloads folder, replace the following path  ~/Downloads/h2o-|version| with the correct path to your h2o-|version| package.
 
-  cd ~/Downloads/h2o-{version} 
+.. substitution-code-block:: bash
+
+  cd ~/Downloads/h2o-|version| 
   java -jar h2o.jar
 
 
@@ -685,7 +687,7 @@ The available options vary depending on the selected model. If an option is only
    -  *Randomized*: Uses randomized subspace iteration method
    -  *GLRM*: Fits a generalized low-rank model with L2 loss function and no regularization and solves for the SVD using local matrix algebra
 
--  **family**: (GLM) Select the model type (Gaussian, Binomial, Multinomial, Poisson, Gamma, Tweedie, Negativebinomial, or Ordinal).
+-  **family**: (GLM) Select the model type (Gaussian, Binomial, Fractionalbinomial, Multinomial, Poisson, Gamma, Tweedie, Negativebinomial, or Ordinal).
 
 -  **solver**: (GLM) Select the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, or COORDINATE_DESCENT). IRLSM is fast on on problems with a small number of predictors and for lambda-search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE and COORDINATE_DESCENT are currently experimental.
 
@@ -948,7 +950,7 @@ The available options vary depending on the selected model. If an option is only
 
 -  **export_checkpoints_dir**: (DL, DRF, GBM) Optionally specify a path to a directory where every generated model will be stored when checkpointing models.
 
--  **custom_metric_func**: (GBM, DRF, GLM) Optionally specify a custom evaluation function.
+-  **custom_metric_func**: (GBM, DRF) Optionally specify a custom evaluation function.
 
 
 **Expert Options**

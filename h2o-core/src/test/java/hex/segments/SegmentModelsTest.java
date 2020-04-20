@@ -71,15 +71,15 @@ public class SegmentModelsTest {
       System.out.println(f.toTwoDimTable());
 
       Frame expected = new TestFrameBuilder()
-              .withVecTypes(Vec.T_CAT, Vec.T_CAT, Vec.T_STR, Vec.T_STR, Vec.T_STR)
-              .withColNames("col_0", "Status", "Model", "Errors", "Warnings")
+              .withVecTypes(Vec.T_CAT, Vec.T_STR, Vec.T_CAT, Vec.T_STR, Vec.T_STR)
+              .withColNames("col_0", "model", "status", "errors", "warnings")
               .withDataForCol(0, new String[]{"seg_A", "seg_B", "seg_C"})
-              .withDataForCol(1, new String[]{"SUCCEEDED", null, "PENDING"})
-              .withDataForCol(2, new String[]{dmbA.dest().toString(), null, dmbC.dest().toString()})
+              .withDataForCol(1, new String[]{dmbA.dest().toString(), null, dmbC.dest().toString()})
+              .withDataForCol(2, new String[]{"SUCCEEDED", null, "PENDING"})
               .withDataForCol(3, new String[]{null, null, null})
               .withDataForCol(4, new String[]{null, null, null})
               .build();
-      expected.replace(1, expected.vec("Status").adaptTo(Job.JobStatus.domain()));
+      expected.replace(2, expected.vec("status").adaptTo(Job.JobStatus.domain()));
       
       TestUtil.assertFrameEquals(expected, f, 0.0, 0.0);
 

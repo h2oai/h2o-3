@@ -74,7 +74,7 @@ echo "Installing dependencies for R ${R_VERSION}"
   ))" 2>&1 | tee R.install.1.log
 checkRInstallLog R.install.1.log
 # Latest XGBoost (from source)
-/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);install.packages(c("xgboost", type="source"))' | tee R.install.2.log
+/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);install.packages(c("xgboost"), type="source")' | tee R.install.2.log
 checkRInstallLog R.install.2.log
 # RCUrl 1.95-4.12 is the last to support R 3.3
 # survival 2.44-1.1 is the last to support R 3.3

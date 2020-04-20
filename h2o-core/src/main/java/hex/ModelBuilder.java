@@ -1273,7 +1273,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         error("_max_after_balance_size","Max size after balancing needs to be positive, suggest 1.0f");
 
       if( _train != null ) {
-        if (_train.numCols() <= 1)
+        if (_train.numCols() <= 1 && !getClass().toString().equals("class hex.gam.GAM")) // gam can have zero predictors
           error("_train", "Training data must have at least 2 features (incl. response).");
         if( null == _parms._response_column) {
           error("_response_column", "Response column parameter not set.");

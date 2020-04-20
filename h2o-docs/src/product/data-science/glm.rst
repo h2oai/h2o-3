@@ -1,3 +1,5 @@
+.. _glm:
+
 Generalized Linear Model (GLM)
 ------------------------------
 
@@ -11,6 +13,7 @@ The GLM suite includes:
 -  Gaussian regression
 -  Poisson regression
 -  Binomial regression (classification)
+-  Fractional binomial regression
 -  Quasibinomial regression 
 -  Multinomial classification
 -  Gamma regression
@@ -43,6 +46,8 @@ Defining a GLM Model
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Specify whether to keep the cross-validation predictions.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
@@ -73,6 +78,7 @@ Defining a GLM Model
 
    -  If the family is **gaussian**, the response must be numeric (**Real** or **Int**). (default)
    -  If the family is **binomial**, the response must be categorical 2 levels/classes or binary (**Enum** or **Int**).
+   -  If the family is **fractionalbinomial**, the response must be a numeric between 0 and 1.
    -  If the family is **multinomial**, the response can be categorical with more than two levels/classes (**Enum**).
    -  If the family is **ordinal**, the response must be categorical with at least 3 levels.
    -  If the family is **quasibinomial**, the response must be numeric.
@@ -91,7 +97,7 @@ Defining a GLM Model
 
 -  `theta <algo-params/theta.html>`__: Theta value (equal to 1/r) for use with the negative binomial family. This value must be > 0 and defaults to 1e-10.  
 
--  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family.
+-  `solver <algo-params/solver.html>`__: Specify the solver to use (AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, or GRADIENT_DESCENT_SQERR). IRLSM is fast on problems with a small number of predictors and for lambda search with L1 penalty, while `L_BFGS <http://cran.r-project.org/web/packages/lbfgs/vignettes/Vignette.pdf>`__ scales better for datasets with many columns. COORDINATE_DESCENT is IRLSM with the covariance updates version of cyclical coordinate descent in the innermost loop. COORDINATE_DESCENT_NAIVE is IRLSM with the naive updates version of cyclical coordinate descent in the innermost loop. GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR can only be used with the Ordinal family. AUTO well set the solver based on the given data and other parameters.
 
 -  `alpha <algo-params/alpha.html>`__: Specify the regularization distribution between L1 and L2.
 
@@ -101,7 +107,7 @@ Defining a GLM Model
 
 -  `early_stopping <algo-params/early_stopping.html>`__: Specify whether to stop early when there is no more relative improvement on the training  or validation set.
    
--  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if **lambda_search** is enabled) Specify the number of lambdas to use in the search. The default is 100.
+-  `nlambdas <algo-params/nlambdas.html>`__: (Applicable only if **lambda_search** is enabled) Specify the number of lambdas to use in the search. When ``alpha`` > 0, the default value for ``lambda_min_ratio`` is :math:`1e^{-4}`, then the default value for ``nlambdas`` is 100. This gives a ratio of 0.912. (For best results when using strong rules, keep the ratio close to this default.) When ``alpha=0``, the default value for ``nlamdas`` is set to 30 because fewer lambdas are needed for ridge regression.
 
 -  `standardize <algo-params/standardize.html>`__: Specify whether to standardize the numeric columns to have a mean of zero and unit variance. Standardization is highly recommended; if you do not use standardization, the results can include components that are dominated by variables that appear to have larger variances relative to other attributes as a matter of scale, rather than true contribution. This option is enabled by default.
 
@@ -119,16 +125,17 @@ Defining a GLM Model
 
 -  `max_iterations <algo-params/max_iterations.html>`__: Specify the number of training iterations.
 
--  `objective_epsilon <algo-params/objective_epsilon.html>`__: Specify a threshold for convergence. If the objective value is less than this threshold, the model is converged.
+-  `objective_epsilon <algo-params/objective_epsilon.html>`__: If the objective value is less than this threshold, then the model is converged. If ``lambda_search=True``, then this value defaults to .0001. If ``lambda_search=False`` and lambda is equal to zero, then this value defaults to .000001. For any other value of lambda, the default value of objective_epsilon is set to .0001.
 
--  `beta_epsilon <algo-params/beta_epsilon.html>`__: Specify the beta epsilon value. If the L1 normalization of the current beta change is below this threshold, consider using convergence.
+-  `beta_epsilon <algo-params/beta_epsilon.html>`__: Converge if beta changes less than this value (using L-infinity norm). This only applies to IRLSM solver.
 
--  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged.
+-  `gradient_epsilon <algo-params/gradient_epsilon.html>`__: (For L-BFGS only) Specify a threshold for convergence. If the objective value (using the L-infinity norm) is less than this threshold, the model is converged. If ``lambda_search=True``, then this value defaults to .0001. If ``lambda_search=False`` and lambda is equal to zero, then this value defaults to .000001. For any other value of lambda, this value defaults to .0001.
 
 -  `link <algo-params/link.html>`__: Specify a link function (Identity, Family_Default, Logit, Log, Inverse, Tweedie, or Ologit).
 
    -  If the family is **Gaussian**, then **Identity**, **Log**, and **Inverse** are supported.
    -  If the family is **Binomial**, then **Logit** is supported.
+   -  If the family is **Fractionalbinomial**, then **Logit** is supported.
    -  If the family is **Poisson**, then **Log** and **Identity** are supported.
    -  If the family is **Gamma**, then **Inverse**, **Log**, and **Identity** are supported.
    -  If the family is **Tweedie**, then only **Tweedie** is supported.
@@ -143,7 +150,7 @@ Defining a GLM Model
 
 -  **calc_like**: Specify whether to return likelihood function value for HGLM. This is disabled by default.
 
--  `hglm <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built; if disabled (default), then a GLM mdoel will be built. 
+-  `hglm <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built; if disabled (default), then a GLM model will be built. 
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
    
@@ -200,6 +207,8 @@ When GLM performs regression (with factor columns), one category can be left out
 The reason for the different behavior with regularization is that collinearity is not a problem with regularization. 
 And it’s better to leave regularization to find out which level to ignore (or how to distribute the coefficients between the levels).
 
+.. _family_and_link_functions:
+
 Family and Link Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -218,6 +227,7 @@ The ``family`` option specifies a probability distribution from an exponential f
 
 - ``gaussian``: (See `Linear Regression (Gaussian Family)`_.) The response must be numeric (Real or Int). This is the default family.
 - ``binomial``: (See `Logistic Regression (Binomial Family)`_). The response must be categorical 2 levels/classes or binary (Enum or Int).
+- ``fractionalbinomial``: See (`Fractional Logit Model (Fraction Binomial)`_). The response must be a numeric between 0 and 1.
 - ``ordinal``: (See `Logistic Ordinal Regression (Ordinal Family)`_). Requires a categorical response with at least 3 levels. (For 2-class problems, use family="binomial".)
 - ``quasibinomial``: (See `Pseudo-Logistic Regression (Quasibinomial Family)`_). The response must be numeric.
 - ``multinomial``: (See `Multiclass Classification (Multinomial Family)`_). The response can be categorical with more than two levels/classes (Enum).
@@ -284,6 +294,18 @@ The corresponding deviance is equal to:
 .. math::
 
  D = -2 \sum_{i=1}^{n} \big( y_i \text{log}(\hat {y}_i) + (1 - y_i) \text{log}(1 - \hat {y}_i) \big)
+
+Fractional Logit Model (Fraction Binomial)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+In the financial service industry, there are many outcomes that are fractional in the range of [0,1]. For example, LGD (Loss Given Default in credit risk) measures the proportion of losses not recovered from a default borrower during the collection process, and this can be observed to be in the closed interval [0, 1]. The following assumptions are made for this model.
+
+- :math:`\text{Pr}(y=1|x) = E(y) = \frac{1}{1 + \text{exp}(-\beta^T x-\beta_0)}`
+- The likelihood function = :math:`\text{Pr}{(y=1|x)}^y (1-\text{Pr}(y=1|x))^{(1-y)}` for :math:`1 \geq y \geq 0`
+- :math:`var(y) = \varphi E(y)(1-E(y))` and :math:`\varphi` is estimated as :math:`\varphi = \frac{1}{n-p} \frac{\sum {(y_i - E(y))}2} {E(y)(1-E(y))}`
+
+Note that these are exactly the same as the binomial distribution.  However, the values are  calculated with the value of :math:`y` in the range of 0 and 1 instead of just 0 and 1.  Therefore, we implemented the fractional binomial family using the code of binomial.  Changes are made when needed.
+
 
 Logistic Ordinal Regression (Ordinal Family)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -486,29 +508,31 @@ H2O's GLM supports the following link functions: Family_Default, Identity, Logit
 
 The following table describes the allowed Family/Link combinations.
 
-+-------------------+-------------------------------------------------------------+--------+
-| **Family**        | **Link Function**                                                    |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-|                   | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Binomial          | X              |          | X     |     |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Quasibinomial     | X              |          | X     |     |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Multinomial       | X              |          |       |     |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Ordinal           | X              |          |       |     |         |         | X      |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Gaussian          | X              | X        |       | X   | X       |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Poisson           | X              | X        |       | X   |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Gamma             | X              | X        |       | X   | X       |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Tweedie           | X              |          |       |     |         | X       |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
-| Negative Binomial | X              | X        |       | X   |         |         |        |
-+-------------------+----------------+----------+-------+-----+---------+---------+--------+
++---------------------+-------------------------------------------------------------+--------+
+| **Family**          | **Link Function**                                                    |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+|                     | Family_Default | Identity | Logit | Log | Inverse | Tweedie | Ologit |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Binomial            | X              |          | X     |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Fractional Binomial | X              |          | X     |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Quasibinomial       | X              |          | X     |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Multinomial         | X              |          |       |     |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Ordinal             | X              |          |       |     |         |         | X      |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gaussian            | X              | X        |       | X   | X       |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Poisson             | X              | X        |       | X   |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Gamma               | X              | X        |       | X   | X       |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Tweedie             | X              |          |       |     |         | X       |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
+| Negative Binomial   | X              | X        |       | X   |         |         |        |
++---------------------+----------------+----------+-------+-----+---------+---------+--------+
 
 Hierarchical GLM
 ~~~~~~~~~~~~~~~~
@@ -751,6 +775,8 @@ With the newly estimated fixed and random coefficients, we will estimate the dis
 
 Again, a gamma GLM model is used here. In addition, the error estimates are generated for each random column. Exactly the same steps are used here as in Step 3. The only difference is that we are looking at the :math:`dev,hv` corresponding to the expanded random columns/effects.
 
+.. _regularization:
+
 Regularization
 ~~~~~~~~~~~~~~
 
@@ -829,6 +855,8 @@ To extract the regularization path from R or python:
 - R: call h2o.getGLMFullRegularizationPath. This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-r/tests/testdir_algos/glm/runit_GLM_reg_path.R>`__.
 - Python: H2OGeneralizedLinearEstimator.getGLMRegularizationPath (static method). This takes the model as an argument. An example is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-py/tests/testdir_algos/glm/pyunit_glm_regularization_path.py>`__.
 
+.. _solvers:
+
 Solvers
 ~~~~~~~
 
@@ -876,6 +904,8 @@ Gradient Descent
 
 For Ordinal regression problems, H2O provides options for `Gradient Descent <https://en.wikipedia.org/wiki/Gradient_descent>`__. Gradient Descent is a first-order iterative optimization algorithm for finding the minimum of a function. In H2O's GLM, conventional ordinal regression uses a likelihood function to adjust the model parameters. The model parameters are adjusted by maximizing the log-likelihood function using gradient descent. When the Ordinal family is specified, the ``solver`` parameter will automatically be set to ``GRADIENT_DESCENT_LH``. To adjust the model parameters using the loss function, you can set the solver parameter to ``GRADIENT_DESCENT_SQERR``. 
 
+.. _coefficients_table: 
+
 Coefficients Table
 ~~~~~~~~~~~~~~~~~~
 
@@ -895,115 +925,7 @@ You can extract the columns in the Coefficients Table by specifying ``names``, `
 - ``coef()``: Coefficients that can be applied to non-standardized data
 - ``coef_norm()``: Coefficients that can be fitted on the standardized data (requires ``standardized=TRUE``, which is the default)
 
-Example
-'''''''
-
-.. tabs::
-   .. code-tab:: r R
-
-       library(h2o)
-       h2o.init()
-
-       df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
-       df$CAPSULE <- as.factor(df$CAPSULE)
-       df$RACE <- as.factor(df$RACE)
-       df$DCAPS <- as.factor(df$DCAPS)
-       df$DPROS <- as.factor(df$DPROS)
-
-       predictors <- c("AGE", "RACE", "VOL", "GLEASON")
-       response <- "CAPSULE"
-
-       prostate.glm <- h2o.glm(family= "binomial", x= predictors, y=response, training_frame=df, lambda = 0, compute_p_values = TRUE)
-
-       # Coefficients that can be applied to the non-standardized data
-       h2o.coef(prostate.glm)
-         Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
-       -6.67515539 -0.44278752 -0.58992326 -0.01788870 -0.01278335  1.25035939
-
-       # Coefficients fitted on the standardized data (requires standardize=TRUE, which is on by default)
-       h2o.coef_norm(prostate.glm)
-         Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
-       -0.07610006 -0.44278752 -0.58992326 -0.11676080 -0.23454402  1.36533415 
-
-       # Print the coefficients table
-       prostate.glm@model$coefficients_table
-       Coefficients: glm coefficients
-             names coefficients std_error   z_value  p_value standardized_coefficients
-       1 Intercept    -6.675155  1.931760 -3.455478 0.000549                 -0.076100
-       2    RACE.1    -0.442788  1.324231 -0.334373 0.738098                 -0.442788
-       3    RACE.2    -0.589923  1.373466 -0.429514 0.667549                 -0.589923
-       4       AGE    -0.017889  0.018702 -0.956516 0.338812                 -0.116761
-       5       VOL    -0.012783  0.007514 -1.701191 0.088907                 -0.234544
-       6   GLEASON     1.250359  0.156156  8.007103 0.000000                  1.365334
-
-       # Print the standard error
-       prostate.glm@model$coefficients_table$std_error
-       [1] 1.931760363 1.324230832 1.373465793 0.018701933 0.007514354 0.156156271
-
-       # Print the p values
-       prostate.glm@model$coefficients_table$p_value
-       [1] 5.493181e-04 7.380978e-01 6.675490e-01 3.388116e-01 8.890718e-02
-       [6] 1.221245e-15
-
-       # Print the z values
-       prostate.glm@model$coefficients_table$z_value
-       [1] -3.4554780 -0.3343734 -0.4295143 -0.9565159 -1.7011907  8.0071033
-
-       # Retrieve a graphical plot of the standardized coefficient magnitudes
-       h2o.std_coef_plot(prostate.glm)
-
-   .. code-tab:: python
-
-       import h2o
-       h2o.init()
-       from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-
-       prostate = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
-       prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
-       prostate['RACE'] = prostate['RACE'].asfactor()
-       prostate['DCAPS'] = prostate['DCAPS'].asfactor()
-       prostate['DPROS'] = prostate['DPROS'].asfactor()
-
-       predictors = ["AGE", "RACE", "VOL", "GLEASON"]
-       response_col = "CAPSULE"
-
-       glm_model = H2OGeneralizedLinearEstimator(family= "binomial", lambda_ = 0, compute_p_values = True)
-       glm_model.train(predictors, response_col, training_frame= prostate)
-       
-       # Coefficients that can be applied to the non-standardized data.
-       print(glm_model.coef())
-       {u'GLEASON': 1.2503593867263176, u'VOL': -0.012783348665664449, u'AGE': -0.017888697161812357, u'Intercept': -6.6751553940827195, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
-
-       # Coefficients fitted on the standardized data (requires standardize = True, which is on by default)
-       print(glm_model.coef_norm())
-       {u'GLEASON': 1.365334151581163, u'VOL': -0.2345440232267344, u'AGE': -0.11676080128780757, u'Intercept': -0.07610006436753876, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
-
-       # Print the Coefficients table
-       glm_model._model_json['output']['coefficients_table']
-       Coefficients: glm coefficients
-       names      coefficients    std_error    z_value    p_value      standardized_coefficients
-       ---------  --------------  -----------  ---------  -----------  ---------------------------
-       Intercept  -6.67516        1.93176      -3.45548   0.000549318  -0.0761001
-       RACE.1     -0.442788       1.32423      -0.334373  0.738098     -0.442788
-       RACE.2     -0.589923       1.37347      -0.429514  0.667549     -0.589923
-       AGE        -0.0178887      0.0187019    -0.956516  0.338812     -0.116761
-       VOL        -0.0127833      0.00751435   -1.70119   0.0889072    -0.234544
-       GLEASON    1.25036         0.156156     8.0071     1.22125e-15  1.36533
-
-       # Print the Standard error
-       print(glm_model._model_json['output']['coefficients_table']['std_error'])
-       [1.9317603626604352, 1.3242308316851008, 1.3734657932878116, 0.01870193337051072, 0.007514353657915356, 0.15615627100850296]
-
-       # Print the p values
-       print(glm_model._model_json['output']['coefficients_table']['p_value'])
-       [0.0005493180609459358, 0.73809783692024, 0.6675489550762566, 0.33881164088847204, 0.0889071809658667, 1.2212453270876722e-15]
-
-       # Print the z values
-       print(glm_model._model_json['output']['coefficients_table']['z_value'])
-       [-3.4554779791058787, -0.3343733631736653, -0.42951434726559384, -0.9565159284557886, -1.7011907141473064, 8.007103260414265]
-
-       # Retrieve a graphical plot of the standardized coefficient magnitudes
-       glm_model.std_coef_plot()
+For an example, refer `here <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/glm.html#examples>`__.
 
 
 Modifying or Creating a Custom GLM Model
@@ -1013,6 +935,125 @@ In R and python, the makeGLMModel call can be used to create an H2O model from g
 
 - R: call h2o.makeGLMModel. This takes a model, a vector of coefficients, and (optional) decision threshold as parameters.
 - Pyton: H2OGeneralizedLinearEstimator.makeGLMModel (static method) takes a model, a dictionary containing coefficients, and (optional) decision threshold as parameters.
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Generalized Linear model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    df <- h2o.importFile("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+    df$CAPSULE <- as.factor(df$CAPSULE)
+    df$RACE <- as.factor(df$RACE)
+    df$DCAPS <- as.factor(df$DCAPS)
+    df$DPROS <- as.factor(df$DPROS)
+
+    predictors <- c("AGE", "RACE", "VOL", "GLEASON")
+    response <- "CAPSULE"
+
+    prostate.glm <- h2o.glm(family= "binomial", 
+                            x= predictors, 
+                            y=response, 
+                            training_frame=df, 
+                            lambda = 0, 
+                            compute_p_values = TRUE)
+
+    # Coefficients that can be applied to the non-standardized data
+    h2o.coef(prostate.glm)
+      Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
+    -6.67515539 -0.44278752 -0.58992326 -0.01788870 -0.01278335  1.25035939
+
+    # Coefficients fitted on the standardized data (requires standardize=TRUE, which is on by default)
+    h2o.coef_norm(prostate.glm)
+      Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
+    -0.07610006 -0.44278752 -0.58992326 -0.11676080 -0.23454402  1.36533415 
+
+    # Print the coefficients table
+    prostate.glm@model$coefficients_table
+    Coefficients: glm coefficients
+          names coefficients std_error   z_value  p_value standardized_coefficients
+    1 Intercept    -6.675155  1.931760 -3.455478 0.000549                 -0.076100
+    2    RACE.1    -0.442788  1.324231 -0.334373 0.738098                 -0.442788
+    3    RACE.2    -0.589923  1.373466 -0.429514 0.667549                 -0.589923
+    4       AGE    -0.017889  0.018702 -0.956516 0.338812                 -0.116761
+    5       VOL    -0.012783  0.007514 -1.701191 0.088907                 -0.234544
+    6   GLEASON     1.250359  0.156156  8.007103 0.000000                  1.365334
+
+    # Print the standard error
+    prostate.glm@model$coefficients_table$std_error
+    [1] 1.931760363 1.324230832 1.373465793 0.018701933 0.007514354 0.156156271
+
+    # Print the p values
+    prostate.glm@model$coefficients_table$p_value
+    [1] 5.493181e-04 7.380978e-01 6.675490e-01 3.388116e-01 8.890718e-02
+    [6] 1.221245e-15
+
+    # Print the z values
+    prostate.glm@model$coefficients_table$z_value
+    [1] -3.4554780 -0.3343734 -0.4295143 -0.9565159 -1.7011907  8.0071033
+
+    # Retrieve a graphical plot of the standardized coefficient magnitudes
+    h2o.std_coef_plot(prostate.glm)
+
+   .. code-tab:: python
+
+    import h2o
+    h2o.init()
+    from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+
+    prostate = h2o.import_file("https://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+    prostate['CAPSULE'] = prostate['CAPSULE'].asfactor()
+    prostate['RACE'] = prostate['RACE'].asfactor()
+    prostate['DCAPS'] = prostate['DCAPS'].asfactor()
+    prostate['DPROS'] = prostate['DPROS'].asfactor()
+
+    predictors = ["AGE", "RACE", "VOL", "GLEASON"]
+    response_col = "CAPSULE"
+
+    glm_model = H2OGeneralizedLinearEstimator(family= "binomial", 
+                                              lambda_ = 0, 
+                                              compute_p_values = True)
+    glm_model.train(predictors, response_col, training_frame= prostate)
+    
+    # Coefficients that can be applied to the non-standardized data.
+    print(glm_model.coef())
+    {u'GLEASON': 1.2503593867263176, u'VOL': -0.012783348665664449, u'AGE': -0.017888697161812357, u'Intercept': -6.6751553940827195, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
+
+    # Coefficients fitted on the standardized data (requires standardize = True, which is on by default)
+    print(glm_model.coef_norm())
+    {u'GLEASON': 1.365334151581163, u'VOL': -0.2345440232267344, u'AGE': -0.11676080128780757, u'Intercept': -0.07610006436753876, u'RACE.2': -0.5899232636956354, u'RACE.1': -0.44278751680880707}
+
+    # Print the Coefficients table
+    glm_model._model_json['output']['coefficients_table']
+    Coefficients: glm coefficients
+    names      coefficients    std_error    z_value    p_value      standardized_coefficients
+    ---------  --------------  -----------  ---------  -----------  ---------------------------
+    Intercept  -6.67516        1.93176      -3.45548   0.000549318  -0.0761001
+    RACE.1     -0.442788       1.32423      -0.334373  0.738098     -0.442788
+    RACE.2     -0.589923       1.37347      -0.429514  0.667549     -0.589923
+    AGE        -0.0178887      0.0187019    -0.956516  0.338812     -0.116761
+    VOL        -0.0127833      0.00751435   -1.70119   0.0889072    -0.234544
+    GLEASON    1.25036         0.156156     8.0071     1.22125e-15  1.36533
+
+    # Print the Standard error
+    print(glm_model._model_json['output']['coefficients_table']['std_error'])
+    [1.9317603626604352, 1.3242308316851008, 1.3734657932878116, 0.01870193337051072, 0.007514353657915356, 0.15615627100850296]
+
+    # Print the p values
+    print(glm_model._model_json['output']['coefficients_table']['p_value'])
+    [0.0005493180609459358, 0.73809783692024, 0.6675489550762566, 0.33881164088847204, 0.0889071809658667, 1.2212453270876722e-15]
+
+    # Print the z values
+    print(glm_model._model_json['output']['coefficients_table']['z_value'])
+    [-3.4554779791058787, -0.3343733631736653, -0.42951434726559384, -0.9565159284557886, -1.7011907141473064, 8.007103260414265]
+
+    # Retrieve a graphical plot of the standardized coefficient magnitudes
+    glm_model.std_coef_plot()
 
 
 FAQ

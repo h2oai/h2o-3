@@ -349,174 +349,74 @@ h2o.xgboost <- function(x,
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
   return(model)
 }
-
-#'
-#' Trains XGBoost model for each segment of the training dataset.
-#'
-#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. 
-#'        The response must be either a numeric or a categorical/factor variable. 
-#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param training_frame Id of the training data frame.
-#' @param validation_frame Id of the validation data frame.
-#' @param nfolds Number of folds for K-fold cross-validation (0 to disable or >= 2). Defaults to 0.
-#' @param keep_cross_validation_models \code{Logical}. Whether to keep the cross-validation models. Defaults to TRUE.
-#' @param keep_cross_validation_predictions \code{Logical}. Whether to keep the predictions of the cross-validation models. Defaults to FALSE.
-#' @param keep_cross_validation_fold_assignment \code{Logical}. Whether to keep the cross-validation fold assignment. Defaults to FALSE.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param fold_assignment Cross-validation fold assignment scheme, if fold_column is not specified. The 'Stratified' option will
-#'        stratify the folds based on the response variable, for classification problems. Must be one of: "AUTO",
-#'        "Random", "Modulo", "Stratified". Defaults to AUTO.
-#' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param offset_column Offset column. This will be added to the combination of columns before applying the link function.
-#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
-#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
-#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
-#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
-#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
-#' @param stopping_rounds Early stopping based on convergence of stopping_metric. Stop if simple moving average of length k of the
-#'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
-#' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
-#'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
-#'        Defaults to AUTO.
-#' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
-#'        much) Defaults to 0.001.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
-#'        Defaults to -1 (time-based random number).
-#' @param distribution Distribution function Must be one of: "AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma",
-#'        "tweedie", "laplace", "quantile", "huber". Defaults to AUTO.
-#' @param tweedie_power Tweedie power for Tweedie regression, must be between 1 and 2. Defaults to 1.5.
-#' @param categorical_encoding Encoding scheme for categorical features Must be one of: "AUTO", "Enum", "OneHotInternal", "OneHotExplicit",
-#'        "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited". Defaults to AUTO.
-#' @param quiet_mode \code{Logical}. Enable quiet mode Defaults to TRUE.
-#' @param checkpoint Model checkpoint to resume training with.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param ntrees (same as n_estimators) Number of trees. Defaults to 50.
-#' @param max_depth Maximum tree depth. Defaults to 6.
-#' @param min_rows (same as min_child_weight) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
-#' @param min_child_weight (same as min_rows) Fewest allowed (weighted) observations in a leaf. Defaults to 1.
-#' @param learn_rate (same as eta) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
-#' @param eta (same as learn_rate) Learning rate (from 0.0 to 1.0) Defaults to 0.3.
-#' @param sample_rate (same as subsample) Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param subsample (same as sample_rate) Row sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param col_sample_rate (same as colsample_bylevel) Column sample rate (from 0.0 to 1.0) Defaults to 1.
-#' @param colsample_bylevel (same as col_sample_rate) Column sample rate (from 0.0 to 1.0) Defaults to 1.
-#' @param col_sample_rate_per_tree (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param colsample_bytree (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
-#' @param max_abs_leafnode_pred (same as max_delta_step) Maximum absolute value of a leaf node prediction Defaults to 0.0.
-#' @param max_delta_step (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction Defaults to 0.0.
-#' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
-#'        decreasing constraint.
-#' @param score_tree_interval Score the model after every so many trees. Disabled if set to 0. Defaults to 0.
-#' @param min_split_improvement (same as gamma) Minimum relative improvement in squared error reduction for a split to happen Defaults to 0.0.
-#' @param gamma (same as min_split_improvement) Minimum relative improvement in squared error reduction for a split to happen
-#'        Defaults to 0.0.
-#' @param nthread Number of parallel threads that can be used to run XGBoost. Cannot exceed H2O cluster limits (-nthreads
-#'        parameter). Defaults to maximum available Defaults to -1.
-#' @param save_matrix_directory Directory where to save matrices passed to XGBoost library. Useful for debugging.
-#' @param build_tree_one_node \code{Logical}. Run on one node only; no network overhead but fewer cpus used. Suitable for small datasets.
-#'        Defaults to FALSE.
-#' @param calibrate_model \code{Logical}. Use Platt Scaling to calculate calibrated class probabilities. Calibration can provide more
-#'        accurate estimates of class probabilities. Defaults to FALSE.
-#' @param calibration_frame Calibration frame for Platt Scaling
-#' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
-#' @param max_leaves For tree_method=hist only: maximum number of leaves Defaults to 0.
-#' @param min_sum_hessian_in_leaf For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting Defaults to 100.0.
-#' @param min_data_in_leaf For tree_method=hist only: the mininum data in a leaf to keep splitting Defaults to 0.0.
-#' @param sample_type For booster=dart only: sample_type Must be one of: "uniform", "weighted". Defaults to uniform.
-#' @param normalize_type For booster=dart only: normalize_type Must be one of: "tree", "forest". Defaults to tree.
-#' @param rate_drop For booster=dart only: rate_drop (0..1) Defaults to 0.0.
-#' @param one_drop \code{Logical}. For booster=dart only: one_drop Defaults to FALSE.
-#' @param skip_drop For booster=dart only: skip_drop (0..1) Defaults to 0.0.
-#' @param tree_method Tree method Must be one of: "auto", "exact", "approx", "hist". Defaults to auto.
-#' @param grow_policy Grow policy - depthwise is standard GBM, lossguide is LightGBM Must be one of: "depthwise", "lossguide".
-#'        Defaults to depthwise.
-#' @param booster Booster type Must be one of: "gbtree", "gblinear", "dart". Defaults to gbtree.
-#' @param reg_lambda L2 regularization Defaults to 1.0.
-#' @param reg_alpha L1 regularization Defaults to 0.0.
-#' @param dmatrix_type Type of DMatrix. For sparse, NAs and 0 are treated equally. Must be one of: "auto", "dense", "sparse".
-#'        Defaults to auto.
-#' @param backend Backend. By default (auto), a GPU is used if available. Must be one of: "auto", "gpu", "cpu". Defaults to
-#'        auto.
-#' @param gpu_id Which GPU to use.  Defaults to 0.
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_xgboost <- function(x,
-                             y,
-                             training_frame,
-                             validation_frame = NULL,
-                             nfolds = 0,
-                             keep_cross_validation_models = TRUE,
-                             keep_cross_validation_predictions = FALSE,
-                             keep_cross_validation_fold_assignment = FALSE,
-                             score_each_iteration = FALSE,
-                             fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
-                             fold_column = NULL,
-                             ignore_const_cols = TRUE,
-                             offset_column = NULL,
-                             weights_column = NULL,
-                             stopping_rounds = 0,
-                             stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
-                             stopping_tolerance = 0.001,
-                             max_runtime_secs = 0,
-                             seed = -1,
-                             distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
-                             tweedie_power = 1.5,
-                             categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
-                             quiet_mode = TRUE,
-                             checkpoint = NULL,
-                             export_checkpoints_dir = NULL,
-                             ntrees = 50,
-                             max_depth = 6,
-                             min_rows = 1,
-                             min_child_weight = 1,
-                             learn_rate = 0.3,
-                             eta = 0.3,
-                             sample_rate = 1,
-                             subsample = 1,
-                             col_sample_rate = 1,
-                             colsample_bylevel = 1,
-                             col_sample_rate_per_tree = 1,
-                             colsample_bytree = 1,
-                             max_abs_leafnode_pred = 0.0,
-                             max_delta_step = 0.0,
-                             monotone_constraints = NULL,
-                             score_tree_interval = 0,
-                             min_split_improvement = 0.0,
-                             gamma = 0.0,
-                             nthread = -1,
-                             save_matrix_directory = NULL,
-                             build_tree_one_node = FALSE,
-                             calibrate_model = FALSE,
-                             calibration_frame = NULL,
-                             max_bins = 256,
-                             max_leaves = 0,
-                             min_sum_hessian_in_leaf = 100.0,
-                             min_data_in_leaf = 0.0,
-                             sample_type = c("uniform", "weighted"),
-                             normalize_type = c("tree", "forest"),
-                             rate_drop = 0.0,
-                             one_drop = FALSE,
-                             skip_drop = 0.0,
-                             tree_method = c("auto", "exact", "approx", "hist"),
-                             grow_policy = c("depthwise", "lossguide"),
-                             booster = c("gbtree", "gblinear", "dart"),
-                             reg_lambda = 1.0,
-                             reg_alpha = 0.0,
-                             dmatrix_type = c("auto", "dense", "sparse"),
-                             backend = c("auto", "gpu", "cpu"),
-                             gpu_id = 0,
-                             segment_columns = NULL,
-                             segment_models_id = NULL,
-                             parallelism = 1)
+.h2o.train_segments_xgboost <- function(x,
+                                        y,
+                                        training_frame,
+                                        validation_frame = NULL,
+                                        nfolds = 0,
+                                        keep_cross_validation_models = TRUE,
+                                        keep_cross_validation_predictions = FALSE,
+                                        keep_cross_validation_fold_assignment = FALSE,
+                                        score_each_iteration = FALSE,
+                                        fold_assignment = c("AUTO", "Random", "Modulo", "Stratified"),
+                                        fold_column = NULL,
+                                        ignore_const_cols = TRUE,
+                                        offset_column = NULL,
+                                        weights_column = NULL,
+                                        stopping_rounds = 0,
+                                        stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                        stopping_tolerance = 0.001,
+                                        max_runtime_secs = 0,
+                                        seed = -1,
+                                        distribution = c("AUTO", "bernoulli", "multinomial", "gaussian", "poisson", "gamma", "tweedie", "laplace", "quantile", "huber"),
+                                        tweedie_power = 1.5,
+                                        categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
+                                        quiet_mode = TRUE,
+                                        checkpoint = NULL,
+                                        export_checkpoints_dir = NULL,
+                                        ntrees = 50,
+                                        max_depth = 6,
+                                        min_rows = 1,
+                                        min_child_weight = 1,
+                                        learn_rate = 0.3,
+                                        eta = 0.3,
+                                        sample_rate = 1,
+                                        subsample = 1,
+                                        col_sample_rate = 1,
+                                        colsample_bylevel = 1,
+                                        col_sample_rate_per_tree = 1,
+                                        colsample_bytree = 1,
+                                        max_abs_leafnode_pred = 0.0,
+                                        max_delta_step = 0.0,
+                                        monotone_constraints = NULL,
+                                        score_tree_interval = 0,
+                                        min_split_improvement = 0.0,
+                                        gamma = 0.0,
+                                        nthread = -1,
+                                        save_matrix_directory = NULL,
+                                        build_tree_one_node = FALSE,
+                                        calibrate_model = FALSE,
+                                        calibration_frame = NULL,
+                                        max_bins = 256,
+                                        max_leaves = 0,
+                                        min_sum_hessian_in_leaf = 100.0,
+                                        min_data_in_leaf = 0.0,
+                                        sample_type = c("uniform", "weighted"),
+                                        normalize_type = c("tree", "forest"),
+                                        rate_drop = 0.0,
+                                        one_drop = FALSE,
+                                        skip_drop = 0.0,
+                                        tree_method = c("auto", "exact", "approx", "hist"),
+                                        grow_policy = c("depthwise", "lossguide"),
+                                        booster = c("gbtree", "gblinear", "dart"),
+                                        reg_lambda = 1.0,
+                                        reg_alpha = 0.0,
+                                        dmatrix_type = c("auto", "dense", "sparse"),
+                                        backend = c("auto", "gpu", "cpu"),
+                                        gpu_id = 0,
+                                        segment_columns = NULL,
+                                        segment_models_id = NULL,
+                                        parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

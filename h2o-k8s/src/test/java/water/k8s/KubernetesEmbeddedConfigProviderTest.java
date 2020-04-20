@@ -32,6 +32,7 @@ public class KubernetesEmbeddedConfigProviderTest {
     
     @Test
     public void testInactiveOnK8SEnvVariablesSet(){
+        environmentVariables.clear("H2O_KUBERNETES_SERVICE_DNS");
         kubernetesEmbeddedConfigProvider.init();
         assertFalse(kubernetesEmbeddedConfigProvider.isActive());
     }

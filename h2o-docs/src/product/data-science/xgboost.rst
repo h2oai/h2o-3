@@ -29,6 +29,8 @@ Defining an XGBoost Model
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. 
@@ -83,6 +85,8 @@ Defining an XGBoost Model
 -  `stopping_tolerance <algo-params/stopping_tolerance.html>`__: Specify the relative tolerance for the metric-based stopping to stop training if the improvement is less than this value. This value defaults to 0.001.
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model training. This option defaults to 0 (disabled) by default.
+
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used. Also useful when you want to use ``exact`` tree method.
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations. This option defaults to -1 (time-based random number).
 
@@ -303,6 +307,79 @@ Some environments may required disabling XGBoost. This can be done by setting ``
   hadoop jar h2odriver.jar -JJ "-Dsys.ai.h2o.ext.core.toggle.XGBoost=False" -nodes 1  -mapperXmx 3g  -output tmp/a39
 
 Setting ``-Dsys.ai.h2o.ext.core.toggle.XGBoost`` to ``False`` can be done on any H2O version that supports XGBoost and removes XGBoost from the list of available algorithms. 
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a XGBoost model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    titanic <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+
+    # Set the predictors and response; set the response as a factor:
+    titanic['survived'] <- as.factor(titanic['survived'])
+    predictors <- setdiff(colnames(titanic), colnames(titanic)[2:3])
+    response <- "survived"
+
+    # Split the dataset into a train and valid set:
+    titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
+    train <- titanic.splits[[1]]
+    valid <- titanic.splits[[2]]
+
+    # Build and train the model:
+    titanic_xgb <- h2o.xgboost(x = predictors, 
+                               y = response, 
+                               training_frame = train, 
+                               validation_frame = valid, 
+                               booster = "dart", 
+                               normalize_type = "tree", 
+                               seed = 1234)
+
+    # Eval performance:
+    perf <- h2o.performance(titanic_xgb)
+
+    # Generate predictions on a test set (if necessary):
+    pred <- h2o.predict(titanic_xgb, newdata = valid)
+
+
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators import H2OXGBoostEstimator
+    h2o.init()
+
+    # Import the titanic dataset into H2O:
+    titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+
+    # Set the predictors and response; set the response as a factor:
+    titanic["survived"] = titanic["survived"].asfactor()
+    predictors = titanic.columns
+    response = "survived" 
+
+    # Split the dataset into a train and valid set: 
+    train, valid = titanic.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    titanic_xgb = H2OXGBoostEstimator(booster='dart', 
+                                      normalize_type="tree", 
+                                      seed=1234)
+    titanic_xgb.train(x=predictors, 
+                      y=response, 
+                      training_frame=train, 
+                      validation_frame=valid)
+
+    # Eval performance:
+    perf = titanic_xgb.model_performance()
+
+    # Generate predictions on a test set (if necessary):
+    pred = titanic_xgb.predict(valid)
+  
 
 FAQs
 ~~~~

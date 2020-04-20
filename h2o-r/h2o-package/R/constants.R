@@ -105,10 +105,10 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 #' @param algo Cannonical identifier of H2O algorithm.
 .h2o.__MODEL_BUILDERS <- function(algo) paste0("ModelBuilders/", algo)
 
-#' Bulk Model Builder Endpoint Generator
+#' Segment Models Builder Endpoint Generator
 #'
 #' @param algo Cannonical identifier of H2O algorithm.
-.h2o.__BULK_MODEL_BUILDERS <- function(algo) paste0("BulkModelBuilders/", algo)
+.h2o.__SEGMENT_MODELS_BUILDERS <- function(algo) paste0("SegmentModelsBuilders/", algo)
 
 #' Export Files Endpoint Generator
 #'
@@ -137,6 +137,7 @@ assign("LOG_FILE_NAME", NULL,  .pkg.env)
 # Export/Import Model Endpoints
 .h2o.__SAVE_MODEL <- function(model) paste0("Models.bin/", model)
 .h2o.__LOAD_MODEL <- "Models.bin/"
+.h2o.__UPLOAD_MODEL <- "Models.upload.bin/"
 
 # Grid search 
 .h2o.__GRID <- function(algo) paste0("Grid/", algo)

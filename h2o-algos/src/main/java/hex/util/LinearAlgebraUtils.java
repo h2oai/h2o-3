@@ -6,13 +6,11 @@ import hex.DataInfo;
 import hex.FrameTask;
 import hex.Interaction;
 import hex.ToEigenVec;
+import hex.gam.MatrixFrameUtils.TriDiagonalMatrix;
 import hex.gram.Gram;
 import jsr166y.ForkJoinTask;
 import jsr166y.RecursiveAction;
-import water.DKV;
-import water.Job;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
@@ -30,7 +28,7 @@ public class LinearAlgebraUtils {
    * Forward substitution: Solve Lx = b for x with L = lower triangular matrix, b = real vector
    */
   public static double[] forwardSolve(double[][] L, double[] b) {
-    assert L != null && L.length == L[0].length && L.length == b.length;
+    assert L != null && L.length == b.length; // && L.length == L[0].length, allow true lower triangular matrix
     double[] res = new double[b.length];
 
     for(int i = 0; i < b.length; i++) {
@@ -57,17 +55,10 @@ public class LinearAlgebraUtils {
       answer[index] = Math.sqrt(aMat[index][index]);
     return answer;
   }
-
-  /**
-   * Given the cholesky decomposition of X = QR, this method will return the inverse of
-   * transpose(X)*X by attempting to solve for transpose(R)*R*XTX_inverse = Identity matrix
-   * 
-   * @param cholR
-   * @return
-   */
-  public static double[][] chol2Inv(final double[][] cholR) {
+  
+  public static double[][] chol2Inv(final double[][] cholR, boolean upperTriag) {
     final int matrixSize = cholR.length;  // cholR is actuall transpose(R) from QR
-    double[][] cholL = ArrayUtils.transpose(cholR); // this is R from QR
+    double[][] cholL = upperTriag?ArrayUtils.transpose(cholR):cholR; // this is R from QR
     final double[][] inverted = new double[matrixSize][];
     RecursiveAction[] ras = new RecursiveAction[matrixSize];
     for (int index=0; index<matrixSize; index++) {
@@ -82,7 +73,7 @@ public class LinearAlgebraUtils {
       };
     }
     ForkJoinTask.invokeAll(ras);
-    
+    double[][] cholRNew = upperTriag?cholR:ArrayUtils.transpose(cholR);
     for (int index=0; index<matrixSize; index++) {
       final double[] oneColumn = new double[matrixSize];
       oneColumn[index] = 1.0;
@@ -90,13 +81,74 @@ public class LinearAlgebraUtils {
       ras[i] = new RecursiveAction() {
         @Override protected void compute() {
           double[] lowerColumn = new double[matrixSize];
-          backwardSolve(cholR, inverted[i], lowerColumn);
+          backwardSolve(cholRNew, inverted[i], lowerColumn);
           inverted[i] = Arrays.copyOf(lowerColumn, matrixSize);
         }
       };
     }
     ForkJoinTask.invokeAll(ras);
     return inverted;
+  }
+
+  /**
+   * Given the cholesky decomposition of X = QR, this method will return the inverse of
+   * transpose(X)*X by attempting to solve for transpose(R)*R*XTX_inverse = Identity matrix
+   * 
+   * @param cholR
+   * @return
+   */
+  public static double[][] chol2Inv(final double[][] cholR) {
+    return chol2Inv(cholR, true);
+  }
+
+  /***
+   * Generate D matrix as a lower diagonal matrix since it is symmetric and contains only 3 diagonals
+   * @param hj
+   * @return
+   */
+  public static double[][] generateTriDiagMatrix(final double[] hj) {
+    final int matrixSize = hj.length-1;  // matrix size is numKnots-2
+    final double[][] lowDiag = new double[matrixSize][];
+    RecursiveAction[] ras = new RecursiveAction[matrixSize];
+    for (int index=0; index<matrixSize; index++) {
+      final int rowSize = index+1;
+      final int i = index;
+      final double hjIndex = hj[index];
+      final double hjIndexP1 = hj[index+1];
+      final double oneO3 = 1.0/3.0;
+      final double oneO6 = 1.0/6.0;
+      final double[] tempDiag = MemoryManager.malloc8d(rowSize);
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          ;
+          tempDiag[i] = (hjIndex+hjIndexP1)*oneO3;
+          if (i > 0)
+            tempDiag[i-1] = hjIndex*oneO6;
+          lowDiag[i] = Arrays.copyOf(tempDiag, rowSize);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return lowDiag;
+  }
+
+  public static double[][] expandLowTrian2Ful(double[][] cholL) {
+    int numRows = cholL.length;
+    final double[][] result = new double[numRows][];
+    RecursiveAction[] ras = new RecursiveAction[numRows];
+    for (int index = 0; index < numRows; index++) {
+      final int i = index;
+      final double[] tempResult = MemoryManager.malloc8d(numRows);
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          for (int colIndex = 0; colIndex <= i; colIndex++)
+            tempResult[colIndex] = cholL[i][colIndex];
+          result[i] = Arrays.copyOf(tempResult, numRows);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return result;
   }
   
   public static double[][] matrixMultiply(double[][] A, double[][] B ) {
@@ -110,7 +162,7 @@ public class LinearAlgebraUtils {
       final double[] tempResult = new double[arow];
       ras[i] = new RecursiveAction() {
         @Override protected void compute() {
-          ArrayUtils.multArrVec(A, B[i], tempResult); 
+          ArrayUtils.multArrVec(A, B[i], tempResult);
           result[i] = Arrays.copyOf(tempResult, arow);
         }
       };
@@ -119,13 +171,61 @@ public class LinearAlgebraUtils {
     return result;
   }
 
+  /**
+   * 
+   * @param A
+   * @param B
+   * @param transposeResult: true will return A*B. Otherwise will return transpose(A*B)
+   * @return
+   */
+  public static double[][] matrixMultiplyTriagonal(double[][] A, TriDiagonalMatrix B, boolean transposeResult) {
+    int arow = A.length; // number of rows of result
+    int bcol = B._size+2;    // number of columns of B, K+2
+    final int lastCol = bcol-1;
+    final int secondLastCol = bcol-2; // also equal to K
+    final int kMinus1 = bcol-3;
+    final int kMinus2 = bcol-4;
+    final double[][] result = new double[bcol][];
+    RecursiveAction[] ras = new RecursiveAction[bcol];
+    for (int index = 0; index < bcol; index++) { // column  index
+      final int i = index;
+      final double[] tempResult = new double[arow];
+      final double[] bCol = new double[B._size];
+      ras[i] = new RecursiveAction() {
+        @Override protected void compute() {
+          if (i==0) {
+            bCol[0] = B._first_diag[0];
+          } else if (i==1) {
+            bCol[0] = B._second_diag[0];
+            bCol[1] = B._first_diag[1];
+          } else if (i==lastCol) {
+            bCol[kMinus1] = B._third_diag[kMinus1];
+          } else if (i==secondLastCol) {
+            bCol[kMinus2] = B._third_diag[kMinus2];
+            bCol[kMinus1] =B._second_diag[kMinus1];
+          } else {
+            bCol[i-2] = B._third_diag[i-2];
+            bCol[i-1] = B._second_diag[i-1];
+            bCol[i] = B._first_diag[i];
+          }
+          
+          ArrayUtils.multArrVec(A, bCol, tempResult);
+          result[i] = Arrays.copyOf(tempResult, arow);
+        }
+      };
+    }
+    ForkJoinTask.invokeAll(ras);
+    return transposeResult?ArrayUtils.transpose(result):result;
+  }
+
   public static double[] backwardSolve(double[][] L, double[] b, double[] res) {
     assert L != null && L.length == L[0].length && L.length == b.length;
     if (res==null)  // only allocate memory if needed
       res = new double[b.length];
-    for (int rowIndex = b.length-1; rowIndex >= 0; rowIndex--) {
+    int lastIndex = b.length-1;
+    for (int rowIndex = lastIndex; rowIndex >= 0; rowIndex--) {
       res[rowIndex] = b[rowIndex];
-      for (int colIndex = b.length-1; colIndex > rowIndex; colIndex--) {
+      for (int colIndex = lastIndex; colIndex > rowIndex; colIndex--) {
         res[rowIndex] -= L[rowIndex][colIndex]*res[colIndex];
       }
       res[rowIndex] /= L[rowIndex][rowIndex];
@@ -344,14 +444,8 @@ public class LinearAlgebraUtils {
     final DataInfo _xinfo;  // Info for frame X
     final double[][] _yt;   // _yt = Y' (transpose of Y)
     final int _ncolX;     // Number of cols in X
-
-    public BMulInPlaceTask(DataInfo xinfo, double[][] yt) {
-      assert yt != null && yt[0].length == numColsExp(xinfo._adaptedFrame,true);
-      _xinfo = xinfo;
-      _ncolX = xinfo._adaptedFrame.numCols();
-      _yt = yt;
-    }
-
+    public boolean _originalImplementation = true;  // if true will produce xB+b0.  If false, just inner product
+    
     public BMulInPlaceTask(DataInfo xinfo, double[][] yt, int nColsExp) {
       assert yt != null && yt[0].length == nColsExp;
       _xinfo = xinfo;
@@ -359,10 +453,19 @@ public class LinearAlgebraUtils {
       _yt = yt;
     }
 
+    public BMulInPlaceTask(DataInfo xinfo, double[][] yt, int nColsExp, boolean originalWay) {
+      assert yt != null && yt[0].length == nColsExp;
+      _xinfo = xinfo;
+      _ncolX = xinfo._adaptedFrame.numCols();
+      _yt = yt;
+      _originalImplementation = originalWay;
+    }
+
     @Override public void map(Chunk[] cs) {
       assert cs.length == _ncolX + _yt.length;
+      int lastColInd = _ncolX-1;
       // Copy over only X frame chunks
-      Chunk[] xchk = new Chunk[_ncolX];
+      Chunk[] xchk = new Chunk[_ncolX]; // only refer to X part, old part of frame
       DataInfo.Row xrow = _xinfo.newDenseRow();
       System.arraycopy(cs,0,xchk,0,_ncolX);
       double sum;
@@ -373,8 +476,8 @@ public class LinearAlgebraUtils {
         int bidx = _ncolX;
         for (double[] ps : _yt ) {
           // Inner product of X row with Y column (Y' row)
-          sum = xrow.innerProduct(ps);
-          cs[bidx].set(row, sum);   // Save inner product to B
+          sum = _originalImplementation?xrow.innerProduct(ps):xrow.innerProduct(ps)-ps[lastColInd];
+          cs[bidx].set(row, sum);   // Save inner product to B, new part of frame
           bidx++;
         }
         assert bidx == cs.length;
@@ -454,6 +557,30 @@ public class LinearAlgebraUtils {
 
     @Override public void reduce(SMulTask other) {
       ArrayUtils.add(_atq, other._atq);
+    }
+  }
+
+  /***
+   * compute the cholesky of xx which stores the lower part of a symmetric square tridiagonal matrix.  We assume
+   * that all the elements are positive and it is in place replacement where L will be stored back in the input
+   * xx.
+   * @param xx
+   * @return
+   */
+  public static void choleskySymDiagMat(double[][] xx) {
+    xx[0][0] = Math.sqrt(xx[0][0]);
+    int rowNumber = xx.length;
+    for (int row = 1; row < rowNumber; row++) {
+      // deals with lower diagonal element
+      int lowerDiag = row-1;
+      if (lowerDiag > 0) {
+        int kMinus2 = lowerDiag - 1;
+        xx[row][lowerDiag] = (xx[row][lowerDiag] - xx[row][kMinus2])/xx[lowerDiag][lowerDiag];
+      } else {
+        xx[row][lowerDiag] = xx[row][lowerDiag]/xx[lowerDiag][lowerDiag];
+      }
+      // deals with diagonal element
+      xx[row][row] = Math.sqrt(xx[row][row]-xx[row][lowerDiag]*xx[row][lowerDiag]);
     }
   }
 

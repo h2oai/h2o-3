@@ -1,15 +1,15 @@
 ``solver``
 ----------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-The ``solver`` option allows you to specify the solver method to use in GLM. When specifying a solver, the optimal solver depends on the data properties and prior information regarding the variables (if available). In general, the data are considered sparse if the ratio of zeros to non-zeros in the input matrix is greater than 10. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. In a dense solution, all predictors have non-zero coefficients in the final model.
+The ``solver`` option allows you to specify the solver method to use in GLM and GAM. When specifying a solver, the optimal solver depends on the data properties and prior information regarding the variables (if available). In general, the data are considered sparse if the ratio of zeros to non-zeros in the input matrix is greater than 10. The solution is sparse when only a subset of the original set of variables is intended to be kept in the model. In a dense solution, all predictors have non-zero coefficients in the final model.
 
-In GLM, you can specify one of the following solvers:
+You can specify one of the following solvers:
 
 - IRLSM: Iteratively Reweighted Least Squares Method
 - L_BFGS: Limited-memory Broyden-Fletcher-Goldfarb-Shanno algorithm
@@ -19,13 +19,13 @@ In GLM, you can specify one of the following solvers:
 - GRADIENT_DESCENT_LH: Gradient Descent Likelihood (available for Ordinal family only; default for Ordinal family)
 - GRADIENT_DESCENT_SQERR: Gradient Descent Squared Error (available for Ordinal family only)
 
-Detailed information about each of these options is available in the `Solvers <../glm.html#solvers>`__ section. The bullets below describe GLM chooses the solver when ``solver=AUTO``:
+Detailed information about each of these options is available in the `Solvers <../glm.html#solvers>`__ section. The bullets below describe how the algorithm chooses the solver when ``solver=AUTO``:
 
--  If there are more than 5k active predictors, GLM uses L_BFGS.
--  If ``family=multinomial`` and ``alpha=0`` (ridge or no penalty), GLM uses L_BFGS.
--  If lambda search is enabled, GLM uses COORDINATE_DESCENT.
--  If your data has upper/lower bounds and no proximal penalty, GLM uses COORDINATE_DESCENT.
--  If none above is true, then GLM defaults to IRLSM. This is because COORDINATE_DESCENT works much better with lambda search.
+-  If there are more than 5k active predictors, the algorithm uses L_BFGS.
+-  If ``family=multinomial`` and ``alpha=0`` (ridge or no penalty), the algorithm uses L_BFGS.
+-  If lambda search is enabled, the algorithm uses COORDINATE_DESCENT.
+-  If your data has upper/lower bounds and no proximal penalty, the algorithm uses COORDINATE_DESCENT.
+-  If none above is true, then the algorithm defaults to IRLSM. This is because COORDINATE_DESCENT works much better with lambda search.
 
 Below are some general guidelines to follow when specifying a solver.  
 

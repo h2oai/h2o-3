@@ -1,20 +1,20 @@
 ``compute_p_values``
 --------------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-Z-score, standard error, and `p-values <https://en.wikipedia.org/wiki/P-value>`__ are classical statistical measures of model quality. p-values are essentially hypothesis tests on the values of each coefficient. A high p-value means that a coefficient is unreliable (insignificant), while a low p-value suggests that the coefficient is statistically significant. You can request GLM to compute the p-values by enabling the ``compute_p_values`` option. 
+Z-score, standard error, and `p-values <https://en.wikipedia.org/wiki/P-value>`__ are classical statistical measures of model quality. p-values are essentially hypothesis tests on the values of each coefficient. A high p-value means that a coefficient is unreliable (insignificant), while a low p-value suggests that the coefficient is statistically significant. You can request GLM or GAM to compute the p-values by enabling the ``compute_p_values`` option. 
 
 **Notes**:
 
 - This option is only applicable when regularization is disabled (``lambda=0``) and when ``solver=IRLSM``. 
 - If collinear columns exist in the data, then you must also specify ``remove_collinear_columns=TRUE``. Otherwise, H2O will return an error. 
 - This option cannot be used with ``family=multinomial`` or with ``beta_constraints``.
-- GLM auto-standardizes the data by default. This changes the p-value of the constant term (intercept).
+- GLM and GAM auto-standardize the data by default. This changes the p-value of the constant term (intercept).
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

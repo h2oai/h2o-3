@@ -245,6 +245,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public int _max_active_predictors = -1;
     public boolean _stdOverride; // standardization override by beta constraints
     final static NormalDistribution _dprobit = new NormalDistribution(0,1);  // get the normal distribution
+    public GLMType _glmType = GLMType.glm;
     
     public void validate(GLM glm) {
       if (_solver.equals(Solver.COORDINATE_DESCENT_NAIVE) && _family.equals(Family.multinomial))
@@ -349,6 +350,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
           throw new IllegalArgumentException("HGLM does not allow cross-validation.");
         if (_valid != null)
           throw new IllegalArgumentException("HGLM does not allow validation.");
+        _glmType = GLMType.hglm;
       }
       if(_link != Link.family_default) { // check we have compatible link
         switch (_family) {
@@ -603,6 +605,8 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       public final Link defaultLink;
       Family(Link link){defaultLink = link;}
     }
+    
+    public static enum GLMType {glm, gam, hglm} // special functions are performed depending on GLMType.  Internal use
     public static enum Link {family_default, identity, logit, log, inverse, tweedie, multinomial, ologit, oprobit, ologlog}
 
     public static enum Solver {AUTO, IRLSM, L_BFGS, COORDINATE_DESCENT_NAIVE, COORDINATE_DESCENT, GRADIENT_DESCENT_LH, GRADIENT_DESCENT_SQERR}
@@ -653,7 +657,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public double dev = Double.NaN;
   }
   public static class GLMWeightsFun extends Iced {
-    final Family _family;
+    final public Family _family;
     final Link _link;
     final double _var_power;
     final double _link_power;
@@ -1067,7 +1071,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
   public static class GLMOutput extends Model.Output {
     Submodel[] _submodels = new Submodel[0];
     DataInfo _dinfo;
-    String[] _coefficient_names;
+    public String[] _coefficient_names;
     String[] _random_coefficient_names; // for HGLM
     String[] _random_column_names;
     public int _best_lambda_idx; // lambda which minimizes deviance on validation (if provided) or train (if not)
@@ -1770,4 +1774,19 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     return new GLMMojoWriter(this);
   }
 
+  @Override
+  protected boolean isFeatureUsedInPredict(int featureIdx) {
+    if (featureIdx < _output._dinfo._catOffsets.length - 1 && _output._column_types[featureIdx].equals("Enum")) {
+      for (int i = _output._dinfo._catOffsets[featureIdx];
+           i < _output._dinfo._catOffsets[featureIdx + 1];
+           i++) {
+        if (beta()[i] != 0) return true;
+      }
+      return false;
+    } else {
+      featureIdx += _output._dinfo._numOffsets[0] - _output._dinfo._catOffsets.length + 1;
+    }
+    return beta()[featureIdx] != 0;
+
+  }
 }

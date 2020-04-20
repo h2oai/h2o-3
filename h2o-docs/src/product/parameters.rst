@@ -118,6 +118,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/score_each_iteration
    data-science/algo-params/score_tree_interval
    data-science/algo-params/seed
+   data-science/algo-params/single_node_mode
    data-science/algo-params/smoothing
    data-science/algo-params/solver
    data-science/algo-params/sort_metric

@@ -262,6 +262,10 @@ public class RegisterV3Api extends AbstractRegister {
             "GET /99/Models.bin/{model_id}", ModelsHandler.class, "exportModel",
             "Export given model.");
 
+    context.registerEndpoint("uploadModel",
+            "POST /99/Models.upload.bin/{model_id}", ModelsHandler.class, "uploadModel",
+            "Upload given binary model into H2O.");
+
     context.registerEndpoint("exportMojo",
             "GET /99/Models.mojo/{model_id}", ModelsHandler.class, "exportMojo",
             "Export given model as Mojo.");

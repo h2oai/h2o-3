@@ -5,15 +5,9 @@ import org.apache.hadoop.conf.Configured;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.Text;
 import org.apache.hadoop.io.Writable;
-import org.apache.hadoop.mapreduce.InputFormat;
-import org.apache.hadoop.mapreduce.InputSplit;
-import org.apache.hadoop.mapreduce.Job;
-import org.apache.hadoop.mapreduce.JobContext;
-import org.apache.hadoop.mapreduce.RecordReader;
-import org.apache.hadoop.mapreduce.TaskAttemptContext;
+import org.apache.hadoop.mapreduce.*;
 import org.apache.hadoop.mapreduce.lib.output.FileOutputFormat;
 import org.apache.hadoop.mapreduce.lib.output.NullOutputFormat;
-import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.util.Tool;
 import org.apache.hadoop.util.ToolRunner;
 import water.H2O;
@@ -23,36 +17,20 @@ import water.hadoop.clouding.fs.CloudingEvent;
 import water.hadoop.clouding.fs.CloudingEventType;
 import water.hadoop.clouding.fs.FileSystemBasedClouding;
 import water.hadoop.clouding.fs.FileSystemCloudingEventSource;
-import water.util.BinaryFileTransfer;
+import water.hive.ImpersonationUtils;
 import water.hive.HiveTokenGenerator;
 import water.init.NetworkInit;
 import water.network.SecurityUtils;
 import water.util.ArrayUtils;
+import water.util.BinaryFileTransfer;
 import water.util.StringUtils;
 import water.webserver.iface.Credentials;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
-import java.io.DataInput;
-import java.io.DataOutput;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileReader;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.io.Writer;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.net.*;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -153,6 +131,7 @@ public class h2odriver extends Configured implements Tool {
   static String hiveHost = null;
   static String hivePrincipal = null;
   static boolean refreshTokens = false;
+  static String hiveToken = null;
   static CloudingMethod cloudingMethod = CloudingMethod.CALLBACKS;
   static String cloudingDir = null;
   static boolean disableFlow = false;
@@ -1281,6 +1260,9 @@ public class h2odriver extends Configured implements Tool {
         hivePrincipal = args[i];
       } else if (s.equals("-refreshTokens")) {
         refreshTokens = true;
+      } else if (s.equals("-hiveToken")) {
+        i++; if (i >= args.length) { usage (); }
+        hiveToken = args[i];
       } else if (s.equals("-clouding_method")) {
         i++; if (i >= args.length) { usage(); }
         cloudingMethod = CloudingMethod.valueOf(args[i].toUpperCase()); 
@@ -1300,7 +1282,7 @@ public class h2odriver extends Configured implements Tool {
   }
 
   private void validateArgs() {
-    // Check for mandatory arguments.
+      // Check for mandatory arguments.
     if (numNodes < 1) {
       error("Number of H2O nodes must be greater than 0 (must specify -n)");
     }
@@ -1390,16 +1372,16 @@ public class h2odriver extends Configured implements Tool {
       }
     }
 
-    if (principal != null || keytabPath != null) {
-      if (principal == null) {
-        error("keytab requires a valid principal (use the '-principal' option)");
-      }
-      if (keytabPath == null) {
-        error("principal requires a valid keytab path (use the '-keytab' option)");
-      }
-      if (runAsUser != null) {
-        warning("will attempt secure impersonation with user from '-run_as_user', " + runAsUser);
-      }
+    ImpersonationUtils.validateImpersonationArgs(
+        principal, keytabPath, runAsUser, h2odriver::error, h2odriver::warning
+    );
+    
+    if (hivePrincipal != null && hiveHost == null && hiveJdbcUrlPattern == null) {
+      error("delegation token generator requires Hive host to be set (use the '-hiveHost' or '-hiveJdbcUrlPattern' option)");
+    }
+    
+    if (refreshTokens && hivePrincipal == null) {
+      error("delegation token refresh requires Hive principal to be set (use the '-hivePrincipal' option)");
     }
 
     if (client && disown) {
@@ -1410,7 +1392,7 @@ public class h2odriver extends Configured implements Tool {
       error("proxy mode doesn't support the '-disown' option");
     }
   }
-
+  
   private static String calcMyIp(String externalIp) throws Exception {
     Enumeration nis = NetworkInterface.getNetworkInterfaces();
 
@@ -1646,22 +1628,8 @@ public class h2odriver extends Configured implements Tool {
     // ---------------------
     Configuration conf = getConf();
 
-    // Run impersonation options
-    if (principal != null && keytabPath != null) {
-      UserGroupInformation.setConfiguration(conf);
-      UserGroupInformation.loginUserFromKeytab(principal, keytabPath);
-      // performs user impersonation (will only work if core-site.xml has hadoop.proxyuser.*.* props set on name node
-      if (runAsUser != null) {
-        System.out.println("Attempting to securely impersonate user, " + runAsUser);
-        UserGroupInformation currentEffUser = UserGroupInformation.getLoginUser();
-        UserGroupInformation proxyUser = UserGroupInformation.createProxyUser(runAsUser, currentEffUser);
-        UserGroupInformation.setLoginUser(proxyUser);
-      }
-    } else if (runAsUser != null) {
-      UserGroupInformation.setConfiguration(conf);
-      UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser(runAsUser));
-    }
-
+    ImpersonationUtils.impersonate(conf, principal, keytabPath, runAsUser);
+    
     if (cloudingMethod == CloudingMethod.FILESYSTEM) {
       if (cloudingDir == null) {
         cloudingDir = new Path(outputPath, ".clouding").toString();
@@ -2073,13 +2041,28 @@ public class h2odriver extends Configured implements Tool {
     j.setOutputKeyClass(Text.class);
     j.setOutputValueClass(Text.class);
 
-    HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
-    if (refreshTokens && principal != null && keytabPath != null) {
-      j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
-      j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
-      byte[] payloadData = readBinaryFile(keytabPath);
-      String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
-      j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
+    boolean haveHiveToken;
+    if (hiveToken != null) {
+      System.out.println("Using pre-generated Hive delegation token.");
+      HiveTokenGenerator.addHiveDelegationToken(j, hiveToken);
+      haveHiveToken = true;
+    } else {
+      haveHiveToken = HiveTokenGenerator.addHiveDelegationTokenIfHivePresent(j, hiveJdbcUrlPattern, hiveHost, hivePrincipal);
+    }
+    if (refreshTokens) {
+      if (!haveHiveToken) {
+        // token not acquired, we need to distribute keytab to make token acquisition possible in mapper
+        if (runAsUser != null) j.getConfiguration().set(H2O_AUTH_USER, runAsUser);
+        if (principal != null) j.getConfiguration().set(H2O_AUTH_PRINCIPAL, principal);
+        if (keytabPath != null) {
+          byte[] payloadData = readBinaryFile(keytabPath);
+          String payload = BinaryFileTransfer.convertByteArrToString(payloadData);
+          j.getConfiguration().set(H2O_AUTH_KEYTAB, payload);
+        }
+      }
+      if (hiveJdbcUrlPattern != null) j.getConfiguration().set(H2O_HIVE_JDBC_URL_PATTERN, hiveJdbcUrlPattern);
+      if (hiveHost != null) j.getConfiguration().set(H2O_HIVE_HOST, hiveHost);
+      if (hivePrincipal != null) j.getConfiguration().set(H2O_HIVE_PRINCIPAL, hivePrincipal);
     }
 
     if (outputPath != null)

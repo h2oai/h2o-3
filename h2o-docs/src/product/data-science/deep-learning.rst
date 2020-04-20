@@ -32,6 +32,8 @@ H2O Deep Learning models have many input parameters, many of which are only acce
    
     **Note**: Cross-validation is not supported when autoencoder is enabled.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
    cross-validation predictions.
 
@@ -222,7 +224,7 @@ H2O Deep Learning models have many input parameters, many of which are only acce
 
 -  **replicate_training_data**: Specify whether to replicate the entire training dataset onto every node for faster training on small datasets.
 
--  **single_node_mode**: Specify whether to run on a single node for fine-tuning of model parameters.
+-  `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters.
 
 -  **shuffle_training_data**: Specify whether to shuffle the training data. This option is recommended if the training data is replicated and the value of **train_samples_per_iteration** is close to the number of nodes times the number of rows. This option is not enabled by default.
 
@@ -290,6 +292,124 @@ and testing sets:
 -  Scoring history in tabular format
 -  Training and validation metrics (model name, model checksum name, frame name, frame checksum name, description, model category, duration in ms, scoring time, predictions, MSE, R2, logloss)
 -  Top-K Hit Ratios for training and validation (for multi-class classification)
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Deep Learning model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the insurance dataset into H2O:
+    insurance <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+
+    # Set the factors:
+    offset = log(insurance$Holders) 
+    insurance$Holders <- as.factor(insurance$Holders)
+    insurance$Age <- as.factor(insurance$Age)
+    insurance$Group <- as.factor(insurance$Group)
+    insurance$District <- as.factor(insurance$District)
+
+
+    # Build and train the model:
+    dl <- h2o.deeplearning(x = 1:3, 
+                           y = "Claims", 
+                           distribution = "tweedie", 
+                           hidden = c(1), 
+                           epochs = 1000, 
+                           train_samples_per_iteration = -1, 
+                           reproducible = TRUE, 
+                           activation = "Tanh", 
+                           single_node_mode = FALSE, 
+                           balance_classes = FALSE, 
+                           force_load_balance = FALSE, 
+                           seed = 23123, 
+                           tweedie_power = 1.5, 
+                           score_training_samples = 0, 
+                           score_validation_samples = 0, 
+                           training_frame = insurance, 
+                           stopping_rounds = 0)
+
+    # Eval performance:
+    perf <- h2o.performance(dl)
+
+    # Generate predictions on a test set (if necessary):
+    pred <- h2o.predict(dl, newdata = insurance)
+
+
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2ODeepLearningEstimator
+    h2o.init()
+
+    # Import the insurance dataset into H2O:
+    insurance = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/insurance.csv")
+
+    # Set the factors:
+     insurance["offset"] = insurance["Holders"].log()
+     insurance["Group"] = insurance["Group"].asfactor()
+     insurance["Age"] = insurance["Age"].asfactor()
+     insurance["District"] = insurance["District"].asfactor()
+
+    # Build and train the model:
+     dl = H2ODeepLearningEstimator(distribution="tweedie",
+                                   hidden=[1],
+                                   epochs=1000,
+                                   train_samples_per_iteration=-1,
+                                   reproducible=True, 
+                                   activation="Tanh",
+                                   single_node_mode=False, 
+                                   balance_classes=False,
+                                   force_load_balance=False,
+                                   seed=23123,
+                                   tweedie_power=1.5,
+                                   score_training_samples=0,
+                                   score_validation_samples=0,
+                                   stopping_rounds=0)
+     dl.train(x=list(range(3)),
+              y="Claims", 
+              training_frame=insurance)
+
+    # Eval performance:
+    perf = dl.model_performance()
+
+    # Generate predictions on a test set (if necessary):
+    pred = dl.predict(insurance)
+
+
+   .. code-tab:: scala
+
+    import org.apache.spark.h2o._
+    import water.Key
+    import java.io.File
+
+    val h2oContext = H2OContext.getOrCreate(sc)
+    import h2oContext._
+    import h2oContext.implicits._
+
+    // Import data from the local file system as an H2O DataFrame
+    val prostateData = new H2OFrame(new File("/Users/jsmith/src/github.com/h2oai/sparkling-water/examples/smalldata/prostate.csv"))
+
+    // Build a Deep Learning model
+    import _root_.hex.deeplearning.DeepLearning
+    import _root_.hex.deeplearning.DeepLearningModel.DeepLearningParameters
+    val dlParams = new DeepLearningParameters()
+    dlParams._epochs = 100
+    dlParams._train = prostateData
+    dlParams._response_column = 'CAPSULE
+    dlParams._variable_importances = true
+    dlParams._nfolds = 5
+    dlParams._seed = 1111
+    dlParams._keep_cross_validation_predictions = true;
+    val dl = new DeepLearning(dlParams, Key.make("dlProstateModel.hex"))
+    val dlModel = dl.trainModel.get
+
 
 FAQ
 ~~~

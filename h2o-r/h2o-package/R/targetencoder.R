@@ -108,44 +108,19 @@ h2o.targetencoder <- function(x,
   model <- .h2o.modelJob('targetencoder', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-
-#'
-#' Trains Target Encoder model for each segment of the training dataset.
-#'
-#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. 
-#'        The response must be either a numeric or a categorical/factor variable. 
-#'        If the response is numeric, then a regression model will be trained, otherwise it will train a classification model.
-#' @param training_frame Id of the training data frame.
-#' @param fold_column Column with cross-validation fold index assignment per observation.
-#' @param blending \code{Logical}. Blending enabled/disabled Defaults to FALSE.
-#' @param k Inflection point. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
-#'        parameter. Defaults to 10.
-#' @param f Smoothing. Used for blending (if enabled). Blending is to be enabled separately using the 'blending'
-#'        parameter. Defaults to 20.
-#' @param data_leakage_handling Data leakage handling strategy. Must be one of: "None", "KFold", "LeaveOneOut". Defaults to None.
-#' @param noise_level Noise level Defaults to 0.01.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
-#'        Defaults to -1 (time-based random number).
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_targetencoder <- function(x,
-                                   y,
-                                   training_frame,
-                                   fold_column = NULL,
-                                   blending = FALSE,
-                                   k = 10,
-                                   f = 20,
-                                   data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
-                                   noise_level = 0.01,
-                                   seed = -1,
-                                   segment_columns = NULL,
-                                   segment_models_id = NULL,
-                                   parallelism = 1)
+.h2o.train_segments_targetencoder <- function(x,
+                                              y,
+                                              training_frame,
+                                              fold_column = NULL,
+                                              blending = FALSE,
+                                              k = 10,
+                                              f = 20,
+                                              data_leakage_handling = c("None", "KFold", "LeaveOneOut"),
+                                              noise_level = 0.01,
+                                              seed = -1,
+                                              segment_columns = NULL,
+                                              segment_models_id = NULL,
+                                              parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

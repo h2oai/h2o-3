@@ -1,13 +1,13 @@
 ``objective_epsilon``
 ---------------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-GLM includes three criteria outside of ``max_iterations`` that define and check for convergence during logistic regression:
+GLM and GAM include three criteria outside of ``max_iterations`` that define and check for convergence during logistic regression:
 
 - ``beta_epsilon``: Converge if the beta change is less than this value (or if beta stops changing). This is used by solvers.
 - ``gradient_epsilon``: Converge if the gradient value change is less than this value (using L-infinity norm). This is used when ``solver=L-BFGS``.
@@ -15,9 +15,9 @@ GLM includes three criteria outside of ``max_iterations`` that define and check 
 
 The default for these options is based on a heurisitic:
 
-- The default for ``beta_epsilon`` is 1e-4.
-- The default for ``gradient_epsilon`` is 1e-6 if there is no regularization (``lambda=0``) or you are running with lambda search; 1e-4 otherwise.
-- The default for ``objective_epsilon`` is 1e-6 if ``lambda=0``; 1e-4 otherwise.
+- ``beta_epsilon``: The default for ``beta_epsilon`` is 1e-4.
+- ``gradient_epsilon``: If ``lambda_search`` is set to False and lambda is equal to zero, the default value of ``gradient_epsilon`` is equal to .000001; otherwise the default value is .0001. If ``lambda_search`` is set to True, then the conditional values above are 1E-8 and 1E-6 respectively. 
+- ``objective_epsilon``: If ``lambda_search=True``, then the default value of ``objective_epsilon`` is .0001. If ``lambda_search=False`` and lambda is equal to zero, then the default value of ``objective_epsilon`` is .000001. For any other value of lambda, the default value of ``objective_epsilon`` is set to .0001.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

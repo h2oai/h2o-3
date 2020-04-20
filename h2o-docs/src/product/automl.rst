@@ -1,3 +1,8 @@
+.. figure:: images/h2o-automl-logo.jpg
+   :alt: H2O AutoML
+   :scale: 15%
+   :align: center
+
 AutoML: Automatic Machine Learning
 ==================================
 
@@ -366,7 +371,6 @@ XGBoost
 AutoML now includes `XGBoost <data-science/xgboost.html>`__ GBMs (Gradient Boosting Machines) among its set of algorithms. This feature is currently provided with the following restrictions:
 
 - XGBoost is used only if it is available globally and if it hasn't been explicitly `disabled <data-science/xgboost.html#disabling-xgboost>`__.
-- XGBoost is disabled by default in AutoML when running H2O-3 in multi-node due to current `limitations <data-science/xgboost.html#limitations>`__.  XGBoost can however be enabled experimentally in multi-node by setting the environment variable ``-Dsys.ai.h2o.automl.xgboost.multinode.enabled=true`` (when launching the H2O process from the command line) for every node of the H2O cluster.
 - You can check if XGBoost is available by using the ``h2o.xgboost.available()`` in R or ``h2o.estimators.xgboost.H2OXGBoostEstimator.available()`` in Python.
 
 
@@ -385,10 +389,6 @@ FAQ
 
   Rather than saving an AutoML object itself, currently, the best thing to do is to save the models you want to keep, individually.  A utility for saving all of the models at once, along with a way to save the AutoML object (with leaderboard), will be added in a future release.
 
--  **Why don't I see XGBoost models when using AutoML in a multi-node H2O cluster?**
-
-  XGBoost is turned off by default for multi-node H2O clusters.
-
 -   **Can we make use of GPUs with AutoML?** 
 
   XGBoost models in AutoML can make use of GPUs. Keep in mind that the following requirements must be met:
@@ -398,6 +398,7 @@ FAQ
 
   You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
 
+
 Resources
 ---------
 
@@ -405,6 +406,31 @@ Resources
 - Intro to AutoML + Hands-on Lab `(1 hour video) <https://www.youtube.com/watch?v=42Oo8TOl85I>`__ `(slides) <https://www.slideshare.net/0xdata/intro-to-automl-handson-lab-erin-ledell-machine-learning-scientist-h2oai>`__
 - Scalable Automatic Machine Learning in H2O `(1 hour video) <https://www.youtube.com/watch?v=j6rqrEYQNdo>`__ `(slides) <https://www.slideshare.net/0xdata/scalable-automatic-machine-learning-in-h2o-89130971>`__
 - `AutoML Roadmap <https://0xdata.atlassian.net/issues/?filter=21603>`__
+
+
+Citation
+--------
+
+If you're citing the H2O AutoML algorithm in a paper, please cite this page as the resource.  The H2O AutoML algorithm was first released in `H2O 3.12.0.1 <https://github.com/h2oai/h2o-3/blob/master/Changes.md#vapnik-31201-662017>`__ on June 6, 2017.  A formatted version of the citation would look like this (insert correct H2O version number): 
+
+H2O.ai. *H2O AutoML*, June 2017. URL http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html. H2O version 3.30.0.1.
+
+If you are using Bibtex:
+
+::
+
+
+    @Manual{H2OAutoML,
+        title = {H2O AutoML},
+        author = {H2O.ai},
+        year = {2017},
+        month = {June},
+        note = {H2O version 3.30.0.1},
+        url = {http://docs.h2o.ai/h2o/latest-stable/h2o-docs/automl.html},
+    }
+
+
+Information about how to cite the H2O software in general is covered in the `H2O FAQ <faq/general.html#i-am-writing-an-academic-research-paper-and-i-would-like-to-cite-h2o-in-my-bibliography-how-should-i-do-that>`__.
 
 
 Random Grid Search Parameters

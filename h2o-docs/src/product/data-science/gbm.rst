@@ -218,9 +218,7 @@ Defining a GBM Model
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: Maximum allowed runtime in seconds for model
    training. Use 0 to disable.
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: To run on a single node, check this
-   checkbox. This is suitable for small datasets as there is no network
-   overhead but fewer CPUs are used.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
 -  `quantile_alpha <algo-params/quantile_alpha.html>`__: (Only applicable if *Quantile* is specified for
    **distribution**) Specify the quantile to be used for Quantile
@@ -243,6 +241,8 @@ Defining a GBM Model
 -  `checkpoint <algo-params/checkpoint.html>`__: Enter a model key associated with a
    previously trained model. Use this option to build a new model as a
    continuation of a previously generated model.
+
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
 
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the
    cross-validation predictions.
@@ -354,6 +354,93 @@ GBM Tuning Guide
 * `Python <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.ipynb>`__
 * `H2O Flow <https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/tutorials/gbm/gbmTuning.flow>`__
 * `Blog <http://www.h2o.ai/blog/h2o-gbm-tuning-tutorial-for-r/>`__
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Gradient Boosting Machine model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the prostate dataset into H2O:
+    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+    # Set the predictors and response; set the factors:
+    prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+    predictors <- c("ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    response <- "CAPSULE"
+
+    # Build and train the model:
+    pros_gbm <- h2o.gbm(x = predictors, 
+                        y = response, 
+                        nfolds = 5, 
+                        seed = 1111, 
+                        keep_cross_validation_predictions = TRUE, 
+                        training_frame = prostate)
+
+    # Eval performance:
+    perf <- h2o.performance(pros_gbm)
+
+    # Generate predictions on a validation set (if necessary):
+    pred <- h2o.predict(pros_gbm, newdata = prostate)
+
+
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators import H2OGradientBoostingEstimator
+    h2o.init()
+
+    # Import the prostate dataset into H2O:
+    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+    # Set the predictors and response; set the factors:
+    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+    predictors = ["ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
+    response = "CAPSULE"
+
+    # Build and train the model:
+    pros_gbm = H2OGradientBoostingEstimator(nfolds=5, 
+                                            seed=1111, 
+                                            keep_cross_validation_predictions = True)
+    pros_gbm.train(x=predictors, y=response, training_frame=prostate)
+
+    # Eval performance:
+    perf = pros_gbm.model_performance()
+
+    # Generate predictions on a test set (if necessary):
+    pred = pros_gbm.predict(prostate)
+
+
+   .. code-tab:: scala
+    
+    import org.apache.spark.h2o._
+    import water.Key
+    import java.io.File
+
+    val h2oContext = H2OContext.getOrCreate(sc)
+    import h2oContext._
+    import h2oContext.implicits._
+
+    // Import data from the local file system as an H2O DataFrame
+    val prostateData = new H2OFrame(new File("/Users/jsmith/src/github.com/h2oai/sparkling-water/examples/smalldata/prostate.csv"))
+
+    // Build a GBM model
+    import _root_.hex.tree.gbm.GBM
+    import _root_.hex.tree.gbm.GBMModel.GBMParameters
+    val gbmParams = new GBMParameters()
+    gbmParams._train = prostateData
+    gbmParams._response_column = 'CAPSULE
+    gbmParams._nfolds = 5
+    gbmParams._seed = 1111
+    gbmParams._keep_cross_validation_predictions = true;
+    val gbm = new GBM(gbmParams,Key.make("gbmRegModel.hex"))
+    val gbmModel = gbm.trainModel().get() 
+
 
 References
 ~~~~~~~~~~

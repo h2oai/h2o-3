@@ -12,6 +12,11 @@ Common
 .. toctree::
    :maxdepth: 1
 
+   data-science/supported-data-types
+
+.. toctree::
+   :maxdepth: 1
+
    data-science/common
 
 Supervised
@@ -24,6 +29,7 @@ Supervised
    data-science/deep-learning
    data-science/drf
    data-science/glm
+   data-science/gam
    data-science/gbm
    data-science/naive-bayes
    data-science/stacked-ensembles

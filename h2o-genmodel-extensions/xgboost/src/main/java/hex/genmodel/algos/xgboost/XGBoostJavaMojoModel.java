@@ -68,7 +68,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     for (RegTree tree : trees) {
       predictors.add(TreeSHAPHelper.makePredictor(tree));
     }
-    float initPred = TreeSHAPHelper.getInitPrediction(predictor);
+    float initPred = predictor.getBaseScore();
     return new TreeSHAPEnsemble<>(predictors, initPred);
   }
 

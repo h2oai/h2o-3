@@ -237,8 +237,8 @@ The following information displays for each message:
 
 --------------
 
-Why do I receive GC (Allocation Failure)?
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Why do I receive a GC (Allocation Failure)?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The G1 collector copies live data out of one region (evacuation) and into another. You will receive a "[GC (Allocation Failure)]" when there is no more space left to allocate live objects from the region being evacuated. Note that this is a normal part of GC operations, and the occurrence of these messages doesn't directly indicate an issue.
 

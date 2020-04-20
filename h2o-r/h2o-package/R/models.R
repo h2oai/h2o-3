@@ -158,10 +158,10 @@ NULL
   #---------- Params ----------#
   param_values <- .h2o.makeModelParams(algo, params, h2oRestApiVersion)
   param_values$segment_models_id <- segment_params$segment_models_id
-  param_values$segment_columns <- segment_params$segment_columns
+  param_values$segment_columns <- .collapse.char(segment_params$segment_columns)
   param_values$parallelism <- segment_params$parallelism 
   #---------- Build! ----------#
-  job <- .h2o.__remoteSend(method = "POST", .h2o.__BULK_MODEL_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
+  job <- .h2o.__remoteSend(method = "POST", .h2o.__SEGMENT_MODELS_BUILDERS(algo), .params = param_values, h2oRestApiVersion = h2oRestApiVersion)
   job_key  <- job$key$name
   dest_key <- job$dest$name
   new("H2OSegmentModelsFuture",job_key=job_key, segment_models_id=dest_key)
@@ -175,7 +175,7 @@ NULL
 
 .h2o.getFutureSegmentModels <- function(object) {
   .h2o.__waitOnJob(object@job_key)
-  h2o.getSegmentModels(object@segment_models_id)
+  h2o.get_segment_models(object@segment_models_id)
 }
 
 #
@@ -794,7 +794,7 @@ staged_predict_proba.H2OModel <- function(object, newdata, ...) {
 #' @export
 h2o.staged_predict_proba <- staged_predict_proba.H2OModel
 
-#' Predict feature contributions - SHAP values on an H2O Model (only GBM and XGBoost models).
+#' Predict feature contributions - SHAP values on an H2O Model (only DRF, GBM and XGBoost models).
 #'
 #' Returned H2OFrame has shape (#rows, #features + 1) - there is a feature contribution column for each input
 #' feature, the last column is the model bias (same value for each row). The sum of the feature contributions
@@ -1509,15 +1509,15 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' }
 #' @export
 h2o.coef <- function(object) {
-  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "coxph")) {
-    if (object@algorithm == "glm" && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
+  if (is(object, "H2OModel") && object@algorithm %in% c("glm", "gam", "coxph")) {
+    if ((object@algorithm == "glm" || object@algorithm == "gam") && (object@allparameters$family %in% c("multinomial", "ordinal"))) {
         grabCoeff(object@model$coefficients_table, "coefs_class", FALSE)
     } else {
       structure(object@model$coefficients_table$coefficients,
                 names = object@model$coefficients_table$names)
     }
   } else {
-    stop("Can only extract coefficients from GLM and CoxPH models")
+    stop("Can only extract coefficients from GAM, GLM and CoxPH models")
   }
 }
 
@@ -1547,7 +1547,7 @@ h2o.coef <- function(object) {
 #' }
 #' @export
 h2o.coef_norm <- function(object) {
-  if (is(object, "H2OModel") && object@algorithm == "glm") {
+  if (is(object, "H2OModel") && ((object@algorithm == "glm") || (object@algorithm == "gam"))) {
     if (object@allparameters$family %in% c("multinomial", "ordinal")) {
         grabCoeff(object@model$coefficients_table, "std_coefs_class", TRUE)
     } else {
@@ -1555,7 +1555,7 @@ h2o.coef_norm <- function(object) {
                 names = object@model$coefficients_table$names)
     }
   } else {
-    stop("Can only extract coefficients from GLMs")
+    stop("Can only extract coefficients from GAMs/GLMs")
   }
 }
 

@@ -1,9 +1,9 @@
 .. _save_and_load_model:
 
-Saving and Loading a Model
-==========================
+Saving, Loading, Downloading, and Uploading Models
+===================================================
 
-This section describes how to save and load binary and :ref:`MOJO models <about-pojo-mojo>` using R, Python, and Flow. 
+This section describes how to save, load, download, and upload binary and :ref:`MOJO models <about-pojo-mojo>` using R, Python, and Flow. 
 
 Binary Models
 -------------
@@ -13,7 +13,12 @@ When saving an H2O binary model with ``h2o.saveModel`` (R), ``h2o.save_model`` (
 In R and Python
 ~~~~~~~~~~~~~~~
 
-In R and Python, you can save a model locally or to HDFS using the ``h2o.saveModel`` (R) or ``h2o.save_model`` (Python) function . This function accepts the model object and the file path. If no path is specified, then the model will be saved to the current working directory. After the model is saved, you can load it using the ``h2o.loadModel`` (R) or ``h2o.load_model`` (Python) function.
+In R and Python, you can save a model locally or to HDFS using the ``h2o.saveModel`` (R) or ``h2o.save_model`` (Python) function . This function accepts the model object and the file path. If no path is specified, then the model will be saved to the current working directory. After the model is saved, you can load it using the ``h2o.loadModel`` (R) or ``h2o.load_model`` (Python) function. You can also upload a model from a local path to your H2O cluster.
+
+**Notes**: 
+
+- When saving a file, the owner of the file saved is the user by which H2O cluster or Python/R session was executed. 
+- When downloading a file, the owner of the file saved is the user by which the Python/R session was executed. 
 
 .. tabs::
    .. code-tab:: r R
@@ -23,12 +28,18 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
 
         # save the model
         model_path <- h2o.saveModel(object=model, path=getwd(), force=TRUE)
-
         print(model_path)
         /tmp/mymodel/DeepLearning_model_R_1441838096933
 
         # load the model
         saved_model <- h2o.loadModel(model_path)
+
+        # download the model built above to your local machine
+        my_local_model <- h2o.download_model(model, dir="/Users/UserName/Desktop")
+
+        # upload the model that you just downloded above 
+        # to the H2O cluster
+        uploaded_model <- h2o.upload_model(my_local_model)
 
    .. code-tab:: python
 
@@ -38,12 +49,18 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
 
     	# save the model
     	model_path = h2o.save_model(model=model, path="/tmp/mymodel", force=True)
-
     	print model_path
     	/tmp/mymodel/DeepLearning_model_python_1441838096933
 
     	# load the model
     	saved_model = h2o.load_model(model_path)
+
+        # download the model built above to your local machine
+        my_local_model = h2o.download_model(model, dir="/Users/UserName/Desktop")
+
+        # upload the model that you just downloded above 
+        # to the H2O cluster
+        uploaded_model = h2o.upload_model(my_local_model)
  
 
 **Note**: When saving to HDFS, you must prepend the save directory with ``hdfs://``. For example:

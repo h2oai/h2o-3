@@ -25,20 +25,41 @@ public class DelegationTokenRefresher implements Runnable {
   public static final String H2O_AUTH_USER = "h2o.auth.user";
   public static final String H2O_AUTH_PRINCIPAL = "h2o.auth.principal";
   public static final String H2O_AUTH_KEYTAB = "h2o.auth.keytab";
-  public static final String H2O_HIVE_JDBC_URL = "h2o.hive.jdbc.url";
+  public static final String H2O_HIVE_JDBC_URL_PATTERN = "h2o.hive.jdbc.urlPattern";
+  public static final String H2O_HIVE_HOST = "h2o.hive.jdbc.host";
   public static final String H2O_HIVE_PRINCIPAL = "h2o.hive.principal";
+  public static final String H2O_HIVE_TOKEN = "h2o.hive.token";
 
   public static void setup(Configuration conf, String tmpDir) throws IOException {
     if (!HiveTokenGenerator.isHiveDriverPresent()) {
       return;
     }
+    String token = conf.get(H2O_HIVE_TOKEN);
+    if (token != null) {
+      log("Adding credentials from property", null);
+      Credentials creds = HiveTokenGenerator.tokenToCredentials(token);
+      UserGroupInformation.getCurrentUser().addCredentials(creds);
+    }
     String authUser = conf.get(H2O_AUTH_USER);
     String authPrincipal = conf.get(H2O_AUTH_PRINCIPAL);
     String authKeytab = conf.get(H2O_AUTH_KEYTAB);
-    HiveTokenGenerator.HiveOptions options = HiveTokenGenerator.HiveOptions.make(conf);
-    if (authPrincipal != null && authKeytab != null && options != null) {
-      String authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
-      new DelegationTokenRefresher(authPrincipal, authKeytabPath, authUser, options).start();
+    String hiveJdbcUrlPattern = conf.get(H2O_HIVE_JDBC_URL_PATTERN);
+    String hiveHost = conf.get(H2O_HIVE_HOST);
+    String hivePrincipal = conf.get(H2O_HIVE_PRINCIPAL);
+    String hiveJdbcUrl;
+    if (authKeytab != null) {
+      hiveJdbcUrl = HiveTokenGenerator.makeHivePrincipalJdbcUrl(hiveJdbcUrlPattern, hiveHost, hivePrincipal);
+    } else {
+      hiveJdbcUrl = HiveTokenGenerator.makeHiveDelegationTokenJdbcUrl(hiveJdbcUrlPattern, hiveHost);
+    }
+    if (hiveJdbcUrl != null) {
+      String authKeytabPath;
+      if (authKeytab != null) {
+        authKeytabPath = writeKeytabToFile(authKeytab, tmpDir);
+      } else {
+        authKeytabPath = null;
+      }
+      new DelegationTokenRefresher(authPrincipal, authKeytabPath, authUser, hiveJdbcUrl, hivePrincipal).start();
     } else {
       log("Delegation token refresh not active.", null);
     }
@@ -59,7 +80,8 @@ public class DelegationTokenRefresher implements Runnable {
   private final String _authPrincipal;
   private final String _authKeytabPath;
   private final String _authUser;
-  private final HiveTokenGenerator.HiveOptions _hiveOptions;
+  private final String _hiveJdbcUrl;
+  private final String _hivePrincipal;
 
   private final HiveTokenGenerator _hiveTokenGenerator = new HiveTokenGenerator();
 
@@ -67,12 +89,14 @@ public class DelegationTokenRefresher implements Runnable {
       String authPrincipal,
       String authKeytabPath,
       String authUser,
-      HiveTokenGenerator.HiveOptions options
+      String hiveJdbcUrl,
+      String hivePrincipal
   ) {
     this._authPrincipal = authPrincipal;
     this._authKeytabPath = authKeytabPath;
     this._authUser = authUser;
-    this._hiveOptions = options;
+    this._hiveJdbcUrl = hiveJdbcUrl;
+    this._hivePrincipal = hivePrincipal;
   }
 
   public void start() {
@@ -127,10 +151,6 @@ public class DelegationTokenRefresher implements Runnable {
     }
   }
   
-  private Credentials getTokens(UserGroupInformation realUser, UserGroupInformation tokenUser) throws IOException, InterruptedException {
-    return _hiveTokenGenerator.addHiveDelegationTokenAsUser(realUser, tokenUser, _hiveOptions);
-  }
-  
   private void distribute(Credentials creds) throws IOException {
     if (!Paxos._cloudLocked) {
       // skip token distribution in pre-cloud forming phase, only use credentials locally
@@ -143,16 +163,23 @@ public class DelegationTokenRefresher implements Runnable {
   }
 
   private void refreshTokens() throws IOException, InterruptedException {
-    log("Log in from keytab as " + _authPrincipal, null);
-    UserGroupInformation realUser = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
-    UserGroupInformation tokenUser = realUser;
-    if (_authUser != null) {
-      log("Impersonate " + _authUser, null);
-      // attempt to impersonate token user, this verifies that the real-user is able to impersonate tokenUser
-      tokenUser = UserGroupInformation.createProxyUser(_authUser, tokenUser);
+    String token;
+    if (_authKeytabPath != null) {
+      log("Log in from keytab as " + _authPrincipal, null);
+      UserGroupInformation realUser = UserGroupInformation.loginUserFromKeytabAndReturnUGI(_authPrincipal, _authKeytabPath);
+      UserGroupInformation tokenUser = realUser;
+      if (_authUser != null) {
+        log("Impersonate " + _authUser, null);
+        // attempt to impersonate token user, this verifies that the real-user is able to impersonate tokenUser
+        tokenUser = UserGroupInformation.createProxyUser(_authUser, tokenUser);
+      }
+      token = _hiveTokenGenerator.getHiveDelegationTokenAsUser(realUser, tokenUser, _hiveJdbcUrl, _hivePrincipal);
+    } else {
+      UserGroupInformation currentUser = UserGroupInformation.getCurrentUser();
+      token = _hiveTokenGenerator.getHiveDelegationTokenIfPossible(currentUser, _hiveJdbcUrl, _hivePrincipal);
     }
-    Credentials creds = getTokens(realUser, tokenUser);
-    if (creds != null) {
+    if (token != null) {
+      Credentials creds = HiveTokenGenerator.tokenToCredentials(token);
       distribute(creds);
     } else {
       log("Failed to refresh delegation token.", null);

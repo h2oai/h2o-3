@@ -45,7 +45,7 @@ Defining an Isolation Forest Model
 
 -  `seed <algo-params/seed.html>`__: Specify the random number generator (RNG) seed for algorithm components dependent on randomization. The seed is consistent for each H2O instance so that you can create models with the same starting conditions in alternative configurations.
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: To run on a single node, check this checkbox. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used.
 
 -  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of IF are used. Valid values for this option are -2, -1, and any value >= 1.
 
@@ -115,10 +115,10 @@ Defining an Isolation Forest Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
-Simple Example
-~~~~~~~~~~~~~~
+Examples
+~~~~~~~~
 
-Below is a simple example showing Isolation Forest from model training through prediction and predicted leaf node assignment. 
+Below is a simple example showing how to build an Isolation Forest model. 
 
 .. tabs::
    .. code-tab:: r R

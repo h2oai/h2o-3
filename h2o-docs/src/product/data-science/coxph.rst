@@ -26,7 +26,7 @@ Defining a CoxPH Model
 
 -  `stop_column <algo-params/stop_column.html>`__: (Required) The name of an integer column in the **source** data set representing the stop time. 
 
--  `y <algo-params/y.html>`__: (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
+-  `y <algo-params/y.html>`__ (Python) / **event_column** (R): (Required) Specify the column to use as the dependent variable. The data can be numeric or categorical.
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
@@ -55,6 +55,8 @@ Defining a CoxPH Model
 -  `interaction_pairs <algo-params/interaction_pairs.html>`__: (Internal only.) When defining interactions, use this option to specify a list of pairwise column interactions (interactions between two variables). Note that this is different than ``interactions``, which will compute all pairwise combinations of specified columns. This option is disabled by default.
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
+
+- `single_node_mode <algo-params/single_node_mode.html>`__: Specify whether to run on a single node for fine-tuning of model parameters. Running on a single node reduces the effect of network overhead (for smaller datasets).
 
 Cox Proportional Hazards Model Results
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -187,6 +189,64 @@ To add numeric stability to the model fitting calculations, the numeric predicto
      :math:`LRE(x, y) = - \log_{10}\big(\frac{\mid x - y \mid}{y}\big)`, if :math:`y \ne 0`
 
      :math:`LRE(x, y) = - \log_{10}(\mid x \mid)`, if :math:`y = 0`
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a CoxPH model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the heart dataset into H2O:
+    heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+    # Split the dataset into a train and test set:
+    heart.split <- h2o.splitFrame(data=heart, ratios=.8, seed=1234)
+    train <- heart.split[[1]]
+    test <- heart.split[[2]]
+
+    # Build and train the model:
+    coxph.model <- h2o.coxph(x = "age", 
+                             event_column = "event",
+                             start_column="start", 
+                             stop_column = "stop", 
+                             ties = "breslow", 
+                             training_frame = train)
+
+    # Eval performance:
+    perf <- h2o.performance(coxph_model)
+
+    # Generate predictions on a test set (if necessary):
+    predict <- h2o.predict(coxph_model, newdata = test)
+
+
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators.coxph import H2OCoxProportionalHazardsEstimator
+    h2o.init()
+
+    # Import the heart dataset into H2O:
+    heart = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
+
+    # Split the dataset into a train and test set:
+    train, test = heart.split_frame(ratios = [.8], seed = 1234)   
+
+    # Build and train the model:
+    coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+                                               stop_column="stop", 
+                                               ties="breslow")
+    coxph.train(x="age", 
+                y="event", 
+                training_frame=train)
+
+    # Generate predictions on a test set (if necessary):
+    pred = coxph.predict(test)
+
 
 
 References

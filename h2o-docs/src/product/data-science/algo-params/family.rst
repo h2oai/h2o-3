@@ -1,13 +1,13 @@
 ``family``
 ----------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
 ~~~~~~~~~~~
 
-GLM problems consist of three main components:
+GLM and GAM problems consist of three main components:
 
 - A random component :math:`f` for the dependent variable :math:`y`: The density function :math:`f(y;\theta,\phi)` has a probability distribution from the exponential family parametrized by :math:`\theta` and :math:`\phi`. This removes the restriction on the distribution of the error and allows for non-homogeneity of the variance with respect to the mean vector. 
 - A systematic component (linear model) :math:`\eta`: :math:`\eta = X\beta`, where :math:`X` is the matrix of all observation vectors :math:`x_i`.
@@ -19,6 +19,7 @@ You can specify one of the following ``family`` options based on the response co
 
 - ``gaussian``: The data must be numeric (Real or Int). This is the default family.
 - ``binomial``: The data must be categorical 2 levels/classes or binary (Enum or Int).
+-  If the family is **fractionalbinomial**, the response must be a numeric between 0 and 1.
 - ``ordinal``: The data must be categorical with at least 3 levels. 
 - ``quasibinomial``: The data must be numeric.
 - ``multinomial``: The data can be categorical with more than two levels/classes (Enum).
@@ -31,7 +32,7 @@ Refer to the `Families <../glm.html#families>`__ section for detailed informatio
 **Note**: If your response column is binomial, then you must convert that column to a categorical (``.asfactor()`` in Python and ``as.factor()`` in R) and set ``family = binomial``. The following configurations can lead to unexpected results. 
 
  - If you DO convert the response column to categorical and DO NOT to set ``family=binomial``, then you will receive an error message.
- - If you DO NOT convert response column to categorical and DO NOT set the family, then GLM will assume the 0s and 1s are numbers and will provide a Gaussian solution to a regression problem.
+ - If you DO NOT convert response column to categorical and DO NOT set the family, then the algorithm will assume the 0s and 1s are numbers and will provide a Gaussian solution to a regression problem.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

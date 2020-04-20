@@ -49,14 +49,14 @@ public class SegmentModels extends Keyed<SegmentModels> {
   /**
    * Converts the collection of Segment Models to a Frame representation
    * 
-   * @return Frame with segment column, followed by job status, model key, error and warning columns 
+   * @return Frame with segment column, followed by model key, job status, error and warning columns 
    */
   public Frame toFrame() {
     Frame result = _segments.deepCopy(null); // never expose the underlying Segments Frame (someone could delete it)
-    Frame models = new ToFrame().doAll(new byte[]{Vec.T_CAT, Vec.T_STR, Vec.T_STR, Vec.T_STR}, new Frame(_results))
+    Frame models = new ToFrame().doAll(new byte[]{Vec.T_STR, Vec.T_CAT, Vec.T_STR, Vec.T_STR}, new Frame(_results))
             .outputFrame(
-                    new String[]{"Status", "Model", "Errors", "Warnings"},
-                    new String[][]{Job.JobStatus.domain(), null, null, null}
+                    new String[]{"model", "status", "errors", "warnings"},
+                    new String[][]{null, Job.JobStatus.domain(), null, null}
             );
     result.add(models);
     return result;
@@ -128,8 +128,8 @@ public class SegmentModels extends Keyed<SegmentModels> {
             nc.addNA();
         } else {
           int col = 0;
-          ncs[col++].addNum(result._status.ordinal());
           ncs[col++].addStr(result._model.toString());
+          ncs[col++].addNum(result._status.ordinal());
           if (result._errors != null)
             ncs[col++].addStr(String.join("\n", result._errors));
           else

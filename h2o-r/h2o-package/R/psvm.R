@@ -127,60 +127,28 @@ h2o.psvm <- function(x,
   model <- .h2o.modelJob('psvm', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-
-#'
-#' Trains Support Vector Machine model for each segment of the training dataset.
-#'
-#' @param x (Optional) A vector containing the names or indices of the predictor variables to use in building the model.
-#'        If x is missing, then all columns except y are used.
-#' @param y The name or column index of the response variable in the data. The response must be either a binary
-#'        categorical/factor variable or a numeric variable with values -1/1 (for compatibility with SVMlight format).
-#' @param training_frame Id of the training data frame.
-#' @param validation_frame Id of the validation data frame.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param hyper_param Penalty parameter C of the error term Defaults to 1.
-#' @param kernel_type Type of used kernel Must be one of: "gaussian". Defaults to gaussian.
-#' @param gamma Coefficient of the kernel (currently RBF gamma for gaussian kernel, -1 means 1/#features) Defaults to -1.
-#' @param rank_ratio Desired rank of the ICF matrix expressed as an ration of number of input rows (-1 means use sqrt(#rows)).
-#'        Defaults to -1.
-#' @param positive_weight Weight of positive (+1) class of observations Defaults to 1.
-#' @param negative_weight Weight of positive (-1) class of observations Defaults to 1.
-#' @param disable_training_metrics \code{Logical}. Disable calculating training metrics (expensive on large datasets) Defaults to TRUE.
-#' @param sv_threshold Threshold for accepting a candidate observation into the set of support vectors Defaults to 0.0001.
-#' @param fact_threshold Convergence threshold of the Incomplete Cholesky Factorization (ICF) Defaults to 1e-05.
-#' @param feasible_threshold Convergence threshold for primal-dual residuals in the IPM iteration Defaults to 0.001.
-#' @param surrogate_gap_threshold Feasibility criterion of the surrogate duality gap (eta) Defaults to 0.001.
-#' @param mu_factor Increasing factor mu Defaults to 10.
-#' @param max_iterations Maximum number of iteration of the algorithm Defaults to 200.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
-#'        Defaults to -1 (time-based random number).
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_psvm <- function(x,
-                          y,
-                          training_frame,
-                          validation_frame = NULL,
-                          ignore_const_cols = TRUE,
-                          hyper_param = 1,
-                          kernel_type = c("gaussian"),
-                          gamma = -1,
-                          rank_ratio = -1,
-                          positive_weight = 1,
-                          negative_weight = 1,
-                          disable_training_metrics = TRUE,
-                          sv_threshold = 0.0001,
-                          fact_threshold = 1e-05,
-                          feasible_threshold = 0.001,
-                          surrogate_gap_threshold = 0.001,
-                          mu_factor = 10,
-                          max_iterations = 200,
-                          seed = -1,
-                          segment_columns = NULL,
-                          segment_models_id = NULL,
-                          parallelism = 1)
+.h2o.train_segments_psvm <- function(x,
+                                     y,
+                                     training_frame,
+                                     validation_frame = NULL,
+                                     ignore_const_cols = TRUE,
+                                     hyper_param = 1,
+                                     kernel_type = c("gaussian"),
+                                     gamma = -1,
+                                     rank_ratio = -1,
+                                     positive_weight = 1,
+                                     negative_weight = 1,
+                                     disable_training_metrics = TRUE,
+                                     sv_threshold = 0.0001,
+                                     fact_threshold = 1e-05,
+                                     feasible_threshold = 0.001,
+                                     surrogate_gap_threshold = 0.001,
+                                     mu_factor = 10,
+                                     max_iterations = 200,
+                                     seed = -1,
+                                     segment_columns = NULL,
+                                     segment_models_id = NULL,
+                                     parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

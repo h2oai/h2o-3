@@ -1,7 +1,7 @@
 ``intercept``
 -------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
@@ -11,7 +11,7 @@ The ``intercept`` command allows you to specify whether a single constant term s
 
 The intercept term adjusts all predictions up or down by a constant amount, i.e. it is the predicted value when all inputs are exactly 0. It can be excluded (forced to equal 0) by setting ``intercept=FALSE``. 
 
-In GLM, the inverse of the link function is applied to obtain the final predictions (targets in regression and probabilities in classification). Excluding the intercept term can negatively impact measured model quality, but it is appropriate when a given linear model should definitely predict 0 when all inputs are 0 (before the application of the inverse of the link function to obtain the final predictions). You may also want to exclude the intercept term to choose a simpler model when appropriate and move away from overfitting. 
+In GLM and GAM, the inverse of the link function is applied to obtain the final predictions (targets in regression and probabilities in classification). Excluding the intercept term can negatively impact measured model quality, but it is appropriate when a given linear model should definitely predict 0 when all inputs are 0 (before the application of the inverse of the link function to obtain the final predictions). You may also want to exclude the intercept term to choose a simpler model when appropriate and move away from overfitting. 
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

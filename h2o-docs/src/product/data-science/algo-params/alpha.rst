@@ -1,13 +1,13 @@
 ``alpha``
 ---------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: yes
 
 Description
 ~~~~~~~~~~~
 
-To get the best possible model, GLM needs to find the optimal values of the regularization parameters :math:`\alpha` and :math:`\lambda`. When performing regularization, penalties are introduced to the model buidling process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties. These types of penalties are described in greater detail in the `Regularization <../glm.html#regularization>`__ section in GLM for more information. 
+To get the best possible model, GLM and GAM need to find the optimal values of the regularization parameters :math:`\alpha` and :math:`\lambda`. When performing regularization, penalties are introduced to the model buidling process to avoid overfitting, to reduce variance of the prediction error, and to handle correlated predictors. The two most common penalized models are ridge regression and LASSO (least absolute shrinkage and selection operator). The elastic net combines both penalties. These types of penalties are described in greater detail in the `Regularization <../glm.html#regularization>`__ section in GLM for more information. 
 
 The ``alpha`` parameter controls the distribution between the :math:`\ell_1` (LASSO) and :math:`\ell_2` (ridge regression) penalties. The penalty is defined as 
 

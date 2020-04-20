@@ -15,6 +15,7 @@ Use the ``h2o.init()`` method to initialize H2O. This method accepts the followi
 - ``forceDL``: (Optional) A logical value indicating whether to force download of the H2O executable. This defaults to FALSE, so the executable will only be downloaded if it does not already exist in the H2O R library resources directory at h2o/java/h2o.jar. 
 - ``enable_assertions``:  (Optional) A logical value indicating whether H2O should be launched with assertions enabled. This is used mainly for error checking and debugging purposes. 
 - ``license``: (Optional) A character string value specifying the full path of the license file. 
+- ``max_log_file_size``: Maximum size of INFO and DEBUG log files. The file is rolled over after the specifized size has been reached. The range for this option is 1MB to 99999MB. The value defaults to 3MB.
 - ``max_mem_size``: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
 - ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
 - ``ice_root``: (Optional) A directory to handle object spillage. The default varies by OS.
@@ -40,7 +41,7 @@ Once connected, the ``h2o.init()`` method checks to see if the local H2O R packa
 Example
 ~~~~~~~
 
-::
+.. substitution-code-block:: r
 
   library h2o
   h2o.init()
@@ -58,20 +59,23 @@ Example
   Starting H2O JVM and connecting: .. Connection successful!
 
   R is connected to the H2O cluster: 
-      H2O cluster uptime:         2 seconds 812 milliseconds 
-      H2O cluster version:        3.22.1.2 
-      H2O cluster version age:    9 days  
-      H2O cluster name:           H2O_started_from_R_techwriter_awt197 
-      H2O cluster total nodes:    1 
-      H2O cluster total memory:   3.56 GB 
-      H2O cluster total cores:    8 
-      H2O cluster allowed cores:  8 
-      H2O cluster healthy:        TRUE 
-      H2O Connection ip:          localhost 
-      H2O Connection port:        54321 
-      H2O Connection proxy:       NA 
-      H2O Internal Security:      FALSE 
-      R Version:                  R version 3.2.2 (2015-08-14) 
+    H2O cluster uptime:         2 seconds 73 milliseconds 
+    H2O cluster timezone:       America/Los_Angeles 
+    H2O data parsing timezone:  UTC 
+    H2O cluster version:        |version|
+    H2O cluster version age:    9 days  
+    H2O cluster name:           H2O_started_from_R_angelabartz_dxr691 
+    H2O cluster total nodes:    1 
+    H2O cluster total memory:   2.00 GB 
+    H2O cluster total cores:    8 
+    H2O cluster allowed cores:  8 
+    H2O cluster healthy:        TRUE 
+    H2O Connection ip:          localhost 
+    H2O Connection port:        54321 
+    H2O Connection proxy:       NA 
+    H2O Internal Security:      FALSE 
+    H2O API Extensions:         Amazon S3, XGBoost, Algos, AutoML, Core V3, TargetEncoder, Core V4 
+    R Version:                  R version 3.5.1 (2018-07-02)  
 
 From Python
 -----------
@@ -107,9 +111,8 @@ Use the ``h2o.init()`` function to initialize H2O. This function accepts the fol
 Example
 ~~~~~~~
 
-::
+.. substitution-code-block:: python
 
-  python
   import h2o
   h2o.init(ip="localhost", port=54323)
 
@@ -123,19 +126,22 @@ Example
     Server is running at http://127.0.0.1:54323
   Connecting to H2O server at http://127.0.0.1:54323... successful.
   --------------------------  ---------------------------------
-  H2O cluster uptime:         02 secs
-  H2O cluster version:        3.22.1.2
-  H2O cluster version age:    9 days
-  H2O cluster name:           H2O_from_python_techwriter_pu6lbs
-  H2O cluster total nodes:    1
-  H2O cluster free memory:    3.556 Gb
-  H2O cluster total cores:    8
-  H2O cluster allowed cores:  8
-  H2O cluster status:         accepting new members, healthy
-  H2O connection url:         http://127.0.0.1:54323
-  H2O connection proxy:
-  H2O internal security:      False
-  Python version:             2.7.12 final
+  H2O_cluster_uptime:         02 secs
+  H2O_cluster_timezone:       America/Los_Angeles
+  H2O_data_parsing_timezone:  UTC
+  H2O_cluster_version:        |version|
+  H2O_cluster_version_age:    12 days
+  H2O_cluster_name:           H2O_from_python_angelabartz_52yc47
+  H2O_cluster_total_nodes:    1
+  H2O_cluster_free_memory:    2 Gb
+  H2O_cluster_total_cores:    8
+  H2O_cluster_allowed_cores:  8
+  H2O_cluster_status:         accepting new members, healthy
+  H2O_connection_url:         http://127.0.0.1:54321
+  H2O_connection_proxy:       {"http": null, "https": null}
+  H2O_internal_security:      False
+  H2O_API_Extensions:         Amazon S3, XGBoost, Algos, AutoML, Core V3, TargetEncoder, Core V4
+  Python_version:             3.7.7 final
   --------------------------  ---------------------------------
 
 From Anaconda
@@ -268,7 +274,7 @@ H2O Options
     - IPv6: ``-network 2001:db8:1234:0:0:0:0:0/48`` (short version of IPv6 with ``::`` is not supported.)
 
 -	``-ice_root <fileSystemPath>``: Specify a directory for H2O to spill temporary data to disk (where ``<fileSystemPath>`` is the file path).
-- ``-log_dir <fileSystemPath>\``: Specify the directory where H2O writes logs to disk. (This usually has a good default that you need not change.
+- ``-log_dir <fileSystemPath>``: Specify the directory where H2O writes logs to disk. (This usually has a good default that you need not change.
 - ``-log_level <TRACE,DEBUG,INFO,WARN,ERRR,FATAL>``: Specify to write messages at this logging level, or above. The default is INFO.
 - ``-flow_dir <server-side or HDFS directory>``: Specify a directory for saved flows. The default is ``/Users/h2o-<H2OUserName>/h2oflows`` (where ``<H2OUserName>`` is your user name).
 - ``-nthreads <#ofThreads>``: Specify the maximum number of threads in the low-priority batch work queue (where ``<#ofThreads>`` is the number of threads). 

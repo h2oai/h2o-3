@@ -110,10 +110,11 @@ Look for the following output to confirm the changes:
 I received the following error after launching H2O in RStudio and using ``h2o.init``. What should I do to resolve this error?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-::
+.. substitution-code-block:: bash
+
 
     Error in h2o.init() : 
-    Version mismatch! H2O is running version 3.2.0.9 but R package is version 3.2.0.3
+    Version mismatch! H2O is running version |version| but R package is version 3.28.1.3
 
 This error is due to a version mismatch between the H2O R package and
 the running H2O instance. Make sure you are using the latest version of

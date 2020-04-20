@@ -209,87 +209,40 @@ h2o.glrm <- function(training_frame,
   model <- .h2o.modelJob('glrm', parms, h2oRestApiVersion=3, verbose=FALSE)
   return(model)
 }
-
-#'
-#' Trains Generalized Low Rank Model model for each segment of the training dataset.
-#'
-#' @param training_frame Id of the training data frame.
-#' @param cols (Optional) A vector containing the data columns on which k-means operates.
-#' @param validation_frame Id of the validation data frame.
-#' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
-#' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param loading_name Frame key to save resulting X
-#' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
-#'        Defaults to NONE.
-#' @param k Rank of matrix approximation Defaults to 1.
-#' @param loss Numeric loss function Must be one of: "Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic",
-#'        "Periodic". Defaults to Quadratic.
-#' @param loss_by_col Loss function by column (override) Must be one of: "Quadratic", "Absolute", "Huber", "Poisson", "Hinge",
-#'        "Logistic", "Periodic", "Categorical", "Ordinal".
-#' @param loss_by_col_idx Loss function by column index (override)
-#' @param multi_loss Categorical loss function Must be one of: "Categorical", "Ordinal". Defaults to Categorical.
-#' @param period Length of period (only used with periodic loss function) Defaults to 1.
-#' @param regularization_x Regularization function for X matrix Must be one of: "None", "Quadratic", "L2", "L1", "NonNegative",
-#'        "OneSparse", "UnitOneSparse", "Simplex". Defaults to None.
-#' @param regularization_y Regularization function for Y matrix Must be one of: "None", "Quadratic", "L2", "L1", "NonNegative",
-#'        "OneSparse", "UnitOneSparse", "Simplex". Defaults to None.
-#' @param gamma_x Regularization weight on X matrix Defaults to 0.
-#' @param gamma_y Regularization weight on Y matrix Defaults to 0.
-#' @param max_iterations Maximum number of iterations Defaults to 1000.
-#' @param max_updates Maximum number of updates, defaults to 2*max_iterations Defaults to 2000.
-#' @param init_step_size Initial step size Defaults to 1.
-#' @param min_step_size Minimum step size Defaults to 0.0001.
-#' @param seed Seed for random numbers (affects certain parts of the algo that are stochastic and those might or might not be enabled by default).
-#'        Defaults to -1 (time-based random number).
-#' @param init Initialization mode Must be one of: "Random", "SVD", "PlusPlus", "User". Defaults to PlusPlus.
-#' @param svd_method Method for computing SVD during initialization (Caution: Randomized is currently experimental and unstable)
-#'        Must be one of: "GramSVD", "Power", "Randomized". Defaults to Randomized.
-#' @param user_y User-specified initial Y
-#' @param user_x User-specified initial X
-#' @param expand_user_y \code{Logical}. Expand categorical columns in user-specified initial Y Defaults to TRUE.
-#' @param impute_original \code{Logical}. Reconstruct original training data by reversing transform Defaults to FALSE.
-#' @param recover_svd \code{Logical}. Recover singular values and eigenvectors of XY Defaults to FALSE.
-#' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
-#' @param export_checkpoints_dir Automatically export generated models to this directory.
-#' @param segment_columns A list of columns to segment-by. H2O will group the training (and validation) dataset by the segment-by columns
-#'        and train a separate model for each segment (group of rows).
-#' @param segment_models_id Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
-#' @param parallelism Level of parallelism of bulk model building, it is the maximum number of models each H2O node will be building in parallel, defaults to 1.
-#' @export
-h2o.bulk_glrm <- function(training_frame,
-                          cols = NULL,
-                          validation_frame = NULL,
-                          ignore_const_cols = TRUE,
-                          score_each_iteration = FALSE,
-                          loading_name = NULL,
-                          transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
-                          k = 1,
-                          loss = c("Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic"),
-                          loss_by_col = c("Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic", "Categorical", "Ordinal"),
-                          loss_by_col_idx = NULL,
-                          multi_loss = c("Categorical", "Ordinal"),
-                          period = 1,
-                          regularization_x = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
-                          regularization_y = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
-                          gamma_x = 0,
-                          gamma_y = 0,
-                          max_iterations = 1000,
-                          max_updates = 2000,
-                          init_step_size = 1,
-                          min_step_size = 0.0001,
-                          seed = -1,
-                          init = c("Random", "SVD", "PlusPlus", "User"),
-                          svd_method = c("GramSVD", "Power", "Randomized"),
-                          user_y = NULL,
-                          user_x = NULL,
-                          expand_user_y = TRUE,
-                          impute_original = FALSE,
-                          recover_svd = FALSE,
-                          max_runtime_secs = 0,
-                          export_checkpoints_dir = NULL,
-                          segment_columns = NULL,
-                          segment_models_id = NULL,
-                          parallelism = 1)
+.h2o.train_segments_glrm <- function(training_frame,
+                                     cols = NULL,
+                                     validation_frame = NULL,
+                                     ignore_const_cols = TRUE,
+                                     score_each_iteration = FALSE,
+                                     loading_name = NULL,
+                                     transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
+                                     k = 1,
+                                     loss = c("Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic"),
+                                     loss_by_col = c("Quadratic", "Absolute", "Huber", "Poisson", "Hinge", "Logistic", "Periodic", "Categorical", "Ordinal"),
+                                     loss_by_col_idx = NULL,
+                                     multi_loss = c("Categorical", "Ordinal"),
+                                     period = 1,
+                                     regularization_x = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
+                                     regularization_y = c("None", "Quadratic", "L2", "L1", "NonNegative", "OneSparse", "UnitOneSparse", "Simplex"),
+                                     gamma_x = 0,
+                                     gamma_y = 0,
+                                     max_iterations = 1000,
+                                     max_updates = 2000,
+                                     init_step_size = 1,
+                                     min_step_size = 0.0001,
+                                     seed = -1,
+                                     init = c("Random", "SVD", "PlusPlus", "User"),
+                                     svd_method = c("GramSVD", "Power", "Randomized"),
+                                     user_y = NULL,
+                                     user_x = NULL,
+                                     expand_user_y = TRUE,
+                                     impute_original = FALSE,
+                                     recover_svd = FALSE,
+                                     max_runtime_secs = 0,
+                                     export_checkpoints_dir = NULL,
+                                     segment_columns = NULL,
+                                     segment_models_id = NULL,
+                                     parallelism = 1)
 {
   # formally define variables that were excluded from function parameters
   model_id <- NULL

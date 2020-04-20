@@ -37,6 +37,8 @@ Defining a Naïve Bayes Model
 
 -  `fold_column <algo-params/fold_column.html>`__: Specify the column that contains the cross-validation fold index assignment per observation.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation predictions.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment. 
@@ -91,6 +93,67 @@ By default, the following output displays:
 -  Y-Levels (levels of the response column)
 -  A Priori response probabilities
 -  P-conditionals
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Naïve Bayes Classifier model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    # Import the prostate dataset into H2O:
+    prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+    # Set the predictors and response; set the response as a factor:
+    prostate$CAPSULE <- as.factor(prostate$CAPSULE)
+    predictors <- c("ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    response <- "CAPSULE"
+
+    # Build and train the model:
+    pros_nb <- h2o.naiveBayes(x = predictors, 
+                              y = response, 
+                              training_frame = prostate, 
+                              laplace = 0, 
+                              nfolds = 5, 
+                              seed = 1234)
+
+    # Eval performance:
+    perf <- h2o.performance(pros_nb)
+
+    # Generate the predictions on a test set (if necessary):
+    pred <- h2o.predict(pros_nb, newdata = prostate)
+    
+
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2ONaiveBayesEstimator
+    h2o.init()
+
+    # Import the prostate dataset into H2O:
+    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+    # Set predictors and response; set the response as a factor:
+    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+    predictors = ("ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    response = "CAPSULE"
+
+    # Build and train the model:
+    pros_nb = H2ONaiveBayesEstimator(laplace=0, 
+                                     nfolds=5, 
+                                     seed=1234)
+    pros_nb.train(x=predictors, 
+                  y=response, 
+                  training_frame=prostate)
+
+    # Eval performance:
+    perf = pros_nb.model_performance()
+
+    # Generate predictions on a test set (if necessary):
+    pred = pros_nb.predict(prostate)
+
 
 FAQ
 ~~~

@@ -10,6 +10,14 @@ def call(final stageConfig) {
             return getCommandHadoop(stageConfig, false)
         case H2O_HADOOP_STARTUP_MODE_HADOOP_SPNEGO:
             return getCommandHadoop(stageConfig, true)
+        case H2O_HADOOP_STARTUP_MODE_STEAM_DRIVER:
+            return getCommandHadoop(stageConfig, false, true, true)
+        case H2O_HADOOP_STARTUP_MODE_STEAM_MAPPER:
+            return getCommandHadoop(stageConfig, false, true, false)
+        case H2O_HADOOP_STARTUP_MODE_SPARKLING:
+            return getCommandHadoop(stageConfig, false, false, false, true)
+        case H2O_HADOOP_STARTUP_MODE_STEAM_SPARKLING:
+            return getCommandHadoop(stageConfig, false, true, false, true)
         case H2O_HADOOP_STARTUP_MODE_STANDALONE:
             return getCommandStandalone(stageConfig)
         default:
@@ -17,7 +25,11 @@ def call(final stageConfig) {
     }
 }
 
-private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
+private GString getCommandHadoop(
+        final stageConfig, final boolean spnegoAuth, 
+        final boolean impersonate = false, final boolean hdpCp = true,
+        final boolean prepareToken = false
+) {
     def defaultPort = 54321
     def loginArgs
     def loginEnvs
@@ -30,12 +42,32 @@ private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
         loginArgs = "-kerberos_login -login_conf ${stageConfig.customData.kerberosConfigPath}"
         loginEnvs = ""
     }
+    def hadoopClasspath = ""
+    if (hdpCp) {
+        hadoopClasspath = "export HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp)"
+    }
+    def securityArgs = ""
+    if (impersonate) {
+        securityArgs = "-principal steam/localhost@H2O.AI -keytab /etc/hadoop/conf/steam.keytab -run_as_user jenkins"
+    }
+    def tokenPreparation = ""
+    def usePreparedToken = ""
+    def h2odriverJar = "h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar"
+    if (prepareToken) {
+        tokenPreparation = """
+            HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp) hadoop jar h2o-hive/build/libs/h2o-hive.jar water.hive.GenerateHiveToken \\
+                -tokenFile hive.token ${securityArgs} \\
+                -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000
+            """
+        usePreparedToken = "-hiveToken \$(cat hive.token)"
+    }
     return """
             rm -fv h2o_one_node h2odriver.log
-            export HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp)
-            hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
-                -n 1 -mapperXmx 2g -baseport 54445 \\
-                -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 \\
+            ${hadoopClasspath}
+            ${tokenPreparation}
+            hadoop jar ${h2odriverJar} \\
+                -n 1 -mapperXmx 2g -baseport 54445 ${securityArgs} -timeout 300 \\
+                -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 -refreshTokens ${usePreparedToken} \\
                 -jks mykeystore.jks \\
                 -notify h2o_one_node -ea -proxy -port ${defaultPort} \\
                 -jks mykeystore.jks \\
@@ -47,7 +79,7 @@ private GString getCommandHadoop(final stageConfig, final spnegoAuth) {
                 break
               fi
               echo "Waiting for H2O to come up (\$i)..."
-              sleep 3
+              sleep 15
             done
             if [ ! -f 'h2o_one_node' ]; then
               echo 'H2O failed to start!'

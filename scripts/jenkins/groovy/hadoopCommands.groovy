@@ -20,7 +20,7 @@ private GString getCommandHadoop(final stageConfig) {
             rm -fv h2o_one_node h2odriver.log
             hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
                 -disable_flow \\
-                -n 1 -mapperXmx 2g -baseport 54445 \\
+                -n 1 -mapperXmx 2g -baseport 54445 -timeout 300 \\
                 -internal_secure_connections \\
                 -jks mykeystore.jks \\
                 -notify h2o_one_node \\
@@ -35,7 +35,7 @@ private GString getCommandHadoop(final stageConfig) {
                 break
               fi
               echo "Waiting for H2O to come up (\$i)..."
-              sleep 3
+              sleep 15
             done
             if [ ! -f 'h2o_one_node' ]; then
               echo 'H2O failed to start!'

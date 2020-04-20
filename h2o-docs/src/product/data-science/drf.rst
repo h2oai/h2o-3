@@ -48,6 +48,8 @@ Defining a DRF Model
 
 -  `x <algo-params/x.html>`__: Specify a vector containing the names or indices of the predictor variables to use when building the model. If ``x`` is missing, then all columns except ``y`` are used.
 
+-  `keep_cross_validation_models <algo-params/keep_cross_validation_models.html>`__: Specify whether to keep the cross-validated models. Keeping cross-validation models may consume significantly more memory in the H2O cluster. This option defaults to TRUE.
+
 -  `keep_cross_validation_predictions <algo-params/keep_cross_validation_predictions.html>`__: Enable this option to keep the cross-validation prediction.
 
 -  `keep_cross_validation_fold_assignment <algo-params/keep_cross_validation_fold_assignment.html>`__: Enable this option to preserve the cross-validation fold assignment.
@@ -176,9 +178,7 @@ Defining a DRF Model
    consistent for each H2O instance so that you can create models with
    the same starting conditions in alternative configurations.
 
--  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: To run on a single node, check this
-   checkbox. This is suitable for small datasets as there is no network
-   overhead but fewer CPUs are used.
+-  `build_tree_one_node <algo-params/build_tree_one_node.html>`__: Specify whether to run on a single node. This is suitable for small datasets as there is no network overhead but fewer CPUs are used
 
 -  `mtries <algo-params/mtries.html>`__: Specify the columns to randomly select at each level. If the default value of ``-1`` is used, the number of variables is the square root of the number of columns for classification and p/3 for regression (where p is the number of predictors). If ``-2`` is specified, all features of DRF are used. Valid values for this option are -2, -1, and any value >= 1.
 
@@ -276,6 +276,87 @@ with the leaf node assignments, or click the **Compute Leafe Node Assignment** c
 predictions from Flow. Those leaf nodes represent decision rules that
 can be fed to other models (i.e., GLM with lambda search and strong
 rules) to obtain a limited set of the most important rules. 
+
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Random Forest model.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the cars dataset into H2O:
+    cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # Set the predictors and response; 
+    # set the response as a factor:
+    cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
+    predictors <- c("displacement","power","weight","acceleration","year")
+    response <- "economy_20mpg"
+
+    # Split the dataset into a train and valid set:
+    cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+    train <- cars.split[[1]]
+    valid <- cars.split[[2]]
+
+    # Build and train the model:
+    cars_drf <- h2o.randomForest(x = predictors, 
+                                 y = response, 
+                                 ntrees = 10, 
+                                 max_depth = 5, 
+                                 min_rows = 10, 
+                                 calibrate_model = TRUE, 
+                                 calibration_frame = valid,
+                                 binomial_double_trees = TRUE, 
+                                 training_frame = train, 
+                                 validation_frame = valid)
+
+    # Eval performance:
+    perf <- h2o.performance(cars_drf)
+
+    # Generate predictions on a validation set (if necessary):
+    predict <- h2o.predict(cars_drf, newdata = valid)
+
+
+   .. code-tab:: python
+   
+    import h2o
+    from h2o.estimators import H2ORandomForestEstimator
+    h2o.init()
+
+    # Import the cars dataset into H2O:
+    cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+
+    # Set the predictors and response; 
+    # set the response as a factor:
+    cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+    predictors = ["displacement","power","weight","acceleration","year"]
+    response = "economy_20mpg"
+
+    # Split the dataset into a train and valid set:
+    train, valid = cars.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    cars_drf = H2ORandomForestEstimator(ntrees=10, 
+                                        max_depth=5, 
+                                        min_rows=10, 
+                                        calibrate_model=True, 
+                                        calibration_frame=valid,
+                                        binomial_double_trees=True)
+    cars_drf.train(x=predictors, 
+                   y=response, 
+                   training_frame=train, 
+                   validation_frame=valid
+
+    # Eval performance:
+    perf = cars_drf.model_performance()
+
+    # Generate predictions on a validation set (if necessary):
+    pred = cars_drf.predict(valid)
+
 
 FAQ
 ~~~
@@ -382,7 +463,7 @@ DRF Algorithm
    :target: http://www.slideshare.net/0xdata/rf-brighttalk
 
 
-`Building Random Forest at Scale <http://www.slideshare.net/0xdata/rf-brighttalk>`_ from Sri Ambati
+`Building Random Forest at Scale <https://www.slideshare.net/0xdata/rf-brighttalk>`_ from Sri Ambati
 
 References
 ~~~~~~~~~~

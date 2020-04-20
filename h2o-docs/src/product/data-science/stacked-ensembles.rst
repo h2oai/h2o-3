@@ -6,7 +6,7 @@ Introduction
 
 Ensemble machine learning methods use multiple learning algorithms to obtain better predictive performance than could be obtained from any of the constituent learning algorithms. Many of the popular modern machine learning algorithms are actually ensembles. For example, `Random Forest <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/drf.html>`__ and `Gradient Boosting Machine (GBM) <http://docs.h2o.ai/h2o/latest-stable/h2o-docs/data-science/gbm.html>`__ are both ensemble learners.  Both bagging (e.g. Random Forest) and boosting (e.g. GBM) are methods for ensembling that take a collection of weak learners (e.g. decision tree) and form a single, strong learner.
 
-H2O's Stacked Ensemble method is supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.  Like all supervised models in H2O, Stacked Ensemeble supports regression, binary classification and multiclass classification.
+H2O's Stacked Ensemble method is a supervised ensemble machine learning algorithm that finds the optimal combination of a collection of prediction algorithms using a process called stacking.  Like all supervised models in H2O, Stacked Ensemeble supports regression, binary classification, and multiclass classification.
 
 Native support for ensembles of H2O algorithms was added into core H2O in version 3.10.3.1.  A separate implementation, the **h2oEnsemble** R package, is also still `available <https://github.com/h2oai/h2o-3/tree/master/h2o-r/ensemble>`__, however for new projects we recommend using the native H2O version, documented below.
 
@@ -103,8 +103,10 @@ Defining a Stacked Ensemble Model
 
 You can follow the progress of H2O's Stacked Ensemble development `here <https://0xdata.atlassian.net/issues/?filter=19301>`__.
 
-Example
-~~~~~~~
+Examples
+~~~~~~~~
+
+Below is a simple example showing how to build a Stacked Ensembles model.
 
 .. tabs::
    .. code-tab:: r R
@@ -113,8 +115,8 @@ Example
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
-        train <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-        test <- h2o.importFile("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        train <- h2o.importFile("https://s3.amazonaws.com/testng/higgs/higgs_train_10k.csv")
+        test <- h2o.importFile("https://s3.amazonaws.com/testng/higgs/higgs_test_5k.csv")
 
         # Identify predictors and response
         y <- "response"
@@ -245,8 +247,8 @@ Example
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
-        train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
-        test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
+        train = h2o.import_file("https://s3.amazonaws.com/testng/higgs/higgs_train_10k.csv")
+        test = h2o.import_file("https://s3.amazonaws.com/testng/higgs/higgs_test_5k.csv")
 
         # Identify predictors and response
         x = train.columns

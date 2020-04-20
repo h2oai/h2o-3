@@ -1,6 +1,8 @@
 package hex.tree.xgboost;
 
 import hex.*;
+import hex.deeplearning.DeepLearning;
+import hex.deeplearning.DeepLearningModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
@@ -1556,7 +1558,7 @@ public class XGBoostTest extends TestUtil {
   }
 
   @Test
-  public void testScoreApproxContributions() throws IOException, XGBoostError {
+  public void testScoreContributions() throws IOException, XGBoostError {
     Scope.enter();
     try {
       Frame tfr = Scope.track(parse_test_file("./smalldata/junit/weather.csv"));
@@ -1580,7 +1582,7 @@ public class XGBoostTest extends TestUtil {
       Scope.track_generic(model);
       Log.info(model);
 
-      Frame contributions = model.scoreContributions(tfr, Key.<Frame>make(), true);
+      Frame contributions = model.scoreContributions(tfr, Key.make());
       Scope.track(contributions);
 
       assertEquals("BiasTerm", contributions.names()[contributions.names().length - 1]);
@@ -1635,12 +1637,15 @@ public class XGBoostTest extends TestUtil {
     @Override
     public void map(Chunk[] cs) {
       for (int i = 0; i < cs[0]._len; i++) {
-        for (int j = 0; j < cs.length; j++) {
+        int row = (int) cs[0].start() + i;
+        for (int j = 0; j < cs.length - 1; j++) {
           float contrib = (float) cs[j].atd(i);
-          int row = (int) cs[0].start() + i;
           assertEquals("Contribution in row=" + row + " on position=" + j + " should match.",
                   _expectedContribs[row][j], contrib, 1e-6);
         }
+        float biasTerm = (float) cs[cs.length - 1].atd(i);
+        float expectedBiasTerm = _expectedContribs[row][cs.length - 1];
+        assertEquals("BiasTerm in row=" + row + " should match.",  expectedBiasTerm, biasTerm, 1e-6);
       }
     }
   }
@@ -1833,4 +1838,70 @@ public class XGBoostTest extends TestUtil {
             Arrays.deepEquals(actualCM._cm, expectedCM._cm));
   }
 
+  @Test
+  public void testIsFeatureUsedInPredict() {
+    isFeatureUsedInPredictHelper(false, false);
+    isFeatureUsedInPredictHelper(true, false);
+    isFeatureUsedInPredictHelper(false, true);
+    isFeatureUsedInPredictHelper(true, true);
+  }
+
+  private void isFeatureUsedInPredictHelper(boolean ignoreConstCols, boolean multinomial) {
+    Scope.enter();
+    Vec target = Vec.makeRepSeq(100, 3);
+    if (multinomial) target = target.toCategoricalVec();
+    Vec zeros = Vec.makeCon(0d, 100);
+    Vec nonzeros = Vec.makeCon(1e10d, 100);
+    Frame dummyFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{zeros, zeros, zeros, zeros, target, target}
+    );
+    dummyFrame._key = Key.make("DummyFrame_testIsFeatureUsedInPredict");
+
+    Frame otherFrame = new Frame(
+            new String[]{"a", "b", "c", "d", "e", "target"},
+            new Vec[]{nonzeros, nonzeros, nonzeros, nonzeros, target, target}
+    );
+
+    Frame reference = null;
+    Frame prediction = null;
+    XGBoostModel model = null;
+    try {
+      DKV.put(dummyFrame);
+      hex.tree.xgboost.XGBoostModel.XGBoostParameters xgb = new  hex.tree.xgboost.XGBoostModel.XGBoostParameters();
+      xgb._train = dummyFrame._key;
+      xgb._response_column = "target";
+      xgb._seed = 1;
+      xgb._ignore_const_cols = ignoreConstCols;
+
+      hex.tree.xgboost.XGBoost job = new hex.tree.xgboost.XGBoost(xgb);
+      model = job.trainModel().get();
+
+      String lastUsedFeature = "";
+      int usedFeatures = 0;
+      for(String feature : model._output._names) {
+        if (model.isFeatureUsedInPredict(feature)) {
+          usedFeatures ++;
+          lastUsedFeature = feature;
+        }
+      }
+      assertEquals(1, usedFeatures);
+      assertEquals("e", lastUsedFeature);
+
+      reference = model.score(dummyFrame);
+      prediction = model.score(otherFrame);
+      for (int i = 0; i < reference.numRows(); i++) {
+        assertEquals(reference.vec(0).at(i), prediction.vec(0).at(i), 1e-10);
+      }
+    } finally {
+      dummyFrame.delete();
+      if (model != null) model.delete();
+      if (reference != null) reference.delete();
+      if (prediction != null) prediction.delete();
+      target.remove();
+      zeros.remove();
+      nonzeros.remove();
+      Scope.exit();
+    }
+  }
 }

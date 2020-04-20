@@ -103,6 +103,15 @@ Currently, H2O supports:
 
 --------------
 
+Do binary variables count as numeric?
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+When H2O parses a file, it uses rules to determine whether a column is numeric, enum, etc. If you need a column to be read as a specific type, especially the columns that can be interpreted as enum or numeric, you can use the ``col_types`` (Python)/``col.types`` (R) when you import a file.
+
+If you decide to make a column binary, that column will be treated as binary. It may be represented as a numeric, but it will not have numerical meanings such as less than, greater than or equal to, etc.
+
+--------------
+
 I am trying to parse a Gzip data file containing multiple files, but it does not parse as quickly as the uncompressed files. Why is this?
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 

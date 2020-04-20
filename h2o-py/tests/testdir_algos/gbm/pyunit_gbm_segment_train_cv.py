@@ -14,12 +14,12 @@ def test_gbm_bulk_cv():
     predictors = ["survived", "name", "sex", "age", "sibsp", "parch", "ticket", "fare", "cabin"]
     train, valid = titanic.split_frame(ratios=[.8], seed=1234)
     titanic_gbm = H2OGradientBoostingEstimator(seed=1234, nfolds=2, build_tree_one_node=True)
-    titanic_gbm.bulk_train(segments=["pclass"],
-                           x=predictors,
-                           y=response,
-                           training_frame=train,
-                           validation_frame=valid,
-                           segment_models_id="titanic_by_pclass")
+    titanic_gbm.train_segments(segments=["pclass"],
+                               x=predictors,
+                               y=response,
+                               training_frame=train,
+                               validation_frame=valid,
+                               segment_models_id="titanic_by_pclass")
 
     train_cl1 = train[train["pclass"] == 1]
     valid_cl1 = valid[valid["pclass"] == 1]
@@ -31,7 +31,7 @@ def test_gbm_bulk_cv():
 
     titanic_models = H2OSegmentModels(segment_models_id="titanic_by_pclass")
     bulk_models = titanic_models.as_frame()
-    titanic_bulk_cl1_gbm_id = (bulk_models[bulk_models["pclass"] == 1]["Model"])
+    titanic_bulk_cl1_gbm_id = (bulk_models[bulk_models["pclass"] == 1]["model"])
     titanic_bulk_cl1_gbm = h2o.get_model(titanic_bulk_cl1_gbm_id.flatten())
 
     pyunit_utils.check_models(titanic_cl1_gbm, titanic_bulk_cl1_gbm, use_cross_validation=True)

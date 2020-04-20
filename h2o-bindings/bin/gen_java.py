@@ -445,7 +445,7 @@ def generate_main_class(endpoints):
         required_fields = [field for field in input_fields if field["required"]]
         input_fields_wo_excluded = [field for field in input_fields if field["name"] != "_exclude_fields"]
 
-        if class_name == "BulkModelBuilders":
+        if class_name == "SegmentModelsBuilders":
             continue
 
         yield "  /**"
@@ -770,7 +770,7 @@ def main():
         bi.write_to_file("water/bindings/pojos/%s.java" % name, generate_enum(name, sorted(values)))
 
     for name, endpoints in bi.endpoint_groups().items():
-        if name != "BulkModelBuilders":
+        if name != "SegmentModelsBuilders":
             bi.vprint("Generating proxy: " + name)
             bi.write_to_file("water/bindings/proxies/retrofit/%s.java" % name, generate_proxy(name, endpoints))
 

@@ -32,6 +32,7 @@ import java.net.URI;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static water.util.FrameUtils.categoricalEncoder;
 import static water.util.FrameUtils.cleanUp;
@@ -2679,6 +2680,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
   }
 
+    /**
+     * Uploads a binary model from a given frame.
+     * Note: binary model has to be created by the same version of H2O, import of a model from a different version will fail
+     * @param destinationFrame key of the frame containing the binary representation of the model on a local filesystem, HDFS, S3...
+     * @return instance of an H2O Model
+     * @throws IOException when reading fails
+     */
+    public static <M extends Model<?, ?, ?>> M uploadBinaryModel(String destinationFrame) throws IOException {
+      Frame fr = DKV.getGet(destinationFrame);
+      ByteVec vec = (ByteVec) fr.vec(0);
+      try (InputStream inputStream = vec.openStream(null)) {
+          final AutoBuffer ab = new AutoBuffer(inputStream);
+          @SuppressWarnings("unchecked")
+          M model = (M) Keyed.readAll(ab);
+          ab.close();
+          return model;
+        } 
+    }
+
   /**
    * Exports a binary model to a given location.
    * @param location target path, it can be on local filesystem, HDFS, S3...
@@ -2789,4 +2809,34 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     };
   }
 
+  /**
+   * Convenience method to find out if featureName is used for prediction, i.e., if it has beta == 0 in GLM,
+   * it is not considered to be used.
+   * This is mainly intended for optimizing prediction speed in StackedEnsemble.
+   * @param featureName
+   */
+  public boolean isFeatureUsedInPredict(String featureName) {
+    if (featureName.equals(_parms._response_column)) return false;
+    int featureIdx = ArrayUtils.find(_output._names, featureName);
+    if (featureIdx == -1) {
+      return false;
+    }
+    return isFeatureUsedInPredict(featureIdx);
+  }
+
+  protected boolean isFeatureUsedInPredict(int featureIdx) {
+    return true;
+  }
+
+  /**
+   * Returns features that are used during prediction. This might be a superset of the features that are actually used,
+   * but it should not be a subset.
+   * @return Array of features used during prediction
+   */
+  public String[] getFeaturesUsedInPrediction() {
+    return Stream
+            .of(_output._names)
+            .filter(this::isFeatureUsedInPredict)
+            .toArray(String[]::new);
+  }
 }

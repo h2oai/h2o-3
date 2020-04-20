@@ -128,6 +128,7 @@ reference:
       - h2o.getVersion
       - h2o.giniCoef
       - h2o.glm
+      - h2o.gam
       - h2o.glrm
       - h2o.grep
       - h2o.grid
@@ -278,6 +279,7 @@ reference:
       - h2o.tot_withinss
       - h2o.totss 
       - h2o.toupper
+      - h2o.train_segments
       - h2o.transform
       - h2o.trim
       - h2o.trunc

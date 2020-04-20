@@ -478,7 +478,9 @@ public class DataInfo extends Keyed<DataInfo> {
 
   /**
    * Filter the _adaptedFrame so that it contains only the Vecs referenced by the cols
-   * parameter.
+   * parameter.  This is done by recording the ignored columns in array ignoredCols.  The enum columns are 
+   * not expanded and considered as one column.  However, it is possible that a level inside the enum column
+   * can be ignored.  In this case, the enum levels are adjusted accordingly.
    *
    * @param cols Array of the expanded column indices to keep.
    * @return A DataInfo with _activeCols specifying the active columns
@@ -493,7 +495,7 @@ public class DataInfo extends Keyed<DataInfo> {
     //public DataInfo(Frame fr, int hasResponses, boolean useAllFactorLvls, double [] normSub, double [] normMul, double [] normRespSub, double [] normRespMul){
     int [][] catLvls = new int[_cats][];  // categorical levels to keep (used in getCategoricalOffsetId binary search)
     int [][] intLvls = new int[_interactionVecs==null?0:_interactionVecs.length][]; // interactions levels to keep (used in getInteractionOffsetId binary search)
-    int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);  // capital 'v' Vec indices to be frame.remove'd
+    int [] ignoredCols = MemoryManager.malloc4(_nums + _cats);  // capital 'v' Vec indices to be frame.remove'd, one per column not expanded
     // first do categoricals...
     if(_catOffsets != null) {
       int coff = _useAllFactorLevels?0:1;

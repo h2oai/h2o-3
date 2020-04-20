@@ -114,11 +114,11 @@ class H2OEstimator(ModelBase):
                                  ignored_columns=ignored_columns, model_id=model_id, verbose=verbose)
         self._train(parms, verbose=verbose)
 
-    def bulk_train(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
-                   weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
-                   segments=None, segment_models_id=None, parallelism=1, verbose=False):
+    def train_segments(self, x=None, y=None, training_frame=None, offset_column=None, fold_column=None,
+                       weights_column=None, validation_frame=None, max_runtime_secs=None, ignored_columns=None,
+                       segments=None, segment_models_id=None, parallelism=1, verbose=False):
         """
-        Trains H2O model for each segment of the training dataset.
+        Trains H2O model for each segment (subpopulation) of the training dataset.
 
         :param x: A list of column names or indices indicating the predictor columns.
         :param y: An index or a column name indicating the response column.
@@ -138,8 +138,8 @@ class H2OEstimator(ModelBase):
             segments to build the models for. This enumeration needs to be represented as H2OFrame.
         :param segment_models_id: Identifier for the returned collection of Segment Models. If not specified
             it will be automatically generated.
-        :param parallelism: Level of parallelism of bulk model building, it is the maximum number of models 
-            each H2O node will be building in parallel.
+        :param parallelism: Level of parallelism of the bulk segment models building, it is the maximum number 
+            of models each H2O node will be building in parallel.
         :param bool verbose: Enable to print additional information during model building. Defaults to False.
 
         :examples:
@@ -151,11 +151,11 @@ class H2OEstimator(ModelBase):
         >>> train, valid = titanic.split_frame(ratios=[.8], seed=1234)
         >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
         >>> titanic_gbm = H2OGradientBoostingEstimator(seed=1234)
-        >>> titanic_models = titanic_gbm.bulk_train(segments=["pclass"],
-        ...                                         x=predictors,
-        ...                                         y=response,
-        ...                                         training_frame=train,
-        ...                                         validation_frame=valid)
+        >>> titanic_models = titanic_gbm.train_segments(segments=["pclass"],
+        ...                                             x=predictors,
+        ...                                             y=response,
+        ...                                             training_frame=train,
+        ...                                             validation_frame=valid)
         >>> titanic_models.as_frame()
         """
         assert_is_type(segments, None, H2OFrame, [str])
@@ -181,8 +181,8 @@ class H2OEstimator(ModelBase):
         parms["parallelism"] = parallelism
 
         rest_ver = self._get_rest_version(parms)
-        bulk_train_response = h2o.api("POST /%d/BulkModelBuilders/%s" % (rest_ver, self.algo), data=parms)
-        job = H2OJob(bulk_train_response, job_type=(self.algo + " Bulk Model Build"))
+        train_segments_response = h2o.api("POST /%d/SegmentModelsBuilders/%s" % (rest_ver, self.algo), data=parms)
+        job = H2OJob(train_segments_response, job_type=(self.algo + " Segment Models Build"))
         job.poll()
         return H2OSegmentModels(job.dest_key)
 
@@ -431,6 +431,7 @@ class H2OEstimator(ModelBase):
         if name == "H2ORandomForestEstimator": return "drf"
         if name == "H2OXGBoostEstimator": return "xgboost"
         if name == "H2OCoxProportionalHazardsEstimator": return "coxph"
+        if name == "H2OGeneralizedAdditiveEstimator": return "gam"
         if name in ["H2OPCA", "H2OPrincipalComponentAnalysisEstimator"]: return "pca"
         if name in ["H2OSVD", "H2OSingularValueDecompositionEstimator"]: return "svd"
 

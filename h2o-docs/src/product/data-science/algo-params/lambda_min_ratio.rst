@@ -1,7 +1,7 @@
 ``lambda_min_ratio``
 --------------------
 
-- Available in: GLM
+- Available in: GLM, GAM
 - Hyperparameter: no
 
 Description
