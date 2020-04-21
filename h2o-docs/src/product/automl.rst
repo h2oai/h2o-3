@@ -61,7 +61,7 @@ Optional Data Parameters
 Optional Miscellaneous Parameters
 '''''''''''''''''''''''''''''''''
 
-- `nfolds <data-science/algo-params/nfolds.html>`__:  Number of folds for k-fold cross-validation of the models in the AutoML run. Defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensembles (thus decreasing the overall best model performance).
+- `nfolds <data-science/algo-params/nfolds.html>`__:  Specify a value >= 2 for the number of folds for k-fold cross-validation of the models in the AutoML run. This value defaults to 5. Use 0 to disable cross-validation; this will also disable Stacked Ensembles (thus decreasing the overall best model performance).
 
 - `balance_classes <data-science/algo-params/balance_classes.html>`__: Specify whether to oversample the minority classes to balance the class distribution. This option is not enabled by default and can increase the data frame size. This option is only applicable for classification. Majority classes can be undersampled to satisfy the **max\_after\_balance\_size** parameter.
 
@@ -152,12 +152,10 @@ Code Examples
 
 Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the the `x` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of ``x`` is "all columns, excluding ``y``", so that will produce the same result.
 
-
 .. tabs::
    .. code-tab:: r R
 
         library(h2o)
-
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
@@ -208,26 +206,8 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         # 
         # [22 rows x 6 columns] 
 
-
-
         # The leader model is stored here
         aml@leader
-
-        # If you need to generate predictions on a test set, you can make 
-        # predictions directly on the `"H2OAutoML"` object, or on the leader 
-        # model object directly
-
-        pred <- h2o.predict(aml, test)  # predict(aml, test) also works
-
-        # or:
-        pred <- h2o.predict(aml@leader, test)
-
-
-        # Get leaderboard with 'extra_columns = 'ALL'
-        lb_all <- h2o.get_leaderboard(object = aml, extra_columns = 'ALL')
-        lb_all
-
-
 
    .. code-tab:: python
 
@@ -284,42 +264,76 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         # 
         # [22 rows x 6 columns]
 
-
         # The leader model is stored here
         aml.leader
 
-        # If you need to generate predictions on a test set, you can make 
-        # predictions directly on the `"H2OAutoML"` object, or on the leader 
-        # model object directly
+The code above is the quickest way to get started, and the example will be referenced in the sections that follow. To learn more about H2O AutoML we recommend taking a look at our more in-depth `AutoML tutorial <https://github.com/h2oai/h2o-tutorials/tree/master/h2o-world-2017/automl>`__ (available in R and Python).
 
+
+AutoML Predictions
+------------------
+
+Using the ``predict()`` function with AutoML generates predictions on the leader model from the run. The order of the rows in the results is the same as the order in which the data was loaded, even if some rows fail (for example, due to missing values or unseen factor levels).
+
+Using the previous example, you can retrieve predictions as follows:
+
+Code Examples
+~~~~~~~~~~~~~
+
+.. tabs::
+   .. code-tab:: r R
+
+        # To generate predictions on a test set, you can make predictions
+        # directly on the `"H2OAutoML"` object or on the leader model 
+        # object directly
+        pred <- h2o.predict(aml, test)  # predict(aml, test) also works
+
+        # or:
+        pred <- h2o.predict(aml@leader, test)
+
+   .. code-tab:: python
+
+        # To generate predictions on a test set, you can make predictions
+        # directly on the `"H2OAutoML"` object or on the leader model 
+        # object directly
         preds = aml.predict(test)
 
         # or:
         preds = aml.leader.predict(test)
 
+AutoML Output
+-------------
+
+The AutoML object includes a "leaderboard" of models that were trained in the process, including the 5-fold cross-validated model performance (by default).  The number of folds used in the model evaluation process can be adjusted using the ``nfolds`` parameter.  If you would like to score the models on a specific dataset, you can specify the ``leaderboard_frame`` argument in the AutoML run, and then the leaderboard will show scores on that dataset instead. 
+
+The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
+
+To help users assess the complexity of ``AutoML`` models, the ``h2o.get_leaderboard`` function has been been expanded by allowing an ``extra_columns`` parameter. This parameter allows you to specify which (if any) optional columns should be added to the leaderboard. This defaults to None. Allowed options include:
+
+- ``training_time_ms``: A column providing the training time of each model in milliseconds. (Note that this doesn't include the training of cross validation models.)
+- ``predict_time_per_row_ms``: A column providing the average prediction time by the model for a single row.
+- ``ALL``: Adds columns for both training_time_ms and predict_time_per_row_ms.
+
+Code Examples
+~~~~~~~~~~~~~
+
+Using the previous example, you can retrieve the leaderboard as follows:
+
+.. tabs::
+   .. code-tab:: r R
+
+        # Get leaderboard with 'extra_columns = 'ALL'
+        lb_all <- h2o.get_leaderboard(object = aml, extra_columns = 'ALL')
+        lb_all
+
+   .. code-tab:: python
 
         # Get leaderboard with `extra_columns` = 'ALL'
         lb_all = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
         lb_all
 
-
-
-The code above is the quickest way to get started, however to learn more about H2O AutoML we recommend taking a look at our more in-depth `AutoML tutorial <https://github.com/h2oai/h2o-tutorials/tree/master/h2o-world-2017/automl>`__ (available in R and Python).
-
-
-AutoML Output
--------------
-
-The AutoML object includes a "leaderboard" of models that were trained in the process, including the 5-fold cross-validated model performance (by default).  The number of folds used in the model evaluation process can be adjusted using the ``nfolds`` parameter.  If the user would like to score the models on a specific dataset, they can specify the ``leaderboard_frame`` argument, and then the leaderboard will show scores on that dataset instead. 
-
-The models are ranked by a default metric based on the problem type (the second column of the leaderboard). In binary classification problems, that metric is AUC, and in multiclass classification problems, the metric is mean per-class error. In regression problems, the default sort metric is deviance.  Some additional metrics are also provided, for convenience.
-
-To help users assess the complexity of ``AutoML`` models, the ``h2o.get_leaderboard`` function has been been expanded. This extension allows users to access extra leaderboard columns by setting ``extra_columns = ‘ALL’``. The leaderboard extension (not rendered by default) now includes the following information:
-
-- Model training time (in ms)
-- Model average scoring time per row (in ms)
-   
-   - If provided, this is based on the prediction of the leaderboard frame; otherwise, it is based on the entire training frame. 
+Leaderboard Example
+~~~~~~~~~~~~~~~~~~~
 
 Here is an example leaderboard for a binary classification task:
 
