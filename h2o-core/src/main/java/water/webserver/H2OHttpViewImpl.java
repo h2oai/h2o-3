@@ -2,6 +2,7 @@ package water.webserver;
 
 import org.apache.commons.io.IOUtils;
 import water.ExtensionManager;
+import water.H2O;
 import water.api.RequestServer;
 import water.server.ServletService;
 import water.server.ServletUtils;

@@ -36,13 +36,18 @@ use this port to talk to the H2O cluster.
 The `app: h2o-k8s` setting is of **great importance**, as this is the name of the application with H2O pods inside. 
 Please make sure this setting corresponds to the name of H2O deployment name chosen.
 
-### Creating the H2O deployment
+### Creating the H2O Stateful Set
 
 It is **strongly recommended** to run H2O as a [Stateful set](https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/)
 on a Kubernetes cluster. Kubernetes assumes all the pods inside the cluster are stateful and does not attempt to restart
 the individual pods on failure. Once a job is triggered on an H2O cluster, the cluster is locked and no additional nodes
 can be added. Therefore, the cluster has to be restarted as a whole if required - which is a perfect fit for a StatefulSet.
- 
+
+In order to ensure reproducibility, all requests should be directed towards H2O Leader node. Leader node election is done
+after the set of nodes discovered is complete. Therefore, after the clustering is complete and the leader node is known,
+only the pod with H2O leader node should be made available. This also makes the service(s) on top of the deployment route
+all requests only to the leader node. To achieve that, readiness probe residing on `/kubernetes/isLeaderNode` address is used.
+Once the clustering is done, all nodes but the leader node mark themselves as not ready, leaving only the leader node exposed.
 
 ```yaml
 apiVersion: apps/v1
@@ -71,6 +76,13 @@ spec:
           ports:
             - containerPort: 54321
               protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /kubernetes/isLeaderNode
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 1
           env:
           - name: H2O_KUBERNETES_SERVICE_DNS
             value: h2o-service.h2o-statefulset.svc.cluster.local
@@ -78,6 +90,8 @@ spec:
             value: '180'
           - name: H2O_NODE_EXPECTED_COUNT
             value: '3'
+          - name: H2O_K8S_API_PORT
+            value: '8081'
 ```
 Besides standardized Kubernetes settings, like `replicas: 3` defining the number of pods with H2O instantiated, there are
 several settings to pay attention to.
@@ -94,6 +108,7 @@ Environment variables:
   to match the specifics of your Kubernetes implementation.
 1. `H2O_NODE_LOOKUP_TIMEOUT` - **[OPTIONAL]** Node lookup constraint. Time before the node lookup is ended. 
 1. `H2O_NODE_EXPECTED_COUNT` - **[OPTIONAL]** Node lookup constraint. Expected number of H2O pods to be discovered.
+1. `H2O_K8S_API_PORT` - **[OPTIONAL]** Port for Kubernetes API checks to listen on. Defaults to 8080.
 
 If none of the optional lookup constraints is specified, a sensible default node lookup timeout will be set - currently
 defaults to 3 minutes. If any of the lookup constraints are defined, the H2O node lookup is terminated on whichever 
