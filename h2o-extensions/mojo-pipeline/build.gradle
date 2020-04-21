@@ -50,7 +50,7 @@ testSingleNode.dependsOn extractMojoRuntime
 test {
     dependsOn ":h2o-core:testJar"
     // Note: multi node tests are ignored right now!
-    dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode
+    dependsOn smalldataCheck, jar, testJar, testSingleNode
 
     // Defeat task 'test' by running no tests.
     exclude '**'

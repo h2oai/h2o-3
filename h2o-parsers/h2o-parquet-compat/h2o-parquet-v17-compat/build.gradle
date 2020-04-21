@@ -35,7 +35,7 @@ apply from: "${rootDir}/gradle/dataCheck.gradle"
 test {
   dependsOn ":h2o-core:testJar"
   dependsOn ":h2o-parquet-parser:testJar"
-  dependsOn smalldataCheck, cpLibs, jar, testJar, testMultiNode
+  dependsOn smalldataCheck, jar, testJar, testMultiNode
 
   // Defeat task 'test' by running no tests.
   exclude '**'
