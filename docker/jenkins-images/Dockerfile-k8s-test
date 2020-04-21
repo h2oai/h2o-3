@@ -18,6 +18,6 @@ RUN rm /var/lib/apt/lists -rf
 RUN \
     groupadd -g 2117 jenkins && \
     adduser --uid 2117 -gid 2117 --disabled-password --gecos "" jenkins
-
+    
 CMD \
   ["/bin/bash"]
