@@ -4,8 +4,8 @@ import ml.dmlc.xgboost4j.java.INativeLibLoader;
 import ml.dmlc.xgboost4j.java.NativeLibLoader;
 import hex.tree.xgboost.util.NativeLibrary;
 import hex.tree.xgboost.util.NativeLibraryLoaderChain;
+import org.apache.log4j.Logger;
 import water.AbstractH2OExtension;
-import water.util.Log;
 
 import java.io.IOException;
 import java.util.Arrays;
@@ -19,6 +19,8 @@ import java.util.Arrays;
  * to be enabled.
  */
 public class XGBoostExtension extends AbstractH2OExtension {
+  
+  private static final Logger LOG = Logger.getLogger(XGBoostExtension.class);
 
   private static String XGBOOST_MIN_REQUIREMENTS =
           "Xgboost (enabled GPUs) needs: \n"
@@ -55,11 +57,11 @@ public class XGBoostExtension extends AbstractH2OExtension {
   }
 
   public void logNativeLibInfo() {
-    Log.info("Found XGBoost backend with library: " + nativeLibInfo.name);
+    LOG.info("Found XGBoost backend with library: " + nativeLibInfo.name);
     if (nativeLibInfo.flags.length == 0) {
-      Log.warn("Your system supports only minimal version of XGBoost (no GPUs, no multithreading)!");
+      LOG.warn("Your system supports only minimal version of XGBoost (no GPUs, no multithreading)!");
     } else {
-      Log.info("XGBoost supported backends: " + Arrays.toString(nativeLibInfo.flags));
+      LOG.info("XGBoost supported backends: " + Arrays.toString(nativeLibInfo.flags));
     }
   }
 
@@ -67,7 +69,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
     try {
       INativeLibLoader loader = NativeLibLoader.getLoader();
       if (! (loader instanceof NativeLibraryLoaderChain)) {
-        Log.warn("Unexpected XGBoost library loader found. Custom loaders are not supported in this version. " +
+        LOG.warn("Unexpected XGBoost library loader found. Custom loaders are not supported in this version. " +
                 "XGBoost extension will be disabled.");
         return false;
       }
@@ -77,7 +79,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
       return true;
     } catch (IOException e) {
       // Ups no lib loaded or load failed
-      Log.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS);
+      LOG.warn("Cannot initialize XGBoost backend! " + XGBOOST_MIN_REQUIREMENTS);
       return false;
     }
   }
@@ -91,7 +93,7 @@ public class XGBoostExtension extends AbstractH2OExtension {
       NativeLibrary lib = chainLoader.getLoadedLibrary();
       return lib.hasCompilationFlag(NativeLibrary.CompilationFlags.WITH_GPU);
     } catch (IOException e) {
-      Log.debug(e);
+      LOG.debug(e);
       return false;
     }
   }

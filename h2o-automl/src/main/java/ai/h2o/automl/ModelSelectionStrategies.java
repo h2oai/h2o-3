@@ -2,15 +2,17 @@ package ai.h2o.automl;
 
 import ai.h2o.automl.leaderboard.Leaderboard;
 import hex.Model;
+import org.apache.log4j.Logger;
 import water.Key;
 import water.util.ArrayUtils;
-import water.util.Log;
 
 import java.util.Arrays;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
 public final class ModelSelectionStrategies {
+    
+    private static final Logger LOG = Logger.getLogger(ModelSelectionStrategies.class);
 
     public static abstract class LeaderboardBasedSelectionStrategy<M extends Model> implements ModelSelectionStrategy<M> {
 
@@ -41,7 +43,7 @@ public final class ModelSelectionStrategies {
             Leaderboard tmpLeaderboard = lbHolder.get();
             tmpLeaderboard.addModels((Key<Model>[]) originalModels);
             tmpLeaderboard.addModels((Key<Model>[]) newModels);
-            if (Log.isLoggingFor(Log.DEBUG)) Log.debug(tmpLeaderboard.toLogString());
+            if (LOG.isDebugEnabled()) LOG.debug(tmpLeaderboard.toLogString());
             Key<Model>[] sortedKeys = tmpLeaderboard.getModelKeys();
             Key<Model>[] bestN = ArrayUtils.subarray(sortedKeys, 0, Math.min(sortedKeys.length, _N));
             Key<M>[] toAdd = Arrays.stream(bestN).filter(k -> !ArrayUtils.contains(originalModels, k)).toArray(Key[]::new);

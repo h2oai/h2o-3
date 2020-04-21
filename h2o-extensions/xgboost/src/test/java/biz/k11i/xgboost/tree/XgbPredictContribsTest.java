@@ -6,11 +6,11 @@ import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.algos.tree.TreeSHAP;
 import hex.util.NaiveTreeSHAP;
 import ml.dmlc.xgboost4j.java.*;
+import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.ReflectionUtils;
 
 import java.io.*;
@@ -23,6 +23,8 @@ import static water.util.FileUtils.getFile;
 // this test demonstrates that XGBoost Predictor can be used to calculate feature contributions (Tree SHAP values)
 // naive (=slow) algorithm implemented and compared to implementation in XGBoost Predictor
 public class XgbPredictContribsTest {
+
+  private static final Logger LOG = Logger.getLogger(XgbPredictContribsTest.class);
 
   private List<Map<Integer, Float>> trainData;
   private DMatrix trainMat;
@@ -86,7 +88,7 @@ public class XgbPredictContribsTest {
       float[] ps = preds[i];
       float[] cs = ctrbs[i];
       if (i < 10) {
-        Log.info(ps[0] + " = Sum" + Arrays.toString(cs).replaceAll("0.0, ", ""));
+        LOG.info(ps[0] + " = Sum" + Arrays.toString(cs).replaceAll("0.0, ", ""));
       }
       assertEquals(ps[0], ArrayUtils.sum(cs), 1e-6);
       assertEquals(ps[0], pp[0], 1e-6);

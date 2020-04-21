@@ -103,8 +103,7 @@ public class TimeLine extends UDP {
       b._bb.limit(lim);
       b._bb.position(pos);
     } catch(Throwable t) {
-      System.err.println("Timeline record failed, " + t.toString());
-      Log.err(t);
+      Log.err("Timeline record failed, " + t.toString(), t);
     }
   }
   static void record_send( AutoBuffer b, boolean tcp)           {

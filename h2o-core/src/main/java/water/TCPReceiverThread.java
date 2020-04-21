@@ -117,8 +117,7 @@ public class TCPReceiverThread extends Thread {
           try { wrappedSocket.close(); } catch (Exception e2) { Log.trace(e2); }
         }
         // On any error from anybody, close all sockets & re-open
-        Log.err("IO error on TCP port "+H2O.H2O_PORT+": ",e);
-        Log.err(e);
+        Log.err("IO error on TCP port " + H2O.H2O_PORT + ": ", e);
         saw_error = true;
         errsock = SOCK ;  SOCK = null; // Signal error recovery on the next loop
       }
@@ -163,8 +162,7 @@ public class TCPReceiverThread extends Thread {
         } catch( Throwable e ) {
           // On any error from anybody, close everything
           System.err.println("IO error");
-          Log.err("IO error on TCP port "+H2O.H2O_PORT+": ",e);
-          Log.err(e);
+          Log.err("IO error on TCP port " + H2O.H2O_PORT + ": ", e);
           break;
         }
         // Reuse open sockets for the next task

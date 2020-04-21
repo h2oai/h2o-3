@@ -1,5 +1,6 @@
 package water.hive;
 
+import org.apache.log4j.Logger;
 import water.AbstractH2OExtension;
 import water.H2O;
 import water.Job;
@@ -9,7 +10,6 @@ import water.fvec.Frame;
 import water.parser.CsvParser;
 import water.parser.ParseDataset;
 import water.parser.ParseSetup;
-import water.util.Log;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -25,6 +25,8 @@ import static water.parser.ParseSetup.NO_HEADER;
 @SuppressWarnings("unused") // called via reflection
 public class HiveTableImporterImpl extends AbstractH2OExtension implements ImportHiveTableHandler.HiveTableImporter {
 
+  private static final Logger LOG = Logger.getLogger(HiveTableImporterImpl.class);
+  
   private static String NAME = "HiveTableImporter";
 
   @Override
@@ -285,7 +287,7 @@ public class HiveTableImporterImpl extends AbstractH2OExtension implements Impor
         if (strict)
           throw new IllegalArgumentException("Unsupported column type: " + hiveType);
         else {
-          Log.warn("Unrecognized Hive type '" + hiveType + "'. Using String type instead.");
+          LOG.warn("Unrecognized Hive type '" + hiveType + "'. Using String type instead.");
           return T_STR;
         }
     }

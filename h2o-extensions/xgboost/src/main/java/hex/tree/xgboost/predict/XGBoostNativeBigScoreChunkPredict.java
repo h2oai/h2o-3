@@ -7,8 +7,10 @@ import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
 import hex.tree.xgboost.XGBoostUtils;
+import hex.tree.xgboost.matrix.DenseMatrixFactory;
 import hex.tree.xgboost.util.BoosterHelper;
 import ml.dmlc.xgboost4j.java.*;
+import org.apache.log4j.Logger;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.Log;
@@ -16,6 +18,8 @@ import water.util.Log;
 import java.util.HashMap;
 
 public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib, Model.BigScoreChunkPredict {
+
+  private static final Logger LOG = Logger.getLogger(XGBoostNativeBigScoreChunkPredict.class);
 
   private final double _threshold;
   private final int _responseIndex;
@@ -116,7 +120,7 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
       try {
         Rabit.shutdown();
       } catch (XGBoostError xgBoostError) {
-        Log.err("Failed Rabit shutdown. A hanging RabitTracker task might be present on the driver node.", xgBoostError);
+        LOG.error("Failed Rabit shutdown. A hanging RabitTracker task might be present on the driver node.", xgBoostError);
       }
     }
   }

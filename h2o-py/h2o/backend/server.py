@@ -477,7 +477,7 @@ class H2OLocalServer(object):
 
         :returns: (scheme, ip, port) tuple if the server has already started, None otherwise.
         """
-        searchstr = "INFO: Open H2O Flow in your web browser:"
+        searchstr = ": Open H2O Flow in your web browser:"
         with open(self._stdout, "rt") as f:
             for line in f:
                 if searchstr in line:

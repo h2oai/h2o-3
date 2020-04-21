@@ -4,22 +4,24 @@ import hex.DataInfo;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import ml.dmlc.xgboost4j.java.util.BigDenseMatrix;
+import org.apache.log4j.Logger;
 import water.H2O;
 import water.LocalMR;
 import water.MrFun;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.Log;
 
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeightAndOffset;
 
 public class DenseMatrixFactory {
 
+    private static final Logger LOG = Logger.getLogger(DenseMatrixFactory.class);
+
     public static DMatrix dense(
         Chunk[] chunks, DataInfo di, int respIdx, float[] resp, float[] weights, int offsetIdx, float[] offsets
     ) throws XGBoostError {
-        Log.debug("Treating matrix as dense.");
+        LOG.debug("Treating matrix as dense.");
         BigDenseMatrix data = null;
         try {
             data = allocateDenseMatrix(chunks[0].len(), di);

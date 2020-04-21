@@ -2,8 +2,8 @@ package hex.tree.xgboost.rabit;
 
 import hex.tree.xgboost.rabit.communication.XGBoostAutoBuffer;
 import hex.tree.xgboost.rabit.util.LinkMap;
+import org.apache.log4j.Logger;
 import water.AutoBuffer;
-import water.util.Log;
 
 import java.io.IOException;
 import java.nio.channels.SocketChannel;
@@ -13,6 +13,8 @@ import java.util.Map;
 import java.util.Set;
 
 public class RabitWorker implements Comparable<RabitWorker> {
+
+    private static final Logger LOG = Logger.getLogger(RabitWorker.class);
 
     final String host;
     final int workerPort;
@@ -51,7 +53,7 @@ public class RabitWorker implements Comparable<RabitWorker> {
         this.cmd = safeLowercase(ab.getStr());
         this.waitAccept = 0;
         this.port = -1;
-        Log.debug("Initialized worker " + this.host + " with rank " + this.rank + " and command [" + this.cmd + "].");
+        LOG.debug("Initialized worker " + this.host + " with rank " + this.rank + " and command [" + this.cmd + "].");
     }
 
     private String safeLowercase(String str) {

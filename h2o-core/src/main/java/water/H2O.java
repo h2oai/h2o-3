@@ -430,7 +430,7 @@ final public class H2O {
           result.append(", ");
         }
         catch (IllegalAccessException ex) {
-          Log.err(ex);
+          Log.err(ex, ex);
         }
       }
       result.deleteCharAt(result.length() - 2);
@@ -2193,7 +2193,7 @@ final public class H2O {
     long time2 = System.currentTimeMillis();
     printAndLogVersion(arguments);
     if( ARGS.version ) {
-      Log.flushStdout();
+      Log.flushBufferedMessages();
       exit(0);
     }
 

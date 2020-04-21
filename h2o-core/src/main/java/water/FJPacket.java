@@ -36,8 +36,7 @@ class FJPacket extends H2OCountedCompleter {
   /** Exceptional completion path; mostly does printing if the exception was
    *  not handled earlier in the stack.  */
   @Override public boolean onExceptionalCompletion(Throwable ex, jsr166y.CountedCompleter caller) {
-    Log.err("onExCompletion for " + this);
-    Log.err(ex);
+    Log.err("onExCompletion for " + this, ex);
     return true;
   }
 }

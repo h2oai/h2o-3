@@ -1,5 +1,6 @@
 package water.hive;
 
+import org.apache.log4j.Logger;
 import water.jdbc.SQLManager;
 import water.util.JSONUtils;
 import water.util.Log;
@@ -14,6 +15,8 @@ import static java.util.Collections.emptyList;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class JdbcHiveMetadata implements HiveMetaData {
+
+    private static final Logger LOG = Logger.getLogger(JdbcHiveMetadata.class);
 
     private static final String SQL_SET_JSON_OUTPUT = "set hive.ddl.output.format=json";
     private static final String SQL_GET_VERSION = "select version()";
@@ -167,7 +170,7 @@ public class JdbcHiveMetadata implements HiveMetaData {
         Connection conn, String queryPattern, String tableName
     ) throws SQLException {
         String query = String.format(queryPattern, tableName);
-        Log.info("Executing Hive metadata query " + query);
+        LOG.info("Executing Hive metadata query " + query);
         String json = executeQuery(conn, query);
         return JSONUtils.parse(json);
     }

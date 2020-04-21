@@ -16,6 +16,7 @@ import hex.util.CheckpointUtils;
 import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
+import org.apache.log4j.Logger;
 import water.*;
 import ml.dmlc.xgboost4j.java.*;
 import water.exceptions.H2OIllegalArgumentException;
@@ -41,6 +42,8 @@ import static water.H2O.technote;
 public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParameters,XGBoostOutput> 
     implements PlattScalingHelper.ModelBuilderWithCalibration<XGBoostModel, XGBoostModel.XGBoostParameters, XGBoostOutput> {
 
+  private static final Logger LOG = Logger.getLogger(XGBoost.class);
+  
   private static final double FILL_RATIO_THRESHOLD = 0.25D;
 
   @Override public boolean haveMojo() { return true; }
@@ -280,7 +283,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     // 2) NAs (check that there's enough rows left)
     GLMTask.YMUTask ymt = new GLMTask.YMUTask(dinfo, nClasses,nClasses == 1, false, true, true).doAll(dinfo._adaptedFrame);
     if (parms._weights_column != null && parms._offset_column != null) {
-      Log.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
+      LOG.warn("Combination of offset and weights can lead to slight differences because Rollupstats aren't weighted - need to re-calculate weighted mean/sigma of the response including offset terms.");
     }
     if (parms._weights_column != null && parms._offset_column == null) {
       dinfo.updateWeightedSigmaAndMean(ymt.predictorSDs(), ymt.predictorMeans());
@@ -298,7 +301,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       int original_chunks = original_fr.anyVec().nChunks();
       if (original_chunks == 1)
         return original_fr;
-      Log.info("Rebalancing " + name.substring(name.length()-5) + " dataset onto a single node.");
+      LOG.info("Rebalancing " + name.substring(name.length()-5) + " dataset onto a single node.");
       Key newKey = Key.make(name + ".1chk");
       RebalanceDataSet rb = new RebalanceDataSet(original_fr, newKey, 1);
       H2O.submitTask(rb).join();
@@ -392,7 +395,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       } finally {
         if (featureMapFile != null) {
           if (! featureMapFile.delete()) {
-            Log.warn("Unable to delete file " + featureMapFile + ". Please do a manual clean-up.");
+            LOG.warn("Unable to delete file " + featureMapFile + ". Please do a manual clean-up.");
           }
         }
         // Unlock & save results
@@ -427,7 +430,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       final long totalColumns = oneHotEncodedColumns + nonCategoricalColumns;
       final double denominator = (double) totalColumns * _train.numRows();
       final double fillRatio = (double) nonZeroCount / denominator;
-      Log.info("fill ratio: " + fillRatio);
+      LOG.info("fill ratio: " + fillRatio);
 
       return fillRatio < FILL_RATIO_THRESHOLD
           || ((_train.numRows() * totalColumns) > Integer.MAX_VALUE);
@@ -453,14 +456,14 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         // During first iteration model contains 0 trees, then 1-tree, ...
         boolean scored = doScoring(model, boosterProvider, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
-          Log.info("Early stopping triggered - stopping XGBoost training");
+          LOG.info("Early stopping triggered - stopping XGBoost training");
           break;
         }
 
         Timer kb_timer = new Timer();
         XGBoostUpdateTask t = new XGBoostUpdateTask(setupTask, tid).run();
         boosterProvider.reset(t);
-        Log.info((tid + 1) + ". tree was built in " + kb_timer.toString());
+        LOG.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
 
         model._output._ntrees++;
@@ -469,7 +472,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._training_time_ms = ArrayUtils.copyAndFillOf(model._output._training_time_ms, model._output._ntrees+1, System.currentTimeMillis());
         if (stop_requested() && !timeout()) throw new Job.JobCancelledException();
         if (timeout()) {
-          Log.info("Stopping XGBoost training because of timeout");
+          LOG.info("Stopping XGBoost training because of timeout");
           break;
         }
       }
@@ -644,7 +647,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           out._variable_importances_frequency = createVarImpTable("Frequency", ArrayUtils.toDouble(out._varimp._freqs), out._varimp._names);
         }
         model.update(_job);
-        Log.info(model);
+        LOG.info(model);
         scored = true;
       }
 
@@ -718,7 +721,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       new RPC<>(node, t).call().get();
       hasGPU = t._hasGPU;
     }
-    Log.debug("Availability of GPU (id=" + gpu_id + ") on node " + node + ": " + hasGPU);
+    LOG.debug("Availability of GPU (id=" + gpu_id + ") on node " + node + ": " + hasGPU);
     return hasGPU;
   }
 
@@ -783,7 +786,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       try {
         Rabit.shutdown();
       } catch (XGBoostError e) {
-        Log.warn("Cannot shutdown XGBoost Rabit for current thread.");
+        LOG.warn("Cannot shutdown XGBoost Rabit for current thread.");
       }
     }
   }

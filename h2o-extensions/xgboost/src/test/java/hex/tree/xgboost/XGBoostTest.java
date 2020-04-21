@@ -14,9 +14,10 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.xgboost.util.BoosterDump;
 import hex.tree.xgboost.util.FeatureScore;
-import ml.dmlc.xgboost4j.java.*;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
+import ml.dmlc.xgboost4j.java.*;
+import org.apache.log4j.Logger;
 import org.hamcrest.CoreMatchers;
 import org.junit.*;
 import org.junit.rules.ExpectedException;
@@ -28,7 +29,6 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.rapids.Rapids;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.TwoDimTable;
 
 import java.io.*;
@@ -42,6 +42,8 @@ import static water.util.FileUtils.getFile;
 
 @RunWith(Parameterized.class)
 public class XGBoostTest extends TestUtil {
+
+  private static final Logger LOG = Logger.getLogger(XGBoostTest.class);
 
   @Parameterized.Parameters(name = "XGBoost(javaPredict={0}")
   public static Collection<Object> data() {
@@ -93,34 +95,34 @@ public class XGBoostTest extends TestUtil {
       boolean error = false;
 
       if (vecs.length != fm.vecs.length) {
-        Log.warn("Training frame vec count has changed from: " +
+        LOG.warn("Training frame vec count has changed from: " +
                 vecs.length + " to: " + fm.vecs.length);
         error = true;
       }
       if (names.length != fm.names.length) {
-        Log.warn("Training frame vec count has changed from: " +
+        LOG.warn("Training frame vec count has changed from: " +
                 names.length + " to: " + fm.names.length);
         error = true;
       }
 
       for (int i = 0; i < fm.vecs.length; i++) {
         if (!fm.vecs[i].equals(fm.vecs[i])) {
-          Log.warn("Training frame vec number " + i + " has changed keys.  Was: " +
+          LOG.warn("Training frame vec number " + i + " has changed keys.  Was: " +
                   vecs[i] + " , now: " + fm.vecs[i]);
           error = true;
         }
         if (!fm.names[i].equals(fm.names[i])) {
-          Log.warn("Training frame vec number " + i + " has changed names.  Was: " +
+          LOG.warn("Training frame vec number " + i + " has changed names.  Was: " +
                   names[i] + " , now: " + fm.names[i]);
           error = true;
         }
         if (checksums[i] != fm.vecs[i].checksum()) {
-          Log.warn("Training frame vec number " + i + " has changed checksum.  Was: " +
+          LOG.warn("Training frame vec number " + i + " has changed checksum.  Was: " +
                   checksums[i] + " , now: " + fm.vecs[i].checksum());
           error = true;
         }
         if (domains[i] != null && ! Arrays.equals(domains[i], fm.vecs[i].domain())) {
-          Log.warn("Training frame vec number " + i + " has changed domain.  Was: " +
+          LOG.warn("Training frame vec number " + i + " has changed domain.  Was: " +
                   domains[i] + " , now: " + fm.vecs[i].domain());
           error = true;
         }
@@ -213,7 +215,7 @@ public class XGBoostTest extends TestUtil {
       float[] ps = preds[i];
       float[] cs = contribs[i];
       if (i < 10) {
-        Log.info(ps[0] + " = Sum" + Arrays.toString(cs).replaceAll("0.0, ", ""));
+        LOG.info(ps[0] + " = Sum" + Arrays.toString(cs).replaceAll("0.0, ", ""));
       }
       assertEquals(ps[0], ArrayUtils.sum(cs), 1e-6);
     }
@@ -434,7 +436,7 @@ public class XGBoostTest extends TestUtil {
       booster.update(trainMat, i);
       float[][] preds = booster.predict(testMat);
       for (int j = 0; j < 10; ++j)
-        Log.info(preds[j][0]);
+        LOG.info(preds[j][0]);
     }
     Rabit.shutdown();
   }
@@ -476,7 +478,7 @@ public class XGBoostTest extends TestUtil {
       parms._response_column = response;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      Log.info(model);
+      LOG.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
       assertEquals(metadataBefore, metadataAfter);
@@ -539,7 +541,7 @@ public class XGBoostTest extends TestUtil {
       parms._response_column = response;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      Log.info(model);
+      LOG.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
       assertEquals(metadataBefore, metadataAfter);
@@ -645,7 +647,7 @@ public class XGBoostTest extends TestUtil {
       parms._ignored_columns = new String[]{"name"};
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      Log.info(model);
+      LOG.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
       assertEquals(metadataBefore, metadataAfter);
@@ -707,7 +709,7 @@ public class XGBoostTest extends TestUtil {
       parms._ignored_columns = new String[]{"ID"};
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      Log.info(model);
+      LOG.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
       assertEquals(metadataBefore, metadataAfter);
@@ -1030,7 +1032,7 @@ public class XGBoostTest extends TestUtil {
         parms._ignored_columns = new String[]{"ID"};
 
         model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-        Log.info(model);
+        LOG.info(model);
 
         FrameMetadata metadataAfter = new FrameMetadata(tfr);
         assertEquals(metadataBefore, metadataAfter);
@@ -1076,7 +1078,7 @@ public class XGBoostTest extends TestUtil {
       parms._seed = 0xCAFEBABE;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      Log.info(model);
+      LOG.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
       assertEquals(metadataBefore, metadataAfter);
@@ -1174,7 +1176,7 @@ public class XGBoostTest extends TestUtil {
       parms._grow_policy = XGBoostModel.XGBoostParameters.GrowPolicy.lossguide;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      Log.info(model);
+      LOG.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
       assertEquals(metadataBefore, metadataAfter);
@@ -1216,7 +1218,7 @@ public class XGBoostTest extends TestUtil {
       parms._response_column = response;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
-      Log.info(model);
+      LOG.info(model);
 
       FrameMetadata metadataAfter = new FrameMetadata(tfr);
       assertEquals(metadataBefore, metadataAfter);
@@ -1320,7 +1322,7 @@ public class XGBoostTest extends TestUtil {
       assertNotNull(sparseModel);
 
 
-      Log.info(denseModel);
+      LOG.info(denseModel);
     } finally {
       if(denseModel != null) denseModel.deleteCrossValidationModels();
       if(sparseModel != null) sparseModel.deleteCrossValidationModels();
@@ -1380,7 +1382,7 @@ public class XGBoostTest extends TestUtil {
       assertNotNull(denseModel);
       assertFalse(denseModel._output._sparse);
 
-      Log.info(sparseModel);
+      LOG.info(sparseModel);
     } finally {
       if(sparseModel != null) sparseModel.deleteCrossValidationModels();
       if(denseModel != null) denseModel.deleteCrossValidationModels();
@@ -1406,7 +1408,7 @@ public class XGBoostTest extends TestUtil {
       parms._ntrees = 7;
 
       XGBoostModel model = (XGBoostModel) Scope.track_generic(new hex.tree.xgboost.XGBoost(parms).trainModel().get());
-      Log.info(model);
+      LOG.info(model);
 
       String[] dump = BoosterDump.getBoosterDump(model.model_info()._boosterBytes, model.model_info()._featureMap, false, "text");
       assertEquals(parms._ntrees, dump.length);
@@ -1580,7 +1582,7 @@ public class XGBoostTest extends TestUtil {
 
       XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
       Scope.track_generic(model);
-      Log.info(model);
+      LOG.info(model);
 
       Frame contributions = model.scoreContributions(tfr, Key.make());
       Scope.track(contributions);

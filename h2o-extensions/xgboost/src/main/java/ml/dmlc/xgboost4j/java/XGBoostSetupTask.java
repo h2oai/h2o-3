@@ -3,11 +3,11 @@ package ml.dmlc.xgboost4j.java;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostUtils;
+import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.IcedHashMapGeneric;
-import water.util.Log;
 
 import java.io.File;
 import java.util.Map;
@@ -16,6 +16,8 @@ import java.util.Map;
  * Initializes XGBoost training (converts Frame to set of node-local DMatrices)
  */
 public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
+
+  private static final Logger LOG = Logger.getLogger(XGBoostSetupTask.class);
 
   private final XGBoostModelInfo _sharedModel;
   private final XGBoostModel.XGBoostParameters _parms;
@@ -47,10 +49,10 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
       if (_parms._save_matrix_directory != null) {
         File directory = new File(_parms._save_matrix_directory);
         if (directory.mkdirs()) {
-          Log.debug("Created directory for matrix export: " + directory.getAbsolutePath());
+          LOG.debug("Created directory for matrix export: " + directory.getAbsolutePath());
         }
         File path = new File(directory, "matrix.part" + H2O.SELF.index()); 
-        Log.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
+        LOG.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
         matrix.saveBinary(path.getAbsolutePath());
       }
     } catch (XGBoostError xgBoostError) {
