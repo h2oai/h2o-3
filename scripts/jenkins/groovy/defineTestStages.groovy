@@ -10,6 +10,7 @@ def call(final pipelineContext) {
   def MODE_HADOOP_MULTINODE_CODE = 7
   def MODE_MASTER_CODE = 10
   def MODE_NIGHTLY_CODE = 20
+  def MODE_KUBERNETES_CODE = 30
   def MODES = [
     [name: 'MODE_PR', code: MODE_PR_CODE],
     [name: 'MODE_HADOOP', code: MODE_HADOOP_CODE],
@@ -20,7 +21,8 @@ def call(final pipelineContext) {
     [name: 'MODE_SINGLE_TEST', code: MODE_SINGLE_TEST_CODE],
     [name: 'MODE_BENCHMARK', code: MODE_BENCHMARK_CODE],
     [name: 'MODE_MASTER', code: MODE_MASTER_CODE],
-    [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE]
+    [name: 'MODE_NIGHTLY', code: MODE_NIGHTLY_CODE],
+    [name: 'MODE_KUBERNETES', code: MODE_KUBERNETES_CODE],
   ]
 
   def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
@@ -366,6 +368,15 @@ def call(final pipelineContext) {
     ]
   ]
 
+  def KUBERNETES_STAGES = [
+    [
+      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
+      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], addToDockerGroup: true
+    ]
+  ]
+
   def supportedHadoopDists = pipelineContext.getBuildConfig().getSupportedHadoopDistributions()
   def HADOOP_STAGES = []
   for (distribution in supportedHadoopDists) {
@@ -603,6 +614,8 @@ def call(final pipelineContext) {
     executeInParallel(COVERAGE_STAGES, pipelineContext)
   } else if (modeCode == MODE_SINGLE_TEST_CODE) {
     executeInParallel(SINGLE_TEST_STAGES, pipelineContext)
+  } else if (modeCode == MODE_KUBERNETES_CODE) {
+    executeInParallel(KUBERNETES_STAGES, pipelineContext)
   } else {
     def jobs = PR_STAGES
     if (modeCode >= MODE_MASTER_CODE) {
