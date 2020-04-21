@@ -63,7 +63,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
     param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
                    "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                   "metalearner_fold_column", "metalearner_params", "seed", "training_scoring_subsample_size",
+                   "metalearner_fold_column", "metalearner_params", "seed", "score_training_samples",
                    "keep_levelone_frame", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
@@ -598,18 +598,19 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     @property
-    def training_scoring_subsample_size(self):
+    def score_training_samples(self):
         """
-        Size of training subsample used to compute training metrics. Use -1 to use the whole training frame.
+        Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
+        enter 0.
 
         Type: ``int``  (default: ``10000``).
         """
-        return self._parms.get("training_scoring_subsample_size")
+        return self._parms.get("score_training_samples")
 
-    @training_scoring_subsample_size.setter
-    def training_scoring_subsample_size(self, training_scoring_subsample_size):
-        assert_is_type(training_scoring_subsample_size, None, int)
-        self._parms["training_scoring_subsample_size"] = training_scoring_subsample_size
+    @score_training_samples.setter
+    def score_training_samples(self, score_training_samples):
+        assert_is_type(score_training_samples, None, int)
+        self._parms["score_training_samples"] = score_training_samples
 
 
     @property

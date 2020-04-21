@@ -68,7 +68,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String _metalearner_params = new String(); //used for clients code-gen only.
     public Model.Parameters _metalearner_parameters;
     public long _seed;
-    public long _training_scoring_subsample_size = 10_000;
+    public long _score_training_samples = 10_000;
 
     /**
      * initialize {@link #_metalearner_parameters} with default parameters for the current {@link #_metalearner_algorithm}.
@@ -135,7 +135,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
                             Frame basePreds = baseModel.score(
                                     fr,
-                                    "preds_base_" + seKey + fr._key,
+                                    "preds_base_" + seKey + baseModelKey + fr._key,
                                     j,
                                     false
                             );
@@ -225,26 +225,15 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   }
 
   ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
-    if (_parms._training_scoring_subsample_size > 0 && _parms._training_scoring_subsample_size < frame.numRows()) { 
-Frame scoredFrame = (_parms._training_scoring_subsample_size > 0 && _parms._training_scoring_subsample_size < frame.numRows()) 
-        ? MRUtils.sampleFrame(frame, _parms._training_scoring_subsample_size, _parms._seed)
-        : frame;
-try {
-      Frame pred = this.predictScoreImpl(frame, new Frame(scoredFrame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
+    Frame scoredFrame = (_parms._score_training_samples > 0 && _parms._score_training_samples < frame.numRows())
+            ? MRUtils.sampleFrame(frame, _parms._score_training_samples, _parms._seed)
+            : frame;
+    try {
+      Frame pred = this.predictScoreImpl(scoredFrame, new Frame(scoredFrame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
       pred.delete();
-      return ModelMetrics.getFromDKV(this, frame);
-} finally {
-     if (scoredFrame != frame) scoredFrame.delete();
-}  
-      Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
-      pred.delete();
-      ModelMetrics metrics = ModelMetrics.getFromDKV(this, frame);
-      frame.delete();
-      return metrics;
-    } else {
-      Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
-      pred.delete();
-      return ModelMetrics.getFromDKV(this, frame);
+      return ModelMetrics.getFromDKV(this, scoredFrame);
+    } finally {
+      if (scoredFrame != frame) scoredFrame.delete();
     }
   }
 
