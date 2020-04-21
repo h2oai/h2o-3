@@ -21,7 +21,7 @@ private GString getCommandHadoop(final stageConfig) {
             hadoop jar h2o-hadoop-*/h2o-${stageConfig.customData.distribution}${stageConfig.customData.version}-assembly/build/libs/h2odriver.jar \\
                 -disable_flow \\
                 -n 1 -mapperXmx 2g -baseport 54445 -timeout 300 \\
-                -internal_secure_connections \\
+                -internal_secure_connections -allow_insecure_xgboost \\
                 -jks mykeystore.jks \\
                 -notify h2o_one_node \\
                 -flatfile flatfile.lst \\
