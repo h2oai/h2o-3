@@ -33,7 +33,7 @@ public class ModelPngWriter implements StreamWriter {
                 os.close();
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Reading the png and writing it to the stream failed.", e);
         }
     }
 

@@ -24,44 +24,56 @@ import java.util.Map;
 
 public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
 
+    private SharedTreeGraph sharedTreeGraph = null;
+
+    public JgraphtPrintMojo() {
+        //no code
+    }
+
+    public JgraphtPrintMojo(String outputPath, SharedTreeGraph g) {
+        destination = outputPath;
+        pTreeOptions = new PrintTreeOptions(setDecimalPlaces, nPlaces, fontSize, internal);
+        format = Format.png;
+        sharedTreeGraph = g;
+    }
+
     @Override
     public void run() throws Exception {
-        if (!Format.png.equals(format)){
+        if (!Format.png.equals(format)) {
             super.run();
+            return;
+        }
+        if (sharedTreeGraph != null) {
+            // called from Flow
+            printPng(sharedTreeGraph);
         } else {
-            validateArgs();
-            if (genModel instanceof TreeBackedMojoModel){
-                TreeBackedMojoModel treeBackedModel = (TreeBackedMojoModel) genModel;
-                ConvertTreeOptions options = new ConvertTreeOptions().withTreeConsistencyCheckEnabled();
-                final SharedTreeGraph g = treeBackedModel.convert(treeToPrint, null, options);
-                printPng(g);
-            }
-            else {
-                System.out.println("ERROR: Unknown MOJO type");
-                System.exit(1);
-            }
-        } 
-    }
-    
-    public void runFromFlow(SharedTreeGraph g, String outputPath){
-        try {
-            destination = outputPath;
-            pTreeOptions = new PrintTreeOptions(setDecimalPlaces, nPlaces, fontSize, internal);    
-            printPng(g);
-        } catch (ImportException | IOException e) {
-            throw new RuntimeException(e);
+            // called from terminal
+            handlePrintingFromMojo();
         }
     }
 
     @Override
-    public boolean supportsFormat(Format format){
+    public boolean supportsFormat(Format format) {
         return true;
     }
-    
+
+    private void handlePrintingFromMojo() throws IOException, ImportException {
+        validateArgs();
+        if (genModel instanceof TreeBackedMojoModel) {
+            TreeBackedMojoModel treeBackedModel = (TreeBackedMojoModel) genModel;
+            ConvertTreeOptions options = new ConvertTreeOptions().withTreeConsistencyCheckEnabled();
+            sharedTreeGraph = treeBackedModel.convert(treeToPrint, null, options);
+            printPng(sharedTreeGraph);
+        } else {
+            System.out.println("ERROR: Unknown MOJO type");
+            System.exit(1);
+        }
+    }
+
     private void printPng(SharedTreeGraph trees) throws IOException, ImportException {
         Path outputDirectoryPath = Paths.get(destination);
         int numberOfTrees = trees.subgraphArray.size();
-        if (numberOfTrees > 1) { 
+        if (numberOfTrees > 1) {
             if (destination == null) {
                 destination = Paths.get("").toString();
             }
@@ -109,7 +121,7 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
             return destination;
         } else {
             return destination + "/" + treeName.replaceAll("\\s+", "").replaceAll(",", "_") + ".png";
-       }
+        }
     }
 
     private class LabeledVertexProvider implements VertexProvider<LabeledVertex> {
@@ -126,7 +138,8 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
             return new LabeledEdge(l);
         }
     }
-    private class ComponentUpdater implements org.jgrapht.io.ComponentUpdater<LabeledVertex>{
+
+    private class ComponentUpdater implements org.jgrapht.io.ComponentUpdater<LabeledVertex> {
         @Override
         public void update(LabeledVertex v, Map<String, Attribute> attrs) {
         }
@@ -139,10 +152,8 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
          * Constructs a relationship edge
          *
          * @param label the label of the new edge.
-         *
          */
-        public LabeledEdge(String label)
-        {
+        public LabeledEdge(String label) {
             this.label = label;
         }
 
@@ -151,49 +162,41 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
          *
          * @return edge label
          */
-        public String getLabel()
-        {
+        public String getLabel() {
             return label;
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return label;
         }
     }
 
-    static class LabeledVertex
-    {
+    static class LabeledVertex {
         private String id;
         private String label;
 
-        public LabeledVertex(String id)
-        {
+        public LabeledVertex(String id) {
             this(id, null);
         }
 
-        public LabeledVertex(String id, String label)
-        {
+        public LabeledVertex(String id, String label) {
             this.id = id;
             this.label = label;
         }
 
         @Override
-        public int hashCode()
-        {
+        public int hashCode() {
             return (id == null) ? 0 : id.hashCode();
         }
 
         @Override
-        public String toString()
-        {
+        public String toString() {
             return label;
         }
 
         @Override
-        public boolean equals(Object obj)
-        {
+        public boolean equals(Object obj) {
             if (this == obj)
                 return true;
             if (obj == null)
@@ -208,5 +211,5 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
             }
         }
     }
-    
+
 }

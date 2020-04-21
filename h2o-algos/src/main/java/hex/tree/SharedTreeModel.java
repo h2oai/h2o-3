@@ -631,13 +631,17 @@ public abstract class SharedTreeModel<
    */
   @Override
   public void visualize(String output) {
-    JgraphtPrintMojo jgraphtPrintMojo = new JgraphtPrintMojo();
-    List<SharedTreeSubgraph> subgraphArray = new ArrayList<>();
+    List<SharedTreeSubgraph> subgraphList = new ArrayList<>();
     for (int i = 0; i < this._parms._ntrees; i++) {
-      subgraphArray.add(this.getSharedTreeSubgraph(i, 0));
+      subgraphList.add(this.getSharedTreeSubgraph(i, 0));
     }
-    SharedTreeGraph sharedTreeGraph = new SharedTreeGraph(subgraphArray);
-    jgraphtPrintMojo.runFromFlow(sharedTreeGraph, output);
+    try {
+      SharedTreeGraph sharedTreeGraph = new SharedTreeGraph(subgraphList);
+      JgraphtPrintMojo jgraphtPrintMojo = new JgraphtPrintMojo(output, sharedTreeGraph);
+      jgraphtPrintMojo.run();
+    } catch (Exception e) {
+      throw new RuntimeException("Shared tree model visualization failed.", e);
+    }
   }
 
   //--------------------------------------------------------------------------------------------------------------------
