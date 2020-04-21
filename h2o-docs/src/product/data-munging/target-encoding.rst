@@ -191,6 +191,7 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     import h2o
     h2o.init()
     from h2o.estimators import H2OTargetEncoderEstimator
+    from h2o.estimators.gbm import H2OGradientBoostingEstimator
 
     #Import the titanic dataset
     titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
@@ -209,7 +210,7 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     blended_avg= True
     inflection_point = 3
     smoothing = 10
-    # In general, the less data you have the more regularisation you need
+    # In general, the less data you have the more regularization you need
     noise = 0.15
 
     # For k_fold strategy we need to provide fold column
@@ -219,11 +220,14 @@ In this example, we will be trying to predict ``survived`` using the popular tit
 
     # Train a TE model
     titanic_te = H2OTargetEncoderEstimator(fold_column=fold_column,
-                                           data_leakage_handling=data_leakage_handling, blending=blended_avg, k=inflection_point, f=smoothing)
+                                           data_leakage_handling=data_leakage_handling, 
+                                           blending=blended_avg, 
+                                           k=inflection_point, 
+                                           f=smoothing)
 
     titanic_te.train(x=encoded_columns,
-                                y=response,
-                                training_frame=train)
+                     y=response,
+                     training_frame=train)
 
     # New target encoded train and test sets
     train_te = titanic_te.transform(frame=train, data_leakage_handling="k_fold", seed=1234, noise=noise)
