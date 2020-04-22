@@ -179,6 +179,12 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
   /** If true, run entirely local - which will pull all the data locally. */
   protected boolean _run_local;
 
+  private PostMapAction<?> _postMap; 
+  public final MRTask<T> withPostMapAction(PostMapAction<?> postMap) {
+    _postMap = postMap;
+    return this;
+  }
+
   public String profString() { return _profile != null ? _profile.toString() : "Profiling turned off"; }
   MRProfile _profile;
 
@@ -610,6 +616,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         if(_profile!=null) _profile._userstart = System.currentTimeMillis();
         if( _keys != null ) map(_keys[_lo]);
         _res = self();        // Save results since called map() at least once!
+        if (_postMap != null)
+          _postMap.call(_keys[_lo]);
         if(_profile!=null) _profile._closestart = System.currentTimeMillis();
       }
     } else if( _hi > _lo ) {    // Frame, Single chunk?
@@ -670,6 +678,8 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
         // Further D/K/V put any new vec results.
         if(_profile!=null)
           _profile._closestart = System.currentTimeMillis();
+        if (_postMap != null)
+          _postMap.call(bvs);
         for( Chunk bv : bvs )  bv.close(_lo,_fs);
         if( _output_types != null) for(NewChunk nch:appendableChunks)nch.close(_lo, _fs);
       }
@@ -805,4 +815,14 @@ public abstract class MRTask<T extends MRTask<T>> extends DTask<T> implements Fo
     x.setPendingCount(0); // Volatile write for completer field; reset pending count also
     return x;
   }
+
+  public static abstract class PostMapAction<T extends PostMapAction<T>> extends Iced<T> {
+    void call(Key mapInput) {
+      // do nothing by default
+    }
+    void call(Chunk[] mapInput) {
+      // do nothing by default
+    }
+  }
+
 }

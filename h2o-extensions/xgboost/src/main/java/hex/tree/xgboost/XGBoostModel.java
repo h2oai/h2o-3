@@ -573,6 +573,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   @Override
   public Frame scoreContributions(Frame frame, Key<Frame> destination_key) {
+    return scoreContributions(frame, destination_key, null);
+  }
+
+  @Override
+  public Frame scoreContributions(Frame frame, Key<Frame> destination_key, Job<Frame> j) {
     Frame adaptFrm = new Frame(frame);
     adaptTestForTrain(adaptFrm, true, false);
 
@@ -581,6 +586,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     final String[] outputNames = ArrayUtils.append(di.coefNames(), "BiasTerm");
 
     return new PredictTreeSHAPTask(di, model_info(), _output)
+            .withPostMapAction(JobUpdatePostMap.forJob(j))
             .doAll(outputNames.length, Vec.T_NUM, adaptFrm)
             .outputFrame(destination_key, outputNames, null);
   }
