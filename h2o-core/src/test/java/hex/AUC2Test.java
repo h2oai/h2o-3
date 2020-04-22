@@ -1,6 +1,7 @@
 package hex;
 
 import org.apache.commons.lang.ArrayUtils;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -52,8 +53,8 @@ public class AUC2Test {
     double mcc = AUC2.ThresholdCriterion.absolute_mcc.exec(auc2, 0);
     double exact_mcc = (tp*tn - fp*fn);
     exact_mcc /= Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
-    assert mcc == 1: "It should return MCC = 1, but it returns "+ mcc;
-    assert mcc != exact_mcc;
     System.out.println("Returned MCC: "+ mcc +", exact MCC: "+ exact_mcc);
+    Assert.assertEquals("It should return MCC = 1, but it returns "+ mcc, mcc, 1, 0);
+    Assert.assertNotEquals("Exact mcc should not be the same as returned mcc due to double precision.", mcc, exact_mcc);
   }
 }
