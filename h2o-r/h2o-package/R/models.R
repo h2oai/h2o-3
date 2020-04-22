@@ -967,6 +967,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' @param actuals An H2OFrame containing actual values
 #' @param domain Vector with response factors for classification.
 #' @param distribution Distribution for regression.
+#' @param weights (optional) An H2OFrame containing observation weights.
 #' @return Returns an object of the \linkS4class{H2OModelMetrics} subclass.
 #' @examples
 #' \dontrun{
@@ -980,17 +981,21 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' h2o.make_metrics(pred, prostate$CAPSULE)
 #' }
 #' @export
-h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL) {
+h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL, weights=NULL) {
+  predicted <- .validate.H2OFrame(predicted, required=TRUE)
+  actuals <- .validate.H2OFrame(actuals, required=TRUE)
+  weights <- .validate.H2OFrame(weights, required=FALSE)
   params <- list()
-  pred <- h2o.getId(predicted)
-  act <- h2o.getId(actuals)
-  params[["predictions_frame"]] <- pred
-  params[["actuals_frame"]] <- act
-  params[["domain"]] <- domain
-  params[["distribution"]] <- distribution
+  params$predictions_frame <- h2o.getId(predicted)
+  params$actuals_frame <- h2o.getId(actuals)
+  if (!is.null(weights)) {
+    params$weights_frame <- h2o.getId(weights)
+  }
+  params$domain <- domain
+  params$distribution <- distribution
 
   if (is.null(domain) && !is.null(h2o.levels(actuals)))
-    domain = h2o.levels(actuals)
+    domain <- h2o.levels(actuals)
 
   ## pythonify the domain
   if (!is.null(domain)) {
@@ -1001,7 +1006,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL)
     out <- paste0(out, "]")
     params[["domain"]] <- out
   }
-  url <- paste0("ModelMetrics/predictions_frame/",pred,"/actuals_frame/",act)
+  url <- paste0("ModelMetrics/predictions_frame/",params$predictions_frame,"/actuals_frame/",params$actuals_frame)
   res <- .h2o.__remoteSend(method = "POST", url, .params = params)
   model_metrics <- res$model_metrics
   metrics <- model_metrics[!(names(model_metrics) %in% c("__meta", "names", "domains", "model_category"))]

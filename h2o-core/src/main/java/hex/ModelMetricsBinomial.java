@@ -88,6 +88,10 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     return make(targetClassProbs,actualLabels,actualLabels.domain());
   }
 
+  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
+    return make(targetClassProbs, actualLabels,  null, domain);
+  }
+
   /**
    * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
    * @param targetClassProbs A Vec containing target class probabilities
@@ -95,7 +99,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
    * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
    * @return ModelMetrics object
    */
-  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, String[] domain) {
+  static public ModelMetricsBinomial make(Vec targetClassProbs, Vec actualLabels, Vec weights, String[] domain) {
     Scope.enter();
     try {
       Vec labels = actualLabels.toCategoricalVec();
@@ -111,12 +115,18 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       labels = labels.adaptTo(domain);
       if (labels.cardinality() != 2)
         throw new IllegalArgumentException("Adapted domain must have 2 class labels, but is " + Arrays.toString(labels.domain()) + " for binomial metrics.");
-      Frame predsLabel = new Frame(targetClassProbs);
-      predsLabel.add("labels", labels);
-      MetricBuilderBinomial mb = new BinomialMetrics(labels.domain()).doAll(predsLabel)._mb;
+
+      Frame fr = new Frame(targetClassProbs);
+      fr.add("labels", labels);
+      if (weights != null) {
+        fr.add("weights", weights);
+      }
+
+      MetricBuilderBinomial mb = new BinomialMetrics(labels.domain()).doAll(fr)._mb;
       labels.remove();
       Frame preds = new Frame(targetClassProbs);
-      ModelMetricsBinomial mm = (ModelMetricsBinomial) mb.makeModelMetrics(null, predsLabel, null, preds);
+      ModelMetricsBinomial mm = (ModelMetricsBinomial) mb.makeModelMetrics(null, fr, preds, 
+              fr.vec("labels"), fr.vec("weights")); // use the Vecs from the frame (to make sure the ESPC is identical)
       mm._description = "Computed on user-given predictions and labels, using F1-optimal threshold: " + mm.auc_obj().defaultThreshold() + ".";
       return mm;
     } finally {
@@ -132,12 +142,16 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
     @Override public void map(Chunk[] chks) {
       _mb = new MetricBuilderBinomial(domain);
       Chunk actuals = chks[1];
-      double [] ds = new double[3];
+      Chunk weights = chks.length == 3 ? chks[2] : null;
+      double[] ds = new double[3];
+      float[] acts = new float[1];
       for (int i=0;i<chks[0]._len;++i) {
         ds[2] = chks[0].atd(i); //class 1 probs (user-given)
         ds[1] = 1-ds[2]; //class 0 probs
         ds[0] = GenModel.getPrediction(ds, null, ds, Double.NaN/*ignored - uses AUC's default threshold*/); //label
-        _mb.perRow(ds, new float[]{(float)actuals.atd(i)}, null);
+        acts[0] = (float) actuals.atd(i);
+        double weight = weights != null ? weights.atd(i) : 1;
+        _mb.perRow(ds, acts, weight, 0,null);
       }
     }
     @Override public void reduce(BinomialMetrics mrt) { _mb.reduce(mrt._mb); }
@@ -202,15 +216,32 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
      * @param preds Optional predictions (can be null), only used to compute Gains/Lift table for binomial problems  @return
      * @return ModelMetricsBinomial
      */
-    @Override public ModelMetrics makeModelMetrics(Model m, Frame f, Frame frameWithWeights, Frame preds) {
-      GainsLift gl = null;
+    @Override public ModelMetrics makeModelMetrics(final Model m, final Frame f, 
+                                                   Frame frameWithWeights, final Frame preds) {
+      Vec resp = null;
+      Vec weight = null;
       if (_wcount > 0) {
         if (preds!=null) {
-          if (frameWithWeights == null) frameWithWeights = f;
-          Vec resp = m==null && frameWithWeights.vec(f.numCols()-1).isCategorical() ? frameWithWeights.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
-                  : frameWithWeights.vec(m._parms._response_column);
+          if (frameWithWeights == null) 
+            frameWithWeights = f;
+          resp = m==null && frameWithWeights.vec(f.numCols()-1).isCategorical() ? 
+                  frameWithWeights.vec(f.numCols()-1) //work-around for the case where we don't have a model, assume that the last column is the actual response
+                  :
+                  frameWithWeights.vec(m._parms._response_column);
           if (resp != null) {
-            Vec weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
+            weight = m==null?null : frameWithWeights.vec(m._parms._weights_column);
+          }
+        }
+      }
+      return makeModelMetrics(m, f, preds, resp, weight);
+    }
+
+    private ModelMetrics makeModelMetrics(final Model m, final Frame f, final Frame preds, 
+                                          final Vec resp, final Vec weight) {
+      GainsLift gl = null;
+      if (_wcount > 0) {
+        if (preds != null) {
+          if (resp != null) {
             gl = calculateGainsLift(m, preds, resp, weight);
           }
         }

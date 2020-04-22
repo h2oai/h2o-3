@@ -1,27 +1,33 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../scripts/h2o-r-test-setup.R")
 
-test.make_metrics_binomial <- function() {
-    train = h2o.importFile(locate("smalldata/logreg/prostate.csv"))
+test.make_metrics_binomial <- function(weights_col = NULL) {
+    train <- h2o.importFile(locate("smalldata/logreg/prostate.csv"))
     train$CAPSULE <- as.factor(train$CAPSULE)
     train$RACE <- as.factor(train$RACE)
+    weights <- NULL
+    if (!is.null(weights_col)) {
+        weights <- h2o.runif(train, seed = 42)
+        train[[weights_col]] <- weights
+    }
 
-    response = "CAPSULE"
-    predictors = setdiff(names(train),c("ID",response))
-    model = h2o.gbm(x=predictors, y=response, distribution = "bernoulli", training_frame = train,
-                    ntrees=2, max_depth=3, min_rows=1, learn_rate=0.01, nbins=20)
+    response <- "CAPSULE"
+    predictors <- setdiff(names(train),c("ID",response))
+    model <- h2o.gbm(x=predictors, y=response, distribution = "bernoulli", training_frame = train,
+                    ntrees=2, max_depth=3, min_rows=1, learn_rate=0.01, nbins=20, weights=weights_col)
+    print(model)
 
     pred <- h2o.assign(h2o.predict(model,train)[,3],"pred")
     actual <- h2o.assign(as.factor(train[,response]),"act")
     domain <- c("0","1")
 
-    m0 <- h2o.make_metrics(pred,actual)
+    m0 <- h2o.make_metrics(pred,actual,weights=weights)
     print(m0)
-    m1 <- h2o.make_metrics(pred,actual,domain=domain)
+    m1 <- h2o.make_metrics(pred,actual,domain=domain,weights=weights)
     print(m1)
     m2 <- h2o.performance(model)
     print(m2)
-
+    
     acc0 <- h2o.accuracy(m0)
     expect_true(is.data.frame(acc0))
     expect_equal(dim(acc0), c(nrow(m0@metrics$thresholds_and_metric_scores), 2))
@@ -89,4 +95,10 @@ test.make_metrics_binomial <- function() {
     expect_true(all(sapply(.h2o.maximizing_metrics, function(m) any(grepl(m, headers)))),
                 info="got duplicate CM headers, although all metrics are different")
 }
-doTest("Check making binomial model metrics.", test.make_metrics_binomial)
+
+test.make_metrics_binomial_weights <- function() test.make_metrics_binomial("weights")
+
+doSuite("Check making binomial model metrics.", makeSuite(
+    test.make_metrics_binomial,
+    test.make_metrics_binomial_weights
+))
