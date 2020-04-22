@@ -619,6 +619,34 @@ The following code snippet shows how to download a MOJO from R and run the Print
     dot -Tpng model.gv -o model.png
     open model.png
 
+PrintMojo 
+'''''''''
+
+If Graphviz installation is troublesome on your environment, PrintMojo is another option to produce a picture output directly (**note:** this option requires Java 8 or higher).
+
+.. figure:: images/mojo_visu_tree.png
+  :alt: Example Output Picture
+
+The following code snippet shows how to run the PrintMojo tool on the command line to make a .png file without using Graphviz.
+
+.. code:: bash
+
+  # Download the latest stable h2o release from http://www.h2o.ai/download/
+  # and run the PrintMojo tool from the command line.
+  java -cp h2o-genmodel.jar hex.genmodel.tools.PrintMojo --tree 0 -i mojo.zip -o tree.png --format png
+  open tree.png
+
+**Note:** h2o-genmodel.jar can be extracted frm the running h2o instance like this:
+
+.. code:: bash
+
+  # In one terminal window run:
+  $ java -jar h2o.jar
+  # In a new terminal window 
+  #(note that H2O must still be running in terminal window #1):
+  $ curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
+
+
 FAQ
 ~~~
 
