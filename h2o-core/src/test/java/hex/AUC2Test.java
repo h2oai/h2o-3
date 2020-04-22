@@ -56,5 +56,4 @@ public class AUC2Test {
     assert mcc != exact_mcc;
     System.out.println("Returned MCC: "+ mcc +", exact MCC: "+ exact_mcc);
   }
-
 }

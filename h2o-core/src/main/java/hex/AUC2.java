@@ -66,11 +66,12 @@ public class AUC2 extends Iced {
         mcc /= Math.sqrt((tp+fp)*(tp+fn)*(tn+fp)*(tn+fn));
         // due tp and tn are double; the MCC could be slightly higher than 1. for example 1.000000000000002
         double eps = 1e-10;
-        assert(Math.abs(mcc) <= 1. + eps) : tp + " " + fp + " " + fn + " " + tn;
-        if(mcc > 1){
-          mcc = 1;
+        double absMcc = Math.abs(mcc);
+        assert(absMcc <= 1. + eps) : "Absolute mcc is greater than 1: mcc="+absMcc+" tp="+tp + " fp=" + fp + " fn=" + fn + " tn=" + tn;
+        if(absMcc > 1){
+          return 1;
         }
-        return Math.abs(mcc);
+        return absMcc;
       } },
     // minimize max-per-class-error by maximizing min-per-class-accuracy.
     // Report from max_criterion is the smallest correct rate for both classes.
