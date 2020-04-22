@@ -96,6 +96,7 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
    * Build a Binomial ModelMetrics object from target-class probabilities, from actual labels, and a given domain for both labels (and domain[1] is the target class)
    * @param targetClassProbs A Vec containing target class probabilities
    * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
+   * @param weights A Vec containing the observation weights.
    * @param domain The two class labels (domain[0] is the non-target class, domain[1] is the target class, for which probabilities are given)
    * @return ModelMetrics object
    */

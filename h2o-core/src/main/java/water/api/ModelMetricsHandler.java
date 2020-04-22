@@ -341,7 +341,7 @@ class ModelMetricsHandler extends Handler {
         ModelMetricsOrdinal mm = ModelMetricsOrdinal.make(pred, act.anyVec(), s.domain);
         s.model_metrics = new ModelMetricsOrdinalV3().fillFromImpl(mm);
       } else {
-        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), s.domain);
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), weights, s.domain);
         s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
       }
     } else {
