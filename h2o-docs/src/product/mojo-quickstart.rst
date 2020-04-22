@@ -642,8 +642,8 @@ The following code snippet shows how to run the PrintMojo tool on the command li
 
   # In one terminal window run:
   $ java -jar h2o.jar
-  # In a new terminal window 
-  #(note that H2O must still be running in terminal window #1):
+  # While still running H2O in the first terminal window
+  # in a second terminal window run:
   $ curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
 
 
