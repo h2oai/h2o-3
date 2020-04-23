@@ -13,9 +13,7 @@ import water.util.MRUtils;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
@@ -120,39 +118,36 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
     Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
 
-    List<H2O.H2OCountedCompleter> tasks = new ArrayList<>();
+    Futures tasks = new Futures();
     final String seKey = this._key.toString();
 
     // Run scoring of base models in parallel
     for (Key<Model> baseModelKey : _parms._base_models) {
       if (isUsefulBaseModel(baseModelKey)) {
-        tasks.add(
-                H2O.submitTask(
-                        new H2O.H2OCountedCompleter() {
-                          @Override
-                          public void compute2() {
-                            Model baseModel = baseModelKey.get();
+        tasks.add(H2O.submitTask(
+                new H2O.H2OCountedCompleter() {
+                  @Override
+                  public void compute2() {
+                    Model baseModel = baseModelKey.get();
 
-                            Frame basePreds = baseModel.score(
-                                    fr,
-                                    "preds_base_" + seKey + baseModelKey + fr._key,
-                                    j,
-                                    false
-                            );
+                    Frame basePreds = baseModel.score(
+                            fr,
+                            "preds_base_" + seKey + baseModelKey + fr._key,
+                            j,
+                            false
+                    );
 
-                            StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, basePreds, levelOneFrame);
-                            DKV.remove(basePreds._key); //Cleanup
-                            Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
-                            tryComplete();
-                          }
-                        }));
+                    StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, basePreds, levelOneFrame);
+                    DKV.remove(basePreds._key); //Cleanup
+                    Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
+                    tryComplete();
+                  }
+                }));
       }
     }
 
     // Wait for the completion of the base model scoring
-    for (H2O.H2OCountedCompleter task : tasks) {
-      task.join();
-    }
+    tasks.blockForPending();
 
     // Add response column to level one frame
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
