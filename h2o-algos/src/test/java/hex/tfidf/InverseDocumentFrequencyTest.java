@@ -1,79 +1,55 @@
 package hex.tfidf;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
-import water.parser.BufferedString;
-import water.util.IcedDouble;
-import water.util.IcedLong;
+import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
 
 public class InverseDocumentFrequencyTest extends TestUtil {
-    
+
     private static final double IDF_DELTA = 0.0001;
+    private static final int DOCUMENTS_CNT = 3;
 
     @BeforeClass()
     public static void setup() { stall_till_cloudsize(1); }
 
     @Test
-    public void testDF() {
-        Map<BufferedString, IcedLong>[] termFrequencies = getSimpleTermFrequencies();
+    public void testIDFSmallData() {
+        Frame fr = getSimpleTestFrame();
 
-        Map<String, IcedLong> expectedDocumentFrequencies = new HashMap() {{
-                put("A", new IcedLong(2));
-                put("B", new IcedLong(2));
-                put("C", new IcedLong(2));
-                put("Z", new IcedLong(1));
-        }};
+        double[] expectedInverseDocumentFrequencies = new double[]{ 0.28768, 0.28768, 0.28768, 
+                                                                    0.28768, 0.69314, 0.28768, 0.28768 };
 
-        InverseDocumentFrequency idfTask = new InverseDocumentFrequency(termFrequencies.length);
-        idfTask.computeIDF(termFrequencies);
-        Map<BufferedString, IcedLong> df = idfTask._documentFrequencies;
+        try {
+            InverseDocumentFrequency idfTask = new InverseDocumentFrequency(DOCUMENTS_CNT)
+                                                    .doAll(new byte[]{ Vec.T_NUM }, fr.vec(0));
+            Vec idfVec = idfTask.outputFrame().anyVec();
+            long idfVecSize = idfVec.length();
 
-        for (Map.Entry<String, IcedLong> expEntry : expectedDocumentFrequencies.entrySet())
-            assertEquals(expEntry.getValue(), df.get(new BufferedString(expEntry.getKey())));
+            Assert.assertEquals(expectedInverseDocumentFrequencies.length, idfVecSize);
+
+            for (int row = 0; row < idfVecSize; row++)
+                Assert.assertEquals(expectedInverseDocumentFrequencies[row], idfVec.at(row), IDF_DELTA);
+
+            idfVec.remove();
+        } finally {
+          fr.remove();
+        }
     }
 
-    @Test
-    public void testIDF() {
-        Map<BufferedString, IcedLong>[] termFrequencies = getSimpleTermFrequencies();
+    private Frame getSimpleTestFrame() {
+        long[] dfValues = new long[]{ 2, 2, 2, 2, 1, 2, 2 };
 
-        Map<String, Double> expectedInverseDocumentFrequencies = new HashMap() {{
-            put("A", 0.28768);
-            put("B", 0.28768);
-            put("C", 0.28768);
-            put("Z", 0.69314);
-        }};
-
-        InverseDocumentFrequency idfTask = new InverseDocumentFrequency(termFrequencies.length);
-        idfTask.computeIDF(termFrequencies);
-        Map<BufferedString, IcedDouble> idf = idfTask._inverseDocumentFrequencies;
-
-        for (Map.Entry<String, Double> expEntry : expectedInverseDocumentFrequencies.entrySet())
-            assertEquals(expEntry.getValue(), idf.get(new BufferedString(expEntry.getKey()))._val, IDF_DELTA);
-    }
-
-    private Map<BufferedString, IcedLong>[] getSimpleTermFrequencies() {
-        Map<BufferedString, IcedLong>[] termFrequencies = new HashMap[] {
-                new HashMap<BufferedString, IcedLong>() {{
-                    put(new BufferedString("A"), new IcedLong(1));
-                    put(new BufferedString("B"), new IcedLong(1));
-                    put(new BufferedString("C"), new IcedLong(1));
-                }},
-                new HashMap<BufferedString, IcedLong>() {{
-                    put(new BufferedString("A"), new IcedLong(3));
-                    put(new BufferedString("Z"), new IcedLong(1));
-                }},
-                new HashMap<BufferedString, IcedLong>() {{
-                    put(new BufferedString("B"), new IcedLong(1));
-                    put(new BufferedString("C"), new IcedLong(3));
-                }}
-        };
-        
-        return termFrequencies;
+        return new TestFrameBuilder()
+                    .withName("data")
+                    .withColNames("DF")
+                    .withVecTypes(Vec.T_NUM)
+                    .withDataForCol(0, dfValues)
+                    .withChunkLayout(2, 1, 3, 1)
+                    .build();
     }
 }
