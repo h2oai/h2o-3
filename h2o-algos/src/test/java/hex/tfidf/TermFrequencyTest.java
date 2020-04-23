@@ -1,5 +1,6 @@
 package hex.tfidf;
 
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
@@ -10,8 +11,6 @@ import water.util.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
 
 public class TermFrequencyTest extends TestUtil {
 
@@ -39,8 +38,8 @@ public class TermFrequencyTest extends TestUtil {
             TermFrequency tf = new TermFrequency();
             Frame outputFrame = tf.compute(fr);
             long outputRowsCnt = outputFrame.numRows();
-            
-            assertEquals(expectedTfValuesCnt, outputRowsCnt);
+
+            Assert.assertEquals(expectedTfValuesCnt, outputRowsCnt);
 
             Vec outputDocIds = outputFrame.vec(0);
             Vec outputTokens = outputFrame.vec(1);
@@ -49,9 +48,12 @@ public class TermFrequencyTest extends TestUtil {
             for(int row = 0; row < outputRowsCnt; row++) {
                 String token = outputTokens.stringAt(row);
                 long docId = outputDocIds.at8(row);
-                long expectedTF = expectedTermFrequencies.get(new Pair<>(token, docId));
-                
-                assertEquals(expectedTF, outputTFs.at8(row));
+                Pair key = new Pair<>(token, docId);
+
+                Assert.assertTrue(expectedTermFrequencies.containsKey(key));
+                long expectedTF = expectedTermFrequencies.get(key);
+
+                Assert.assertEquals(expectedTF, outputTFs.at8(row));
             }
 
             outputFrame.remove();
