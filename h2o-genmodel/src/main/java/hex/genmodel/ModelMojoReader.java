@@ -159,6 +159,15 @@ public abstract class ModelMojoReader<M extends MojoModel> {
     }
     return res;
   }
+  
+  protected String[] readStringArray(String name, int size) throws IOException {
+    String[] array = new String[size];
+    int i = 0;
+    for (String line : readtext(name, true)) {
+      array[i++] = line;
+    }
+    return array;
+  }
 
 
   //--------------------------------------------------------------------------------------------------------------------

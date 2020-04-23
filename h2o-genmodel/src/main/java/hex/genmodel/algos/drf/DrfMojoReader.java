@@ -26,6 +26,6 @@ public class DrfMojoReader extends SharedTreeMojoReader<DrfMojoModel> {
   }
 
   @Override public String mojoVersion() {
-    return "1.30";
+    return "1.40";
   }
 }

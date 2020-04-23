@@ -38,6 +38,26 @@ public abstract class SharedTreeMojoWriter<
       writekv("calib_method", "platt");
       writekv("calib_glm_beta", beta);
     }
+    writekv("_genmodel_encoding", model.getGenModelEncoding());
+    String[] origNames = model._output._origNames;
+    if (origNames != null) {
+      int nOrigNames = origNames.length;
+      writekv("_n_orig_names", nOrigNames);
+      writeStringArray(origNames, "_orig_names");
+    }
+    if (model._output._origDomains != null) {
+      int nOrigDomainValues = model._output._origDomains.length;
+      writekv("_n_orig_domain_values", nOrigDomainValues);
+      for (int i=0; i < nOrigDomainValues; i++) {
+        String[] currOrigDomain = model._output._origDomains[i];
+        writekv("_m_orig_domain_values_" + i, currOrigDomain == null ? 0 : currOrigDomain.length);
+        if (currOrigDomain != null) {
+          writeStringArray(currOrigDomain, "_orig_domain_values_" + i);
+        }
+      }
+    }
+    writekv("_orig_projection_array", model._output._orig_projection_array);
+
     for (int i = 0; i < model._output._ntrees; i++) {
       for (int j = 0; j < ntreesPerClass; j++) {
         Key<CompressedTree> key = model._output._treeKeys[i][j];

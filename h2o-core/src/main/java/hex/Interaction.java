@@ -60,4 +60,14 @@ public class Interaction extends Iced {
       return "Created " + res.numCols() + " pair-wise interaction features " + Arrays.deepToString(res.names())
         + " (order: 2) in" + PrettyPrint.msecs(_job.msec(), true);
   }
+
+  public static Interaction getInteraction(Key<Frame> key, String[] names, int maxLevels) {
+    Interaction inter = new Interaction();
+    inter._source_frame = key;
+    inter._max_factors = maxLevels; // keep only this many most frequent levels
+    inter._min_occurrence = 2; // but need at least 2 observations for a level to be kept
+    inter._pairwise = false;
+    inter._factor_columns = names;
+    return inter;
+  }
 }

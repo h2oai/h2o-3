@@ -19,7 +19,7 @@ public class GbmMojoWriter extends SharedTreeMojoWriter<GBMModel, GBMModel.GBMPa
   }
 
   @Override public String mojoVersion() {
-    return "1.30";
+    return "1.40";
   }
 
   @Override

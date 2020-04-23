@@ -33,7 +33,10 @@ public class ParseUtils {
             res[i] = Integer.parseInt(parts[i].trim());
         return res;
     }
-
+    
+    // return value type and defValue type don't match, parsed result has different type
+    // e.g. when using new Long[0] as default value to obtain result of type Long[], parsed value is of type long[]
+    // when using new long[0] as default value to obtain result of type long[], parsed value is of type int[]
     public static Object tryParse(String input, Object defVal) {
         if (input.equals("null")) return defVal;
 

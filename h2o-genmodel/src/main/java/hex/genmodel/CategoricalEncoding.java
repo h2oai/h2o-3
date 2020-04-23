@@ -27,6 +27,17 @@ public enum CategoricalEncoding {
       return new OneHotEncoderDomainMapConstructor(m, columnMapping).create();
     }
   },
+  Binary {
+    @Override
+    public Map<String, Integer> createColumnMapping(GenModel m) {
+      return new BinaryColumnMapper(m).create();
+    }
+
+    @Override
+    public Map<Integer, CategoricalEncoder> createCategoricalEncoders(GenModel m, Map<String, Integer> columnMapping) {
+      return new BinaryDomainMapConstructor(m, columnMapping).create();
+    }
+  },
   EnumLimited {
     @Override
     public Map<String, Integer> createColumnMapping(GenModel m) {
@@ -36,6 +47,28 @@ public enum CategoricalEncoding {
     @Override
     public Map<Integer, CategoricalEncoder> createCategoricalEncoders(GenModel m, Map<String, Integer> columnMapping) {
       return new EnumLimitedEncoderDomainMapConstructor(m, columnMapping).create();
+    }
+  },
+  Eigen {
+    @Override
+    public Map<String, Integer> createColumnMapping(GenModel m) {
+      return new EigenEncoderColumnMapper(m).create();
+    }
+
+    @Override
+    public Map<Integer, CategoricalEncoder> createCategoricalEncoders(GenModel m, Map<String, Integer> columnMapping) {
+      return new EigenEncoderDomainMapConstructor(m, columnMapping).create();
+    }
+  },
+  LabelEncoder {
+    @Override
+    public Map<String, Integer> createColumnMapping(GenModel m) {
+      return new EnumEncoderColumnMapper(m).create();
+    }
+
+    @Override
+    public Map<Integer, CategoricalEncoder> createCategoricalEncoders(GenModel m, Map<String, Integer> columnMapping) {
+      return new LabelEncoderDomainMapConstructor(m, columnMapping).create();
     }
   };
 
