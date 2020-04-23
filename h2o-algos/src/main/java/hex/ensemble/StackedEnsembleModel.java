@@ -219,7 +219,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     throw new UnsupportedOperationException("StackedEnsembleModel.makeMetricBuilder should never be called!");
   }
 
-  ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
+  private ModelMetrics doScoreTrainingMetrics(Frame frame, Job job) {
     Frame scoredFrame = (_parms._score_training_samples > 0 && _parms._score_training_samples < frame.numRows())
             ? MRUtils.sampleFrame(frame, _parms._score_training_samples, _parms._seed)
             : frame;
@@ -239,7 +239,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // the metalearner was trained on cv preds, not training preds.  So, rather than clone the metalearner
     // training metrics, we have to re-score the training frame on all the base models, then send these
     // biased preds through to the metalearner, and then compute the metrics there.
-    this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
+    this._output._training_metrics = doScoreTrainingMetrics(this._parms.train(), job);
     
     // Validation metrics can be copied from metalearner (may be null).
     // Validation frame was already piped through so there's no need to re-do that to get the same results.
