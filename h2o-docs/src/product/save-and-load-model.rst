@@ -91,7 +91,7 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
 In Flow
 ~~~~~~~
 
-The steps for saving and loading models in Flow are described in the **Using Flow - H2O's Web UI** section. Specifically, refer to :ref:`Exporting and Importing Models <export-import-models-flow>` for information about loading models into Flow. 
+The steps for saving and loading models in Flow are described in the **Using Flow - H2O's Web UI** section. Specifically, refer to :ref:`Exporting and Importing Models <export-import-models-flow>` for information about exporting and importing binary models in Flow. 
 
 MOJO Models
 -----------
@@ -112,13 +112,13 @@ Only a subset of H2O MOJO models is supported in this version.
 -  GLM (Generalized Linear Model)
 -  XGBoost
 
-Importing a MOJO
-~~~~~~~~~~~~~~~~~~~~~~~~~
+Saving and Importing MOJOs
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Importing a MOJO can be done from Python, R, and Flow. H2O imports the model and embraces it for the purpose of scoring. Information output about the model may be limited.
 
-Importing in R or Python
-''''''''''''''''''''''''
+Saving and Importing in R or Python
+'''''''''''''''''''''''''''''''''''
 
 .. tabs::
    .. code-tab:: r R
@@ -134,9 +134,6 @@ Importing in R or Python
         new_observations <- h2o.importFile(path = 'new_observations.csv')
         h2o.predict(imported_model, new_observations)
 
-Alternatively, h2o.download_mojo and h2o.upload_mojo R functions may be used when downloading/uploading MOJOs from
-client's computer standing outside of H2O cluster.
-
    .. code-tab:: python
 
         data = h2o.import_file(path='training_dataset.csv')
@@ -150,8 +147,6 @@ client's computer standing outside of H2O cluster.
         new_observations = h2o.import_file(path='new_observations.csv')
         predictions = imported_model.predict(new_observations)
 
-Alternatively, h2o.download_mojo and h2o.upload_mojo Python functions may be used when downloading/uploading MOJOs from
-client's computer standing outside of H2O cluster.
 
 Importing a MOJO Model in Flow
 ''''''''''''''''''''''''''''''
@@ -160,6 +155,47 @@ To import a MOJO model in Flow:
 
 1. Import or upload the MOJO as a Generic model into H2O. To do this, click on **Data** in the top menu and select either **Import Files** or **Upload File**.
 2. Retrieve the imported MOJO by clicking **Models** in the top menu and selecting **Import MOJO Model**.
+
+Downloading and Uploading MOJOs
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Alternatively, the ``download_mojo()`` and ``h2o.upload_mojo()`` R and Python functions can be used when downloading/uploading MOJOs from a client computer standing outside of an H2O cluster.
+
+Downloading and Uploading in R and Python
+'''''''''''''''''''''''''''''''''''''''''
+
+.. tabs::
+   .. code-tab:: r R
+
+    # train a GBM model
+    library(h2o)
+    h2o.init()
+    fr <- as.h2o(iris)
+    my_model <- h2o.gbm(x = 1:4, y = 5, training_frame = fr)
+
+    # save to the current working directory
+    my_mojo <- h2o.download_mojo(my_model, "/Users/UserName/Desktop")
+
+    # upload the MOJO
+    mojo_model <- h2o.upload_mojo(my_mojo)
+
+   .. code-tab:: python
+
+    import h2o
+    h2o.init()
+
+    # Train a GBM Model
+    from h2o.estimators import H2OGradientBoostingEstimator
+    df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+    model = H2OGradientBoostingEstimator()
+    model.train(x=list(range(4)), y = "class", training_frame=df)
+
+    # Download the MOJO
+    my_mojo = model.download_mojo(dir="/Users/UserName/Desktop")
+
+    # Upload the MOJO
+    mojo_model = h2o.upload_mojo(my_mojo)
+
 
 Advanced MOJO Model Initialization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
