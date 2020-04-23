@@ -21,7 +21,7 @@ public class TfIdfPreprocessorTest extends TestUtil {
         Frame inputFrame = testFramesPair._1();
         Frame expectedOutputFrame = testFramesPair._2();
 
-        byte[] outputTypes = new byte[]{ Vec.T_STR, Vec.T_NUM, Vec.T_STR };
+        byte[] outputTypes = new byte[]{ Vec.T_NUM, Vec.T_STR };
 
         try {
             TfIdfPreprocessor preprocessor = new TfIdfPreprocessor().doAll(outputTypes, inputFrame);
@@ -56,18 +56,13 @@ public class TfIdfPreprocessorTest extends TestUtil {
 
         Frame inputFrame = new TestFrameBuilder()
                                .withName("data")
-                               .withColNames("Document", "Document ID")
-                               .withVecTypes(Vec.T_STR, Vec.T_NUM)
-                               .withDataForCol(0, documents)
-                               .withDataForCol(1, docIds)
+                               .withColNames("Document ID", "Document")
+                               .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                               .withDataForCol(0, docIds)
+                               .withDataForCol(1, documents)
                                .withChunkLayout(2, 1)
                                .build();
 
-        String[] outDocuments = new String[] {
-                "A B C", "A B C", "A B C",
-                "A A A Z", "A A A Z", "A A A Z", "A A A Z",
-                "C C B C", "C C B C", "C C B C", "C C B C"
-        };
         long[] outDocIds = new long[] {
                 0L, 0L, 0L,
                 1L, 1L, 1L, 1L,
@@ -81,11 +76,10 @@ public class TfIdfPreprocessorTest extends TestUtil {
 
         Frame expectedOutFrame = new TestFrameBuilder()
                                      .withName("expectedOutputFrame")
-                                     .withColNames("Document", "Document ID", "Token")
-                                     .withVecTypes(Vec.T_STR, Vec.T_NUM, Vec.T_STR)
-                                     .withDataForCol(0, outDocuments)
-                                     .withDataForCol(1, outDocIds)
-                                     .withDataForCol(2, outTokens)
+                                     .withColNames("Document ID", "Token")
+                                     .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                                     .withDataForCol(0, outDocIds)
+                                     .withDataForCol(1, outTokens)
                                      .build();
 
         return new Pair<>(inputFrame, expectedOutFrame);
