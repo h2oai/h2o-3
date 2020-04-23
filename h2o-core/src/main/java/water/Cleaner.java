@@ -2,7 +2,9 @@ package water;
 
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.util.Arrays;
+import java.util.*;
+import java.util.stream.Collectors;
+
 import water.fvec.Chunk;
 import water.util.Log;
 import water.util.PrettyPrint;
@@ -238,6 +240,13 @@ class Cleaner extends Thread {
     Value _vold;  // For assertions: record the oldest Value
     boolean _clean; // Was "clean" K/V when built?
 
+    transient volatile Map<Key, Integer> _dkv;
+
+    public Map<Key, Integer> dkv() {
+      return _dkv.entrySet().stream().sorted(Map.Entry.comparingByValue()).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+    }
+
+
     // Compute a histogram
     Histo( long eldest ) {
       Arrays.fill(_hs, 0);
@@ -252,6 +261,7 @@ class Cleaner extends Thread {
       long swapped=0;  // Total K/V persisted
       long oldest = Long.MAX_VALUE; // K/V with the longest time since being touched
       Value vold = null;
+      Map<Key, Integer> dkv = new HashMap<>();
       // Start the walk at slot 2, because slots 0,1 hold meta-data
       for( int i=2; i<kvs.length; i += 2 ) {
         // In the raw backing array, Keys and Values alternate in slots
@@ -270,6 +280,7 @@ class Cleaner extends Thread {
         if( m != null && p instanceof Chunk ) len -= val._max; // Do not double-count Chunks
         if( len == 0 ) continue;
         cached += len; // Accumulate total amount of cached keys
+        dkv.put((Key) ok, (m != null && p instanceof Chunk) ? val._max : 2*val._max);
 
         if( val._lastAccessedTime < oldest ) { // Found an older Value?
           vold = val; // Record oldest Value seen
@@ -287,6 +298,7 @@ class Cleaner extends Thread {
       _oldest = oldest; // Oldest seen in this pass
       _vold = vold;
       _clean = clean && _dirty==Long.MAX_VALUE; // Looks like a clean K/V the whole time?
+      _dkv = dkv;
     }
 
     // Compute the time (in msec) for which we need to throw out things

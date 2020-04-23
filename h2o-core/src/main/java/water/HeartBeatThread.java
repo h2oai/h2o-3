@@ -102,6 +102,7 @@ public class HeartBeatThread extends Thread {
       // persistent KV pairs are stored
       hb.set_free_disk(H2O.getPM().getIce().getUsableSpace());
       hb.set_max_disk (H2O.getPM().getIce().getTotalSpace() );
+      hb.set_dkv(Cleaner.Histo.current(false).dkv());
 
       // get cpu utilization for the system and for this process.  (linux only.)
       LinuxProcFileReader lpfr = new LinuxProcFileReader();

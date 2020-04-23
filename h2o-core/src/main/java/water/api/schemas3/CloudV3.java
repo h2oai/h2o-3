@@ -2,7 +2,9 @@ package water.api.schemas3;
 
 import water.*;
 import water.api.API;
+import water.util.TwoDimTable;
 
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
@@ -187,6 +189,9 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
     @API(help="Memory Bandwidth", direction=API.Direction.OUTPUT)
     public double mem_bw;
 
+    @API(help="DKV", direction = API.Direction.OUTPUT)
+    public TwoDimTableV3 dkv;
+
     public NodeV3(H2ONode h2o, boolean skip_ticks) {
       HeartBeat hb = h2o._heartbeat;
 
@@ -255,6 +260,19 @@ public class CloudV3 extends RequestSchemaV3<Iced, CloudV3> {
         LastTicksEntry newLte = new LastTicksEntry(hb);
         ticksHashMap.put(h2o.toString(), newLte);
       }
+
+      Map<Key, Integer> _sizes = hb.get_dkv();
+      TwoDimTable _dkv = new TwoDimTable("DKV", "DKV",
+              _sizes.keySet().stream().map(Key::toString).toArray(String[]::new),
+              new String[] {"Size"},
+              null, null, "Keys");
+      int i = 0;
+      for (int s: _sizes.values()) {
+        _dkv.set(i++, 0, s);
+      }
+
+      dkv = new TwoDimTableV3(_dkv);
+
     }
   }
 }

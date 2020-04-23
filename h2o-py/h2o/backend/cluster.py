@@ -249,6 +249,10 @@ class H2OCluster(object):
         table = H2OTwoDimTable(cell_values=node_table, col_header=keys, row_header=keys)
         return table
 
+    def get_dkv(self):
+        info = h2o.api("GET /3/Cloud")
+        return [node['dkv'] for node in info._props['nodes']]
+
     def network_test(self):
         """Test network connectivity."""
         res = h2o.api("GET /3/NetworkTest")

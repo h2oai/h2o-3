@@ -1,6 +1,8 @@
 package water;
 
 import java.util.Arrays;
+import java.util.Map;
+
 import water.init.JarHash;
 
 /**
@@ -48,7 +50,9 @@ public class HeartBeat extends Iced<HeartBeat> {
   public long get_pojo_mem() { return _pojo_mem; }
   public long get_free_mem() { return _free_mem; }
   public long get_swap_mem() { return _swap_mem; }
-  
+  private transient Map _dkv;
+  void set_dkv(Map dkv) { _dkv = dkv; };
+  public Map get_dkv() { return _dkv; }
 
   public int _keys;       // Number of LOCAL keys in this node, cached or homed
 
