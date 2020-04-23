@@ -35,7 +35,7 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
         saved_model <- h2o.loadModel(model_path)
 
         # download the model built above to your local machine
-        my_local_model <- h2o.download_model(model, dir="/Users/UserName/Desktop")
+        my_local_model <- h2o.download_model(model, path="/Users/UserName/Desktop")
 
         # upload the model that you just downloded above 
         # to the H2O cluster
@@ -56,7 +56,7 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
     	saved_model = h2o.load_model(model_path)
 
         # download the model built above to your local machine
-        my_local_model = h2o.download_model(model, dir="/Users/UserName/Desktop")
+        my_local_model = h2o.download_model(model, path="/Users/UserName/Desktop")
 
         # upload the model that you just downloded above 
         # to the H2O cluster
@@ -75,7 +75,7 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
         hdfs_name_node <- "node-1"
         hdfs_tmp_dir <- "/tmp/runit"
         model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
-        h2o.saveModel(model, dir=model_path, name="mymodel")
+        h2o.saveModel(model, path=model_path, name="mymodel")
 
    .. code-tab:: python
 
@@ -191,7 +191,7 @@ Downloading and Uploading in R and Python
     model.train(x=list(range(4)), y = "class", training_frame=df)
 
     # Download the MOJO
-    my_mojo = model.download_mojo(dir="/Users/UserName/Desktop")
+    my_mojo = model.download_mojo(path="/Users/UserName/Desktop")
 
     # Upload the MOJO
     mojo_model = h2o.upload_mojo(my_mojo)
