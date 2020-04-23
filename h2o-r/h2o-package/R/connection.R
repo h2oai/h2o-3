@@ -193,7 +193,9 @@ h2o.init <- function(ip = "localhost", port = 54321, name = NA_character_, start
       cat("\nH2O is not running yet, starting it now...\n")
       
       if(isTRUE(https)){
-        stop("Unable to start local server with https enabled. Consider disabling https.")
+        stop(paste0("Unable to start local server with https enabled. ",
+         "Consider disabling https or start H2O manually ",
+         "(http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#new-user-quick-start)."))
       }
 
       if (nthreads == -2) {

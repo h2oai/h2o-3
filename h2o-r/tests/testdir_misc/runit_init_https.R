@@ -18,7 +18,7 @@ h2o_init_test <- function() {
   expect_false(is.null(e))
   print(e)
   err_message <- e[[1]]
-  expect_true("Unable to start local server with https enabled. Consider disabling https." == err_message)
+  expect_true("Unable to start local server with https enabled. Consider disabling https or start H2O manually (http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#new-user-quick-start)." == err_message)
 }
 
 doTest("Error thrown when HTTPS is enabled on h2o.init() (local cluster)",

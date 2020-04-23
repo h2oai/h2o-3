@@ -12,7 +12,7 @@ def test_https_startup():
         assert False, "Expected to fail starting local H2O server with https=true"
     except H2OConnectionError as err:
         print(err)  # HTTPS is not allowed during localhost startup
-        assert "Unable to start local server with https enabled. Consider disabling https." == str(err)
+        assert "Unable to start local server with https enabled. Consider disabling https orstart H2O manually (http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#new-user-quick-start)." == str(err)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_https_startup)
