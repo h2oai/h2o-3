@@ -4712,7 +4712,7 @@ h2o.genericModel <- function(mojo_file_path){
 #' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
 #'
 #' # Download the trained GBM model as MOJO (temporary directory used in this example)
-#' mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
+#' mojo_original_name <- h2o.saveMojo(original_model, path = tempdir())
 #' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
 #'
 #' # Import the MOJO and obtain a Generic model

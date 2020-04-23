@@ -128,11 +128,14 @@ Importing in R or Python
         original_model <- h2o.glm(x=cols, y = "response", training_frame = data)    
 
         path <- "/path/to/model/directory"
-        mojo_destination <- h2o.download_mojo(model = original_model, path = path)
+        mojo_destination <- h2o.saveMojo(original_model, path = path)
         imported_model <- h2o.import_mojo(mojo_destination)
 
         new_observations <- h2o.importFile(path = 'new_observations.csv')
         h2o.predict(imported_model, new_observations)
+
+Alternatively, h2o.download_mojo and h2o.upload_mojo R functions may be used when downloading/uploading MOJOs from
+client's computer standing outside of H2O cluster.
 
    .. code-tab:: python
 
@@ -141,11 +144,14 @@ Importing in R or Python
         original_model.train(x = ["Some column", "Another column"], y = "response", training_frame=data)
 
         path = '/path/to/model/directory/model.zip'
-        original_model.download_mojo(path)
+        original_model.save_mojo(path)
 
         imported_model = h2o.import_mojo(path)
         new_observations = h2o.import_file(path='new_observations.csv')
         predictions = imported_model.predict(new_observations)
+
+Alternatively, h2o.download_mojo and h2o.upload_mojo Python functions may be used when downloading/uploading MOJOs from
+client's computer standing outside of H2O cluster.
 
 Importing a MOJO Model in Flow
 ''''''''''''''''''''''''''''''
