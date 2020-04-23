@@ -13,9 +13,14 @@ test.make_metrics_regression <- function(weights_col = NULL) {
 
     response <- "AGE"
     predictors <- setdiff(names(train),c("ID",response))
-
+    
     for (distribution in c("gaussian","laplace","poisson","gamma")) {
-      model = h2o.gbm(x=predictors,y=response,distribution = distribution,training_frame=train,
+      if (!is.null(weights_col) && distribution=="laplace") {
+          # Skipping on `laplace`
+          # GBM training fails due to a bug: https://0xdata.atlassian.net/browse/PUBDEV-7480
+          next
+      }
+      model <- h2o.gbm(x=predictors,y=response,distribution = distribution,training_frame=train,
                       ntrees=2,max_depth=3,min_rows=1,learn_rate=0.1,nbins=20,weights=weights_col)
       pred <- h2o.assign(h2o.predict(model,train),"pred")
       actual <- h2o.assign(train[,response],"act")
