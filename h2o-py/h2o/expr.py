@@ -104,7 +104,13 @@ class ExprNode(object):
         self._eval_driver('scalar')
         return self._cache
 
-    def _eval_driver(self, top=None):
+    def _eval_driver(self, top):
+        """
+        :param top: if this is a top expression (providing a final result),
+            then specifies the expected result type (accepted values = ['frame', 'scalar']),
+            or None if no object creation is expected.
+        :return: self expr
+        """
         exec_str = self._get_ast_str(top)
         res = ExprNode.rapids(exec_str)
         if 'scalar' in res:
