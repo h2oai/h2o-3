@@ -129,7 +129,7 @@ Step 1: Build and Extract a Model
          default threshold: 0.261136531829834
         ...
         Model AUC 0.8289237508508612
-        Model written out as a mojo to file /Demos/Lending-Club/LoanStats4.csv.zip
+        Model written out as a MOJO to file /Demos/Lending-Club/LoanStats4.csv.zip
 
         // Save as h2oDirect.java
         package h2oDirect;
@@ -200,7 +200,7 @@ Step 1: Build and Extract a Model
               FileOutputStream modeloutput = new FileOutputStream(outputfile);
               gbm.getMojo().writeTo(modeloutput);
               modeloutput.close();
-              System.out.println("Model written out as a mojo to file "+outputfile);
+              System.out.println("Model written out as a MOJO to file "+outputfile);
               
               System.out.println("H2O shutdown....");
               H2O.shutdown(0);
@@ -376,7 +376,7 @@ Step 1: Build and Extract a Model
                 
               outputfile = inputfile+"_model_mojo.zip"
               modeloutput = new FileOutputStream(outputfile)
-              println("Saving mojo to "+outputfile)
+              println("Saving MOJO to "+outputfile)
               model.getMojo.writeTo(modeloutput)
               modeloutput.close()
 
@@ -585,7 +585,7 @@ Step 2: Compile and Run the MOJO
 Viewing a MOJO Model
 ~~~~~~~~~~~~~~~~~~~~
 
-Use the PrintMojo tool to generate a graphical representation of the MOJO. PrintMojo is a java tool for converting binary mojo files into human viewable graphs. This tool is packaged with H2O and produces an output that "dot" (which is part of Graphviz) can turn into an image. (See the `Graphviz home page <http://www.graphviz.org/>`__ for more information.)
+Use the PrintMojo tool to generate a graphical representation of the MOJO. PrintMojo is a java tool for converting binary MOJO files into human viewable graphs. This tool is packaged with H2O and produces an output that "dot" (which is part of Graphviz) can turn into an image. (See the `Graphviz home page <http://www.graphviz.org/>`__ for more information.)
 
 Here is an example output for a GBM model:
 
@@ -661,8 +661,8 @@ The following code snippet shows how to download a MOJO and run the PrintMojo to
       cd h2o-|version|
 
       # Run the PrintMojo tool from the command line. 
-      # This requires that graphviz is installed.
-      brew install graphviz # if not already installed
+      # This requires that graphviz is installed. 
+      brew install graphviz # example for Mac OsX if not already installed
       java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i "path/to/model.zip" -o model.gv -f 20 -d 3
       dot -Tpng model.gv -o model.png
       open model.png
