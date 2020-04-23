@@ -924,7 +924,7 @@ def assign(data, xid):
     assert_is_type(xid, str)
     assert_satisfies(xid, xid != data.frame_id)
     check_frame_id(xid)
-    data._ex = ExprNode("assign", xid, data)._eval_driver(False)
+    data._ex = ExprNode("assign", xid, data)._eval_driver()
     data._ex._cache._id = xid
     data._ex._children = None
     return data
@@ -950,7 +950,7 @@ def deep_copy(data, xid):
     assert_satisfies(xid, xid != data.frame_id)
     check_frame_id(xid)
     duplicate = data.apply(lambda x: x)
-    duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver(False)
+    duplicate._ex = ExprNode("assign", xid, duplicate)._eval_driver()
     duplicate._ex._cache._id = xid
     duplicate._ex._children = None
     return duplicate

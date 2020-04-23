@@ -88,23 +88,23 @@ class ExprNode(object):
     def _eager_frame(self):
         if not self._cache.is_empty(): return
         if self._cache._id is not None: return  # Data already computed under ID, but not cached locally
-        self._eval_driver(True)
+        self._eval_driver('frame')
 
     def _eager_scalar(self):  # returns a scalar (or a list of scalars)
         if not self._cache.is_empty():
             assert self._cache.is_scalar()
             return self
         assert self._cache._id is None
-        self._eval_driver(False)
+        self._eval_driver('scalar')
         assert self._cache._id is None
         assert self._cache.is_scalar()
         return self._cache._data
 
     def _eager_map_frame(self):  # returns a scalar (or a list of scalars)
-        self._eval_driver(False)
+        self._eval_driver('scalar')
         return self._cache
 
-    def _eval_driver(self, top):
+    def _eval_driver(self, top=None):
         exec_str = self._get_ast_str(top)
         res = ExprNode.rapids(exec_str)
         if 'scalar' in res:
@@ -137,7 +137,7 @@ class ExprNode(object):
     # Global timezone change is eager, so the time parse as to occur in the correct order relative to
     # the timezone change, so cannot be lazy.
     #
-    def _get_ast_str(self, top):
+    def _get_ast_str(self, top=None):
         if not self._cache.is_empty():  # Data already computed and cached; could a "false-like" cached value
             return str(self._cache._data) if self._cache.is_scalar() else self._cache._id
         if self._cache._id is not None:
@@ -162,7 +162,7 @@ class ExprNode(object):
         ref_cnt = len(proper_ref)
         del referrers, proper_ref
         # if this self node is referenced by at least one other node (nested expr), then create a tmp frame
-        if top or ref_cnt > 1:
+        if top == 'frame' or (not top and ref_cnt > 1):
             self._cache._id = _py_tmp_key(append=h2o.connection().session_id)
             exec_str = "(tmp= {} {})".format(self._cache._id, exec_str)
         return exec_str
@@ -172,7 +172,7 @@ class ExprNode(object):
         if arg is None:
             return "[]"  # empty list
         if isinstance(arg, ExprNode):
-            return arg._get_ast_str(False)
+            return arg._get_ast_str()
         if isinstance(arg, ASTId):
             return str(arg)
         if isinstance(arg, (list, tuple, range)):
