@@ -1,87 +1,32 @@
 package hex.tfidf;
 
-import water.Key;
-import water.MRTask;
-import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.fvec.NewChunk;
-import water.fvec.Vec;
 import water.rapids.ast.prims.mungers.AstGroup;
 
-import java.util.Arrays;
-
 /**
- * Map-Reduce task for computing Term Frequency values for words in given documents.
+ * Task class using map-reduce to compute term frequency values for words in given documents.
  */
-public class TermFrequency extends MRTask<TermFrequency> {
-
-    @Override
-    public void map(Chunk[] cs, NewChunk[] ncs) {
-        Frame inputChunk = new Frame(Arrays.stream(cs).map(Chunk::vec).toArray(Vec[]::new));
-
-        AstGroup.AGG[] aggs = new AstGroup.AGG[1];
-        aggs[0] = new AstGroup.AGG(AstGroup.FCN.nrow, 1, AstGroup.NAHandling.ALL, -1);
-
-        int[] groupByColumnsNum = new int[]{ 1 };
-        int[] groupByColumnsStr = new int[]{ 0, 2 };
-
-        Frame groupedInputChunk = new AstGroup().performGroupingWithAggregations(inputChunk, 
-                                                                                 groupByColumnsNum,
-                                                                                 groupByColumnsStr, 
-                                                                                 aggs).getFrame();
-
-        for (int col = 0; col < groupedInputChunk.numCols(); col++) {
-            Vec column = groupedInputChunk.vec(col);
-            
-            // TODO: More efficient way
-            for (int row = 0; row < column.length(); row++)
-                if (column.isString())
-                    ncs[col].addStr(column.stringAt(row)); 
-                else
-                    ncs[col].addNum(column.at8(row));
-        }
-
-        groupedInputChunk.remove();
-    }
-
-    @Override
-    public Frame outputFrame() {
-        return finalOutputFrame(super.outputFrame(null, null, null));
-    }
-
-    @Override
-    public Frame outputFrame(String[] names, String[][] domains) {
-        return finalOutputFrame(super.outputFrame(null, names, domains));
-    }
-
-    @Override
-    public Frame outputFrame(Key<Frame> key, String[] names, String[][] domains) {
-        return finalOutputFrame(super.outputFrame(key, names, domains));
-    }
+public class TermFrequency {
 
     /**
-     * Constructs output frame with final TF values from the output frame 
-     * with partial TF values and <strong>discards the frame with partial TF values</strong>.
+     * Computes term frequency values for given words in documents.
      * 
-     * @param outFrame  output frame with partial TF values. This frame <strong>is discarded</strong>.
+     * @param wordFrame input frame of words for which term frequency
+     *                  values should be computed. For exact format
+     *                  see {@link TfIdfPreprocessor}.
      * 
-     * @return  output frame with final TF values.
+     * @return frame containing term frequency values for given words.
      */
-    private Frame finalOutputFrame(Frame outFrame) {
+    public Frame compute(Frame wordFrame) {
         AstGroup.AGG[] aggs = new AstGroup.AGG[1];
-        aggs[0] = new AstGroup.AGG(AstGroup.FCN.sum, 3, AstGroup.NAHandling.ALL, -1);
+        aggs[0] = new AstGroup.AGG(AstGroup.FCN.nrow, 0, AstGroup.NAHandling.ALL, -1);
 
-        int[] groupByColumnsNum = new int[]{0, 3};
-        int[] groupByColumnsStr = new int[]{1, 2};
+        int[] groupByColumnsNum = new int[]{ 0 };
+        int[] groupByColumnsStr = new int[]{ 1 };
 
-        Frame groupedOutputFrame = new AstGroup()
-                                        .performGroupingWithAggregations(outFrame,
-                                                                         groupByColumnsNum,
-                                                                         groupByColumnsStr,
-                                                                         aggs).getFrame();
-
-        outFrame.remove();
-
-        return groupedOutputFrame;
+        return new AstGroup().performGroupingWithAggregations(wordFrame,
+                                                              groupByColumnsNum,
+                                                              groupByColumnsStr,
+                                                              aggs).getFrame();
     }
 }
