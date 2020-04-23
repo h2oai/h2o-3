@@ -585,66 +585,113 @@ Step 2: Compile and Run the MOJO
 Viewing a MOJO Model
 ~~~~~~~~~~~~~~~~~~~~
 
-A java tool for converting binary mojo files into human viewable graphs is packaged with H2O. This tool produces output that "dot" (which is part of Graphviz) can turn into an image. (See the `Graphviz home page <http://www.graphviz.org/>`__ for more information.)
+Use the PrintMojo tool to generate a graphical representation of the MOJO. PrintMojo is a java tool for converting binary mojo files into human viewable graphs. This tool is packaged with H2O and produces an output that "dot" (which is part of Graphviz) can turn into an image. (See the `Graphviz home page <http://www.graphviz.org/>`__ for more information.)
 
 Here is an example output for a GBM model:
 
 .. figure:: images/gbm_mojo_graph.png
    :alt: GBM MOJO model
 
-The following code snippet shows how to download a MOJO from R and run the PrintMojo tool on the command line to make a .png file. To better control the look and feel of your tree, we provide two options for PrintMojo:
+The following options can be specified with PrintMojo:
 
-- ``--decimalplaces`` (or ``-d``) allows you to control the  number of decimal points shown for numbers. 
-- ``--fontsize`` (or ``-f``) controls the font size.  The default font size is 14. When using this option, be careful not to choose a font size that  is so large that you cannot see your whole tree. We recommend using a font size no larger than  20.
+- ``--input`` (or ``-i``): Required. Sepcify the MOJO file name
+- ``--output`` (or ``-o``): Optionally specify the output file name. This is taken as a directory name in the case of .png format and multiple trees to visualize. This defaults to stdout.
+- ``--format``: Optionally specify the output format. Available formats include dot (default), json, raw, and png. Note that for .png output, Java 8 is the minimum Java requirement.
+- ``--tree``: Optionally specify the tree number to print. This defaults to "all".
+- ``--levels``: Optionaly specify the number of levels per edge to print. This defaults to 10.
+- ``--title``: Optionally force the title of the tree graph.
+- ``--detail``: Specifies to print additional information such as node numbers.
+- ``--decimalplaces`` (or ``-d``): Allows you to control the  number of decimal points shown for numbers. 
+- ``--fontsize`` (or ``-f``): Controls the font size.  The default font size is 14. When using this option, be careful not to choose a font size that  is so large that you cannot see your whole tree. We recommend using a font size no larger than 20.
+- ``--internal``:  Optional. Internal H2O representation of the decision tree (splits etc.). This is used for generating the Graphviz format.
+
+The following code snippet shows how to download a MOJO and run the PrintMojo tool from the command line to make a .png file. Note that this requires that Graphviz is installed.
 
 .. tabs::
-   .. code-tab:: r R
+   .. group-tab:: R
 
-    library(h2o)
-    h2o.init()
-    df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-    model <- h2o.gbm(model_id = "model",
-                    training_frame = df,
-                    x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
-                    y = "IsDepDelayed",
-                    max_depth = 3,
-                    ntrees = 5)
-    h2o.download_mojo(model, getwd(), FALSE)
+    .. substitution-code-block:: r
 
-    # Now download the latest stable h2o release from http://www.h2o.ai/download/
+      library(h2o)
+      h2o.init()
+      df <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+      model <- h2o.gbm(model_id = "model",
+                      training_frame = df,
+                      x = c("Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"),
+                      y = "IsDepDelayed",
+                      max_depth = 3,
+                      ntrees = 5)
+      h2o.download_mojo(model, getwd(), FALSE)
+
+      # In another terminal window, download and extract the 
+      # latest stable h2o.jar from http://www.h2o.ai/download/
+      cd ~/Downloads
+      unzip h2o-|version|.zip
+      cd h2o-|version|
+
+      # Run the PrintMojo tool from the command line. 
+      # This requires that graphviz is installed.
+      brew install graphviz # if not already installed
+      java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i "path/to/model.zip" -o model.gv -f 20 -d 3
+      dot -Tpng model.gv -o model.png
+      open model.png
+
+   .. group-tab:: Python
+
+    .. substitution-code-block:: python
+
+      import h2o
+      h2o.init()
+      from h2o.estimators.gbm import H2OGradientBoostingEstimator
+      df = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+
+      predictors = ["Year", "Month", "DayofMonth", "DayOfWeek", "UniqueCarrier"]
+      response = "IsDepDelayed"
+
+      model = H2OGradientBoostingEstimator(max_depth=3, ntrees=5)
+      model.train(x = predictors, 
+                  y = response, 
+                  training_frame = df)
+      model.download_mojo(path="/path/to/mojo/zip", get_genmodel_jar=False, genmodel_name=genmodel_path)
+
+      # In another terminal window, download and extract the 
+      # latest stable h2o.jar from http://www.h2o.ai/download/
+      cd ~/Downloads
+      unzip h2o-|version|.zip
+      cd h2o-|version|
+
+      # Run the PrintMojo tool from the command line. 
+      # This requires that graphviz is installed.
+      brew install graphviz # if not already installed
+      java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i "path/to/model.zip" -o model.gv -f 20 -d 3
+      dot -Tpng model.gv -o model.png
+      open model.png
+
+If you cannot install Graphviz on your environment, another option is to produce a picture output directly with PrintMojo. This option requires Java 8 or higher and uses the h2o-genmodel.jar file. 
+
+1. Extract h2o-genmodel.jar from the running h2o instance:
+
+  .. code-block:: bash
+
+    # In one terminal window run:
+    java -jar h2o.jar
+
+    # While still running H2O in the first terminal window,
+    # in the second terminal window run:
+    curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
+
+2. Run the PrintMojo tool on the command line to make a .png file without using Graphviz. 
+
+  .. code-block:: bash
+
+    # Download the latest stable h2o release from http://www.h2o.ai/download/
     # and run the PrintMojo tool from the command line.
-    #
-    # (For MacOS: brew install graphviz)
-    java -cp h2o.jar hex.genmodel.tools.PrintMojo --tree 0 -i model.zip -o model.gv -f 20 -d 3
-    dot -Tpng model.gv -o model.png
-    open model.png
-
-PrintMojo 
-'''''''''
-
-If Graphviz installation is troublesome on your environment, PrintMojo is another option to produce a picture output directly (**note:** this option requires Java 8 or higher).
+    java -cp h2o-genmodel.jar hex.genmodel.tools.PrintMojo --tree 0 -i "/path/to/model.zip" -o tree.png --format png
+    open tree.png
 
 .. figure:: images/mojo_visu_tree.png
   :alt: Example Output Picture
-
-The following code snippet shows how to run the PrintMojo tool on the command line to make a .png file without using Graphviz.
-
-.. code:: bash
-
-  # Download the latest stable h2o release from http://www.h2o.ai/download/
-  # and run the PrintMojo tool from the command line.
-  java -cp h2o-genmodel.jar hex.genmodel.tools.PrintMojo --tree 0 -i mojo.zip -o tree.png --format png
-  open tree.png
-
-**Note:** h2o-genmodel.jar can be extracted frm the running h2o instance like this:
-
-.. code:: bash
-
-  # In one terminal window run:
-  $ java -jar h2o.jar
-  # While still running H2O in the first terminal window
-  # in a second terminal window run:
-  $ curl http://localhost:54321/3/h2o-genmodel.jar > h2o-genmodel.jar
+  :scale: 50%
 
 
 FAQ
