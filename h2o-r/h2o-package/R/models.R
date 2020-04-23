@@ -827,11 +827,12 @@ predict_contributions.H2OModel <- function(object, newdata, ...) {
     if (missing(newdata)) {
         stop("predictions with a missing `newdata` argument is not implemented yet")
     }
-
     url <- paste0('Predictions/models/', object@model_id, '/frames/',  h2o.getId(newdata))
-    res <- .h2o.__remoteSend(url, method = "POST", predict_contributions=TRUE)
-    res <- res$predictions_frame
-    h2o.getFrame(res$name)
+    res <- .h2o.__remoteSend(url, method = "POST", predict_contributions=TRUE, h2oRestApiVersion = 4)
+    job_key <- res$key$name
+    dest_key <- res$dest$name
+    .h2o.__waitOnJob(job_key)
+    h2o.getFrame(dest_key)
 }
 
 #' @rdname predict_contributions.H2OModel
