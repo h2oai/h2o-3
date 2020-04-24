@@ -282,10 +282,13 @@ public final class DHistogram extends Iced {
   public int nbins() { return _nbin; }
   // actual number of bins (possibly including NA bin)
   public int actNBins() {
-    return nbins() + (wNA() != 0 ? 1: 0);
+    return nbins() + (hasNABin() ? 1: 0);
   }
   public double bins(int b) { return w(b); }
 
+  private boolean hasNABin() {
+    return _vals != null && wNA() > 0;
+  }
   
   // Big allocation of arrays
   public void init() { init(null);}
