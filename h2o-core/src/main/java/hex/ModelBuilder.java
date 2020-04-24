@@ -1037,7 +1037,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       new FilterCols(npredictors) {
         @Override protected boolean filter(Vec v) {
           boolean isBad = v.isBad();
-          boolean skipConst = ignoreConstColumns() && v.isConst();
+          boolean skipConst = ignoreConstColumns() && v.isConst(true); // NAs can have information
           boolean skipString = ignoreStringColumns() && v.isString();
           boolean skipUuid = ignoreUuidColumns() && v.isUUID();
           boolean skip = isBad || skipConst || skipString || skipUuid;

@@ -278,9 +278,15 @@ public final class DHistogram extends Iced {
     return _min + (_splitPts == null ? b : _splitPts[b]) / _step;
   }
 
+  // number of bins excluding the NA bin
   public int nbins() { return _nbin; }
+  // actual number of bins (possibly including NA bin)
+  public int actNBins() {
+    return nbins() + (wNA() != 0 ? 1: 0);
+  }
   public double bins(int b) { return w(b); }
 
+  
   // Big allocation of arrays
   public void init() { init(null);}
   public void init(double [] vals) {
@@ -395,7 +401,7 @@ public final class DHistogram extends Iced {
       final double maxEx = v.isCategorical() ? v.domain().length : find_maxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
       final long vlen = v.length();
       try {
-        hs[c] = v.naCnt() == vlen || v.min() == v.max() ?
+        hs[c] = v.naCnt() == vlen || v.isConst(true) ?
             null : make(fr._names[c], nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), minIn, maxEx, seed, parms, globalQuantilesKey[c], cs);
       } catch(StepOutOfRangeException e) {
         hs[c] = null;
