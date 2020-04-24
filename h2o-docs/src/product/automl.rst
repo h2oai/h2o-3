@@ -323,7 +323,7 @@ Using the previous example, you can retrieve the leaderboard as follows:
    .. code-tab:: r R
 
         # Get leaderboard with 'extra_columns = 'ALL'
-        lb_all <- h2o.get_leaderboard(object = aml, extra_columns = 'ALL')
+        lb <- h2o.get_leaderboard(object = aml, extra_columns = 'ALL')
         lb_all
 
    .. code-tab:: python
