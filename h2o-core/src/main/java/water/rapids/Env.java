@@ -216,6 +216,7 @@ public class Env extends Iced {
     init(new AstTable());
     init(new AstUnique());
     init(new AstVariance());
+    init(new AstTfIdf());
 
     // Generic data mungers
     init(new AstAnyFactor());

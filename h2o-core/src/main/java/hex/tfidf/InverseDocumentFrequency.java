@@ -13,9 +13,9 @@ public class InverseDocumentFrequency extends MRTask<InverseDocumentFrequency> {
     /**
      * Number of documents in given corpus.
      */
-    private final int _documentsCnt;
+    private final long _documentsCnt;
     
-    public InverseDocumentFrequency(int documentsCnt) {
+    public InverseDocumentFrequency(long documentsCnt) {
         _documentsCnt = documentsCnt;
     }
 
