@@ -294,6 +294,10 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
         if not start_h2o: raise
         if ip and not (ip == "localhost" or ip == "127.0.0.1"):
             raise H2OConnectionError('Can only start H2O launcher if IP address is localhost.')
+        if https:
+            raise H2OConnectionError('Starting local server is not available with https enabled. You may start local'
+                                     ' instance of H2O with https manually '
+                                     '(http://docs.h2o.ai/h2o/latest-stable/h2o-docs/welcome.html#new-user-quick-start).')
         hs = H2OLocalServer.start(nthreads=nthreads, enable_assertions=enable_assertions, max_mem_size=mmax,
                                   min_mem_size=mmin, ice_root=ice_root, log_dir=log_dir, log_level=log_level,
                                   max_log_file_size=max_log_file_size, port=port, name=name,
