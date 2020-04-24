@@ -148,7 +148,7 @@ If the user sets ``nfolds == 0``, then cross-validation metrics will not be avai
 
 
 Code Examples
-~~~~~~~~~~~~~
+-------------
 
 Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the the `x` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of ``x`` is "all columns, excluding ``y``", so that will produce the same result.
 
@@ -270,15 +270,12 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
 The code above is the quickest way to get started, and the example will be referenced in the sections that follow. To learn more about H2O AutoML we recommend taking a look at our more in-depth `AutoML tutorial <https://github.com/h2oai/h2o-tutorials/tree/master/h2o-world-2017/automl>`__ (available in R and Python).
 
 
-AutoML Predictions
-------------------
+Prediction
+~~~~~~~~~~
 
 Using the ``predict()`` function with AutoML generates predictions on the leader model from the run. The order of the rows in the results is the same as the order in which the data was loaded, even if some rows fail (for example, due to missing values or unseen factor levels).
 
-Using the previous example, you can retrieve predictions as follows:
-
-Code Examples
-~~~~~~~~~~~~~
+Using the previous code example, you can generate test set predictions as follows:
 
 .. tabs::
    .. code-tab:: r R
@@ -301,8 +298,12 @@ Code Examples
         # or:
         preds = aml.leader.predict(test)
 
+
 AutoML Output
 -------------
+
+Leaderboard 
+~~~~~~~~~~~~
 
 The AutoML object includes a "leaderboard" of models that were trained in the process, including the 5-fold cross-validated model performance (by default).  The number of folds used in the model evaluation process can be adjusted using the ``nfolds`` parameter.  If you would like to score the models on a specific dataset, you can specify the ``leaderboard_frame`` argument in the AutoML run, and then the leaderboard will show scores on that dataset instead. 
 
@@ -313,9 +314,6 @@ To help users assess the complexity of ``AutoML`` models, the ``h2o.get_leaderbo
 - ``training_time_ms``: A column providing the training time of each model in milliseconds. (Note that this doesn't include the training of cross validation models.)
 - ``predict_time_per_row_ms``: A column providing the average prediction time by the model for a single row.
 - ``ALL``: Adds columns for both training_time_ms and predict_time_per_row_ms.
-
-Code Examples
-~~~~~~~~~~~~~
 
 Using the previous example, you can retrieve the leaderboard as follows:
 
@@ -332,10 +330,10 @@ Using the previous example, you can retrieve the leaderboard as follows:
         lb = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
         lb
 
-Leaderboard Example
+Example Leaderboard
 ~~~~~~~~~~~~~~~~~~~
 
-Here is an example leaderboard for a binary classification task:
+Here is an example of a leaderboard for a binary classification task:
 
 +--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
 |                                               model_id |      auc |  logloss |    aucpr | mean_per_class_error |     rmse |      mse | training_time_ms | predict_time_per_row_ms |
@@ -385,6 +383,8 @@ Here is an example leaderboard for a binary classification task:
 | GLM_1_AutoML_20191213_174603                           | 0.682648 | 0.63852  | 0.680344 |             0.397234 | 0.472683 | 0.223429 |              195 |                0.001312 |
 +--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
 
+AutoML Log
+~~~~~~~~~~
 
 When using Python or R clients, you can also access meta information with the following AutoML object properties:
 
