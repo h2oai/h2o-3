@@ -324,7 +324,7 @@ Using the previous example, you can retrieve the leaderboard as follows:
 
         # Get leaderboard with 'extra_columns = 'ALL'
         lb <- h2o.get_leaderboard(object = aml, extra_columns = 'ALL')
-        lb_all
+        lb
 
    .. code-tab:: python
 
