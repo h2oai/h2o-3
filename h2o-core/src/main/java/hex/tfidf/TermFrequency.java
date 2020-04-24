@@ -9,6 +9,11 @@ import water.rapids.ast.prims.mungers.AstGroup;
 public class TermFrequency {
 
     /**
+     * Column names to be used for output frame.
+     */
+    private static final String[] OUTPUT_FRAME_COL_NAMES = new String[] { "DocID", "Word", "TF" };
+
+    /**
      * Computes term frequency values for given words in documents.
      * 
      * @param wordFrame input frame of words for which term frequency
@@ -24,9 +29,12 @@ public class TermFrequency {
         int[] groupByColumnsNum = new int[]{ 0 };
         int[] groupByColumnsStr = new int[]{ 1 };
 
-        return new AstGroup().performGroupingWithAggregations(wordFrame,
-                                                              groupByColumnsNum,
-                                                              groupByColumnsStr,
-                                                              aggs).getFrame();
+        Frame tfFrame = new AstGroup().performGroupingWithAggregations(wordFrame,
+                                                                       groupByColumnsNum,
+                                                                       groupByColumnsStr,
+                                                                       aggs).getFrame();
+        tfFrame.setNames(OUTPUT_FRAME_COL_NAMES);
+
+        return tfFrame;
     }
 }

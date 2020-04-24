@@ -9,6 +9,11 @@ import water.rapids.ast.prims.mungers.AstGroup;
 public class DocumentFrequency {
 
     /**
+     * Column names to be used for output frame.
+     */
+    private static final String[] OUTPUT_FRAME_COL_NAMES = new String[] { "Word", "DF" };
+
+    /**
      * Computes document frequency values for given words in documents.
      *
      * @param wordFrame input frame of words for which document frequency
@@ -40,6 +45,7 @@ public class DocumentFrequency {
                                                                        groupByColumnsNum,
                                                                        groupByColumnsStr,
                                                                        aggs).getFrame();
+        dfFrame.setNames(OUTPUT_FRAME_COL_NAMES);
         
         uniqueWordsPerDocFrame.remove();
         
