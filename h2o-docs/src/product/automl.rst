@@ -330,7 +330,7 @@ Using the previous example, you can retrieve the leaderboard as follows:
 
         # Get leaderboard with `extra_columns` = 'ALL'
         lb = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
-        lb_all
+        lb
 
 Leaderboard Example
 ~~~~~~~~~~~~~~~~~~~
