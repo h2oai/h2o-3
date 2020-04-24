@@ -56,13 +56,13 @@ public class DocumentFrequencyTest extends TestUtil {
     private Frame getSimpleTestFrame() {
         long[] docIds = new long[] {
                 0L, 0L, 0L,
-                1L, 1L,
-                2L, 2L
+                1L, 1L, 1L, 1L,
+                2L, 2L, 2L, 2L
         };
         String[] tokens = new String[] {
                 "A", "B", "C",
-                "A", "Z",
-                "C", "B"
+                "A", "A", "A", "Z",
+                "C", "C", "B", "C"
         };
 
         return new TestFrameBuilder()
@@ -71,7 +71,7 @@ public class DocumentFrequencyTest extends TestUtil {
                     .withVecTypes(Vec.T_NUM, Vec.T_STR)
                     .withDataForCol(0, docIds)
                     .withDataForCol(1, tokens)
-                    .withChunkLayout(2, 3, 1, 1)
+                    .withChunkLayout(4, 3, 1, 2, 1)
                     .build();
     }
 }
