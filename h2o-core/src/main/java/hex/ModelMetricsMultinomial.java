@@ -114,20 +114,25 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     return make(perClassProbs, actualLabels, perClassProbs.names());
   }
 
+  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, String[] domain) {
+    return make(perClassProbs, actualLabels, null, domain);
+  }
+
   /**
    * Build a Multinomial ModelMetrics object from per-class probabilities (in Frame preds - no labels!), from actual labels, and a given domain for all possible labels (maybe more than what's in labels)
    * @param perClassProbs Frame containing predicted per-class probabilities (and no predicted labels)
    * @param actualLabels A Vec containing the actual labels (can be for fewer labels than what's in domain, since the predictions can be for a small subset of the data)
+   * @param weights A Vec containing the observation weights.
    * @param domain Ordered list of factor levels for which the probabilities are given (perClassProbs[i] are the per-observation probabilities for belonging to class domain[i])
    * @return ModelMetrics object
    */
-  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, String[] domain) {
+  static public ModelMetricsMultinomial make(Frame perClassProbs, Vec actualLabels, Vec weights, String[] domain) {
     Scope.enter();
-    Vec _labels = actualLabels.toCategoricalVec();
-    if (_labels == null || perClassProbs == null)
+    Vec labels = actualLabels.toCategoricalVec();
+    if (labels == null || perClassProbs == null)
       throw new IllegalArgumentException("Missing actualLabels or predictedProbs for multinomial metrics!");
-    if (_labels.length() != perClassProbs.numRows())
-      throw new IllegalArgumentException("Both arguments must have the same length for multinomial metrics (" + _labels.length() + "!=" + perClassProbs.numRows() + ")!");
+    if (labels.length() != perClassProbs.numRows())
+      throw new IllegalArgumentException("Both arguments must have the same length for multinomial metrics (" + labels.length() + "!=" + perClassProbs.numRows() + ")!");
     for (Vec p : perClassProbs.vecs()) {
       if (!p.isNumeric())
         throw new IllegalArgumentException("Predicted probabilities must be numeric per-class probabilities for multinomial metrics.");
@@ -137,31 +142,45 @@ public class ModelMetricsMultinomial extends ModelMetricsSupervised {
     int nclasses = perClassProbs.numCols();
     if (domain.length!=nclasses)
       throw new IllegalArgumentException("Given domain has " + domain.length + " classes, but predictions have " + nclasses + " columns (per-class probabilities) for multinomial metrics.");
-    _labels = _labels.adaptTo(domain);
-    Frame predsLabel = new Frame(perClassProbs);
-    predsLabel.add("labels", _labels);
-    MetricBuilderMultinomial mb = new MultinomialMetrics((_labels.domain())).doAll(predsLabel)._mb;
-    _labels.remove();
-    ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mb.makeModelMetrics(null, predsLabel, null, null);
+    labels = labels.adaptTo(domain);
+
+    Frame fr = new Frame(perClassProbs);
+    fr.add("labels", labels);
+    if (weights != null) {
+      fr.add("weights", weights);
+    }
+    MetricBuilderMultinomial mb = new MultinomialMetrics((labels.domain())).doAll(fr)._mb;
+    labels.remove();
+    ModelMetricsMultinomial mm = (ModelMetricsMultinomial)mb.makeModelMetrics(null, fr, null, null);
     mm._description = "Computed on user-given predictions and labels.";
     Scope.exit();
     return mm;
   }
 
-  // helper to build a ModelMetricsMultinomial for a N-class problem from a Frame that contains N per-class probability columns, and the actual label as the (N+1)-th column
+  // helper to build a ModelMetricsMultinomial for a N-class problem from a Frame that contains N per-class probability columns, 
+  // and the actual label as the (N+1)-th column with optional weights column at the end of the Frame
   private static class MultinomialMetrics extends MRTask<MultinomialMetrics> {
-    public MultinomialMetrics(String[] domain) { this.domain = domain; }
-    String[] domain;
+    private final String[] _domain;
     private MetricBuilderMultinomial _mb;
+
+    MultinomialMetrics(String[] domain) { 
+      _domain = domain;
+    }
+
     @Override public void map(Chunk[] chks) {
-      _mb = new MetricBuilderMultinomial(domain.length, domain);
-      Chunk actuals = chks[chks.length-1];
-      double [] ds = new double[chks.length];
-      for (int i=0;i<chks[0]._len;++i) {
-        for (int c=1;c<chks.length;++c)
-          ds[c] = chks[c-1].atd(i); //per-class probs - user-given
+      _mb = new MetricBuilderMultinomial(_domain.length, _domain);
+      Chunk actuals = chks[_domain.length];
+      Chunk weights = chks.length == _domain.length + 2 ? chks[_domain.length + 1] : null;
+      double[] ds = new double[_domain.length + 1];
+      float[] acts = new float[1];
+
+      for (int i = 0; i < chks[0]._len; i++) {
+        for (int c = 0; c < ds.length - 1; c++)
+          ds[c + 1] = chks[c].atd(i); //per-class probs - user-given
         ds[0] = GenModel.getPrediction(ds, null, ds, 0.5 /*ignored*/);
-        _mb.perRow(ds, new float[]{actuals.at8(i)}, null);
+        acts[0] = actuals.at8(i);
+        double w = weights != null ? weights.atd(i) : 1;
+        _mb.perRow(ds, acts, w, 0, null);
       }
     }
     @Override public void reduce(MultinomialMetrics mrt) { _mb.reduce(mrt._mb); }

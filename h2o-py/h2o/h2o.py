@@ -1810,7 +1810,7 @@ def load_dataset(relative_path):
     raise H2OValueError("Data file %s cannot be found" % relative_path)
 
 
-def make_metrics(predicted, actual, domain=None, distribution=None):
+def make_metrics(predicted, actual, domain=None, distribution=None, weights=None):
     """
     Create Model Metrics from predicted and actual values in H2O.
 
@@ -1818,6 +1818,7 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
     :param H2OFrame actuals: an H2OFrame containing actual values.
     :param domain: list of response factors for classification.
     :param distribution: distribution for regression.
+    :param H2OFrame weights: an H2OFrame containing observation weights (optional).
 
     :examples:
 
@@ -1848,14 +1849,17 @@ def make_metrics(predicted, actual, domain=None, distribution=None):
     """
     assert_is_type(predicted, H2OFrame)
     assert_is_type(actual, H2OFrame)
-    # assert predicted.ncol == 1, "`predicted` frame should have exactly 1 column"
+    assert_is_type(weights, H2OFrame, None)
     assert actual.ncol == 1, "`actual` frame should have exactly 1 column"
     assert_is_type(distribution, str, None)
     assert_satisfies(actual.ncol, actual.ncol == 1)
     if domain is None and any(actual.isfactor()):
         domain = actual.levels()[0]
+    params = {"domain": domain, "distribution": distribution}
+    if weights is not None:
+        params["weights_frame"] = weights.frame_id
     res = api("POST /3/ModelMetrics/predictions_frame/%s/actuals_frame/%s" % (predicted.frame_id, actual.frame_id),
-              data={"domain": domain, "distribution": distribution})
+              data=params)
     return res["model_metrics"]
 
 
