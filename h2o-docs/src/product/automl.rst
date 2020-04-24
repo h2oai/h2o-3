@@ -329,7 +329,7 @@ Using the previous example, you can retrieve the leaderboard as follows:
    .. code-tab:: python
 
         # Get leaderboard with `extra_columns` = 'ALL'
-        lb_all = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
+        lb = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
         lb_all
 
 Leaderboard Example
