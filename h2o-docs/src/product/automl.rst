@@ -150,6 +150,9 @@ If the user sets ``nfolds == 0``, then cross-validation metrics will not be avai
 Code Examples
 -------------
 
+Training
+~~~~~~~~
+
 Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* and the ``H2OAutoML`` class in *Python*.  For demonstration purposes only, we explicitly specify the the `x` argument, even though on this dataset, that's not required.  With this dataset, the set of predictors is all columns other than the response.  Like other H2O algorithms, the default value of ``x`` is "all columns, excluding ``y``", so that will produce the same result.
 
 .. tabs::
@@ -330,10 +333,8 @@ Using the previous example, you can retrieve the leaderboard as follows:
         lb = h2o.automl.get_leaderboard(aml, extra_columns = 'ALL')
         lb
 
-Example Leaderboard
-~~~~~~~~~~~~~~~~~~~
 
-Here is an example of a leaderboard for a binary classification task:
+Here is an example of a basic leaderboard (no extra columns) for a binary classification task:
 
 +--------------------------------------------------------+----------+----------+----------+----------------------+----------+----------+------------------+-------------------------+
 |                                               model_id |      auc |  logloss |    aucpr | mean_per_class_error |     rmse |      mse | training_time_ms | predict_time_per_row_ms |
