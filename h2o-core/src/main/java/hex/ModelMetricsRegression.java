@@ -54,13 +54,18 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     return sb.toString();
   }
 
+  static public ModelMetricsRegression make(Vec predicted, Vec actual, DistributionFamily family) {
+    return make(predicted, actual, null, family);
+  }
+
   /**
    * Build a Regression ModelMetrics object from predicted and actual targets
    * @param predicted A Vec containing predicted values
    * @param actual A Vec containing the actual target values
+   * @param weights A Vec containing the observation weights (optional) 
    * @return ModelMetrics object
    */
-  static public ModelMetricsRegression make(Vec predicted, Vec actual, DistributionFamily family) {
+  static public ModelMetricsRegression make(Vec predicted, Vec actual, Vec weights, DistributionFamily family) {
     if (predicted == null || actual == null)
       throw new IllegalArgumentException("Missing actual or predicted targets for regression metrics!");
     if (!predicted.isNumeric())
@@ -69,11 +74,15 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       throw new IllegalArgumentException("Actual values must be numeric for regression metrics.");
     if (family == DistributionFamily.quantile || family == DistributionFamily.tweedie || family == DistributionFamily.huber)
       throw new IllegalArgumentException("Unsupported distribution family, requires additional parameters which cannot be specified right now.");
-    Frame predsActual = new Frame(predicted);
-    predsActual.add("actual", actual);
-    MetricBuilderRegression mb = new RegressionMetrics(family).doAll(predsActual)._mb;
-    ModelMetricsRegression mm = (ModelMetricsRegression)mb.makeModelMetrics(null, predsActual, null, null);
-    mm._description = "Computed on user-given predictions and targets, distribution: " + (family ==null? DistributionFamily.gaussian.toString(): family.toString()) + ".";
+    Frame fr = new Frame(predicted);
+    fr.add("actual", actual);
+    if (weights != null) {
+      fr.add("weights", weights);
+    }
+    family = family ==null ? DistributionFamily.gaussian : family;
+    MetricBuilderRegression mb = new RegressionMetrics(family).doAll(fr)._mb;
+    ModelMetricsRegression mm = (ModelMetricsRegression) mb.makeModelMetrics(null, fr, null, null);
+    mm._description = "Computed on user-given predictions and targets, distribution: " + family.toString() + ".";
     return mm;
   }
 
@@ -84,16 +93,20 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
     public MetricBuilderRegression _mb;
     final Distribution _distribution;
     RegressionMetrics(DistributionFamily family) {
-      _distribution = family == null ? DistributionFactory.getDistribution(DistributionFamily.gaussian) : DistributionFactory.getDistribution(family);
+      _distribution = DistributionFactory.getDistribution(family);
     }
     @Override public void map(Chunk[] chks) {
       _mb = new MetricBuilderRegression(_distribution);
       Chunk preds = chks[0];
       Chunk actuals = chks[1];
-      double [] ds = new double[1];
+      Chunk weights = chks.length == 3 ? chks[2] : null;
+      double[] ds = new double[1];
+      float[] acts = new float[1];
       for (int i=0;i<chks[0]._len;++i) {
         ds[0] = preds.atd(i);
-        _mb.perRow(ds, new float[]{(float)actuals.atd(i)}, null);
+        acts[0] = (float) actuals.atd(i);
+        double w = weights != null ? weights.atd(i) : 1; 
+        _mb.perRow(ds, acts, w, 0, null);
       }
     }
     @Override public void reduce(RegressionMetrics mrt) { _mb.reduce(mrt._mb); }

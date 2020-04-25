@@ -8,6 +8,7 @@ import water.api.schemas3.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OKeyNotFoundArgumentException;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.udf.CFuncRef;
 import water.util.Log;
 
@@ -285,6 +286,9 @@ class ModelMetricsHandler extends Handler {
     @API(help="Actuals Frame.", direction=API.Direction.INOUT)
     public String actuals_frame;
 
+    @API(help="Weights Frame.", direction=API.Direction.INOUT)
+    public String weights_frame;
+
     @API(help="Domain (for classification).", direction=API.Direction.INOUT)
     public String[] domain;
 
@@ -309,17 +313,24 @@ class ModelMetricsHandler extends Handler {
     Frame act = DKV.getGet(s.actuals_frame);
     if (null == act) throw new H2OKeyNotFoundArgumentException("actuals_frame", "make", s.actuals_frame);
 
+    Vec weights = null;
+    if (null != s.weights_frame) {
+      Frame weightsFrame = DKV.getGet(s.weights_frame);
+      if (null == weightsFrame) throw new H2OKeyNotFoundArgumentException("weights_frame", "make", s.actuals_frame);
+      weights = weightsFrame.anyVec();
+    }
+
     if (s.domain ==null) {
       if (pred.numCols()!=1) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For regression problems (domain=null), the predictions_frame must have exactly 1 column.");
       }
-      ModelMetricsRegression mm = ModelMetricsRegression.make(pred.anyVec(), act.anyVec(), s.distribution);
+      ModelMetricsRegression mm = ModelMetricsRegression.make(pred.anyVec(), act.anyVec(), weights, s.distribution);
       s.model_metrics = new ModelMetricsRegressionV3().fillFromImpl(mm);
     } else if (s.domain.length==2) {
       if (pred.numCols()!=1) {
         throw new H2OIllegalArgumentException("predictions_frame", "make", "For domains with 2 class labels, the predictions_frame must have exactly one column containing the class-1 probabilities.");
       }
-      ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), s.domain);
+      ModelMetricsBinomial mm = ModelMetricsBinomial.make(pred.anyVec(), act.anyVec(), weights, s.domain);
       s.model_metrics = new ModelMetricsBinomialV3().fillFromImpl(mm);
     } else if (s.domain.length>2){
       if (pred.numCols()!=s.domain.length) {
@@ -330,7 +341,7 @@ class ModelMetricsHandler extends Handler {
         ModelMetricsOrdinal mm = ModelMetricsOrdinal.make(pred, act.anyVec(), s.domain);
         s.model_metrics = new ModelMetricsOrdinalV3().fillFromImpl(mm);
       } else {
-        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), s.domain);
+        ModelMetricsMultinomial mm = ModelMetricsMultinomial.make(pred, act.anyVec(), weights, s.domain);
         s.model_metrics = new ModelMetricsMultinomialV3().fillFromImpl(mm);
       }
     } else {
