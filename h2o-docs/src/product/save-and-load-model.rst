@@ -128,7 +128,7 @@ Saving and Importing in R or Python
         original_model <- h2o.glm(x=cols, y = "response", training_frame = data)    
 
         path <- "/path/to/model/directory"
-        mojo_destination <- h2o.saveMojo(original_model, path = path)
+        mojo_destination <- h2o.save_mojo(original_model, path = path)
         imported_model <- h2o.import_mojo(mojo_destination)
 
         new_observations <- h2o.importFile(path = 'new_observations.csv')
