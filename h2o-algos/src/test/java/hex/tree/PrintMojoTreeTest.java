@@ -187,8 +187,8 @@ public class PrintMojoTreeTest {
     assertFalse(treeJson.isEmpty());
     final String expectedTreeJson = IOUtils.toString(getClass().getResourceAsStream(fixtureFile));
     assertEquals(
-        removeH2OVersion(expectedTreeJson), 
-        removeH2OVersion(treeJson)
+            removeMOJOVersion(removeH2OVersion(expectedTreeJson)),
+            removeMOJOVersion(removeH2OVersion(treeJson))
     );
   }
   
@@ -219,6 +219,10 @@ public class PrintMojoTreeTest {
     return json.replaceAll("\"h2o_version\": \"[\\d\\.]+\"", "h2o_version");
   }
 
+  private String removeMOJOVersion(String json) {
+    return json.replaceAll("\"mojo_version\": [\\d\\.]+", "mojo_version");
+  }  
+  
   @Test
   public void testMojoCategoricalJson() throws IOException {
     try {

@@ -827,13 +827,7 @@ public class FrameUtils {
             Frame train = new Frame(source, new String[]{"enum"}, new Vec[]{src});
             DKV.put(train);
             Log.info("Reducing the cardinality of a categorical column with " + src.cardinality() + " levels to " + _maxLevels);
-            Interaction inter = new Interaction();
-            inter._source_frame = train._key;
-            inter._max_factors = _maxLevels; // keep only this many most frequent levels
-            inter._min_occurrence = 2; // but need at least 2 observations for a level to be kept
-            inter._pairwise = false;
-            inter._factor_columns = train.names();
-            train = inter.execImpl(dest).get();
+            train = Interaction.getInteraction(train._key, train.names(), _maxLevels).execImpl(dest).get();
             outputFrame.add(_frame.name(i) + ".top_" + _maxLevels + "_levels", train.anyVec().makeCopy());
             train.remove();
             DKV.remove(source);

@@ -676,7 +676,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      *  response col categoricals for SupervisedModels.  */
     public String _domains[][];
     public String _origDomains[][]; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
-
+    
+    public double[] _orig_projection_array;// only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
+    
     /** List of Keys to cross-validation models (non-null iff _parms._nfolds > 1 or _parms._fold_column != null) **/
     public Key _cross_validation_models[];
     /** List of Keys to cross-validation predictions (if requested) **/
@@ -721,6 +723,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _domains = train != null ? train.domains() : new String[0][];
       _origNames = b._origNames;
       _origDomains = b._origDomains;
+      _orig_projection_array = b._orig_projection_array;
       _hasOffset = b.hasOffsetCol();
       _hasWeights = b.hasWeightCol();
       _hasFold = b.hasFoldCol();

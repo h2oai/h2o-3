@@ -11,4 +11,15 @@ public class MathUtils {
     return Math.abs(actual - expected) <= (n-1) * Math.ulp(actual) * absum;
   }
 
+  /** 
+   * Fast calculation of log base 2 for integers.
+   *  @return log base 2 of n 
+   */
+  public static int log2(int n) {
+    if (n <= 0) throw new IllegalArgumentException();
+    return 31 - Integer.numberOfLeadingZeros(n);
+  }
+  public static int log2(long n) {
+    return 63 - Long.numberOfLeadingZeros(n);
+  }
 }

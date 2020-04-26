@@ -53,6 +53,6 @@ public class GbmMojoReader extends SharedTreeMojoReader<GbmMojoModel> {
   }
 
   @Override public String mojoVersion() {
-    return "1.30";
+    return "1.40";
   }
 }
