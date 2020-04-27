@@ -34,6 +34,7 @@ public class SharedTreeTest extends TestUtil  {
     gbmParams._learn_rate = 1;
     // 2. DRF
     DRFModel.DRFParameters drfParams = new DRFModel.DRFParameters();
+    drfParams._sample_rate = 1;
     return Arrays.asList(gbmParams, drfParams);
   }
 
@@ -65,6 +66,7 @@ public class SharedTreeTest extends TestUtil  {
               .build();
 
       parms._train = frame._key;
+      parms._valid = frame._key; // we don't do sampling in DRF, metrics will be NA 
       parms._response_column = "Response";
       parms._ntrees = 1;
       parms._ignore_const_cols = true; // default but to make sure and illustrate the point
