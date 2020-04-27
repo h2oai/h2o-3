@@ -183,6 +183,8 @@ def init(url=None, ip=None, port=None, name=None, https=None, cacert=None, insec
     :param max_log_file_size: Maximum size of INFO and DEBUG log files. The file is rolled over after a specified size has been reached. (The default is 3MB. Minimum is 1MB and maximum is 99999MB)
     :param enable_assertions: Enable assertions in Java for the new h2o server.
     :param max_mem_size: Maximum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
+
+        - **Note:** If `max_mem_size` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
     :param min_mem_size: Minimum memory to use for the new h2o server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
     :param strict_version_check: If True, an error will be raised if the client and server versions don't match.
     :param ignore_config: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.

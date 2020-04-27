@@ -16,8 +16,11 @@ Use the ``h2o.init()`` method to initialize H2O. This method accepts the followi
 - ``enable_assertions``:  (Optional) A logical value indicating whether H2O should be launched with assertions enabled. This is used mainly for error checking and debugging purposes. 
 - ``license``: (Optional) A character string value specifying the full path of the license file. 
 - ``max_log_file_size``: Maximum size of INFO and DEBUG log files. The file is rolled over after the specifized size has been reached. The range for this option is 1MB to 99999MB. The value defaults to 3MB.
-- ``max_mem_size``: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
-- ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes.
+- ``max_mem_size``: (Optional) A character string specifying the maximum size, in bytes, of the memory allocation pool to H2O. This value must be a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes. 
+
+    **Note:** If ``max_mem_size`` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
+
+- ``min_mem_size``: (Optional) A character string specifying the minimum size, in bytes, of the memory allocation pool to H2O. This value must a multiple of 1024 greater than 2MB. Append the letter ``m`` or ``M`` to indicate megabytes, or ``g`` or ``G`` to indicate gigabytes. 
 - ``ice_root``: (Optional) A directory to handle object spillage. The default varies by OS.
 - ``strict_version_check``: (Optional) Setting this to FALSE is unsupported and should only be done when advised by technical support.
 - ``ignore_config``: (Optional) This option allows you to specify whether to perform processing of a .h2oconfig file. When h2o.init() is specified, a call to a config reader method is invoked. This call can result in path issues when there is no "root" (for example, with a Windows network drive) because the config file reader searches up to "root." When there is no "root", the path to search will continue to expand, eventually result in an error. This value defaults to False.
@@ -100,7 +103,10 @@ Use the ``h2o.init()`` function to initialize H2O. This function accepts the fol
 - ``log_level``: The logger level for H2O if a new instance is started. One of TRACE,DEBUG,INFO,WARN,ERRR,FATA. Default is INFO. Ignored if connecting to an existing node.
 - ``enable_assertions``: Enable assertions in Java for the new H2O server.
 - ``max_mem_size``: Maximum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
-- ``min_mem_size``: Minimum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).
+  
+  **Note:** If ``max_mem_size`` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the Java Virtual Machine (JVM). This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
+
+- ``min_mem_size``: Minimum memory to use for the new H2O server. Integer input will be evaluated as gigabytes.  Other units can be specified by passing in a string (e.g. "160M" for 160 megabytes).  
 - ``strict_version_check``: If True, an error will be raised if the client and server versions don't match.
 - ``ignore_config``: Indicates whether a processing of a .h2oconfig file should be conducted or not. Default value is False.
 - ``extra_classpath``: List of paths to libraries that should be included on the Java classpath when starting H2O from Python.
@@ -252,7 +258,7 @@ JVM Options
 -  ``-version``: Display Java version info.
 -  ``-Xmx<Heap Size>``: To set the total heap size for an H2O node, configure the memory allocation option ``-Xmx``. By default, this option is set to 1 Gb (``-Xmx1g``). When launching nodes, we recommend allocating a total of four times the memory of your data.
 
-    **Note**: Do not try to launch H2O with more memory than you have available.
+    **Note**: Do not try to launch H2O with more memory than you have available. If ``-Xmx<Heap Size>`` is not defined, then the amount of memory that H2O allocates will be determined by the default memory of the JVM. This amount depends on the Java version, but it will generally be 25% of the machine's physical memory.
 
 H2O Options
 ~~~~~~~~~~~
