@@ -204,6 +204,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public final Frame train() { return _train; }
   protected transient Frame _train;
 
+  protected transient Frame _origTrain;
+
   public void setTrain(Frame train) {
     _train = train;
   }
@@ -897,6 +899,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient Vec _fold; // fold id column
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
+  protected transient double[] _orig_projection_array; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
   public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
@@ -1346,10 +1349,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (expensive) {
       Frame newtrain = encodeFrameCategoricals(_train, ! _parms._is_cv_model);
       if (newtrain != _train) {
+        _origTrain = _train;
         _origNames = _train.names();
         _origDomains = _train.domains();
         setTrain(newtrain);
         separateFeatureVecs(); //fix up the pointers to the special vecs
+      } else {
+        _origTrain = null;
       }
       if (_valid != null) {
         _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);

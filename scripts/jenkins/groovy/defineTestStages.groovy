@@ -42,7 +42,7 @@ def call(final pipelineContext) {
     [
       stageName: 'Java 8 Smoke', target: 'test-junit-smoke-jenkins', javaVersion: 8, timeoutValue: 20,
       component: pipelineContext.getBuildConfig().COMPONENT_JAVA
-    ],
+    ]
   ]
 
   // Stages executed after each push to PR branch.
@@ -357,6 +357,21 @@ def call(final pipelineContext) {
     [ // These run with reduced number of file descriptors for early detection of FD leaks
       stageName: 'XGBoost Stress tests', target: 'test-pyunit-xgboost-stress', pythonVersion: '3.5', timeoutValue: 40,
       component: pipelineContext.getBuildConfig().COMPONENT_PY, customDockerArgs: [ '--ulimit nofile=100:100' ]
+    ],
+    [
+      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
+      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], addToDockerGroup: true, nodeLabel: "micro"
+    ]
+  ]
+
+  def KUBERNETES_STAGES = [
+    [
+      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
+      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
+      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], addToDockerGroup: true
     ]
   ]
 
@@ -643,6 +658,7 @@ private void executeInParallel(final jobs, final pipelineContext) {
           imageSpecifier = c['imageSpecifier']
           dockerImageSuffix = c['dockerImageSuffix']
           healthCheckSuppressed = c['healthCheckSuppressed']
+          addToDockerGroup = c['addToDockerGroup']
         }
       }
     ]

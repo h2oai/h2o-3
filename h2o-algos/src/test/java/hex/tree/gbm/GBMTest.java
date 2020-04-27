@@ -123,7 +123,7 @@ public class GBMTest extends TestUtil {
     }
   }
 
-  @Test public void testPOJOSupportedCategoricalEncodings() throws Exception {
+  @Test public void testMOJOandPOJOSupportedCategoricalEncodings() throws Exception {
     try {
       Scope.enter();
       final String response = "CAPSULE";
@@ -141,7 +141,10 @@ public class GBMTest extends TestUtil {
               Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
               Model.Parameters.CategoricalEncodingScheme.SortByResponse,
               Model.Parameters.CategoricalEncodingScheme.EnumLimited,
-              Model.Parameters.CategoricalEncodingScheme.Enum
+              Model.Parameters.CategoricalEncodingScheme.Enum,
+              Model.Parameters.CategoricalEncodingScheme.Binary,
+              Model.Parameters.CategoricalEncodingScheme.LabelEncoder,
+              Model.Parameters.CategoricalEncodingScheme.Eigen
       };
       
       for (Model.Parameters.CategoricalEncodingScheme scheme : supportedSchemes) {
@@ -178,7 +181,27 @@ public class GBMTest extends TestUtil {
                         "--output", pojoScoringOutput.getAbsolutePath(),
                         "--decimal"}, (GenModel) pojoClass.newInstance());
         predictor.run();
-        Frame scoredWithMojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+        Frame scoredWithPojo = Scope.track(parse_test_file(pojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
+          @Override
+          public ParseSetup transformSetup(ParseSetup guessedSetup) {
+            return guessedSetup.setCheckHeader(1);
+          }
+        }));
+
+        scoredWithPojo.setNames(scored.names());
+        assertFrameEquals(scored, scoredWithPojo, 1e-8);
+
+        File mojoScoringOutput = temporaryFolder.newFile(gbm._key + "_scored2.csv");
+        MojoModel mojoModel = gbm.toMojo();
+        
+        predictor = PredictCsv.make(
+                new String[]{
+                        "--embedded",
+                        "--input", TestUtil.makeNfsFileVec(testFile).getPath(),
+                        "--output", mojoScoringOutput.getAbsolutePath(),
+                        "--decimal"}, (GenModel) mojoModel);
+        predictor.run();
+        Frame scoredWithMojo = Scope.track(parse_test_file(mojoScoringOutput.getAbsolutePath(), new ParseSetupTransformer() {
           @Override
           public ParseSetup transformSetup(ParseSetup guessedSetup) {
             return guessedSetup.setCheckHeader(1);

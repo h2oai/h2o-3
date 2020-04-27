@@ -67,6 +67,9 @@ public interface IGeneratedModel {
     /** Returns original domain values for all columns including response column. */
     public String[][] getOrigDomainValues();
 
+    /** Returns original Eigen encoder projections array for all columns. */
+    public double[] getOrigProjectionArray();
+
     /** Returns index of column with give name or -1 if column is not found. */
     public int getColIdx(String name);
 

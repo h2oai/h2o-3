@@ -1,5 +1,6 @@
 package hex.genmodel.algos.tree;
 
+import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.drf.DrfMojoModel;
 import hex.genmodel.algos.gbm.GbmMojoModel;
@@ -57,6 +58,14 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
      * GLM's beta used for calibrating output probabilities using Platt Scaling.
      */
     protected double[] _calib_glm_beta;
+    
+    protected String _genmodel_encoding;
+    
+    protected String[] _orig_names;
+
+    protected String[][] _orig_domain_values;
+
+    protected double[] _orig_projection_array;
 
 
     protected void postInit() {
@@ -225,6 +234,44 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
                 }
             }
         }
+    }
+    
+
+    @Override
+    public CategoricalEncoding getCategoricalEncoding() {
+        switch (_genmodel_encoding) {
+            case "AUTO":
+            case "Enum":
+            case "SortByResponse":
+                return CategoricalEncoding.AUTO;
+            case "OneHotExplicit":
+                return CategoricalEncoding.OneHotExplicit;
+            case "Binary":
+                return CategoricalEncoding.Binary;
+            case "EnumLimited":
+                return CategoricalEncoding.EnumLimited;
+            case "Eigen":
+                return CategoricalEncoding.Eigen;
+            case "LabelEncoder":
+                return CategoricalEncoding.LabelEncoder;
+            default:
+                return null;
+        }
+    }
+
+    @Override
+    public String[] getOrigNames() {
+      return _orig_names;
+    }
+
+    @Override
+    public double[] getOrigProjectionArray() {
+        return _orig_projection_array;
+    }
+
+    @Override
+    public String[][] getOrigDomainValues() {
+        return _orig_domain_values;
     }
 
     public interface DecisionPathTracker<T> {

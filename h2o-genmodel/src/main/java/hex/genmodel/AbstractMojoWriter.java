@@ -245,12 +245,16 @@ public abstract class AbstractMojoWriter {
     int domIndex = 0;
     for (String[] domain : model.scoringDomains()) {
       if (domain == null) continue;
-      startWritingTextFile(String.format("domains/d%03d.txt", domIndex++));
-      for (String category : domain) {
-        writeln(StringEscapeUtils.escapeNewlines(category));
-      }
-      finishWritingTextFile();
+      writeStringArray(domain, String.format("domains/d%03d.txt", domIndex++));
     }
+  }
+  
+  protected void writeStringArray(String[] array, String filename) throws IOException {
+    startWritingTextFile(filename);
+    for (String value : array) {
+      writeln(value, true);
+    }
+    finishWritingTextFile();
   }
 
   private static byte[] toBytes(Object value) {

@@ -18,7 +18,7 @@ public class IsolationForestMojoWriter extends SharedTreeMojoWriter<IsolationFor
   public IsolationForestMojoWriter(IsolationForestModel model) { super(model); }
 
   @Override public String mojoVersion() {
-    return "1.30";
+    return "1.40";
   }
 
   @Override
