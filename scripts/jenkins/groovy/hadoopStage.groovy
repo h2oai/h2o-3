@@ -9,7 +9,7 @@ H2O_HADOOP_STARTUP_MODE_STEAM_SPARKLING='STEAM_SPARKLING'
 
 def call(final pipelineContext, final stageConfig) {
     withCredentials([usernamePassword(credentialsId: 'ldap-credentials', usernameVariable: 'LDAP_USERNAME', passwordVariable: 'LDAP_PASSWORD')]) {
-        def commandFactory = load(stageConfig.customData.commandFactory)
+        def commandFactory = load(stageConfig.customData.commandFactory)()
         stageConfig.customBuildAction = """
             if [ -n "\$HADOOP_CONF_DIR" ]; then
                 export HADOOP_CONF_DIR=\$(realpath \${HADOOP_CONF_DIR})
@@ -31,7 +31,7 @@ def call(final pipelineContext, final stageConfig) {
             BUILD_HADOOP=true H2O_TARGET=${stageConfig.customData.distribution}${stageConfig.customData.version} ./gradlew clean build -x test
 
             echo 'Starting H2O on Hadoop'
-            ${commandFactory(stageConfig)}
+            ${commandFactory.getH2OStartCommand(stageConfig)}
             if [ -z \${CLOUD_IP} ]; then
                 echo "CLOUD_IP must be set"
                 exit 1
@@ -43,7 +43,7 @@ def call(final pipelineContext, final stageConfig) {
             echo "Cloud IP:PORT ----> \$CLOUD_IP:\$CLOUD_PORT"
 
             echo "Running Make"
-            make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}${getMakeTargetSuffix(stageConfig)} check-leaks
+            make -f ${pipelineContext.getBuildConfig().MAKEFILE_PATH} ${stageConfig.target}${getMakeTargetSuffix(stageConfig)} ${commandFactory.getExtraMakeTarget()} check-leaks
         """
         
         stageConfig.postFailedBuildAction = getPostFailedBuildAction(stageConfig.customData.mode)
