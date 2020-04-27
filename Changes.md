@@ -32,8 +32,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/in
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7237'>PUBDEV-7237</a>] - Added a method to get the actual parameter value when a parameter is set to Auto. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7353'>PUBDEV-7353</a>] - Added the following options for customizing and retrieving threshold values. (STILL OPEN)
 <ul>
 <li>`threshold` allows you to specify the threshold value used for calculating the confusion matrix.
