@@ -6,6 +6,7 @@ sys.path.insert(1, os.path.join("..","..","..",".."))
 import h2o
 from tests import pyunit_utils
 from h2o.estimators import H2OTargetEncoderEstimator
+from h2o.estimators import H2OGradientBoostingEstimator
 
 """
 This test is used to check Rapids wrapper for java TargetEncoder
@@ -61,6 +62,19 @@ def test_target_encoding_fit_method():
            'sex_te', 'cabin_te', 'embarked_te', 'home.dest_te']
     assert len(transformed.col_names) == len(expected_columns)
     assert sorted(transformed.col_names) == sorted(expected_columns) # 4 encoded columns
+
+    gbm_with_te=H2OGradientBoostingEstimator(score_tree_interval=10,
+                                             ntrees=500,
+                                             sample_rate=0.8,
+                                             col_sample_rate=0.8,
+                                             seed=1234,
+                                             stopping_rounds=5,
+                                             stopping_metric="AUC",
+                                             stopping_tolerance=0.001,
+                                             model_id="gbm_with_te")
+
+    myX = ["pclass", "sex", "age", "sibsp", "parch", "fare", "cabin_te", "embarked_te", "home.dest_te"]
+    gbm_with_te.train(x=myX, y=targetColumnName, training_frame=transformed)
 
 
 testList = [
