@@ -2,7 +2,7 @@
 
 ## H2O
 
-### Zahradnik (3.30.0.2) - 4/27/2020
+### Zahradnik (3.30.0.2) - 4/28/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/index.html</a>
 
@@ -15,98 +15,83 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/in
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7426'>PUBDEV-7426</a>] - Fixed an issue that caused an assertion error while running Grid Search.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7434'>PUBDEV-7434</a>] - Training of a model based on a data frame with Target Encodings no longer fails due to a locked frame.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7434'>PUBDEV-7434</a>] - Training of a model based on a data frame that includes Target Encodings no longer fails due to a locked frame.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7439'>PUBDEV-7439</a>] -         train_segments not included in the R html documentation
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7439'>PUBDEV-7439</a>] - Added train_segments() to the R html documentation.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7441'>PUBDEV-7441</a>] -         Target encoder does not unlock output Frame
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7441'>PUBDEV-7441</a>] - Target Encoder now unlocks the output frame.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7449'>PUBDEV-7449</a>] -         XGBoost Not Reproducible if Columns Added To DataFrame and Column Sampling On
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7454'>PUBDEV-7454</a>] - The h2o.get_leaderboard() function now works correctly for re-attached H2OAutoML objects. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7454'>PUBDEV-7454</a>] -         h2o.get_leaderboard function does not work for re-attached H2OAutoML object
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7456'>PUBDEV-7456</a>] - Fixed the BiasTerm in XGBoost Contributions after upgrading to XGBoost 1.0.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7456'>PUBDEV-7456</a>] -         BiasTerm in XGBoost Contributions is not correct
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7461'>PUBDEV-7461</a>] -         Add information about the h2o.get_leaderboard function to the AutoML User Guide page
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7486'>PUBDEV-7486</a>] -         GBM/XGBoost will ignore a column made of a constant and NAs
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7486'>PUBDEV-7486</a>] - GBM and XGBoost no longer ignore a column that includes a constant and NAs. (STILL OPEN)
 </li>
 </ul>
 
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7237'>PUBDEV-7237</a>] -         Add method to get the actual parameter when a parameter is set to &#39;Auto&#39;
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7237'>PUBDEV-7237</a>] - Added a method to get the actual parameter value when a parameter is set to Auto. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7353'>PUBDEV-7353</a>] -         Provide a function to change the binarisation threshold
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7376'>PUBDEV-7376</a>] -         Kubernetes Docker image tests
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7408'>PUBDEV-7408</a>] -         Add progress bar during Shap Contributions calculations
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7458'>PUBDEV-7458</a>] -         Create config options (e.g. -internal_secure_connections_xgboost) to disable SLL for internode security for only XGBoost
-</li>
-</ul>
-
-<h4>Task</h4>
-
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7353'>PUBDEV-7353</a>] - Added the following options for customizing and retrieving threshold values. (STILL OPEN)
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7460'>PUBDEV-7460</a>] -         Verify functions of GAM working properly: accuracy, hit-ratio-table and other metrics generation.
+<li>`threshold` allows you to specify the threshold value used for calculating the confusion matrix.
+<li>`default_threshold` allows you to change the threshold that is used to binarise the predicted class probabilities.</li>
+<li>`reset_model_threshold` allows you to reset the model threshold.</li>
+</ul>
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7487'>PUBDEV-7487</a>] -         Release notes for 3.30.0.2 release
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7376'>PUBDEV-7376</a>] - Introduced Kubernetes integration. Docker image tests are now available on K8S and published to Docker Hug.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7408'>PUBDEV-7408</a>] - A progress bar is now available during Shap Contributions calculations.
 </li>
 </ul>
 
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6417'>PUBDEV-6417</a>] -         Add Ability to Calculate Performance Metrics on any predictions (incl. calibrated)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6417'>PUBDEV-6417</a>] - An H2O Frame containing weights can now be specified when running `make_metrics`. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7274'>PUBDEV-7274</a>] -         Add Pojo  and Mojo support for all encodings in GBM
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7274'>PUBDEV-7274</a>] - Added POJO and MOJO support for all encodings in GBM.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7438'>PUBDEV-7438</a>] -         Allow y-axis scaling options within the H2O PDP function
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7438'>PUBDEV-7438</a>] - Added support for Y-axis scaling options within the H2O partial plot function. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7446'>PUBDEV-7446</a>] -         Add error/warning if user has https in h2o.init()
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7446'>PUBDEV-7446</a>] - Users will now receive an error if they attempt to run https in h2o.init() when starting a local cluster. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7463'>PUBDEV-7463</a>] -         Speed up training and prediction of Stacked Ensemble
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7463'>PUBDEV-7463</a>] - Improved speed for training and prediction of Stacked Ensembles. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7465'>PUBDEV-7465</a>] -         XGBoost multinode in secured cluster
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7465'>PUBDEV-7465</a>] - Added an `-allow_insecure_xgboost` option to h2o and h2odriver that allows XGBoost multinode to run in a secured cluster.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7469'>PUBDEV-7469</a>] -         Expose leader node only on K8S
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7469'>PUBDEV-7469</a>] - Only the leader node is exposed on K8S. (STILL OPEN)
 </li>
 </ul>
 
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7020'>PUBDEV-7020</a>] -         Update Target Encoding topic and examples
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7020'>PUBDEV-7020</a>] - Updated the Target Encoding topic and examples based on the improved API. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7343'>PUBDEV-7343</a>] -         Clean-up and clarify Hive import documentation
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7343'>PUBDEV-7343</a>] - Cleaned up and added more clarification to the Hive import documentation. (STILL OPEN)
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7344'>PUBDEV-7344</a>] -         Add a new topic &quot;Supported Data Types&quot; to the Algorithms chapter
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7344'>PUBDEV-7344</a>] - Added a new "Supported Data Types" topic to the Algorithms chapter.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7412'>PUBDEV-7412</a>] -         Add version number to Python docs
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7442'>PUBDEV-7442</a>] - Added a new "Kubernetes Integration" topic to the Welcome chapter.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7442'>PUBDEV-7442</a>] -         Add new &quot;Kubernetes Integration&quot; topic to the welcome.rst
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7443'>PUBDEV-7443</a>] - Fixed the links for the constrained k-means Python demos.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7443'>PUBDEV-7443</a>] -         New links for constrained k-means python demo
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7447'>PUBDEV-7447</a>] - Fixed the R example in the GAM chapter.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7447'>PUBDEV-7447</a>] -         Fix R example for GAM 
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7451'>PUBDEV-7451</a>] - Added clarification for when `min_mem_size` and `max_mem_size`` are set to NULL/None in h2o.init(). 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7450'>PUBDEV-7450</a>] -         Add sphinx substitution extension; update topics that use hard-coded versions and replace with version variable
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7459'>PUBDEV-7459</a>] - The link to the slideshare in the DRF chapter now points to https instead of http.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7451'>PUBDEV-7451</a>] -         Add clarification: min_mem_size and max_mem_size = NULL/None in h2o.init() uses JVM default
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7461'>PUBDEV-7461</a>] - Added information about the h2o.get_leaderboard() function to the AutoML chapter of the User Guide.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7459'>PUBDEV-7459</a>] -         Link to slideshare in DRF chapter should point to https instead of http
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7462'>PUBDEV-7462</a>] - Updated the MOJO Quickstart showing how to use PrintMojo to visualize MOJOs without requiring Graphviz.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7462'>PUBDEV-7462</a>] -         Update docs of mojo visualisation for png format
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7470'>PUBDEV-7470</a>] -         update import_mojo documentation
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7476'>PUBDEV-7476</a>] -         Update saving/downloading data documentation
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7470'>PUBDEV-7470</a>] - The import_mojo() function now uses "path" instead of "dir" when downloading, importing, uploading, and saving models. Updated the examples in the documentation.
 </li>
 </ul>
-
 
 
 ### Zahradnik (3.30.0.1) - 4/3/2020
