@@ -8,11 +8,14 @@ import org.apache.hadoop.security.UserGroupInformation;
 import org.apache.hadoop.security.token.Token;
 import org.apache.hive.jdbc.HiveConnection;
 
+import java.io.ByteArrayInputStream;
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.security.PrivilegedExceptionAction;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
+import java.util.Date;
 
 public class HiveTokenGenerator {
 
@@ -82,11 +85,26 @@ public class HiveTokenGenerator {
     }
     String token = getHiveDelegationToken(hiveJdbcUrl, hivePrincipal);
     if (token != null) {
+      printToken(token);
       addHiveDelegationToken(job, token);
       return true;
     } else {
       log("Failed to get delegation token.", null);
       return false;
+    }
+  }
+  
+  public static void printToken(String token) {
+    try {
+      Token<DelegationTokenIdentifier> t = new Token();
+      t.decodeFromUrlString(token);
+      org.apache.hadoop.hive.thrift.DelegationTokenIdentifier id = new org.apache.hadoop.hive.thrift.DelegationTokenIdentifier();
+      id.readFields(new DataInputStream(new ByteArrayInputStream(t.getIdentifier())));
+      System.out.println("token.kind: " + t.getKind() + ", token.service: " + t.getService() + ", " + 
+          "id.kind: " + id.getKind() + ", id.maxdate: " + id.getMaxDate() + " (" + new Date(id.getMaxDate()) + "), " +
+          "id.validity: " + (id.getMaxDate() - System.currentTimeMillis()) / 3600_000 + " hours");
+    } catch (IOException e) {
+      log("Failed to decode token", e);
     }
   }
   
