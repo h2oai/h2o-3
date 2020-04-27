@@ -66,6 +66,7 @@ ext {
     // All published projects - their artifacts are going to Maven central
     publishedProjects = [
       project(':h2o-core'),
+      project(':h2o-test-support'),
       project(':h2o-algos'),
       project(':h2o-web'),
       project(':h2o-app'),
