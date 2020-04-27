@@ -1909,6 +1909,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testNAPredictor_cat() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // using `tree_method`=exact is not supported in multi-node
     checkNAPredictor(new TestFrameBuilder()
             .withVecTypes(Vec.T_CAT, Vec.T_CAT)
             .withDataForCol(0, ar(null, "V", null, "V", null, "V"))
@@ -1917,6 +1918,7 @@ public class XGBoostTest extends TestUtil {
 
   @Test
   public void testNAPredictor_num() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // using `tree_method`=exact is not supported in multi-node
     checkNAPredictor(new TestFrameBuilder()
             .withVecTypes(Vec.T_NUM, Vec.T_CAT)
             .withDataForCol(0, ard(Double.NaN, 1, Double.NaN, 1, Double.NaN, 1))
