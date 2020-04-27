@@ -366,15 +366,6 @@ def call(final pipelineContext) {
     ]
   ]
 
-  def KUBERNETES_STAGES = [
-    [
-      stageName: 'Kubernetes', target: 'test-h2o-k8s', timeoutValue: 20,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA,
-      image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3-k8s:${pipelineContext.getBuildConfig().K8S_TEST_IMAGE_VERSION_TAG}",
-      customDockerArgs: ['-v /var/run/docker.sock:/var/run/docker.sock', '--network host'], addToDockerGroup: true
-    ]
-  ]
-
   def supportedHadoopDists = pipelineContext.getBuildConfig().getSupportedHadoopDistributions()
   def HADOOP_STAGES = []
   for (distribution in supportedHadoopDists) {
