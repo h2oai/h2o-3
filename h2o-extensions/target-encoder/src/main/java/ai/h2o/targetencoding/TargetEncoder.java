@@ -234,12 +234,12 @@ public class TargetEncoder extends Iced<TargetEncoder>{
     }
     
     private void updateDomainGlobally(Frame fr, String teColumnName, String[] domain) {
-      Lockable lock = fr.write_lock();
+      fr.write_lock();
       Vec updatedVec = fr.vec(teColumnName);
       updatedVec.setDomain(domain);
       DKV.put(updatedVec);
       fr.update();
-      lock.unlock();
+      fr.unlock();
     }
 
     Frame getOutOfFoldData(Frame encodingMap, String foldColumnName, long currentFoldValue)  {

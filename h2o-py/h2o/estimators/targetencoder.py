@@ -291,9 +291,9 @@ class H2OTargetEncoderEstimator(H2OEstimator):
         :param H2OFrame frame: to which frame we are applying target encoding transformations.
         :param str data_leakage_handling: Supported options:
 
-        1) "k_fold" - encodings for a fold are generated based on out-of-fold data.
-        2) "leave_one_out" - leave one out. Current row's response value is subtracted from the pre-calculated per-level frequencies.
-        3) "none" - we do not holdout anything. Using whole frame for training
+                1) "k_fold" - encodings for a fold are generated based on out-of-fold data.
+                2) "leave_one_out" - leave one out. Current row's response value is subtracted from the pre-calculated per-level frequencies.
+                3) "none" - we do not holdout anything. Using whole frame for training
 
         :param float noise: the amount of random noise added to the target encoding.  This helps prevent overfitting. Defaults to 0.01 * range of y.
         :param int seed: a random seed used to generate draws from the uniform distribution for random noise. Defaults to -1.
