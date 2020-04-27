@@ -82,6 +82,13 @@ public class GenericModelOutput extends Model.Output {
                 auc._auc = binomial._auc;
                 auc._pr_auc = binomial._pr_auc;
                 auc._gini = binomial._gini;
+                int thsSize = binomial._thresholds_and_metric_scores.rows();
+                auc._ths = new double[thsSize];
+                for(int i=0; i<thsSize; i++){
+                    auc._ths[i] = (Double) binomial._thresholds_and_metric_scores.getCell(0, i);
+                }
+                auc.resetThreshold(_defaultThreshold);
+                //auc._nBins = thsSize;
                 if (mojoMetrics instanceof MojoModelMetricsBinomialGLM) {
                     assert modelAttributes instanceof ModelAttributesGLM;
                     final ModelAttributesGLM modelAttributesGLM = (ModelAttributesGLM) modelAttributes;

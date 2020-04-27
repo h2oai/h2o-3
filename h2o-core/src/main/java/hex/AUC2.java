@@ -6,7 +6,6 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Chunk;
 import water.fvec.Vec;
 import water.util.fp.Function;
-import water.util.fp.Functions;
 
 import java.util.Arrays;
 
@@ -22,8 +21,8 @@ import static hex.AUC2.ThresholdCriterion.*;
  *  thresholds; these define the (X,Y) coordinates of the AUC.
  */
 public class AUC2 extends Iced {
-  public final int _nBins; // Max number of bins; can be less if there are fewer points
-  public final double[] _ths;   // Thresholds
+  public int _nBins; // Max number of bins; can be less if there are fewer points
+  public double[] _ths;   // Thresholds; no final due to GenericModel
   public final double[] _tps;     // True  Positives
   public final double[] _fps;     // False Positives
   public final double _p, _n;     // Actual trues, falses
@@ -132,11 +131,12 @@ public class AUC2 extends Iced {
     double[] ths = Arrays.copyOf(_ths, _ths.length);
     boolean reversed = false;
     // if the thresholds are reversed, reverse back
-    if(ths[0] > ths[ths.length-1]) {
-      for (int i = 0; i < ((_nBins) >> 1); i++) {
+    int thsLength=ths.length;
+    if(ths[0] > ths[thsLength-1]) {
+      for (int i = 0; i < Math.ceil(thsLength/2); i++) {
         double tmp = ths[i];
-        ths[i] = ths[_nBins - 1 - i];
-        ths[_nBins - 1 - i] = tmp;
+        ths[i] = ths[thsLength - 1 - i];
+        ths[thsLength - 1 - i] = tmp;
       }
       reversed = true;
     }
@@ -363,6 +363,9 @@ public class AUC2 extends Iced {
 
   /** @return the default CM, or null for an empty AUC */
   public double[/*actual*/][/*predicted*/] defaultCM( ) { 
+    if(_max_idx >= _tps.length || _custom_max_idx >= _tps.length){
+      return null;
+    }
     if(_custom_max_idx > -1){
       return buildCM(_custom_max_idx);
     }

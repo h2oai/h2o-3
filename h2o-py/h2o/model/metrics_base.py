@@ -161,7 +161,8 @@ class MetricsBase(h2o_meta()):
             print("AUC: " + str(self.auc()))
             print("AUCPR: " + str(self.aucpr()))
             print("Gini: " + str(self.gini()))
-            self.confusion_matrix().show()
+            print("Threshold: "+ str(self.threshold()))
+            self.confusion_matrix(thresholds=[self.threshold()]).show()
             self._metric_json["max_criteria_and_metric_scores"].show()
             if self.gains_lift():
                 print(self.gains_lift())
@@ -465,6 +466,26 @@ class MetricsBase(h2o_meta()):
         if MetricsBase._has(self._metric_json, "residual_deviance"):
             return self._metric_json["residual_deviance"]
         return None
+    
+    def threshold(self):
+        """Threshold used for calculation of Confusion Matrix
+
+        :examples:
+
+        >>> from h2o.estimators.gbm import H2OGradientBoostingEstimator
+        >>> cars = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
+        >>> cars["economy_20mpg"] = cars["economy_20mpg"].asfactor()
+        >>> predictors = ["displacement","power","weight","acceleration","year"]    
+        >>> response = "economy_20mpg"
+        >>> train, valid = cars.split_frame(ratios = [.8], seed = 1234)
+        >>> cars_gbm = H2OGradientBoostingEstimator(seed = 1234) 
+        >>> cars_gbm.train(x = predictors,
+        ...                y = response,
+        ...                training_frame = train,
+        ...                validation_frame = valid)
+        >>> cars_gbm.threshold()
+        """
+        return self._metric_json['threshold']
     
     def hglm_metric(self, metric_string):
         if MetricsBase._has(self._metric_json, metric_string):

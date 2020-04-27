@@ -900,18 +900,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     
     public void resetThreshold(double threshold){
       if(isBinomialClassifier()){
-        if(_training_metrics != null && ((ModelMetricsBinomial) _training_metrics)._auc != null){ 
-            ((ModelMetricsBinomial) _training_metrics)._auc.resetThreshold(threshold);
-            DKV.put(_training_metrics._key,  _training_metrics);
-        } 
         if(_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null){
           ((ModelMetricsBinomial) _validation_metrics)._auc.resetThreshold(threshold);
           DKV.put( _training_metrics._key,  _training_metrics);
+        } else if(_training_metrics != null && ((ModelMetricsBinomial) _training_metrics)._auc != null){ 
+            ((ModelMetricsBinomial) _training_metrics)._auc.resetThreshold(threshold);
+            DKV.put(_training_metrics._key,  _training_metrics);
         }
-        if(_cross_validation_metrics != null && ((ModelMetricsBinomial) _cross_validation_metrics)._auc != null){
-            ((ModelMetricsBinomial) _cross_validation_metrics)._auc.resetThreshold(threshold);
-            DKV.put(_cross_validation_metrics._key, _cross_validation_metrics);
-          }
       }
     }
     
