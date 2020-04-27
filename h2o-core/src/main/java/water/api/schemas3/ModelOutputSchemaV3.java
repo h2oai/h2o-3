@@ -73,6 +73,9 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
   @API(help="Runtime in milliseconds", direction=API.Direction.OUTPUT, level=API.Level.secondary)
   public long run_time;
 
+  @API(help="Default threshold used for predictions", direction=API.Direction.OUTPUT)
+  public double default_threshold;
+
   @API(help="Help information for output fields", direction=API.Direction.OUTPUT)
   public IcedHashMapGeneric.IcedHashMapStringString help;
 
@@ -84,6 +87,7 @@ public class ModelOutputSchemaV3<O extends Model.Output, S extends ModelOutputSc
     super.fillFromImpl(impl);
     this.model_category = impl.getModelCategory();
     this.original_names = impl._origNames;
+    this.default_threshold = impl.defaultThreshold();
     fillHelp();
     return (S)this;
   }

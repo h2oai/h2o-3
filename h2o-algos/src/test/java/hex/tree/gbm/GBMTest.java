@@ -4008,4 +4008,51 @@ public class GBMTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testResetThreshold() throws Exception {
+    GBMModel gbm = null;
+    try {
+      Scope.enter();
+      Frame frame = new TestFrameBuilder()
+              .withName("data")
+              .withColNames("ColA", "ColB", "Response")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, ard(0, 1, 0, 1, 0, 1, 0))
+              .withDataForCol(1, ard(Double.NaN, 1, 2, 3, 4, 5.6, 7))
+              .withDataForCol(2, ard(1, 0, 1, 1, 1, 0, 1))
+              .build();
+
+      frame = frame.toCategoricalCol(2);
+
+      GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._ntrees = 1;
+      parms._min_rows = 0.1;
+      parms._distribution = bernoulli;
+
+      gbm = new GBM(parms).trainModel().get();
+      Scope.track_generic(gbm);
+      double oldTh = gbm._output.defaultThreshold();
+
+      double newTh = 0.6379068421037659;
+      gbm.resetThreshold(newTh);
+      double resetTh = gbm._output.defaultThreshold();
+      assertEquals("The new model (" +newTh+ ") is not the same as reset model ("+resetTh+").", newTh, resetTh, 0);
+      assertNotEquals("The old threshold is the same as reset threshold.", oldTh, resetTh);
+
+      // check mojo
+      MojoModel mojo = gbm.toMojo();
+      double mojoTh = mojo._defaultThreshold;
+      assertEquals("The new model is not same in MOJO after reset.", newTh, mojoTh, 0);
+
+    } finally {
+      if (gbm != null) {
+        gbm.deleteCrossValidationModels();
+        gbm.deleteCrossValidationPreds();
+      }
+      Scope.exit();
+    }
+  }
 }
