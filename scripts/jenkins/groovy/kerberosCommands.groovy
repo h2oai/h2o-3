@@ -67,7 +67,7 @@ private GString getCommandHadoop(
     def shouldRefreshTokensForHive1 = impersonate && !hdpCp && !prepareToken
     return """
             rm -fv h2o_one_node h2odriver.log
-            if [ "\$HIVE_DIST_ENABLED" == "true" ] || [ "$shouldRefreshTokensForHive1" == "true" ]; then
+            if [ "\$HIVE_DIST_ENABLED" = "true" ] || [ "$shouldRefreshTokensForHive1" = "true" ]; then
                 # hive 2+ = regular refresh, hive 1 = only refreshing when distributing keytab
                 REFRESH_TOKENS_CONF="--refreshTokens"
                 CHECK_TOKEN_REFRESH_MAKE_TARGET=test-kerberos-verify-token-refresh
