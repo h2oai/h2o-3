@@ -1,6 +1,5 @@
 package hex.gam.MatrixFrameUtils;
 
-import hex.DataInfo;
 import hex.gam.GamSplines.CubicRegressionSplines;
 import water.MRTask;
 import water.MemoryManager;
@@ -24,19 +23,17 @@ public class AddGamColumns extends MRTask<AddGamColumns> {
   int[] _numKnots;
   public int _numGAMcols;
   public int _gamCols2Add = 0;
-  DataInfo _dinfo;
   double[] _vmax;
   double[] _vmin;
   int[] _gamColsOffsets;
   Frame _gamFrame;
 
 
-  public AddGamColumns(double[][][] binvD, double[][][] ztransp, double[][] knotsMat, int[] numKnots, DataInfo dinfo, 
+  public AddGamColumns(double[][][] binvD, double[][][] ztransp, double[][] knotsMat, int[] numKnots, 
                        Frame gamColFrames) {
     _binvD = binvD;
     _knotsMat = knotsMat;
     _numKnots = numKnots;
-    _dinfo = dinfo;
     _numGAMcols = numKnots.length;
     _vmax = MemoryManager.malloc8d(_numGAMcols);
     _vmin = MemoryManager.malloc8d(_numGAMcols);

@@ -63,6 +63,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   public double[][][] _penaltyMatrix = null;
   public String[][] _gamColnames = null;
   public int[][] _gamColIndices = null; // corresponding column indices in dataInfo
+  public static int _totalBetaLen;
   public GLM(boolean startup_once){super(new GLMParameters(),startup_once);}
   public GLM(GLMModel.GLMParameters parms) {
     super(parms);
@@ -534,6 +535,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
               _parms.missingValuesHandling() == MissingValuesHandling.MeanImputation || _parms.missingValuesHandling() == MissingValuesHandling.PlugValues,
               _parms.makeImputer(), 
               false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
+      _totalBetaLen = _parms._family.equals(Family.multinomial) || _parms._family.equals(Family.ordinal)?
+              _dinfo.fullN()*nclasses()+1:_dinfo.fullN()+1;
       if (_parms._glmType.equals(GLMType.gam))
          _gamColIndices = extractAdaptedFrameIndices(_dinfo._adaptedFrame, _gamColnames, _dinfo._numOffsets[0]-_dinfo._cats);
         
@@ -825,8 +828,18 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   @Override protected GLMDriver trainModelImpl() { return _driver = new GLMDriver(); }
 
   private final double lmax(double[] grad) {
-    return Math.max(ArrayUtils.maxValue(grad), -ArrayUtils.minValue(grad)) / Math.max(1e-2, _parms._alpha[0]);
+    if (_parms._glmType==GLMType.gam) { // do not take into account gam col gradients.  They can be too big
+      int totGamCols = 0;
+      for (int numG = 0; numG < _penaltyMatrix.length; numG++) {
+           totGamCols += _penaltyMatrix[numG].length;
+      }
+      int endIndex = grad.length - totGamCols;
+      return Math.max(ArrayUtils.maxValue(grad,0,endIndex), -ArrayUtils.minValue(grad,0,endIndex)) 
+              / Math.max(1e-2, _parms._alpha[0]);
+    } else
+      return Math.max(ArrayUtils.maxValue(grad), -ArrayUtils.minValue(grad)) / Math.max(1e-2, _parms._alpha[0]);
   }
+  
   private transient ComputationState _state;
 
   /**
@@ -2802,7 +2815,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       for (double[] b : _betaMultinomial) {
         l2pen += ArrayUtils.l2norm2(b, _dinfo._intercept);
       }
-      double smoothval = _parms._glmType.equals(GLMType.gam)?calSmoothNess(_betaMultinomial, _penaltyMatrix, _gamColIndices):0;
+      double smoothval = _parms._glmType.equals(GLMType.gam)?calSmoothNess(_betaMultinomial, _penaltyMatrix, 
+              _gamColIndices):0;
       return new GLMGradientInfo(gt._likelihood, gt._likelihood * _parms._obj_reg + .5 * _l2pen * l2pen + 
               smoothval, null);
     }
@@ -2869,7 +2883,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         if (!_parms._intercept) // no intercept, null the ginfo
           gradient[gradient.length - 1] = 0;
         
-        double gamSmooth = _parms._glmType.equals(GLMType.gam)?calSmoothNess(beta, _penaltyMatrix, _gamColIndices):0;
+        double gamSmooth = _parms._glmType.equals(GLMType.gam)?
+                calSmoothNess(expandVec(beta, _dinfo._activeCols, _totalBetaLen), _penaltyMatrix, _gamColIndices):0;
         double obj = likelihood * _parms._obj_reg + .5 * _l2pen * ArrayUtils.l2norm2(beta, true)+gamSmooth;
         if (_bc != null && _bc._betaGiven != null && _bc._rho != null)
           obj = ProximalGradientSolver.proximal_gradient(gradient, obj, beta, _bc._betaGiven, _bc._rho);
@@ -2880,7 +2895,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     @Override
     public GradientInfo getObjective(double[] beta) {
       double l = new GLMResDevTask(_job._key,_dinfo,_parms,beta).doAll(_dinfo._adaptedFrame)._likelihood;
-      double smoothness = _parms._glmType.equals(GLMType.gam)?calSmoothNess(beta, _penaltyMatrix, _gamColIndices):0;
+      double smoothness = _parms._glmType.equals(GLMType.gam)?
+              calSmoothNess(expandVec(beta, _dinfo._activeCols, _totalBetaLen), _penaltyMatrix, _gamColIndices):0;
       return new GLMGradientInfo(l,l*_parms._obj_reg + .5*_l2pen*ArrayUtils.l2norm2(beta,true)
               +smoothness,null);
     }
