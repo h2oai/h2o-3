@@ -20,6 +20,13 @@ spec:
           ports:
             - containerPort: 54321
               protocol: TCP
+          readinessProbe:
+            httpGet:
+              path: /kubernetes/isLeaderNode
+              port: 8081
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 1
           volumeMounts:
             - name: test-volume
               mountPath: "h2o.jar"
@@ -30,6 +37,8 @@ spec:
             value: '320'
           - name: H2O_NODE_EXPECTED_COUNT
             value: '2'
+          - name: H2O_KUBERNETES_API_PORT
+            value: '8081'
       volumes:
       - name: test-volume
         hostPath:

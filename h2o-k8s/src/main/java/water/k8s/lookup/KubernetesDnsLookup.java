@@ -108,13 +108,16 @@ public class KubernetesDnsLookup implements KubernetesLookup {
         while (lookupConstraints.stream().allMatch(lookupStrategy -> !lookupStrategy.isLookupEnded(lookedUpNodes))) {
             try {
                 dnsLookup(lookedUpNodes);
-                Thread.sleep(ONE_SECOND);
             } catch (NamingException e) {
                 Log.warn(e.getMessage());
                 continue;
-            } catch (InterruptedException e) {
-                Log.err(e);
-                return Optional.empty();
+            } finally {
+                try {
+                    Thread.sleep(ONE_SECOND);
+                } catch (InterruptedException e) {
+                    Log.err(e);
+                    return Optional.empty();
+                }
             }
         }
 

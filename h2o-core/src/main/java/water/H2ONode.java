@@ -770,4 +770,13 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
   public H2OSecurityManager getSecurityManager() {
     return _security;
   }
+
+  /**
+   * 
+   * @return True if and only if this node is leader of the cloud. Otherwise false.
+   */
+  public boolean isLeaderNode() {
+    if(H2O.CLOUD.size() == 0) return false;
+     return H2O.CLOUD.leader() != null && H2O.CLOUD.leader().equals(this);
+  }
 }

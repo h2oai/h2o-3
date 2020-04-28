@@ -1,12 +1,16 @@
 package water.k8s;
 
+import fi.iki.elonen.NanoHTTPD;
+import water.H2O;
 import water.init.AbstractEmbeddedH2OConfig;
 import water.init.EmbeddedConfigProvider;
+import water.k8s.api.KubernetesRestApi;
 import water.k8s.lookup.KubernetesDnsLookup;
 import water.k8s.lookup.KubernetesLookup;
 import water.k8s.lookup.LookupConstraintsBuilder;
 import water.util.Log;
 
+import java.io.IOException;
 import java.util.Collection;
 import java.util.Optional;
 import java.util.Set;
@@ -20,14 +24,15 @@ import java.util.regex.Pattern;
  */
 public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider {
 
-    private static final String K8S_NODE_LOOKUP_TIMEOUT_KEY = "H2O_NODE_LOOKUP_TIMEOUT";
-    private static final String K8S_DESIRED_CLUSTER_SIZE_KEY = "H2O_NODE_EXPECTED_COUNT";
+    public static final String K8S_NODE_LOOKUP_TIMEOUT_KEY = "H2O_NODE_LOOKUP_TIMEOUT";
+    public static final String K8S_DESIRED_CLUSTER_SIZE_KEY = "H2O_NODE_EXPECTED_COUNT";
+
+    private volatile static boolean clustered = false;
 
     private boolean runningOnKubernetes = false;
     private KubernetesEmbeddedConfig kubernetesEmbeddedConfig;
 
     /**
-     * 
      * @return A Set of node addresses. The adresses are internal adresses/IPs to the Kubernetes cluster.
      */
     private static final Optional<Set<String>> resolveInternalNodeIPs() {
@@ -59,6 +64,8 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
             return; // Do not initialize any configuration if H2O is not running in K8S-spawned container.
         }
 
+        startKubernetesRestApi();
+
         Log.info("Initializing H2O Kubernetes cluster");
         final Collection<String> nodeIPs = resolveInternalNodeIPs()
                 .orElseThrow(() -> new IllegalStateException("Unable to resolve Node IPs from DNS service."));
@@ -66,6 +73,7 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
         Log.info(String.format("Using the following pods to form H2O cluster: [%s]",
                 String.join(",", nodeIPs)));
 
+        clustered = true;
         kubernetesEmbeddedConfig = new KubernetesEmbeddedConfig(nodeIPs);
     }
 
@@ -85,5 +93,24 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
      */
     private boolean isRunningOnKubernetes() {
         return KubernetesDnsLookup.isLookupPossible();
+    }
+
+    /**
+     * Start Kubernetes-only REST API services
+     */
+    private void startKubernetesRestApi() {
+        Log.info("Starting Kubernetes-related REST API services");
+        try {
+            final KubernetesRestApi kubernetesRestApi = new KubernetesRestApi();
+            kubernetesRestApi.start();
+            Log.info("Kubernetes REST API services successfully started.");
+        } catch (IOException e) {
+            Log.err("Unable to start H2O Kubernetes REST API", e);
+            System.exit(1);
+        }
+    }
+
+    public static boolean isClustered() {
+        return clustered;
     }
 }
