@@ -21,11 +21,12 @@ public class DelegationTokenPrinter {
         }
     }
     
-    public static void printToken(String tokenString) {
+    public static void printToken(final String tokenString) {
+        Objects.requireNonNull(tokenString);
       try {
-        Token<DelegationTokenIdentifier> token = new Token<>();
+        final Token<DelegationTokenIdentifier> token = new Token<>();
         token.decodeFromUrlString(tokenString);
-        AbstractDelegationTokenIdentifier identifier = new PrintingDelegationTokenIdentifier();
+        final AbstractDelegationTokenIdentifier identifier = new PrintingDelegationTokenIdentifier();
         identifier.readFields(new DataInputStream(new ByteArrayInputStream(token.getIdentifier())));
         System.out.println(
             "token.kind: " + token.getKind() + ", " + 
