@@ -125,6 +125,10 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public double defaultThreshold() {
     return _output.defaultThreshold();
   }
+  
+  public void resetThreshold(double value){
+    _output.resetThreshold(value);
+  }
 
   /**
    * @deprecated use {@link Output#defaultThreshold()} instead.
@@ -730,6 +734,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
       assert(_job==null);  // only set after job completion
+      _defaultThreshold = -1;
     }
 
     /** Returns number of input features (OK for most supervised methods, need to override for unsupervised!) */
@@ -785,6 +790,12 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     protected boolean _isSupervised;
 
+    /**
+     * Default threshold used to make decision about binomial predictions
+     * -1 if is not set by user - than the default threshold is 0.5 if metrics are not set
+     * (0, 1> custom default threshold or validation metric threshold or training metric threshold
+     */
+    public double _defaultThreshold;
 
 
     public boolean isSupervised() { return _isSupervised; }
@@ -878,11 +889,20 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public double defaultThreshold() {
       if (nclasses() != 2 || _training_metrics == null)
         return 0.5;
-      if (_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null)
-        return ((ModelMetricsBinomial) _validation_metrics)._auc.defaultThreshold();
-      if (((ModelMetricsBinomial) _training_metrics)._auc != null)
-        return ((ModelMetricsBinomial) _training_metrics)._auc.defaultThreshold();
+      if(_defaultThreshold == -1) {
+        if (_validation_metrics != null && ((ModelMetricsBinomial) _validation_metrics)._auc != null)
+          return ((ModelMetricsBinomial) _validation_metrics)._auc.defaultThreshold();
+        if (((ModelMetricsBinomial) _training_metrics)._auc != null)
+          return ((ModelMetricsBinomial) _training_metrics)._auc.defaultThreshold();
+      } else {
+        return _defaultThreshold;
+      }
       return 0.5;
+    }
+    
+    public void resetThreshold(double value){
+      assert value > 0 && value <= 1: "Reset threshold should be value from 0 to 1 (included). Got "+value+".";
+      _defaultThreshold = value;
     }
     
     public void printTwoDimTables(StringBuilder sb, Object o) {

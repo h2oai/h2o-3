@@ -4767,3 +4767,33 @@ h2o.upload_mojo <- function(mojo_local_file_path){
   model <- h2o.generic(model_key = model_file_key)
   return(model)
 }
+
+#'
+#' Reset model threshold and return old threshold value.
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @param threshold A threshold value from 0 to 1 included.
+#'
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#'                         training_frame = prostate, family = "binomial", 
+#'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
+#' old_threshold <- h2o.reset_threshold(prostate_glm, 0.9)
+#' }
+#' @export
+h2o.reset_threshold <- function(object, threshold) {
+  o <- object
+  if( is(o, "H2OModel") ) {
+    .newExpr("model.reset.threshold", list(o@model_id, threshold))[1,1]
+  } else {
+    warning( paste0("Threshold cannot be reset for class ", class(o)) )
+    return(NULL)
+  }
+}
