@@ -170,7 +170,7 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
   res$dir
 }
 
-#' Deprecated - use h2o.save_mojo instead. Save an H2O Model Object as Mojo to Disk
+#' Save an H2O Model Object as Mojo to Disk
 #'
 #' Save an MOJO (Model Object, Optimized) to disk.
 #'
@@ -192,32 +192,6 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
 #' }
 #' @export
 h2o.saveMojo <- function(object, path="", force=FALSE) {
-  .Deprecated("h2o.save_mojo")
-  h2o.save_mojo(object = object, path = path, force = force)
-}
-
-#' Save an H2O Model Object as Mojo to Disk
-#'
-#' Save an MOJO (Model Object, Optimized) to disk.
-#'
-#' MOJO will download as a zip file. In the case of existing files \code{force = TRUE}
-#' will overwrite the file. Otherwise, the operation will fail.
-#'
-#' @param object an \linkS4class{H2OModel} object.
-#' @param path string indicating the directory the model will be written to.
-#' @param force logical, indicates how to deal with files that already exist.
-#' @seealso \code{\link{h2o.saveModel}} for saving a model to disk as a binary object.
-#' @examples
-#' \dontrun{
-#' # library(h2o)
-#' # h2o.init()
-#' # prostate <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
-#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
-#' #                         training_frame = prostate, family = "binomial", alpha = 0.5)
-#' # h2o.save_mojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
-#' }
-#' @export
-h2o.save_mojo <- function(object, path="", force=FALSE) {
   if(!is(object, "H2OModel")) stop("`object` must be an H2OModel object")
   if(!is.character(path) || length(path) != 1L || is.na(path)) stop("`path` must be a character string")
   if(!is.logical(force) || length(force) != 1L || is.na(force)) stop("`force` must be TRUE or FALSE")

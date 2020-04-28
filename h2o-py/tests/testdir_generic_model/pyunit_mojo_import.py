@@ -13,7 +13,7 @@ def mojo_conveniece():
     
     #Save the previously created model into a temporary file
     original_model_filename = tempfile.mkdtemp()
-    original_model_filename = model.save_mojo(original_model_filename)
+    original_model_filename = model.download_mojo(original_model_filename)
     
     # Load the model from the temporary file
     mojo_model = h2o.import_mojo(original_model_filename)
@@ -23,13 +23,11 @@ def mojo_conveniece():
     predictions = mojo_model.predict(airlines)
     assert predictions is not None
     assert predictions.nrows == 24421
-
+    
     #####
     # MOJO UPLOAD TEST
     #####
 
-    # Download the MOJO
-    original_model_filename = model.download_mojo(original_model_filename)
     # Load the model from the temporary file
     mojo_model = h2o.upload_mojo(original_model_filename)
     assert isinstance(mojo_model, H2OGenericEstimator)
