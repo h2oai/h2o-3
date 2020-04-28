@@ -835,6 +835,13 @@ public class Vec extends Keyed<Vec> {
   /** True if the column contains only a constant value and it is not full of NAs 
    *  @return True if the column is constant */
   public final boolean isConst() { return min() == max(); }
+  /** True if the column contains only a constant value and it is not full of NAs 
+   *  @return True if the column is constant */
+  public final boolean isConst(boolean includeNAs) {
+    if (! isConst())
+      return false;
+    return !includeNAs || naCnt() == 0;
+  }
   /** True if the column contains only NAs
    *  @return True if the column contains only NAs */
   public final boolean isBad() { return naCnt()==length(); }

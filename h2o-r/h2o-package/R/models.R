@@ -4729,8 +4729,7 @@ h2o.genericModel <- function(mojo_file_path){
 #' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
 #'
 #' # Download the trained GBM model as MOJO (temporary directory used in this example)
-#' mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
-#' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+#' mojo_original_path <- h2o.save_mojo(original_model, path = tempdir())
 #'
 #' # Import the MOJO and obtain a Generic model
 #' mojo_model <- h2o.import_mojo(mojo_original_path)
@@ -4779,4 +4778,34 @@ h2o.upload_mojo <- function(mojo_local_file_path){
   model_file_key <- h2o.uploadFile(mojo_local_file_path, parse = FALSE)
   model <- h2o.generic(model_key = model_file_key)
   return(model)
+}
+
+#'
+#' Reset model threshold and return old threshold value.
+#'
+#' @param object An \linkS4class{H2OModel} object.
+#' @param threshold A threshold value from 0 to 1 included.
+#'
+#' @examples 
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
+#' prostate <- h2o.importFile(prostate_path)
+#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#'                         training_frame = prostate, family = "binomial", 
+#'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
+#' old_threshold <- h2o.reset_threshold(prostate_glm, 0.9)
+#' }
+#' @export
+h2o.reset_threshold <- function(object, threshold) {
+  o <- object
+  if( is(o, "H2OModel") ) {
+    .newExpr("model.reset.threshold", list(o@model_id, threshold))[1,1]
+  } else {
+    warning( paste0("Threshold cannot be reset for class ", class(o)) )
+    return(NULL)
+  }
 }

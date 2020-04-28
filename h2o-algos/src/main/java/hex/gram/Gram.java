@@ -96,7 +96,7 @@ public final class Gram extends Iced<Gram> {
    * @param ds: store penalty matrix per column 
    * @param gamIndices: penalty column indices taken into account categorical column offset
    */
-  public void addGAMPenalty(Integer[] activeColumns, double[][][] ds, int[][] gamIndices, int classOffsets) {
+  public void addGAMPenalty(Integer[] activeColumns, double[][][] ds, int[][] gamIndices) {
     int numGamCols = gamIndices.length;
     for (int gamInd = 0; gamInd < numGamCols; gamInd++) { // deal with each GAM column separately
       int numKnots = gamIndices[gamInd].length;
@@ -114,9 +114,6 @@ public final class Gram extends Iced<Gram> {
             if (betaIndexJ < 0)
               continue;
           }
-
-          betaIndex += classOffsets;
-          betaIndexJ += classOffsets;
           int rowLen = _xx[betaIndex - _diagN].length;
           if (betaIndexJ < rowLen) {  // only update the lower half, symmetric
             _xx[betaIndex - _diagN][betaIndexJ] += 2 * ds[gamInd][betaInd][betaIndj];

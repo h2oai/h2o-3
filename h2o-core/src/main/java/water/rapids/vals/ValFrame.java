@@ -42,5 +42,4 @@ public class ValFrame extends Val {
     Frame fr = new Frame(vecs);
     return new ValFrame(fr);
   } 
-
 }

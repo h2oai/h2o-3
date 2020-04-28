@@ -263,6 +263,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     _calib = f;
   }
 
+  @Override
+  protected boolean canLearnFromNAs() {
+    return true;
+  }
+
   static DataInfo makeDataInfo(Frame train, Frame valid, XGBoostModel.XGBoostParameters parms, int nClasses) {
     DataInfo dinfo = new DataInfo(
             train,
