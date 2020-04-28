@@ -191,18 +191,21 @@ core-site.xml must be configured for at least the following properties (class, p
         </property>
     </configuration>
 
+.. _direct_hive_import:
 
 Direct Hive Import
 ~~~~~~~~~~~~~~~~~~
 
-H2O supports direct ingestion of data managed by Hive in Hadoop. This feature is available only when H2O is running as a Hadoop job. Internally H2O uses metadata in Hive Metastore database to determine the location and format of given Hive table. H2O then imports data directly from HDFS so limitations of supported formats mentioned above apply. Data from hive can pulled into H2O using ``import_hive_table`` function. H2O can read Hive table metadata two ways - either via direct Metastore access (preferred) or via JDBC. 
+H2O supports direct ingestion of data managed by Hive in Hadoop. This feature is available only when H2O is running as a Hadoop job. Internally H2O uses metadata in Hive Metastore database to determine the location and format of given Hive table. H2O then imports data directly from HDFS so limitations of supported formats mentioned above apply. Data from hive can pulled into H2O using ``import_hive_table`` function. H2O can read Hive table metadata two ways - either via direct Metastore access or via JDBC. 
+
+**Note**: When ingesting data from Hive in Hadoop, direct Hive import is preferred over :ref:`hive2`.
 
 Requirements
 ''''''''''''
 
 - The user running H2O must have read access to Hive and the files it manages.
 
-- For Direct Metastore access, the Hive jars and configuration must be present on H2O job classpath - either by adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars. Note that Direct Metastore access is the perferred method.
+- For Direct Metastore access, the Hive jars and configuration must be present on H2O job classpath - either by adding it to yarn.application.classpath (or similar property for your resource manger of choice) or by adding Hive jars and configuration to libjars. 
 
 - For JDBC metadata access, the Hive JDBC Driver must be on H2O job classpath.
 
@@ -216,35 +219,23 @@ Limitations
 Importing Examples
 ''''''''''''''''''
 
-Example 1: Access Metadata via Metastore (preferred)
-####################################################
+Example 1: Access Metadata via Metastore
+########################################
 
 This example shows how to access metadata via the metastore. 
 
-1. Add the Hive JDBC driver to H2O's classpath.
-
- .. code-block:: bash
-
-      # Add the Hive JDBC driver to H2O's classpath
-      java -cp hive-jdbc.jar:<path_to_h2o_jar> water.H2OApp
-
-
-2. Start the H2O jar in the terminal with your downloaded Hive JDBC driver in the classpath
+1. Start the H2O jar in the terminal with your downloaded Hive JDBC driver in the classpath
 
  .. code-block:: bash
 
       # start the h2o.jar 
       hadoop jar h2odriver.jar -libjars hive-jdbc-standalone.jar -nodes 3 -mapperXmx 6g
 
-3. Initialize H2O in either R or Python and import data.
+2. Import data in R or Python.
 
  .. tabs::
 
    .. code-tab:: r R
-
-        # initialize h2o in R
-        library(h2o)
-        h2o.init(extra_classpath=["hive-jdbc-standalone.jar"])
 
         # basic import
         basic_import <- h2o.import_hive_table("default", "table_name")
@@ -260,10 +251,6 @@ This example shows how to access metadata via the metastore.
                                                        [["2017", "02"]])
 
    .. code-tab:: python
-
-        # initialize h2o in Python
-        import h2o
-        h2o.init(extra_classpath = ["hive-jdbc-standalone.jar"])
 
         # basic import
         basic_import = h2o.import_hive_table("default", "table_name")
@@ -284,30 +271,18 @@ Example 2: Access Metadata via JDBC
 
 This example shows how to access metadata via JDBC.  
 
-1. Add the Hive JDBC driver to H2O's classpath.
-
- .. code-block:: bash
-
-      # Add the Hive JDBC driver to H2O's classpath
-      java -cp hive-jdbc.jar:<path_to_h2o_jar> water.H2OApp
-
-
-2. Start the H2O jar in the terminal with your downloaded Hive JDBC driver in the classpath
+1. Start the H2O jar in the terminal with your downloaded Hive JDBC driver in the classpath
 
  .. code-block:: bash
 
       # start the h2o.jar 
       hadoop jar h2odriver.jar -libjars hive-jdbc-standalone.jar -nodes 3 -mapperXmx 6g
 
-3. Initialize H2O in either R or Python and import data.
+2. Import data in R or Python.
 
  .. tabs::
 
    .. code-tab:: r R
-
-        # start the h2o.jar in R
-        library(h2o)
-        h2o.init(extra_classpath=["hive-jdbc-standalone.jar"])
 
         # basic import of metadata via JDBC
         basic_import <- h2o.import_hive_table("jdbc:hive2://hive-server:10000/default", "table_name")
@@ -315,17 +290,13 @@ This example shows how to access metadata via JDBC.
 
    .. code-tab:: python
 
-        # start the h2o.jar in Python
-        import h2o
-        h2o.init(extra_classpath = ["hive-jdbc-standalone.jar"])
-
         # basic import of metadata via JDBC
         basic_import = h2o.import_hive_table("jdbc:hive2://hive-server:10000/default", "table_name")
 
 JDBC Databases
 ~~~~~~~~~~~~~~
 
-Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Netezza, Amazon Redshift, Teradata, and Hive. (Refer to :ref:`hive2` for more information.) Data from these SQL databases can be pulled into H2O using the ``import_sql_table`` and ``import_sql_select`` functions.
+Relational databases that include a JDBC (Java database connectivity) driver can be used as the source of data for machine learning in H2O. Currently supported SQL databases are MySQL, PostgreSQL, MariaDB, Netezza, Amazon Redshift, Teradata, and Hive. (Refer to :ref:`hive2` for more information.) Data from these SQL databases can be pulled into H2O using the ``import_sql_table`` and ``import_sql_select`` functions. 
 
 Refer to the following articles for examples about using JDBC data sources with H2O.
 
@@ -423,7 +394,11 @@ Using the Hive 2 JDBC Driver
 
 H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O with the JDBC driver for your Hive version. A demo showing how to ingest data from Hive through the Hive v2 JDBC driver is available `here <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/hive_jdbc_driver/Hive.md>`__. The basic steps are described below. 
 
-**Note**: H2O can only load data from Hive version 2.2.0 or greater due to a limited implementation of the JDBC interface by Hive in earlier versions.
+**Notes**: 
+
+- :ref:`direct_hive_import` is preferred over using the Hive 2 JDBC driver.
+- H2O can only load data from Hive version 2.2.0 or greater due to a limited implementation of the JDBC interface by Hive in earlier versions.
+
 
 1. Set up a table with data. 
 
@@ -477,15 +452,7 @@ H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O w
         # Add the Hive JDBC driver to H2O's classpath
         java -cp hive-jdbc.jar:<path_to_h2o_jar> water.H2OApp
 
-
-4. Start the H2O jar in the terminal with your downloaded Hive JDBC driver in the classpath
-
- .. code-block:: bash
-
-        # start the h2o.jar 
-        hadoop jar h2odriver.jar -libjars hive-jdbc-standalone.jar -nodes 3 -mapperXmx 6g
-
-5. Initialize H2O in either R or Python and import data.
+4. Initialize H2O in either R or Python and import data.
 
  .. tabs::
 
@@ -506,7 +473,7 @@ H2O can ingest data from Hive through the Hive v2 JDBC driver by providing H2O w
         h2o.init(extra_classpath = ["hive-jdbc-standalone.jar"])
 
 
-6. After the jar file with JDBC driver is added, then data from the Hive databases can be pulled into H2O using the aforementioned ``import_sql_table`` and ``import_sql_select`` functions. 
+5. After the jar file with JDBC driver is added, then data from the Hive databases can be pulled into H2O using the aforementioned ``import_sql_table`` and ``import_sql_select`` functions. 
 
  .. tabs::
 
