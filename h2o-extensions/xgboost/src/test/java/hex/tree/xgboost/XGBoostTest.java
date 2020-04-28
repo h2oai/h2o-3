@@ -6,6 +6,8 @@ import hex.deeplearning.DeepLearningModel;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
+import hex.genmodel.algos.tree.SharedTreeGraph;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
@@ -1904,4 +1906,89 @@ public class XGBoostTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testNAPredictor_cat() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // using `tree_method`=exact is not supported in multi-node
+    checkNAPredictor(new TestFrameBuilder()
+            .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+            .withDataForCol(0, ar(null, "V", null, "V", null, "V"))
+    );
+  }
+
+  @Test
+  public void testNAPredictor_num() {
+    Assume.assumeTrue(H2O.getCloudSize() == 1); // using `tree_method`=exact is not supported in multi-node
+    checkNAPredictor(new TestFrameBuilder()
+            .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+            .withDataForCol(0, ard(Double.NaN, 1, Double.NaN, 1, Double.NaN, 1))
+    );
+  }
+
+  private void checkNAPredictor(TestFrameBuilder fb) {
+    Scope.enter();
+    try {
+      final Frame frame = fb
+              .withColNames("F", "Response")
+              .withDataForCol(1, ar("A", "B", "A", "B", "A", "B"))
+              .build();
+
+      XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
+      parms._train = frame._key;
+      parms._response_column = "Response";
+      parms._ntrees = 1;
+      parms._learn_rate = 1;
+      parms._ignore_const_cols = true; // default but to make sure and illustrate the point
+      parms._min_rows = 0;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.exact;
+
+      XGBoostModel model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
+      Scope.track_generic(model);
+
+      // We should have a perfect model
+      assertEquals(0, model.classification_error(), 0);
+
+      // Check that we predict perfectly
+      Frame test = Scope.track(frame.subframe(new String[]{"F"}));
+      Frame scored = Scope.track(model.score(test));
+      assertCatVecEquals(frame.vec("Response"), scored.vec("predict"));
+
+      // Tree should split on NAs
+      SharedTreeSubgraph tree0 = model.convert(0, "A").subgraphArray.get(0);
+      assertEquals(3, tree0.nodesArray.size()); // this implies depth 1
+    } finally {
+      Scope.exit();
+    }
+  }
+  
+  @Test
+  public void testIdentityModel() throws XGBoostError, IOException {
+    try {
+      Map<String, String> rabitEnv = new HashMap<>();
+      rabitEnv.put("DMLC_TASK_ID", "0");
+      Rabit.init(rabitEnv);
+      // trivial identity matrix
+      DMatrix trainMat = new DMatrix(new float[]{0, 1}, 2, 1);
+      trainMat.setLabel(new float[]{0, 1});
+
+      HashMap<String, Object> params = new HashMap<>();
+      params.put("eta", 1.0);
+      params.put("max_depth", 5);
+      params.put("silent", 0);
+      params.put("objective", "binary:logistic");
+      params.put("min_child_weight", 0);           // Test won't with min_child_weight == 1 (dunno why)
+
+      HashMap<String, DMatrix> watches = new HashMap<>();
+      watches.put("train", trainMat);
+
+      Booster booster = XGBoost.train(trainMat, params, 1, watches, null, null);
+      float[][] preds = booster.predict(trainMat);
+      assertTrue(preds[0][0] < 0.5);
+      assertTrue(preds[1][0] > 0.5);
+    } finally {
+      Rabit.shutdown();
+    }
+  }
+
+
 }
