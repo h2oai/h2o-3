@@ -5,7 +5,6 @@ import fi.iki.elonen.router.RouterNanoHTTPD;
 import water.H2O;
 import water.H2ONode;
 import water.k8s.KubernetesEmbeddedConfigProvider;
-import water.util.Log;
 
 import java.util.Map;
 
