@@ -104,7 +104,7 @@ public class GenerateHiveToken extends Configured implements Tool {
         ImpersonationUtils.impersonate(getConf(), principal, keytabPath, runAsUser);
         String token = HiveTokenGenerator.getHiveDelegationTokenIfHivePresent(hiveJdbcUrlPattern, hiveHost, hivePrincipal);
         if (token != null) {
-            HiveTokenGenerator.printToken(token);
+            DelegationTokenPrinter.printToken(token);
             System.out.println("Token generated, writing into file " + tokenFile);
             try (PrintWriter pw = new PrintWriter(tokenFile)) {
                 pw.print(token);

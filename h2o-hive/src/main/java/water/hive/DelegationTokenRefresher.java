@@ -179,7 +179,7 @@ public class DelegationTokenRefresher implements Runnable {
       token = _hiveTokenGenerator.getHiveDelegationTokenIfPossible(currentUser, _hiveJdbcUrl, _hivePrincipal);
     }
     if (token != null) {
-      HiveTokenGenerator.printToken(token);
+      DelegationTokenPrinter.printToken(token);
       Credentials creds = HiveTokenGenerator.tokenToCredentials(token);
       distribute(creds);
     } else {
