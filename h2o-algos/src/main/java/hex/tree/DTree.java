@@ -478,14 +478,16 @@ public class DTree extends Iced {
       long nbinsSum = 0;
       for( int i=0; i<maxCols; i++ ) {
         int col = u._scoreCols == null ? i : u._scoreCols[i];
-        if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
-        nbinsSum += hs[col].nbins();
+        if( hs[col]==null || hs[col].actNBins() <= 1 )
+          continue;
+        nbinsSum += hs[col].actNBins();
       }
       // for small work loads, do a serial loop, otherwise, submit work to FJ thread pool
       final boolean isSmall = (nbinsSum <= 1024); //heuristic - 50 cols with 20 nbins, or 1 column with 1024 bins, etc.
       for( int i=0; i<maxCols; i++ ) {
         int col = u._scoreCols == null ? i : u._scoreCols[i];
-        if( hs[col]==null || hs[col].nbins() <= 1 ) continue;
+        if( hs[col]==null || hs[col].actNBins() <= 1 )
+          continue;
         FindSplits fs = new FindSplits(hs, cs, col, u._nid);
         findSplits.add(fs);
         if (isSmall) fs.compute();

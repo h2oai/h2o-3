@@ -31,18 +31,24 @@ public class GLMUtils {
     return gamColIndices;
   }
 
-  public static void updateGradGam(double[] gradient, double[][][] penalty_mat, int[][] gamBetaIndices, double[] beta) { // update gradient due to gam smoothness constraint
+  public static void updateGradGam(double[] gradient, double[][][] penalty_mat, int[][] gamBetaIndices, double[] beta,
+                                   int[] activeCols) { // update gradient due to gam smoothness constraint
     int numGamCol = gamBetaIndices.length; // number of predictors used for gam
     for (int gamColInd = 0; gamColInd < numGamCol; gamColInd++) { // update each gam col separately
       int penaltyMatSize = penalty_mat[gamColInd].length;
       for (int betaInd = 0; betaInd < penaltyMatSize; betaInd++) {  // derivative of each beta in penalty matrix
         int currentBetaIndex = gamBetaIndices[gamColInd][betaInd];
+        if (activeCols!=null) {
+          currentBetaIndex = ArrayUtils.find(activeCols, currentBetaIndex);
+        }
         double tempGrad = 2*beta[currentBetaIndex]*penalty_mat[gamColInd][betaInd][betaInd];
         for (int rowInd=0; rowInd < penaltyMatSize; rowInd++) {
           if (rowInd != betaInd) {
             int currBetaInd = gamBetaIndices[gamColInd][rowInd];
+            if (activeCols!=null) {
+              currBetaInd = ArrayUtils.find(activeCols, currBetaInd);
+            }
             tempGrad += beta[currBetaInd] * penalty_mat[gamColInd][betaInd][rowInd];
-            tempGrad += beta[currBetaInd] * penalty_mat[gamColInd][rowInd][betaInd];
           }
         }
         gradient[currentBetaIndex] += tempGrad;
@@ -58,12 +64,13 @@ public class GLMUtils {
     for (int classInd = 0; classInd < numClass; classInd++) {
       for (int gamInd = 0; gamInd < numGamCol; gamInd++) {
         int numKnots = gamBetaIndices[gamInd].length;
-        for (int rowInd = 0; rowInd < numKnots; rowInd++) {
+        for (int rowInd = 0; rowInd < numKnots; rowInd++) { // calculate dpenalty/dbeta rowInd
           double temp = 0.0;
-          int betaIndR = gamBetaIndices[gamInd][rowInd];
+          int betaIndR = gamBetaIndices[gamInd][rowInd];  // dGradient/dbeta_betaIndR
           for (int colInd = 0; colInd < numKnots; colInd++) {
             int betaIndC = gamBetaIndices[gamInd][colInd];
-            temp += penaltyMat[gamInd][rowInd][colInd]*beta[betaIndC][classInd]*2;
+            temp += (betaIndC==betaIndR)?(2*penaltyMat[gamInd][rowInd][colInd]*beta[betaIndC][classInd])
+                    :penaltyMat[gamInd][rowInd][colInd]*beta[betaIndC][classInd];
           }
           gradient[betaIndR][classInd] += temp;
         }

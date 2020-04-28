@@ -1037,7 +1037,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       new FilterCols(npredictors) {
         @Override protected boolean filter(Vec v) {
           boolean isBad = v.isBad();
-          boolean skipConst = ignoreConstColumns() && v.isConst();
+          boolean skipConst = ignoreConstColumns() && v.isConst(canLearnFromNAs()); // NAs can have information
           boolean skipString = ignoreStringColumns() && v.isString();
           boolean skipUuid = ignoreUuidColumns() && v.isUUID();
           boolean skip = isBad || skipConst || skipString || skipUuid;
@@ -1046,6 +1046,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }.doIt(_train,"Dropping bad and constant columns: ",expensive);
   }
 
+  /**
+   * Indicates that the algorithm is able to natively learn from NA values, there is no need
+   * to eg. impute missing values or skip rows that have missing values.
+   * @return whether model builder natively supports NAs
+   */
+  protected boolean canLearnFromNAs() {
+    return false;
+  }
+  
   /**
    * Checks response variable attributes and adds errors if response variable is unusable.
    */

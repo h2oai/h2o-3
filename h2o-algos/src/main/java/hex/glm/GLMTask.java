@@ -575,7 +575,7 @@ public abstract class GLMTask  {
       for(int j = 0; j < _beta.length - 1; ++j)
         _gradient[j] += _currentLambda * _beta[j];  // add L2 constraint for gradient
       if ((_penalty_mat != null) && (_gamBetaIndices != null))
-        updateGradGam(_gradient, _penalty_mat, _gamBetaIndices, _beta);  // update contribution from gam smoothness constraint
+        updateGradGam(_gradient, _penalty_mat, _gamBetaIndices, _beta, _dinfo._activeCols);  // update contribution from gam smoothness constraint
     }
   }
 
@@ -1035,7 +1035,7 @@ public abstract class GLMTask  {
         double logSumExp = computeMultinomialEtas(etas[i], exps);
         _likelihood -= w * (etas[i][y] - logSumExp);
         for (int c = 0; c < K; ++c)
-          etas[i][c] = w * (exps[c + 1] - (y == c ? 1 : 0));
+          etas[i][c] = w * (exps[c + 1] - (y == c ? 1 : 0));  // dllh/dbc for all class except xik
       }
     }
 

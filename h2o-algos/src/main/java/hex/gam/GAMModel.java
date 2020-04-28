@@ -22,9 +22,9 @@ import water.util.TwoDimTable;
 
 import java.io.Serializable;
 import java.util.Arrays;
-import java.util.Comparator;
 
 import static hex.gam.MatrixFrameUtils.GamUtils.equalColNames;
+import static hex.gam.MatrixFrameUtils.GamUtils.sortCoeffMags;
 import static hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 
 public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.GAMModelOutput> {
@@ -87,7 +87,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     
     TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
             "names");
-    fillUpCoeffs(coeffNames, coefficients, coefficientsStand, table, 0);
+    fillUpCoeffs(coefficients, coefficientsStand, table, 0);
     return table;
   }
 
@@ -108,9 +108,9 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     
     int countIndex = 0;
     for (int index = 0; index < nCoeff; index++) {
-      if (coefficientNames[index].equals("Intercept")) {
+      if (!coefficientNames[index].equals("Intercept")) {
         for (int classInd = 0; classInd < nClass; classInd++) {
-          coeffMags[countIndex] += Math.abs(coefficients[classInd][index]);
+          coeffMags[countIndex] += Math.abs(coefficients[classInd][index]); // add abs(coefficients) of diff classes
         }
         coeffNames[countIndex] = coefficientNames[index];
         coeffSigns[countIndex] = "POS";   // assign all signs to positive for multinomial
@@ -118,20 +118,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       }
     }
     // sort in descending order of the magnitudes
-    Integer[] indices = new Integer[nCoeff-1];
-    Log.info("genCoefficientMagTableMultinomial", String.format("index length: %d. ", indices.length));
-    for (int index = 0; index < indices.length; index++)
-      indices[index] = index;
-
-    Arrays.sort(indices, new Comparator<Integer>() {
-      @Override
-      public int compare(Integer o1, Integer o2) {
-        if(coeffMags[o1] < coeffMags[o2]) return +1;
-        if(coeffMags[o1] > coeffMags[o2]) return -1;
-        return 0;
-      }
-    });
-    
+    Integer[] indices = sortCoeffMags(coeffMags.length, coeffMags);
     // reorder names and coeffMags with indices
     for (int index = 0; index < coeffMags.length; index++) {
       coeffMags2[index] = coeffMags[indices[index]];
@@ -143,7 +130,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     
     TwoDimTable table = new TwoDimTable(tableHeader, "Standardized Coefficient Magnitutes", coeffNames2, colHeaders, colTypes, colFormat,
             "names");
-    fillUpCoeffsMag(coeffNames2, coeffMags2, coeffSigns, table, 0);
+    fillUpCoeffsMag(coeffMags2, coeffSigns, table, 0);
     return table;
   }
 
@@ -155,25 +142,33 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     String[] coeffNames = new String[nCoeff-1];
     double[] coeffMags = new double[nCoeff-1]; // skip over intercepts
     String[] coeffSigns = new String[nCoeff-1];
-  //  System.arraycopy(coefficientNames, 0, coeffNames, 0, nCoeff);
     int countMagIndex = 0;
     for (int index = 0; index < nCoeff; index++) {
-      if (coefficientNames[index].equals("Intercept")) {
+      if (!coefficientNames[index].equals("Intercept")) {
         coeffMags[countMagIndex] = Math.abs(coefficients[index]);
         coeffSigns[countMagIndex] = coefficients[index] > 0 ? "POS" : "NEG";
         coeffNames[countMagIndex++] = coefficientNames[index];
       }
     }
+    Integer[] indices = sortCoeffMags(coeffMags.length, coeffMags); // sort magnitude indices in decreasing magnitude
+    String[] names2 = new String[coeffNames.length];
+    double[] mag2 = new double[coeffNames.length];
+    String[] sign2 = new String[coeffNames.length];
+    for (int i = 0; i < coeffNames.length; ++i) {
+      names2[i] = coeffNames[indices[i]];
+      mag2[i] = coeffMags[indices[i]];
+      sign2[i] = coeffSigns[indices[i]];
+    }
     Log.info("genCoefficientMagTableMultinomial", String.format("coeffNames length: %d.  coeffMags " +
             "length: %d, coeffSigns length: %d", coeffNames.length, coeffMags.length, coeffSigns.length));
 
-    TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
+    TwoDimTable table = new TwoDimTable(tableHeader, "", names2, colHeaders, colTypes, colFormat,
             "names");
-    fillUpCoeffsMag(coeffNames, coeffMags, coeffSigns, table, 0);
+    fillUpCoeffsMag( mag2, sign2, table, 0);
     return table;
   }
-
-  private void fillUpCoeffsMag(String[] names, double[] coeffMags, String[] coeffSigns, TwoDimTable tdt, int rowStart) {
+  
+  private void fillUpCoeffsMag(double[] coeffMags, String[] coeffSigns, TwoDimTable tdt, int rowStart) {
     int arrLength = coeffMags.length+rowStart;
     int arrCounter=0;
     for (int i=rowStart; i<arrLength; i++) {
@@ -201,11 +196,11 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     TwoDimTable table = new TwoDimTable(tableHeader, "", coeffNames, colHeaders, colTypes, colFormat,
             "names");
     for (int classInd=0; classInd<nclass; classInd++)
-      fillUpCoeffs(coeffNames, coefficients[classInd], coefficients_stand[classInd], table, classInd*nCoeff);
+      fillUpCoeffs(coefficients[classInd], coefficients_stand[classInd], table, classInd*nCoeff);
     return table;
   }
 
-  private void fillUpCoeffs(String[] names, double[] coeffValues, double[] coeffValuesStand, TwoDimTable tdt, int rowStart) {
+  private void fillUpCoeffs(double[] coeffValues, double[] coeffValuesStand, TwoDimTable tdt, int rowStart) {
     int arrLength = coeffValues.length+rowStart;
     int arrCounter=0;
     for (int i=rowStart; i<arrLength; i++) {
@@ -433,37 +428,43 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     // compare column names with test frame.  If equal, call adaptTestForTrain.  Otherwise, need to adapt it first
     String[] testNames = test.names();
     if (!equalColNames(testNames, _output._dinfo._adaptedFrame.names(), _parms._response_column)) {  // shallow check: column number, column names only
-      Frame adptedF = cleanUpInputFrame(test, testNames); // column names here need to be in same sequence of dinfo._adaptedFrame
+      Frame adptedF = cleanUpInputFrame(test); // column names here need to be in same sequence of dinfo._adaptedFrame
       int testNumCols = test.numCols();
       for (int index = 0; index < testNumCols; index++)
         test.remove(0);
       int adaptNumCols = adptedF.numCols();
       for (int index = 0; index < adaptNumCols; index++)
         test.add(adptedF.name(index), adptedF.vec(index));
-      return super.adaptTestForTrain(adptedF, expensive, computeMetrics);
+      return super.adaptTestForTrain(test, expensive, computeMetrics);
     }
     return super.adaptTestForTrain(test, expensive, computeMetrics);
   }
 
-  public Frame cleanUpInputFrame(Frame test, String[] testNames) {
-    Frame adptedF = new Frame(Key.make(), test._names.clone(), test.vecs().clone()); // clone test dataset
-    int numGamCols = _output._numKnots.length;
+  public Frame cleanUpInputFrame(Frame test) {
+    Frame adptedF = new Frame(Key.make(), test.names(), test.vecs().clone()); // clone test dataset
+    return cleanUpInputFrame(adptedF, _parms, _gamColNames, _output._binvD, _output._zTranspose, 
+            _output._knots, _output._numKnots);
+  }
+
+  public static Frame cleanUpInputFrame(Frame adptedF, GAMParameters parms, String[][] gamColNames, 
+                                 double[][][] binvD, double[][][] zTranspose, double[][] knots, int[] numKnots) {
+    int numGamCols = parms._gam_columns.length;
+    String[] testNames = adptedF.names();
     Vec[] gamCols = new Vec[numGamCols];
     for (int vind=0; vind<numGamCols; vind++)
-      gamCols[vind] = adptedF.vec(_parms._gam_columns[vind]).clone();
-    Frame onlyGamCols = new Frame(_parms._gam_columns, gamCols);
-    AddGamColumns genGamCols = new AddGamColumns(_output._binvD, _output._zTranspose, _output._knots, 
-            _output._numKnots, _output._dinfo, onlyGamCols);
+      gamCols[vind] = adptedF.vec(parms._gam_columns[vind]).clone();
+    Frame onlyGamCols = new Frame(parms._gam_columns, gamCols);
+    AddGamColumns genGamCols = new AddGamColumns(binvD, zTranspose, knots, numKnots, onlyGamCols);
     genGamCols.doAll(genGamCols._gamCols2Add, Vec.T_NUM, onlyGamCols);
     String[] gamColsNames = new String[genGamCols._gamCols2Add];
     int offset = 0;
     for (int ind=0; ind<genGamCols._numGAMcols; ind++) {
-      System.arraycopy(_gamColNames[ind], 0, gamColsNames, offset, _gamColNames[ind].length);
-      offset+= _gamColNames[ind].length;
+      System.arraycopy(gamColNames[ind], 0, gamColsNames, offset, gamColNames[ind].length);
+      offset+= gamColNames[ind].length;
     }
     Frame oneAugmentedColumn = genGamCols.outputFrame(Key.make(), gamColsNames, null);
-    if (_parms._ignored_columns != null) {  // remove ignored columns
-      for (String iname:_parms._ignored_columns) {
+    if (parms._ignored_columns != null) {  // remove ignored columns
+      for (String iname:parms._ignored_columns) {
         if (ArrayUtils.contains(testNames, iname)) {
           adptedF.remove(iname);
         }
@@ -472,43 +473,27 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
     int numCols = adptedF.numCols();  // remove constant or bad frames.
     for (int vInd=0; vInd<numCols; vInd++) {
       Vec v = adptedF.vec(vInd);
-      if ((_parms._ignore_const_cols &&  v.isConst()) || v.isBad())
+      if ((parms._ignore_const_cols &&  v.isConst()) || v.isBad())
         adptedF.remove(vInd);
     }
     Vec respV = null;
-    if (ArrayUtils.contains(testNames, _parms._response_column))
-      respV = adptedF.remove(_parms._response_column);
+    if (ArrayUtils.contains(testNames, parms._response_column))
+      respV = adptedF.remove(parms._response_column);
     adptedF.add(oneAugmentedColumn.names(), oneAugmentedColumn.removeAll());
     Scope.track(oneAugmentedColumn);
-    
+
     if (respV != null)
-      adptedF.add(_parms._response_column, respV);
-    DataInfo dinfo = new DataInfo(adptedF, null, respV!=null?1:0, _parms._use_all_factor_levels
-            || _parms._lambda_search, _parms._standardize ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE,
-            _parms.missingValuesHandling() == GLMModel.GLMParameters.MissingValuesHandling.Skip,
-            _parms.missingValuesHandling() == GLMModel.GLMParameters.MissingValuesHandling.MeanImputation || _parms.missingValuesHandling() == GLMModel.GLMParameters.MissingValuesHandling.PlugValues,
-            _parms.makeImputer(),
-            false, _parms._weights_column != null, _parms._offset_column != null,  _parms._fold_column != null, _parms.interactionSpec());
-    return dinfo._adaptedFrame;
+      adptedF.add(parms._response_column, respV);
+    return adptedF;
   }
 
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics,
                                    CFuncRef customMetricFunc) {
-    int nReponse = ArrayUtils.contains(adaptFrm.names(), _parms._response_column)?1:0;
     String[] predictNames = makeScoringNames();
     String[][] domains = new String[predictNames.length][];
-    DataInfo datainfo = new DataInfo(adaptFrm.clone(), null, nReponse,
-            _parms._use_all_factor_levels || _parms._lambda_search, DataInfo.TransformType.NONE,
-            DataInfo.TransformType.NONE, _parms.missingValuesHandling() == MissingValuesHandling.Skip,
-            _parms.missingValuesHandling() == MissingValuesHandling.MeanImputation ||
-                    _parms.missingValuesHandling() == MissingValuesHandling.PlugValues, _parms.makeImputer(),
-            false, _parms._weights_column!=null, _parms._offset_column==null,
-            _parms._fold_column!=null, null);
     GAMScore gs = makeScoringTask(adaptFrm, j, computeMetrics);
- //   GAMScore gs = new GAMScore(_output._dinfo, _output._model_beta, _output._model_beta_multinomial, _nclass, j,
-   //         _parms._family, _output._responseDomains, this, computeMetrics);
-    gs.doAll(predictNames.length, Vec.T_NUM, datainfo._adaptedFrame);
+    gs.doAll(predictNames.length, Vec.T_NUM, gs._dinfo._adaptedFrame);
     if (gs._computeMetrics)
       gs._mb.makeModelMetrics(this, fr, adaptFrm, gs.outputFrame());
     domains[0] = gs._predDomains;
@@ -607,7 +592,7 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
       for (int rid=0; rid<chkLen; rid++) {  // extract each row
         _dinfo.extractDenseRow(chks, rid, r);
         processRow(r, predictVals, nc, numPredVals);
-        if (_computeMetrics) {
+        if (_computeMetrics && !r.response_bad) {
           trueResponse[0] = (float) r.response[0];
           _mb.perRow(predictVals, trueResponse, r.weight, r.offset, _m);
         }
@@ -712,7 +697,6 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   @Override
   protected Futures remove_impl(Futures fs, boolean cascade) {
     Keyed.remove(_output._gamTransformedTrainCenter, fs, true);
-  //  Keyed.remove(_output._gamGamXCenter, fs, true);
     super.remove_impl(fs, cascade);
     return fs;
   }
