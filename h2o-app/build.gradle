@@ -7,6 +7,7 @@ dependencies {
   compile project(":h2o-genmodel")
   compile project(":h2o-core")
   compile project(":h2o-algos")
+  compile project(":h2o-automl")
   compile project(":h2o-ext-target-encoder")
   compile project(":h2o-k8s")
   runtime project(":${defaultWebserverModule}")
