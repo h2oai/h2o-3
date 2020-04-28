@@ -90,7 +90,7 @@ spec:
             value: '180'
           - name: H2O_NODE_EXPECTED_COUNT
             value: '3'
-          - name: H2O_K8S_API_PORT
+          - name: H2O_KUBERNETES_API_PORT
             value: '8081'
 ```
 Besides standardized Kubernetes settings, like `replicas: 3` defining the number of pods with H2O instantiated, there are
@@ -108,7 +108,7 @@ Environment variables:
   to match the specifics of your Kubernetes implementation.
 1. `H2O_NODE_LOOKUP_TIMEOUT` - **[OPTIONAL]** Node lookup constraint. Time before the node lookup is ended. 
 1. `H2O_NODE_EXPECTED_COUNT` - **[OPTIONAL]** Node lookup constraint. Expected number of H2O pods to be discovered.
-1. `H2O_K8S_API_PORT` - **[OPTIONAL]** Port for Kubernetes API checks to listen on. Defaults to 8080.
+1. `H2O_KUBERNETES_API_PORT` - **[OPTIONAL]** Port for Kubernetes API checks to listen on. Defaults to 8080.
 
 If none of the optional lookup constraints is specified, a sensible default node lookup timeout will be set - currently
 defaults to 3 minutes. If any of the lookup constraints are defined, the H2O node lookup is terminated on whichever 

@@ -22,14 +22,14 @@ public class KubernetesRestApi extends RouterNanoHTTPD implements AutoCloseable 
      * Default port to bind to / listen on.
      */
     private static final int DEFAULT_PORT = 8080;
-    public static final String KUBERNETES_REST_API_PORT_KEY = "H2O_K8S_API_PORT";
+    public static final String KUBERNETES_REST_API_PORT_KEY = "H2O_KUBERNETES_API_PORT";
 
 
     /**
      * Creates, but not starts Kubernetes REST API. To start the REST API, please use
      * one of the start methods available.
      * <p>
-     * The REST API is bound to a default port of 8080, unless specified otherwise by H2O_K8S_API_PORT environment
+     * The REST API is bound to a default port of 8080, unless specified otherwise by H2O_KUBERNETES_API_PORT environment
      * variable.
      */
     public KubernetesRestApi() {
