@@ -9,8 +9,6 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/in
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7362'>PUBDEV-7362</a>] - Fixed an issue with h2o.merge() in R. Attempting to join a single row H2O frame where the join is on a <dbl> column to another frame no longer fails or returns the wrong number of rows. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7400'>PUBDEV-7400</a>] - Fixed an issue that caused H2O to crash while debugging Python code using intellij/pycharm.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7426'>PUBDEV-7426</a>] - Fixed an issue that caused an assertion error while running Grid Search.
@@ -21,18 +19,16 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/in
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7441'>PUBDEV-7441</a>] - Target Encoder now unlocks the output frame.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7454'>PUBDEV-7454</a>] - The h2o.get_leaderboard() function now works correctly for re-attached H2OAutoML objects. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7456'>PUBDEV-7456</a>] - Fixed the BiasTerm in XGBoost Contributions after upgrading to XGBoost 1.0.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7486'>PUBDEV-7486</a>] - GBM and XGBoost no longer ignore a column that includes a constant and NAs. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7486'>PUBDEV-7486</a>] - GBM and XGBoost no longer ignore a column that includes a constant and NAs.
 </li>
 </ul>
 
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7353'>PUBDEV-7353</a>] - Added the following options for customizing and retrieving threshold values. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7353'>PUBDEV-7353</a>] - Added the following options for customizing and retrieving threshold values.
 <ul>
 <li>`threshold` allows you to specify the threshold value used for calculating the confusion matrix.
 <li>`default_threshold` allows you to change the threshold that is used to binarise the predicted class probabilities.</li>
@@ -52,24 +48,18 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/in
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7274'>PUBDEV-7274</a>] - Added POJO and MOJO support for all encodings in GBM.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7438'>PUBDEV-7438</a>] - Added support for Y-axis scaling options within the H2O partial plot function. (STILL OPEN)
-</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7446'>PUBDEV-7446</a>] - Users will now receive an error if they attempt to run https in h2o.init() when starting a local cluster. 
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7463'>PUBDEV-7463</a>] - Improved speed for training and prediction of Stacked Ensembles. (STILL OPEN)
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7465'>PUBDEV-7465</a>] - Added an `-allow_insecure_xgboost` option to h2o and h2odriver that allows XGBoost multinode to run in a secured cluster.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7469'>PUBDEV-7469</a>] - Only the leader node is exposed on K8S. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7469'>PUBDEV-7469</a>] - Only the leader node is exposed on K8S.
 </li>
 </ul>
 
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7020'>PUBDEV-7020</a>] - Updated the Target Encoding topic and examples based on the improved API. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7343'>PUBDEV-7343</a>] - Cleaned up and added more clarification to the Hive import documentation. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7020'>PUBDEV-7020</a>] - Updated the Target Encoding topic and examples based on the improved API. 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7344'>PUBDEV-7344</a>] - Added a new "Supported Data Types" topic to the Algorithms chapter.
 </li>
