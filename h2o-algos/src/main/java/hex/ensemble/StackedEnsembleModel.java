@@ -153,9 +153,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       }
     }
 
-    // Add response column to level one frame
-    levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
-    
+    // Add response column, weights columns to level one frame
+    StackedEnsemble.addMiscColumnsToLevelOneFrame(_parms, adaptFrm, levelOneFrame, false);
     // TODO: what if we're running multiple in parallel and have a name collision?
     Log.info("Finished creating \"level one\" frame for scoring: " + levelOneFrame.toString());
 

@@ -35,6 +35,11 @@
 #' @param metalearner_fold_column Column with cross-validation fold index assignment per observation for cross-validation of the metalearner.
 #' @param metalearner_params Parameters for metalearner algorithm
 #' @param max_runtime_secs Maximum allowed runtime in seconds for model training. Use 0 to disable. Defaults to 0.
+#' @param weights_column Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from
+#'        the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+#'        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the
+#'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
+#'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param seed Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number).
 #' @param score_training_samples Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
 #'        enter 0. Defaults to 10000.
@@ -105,6 +110,7 @@ h2o.stackedEnsemble <- function(x,
                                 metalearner_fold_column = NULL,
                                 metalearner_params = NULL,
                                 max_runtime_secs = 0,
+                                weights_column = NULL,
                                 seed = -1,
                                 score_training_samples = 10000,
                                 keep_levelone_frame = FALSE,
@@ -142,6 +148,21 @@ h2o.stackedEnsemble <- function(x,
     }
   }
 
+  # Warn user if all base models use same weights_column but user didn't specify any for SE
+  if (missing(weights_column)) {
+      weights_columns <- lapply(base_models, function (base_model_key)
+        h2o.getModel(base_model_key)@allparameters$weights_column$column_name)
+      reference_weights_column <- weights_columns[[1]]
+      if (!is.null(reference_weights_column)) {
+        if (all(sapply(weights_columns, function(wc) wc == reference_weights_column))) {
+          warning(paste0("All base models use weights_column=\"", reference_weights_column,
+                         "\" but Stacked Ensemble does not. If you want to use the same ",
+                         "weights_column for the meta learner, please specify it as an argument ",
+                         "in the h2o.stackedEnsemble call."))
+        }
+      }
+  }
+
   # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
@@ -166,6 +187,8 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_column <- metalearner_fold_column
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(score_training_samples))
@@ -238,6 +261,7 @@ h2o.stackedEnsemble <- function(x,
                                                 metalearner_fold_column = NULL,
                                                 metalearner_params = NULL,
                                                 max_runtime_secs = 0,
+                                                weights_column = NULL,
                                                 seed = -1,
                                                 score_training_samples = 10000,
                                                 keep_levelone_frame = FALSE,
@@ -282,6 +306,21 @@ h2o.stackedEnsemble <- function(x,
     }
   }
 
+  # Warn user if all base models use same weights_column but user didn't specify any for SE
+  if (missing(weights_column)) {
+      weights_columns <- lapply(base_models, function (base_model_key)
+        h2o.getModel(base_model_key)@allparameters$weights_column$column_name)
+      reference_weights_column <- weights_columns[[1]]
+      if (!is.null(reference_weights_column)) {
+        if (all(sapply(weights_columns, function(wc) wc == reference_weights_column))) {
+          warning(paste0("All base models use weights_column=\"", reference_weights_column,
+                         "\" but Stacked Ensemble does not. If you want to use the same ",
+                         "weights_column for the meta learner, please specify it as an argument ",
+                         "in the h2o.stackedEnsemble call."))
+        }
+      }
+  }
+
   # Build parameter list to send to model builder
   parms <- list()
   parms$training_frame <- training_frame
@@ -304,6 +343,8 @@ h2o.stackedEnsemble <- function(x,
     parms$metalearner_fold_column <- metalearner_fold_column
   if (!missing(max_runtime_secs))
     parms$max_runtime_secs <- max_runtime_secs
+  if (!missing(weights_column))
+    parms$weights_column <- weights_column
   if (!missing(seed))
     parms$seed <- seed
   if (!missing(score_training_samples))

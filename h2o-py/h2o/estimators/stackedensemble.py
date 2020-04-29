@@ -64,7 +64,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
     param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
                    "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                   "metalearner_fold_column", "metalearner_params", "max_runtime_secs", "seed",
+                   "metalearner_fold_column", "metalearner_params", "max_runtime_secs", "weights_column", "seed",
                    "score_training_samples", "keep_levelone_frame", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
@@ -567,6 +567,25 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
 
     @property
+    def weights_column(self):
+        """
+        Column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the
+        dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative
+        weights are not allowed. Note: Weights are per-row observation weights and do not increase the size of the data
+        frame. This is typically the number of times a row is repeated, but non-integer values are supported as well.
+        During training, rows with higher weights matter more, due to the larger loss function pre-factor.
+
+        Type: ``str``.
+        """
+        return self._parms.get("weights_column")
+
+    @weights_column.setter
+    def weights_column(self, weights_column):
+        assert_is_type(weights_column, None, str)
+        self._parms["weights_column"] = weights_column
+
+
+    @property
     def seed(self):
         """
         Seed for random numbers; passed through to the metalearner algorithm. Defaults to -1 (time-based random number)
@@ -827,6 +846,18 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     # Override train method to support blending
     def train(self, x=None, y=None, training_frame=None, blending_frame=None, verbose=False, **kwargs):
+        if kwargs.get("weights_column") is None and self._parms.get("weights_column") is None:
+            weight_columns = [
+                h2o.get_model(base_model).actual_params.get("weights_column", dict()).get("column_name")
+                for base_model in self.base_models
+            ]
+            weight_column_ref = weight_columns[0]
+            if all((wc == weight_column_ref for wc in weight_columns)):
+                warnings.warn(("All base models use weights_column=\"{}\" but Stacked Ensemble does not. "
+                               "If you want to use the same weights_column for the meta learner, "
+                               "please specify it as an argument in StackedEnsemble's constructor.").format(weight_column_ref))
+
+
         has_training_frame = training_frame is not None or self.training_frame is not None
         blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=not has_training_frame)
 

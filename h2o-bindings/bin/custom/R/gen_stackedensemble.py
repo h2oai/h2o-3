@@ -35,6 +35,21 @@ for (i in 1:length(base_models)) {
     base_models[[i]] <- h2o.keyof(base_models[[i]])
   }
 }
+
+# Warn user if all base models use same weights_column but user didn't specify any for SE
+if (missing(weights_column)) {
+    weights_columns <- lapply(base_models, function (base_model_key)
+      h2o.getModel(base_model_key)@allparameters$weights_column$column_name)
+    reference_weights_column <- weights_columns[[1]]
+    if (!is.null(reference_weights_column)) {
+      if (all(sapply(weights_columns, function(wc) wc == reference_weights_column))) {
+        warning(paste0("All base models use weights_column=\\\"", reference_weights_column,
+                       "\\\" but Stacked Ensemble does not. If you want to use the same ",
+                       "weights_column for the meta learner, please specify it as an argument ",
+                       "in the h2o.stackedEnsemble call."))
+      }
+    }
+}
 """,
     set_required_params="""
 parms$training_frame <- training_frame

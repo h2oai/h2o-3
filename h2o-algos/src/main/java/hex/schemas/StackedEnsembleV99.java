@@ -44,6 +44,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "metalearner_fold_column",
       "metalearner_params",
       "max_runtime_secs",
+      "weights_column",
       "seed",
       "score_training_samples",
       "keep_levelone_frame",

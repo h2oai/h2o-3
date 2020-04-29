@@ -111,6 +111,18 @@ def class_extensions():
 
     # Override train method to support blending
     def train(self, x=None, y=None, training_frame=None, blending_frame=None, verbose=False, **kwargs):
+        if kwargs.get("weights_column") is None and self._parms.get("weights_column") is None:
+            weight_columns = [
+                h2o.get_model(base_model).actual_params.get("weights_column", dict()).get("column_name")
+                for base_model in self.base_models
+            ]
+            weight_column_ref = weight_columns[0]
+            if all((wc == weight_column_ref for wc in weight_columns)):
+                warnings.warn(("All base models use weights_column=\"{}\" but Stacked Ensemble does not. "
+                               "If you want to use the same weights_column for the meta learner, "
+                               "please specify it as an argument in StackedEnsemble's constructor.").format(weight_column_ref))
+
+
         has_training_frame = training_frame is not None or self.training_frame is not None
         blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=not has_training_frame)
 
