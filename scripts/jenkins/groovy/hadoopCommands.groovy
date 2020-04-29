@@ -4,7 +4,10 @@
  * @param stageConfig stage configuration to read mode and additional information from
  * @return the cmd used to start H2O in given mode
  */
-def call(final stageConfig) {
+def call(final stageConfig, final boolean getMakeTarget = false) {
+    if (getMakeTarget) {
+        return ""
+    }
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return getCommandHadoop(stageConfig)
