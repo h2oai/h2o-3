@@ -14,6 +14,7 @@ import water.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
@@ -116,38 +117,34 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    */
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
-
-    Futures tasks = new Futures();
     final String seKey = this._key.toString();
+    Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + seKey + fr._key));
+
+    Model[] usefulBaseModels = Stream.of(_parms._base_models)
+            .filter(this::isUsefulBaseModel)
+            .map(Key::get)
+            .toArray(Model[]::new);
+
+    Frame[] baseModelPredictions = new Frame[usefulBaseModels.length];
 
     // Run scoring of base models in parallel
-    for (Key<Model> baseModelKey : _parms._base_models) {
-      if (isUsefulBaseModel(baseModelKey)) {
-        tasks.add(H2O.submitTask(
-                new H2O.H2OCountedCompleter() {
-                  @Override
-                  public void compute2() {
-                    Model baseModel = baseModelKey.get();
-
-                    Frame basePreds = baseModel.score(
-                            fr,
-                            "preds_base_" + seKey + baseModelKey + fr._key,
-                            j,
-                            false
-                    );
-
-                    StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, basePreds, levelOneFrame);
-                    DKV.remove(basePreds._key); //Cleanup
-                    Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
-                    tryComplete();
-                  }
-                }));
+    H2O.submitTask(new LocalMR(new MrFun() {
+      @Override
+      protected void map(int id) {
+        baseModelPredictions[id] = usefulBaseModels[id].score(
+                fr,
+                "preds_base_" + seKey + usefulBaseModels[id]._key + fr._key,
+                j,
+                false
+        );
       }
-    }
+    }, usefulBaseModels.length)).join();
 
-    // Wait for the completion of the base model scoring
-    tasks.blockForPending();
+    for (int i = 0; i < usefulBaseModels.length; i++) {
+      StackedEnsemble.addModelPredictionsToLevelOneFrame(usefulBaseModels[i], baseModelPredictions[i], levelOneFrame);
+      DKV.remove(baseModelPredictions[i]._key); //Cleanup
+      Frame.deleteTempFrameAndItsNonSharedVecs(baseModelPredictions[i], levelOneFrame);
+    }
 
     // Add response column to level one frame
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));

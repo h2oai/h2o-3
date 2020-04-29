@@ -123,9 +123,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     if (aModel._output.isBinomialClassifier()) {
       // GLM uses a different column name than the other algos
       Vec preds = aModelsPredictions.vec(2); // Predictions column names have been changed...
-      synchronized (levelOneFrame) {
-        levelOneFrame.add(aModel._key.toString(), preds);
-      }
+      levelOneFrame.add(aModel._key.toString(), preds);
     } else if (aModel._output.isMultinomialClassifier()) { //Multinomial
       //Need to remove 'predict' column from multinomial since it contains outcome
       Frame probabilities = aModelsPredictions.subframe(ArrayUtils.remove(aModelsPredictions.names(), "predict"));
@@ -134,18 +132,14 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
                       .map((name) -> aModel._key.toString().concat("/").concat(name))
                       .toArray(String[]::new)
       );
-      synchronized (levelOneFrame) {
-        levelOneFrame.add(probabilities);
-      }
+      levelOneFrame.add(probabilities);
     } else if (aModel._output.isAutoencoder()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack autoencoders: " + aModel._key);
     } else if (!aModel._output.isSupervised()) {
       throw new H2OIllegalArgumentException("Don't yet know how to stack unsupervised models: " + aModel._key);
     } else {
       Vec preds = aModelsPredictions.vec("predict");
-      synchronized (levelOneFrame) {
-        levelOneFrame.add(aModel._key.toString(), preds);
-      }
+      levelOneFrame.add(aModel._key.toString(), preds);
     }
   }
 
