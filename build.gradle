@@ -272,7 +272,6 @@ subprojects {
     // Configure Java projects
     if (project in javaProjects) {
         apply from: "$rootDir/gradle/java.gradle"
-        apply from: "$rootDir/gradle/cp.gradle"
         // Include Findbugs only if the property is specified
         if (project.hasProperty("doFindbugs") && project.doFindbugs == "true") {
             apply from: "$rootDir/gradle/findbugs.gradle"
@@ -296,7 +295,6 @@ subprojects {
     // Configure Scala projects
     if (project in scalaProjects) {
         apply from: "$rootDir/gradle/scala.gradle"
-        apply from: "$rootDir/gradle/cp.gradle"
         if (testNeedsCiProject.contains(project)) {
             logger.warn("The project $project needs CI for running tests! You can pass `-PdoCI=true` to force CI behaviour.")
             project.testMultiNode.enabled = isCi
@@ -316,21 +314,6 @@ subprojects {
             apply from: "$rootDir/gradle/ubench.gradle"
         }
     }
-}
-
-//
-// Setup global properties shared by all projects
-//
-ext {
-    // Collect all artifacts produced by all projects in this project - all "archives" artifacts
-    allArchives = subprojects.findAll().inject(
-            files(), { acc, pj -> 
-          if (pj in publishedProjects)
-            acc + pj.configurations.archives.allArtifacts.getFiles()
-          else
-            acc
-    })
-
 }
 
 // Include support for S3 syncing

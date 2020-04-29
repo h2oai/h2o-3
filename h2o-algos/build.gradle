@@ -57,7 +57,7 @@ dependencies {
 apply from: "${rootDir}/gradle/dataCheck.gradle"
 
 task testSSLEncryption(type: Exec) {
-  dependsOn cpLibs, jar, testJar
+  dependsOn jar, testJar
   if(project.hasProperty('doTestSSL')) {
       commandLine 'bash', './testSSL.sh'
   } else {
@@ -76,7 +76,7 @@ task testSSLEncryption(type: Exec) {
 // level) to files - then scrape the files later for test results.
 test {
   dependsOn ":h2o-core:testJar"
-  dependsOn smalldataCheck, cpLibs, jar, testJar, testSingleNode, testMultiNode, testSSLEncryption
+  dependsOn smalldataCheck, jar, testJar, testSingleNode, testMultiNode, testSSLEncryption
 
   // Defeat task 'test' by running no tests.
   exclude '**'

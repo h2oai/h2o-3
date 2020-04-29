@@ -22,7 +22,6 @@ build-h2o-3:
 
 warmup-caches:
 	@$(MAKE) -f $(THIS_FILE) build-h2o-3
-	./gradlew cpLibs $$ADDITIONAL_GRADLE_OPTS
 
 compress-huge-logfiles:
 	find * -type f -name 'java*.out.txt' -exec gzip {} \;

@@ -34,7 +34,7 @@ task s3CredentialsCheck(group: "S3") {
 
 test {
     dependsOn ":h2o-core:testJar"
-    dependsOn smalldataCheck, s3CredentialsCheck, cpLibs, jar, testJar, testMultiNode
+    dependsOn smalldataCheck, s3CredentialsCheck, jar, testJar, testMultiNode
 
     // Defeat task 'test' by running no tests.
     exclude '**'
