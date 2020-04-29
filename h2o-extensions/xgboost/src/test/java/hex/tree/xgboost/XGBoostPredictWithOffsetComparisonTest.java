@@ -10,7 +10,6 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.rapids.Merge;
 
 import java.util.Arrays;
 import java.util.Collection;

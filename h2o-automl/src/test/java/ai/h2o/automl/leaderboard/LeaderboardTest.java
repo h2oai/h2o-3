@@ -5,12 +5,10 @@ import ai.h2o.automl.events.EventLog;
 import hex.Model;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
 import water.Keyed;
-import water.Lockable;
 import water.fvec.Frame;
 import water.util.Log;
 import water.util.TwoDimTable;
@@ -21,8 +19,6 @@ import java.util.List;
 import static org.junit.Assert.*;
 
 public class LeaderboardTest extends water.TestUtil {
-
-  // TODO: plenty of tests to write for this class
 
   @BeforeClass
   public static void setup() {

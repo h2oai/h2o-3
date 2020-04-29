@@ -1,9 +1,10 @@
-package water.udf;
+package water.udf.metric;
 
 import org.junit.Ignore;
+import water.udf.CDistributionFunc;
 
 @Ignore("Support for tests, but no actual tests here")
-public class TestBernoulliCustomDistribution implements CDistributionFunc {
+public class BernoulliCustomDistribution implements CDistributionFunc {
 
     public double MIN_LOG = -19;
     public double MAX = 1e19;

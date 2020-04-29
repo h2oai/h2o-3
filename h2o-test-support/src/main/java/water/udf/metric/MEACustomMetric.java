@@ -1,12 +1,13 @@
-package water.udf;
+package water.udf.metric;
 
 import org.junit.Ignore;
 
 import hex.Model;
+import water.udf.CMetricFunc;
 import water.util.ArrayUtils;
 
 @Ignore("Support for tests, but no actual tests here")
-public class TestMEACustomMetric implements CMetricFunc {
+public class MEACustomMetric implements CMetricFunc {
 
   @Override
   public double[] map(double[] preds, float[] yact, double weight, double offset, Model m) {

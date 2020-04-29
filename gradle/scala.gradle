@@ -38,16 +38,6 @@ task scaladocJar(type: Jar) {
     from scaladoc
 }
 
-// Create a configuration containing only for test artifacts
-configurations {
-    testArchives
-}
-
-// Explicitly
-artifacts {
-    testArchives testJar
-}
-
 // Enable support for multi-node testing
 apply from: "$rootDir/gradle/multiNodeTesting.gradle"
 

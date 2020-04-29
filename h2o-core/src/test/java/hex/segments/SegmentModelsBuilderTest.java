@@ -1,6 +1,7 @@
 package hex.segments;
 
-import hex.ModelBuilderTest;
+import water.test.dummy.DummyModel;
+import water.test.dummy.DummyAction;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -12,6 +13,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.parser.BufferedString;
+import water.test.dummy.DummyModelParameters;
 
 import static org.junit.Assert.*;
 
@@ -42,7 +44,7 @@ public class SegmentModelsBuilderTest extends TestUtil {
       DKV.put(segments);
       Scope.track_generic(segments);
 
-      ModelBuilderTest.DummyModelParameters parms = new ModelBuilderTest.DummyModelParameters();
+      DummyModelParameters parms = new DummyModelParameters();
       parms._makeModel = true;
       parms._action = new GetSegment();
       parms._train = fr._key;
@@ -66,8 +68,8 @@ public class SegmentModelsBuilderTest extends TestUtil {
       Vec.Reader modelIdReader = smFrame.vec("model"). new Reader();
       for (int i = 0; i < 3; i++) {
         String segment = segmentVec.domain()[(int) segmentReader.at(i)];
-        Key<ModelBuilderTest.DummyModel> dmKey = Key.make(modelIdReader.atStr(new BufferedString(), i).toString());
-        ModelBuilderTest.DummyModel dm = dmKey.get(); 
+        Key<DummyModel> dmKey = Key.make(modelIdReader.atStr(new BufferedString(), i).toString());
+        DummyModel dm = dmKey.get(); 
         assertNotNull(dm);
         assertEquals(segment, dm._output._msg);
         dm.remove();
@@ -77,9 +79,9 @@ public class SegmentModelsBuilderTest extends TestUtil {
     }
   }
 
-  private static class GetSegment extends ModelBuilderTest.DummyAction<GetSegment> {
+  private static class GetSegment extends DummyAction<GetSegment> {
     @Override
-    protected String run(ModelBuilderTest.DummyModelParameters parms) {
+    protected String run(DummyModelParameters parms) {
       Vec segmentVec = parms.train().vec("class");
       assertTrue(segmentVec.isConst());
       return segmentVec.domain()[(int) segmentVec.at(0)];

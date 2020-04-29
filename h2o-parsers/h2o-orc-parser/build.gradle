@@ -49,8 +49,7 @@ dependencies {
       }
   }
 
-  testCompile "junit:junit:${junitVersion}"
-  testCompile project(path: ":h2o-core", configuration: "testArchives")
+  testCompile project(":h2o-test-support")
   testRuntimeOnly project(":${defaultWebserverModule}")
   // We need correct version of MapRe Hadoop to run JUnits
   testRuntime("org.apache.hadoop:hadoop-client:$defaultHadoopVersion") {

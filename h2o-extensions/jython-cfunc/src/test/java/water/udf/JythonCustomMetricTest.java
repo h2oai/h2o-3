@@ -9,7 +9,7 @@ import java.io.InputStream;
 
 import water.TestUtil;
 
-import static water.udf.CustomMetricTest.testNullModelRegression;
+import static water.udf.CustomMetricUtils.testNullModelRegression;
 import static water.udf.JFuncUtils.loadRawTestFunc;
 
 public class JythonCustomMetricTest extends TestUtil {

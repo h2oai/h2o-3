@@ -5,7 +5,6 @@ import org.junit.*;
 
 import water.*;
 import water.parser.ParseDataset;
-import water.util.FileUtils;
 import water.util.FrameUtils;
 import water.util.Log;
 

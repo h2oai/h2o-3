@@ -6,7 +6,6 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-import water.DKV;
 import water.Key;
 import water.Scope;
 import water.TestUtil;

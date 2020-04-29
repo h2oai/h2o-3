@@ -7,7 +7,7 @@ import hex.genmodel.easy.EasyPredictModelWrapper;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.RegressionModelPrediction;
-import hex.util.NaiveTreeSHAP;
+import water.test.util.NaiveTreeSHAP;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;

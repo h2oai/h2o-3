@@ -3,7 +3,6 @@ package water.rapids.ast.prims.advmath;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.Scope;

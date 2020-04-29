@@ -11,7 +11,6 @@ import water.fvec.Vec;
 import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
-import water.util.ArrayUtils;
 import water.rapids.Session;
 public class AstPivotTest  extends TestUtil {
     @BeforeClass

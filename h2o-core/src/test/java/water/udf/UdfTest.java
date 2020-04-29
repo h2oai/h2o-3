@@ -26,19 +26,19 @@ public class UdfTest extends UdfTestBase {
   int requiredCloudSize() { return 2; }
   
   private DataColumn<Double> sines() throws java.io.IOException {
-    return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    return UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
     }));
   }
 
   private DataColumn<Double> sinesShort() throws java.io.IOException {
-    return willDrop(Doubles.newColumn(1001590, new Function<Long, Double>() {
+    return UdfUtils.willDrop(Doubles.newColumn(1001590, new Function<Long, Double>() {
       public Double apply(Long i) { return (i > 10 && i < 20) ? null : Math.sin(i); }
     }));
   }
 
   private DataColumn<Double> five_x() throws java.io.IOException {
-    return willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    return UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return i*5.0; }
     }));
   }
@@ -69,7 +69,7 @@ public class UdfTest extends UdfTestBase {
 
   @Test
   public void testOfStrings() throws Exception {
-    Column<String> c = willDrop(Strings.newColumn(1 << 20, new Function<Long, String>() {
+    Column<String> c = UdfUtils.willDrop(Strings.newColumn(1 << 20, new Function<Long, String>() {
        public String apply(Long i) {
         return i == 42 ? null : "<<" + i + ">>";
       }
@@ -86,7 +86,7 @@ public class UdfTest extends UdfTestBase {
 
   @Test
   public void testOfEnums() throws Exception {
-    Column<Integer> c = willDrop(Enums.enums(new String[] {"Red", "White", "Blue"})
+    Column<Integer> c = UdfUtils.willDrop(Enums.enums(new String[] {"Red", "White", "Blue"})
         .newColumn(1 << 20, new Function<Long, Integer>() {
        public Integer apply(Long i) { return (int)( i % 3); }
     }));
@@ -104,7 +104,7 @@ public class UdfTest extends UdfTestBase {
 
   @Test
   public void testOfDates() throws Exception {
-    Column<Date> c = willDrop(Dates.newColumn(1 << 20, new Function<Long, Date>() {
+    Column<Date> c = UdfUtils.willDrop(Dates.newColumn(1 << 20, new Function<Long, Date>() {
        public Date apply(Long i) {
         return new Date(i*3600000L*24);
       }
@@ -140,7 +140,7 @@ public class UdfTest extends UdfTestBase {
   @Test
   public void testOfEnumFun() throws Exception {
     final String[] domain = {"Red", "White", "Blue"};
-    Column<Integer> x = willDrop(Enums.enums(domain)
+    Column<Integer> x = UdfUtils.willDrop(Enums.enums(domain)
         .newColumn(1 << 20, new Function<Long, Integer>() {
            public Integer apply(Long i) { return (int)( i % 3); }
         }));
@@ -183,9 +183,9 @@ public class UdfTest extends UdfTestBase {
   public void testFun2() throws Exception {
     Column<Double> x = five_x();
     Column<Double> y = sines();
-    Column<Double> y2 = willDrop(new FunColumn<>(PureFunctions.SQUARE, y));
-    Column<Double> z1 = willDrop(new Fun2Column<>(PureFunctions.PLUS, x, y2));
-    Column<Double> z2 = willDrop(new Fun2Column<>(PureFunctions.X2_PLUS_Y2, x, y));
+    Column<Double> y2 = UdfUtils.willDrop(new FunColumn<>(PureFunctions.SQUARE, y));
+    Column<Double> z1 = UdfUtils.willDrop(new Fun2Column<>(PureFunctions.PLUS, x, y2));
+    Column<Double> z2 = UdfUtils.willDrop(new Fun2Column<>(PureFunctions.X2_PLUS_Y2, x, y));
     
     assertEquals(0.0, z1.apply(0), 0.000001);
     assertEquals(210.84001174779368, z1.apply(42), 0.000001);
@@ -195,7 +195,7 @@ public class UdfTest extends UdfTestBase {
     assertEquals(44100.840011747794, z2.apply(42), 0.000001);
     assertEquals(10000000000.3387062632, z2.apply(20000), 0.000001);
 
-    Column<Double> materialized = willDrop(Doubles.materialize(z2));
+    Column<Double> materialized = UdfUtils.willDrop(Doubles.materialize(z2));
 
     for (int i = 0; i < 100000; i++) {
       Double expected = z2.apply(i);
@@ -212,7 +212,7 @@ public class UdfTest extends UdfTestBase {
   public void testFun2Compatibility() throws Exception {
     Column<Double> x = five_x();
     Column<Double> y = sinesShort();
-    Column<Double> z = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> z = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.sin(i*0.0001); }
     }));
 
@@ -242,7 +242,7 @@ public class UdfTest extends UdfTestBase {
   public void testFun2CompatibilityWithConst() throws Exception {
     Column<Double> x = five_x();
     Column<Double> y = Doubles.constColumn(42.0, 1 << 20);
-    Column<Double> z = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> z = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.sin(i*0.0001); }
     }));
 
@@ -270,15 +270,15 @@ public class UdfTest extends UdfTestBase {
 
   @Test
   public void testFun3() throws Exception {
-    Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> x = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
         public Double apply(Long i) { return Math.cos(i*0.0001)*Math.cos(i*0.0000001); }
       }));
 
-    Column<Double> y = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> y = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.cos(i*0.0001)*Math.sin(i*0.0000001); }
     }));
 
-    Column<Double> z = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> z = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.sin(i*0.0001); }
     }));
 
@@ -297,15 +297,15 @@ public class UdfTest extends UdfTestBase {
 
   @Test
   public void testFoldingColumn() throws Exception {
-    Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> x = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.cos(i*0.0001)*Math.cos(i*0.0000001); }
     }));
 
-    Column<Double> y = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> y = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.cos(i*0.0001)*Math.sin(i*0.0000001); }
     }));
 
-    Column<Double> z = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> z = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.sin(i*0.0001); }
     }));
 
@@ -337,11 +337,11 @@ public class UdfTest extends UdfTestBase {
   }
   @Test
   public void testFoldingColumnCompatibility() throws Exception {
-    Column<Double> x = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> x = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.cos(i*0.0001)*Math.cos(i*0.0000001); }
     }));
 
-    Column<Double> y = willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
+    Column<Double> y = UdfUtils.willDrop(Doubles.newColumn(1 << 20, new Function<Long, Double>() {
       public Double apply(Long i) { return Math.cos(i*0.0001)*Math.sin(i*0.0000001); }
     }));
 
@@ -364,7 +364,7 @@ public class UdfTest extends UdfTestBase {
     final List<String> lines = Files.readLines(file, Charset.defaultCharset());
 
     // store it in H2O, with typed column as a wrapper (core H2O storage is a type-unaware Vec class)
-    Column<String> source = willDrop(Strings.newColumn(lines));
+    Column<String> source = UdfUtils.willDrop(Strings.newColumn(lines));
 
     // produce another (virtual) column that stores a list of strings as a row value
     Column<List<String>> split = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
@@ -383,7 +383,7 @@ public class UdfTest extends UdfTestBase {
   public void testUnfoldingFrame() throws IOException {
     File file = getFile("smalldata/chicago/chicagoAllWeather.csv");
     final List<String> lines = Files.readLines(file, Charset.defaultCharset());
-    Column<String> source = willDrop(Strings.newColumn(lines));
+    Column<String> source = UdfUtils.willDrop(Strings.newColumn(lines));
     Column<List<String>> split = new UnfoldingColumn<>(PureFunctions.splitBy(","), source, 10);
     UnfoldingFrame<String> frame = new UnfoldingFrame<>(Strings, split.size(), split, 11);
     List<DataColumn<String>> columns = frame.materialize();

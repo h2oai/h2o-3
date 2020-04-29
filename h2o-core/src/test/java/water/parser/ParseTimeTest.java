@@ -1,11 +1,11 @@
 package water.parser;
 
-import org.joda.time.DateTime;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Key;
 import water.TestUtil;
+import water.fvec.FVecFactory;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
@@ -123,7 +123,7 @@ public class ParseTimeTest extends TestUtil {
 
     StringBuilder sb1 = new StringBuilder();
     for( String ds : data ) sb1.append(ds).append("\n");
-    Key[] k1 = new Key[]{ParserTest.makeByteVec(sb1.toString())};
+    Key[] k1 = new Key[]{FVecFactory.makeByteVec(sb1.toString())};
     Key r1 = Key.make("r1");
     ParseSetup ps = ParseSetup.guessSetup(k1, false, 0);
     ps._separator = ',';
@@ -141,7 +141,7 @@ public class ParseTimeTest extends TestUtil {
       "2014-1-24\n"+
       "2014-1-23\n"+
       "2014-1-24\n";
-    Key k1 = ParserTest.makeByteVec(data);
+    Key k1 = FVecFactory.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
@@ -164,7 +164,7 @@ public class ParseTimeTest extends TestUtil {
       "1/24/2014  \n"+
       "1/23/2014 \n"+
       "1/24/2014\n";
-    Key k1 = ParserTest.makeByteVec(data);
+    Key k1 = FVecFactory.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
@@ -187,7 +187,7 @@ public class ParseTimeTest extends TestUtil {
       "2014-2\n"+
       "2014-3\n"+
       "2014-4\n";
-    Key k1 = ParserTest.makeByteVec(data);
+    Key k1 = FVecFactory.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
@@ -213,7 +213,7 @@ public class ParseTimeTest extends TestUtil {
       "14-JAN\n"+"14-FEB\n"+"14-MAR\n"+"14-APR\n"+"14-MAY\n"+"14-JUN\n"+
       "14-JUL\n"+"14-AUG\n"+"14-SEP\n"+"14-OCT\n"+"14-NOV\n"+"14-DEC\n"+
       "16-JAN\n"+"17-MAR\n"+"18-JUN\n"+"19-SEP\n"+"20-DEC\n";
-    Key k1 = ParserTest.makeByteVec(data);
+    Key k1 = FVecFactory.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));
@@ -257,7 +257,7 @@ public class ParseTimeTest extends TestUtil {
       "7:0:15.0\n"+
       "7:3:8.0\n"+
       "8:20:8.0\n";
-    Key k1 = ParserTest.makeByteVec(data);
+    Key k1 = FVecFactory.makeByteVec(data);
     Key r1 = Key.make("r1");
     Frame fr = ParseDataset.parse(r1, k1);
     Assert.assertTrue(fr.vec(0).get_type_str().equals("Time"));

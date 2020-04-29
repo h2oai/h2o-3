@@ -1,16 +1,10 @@
 package water.fvec;
 
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
 import water.TestUtil;
 import water.parser.BufferedString;
-import water.rapids.Rapids;
-import water.rapids.Val;
-import water.util.TwoDimTable;
-
-import java.util.Random;
 
 import static org.junit.Assert.*;
 

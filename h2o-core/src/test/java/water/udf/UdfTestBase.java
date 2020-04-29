@@ -38,24 +38,6 @@ public class UdfTestBase extends TestUtil {
     Scope.exit(); 
   }
 
-  protected static Vec willDrop(Vec v) { return Scope.track(v); }
-
-  public static <T> T willDrop(T vh) {
-    try { // using reflection so that Paula Bean's code is intact
-      Method vec = vh.getClass().getMethod("vec");
-      Scope.track((Vec)vec.invoke(vh));
-    } catch (Exception e) {
-      // just ignore
-    }
-    return vh;
-  }
-
-
-  public static Vec loadFile(String fname) throws IOException {
-    File f = FileUtils.getFile(fname);
-    return NFSFileVec.make(f);
-  }
-
   // the following code exists or else gradlew will complain; also, it checks assertions
   @Test
   public void testAssertionsEnabled() throws Exception {

@@ -11,11 +11,8 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
 import water.fvec.Vec;
-import water.util.ArrayUtils;
 
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static water.udf.JFuncUtils.getSkippingClassloader;
 import static water.udf.JFuncUtils.loadTestFunc;
 import static water.util.FrameUtils.delete;
@@ -40,8 +37,8 @@ public class JFuncTest extends TestUtil {
       CFunc2 testFunc = (CFunc2) testFuncKlazz.newInstance();
       CFunc2 codeFunc = new TestCFunc2();
 
-      CBlock.CRow crow1 = mockedRow(10, 1.0);
-      CBlock.CRow crow2 = mockedRow(5, 1.0);
+      CBlock.CRow crow1 = JFuncUtils.mockedRow(10, 1.0);
+      CBlock.CRow crow2 = JFuncUtils.mockedRow(5, 1.0);
 
       Assert.assertEquals("Test func call should return expected value",
                           10*1.0 + 5*1.0, testFunc.apply(crow1, crow2), 1e-10);
@@ -111,12 +108,5 @@ public class JFuncTest extends TestUtil {
     }
   }
 
-  static CBlock.CRow mockedRow(int len, double value) {
-    CBlock.CRow row = mock(CBlock.CRow.class);
-    when(row.len()).thenReturn(len);
-    when(row.readDouble(anyInt())).thenReturn(value);
-    when(row.readDoubles()).thenReturn(ArrayUtils.constAry(len, value));
-    return row;
-  }
 }
 

@@ -14,7 +14,7 @@ dependencies {
   // Manually define all dependencies in com.github.fommil.netlib:all:1.1.2 to make Databricks maven resolver happy.
   // Also exclude arpack_combined_all dependency and manually add it later. The fommil libraries 
   // reference this dependency and also its javadoc which confuses some maven resolvers (Spark ivy resolver)
-  compile('com.github.fommil.netlib:core:1.1.2'){
+  compile('com.github.fommil.netlib:core:1.1.2') {
     exclude group: 'net.sourceforge.f2j', module: 'arpack_combined_all'
   }
   compile('net.sourceforge.f2j:arpack_combined_all:0.1')
@@ -43,17 +43,15 @@ dependencies {
     exclude group: 'net.sourceforge.f2j', module: 'arpack_combined_all'
   }
 
-  compile('com.googlecode.matrix-toolkits-java:mtj:1.0.4'){
+  compile('com.googlecode.matrix-toolkits-java:mtj:1.0.4') {
     exclude group: 'com.github.fommil.netlib', module: 'all'
   }
 
-
   // Test dependencies only
+  testCompile project(":h2o-test-support")
   testCompile project(":h2o-genmodel-ext-jgrapht")
-  testCompile "junit:junit:${junitVersion}"
-  testCompile project(path: ":h2o-core", configuration: "testArchives")
-  testCompileOnly "javax.servlet:javax.servlet-api:3.0.1"
   testRuntimeOnly project(":${defaultWebserverModule}")
+  testCompileOnly "javax.servlet:javax.servlet-api:3.0.1"
 }
 
 apply from: "${rootDir}/gradle/dataCheck.gradle"

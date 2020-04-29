@@ -1,8 +1,6 @@
 package ai.h2o.automl.events;
 
 import ai.h2o.automl.AutoML;
-import ai.h2o.automl.events.EventLog;
-import ai.h2o.automl.events.EventLogEntry;
 import ai.h2o.automl.events.EventLogEntry.Level;
 import ai.h2o.automl.events.EventLogEntry.Stage;
 import org.joda.time.DateTime;
