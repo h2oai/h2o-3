@@ -1210,7 +1210,7 @@ class ModelBase(h2o_meta(Keyed)):
                 if (i >= num_1dpdp): # plot 2D pdp
                     if (axes3D==None) or (cm==None) or (plt==None):    # quit if cannot find toolbox
                         break
-                    figPlotted = self.__plot_2dpqdp(fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols,
+                    figPlotted = self.__plot_2dpdp(fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols,
                                                    user_num_splits, plot_stddev, cm, i)
                 else:  # plot 1D pdp
                     figPlotted = self.__plot_1dpdp(cols, i, data, pp, fig, gxs, plot_stddev)
