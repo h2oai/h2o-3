@@ -4,7 +4,10 @@
  * @param stageConfig stage configuration to read mode and additional information from
  * @return the cmd used to start H2O in given mode
  */
-def call(final stageConfig) {
+def call(final stageConfig, final boolean getMakeTarget = false) {
+    if (getMakeTarget) {
+        return "\$CHECK_TOKEN_REFRESH_MAKE_TARGET"
+    }
     switch (stageConfig.customData.mode) {
         case H2O_HADOOP_STARTUP_MODE_HADOOP:
             return getCommandHadoop(stageConfig, false)
@@ -26,7 +29,7 @@ def call(final stageConfig) {
 }
 
 private GString getCommandHadoop(
-        final stageConfig, final boolean spnegoAuth, 
+        final stageConfig, final boolean spnegoAuth,
         final boolean impersonate = false, final boolean hdpCp = true,
         final boolean prepareToken = false
 ) {
@@ -46,9 +49,9 @@ private GString getCommandHadoop(
     if (hdpCp) {
         hadoopClasspath = "export HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp)"
     }
-    def securityArgs = ""
+    def impersonationArgs = ""
     if (impersonate) {
-        securityArgs = "-principal steam/localhost@H2O.AI -keytab /etc/hadoop/conf/steam.keytab -run_as_user jenkins"
+        impersonationArgs = "-principal steam/localhost@H2O.AI -keytab /etc/hadoop/conf/steam.keytab -run_as_user jenkins"
     }
     def tokenPreparation = ""
     def usePreparedToken = ""
@@ -56,18 +59,27 @@ private GString getCommandHadoop(
     if (prepareToken) {
         tokenPreparation = """
             HADOOP_CLASSPATH=\$(cat /opt/hive-jdbc-cp) hadoop jar h2o-hive/build/libs/h2o-hive.jar water.hive.GenerateHiveToken \\
-                -tokenFile hive.token ${securityArgs} \\
+                -tokenFile hive.token ${impersonationArgs} \\
                 -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000
             """
         usePreparedToken = "-hiveToken \$(cat hive.token)"
     }
+    def shouldRefreshTokensForHive1 = impersonate && !hdpCp && !prepareToken
     return """
             rm -fv h2o_one_node h2odriver.log
+            if [ "\$HIVE_DIST_ENABLED" = "true" ] || [ "$shouldRefreshTokensForHive1" = "true" ]; then
+                # hive 2+ = regular refresh, hive 1 = only refreshing when distributing keytab
+                REFRESH_TOKENS_CONF="-refreshTokens"
+                CHECK_TOKEN_REFRESH_MAKE_TARGET=test-kerberos-verify-token-refresh
+            else
+                # disable refresh for hive 1.x impersonation
+                REFRESH_TOKENS_CONF=""
+            fi
             ${hadoopClasspath}
             ${tokenPreparation}
             hadoop jar ${h2odriverJar} \\
-                -n 1 -mapperXmx 2g -baseport 54445 ${securityArgs} -timeout 300 \\
-                -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 -refreshTokens ${usePreparedToken} \\
+                -n 1 -mapperXmx 2g -baseport 54445 ${impersonationArgs} -timeout 300 \\
+                -hivePrincipal hive/localhost@H2O.AI -hiveHost localhost:10000 \$REFRESH_TOKENS_CONF ${usePreparedToken} \\
                 -jks mykeystore.jks \\
                 -notify h2o_one_node -ea -proxy -port ${defaultPort} \\
                 -jks mykeystore.jks \\

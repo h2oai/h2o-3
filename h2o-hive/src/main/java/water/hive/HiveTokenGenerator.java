@@ -82,6 +82,7 @@ public class HiveTokenGenerator {
     }
     String token = getHiveDelegationToken(hiveJdbcUrl, hivePrincipal);
     if (token != null) {
+      DelegationTokenPrinter.printToken(token);
       addHiveDelegationToken(job, token);
       return true;
     } else {
@@ -89,7 +90,7 @@ public class HiveTokenGenerator {
       return false;
     }
   }
-  
+
   public static void addHiveDelegationToken(Job job, String token) throws IOException {
     Credentials creds = tokenToCredentials(token);
     job.getCredentials().addAll(creds);
