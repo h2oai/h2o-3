@@ -1,7 +1,7 @@
 package ml.dmlc.xgboost4j.java;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
+import hex.tree.xgboost.util.BoosterHelper;
+
 import java.util.Map;
 
 /**
@@ -11,23 +11,19 @@ public class BoosterWrapper {
 
     private final Booster booster;
 
-    public BoosterWrapper(byte[] checkpointBoosterBytes, Map<String, Object> params, DMatrix train) throws XGBoostError {
+    public BoosterWrapper(
+        byte[] checkpointBoosterBytes,
+        Map<String, Object> params,
+        DMatrix train
+    ) throws XGBoostError {
         if (checkpointBoosterBytes != null) {
-            booster = loadFromCheckpoint(checkpointBoosterBytes);
+            booster = BoosterHelper.loadModel(checkpointBoosterBytes);
             booster.setParams(params);
         } else {
             booster = Booster.newBooster(params, new DMatrix[]{train});
             booster.loadRabitCheckpoint();
         }
         booster.saveRabitCheckpoint();
-    }
-
-    private static Booster loadFromCheckpoint(byte[] checkpointBoosterBytes) throws XGBoostError {
-        try {
-            return XGBoost.loadModel(new ByteArrayInputStream(checkpointBoosterBytes));
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to load checkpoint booster.");
-        }
     }
 
     public void update(DMatrix dtrain, int iter) throws XGBoostError {

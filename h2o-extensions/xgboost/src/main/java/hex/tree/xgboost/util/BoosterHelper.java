@@ -2,6 +2,7 @@ package hex.tree.xgboost.util;
 
 import ml.dmlc.xgboost4j.java.*;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -12,8 +13,16 @@ import java.util.Map;
  */
 public class BoosterHelper {
 
-  public static Booster loadModel(InputStream in) throws XGBoostError, IOException {
-    return XGBoost.loadModel(in);
+  public static Booster loadModel(InputStream in) {
+    try {
+      return XGBoost.loadModel(in);
+    } catch (XGBoostError | IOException e) {
+      throw new IllegalStateException("Failed to load booster.", e);
+    }
+  }
+  
+  public static Booster loadModel(byte[] boosterBytes) {
+    return loadModel(new ByteArrayInputStream(boosterBytes));
   }
 
   /**

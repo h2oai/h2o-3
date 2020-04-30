@@ -90,7 +90,7 @@ public class XGBoostNativeBigScoreChunkPredict implements XGBoostPredictContrib,
         return null;
       }
       // Initialize Booster
-      booster = _modelInfo.deserializeBooster();
+      booster = BoosterHelper.loadModel(_modelInfo._boosterBytes);
       booster.setParams(_boosterParms.get());
       int treeLimit = 0;
       if (_parms._booster == XGBoostModel.XGBoostParameters.Booster.dart) {

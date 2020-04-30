@@ -1,21 +1,13 @@
 package hex.tree.xgboost;
 
 import hex.DataInfo;
-import ml.dmlc.xgboost4j.java.Booster;
-import ml.dmlc.xgboost4j.java.XGBoost;
-import ml.dmlc.xgboost4j.java.XGBoostError;
-import org.apache.log4j.Logger;
 import water.Iced;
 import water.Key;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
 import java.util.Arrays;
 
 final public class XGBoostModelInfo extends Iced {
 
-  private static final Logger LOG = Logger.getLogger(XGBoostModelInfo.class);
-  
   public final XGBoostModel.XGBoostParameters _parameters; // not used, kept for debugging purposes
   private final Key<DataInfo> _dataInfoKey;
 
@@ -41,19 +33,6 @@ final public class XGBoostModelInfo extends Iced {
 
   public void setBoosterBytes(byte[] boosterBytes) {
     _boosterBytes = boosterBytes;
-  }
-
-  public Booster deserializeBooster() {
-    if (_boosterBytes == null) {
-      throw new IllegalStateException("Booster not initialized!");
-    }
-    try {
-      Booster booster = XGBoost.loadModel(new ByteArrayInputStream(_boosterBytes));
-      LOG.debug("Booster created from bytes, raw size = " + _boosterBytes.length);
-      return booster;
-    } catch (XGBoostError | IOException exception) {
-      throw new IllegalStateException("Failed to load the booster.", exception);
-    }
   }
 
   @Override

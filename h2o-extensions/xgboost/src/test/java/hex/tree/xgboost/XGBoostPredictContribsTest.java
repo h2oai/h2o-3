@@ -1,10 +1,14 @@
-package biz.k11i.xgboost.tree;
+package hex.tree.xgboost;
 
 import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
+import biz.k11i.xgboost.tree.RegTree;
+import biz.k11i.xgboost.tree.RegTreeImpl;
+import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import biz.k11i.xgboost.util.FVec;
 import hex.genmodel.algos.tree.TreeSHAP;
 import ml.dmlc.xgboost4j.java.*;
+import ml.dmlc.xgboost4j.java.XGBoost;
 import org.apache.log4j.Logger;
 import org.junit.After;
 import org.junit.Before;
@@ -21,9 +25,9 @@ import static water.util.FileUtils.getFile;
 
 // this test demonstrates that XGBoost Predictor can be used to calculate feature contributions (Tree SHAP values)
 // naive (=slow) algorithm implemented and compared to implementation in XGBoost Predictor
-public class XgbPredictContribsTest {
+public class XGBoostPredictContribsTest {
 
-  private static final Logger LOG = Logger.getLogger(XgbPredictContribsTest.class);
+  private static final Logger LOG = Logger.getLogger(XGBoostPredictContribsTest.class);
 
   private List<Map<Integer, Float>> trainData;
   private DMatrix trainMat;
@@ -107,11 +111,11 @@ public class XgbPredictContribsTest {
       for (int t = 0; t < trees.length; t++) {
         // A) Calculate contributions using Predictor 
         final RegTreeImpl tree = (RegTreeImpl) trees[t];
-        final TreeSHAP<FVec, RegTreeImpl.Node, RegTreeImpl.RTreeNodeStat> treeSHAP = new TreeSHAP<>(
+        final TreeSHAP<FVec, RegTreeImpl.Node, RegTreeNodeStat> treeSHAP = new TreeSHAP<>(
                 tree.getNodes(), tree.getStats(), 0);
         contribsPredictor = treeSHAP.calculateContributions(row, contribsPredictor);
         // B) Calculate contributions the hard way
-        final NaiveTreeSHAP<FVec, RegTreeImpl.Node, RegTreeImpl.RTreeNodeStat> naiveTreeSHAP = new NaiveTreeSHAP<>(
+        final NaiveTreeSHAP<FVec, RegTreeImpl.Node, RegTreeNodeStat> naiveTreeSHAP = new NaiveTreeSHAP<>(
                 tree.getNodes(), tree.getStats(), 0);
         predExpVal += naiveTreeSHAP.calculateContributions(row, contribsNaive);  
       }

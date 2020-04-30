@@ -5,7 +5,7 @@ public class FeatureScore {
     public static final String GAIN_KEY = "gain";
     public static final String COVER_KEY = "cover";
     
-    public int _frequency;
+    public int _frequency = 1;
     public float _gain;
     public float _cover;
 

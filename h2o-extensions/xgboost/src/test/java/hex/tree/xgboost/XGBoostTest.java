@@ -4,7 +4,6 @@ import hex.*;
 import hex.genmodel.MojoModel;
 import hex.genmodel.MojoReaderBackend;
 import hex.genmodel.MojoReaderBackendFactory;
-import hex.genmodel.algos.tree.SharedTreeGraph;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
 import hex.genmodel.easy.EasyPredictModelWrapper;
@@ -12,7 +11,9 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.xgboost.predict.XGBoostNativeVariableImportance;
 import hex.tree.xgboost.util.BoosterDump;
+import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoost;
@@ -348,7 +349,7 @@ public class XGBoostTest extends TestUtil {
 
   private Map<String, FeatureScore> getExtFeatureScore(Booster booster) throws XGBoostError {
     String[] modelDump = booster.getModelDump((String) null, true);
-    return XGBoostUtils.parseFeatureScores(modelDump);
+    return XGBoostNativeVariableImportance.parseFeatureScores(modelDump);
   }
 
   @Test
@@ -1599,7 +1600,7 @@ public class XGBoostTest extends TestUtil {
       Map<String, String> rabitEnv = new HashMap<>();
       rabitEnv.put("DMLC_TASK_ID", "0");
       Rabit.init(rabitEnv);
-      Booster booster = model.model_info().deserializeBooster();
+      Booster booster = BoosterHelper.loadModel(model.model_info()._boosterBytes);
       DMatrix matrix = new DMatrix(new File(parms._save_matrix_directory, "matrix.part0").getAbsolutePath());
       final float[][] expectedContribs = booster.predictContrib(matrix, 0);
       booster.dispose();
