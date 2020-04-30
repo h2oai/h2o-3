@@ -4,8 +4,7 @@ import biz.k11i.xgboost.Predictor;
 import hex.DataInfo;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
-import ml.dmlc.xgboost4j.java.PredictorFactory;
-import ml.dmlc.xgboost4j.java.XGBoostModelInfo;
+import hex.tree.xgboost.XGBoostModelInfo;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 

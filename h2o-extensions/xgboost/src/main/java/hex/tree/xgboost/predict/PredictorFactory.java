@@ -1,4 +1,4 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.predict;
 
 import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.config.PredictorConfiguration;

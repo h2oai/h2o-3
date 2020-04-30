@@ -1,7 +1,8 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.matrix.DenseMatrixFactory;
+import ml.dmlc.xgboost4j.java.Booster;
 import org.apache.log4j.Logger;
 import water.*;
 

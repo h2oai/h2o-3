@@ -1,7 +1,9 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost;
 
 import hex.DataInfo;
-import hex.tree.xgboost.XGBoostModel;
+import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.XGBoost;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
 import water.Iced;
 import water.Key;
@@ -10,10 +12,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-/**
- * This class contains the state of the Deep Learning model
- * This will be shared: one per node
- */
 final public class XGBoostModelInfo extends Iced {
 
   private static final Logger LOG = Logger.getLogger(XGBoostModelInfo.class);
@@ -50,7 +48,7 @@ final public class XGBoostModelInfo extends Iced {
       throw new IllegalStateException("Booster not initialized!");
     }
     try {
-      Booster booster = Booster.loadModel(new ByteArrayInputStream(_boosterBytes));
+      Booster booster = XGBoost.loadModel(new ByteArrayInputStream(_boosterBytes));
       LOG.debug("Booster created from bytes, raw size = " + _boosterBytes.length);
       return booster;
     } catch (XGBoostError | IOException exception) {
@@ -67,7 +65,7 @@ final public class XGBoostModelInfo extends Iced {
   // momenta are not counted here, but they are needed for model building
   public long size() {
     long res = 0;
-    if (_boosterBytes !=null) res+= _boosterBytes.length;
+    if (_boosterBytes != null) res += _boosterBytes.length;
     return res;
   }
 

@@ -3,17 +3,15 @@ package hex.tree.xgboost.predict;
 import hex.DataInfo;
 import hex.Model;
 import hex.genmodel.algos.xgboost.XGBoostMojoModel;
-import hex.tree.xgboost.BoosterParms;
-import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.XGBoostOutput;
-import hex.tree.xgboost.XGBoostUtils;
-import hex.tree.xgboost.matrix.DenseMatrixFactory;
+import hex.tree.xgboost.*;
 import hex.tree.xgboost.util.BoosterHelper;
-import ml.dmlc.xgboost4j.java.*;
+import ml.dmlc.xgboost4j.java.Booster;
+import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.Rabit;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
 import water.fvec.Chunk;
 import water.fvec.Frame;
-import water.util.Log;
 
 import java.util.HashMap;
 

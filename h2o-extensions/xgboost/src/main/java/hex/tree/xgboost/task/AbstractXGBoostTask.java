@@ -1,10 +1,10 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.XGBoostExtension;
 import hex.tree.xgboost.XGBoostModel;
 import water.*;
 
-abstract class AbstractXGBoostTask<T extends MRTask<T>> extends MRTask<T> {
+public abstract class AbstractXGBoostTask<T extends MRTask<T>> extends MRTask<T> {
 
   final Key<XGBoostModel> _modelKey;
   private final boolean[] _hasDMatrix;
