@@ -95,6 +95,8 @@ Defining a Stacked Ensemble Model
 
 -  `metalearner_fold_column <algo-params/fold_column.html>`__: (Optional; Cannot be used at the same time as ``nfolds``) Specify the name of the column that contains the cross-validation fold assignment per observation for cross-validation of the metalearner.  The column can be numeric (e.g. fold index or other integer value) or it can be categorical.  The number of folds is equal to the number of unique values in this column.
 
+-  `weights_column <algo-params/weights_column.html>`__: (Optional) Specifies a column with observation weights. Giving some observation a weight of zero is equivalent to excluding it from the dataset; giving an observation a relative weight of 2 is equivalent to repeating that row twice. Negative weights are not allowed.
+
 -  **keep_levelone_frame**: (Optional) Keep the level one data frame that's constructed for the metalearning step. Defaults to False.
 
 -  `max_runtime_secs <algo-params/max_runtime_secs.html>`__: (Optional) Maximum allowed runtime in seconds for the metalearner model training. Use 0 to disable the time limit. Defaults to 0.

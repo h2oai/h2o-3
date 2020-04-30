@@ -113,9 +113,10 @@ def class_extensions():
     def train(self, x=None, y=None, training_frame=None, blending_frame=None, verbose=False, **kwargs):
         if kwargs.get("weights_column") is None and self._parms.get("weights_column") is None:
             weight_columns = [
-                h2o.get_model(base_model).actual_params.get("weights_column", dict()).get("column_name")
+                h2o.get_model(base_model).actual_params.get("weights_column")
                 for base_model in self.base_models
             ]
+            weight_columns = [wc.get("column_name") if wc else wc for wc in weight_columns]
             weight_column_ref = weight_columns[0]
             if all((wc == weight_column_ref for wc in weight_columns)):
                 warnings.warn(("All base models use weights_column=\"{}\" but Stacked Ensemble does not. "
