@@ -1,8 +1,11 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
+import hex.tree.xgboost.XGBoostModelInfo;
 import hex.tree.xgboost.XGBoostUtils;
+import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
 import water.*;
 import water.fvec.Frame;

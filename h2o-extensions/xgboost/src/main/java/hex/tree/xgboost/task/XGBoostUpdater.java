@@ -1,15 +1,13 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
+import ml.dmlc.xgboost4j.java.*;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
 import water.nbhm.NonBlockingHashMap;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.TimeUnit;
@@ -32,7 +30,7 @@ public class XGBoostUpdater extends Thread {
   private volatile SynchronousQueue<BoosterCallable<?>> _in;
   private volatile SynchronousQueue<Object> _out;
 
-  private Booster _booster;
+  private BoosterWrapper _booster;
 
   private XGBoostUpdater(
       Key<XGBoostModel> modelKey, DMatrix trainMat, BoosterParms boosterParms, 
@@ -117,26 +115,7 @@ public class XGBoostUpdater extends Thread {
     @Override
     public Booster call() throws XGBoostError {
       if ((_booster == null) && _tid == 0) {
-        HashMap<String, DMatrix> watches = new HashMap<>();
-        // Create initial Booster
-        Booster checkpointBooster = null;
-        if (_checkpointBoosterBytes != null) {
-          try {
-            checkpointBooster = XGBoost.loadModel(new ByteArrayInputStream(_checkpointBoosterBytes));
-          } catch (IOException e) {
-            throw new RuntimeException("Failed to load checkpoint booster.");
-          }
-        }
-        _booster = ml.dmlc.xgboost4j.java.XGBoost.train(_trainMat,
-                _boosterParms.get(),
-                0,
-                watches,
-                null,
-                null, 
-                null, 
-                0,
-                checkpointBooster
-              );
+        _booster = new BoosterWrapper(_checkpointBoosterBytes, _boosterParms.get(), _trainMat);        
         // Force Booster initialization; we can call any method that does "lazy init"
         byte[] boosterBytes = _booster.toByteArray();
         LOG.info("Initial Booster created, size=" + boosterBytes.length);
@@ -146,7 +125,7 @@ public class XGBoostUpdater extends Thread {
         _booster.update(_trainMat, _tid);
         _booster.saveRabitCheckpoint();
       }
-      return _booster;
+      return _booster.getBooster();
     }
 
     @Override

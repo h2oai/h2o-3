@@ -4,7 +4,7 @@ import hex.Model;
 import hex.ModelMetrics;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
-import ml.dmlc.xgboost4j.java.XGBoostScoreTask;
+import hex.tree.xgboost.task.XGBoostScoreTask;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;

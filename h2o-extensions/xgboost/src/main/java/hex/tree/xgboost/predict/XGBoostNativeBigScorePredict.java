@@ -1,11 +1,10 @@
 package hex.tree.xgboost.predict;
 
 import hex.DataInfo;
-import hex.Model;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostOutput;
-import ml.dmlc.xgboost4j.java.XGBoostModelInfo;
+import hex.tree.xgboost.XGBoostModelInfo;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 

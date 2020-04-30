@@ -1,4 +1,4 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.task;
 
 /**
  * Cleans up after XGBoost training

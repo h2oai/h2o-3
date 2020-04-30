@@ -3,7 +3,7 @@ package hex.tree.xgboost.predict;
 import hex.DataInfo;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.tree.xgboost.XGBoostOutput;
-import ml.dmlc.xgboost4j.java.XGBoostModelInfo;
+import hex.tree.xgboost.XGBoostModelInfo;
 import water.MRTask;
 import water.MemoryManager;
 import water.fvec.Chunk;

@@ -1,4 +1,4 @@
-package ml.dmlc.xgboost4j.java;
+package hex.tree.xgboost.predict;
 
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
