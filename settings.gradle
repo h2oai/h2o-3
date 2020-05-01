@@ -50,6 +50,10 @@ if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
 // Reconfigure scala projects to support cross compilation
 // The following code will create two projects for each included item:
 //   For example: h2o-scala_2.10, h2o-scala_2.11
+buildscript {
+  repositories { flatDir name: 'libs', dirs: "buildSrc/build/libs" }
+  dependencies { classpath 'ai.h2o:buildSrc:1.0' }
+}
 apply plugin: 'scala-cross-build'
 
 scalaCrossCompile {

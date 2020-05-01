@@ -1,6 +1,9 @@
 apply plugin: 'java'
 apply plugin: 'groovy'
 
+group = 'ai.h2o'
+version = '1.0'
+sourceCompatibility = 1.8
 repositories {
     mavenCentral()
     jcenter()
