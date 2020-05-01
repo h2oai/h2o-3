@@ -20,6 +20,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: h2o-service
+  namespace: <namespace-name>
 spec:
   type: ClusterIP
   clusterIP: None
@@ -54,7 +55,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: h2o-stateful-set
-  namespace: h2o-statefulset
+  namespace: <namespace-name>
 spec:
   serviceName: h2o-service
   replicas: 3
@@ -66,7 +67,6 @@ spec:
       labels:
         app: h2o-k8s
     spec:
-      terminationGracePeriodSeconds: 10
       containers:
         - name: h2o-k8s
           image: '<someDockerImageWithH2OInside>'
@@ -85,7 +85,7 @@ spec:
             failureThreshold: 1
           env:
           - name: H2O_KUBERNETES_SERVICE_DNS
-            value: h2o-service.h2o-statefulset.svc.cluster.local
+            value: h2o-service.<namespace-name>.svc.cluster.local
           - name: H2O_NODE_LOOKUP_TIMEOUT
             value: '180'
           - name: H2O_NODE_EXPECTED_COUNT
