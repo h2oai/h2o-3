@@ -144,7 +144,7 @@ stackedensemble_base_models_validate_test <- function() {
                                                   y=y,
                                                   training_frame = train,
                                                   base_models = as.list(c(grid1@model_ids, h2o.keyof(train))))),
-               "Unsupported type \"class water.fvec.Frame\" as a base model.")
+               paste0("Unsupported type of base model \"", h2o.keyof(train), "\". Should be either a model or a grid."))
 }
 
 doSuite("Stacked Ensemble accept both models and grid as base models", makeSuite(
