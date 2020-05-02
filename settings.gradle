@@ -1,3 +1,5 @@
+import org.gradle.api.internal.DefaultDomainObjectSet
+
 rootProject.name = 'h2o-3'
 
 include 'h2o-core'
@@ -51,12 +53,100 @@ if ("true".equals(System.getenv("H2O_BUILD_GRPC"))) {
 // The following code will create two projects for each included item:
 //   For example: h2o-scala_2.10, h2o-scala_2.11
 
+class ScalaCrossCompileExtension {
 
-apply plugin: 'scala-cross-build'
+  private String defaultScalaVersion
+
+  private boolean buildDefaultOnly = false
+
+  def targetVersions = new DefaultDomainObjectSet(String)
+
+  def projectsToCrossBuild = new DefaultDomainObjectSet(String)
+
+  void targetVersions(String... versions) {
+    targetVersions.addAll(versions as List)
+  }
+
+
+  void defaultScalaVersion(String defaultScalaVersion) {
+    defaultScalaVersion = defaultScalaVersion
+  }
+
+  void buildDefaultOnly(boolean buildDefaultOnly) {
+    buildDefaultOnly = buildDefaultOnly
+  }
+
+  String getDefaultScalaVersion() {
+    return defaultScalaVersion
+  }
+
+  boolean getBuildDefaultOnly() {
+    return buildDefaultOnly
+  }
+
+  void include(String projectName) {
+    projectsToCrossBuild.add(projectName)
+  }
+}
+
+class ScalaCrossBuildPlugin implements Plugin<Settings> {
+  static getScalaVersionSuffix(String version) {
+    return "_${getScalaBaseVersion(version)}"
+  }
+
+  /* Scala base version for Scala < 2.10 is the same as version number (minor releases are not
+     binary compatible). For Scala >= 2.10 the major version represents compatibility group.
+   */
+  static getScalaBaseVersion(String version) {
+    return version.startsWith("2.10.") ? "2.10"
+            : version.startsWith("2.11") ? "2.11"
+            : version
+  }
+  private static def includeSuffixedProject(settings, module, scalaVersion, mapping) {
+    def path = module + getScalaVersionSuffix(scalaVersion)
+    settings.include(path)
+
+    def project = settings.findProject(path.startsWith(":") ? path : ":" + path)
+    project.projectDir = new File(project.projectDir.parent, module.split(':').last())
+    mapping.put(project.name, scalaVersion)
+  }
+
+  void apply(Settings settings) {
+
+    def scalaCrossCompile = settings.extensions.create('scalaCrossCompile', ScalaCrossCompileExtension)//, settings.startParameter.projectProperties)
+    def projectMapping = new HashMap<String, String>() // project name to version mapping
+
+    scalaCrossCompile.projectsToCrossBuild.all { module ->
+      if (scalaCrossCompile.buildDefaultOnly) {
+        includeSuffixedProject(settings, module, scalaCrossCompile.defaultScalaVersion, projectMapping)
+      } else {
+        scalaCrossCompile.targetVersions.each { v ->
+          includeSuffixedProject(settings, module, v, projectMapping)
+        }
+      }
+    }
+    // Modify the projects to produce right build directory and
+    // propagate scala version
+    // FIXME: introduce extension to simplify passing of scala version
+    settings.gradle.projectsLoaded { g ->
+      g.rootProject.subprojects { subproject ->
+        // It is cross compiled project
+        if (projectMapping.containsKey(subproject.name))  {
+          def projectScalaVersion = projectMapping[subproject.name]
+          subproject.ext.scalaBaseVersion = getScalaBaseVersion(projectScalaVersion)
+          subproject.ext.scalaVersion = projectScalaVersion
+          subproject.buildDir = "${subproject.buildDir}/${subproject.name}"
+        }
+      }
+    }
+  }
+}
+
+apply plugin: ScalaCrossBuildPlugin
 
 scalaCrossCompile {
-  targetVersions "2.10.7", "2.11.12"
-  include 'h2o-scala'
+    targetVersions "2.10.7", "2.11.12"
+    include 'h2o-scala'
 }
 
 // Make structure flat and avoid annoying dummy modules
