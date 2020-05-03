@@ -487,6 +487,17 @@ cd h2o-3
 
 
 <a name="Launching"></a>
+### 4.8. Setting up your preferred IDE environment
+
+For users of Intellij's IDEA, generate project files with:
+
+    ./gradlew idea
+
+For users of Eclipse, generate project files with:
+
+    ./gradlew eclipse
+
+
 
 ## 5. Launching H2O after Building
 
@@ -575,6 +586,25 @@ When using the h2odriver (e.g. when running with `hadoop jar ...`), specify `-pr
 *  Setting any `hadoop.proxyuser.<proxyusername>.{hosts,groups,users}` property to '*' can greatly increase exposure to security risk.
 *  When users aren't authenticated before being used with the driver (e.g. like Steam does via a secure web app/API), auditability of the process/system is difficult.
 
+
+### Debugging HDFS
+
+These are the required steps to debug HDFS in IDEA as a standalone H2O process.
+
+Debugging H2O on Hadoop as a `hadoop jar` hadoop mapreduce job is a difficult thing to do. However, what you can do relatively easily is tweak the gradle settings for the project so that H2OApp has HDFS as a dependency.  Here are the steps:
+
+1.  Make the following changes to gradle build files below
+    *  Change the `hadoop-client` version in `h2o-persist-hdfs` to the desired version     
+    *  Add `h2o-persist-hdfs` as a dependency to `h2o-app`
+1.  Close IDEA
+1.  `./gradlew cleanIdea`
+1.  `./gradlew idea`
+1.  Re-open IDEA
+1.  Run or debug H2OApp, and you will now be able to read from HDFS inside the IDE debugger
+
+`h2o-persist-hdfs` is normally only a dependency of the assembly modules, since those are not used by any downstream modules.  We want the final module to define its own version of HDFS if any is desired.
+
+Note this example is for MapR 4, which requires the additional `org.json` dependency to work properly.
 
 ```
 $ git diff
