@@ -32,13 +32,6 @@ dependencies {
     srcGenCompile project(path: ":h2o-assemblies:main", configuration: "shadow")
 }
 
-// Configure idea import
-idea {
-    module {
-        generatedSourceDirs += srcGenBindingsDir
-    }
-}
-
 sourceSets {
   main {
     java {

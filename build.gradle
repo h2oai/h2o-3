@@ -202,11 +202,6 @@ allprojects {
     // By default inject debugging support
     apply plugin: 'project-report'
     apply from: "$rootDir/gradle/debug.gradle"
-
-    // Support different IDEs
-    apply plugin: 'idea'
-    idea.module.inheritOutputDirs = true
-    apply plugin: 'eclipse'
     apply from: "$rootDir/gradle/artifacts.gradle"
 
     ext {

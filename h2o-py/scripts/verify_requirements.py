@@ -130,7 +130,7 @@ def test_module(mod, min_version, installed_modules):
 
 
 def main(kind, metayaml_file):
-    installed = get_installed_distributions(skip=())
+    installed = get_installed_distributions(skip=(), local_only=False)
     msgs = test_requirements(kind, metayaml_file, installed)
     if msgs:
         print("\n    ERRORS:\n", file=sys.stderr)
