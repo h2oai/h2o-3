@@ -17,7 +17,8 @@ Common
 .. toctree::
    :maxdepth: 1
 
-   data-science/common
+   data-science/quantiles
+   data-science/early_stopping
 
 Supervised
 ----------
