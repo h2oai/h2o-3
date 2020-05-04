@@ -51,7 +51,7 @@ private GString getCommandHadoop(final stageConfig) {
         """
 }
 
-private GString getCommandStandalone(final stageConfig, final startupCheckScript) {
+private GString getCommandStandalone(final stageConfig) {
     def defaultPort = 54321
     return """
             java -cp build/h2o.jar:\$(cat /opt/hive-jdbc-cp) water.H2OApp \\
@@ -59,14 +59,14 @@ private GString getCommandStandalone(final stageConfig, final startupCheckScript
                 -jks mykeystore.jks \\
                 -login_conf ${stageConfig.customData.ldapConfigPathStandalone} -ldap_login \\
                 > standalone_h2o.log 2>&1 & 
-            for i in \\\$(seq 4); do
+            for i in \$(seq 4); do
               if grep "Open H2O Flow in your web browser" standalone_h2o.log
               then
                 echo "H2O started"
                 touch standalone_start_check_success
                 break
               fi
-              echo "Waiting for H2O to come up (\\$i)..."
+              echo "Waiting for H2O to come up (\$i)..."
               sleep 5
             done
             if [ ! -f 'standalone_start_check_success' ]; then
