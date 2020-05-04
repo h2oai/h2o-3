@@ -1,5 +1,7 @@
 apply plugin: 'scala'
 
+build.finalizedBy(scaladoc)
+
 //
 // The Scala module expects scalaVersion and scalaBaseVersion
 // to be set up as extension properties on this project.
@@ -30,22 +32,6 @@ tasks.withType(ScalaCompile) {
 task testJar(type: Jar, dependsOn: testClasses) {
     appendix = 'test'
     from sourceSets.test.output
-}
-
-// Create jar with scaladoc
-task scaladocJar(type: Jar) {
-    classifier = 'scaladoc'
-    from scaladoc
-}
-
-// Create a configuration containing only for test artifacts
-configurations {
-    testArchives
-}
-
-// Explicitly
-artifacts {
-    testArchives testJar
 }
 
 // Enable support for multi-node testing

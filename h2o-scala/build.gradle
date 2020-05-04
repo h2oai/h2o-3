@@ -28,7 +28,3 @@ test {
   // Defeat task 'test' by running no tests.
   exclude '**'
 }
-
-artifacts {
-    toPublish scaladocJar
-}
