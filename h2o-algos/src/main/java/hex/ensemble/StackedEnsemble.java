@@ -316,7 +316,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
                 metalearnerJob,
                 _parms,
                 hasMetaLearnerParams,
-                metalearnerSeed
+                metalearnerSeed,
+                _parms._metalearner_parameters_user_override
         );
         metalearner.compute();
       } else {
