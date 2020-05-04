@@ -3,7 +3,6 @@ package hex.tree.xgboost.predict;
 import biz.k11i.xgboost.Predictor;
 import biz.k11i.xgboost.gbm.GBTree;
 import biz.k11i.xgboost.tree.RegTree;
-import biz.k11i.xgboost.tree.RegTreeImpl;
 import biz.k11i.xgboost.tree.RegTreeNode;
 import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import hex.DataInfo;
@@ -35,7 +34,7 @@ public class XGBoostJavaVariableImportance implements XGBoostVariableImportance 
         final RegTree[][] trees = gbm.getGroupedTrees();
         for (int i = 0; i < trees.length; i++) {
             for (int j = 0; j < trees[i].length; j++) {
-                RegTreeImpl t = (RegTreeImpl) trees[i][j];
+                RegTree t = trees[i][j];
                 for (int k = 0; k < t.getNodes().length; k++) {
                     RegTreeNode node = t.getNodes()[k];
                     if (node.isLeaf()) continue;
