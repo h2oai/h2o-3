@@ -6,13 +6,16 @@ Algorithms
 
 This section provides an overview of each algorithm available in H2O. For detailed information about the parameters that can be used for building models, refer to `Appendix A - Parameters <parameters.html>`__.
 
-Common
-------
+Data Types
+----------
 
 .. toctree::
    :maxdepth: 1
 
    data-science/supported-data-types
+
+Common
+------
 
 .. toctree::
    :maxdepth: 1
