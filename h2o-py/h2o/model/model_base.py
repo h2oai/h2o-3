@@ -1226,23 +1226,24 @@ class ModelBase(h2o_meta(Keyed)):
     def __plot_2dpdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, plot_stddev, cm, i):
         ax = fig.add_subplot(gxs[i], projection='3d')
         colPairs = col_pairs_2dpdp[i-num_1dpdp]
-        x = self.__grabValues(pp, 0, data, colPairs[0], ax) # change to numpy 2d_array
+        x = self.__grabValues(pp, 0, data, colPairs[0], ax)  # change to numpy 2d_array
         y = self.__grabValues(pp, 1, data, colPairs[1], ax)
-        X,Y,Z = self.__predFor3D(x,y,pp[2], colPairs, nbins, user_cols, user_num_splits)
-
-        zupper = [a + b for a, b in zip(pp[2], pp[3]) ]  # pp[1] is mean, pp[2] is std
-        zlower = [a - b for a, b in zip(pp[2], pp[3]) ]
-        _,_,Zupper = self.__predFor3D(x,y,zupper, colPairs, nbins, user_cols, user_num_splits)
-        _,_,Zlower = self.__predFor3D(x,y,zlower, colPairs, nbins, user_cols, user_num_splits)
-        ax.plot_surface(X, Y, Z, cmap=cm.coolwarm,linewidth=1, antialiased=False, alpha=0.5, edgecolor='k')
+        X, Y, Z = self.__predFor3D(x,y,pp[2], colPairs, nbins, user_cols, user_num_splits)
+        ax.plot_surface(X, Y, Z, cmap=cm.coolwarm, linewidth=1, antialiased=False, alpha=0.5, edgecolor='k')
         if plot_stddev:
+            zupper = [a + b for a, b in zip(pp[2], pp[3])]  # pp[1] is mean, pp[2] is std
+            zlower = [a - b for a, b in zip(pp[2], pp[3])]
+            _,_,Zupper = self.__predFor3D(x,y,zupper, colPairs, nbins, user_cols, user_num_splits)
+            _,_,Zlower = self.__predFor3D(x,y,zlower, colPairs, nbins, user_cols, user_num_splits)
             ax.plot_surface(X, Y, Zupper, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='y')
             ax.plot_surface(X, Y, Zlower, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='g')
+            ax.set_zlim(min([min(zupper), min(zlower), min(pp[2])]), max([max(zupper), max(zlower), max(pp[2])]))
+        else:
+            ax.set_zlim(min(pp[2]), max(pp[2]))  # adapt scaling of z without stddev values
         ax.set_xlabel(colPairs[0])
         ax.set_xlim(min(x), max(x))
         ax.set_ylabel(colPairs[1])
         ax.set_ylim(min(y), max(y))
-        ax.set_zlim(min([min(zupper), min(zlower), min(pp[2])]), max([max(zupper), max(zlower), max(pp[2])]))
         ax.set_zlabel('Partial dependence')
         titles = '2D partial dependence plot for '+colPairs[0] + ' and '+colPairs[1]
         ax.set_title(titles)
@@ -1251,8 +1252,8 @@ class ModelBase(h2o_meta(Keyed)):
     def __plot_1dpdp(self, cols, i, data, pp, fig, gxs, plot_stddev):
         col = cols[i]
         cat = data[col].isfactor()[0]
-        upper = [a + b for a, b in zip(pp[1], pp[2]) ]  # pp[1] is mean, pp[2] is std
-        lower = [a - b for a, b in zip(pp[1], pp[2]) ]
+        upper = [a + b for a, b in zip(pp[1], pp[2])]  # pp[1] is mean, pp[2] is std
+        lower = [a - b for a, b in zip(pp[1], pp[2])]
         axs = fig.add_subplot(gxs[i])
         self.__setAxs1D(axs, upper, lower, plot_stddev, cat, pp, 0, col)  # setup graph, axis, labels and ...
         return True
@@ -1311,7 +1312,10 @@ class ModelBase(h2o_meta(Keyed)):
             if plot_stddev:
                 axs.plot(x, lower, 'b--')
                 axs.plot(x, upper, 'b--')
-            axs.set_ylim(min(lower) - 0.1*abs(min(lower)), max(upper) + 0.1*abs(max(upper)))
+                axs.set_ylim(min(lower) - 0.1 * abs(min(lower)), max(upper) + 0.1 * abs(max(upper)))
+            else:
+                # adapt scaling of y without stddev values
+                axs.set_ylim(min(y) - 0.1 * abs(min(y)), max(y) + 0.1 * abs(max(y)))
             axs.set_xticks(x)
             axs.set_xticklabels(labels)
             axs.margins(0.2)
@@ -1322,9 +1326,11 @@ class ModelBase(h2o_meta(Keyed)):
             if plot_stddev:
                 axs.plot(x, lower, 'b--')
                 axs.plot(x, upper, 'b--')
+                axs.set_ylim(min(lower) - 0.1 * abs(min(lower)), max(upper) + 0.1 * abs(max(upper)))
+            else:
+                # adapt scaling of y without stddev values
+                axs.set_ylim(min(y) - 0.1 * abs(min(y)), max(y) + 0.1 * abs(max(y)))
             axs.set_xlim(min(x), max(x))
-            axs.set_ylim(min(lower) - 0.1*abs(min(lower)), max(upper) + 0.1*abs(max(upper)))
-    
         axs.set_title("Partial Dependence Plot For {}".format(col))
         axs.set_xlabel(pp.col_header[pp_start_index])
         axs.set_ylabel(pp.col_header[pp_start_index+1])
