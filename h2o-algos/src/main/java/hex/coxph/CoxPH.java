@@ -51,29 +51,72 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
     }
 
     if (_parms._train != null && _parms.train() != null) {
-      if ((_parms._start_column != null) && (! _parms.startVec().isNumeric())) {
-        error("start_column", "start time must be undefined or of type numeric");
+      if (_parms._start_column != null) {
+        Vec startVec  = _parms.startVec();
+        if (startVec == null) {
+          error("start_column", "start_column " + _parms._start_column + " not found in the training frame");
+        } else if (!startVec.isNumeric()) {
+          error("start_column", "start time must be undefined or of type numeric");
+        }
       }
 
       if (_parms._stop_column != null) {
-        if (! _parms.stopVec().isNumeric())
+        Vec stopVec  = _parms.stopVec();
+        if (stopVec == null) {
+          error("stop_column", "stop_column " + _parms._stop_column + " not found in the training frame");
+        } else if (!stopVec.isNumeric()) {
           error("stop_column", "stop time must be of type numeric");
-        else
-          if (expensive) {
-            try {
-              CollectTimes.collect(_parms.stopVec(), _parms._single_node_mode);
-            } catch (CollectTimesException e) {
-              error("stop_column", e.getMessage());
-            }
+        } else if (expensive) {
+          try {
+            CollectTimes.collect(_parms.stopVec(), _parms._single_node_mode);
+          } catch (CollectTimesException e) {
+            error("stop_column", e.getMessage());
           }
+        }
       }
 
       if ((_parms._response_column != null) && ! _response.isInt() && (! _response.isCategorical()))
         error("response_column", "response/event column must be of type integer or factor");
 
-      if (_parms._start_column != null && _parms._stop_column != null) {
+      if (_parms.startVec() != null && _parms.stopVec() != null) {
         if (_parms.startVec().min() >= _parms.stopVec().max())
           error("start_column", "start times must be strictly less than stop times");
+      }
+
+      if (_parms._interactions != null) {
+        for (String col : _parms._interactions) {
+          if (_train.vec(col) == null) {
+            error("interactions", col + " not found in the training frame");
+
+          }
+        }
+      }
+
+      if (_parms._interactions_only != null) {
+        for (String col : _parms._interactions_only) {
+          if (_train.vec(col) == null) {
+            error("interactions_only", col + " not found in the training frame");
+
+          }
+        }
+      }
+
+      if (_parms._interaction_pairs != null) {
+        for (StringPair pair : _parms._interaction_pairs) {
+          if (_train.vec(pair._a) == null) {
+            error("interaction_pairs", pair._a + " not found in the training frame");
+          }
+          if (_train.vec(pair._b) == null) {
+            error("interaction_pairs", pair._b + " not found in the training frame");
+          }
+        }
+      }
+
+      if( _train != null ) {
+        int nonFeatureColCount = (_parms._start_column!=null?1:0) + (_parms._stop_column!=null?1:0) + 
+            (_parms._interactions_only!=null?_parms._interactions_only.length:0);
+        if (_train.numCols() < (2 + nonFeatureColCount))
+          error("_train", "Training data must have at least 2 features (incl. response).");
       }
 
       if (_parms.isStratified()) {
