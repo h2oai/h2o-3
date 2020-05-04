@@ -10,6 +10,11 @@ compileJava {
   options.encoding = "UTF-8"
 }
 
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
 task testJar(type: Jar, dependsOn: testClasses, group: "build") {
     classifier = 'test'
     from sourceSets.test.output
@@ -39,12 +44,6 @@ javadoc {
     H2OBuildVersion bv = new H2OBuildVersion(rootDir, version)
     def tmp = title.tokenize()[0] +  " version " + bv.getProjectVersion() + " API"
     title = tmp
-}
-
-// Default task to bundle javadoc as jar
-task javadocJar(type: Jar) {
-    classifier = 'javadoc'
-    from javadoc
 }
 
 plugins.withType(org.gradle.api.publish.maven.plugins.MavenPublishPlugin) {
