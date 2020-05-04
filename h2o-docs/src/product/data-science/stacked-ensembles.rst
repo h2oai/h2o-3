@@ -149,7 +149,6 @@ Below is a simple example showing how to build a Stacked Ensembles model.
                           min_rows = 2, 
                           learn_rate = 0.2, 
                           nfolds = nfolds, 
-                          fold_assignment = "Modulo",
                           keep_cross_validation_predictions = TRUE,
                           seed = 1)
 
@@ -158,8 +157,7 @@ Below is a simple example showing how to build a Stacked Ensembles model.
                                   y = y, 
                                   training_frame = train, 
                                   ntrees = 50, 
-                                  nfolds = nfolds, 
-                                  fold_assignment = "Modulo",
+                                  nfolds = nfolds,
                                   keep_cross_validation_predictions = TRUE,
                                   seed = 1)
 
@@ -167,7 +165,6 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         ensemble <- h2o.stackedEnsemble(x = x, 
                                         y = y, 
                                         training_frame = train,
-                                        model_id = "my_ensemble_binomial", 
                                         base_models = list(my_gbm, my_rf))
 
         # Eval ensemble performance on a test set
@@ -180,6 +177,8 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         ensemble_auc_test <- h2o.auc(perf)
         print(sprintf("Best Base-learner Test AUC:  %s", baselearner_best_auc_test))
         print(sprintf("Ensemble Test AUC:  %s", ensemble_auc_test))
+        # [1] "Best Base-learner Test AUC:  0.76979821502548"
+        # [1] "Ensemble Test AUC:  0.773501212640419"
 
         # Generate predictions on a test set (if neccessary)
         pred <- h2o.predict(ensemble, newdata = test)
@@ -209,7 +208,6 @@ Below is a simple example showing how to build a Stacked Ensembles model.
                              ntrees = 10,
                              seed = 1,
                              nfolds = nfolds,
-                             fold_assignment = "Modulo",
                              keep_cross_validation_predictions = TRUE,
                              hyper_params = hyper_params,
                              search_criteria = search_criteria)
@@ -218,7 +216,6 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         ensemble <- h2o.stackedEnsemble(x = x, 
                                         y = y, 
                                         training_frame = train,
-                                        model_id = "ensemble_gbm_grid_binomial",
                                         base_models = gbm_grid@model_ids)
 
         # Eval ensemble performance on a test set
@@ -231,6 +228,8 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         ensemble_auc_test <- h2o.auc(perf)
         print(sprintf("Best Base-learner Test AUC:  %s", baselearner_best_auc_test))
         print(sprintf("Ensemble Test AUC:  %s", ensemble_auc_test))
+        # [1] "Best Base-learner Test AUC:  0.748146530400473"
+        # [1] "Ensemble Test AUC:  0.773501212640419"
 
         # Generate predictions on a test set (if neccessary)
         pred <- h2o.predict(ensemble, newdata = test)
