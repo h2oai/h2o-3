@@ -1,13 +1,15 @@
 package hex;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
 import org.junit.Test;
-import water.TestUtil;
+import org.junit.runner.RunWith;
 import water.fvec.Frame;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 
-public class CreateFrameTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+@RunWith(H2ORunner.class)
+@CloudSize(1)
+public class CreateFrameTest {
 
   @Test public void basicTest() {
     CreateFrame cf = new CreateFrame();
@@ -21,12 +23,16 @@ public class CreateFrameTest extends TestUtil {
     cf.positive_response = false;
     cf.has_response = true;
     cf.seed = 1234;
-    Frame frame = cf.execImpl().get();
-    Assert.assertTrue(frame.numCols() == 11);
-    Assert.assertTrue(frame.numRows() == 100);
-    // Tries to print a frame
-    frame.toString();
-    frame.delete();
+    Frame frame = null;
+    try {
+      frame = cf.execImpl().get();
+      Assert.assertTrue(frame.numCols() == 11);
+      Assert.assertTrue(frame.numRows() == 100);
+      // Tries to print a frame
+      frame.toString();
+    } finally {
+      if (frame != null) frame.delete();
+    }
   }
 
   @Test public void binaryTest() {
@@ -42,12 +48,16 @@ public class CreateFrameTest extends TestUtil {
     cf.positive_response = false;
     cf.has_response = true;
     cf.seed = 1234;
-    Frame frame = cf.execImpl().get();
-    Assert.assertTrue(frame.numCols() == 101);
-    Assert.assertTrue(frame.numRows() == 10);
-    // Print a fame
-    frame.toString();
-    frame.delete();
+    Frame frame = null;
+    try {
+      frame = cf.execImpl().get();
+      Assert.assertTrue(frame.numCols() == 101);
+      Assert.assertTrue(frame.numRows() == 10);
+      // Print a frame
+      frame.toString();
+    } finally {
+      if (frame != null) frame.delete();
+    }
   }
 
   @Test public void timeTest() {
@@ -64,12 +74,16 @@ public class CreateFrameTest extends TestUtil {
     cf.positive_response = false;
     cf.has_response = true;
     cf.seed = 1234;
-    Frame frame = cf.execImpl().get();
-    Assert.assertTrue(frame.numCols() == 101);
-    Assert.assertTrue(frame.numRows() == 10);
-    // Print a fame
-    frame.toString();
-    frame.delete();
+    Frame frame = null;
+    try {
+      frame = cf.execImpl().get();
+      Assert.assertTrue(frame.numCols() == 101);
+      Assert.assertTrue(frame.numRows() == 10);
+      // Print a frame
+      frame.toString();
+    } finally {
+      if (frame != null) frame.delete();
+    }
   }
 
   @Test public void stringTest() {
@@ -87,12 +101,16 @@ public class CreateFrameTest extends TestUtil {
     cf.positive_response = false;
     cf.has_response = true;
     cf.seed = 1234;
-    Frame frame = cf.execImpl().get();
-    Assert.assertTrue(frame.numCols() == 101);
-    Assert.assertTrue(frame.numRows() == 10);
-    // Print a fame
-    frame.toString();
-    frame.delete();
+    Frame frame = null;
+    try {
+      frame = cf.execImpl().get();
+      Assert.assertTrue(frame.numCols() == 101);
+      Assert.assertTrue(frame.numRows() == 10);
+      // Print a frame
+      frame.toString();
+    } finally {
+      if (frame != null) frame.delete();
+    }
   }
 
   @Test public void everything() {
@@ -110,12 +128,16 @@ public class CreateFrameTest extends TestUtil {
     cf.positive_response = false;
     cf.has_response = true;
     cf.seed = 1234;
-    Frame frame = cf.execImpl().get();
-    Assert.assertTrue(frame.numCols() == 101);
-    Assert.assertTrue(frame.numRows() == 100);
-    // Print a fame
-    frame.toString();
-    frame.delete();
+    Frame frame = null;
+    try {
+      frame = cf.execImpl().get();
+      Assert.assertTrue(frame.numCols() == 101);
+      Assert.assertTrue(frame.numRows() == 100);
+      // Print a frame
+      frame.toString();
+    } finally {
+      if (frame != null) frame.delete();
+    }
   }
 
   @Test public void trainTest() {
