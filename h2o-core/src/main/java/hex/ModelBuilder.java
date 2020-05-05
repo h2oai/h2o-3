@@ -1796,14 +1796,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       _workspace = new Workspace(true);
   }
 
-  private static class Workspace {
+  static class Workspace {
     private final IcedHashMap<Key,String> _toDelete;
 
     private Workspace(boolean expensive) {
       _toDelete = expensive ? new IcedHashMap<>() : null;
     }
 
-    private IcedHashMap<Key, String> getToDelete(boolean expensive) {
+    IcedHashMap<Key, String> getToDelete(boolean expensive) {
       if (! expensive)
         return null; // incorrect usages during "inexpensive" initialization will fail
       if (_toDelete == null) {
@@ -1814,7 +1814,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       return _toDelete;
     }
 
-    private void cleanUp() {
+    void cleanUp() {
       FrameUtils.cleanUp(_toDelete);
     }
   }
