@@ -19,8 +19,10 @@ def coxph_validations():
         coxph.train(x=["surgery", "transplant", "year"], y="event", training_frame=heart)
         assert False
     except H2OResponseError as ex:
-        assert "start_column XXX not found in the training frame" in ex.args[0].exception_msg
-        assert "stop_column YYY not found in the training frame" in ex.args[0].exception_msg
+        assert "start_column XXX not found in the training frame" in ex.args[0].exception_msg, \
+            "There should be an error message for start_column"
+        assert "stop_column YYY not found in the training frame" in ex.args[0].exception_msg, \
+            "There should be an error message for stop_column"
     # check any num/cat features present
     try:
         coxph = H2OCoxProportionalHazardsEstimator(
@@ -43,16 +45,19 @@ def coxph_validations():
         coxph.train(x=["transplant"], y="event", training_frame=heart)
         assert False
     except H2OResponseError as ex:
-        assert "interactions: ZZZ not found in the training frame" in ex.args[0].exception_msg
-        assert "interactions_only: AAA not found in the training frame" in ex.args[0].exception_msg
-        assert "interaction_pairs: BBB not found in the training frame" in ex.args[0].exception_msg
+        assert "interactions: ZZZ not found in the training frame" in ex.args[0].exception_msg, \
+            "There should be an error message for interactions"
+        assert "interactions_only: AAA not found in the training frame" in ex.args[0].exception_msg, \
+            "There should be an error message for interactions_only"
+        assert "interaction_pairs: BBB not found in the training frame" in ex.args[0].exception_msg, \
+            "There should be an error message for interaction_pairs"
     # happy path
     coxph = H2OCoxProportionalHazardsEstimator(
         start_column="start",
         stop_column="stop"
     )
     coxph.train(x=["surgery"], y="event", training_frame=heart)
-    assert True
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(coxph_validations)
