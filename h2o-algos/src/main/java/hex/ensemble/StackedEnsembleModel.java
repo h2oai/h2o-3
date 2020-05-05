@@ -350,7 +350,19 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    * @param parms
    */
   private void inheritDistributionParms(Model.Parameters parms){
-    _parms._distribution = parms._distribution;
+    if (parms instanceof GLMModel.GLMParameters) {
+      if (((GLMModel.GLMParameters) parms)._family == GLMModel.GLMParameters.Family.binomial) {
+        _parms._distribution = DistributionFamily.bernoulli;
+      } else {
+        try {
+          _parms._distribution = Enum.valueOf(DistributionFamily.class, ((GLMModel.GLMParameters) parms)._family.toString());
+        } catch (IllegalArgumentException e) {
+          Log.warn("Stacked Ensemble is not able to inherit distribution from GLM's family " + ((GLMModel.GLMParameters) parms)._family + ".");
+        }
+      }
+    } else {
+      _parms._distribution = parms._distribution;
+    }
     // deal with parameterized distributions
     switch (parms._distribution) {
       case custom:
@@ -381,7 +393,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       }
       this._dist = getDistribution(aModel);
       if (aModel instanceof GLMModel) {
-        if (_parms._metalearner_parameters == null) _parms.initMetalearnerParams();
         _parms._distribution = distributionFamily(aModel);
         ((GLMModel.GLMParameters) _parms._metalearner_parameters)._family = ((GLMModel.GLMParameters)aModel._parms)._family;
         ((GLMModel.GLMParameters) _parms._metalearner_parameters)._link = ((GLMModel.GLMParameters)aModel._parms)._link;
@@ -408,6 +419,17 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       _parms._distribution = DistributionFamily.gaussian;
     }
     _dist = DistributionFactory.getDistribution(_parms._distribution);
+    if (Metalearners.getActualMetalearnerAlgo(_parms._metalearner_algorithm).equals(Metalearner.Algorithm.glm)){
+      GLMModel.GLMParameters parms = (GLMModel.GLMParameters)_parms._metalearner_parameters;
+      parms._link = GLMModel.GLMParameters.Link.family_default;
+      if (this._output.isBinomialClassifier()) {
+         parms._family = GLMModel.GLMParameters.Family.binomial;
+      } else if (this._output.isClassifier()) {
+        parms._family = GLMModel.GLMParameters.Family.multinomial;
+      } else {
+        parms._family = GLMModel.GLMParameters.Family.gaussian;
+      }
+    }
   }
 
   void checkAndInheritModelProperties() {
@@ -420,6 +442,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     Model aModel = null;
     boolean retrievedFirstModelParams = false;
     boolean inferredDistributionFromFirstModel = false;
+    boolean inferredFromGLM = false;
     boolean blending_mode = _parms._blending != null;
     boolean cv_required_on_base_model = !blending_mode;
     boolean require_consistent_training_frames = !blending_mode && !_parms._is_cv_model;
@@ -430,6 +453,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     String basemodel_fold_column = null;
     long seed = -1;
     //end 1st model collected fields
+
+    // Make sure we can set metalearner's family and link if needed
+    if (_parms._metalearner_parameters == null)
+      _parms.initMetalearnerParams();
 
     for (Key<Model> k : _parms._base_models) {
       aModel = DKV.getGet(k);
@@ -516,9 +543,15 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
                 sameParams = _parms._quantile_alpha == aModel._parms._quantile_alpha;
                 break;
             }
-            if ((aModel instanceof GLMModel) && (Metalearners.getActualMetalearnerAlgo(_parms._metalearner_algorithm) == Metalearner.Algorithm.glm) &&
+            if ((aModel instanceof GLMModel) &&
+                    (Metalearners.getActualMetalearnerAlgo(_parms._metalearner_algorithm) == Metalearner.Algorithm.glm) &&
                     !((GLMModel.GLMParameters) _parms._metalearner_parameters)._link.equals(((GLMModel) aModel)._parms._link)) {
+              if (inferredFromGLM) {
                 sameParams = false;
+              } else {
+                inferDistributionOrFamily(aModel);
+                inferredFromGLM = true;
+              }
             }
 
             if (!sameParams) {
@@ -540,6 +573,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // !retrievedFirstModelParams: this is the first base_model
         this.modelCategory = aModel._output.getModelCategory();
         inferredDistributionFromFirstModel = inferDistributionOrFamily(aModel);
+        inferredFromGLM = aModel instanceof GLMModel && inferredDistributionFromFirstModel;
         responseColumn = aModel._parms._response_column;
 
         if (! _parms._response_column.equals(responseColumn))  // _params._response_column can't be null, validated by ModelBuilder
