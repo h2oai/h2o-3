@@ -2931,6 +2931,39 @@ cor <- function (x, ...)
 }
 
 #'
+#' Drops duplicated rows.
+#'
+#' Drops duplicated rows across specified columns.
+#'
+#' @param frame An H2OFrame object to drop duplicates on.
+#' @param columns Columns to compare during the duplicate detection process.
+#' @param keep Which rows to keep. The "first" value (default) keeps the first row and delets the rest. 
+#' The "last" keeps the last row.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' data <- as.h2o(iris)
+#' deduplicated_data <- h2o.drop_duplicates(data, c("Species", "Sepal.Length"), keep = "first")
+#' }
+#' @export
+h2o.drop_duplicates <- function(frame , columns, keep = "first") {
+  if (missing(columns)) {
+    stop("Frame to drop duplicates in must be specified.")
+  }
+  
+  if (missing(columns)) {
+    stop("Columns to compare fo de-duplication process must be specified.")
+  }
+  
+  if(length(columns) == 1){
+    columns <- .quote(columns)
+  }
+  .newExpr("dropdup", frame, columns, keep)
+}
+
+#'
 #' Standard Deviation of a column of data.
 #'
 #' Obtain the standard deviation of a column of data.
