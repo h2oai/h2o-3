@@ -230,30 +230,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     setDataInfoToOutput(dinfo);
     model_info = new XGBoostModelInfo(parms, dinfo);
   }
-
-  // useful for debugging
-  @SuppressWarnings("unused")
-  public void dump(String format) {
-    File fmFile = null;
-    try {
-      Booster b = BoosterHelper.loadModel(new ByteArrayInputStream(this.model_info._boosterBytes));
-      fmFile = File.createTempFile("xgboost-feature-map", ".bin");
-      FileOutputStream os = new FileOutputStream(fmFile);
-      os.write(this.model_info._featureMap.getBytes());
-      os.close();
-      String fmFilePath = fmFile.getAbsolutePath();
-      String[] d = b.getModelDump(fmFilePath, true, format);
-      for (String l : d) {
-        System.out.println(l);
-      }
-    } catch (Exception e) {
-      LOG.error(e);
-    } finally {
-      if (fmFile != null) {
-        fmFile.delete();
-      }
-    }
-  }
   
   public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p) {
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
@@ -574,6 +550,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
   private XGBoostBigScorePredict setupBigScorePredictJava(DataInfo di) {
     return new XGBoostJavaBigScorePredict(model_info, _output, di, _parms, defaultThreshold());
+  }
+  
+  public XGBoostVariableImportance setupVarImp(File featureMapFile) {
+    if (PredictConfiguration.useJavaScoring()) {
+      return new XGBoostJavaVariableImportance(model_info);
+    } else {
+      return new XGBoostNativeVariableImportance(model_info, featureMapFile);
+    }
   }
 
   @Override

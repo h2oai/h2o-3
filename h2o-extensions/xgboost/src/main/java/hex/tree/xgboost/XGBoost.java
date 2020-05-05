@@ -8,31 +8,38 @@ import hex.*;
 import hex.genmodel.algos.xgboost.XGBoostJavaMojoModel;
 import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
-import hex.tree.*;
+import hex.tree.PlattScalingHelper;
+import hex.tree.TreeUtils;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.task.XGBoostCleanupTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
 import hex.tree.xgboost.task.XGBoostUpdateTask;
-import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
-import ml.dmlc.xgboost4j.java.Booster;
 import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.Rabit;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
 import water.*;
-import ml.dmlc.xgboost4j.java.*;
 import water.exceptions.H2OIllegalArgumentException;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
-import water.util.*;
+import water.util.ArrayUtils;
+import water.util.Log;
 import water.util.Timer;
+import water.util.TwoDimTable;
 
-import java.io.*;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 import static hex.tree.SharedTree.createModelSummaryTable;
 import static hex.tree.SharedTree.createScoringHistoryTable;
@@ -630,22 +637,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model.doScoring(_train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         XGBoostOutput out = model._output;
-        final Map<String, FeatureScore> varimp;
-        Booster booster = null;
-        try {
-          booster = model.model_info().deserializeBooster();
-          varimp = BoosterHelper.doWithLocalRabit(new BoosterHelper.BoosterOp<Map<String, FeatureScore>>() {
-            @Override
-            public Map<String, FeatureScore> apply(Booster booster) throws XGBoostError {
-              String fmPath = boosterProvider._featureMapFile.getAbsolutePath();
-              final String[] modelDump = booster.getModelDump(fmPath, true);
-              return XGBoostUtils.parseFeatureScores(modelDump);
-            }
-          }, booster);
-        } finally {
-          if (booster != null)
-            BoosterHelper.dispose(booster);
-        }
+        final Map<String, FeatureScore> varimp = model.setupVarImp(boosterProvider._featureMapFile).getFeatureScores();
         out._varimp = computeVarImp(varimp);
         out._model_summary = createModelSummaryTable(out._ntrees, null);
         out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null, false);

@@ -2,6 +2,7 @@ package hex.tree.xgboost.predict;
 
 import biz.k11i.xgboost.tree.RegTree;
 import biz.k11i.xgboost.tree.RegTreeNode;
+import biz.k11i.xgboost.tree.RegTreeNodeStat;
 import biz.k11i.xgboost.util.FVec;
 import biz.k11i.xgboost.util.ModelReader;
 import water.util.UnsafeUtils;
@@ -75,6 +76,10 @@ public class XGBoostRegTree implements RegTree {
     throw new UnsupportedOperationException();
   }
 
+  @Override
+  public RegTreeNodeStat[] getStats() {
+    throw new UnsupportedOperationException();
+  }
 
   private static int readNumNodes(ModelReader reader) throws IOException {
     int numRoots = reader.readInt();

@@ -3,8 +3,8 @@ package hex.tree.xgboost.predict;
 import hex.DataInfo;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
-import hex.tree.xgboost.XGBoostOutput;
 import hex.tree.xgboost.XGBoostModelInfo;
+import hex.tree.xgboost.XGBoostOutput;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 
