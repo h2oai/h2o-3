@@ -13,6 +13,9 @@ import static java.math.BigInteger.ONE;
 import static water.rapids.SingleThreadRadixOrder.getSortedOXHeaderKey;
 
 public class Merge {
+  
+  public static int ASCENDING = 1;
+  public static int DESCENDING = -1; 
 
   public static Frame sort(final Frame fr, int col) {
     return sort(fr, new int[]{col});
@@ -25,6 +28,7 @@ public class Merge {
 
     return sort(fr, cols, ascending); // default is to sort in ascending order
   }
+  
   // Radix-sort a Frame using the given columns as keys.
   // This is a fully distributed and parallel sort.
   // It is not currently an in-place sort, so the data is doubled and a sorted copy is returned.
