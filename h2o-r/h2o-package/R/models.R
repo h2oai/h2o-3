@@ -898,7 +898,7 @@ h2o.feature_frequencies <- feature_frequencies.H2OModel
 #' h2o.performance(model = prostate_gbm, newdata=prostate)
 #'
 #' ## If model uses balance_classes
-#' ## the results from train = TRUE will not match the results from newdata = prostate.hex
+#' ## the results from train = TRUE will not match the results from newdata = prostate
 #' prostate_gbm_balanced <- h2o.gbm(3:9, "CAPSULE", prostate, balance_classes = TRUE)
 #' h2o.performance(model = prostate_gbm_balanced, newdata = prostate)
 #' h2o.performance(model = prostate_gbm_balanced, train = TRUE)
@@ -1241,8 +1241,8 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
-#' p.sid <- h2o.runif(prostate)
-#' prostate_train <- prostate[p.sid > .2,]
+#' p_sid <- h2o.runif(prostate)
+#' prostate_train <- prostate[p_sid > .2,]
 #' prostate_glm <- h2o.glm(x=3:7, y=2, training_frame=prostate_train)
 #' aic_basic <- h2o.aic(prostate_glm)
 #' print(aic_basic)
@@ -1502,9 +1502,9 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' cars <- h2o.importFile(f)
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "cylinders"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_glm <- h2o.glm(balance_classes = TRUE, 
 #'                     seed = 1234, 
 #'                     x = predictors, 
@@ -1540,9 +1540,9 @@ h2o.coef <- function(object) {
 #' cars <- h2o.importFile(f)
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "cylinders"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_glm <- h2o.glm(balance_classes = TRUE, 
 #'                     seed = 1234, 
 #'                     x = predictors, 
@@ -1876,9 +1876,9 @@ h2o.rmsle <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
-#' cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
-#' train <- cars.splits[[1]]
-#' valid <- cars.splits[[2]]
+#' cars_splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
+#' train <- cars_splits[[1]]
+#' valid <- cars_splits[[2]]
 #' car_drf <- h2o.randomForest(x = predictors, 
 #'                             y = response, 
 #'                             training_frame = train, 
@@ -2007,9 +2007,9 @@ h2o.varsplits <- function(object) {
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, 
 #'                     training_frame = train, 
 #'                     validation_frame = valid, 
@@ -2138,9 +2138,9 @@ h2o.biases <- function(object, vector_id=1){
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_wheader.csv"
 #' iris <- h2o.importFile(f)
-#' iris.split <- h2o.splitFrame(data = iris, ratios = 0.8, seed = 1234)
-#' train <- iris.split[[1]]
-#' valid <- iris.split[[2]]
+#' iris_split <- h2o.splitFrame(data = iris, ratios = 0.8, seed = 1234)
+#' train <- iris_split[[1]]
+#' valid <- iris_split[[2]]
 #' 
 #' iris_xgb <- h2o.xgboost(x = 1:4, y = 5, training_frame = train, validation_frame = valid)
 #' hrt_iris <- h2o.hit_ratio_table(iris_xgb, valid = TRUE)
@@ -2391,9 +2391,9 @@ h2o.specificity <- function(object, thresholds){
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, 
 #'                     training_frame = train, validation_frame = valid, 
 #'                     build_tree_one_node = TRUE , seed = 1234)
@@ -2423,9 +2423,9 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, 
 #'                     training_frame = train, validation_frame = valid, 
 #'                     build_tree_one_node = TRUE , seed = 1234)
@@ -3780,9 +3780,9 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
 #'                     nfolds = 5,  keep_cross_validation_models = TRUE, seed = 1234)
 #' h2o.cross_validation_models(cars_gbm)
@@ -3810,9 +3810,9 @@ h2o.cross_validation_models <- function(object) {
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
 #'                     nfolds = 5,  keep_cross_validation_fold_assignment= TRUE, seed = 1234)
 #' h2o.cross_validation_fold_assignment(cars_gbm)
@@ -3840,9 +3840,9 @@ h2o.cross_validation_fold_assignment <- function(object) {
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
 #'                     nfolds = 5,  keep_cross_validation_predictions = TRUE, seed = 1234)
 #' h2o.cross_validation_holdout_predictions(cars_gbm)
@@ -3870,9 +3870,9 @@ h2o.cross_validation_holdout_predictions <- function(object) {
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 #' predictors <- c("displacement","power","weight","acceleration","year")
 #' response <- "economy_20mpg"
-#' cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-#' train <- cars.split[[1]]
-#' valid <- cars.split[[2]]
+#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' train <- cars_split[[1]]
+#' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
 #'                     nfolds = 5,  keep_cross_validation_predictions = TRUE, seed = 1234)
 #' h2o.cross_validation_predictions(cars_gbm)

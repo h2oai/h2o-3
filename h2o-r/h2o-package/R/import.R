@@ -31,9 +31,6 @@
 #'        imported. Each row of data appears as one line of the file.
 #' @param pattern (Optional) Character string containing a regular expression to match file(s) in
 #'        the folder.
-#' @param destination_frame (Optional) The unique hex key assigned to the imported file. If
-#'        none is given, a key will automatically be generated based on the URL
-#'        path.
 #' @param parse (Optional) A logical value indicating whether the file should be
 #'        parsed after import, for details see \link{h2o.parseRaw}.
 #' @param header (Optional) A logical value indicating whether the first line of
@@ -423,7 +420,7 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = 
 #' library(h2o)
 #' h2o.init()
 #'
-#'iris.hex <- as.h2o(iris)
+#'iris <- as.h2o(iris)
 #'
 #'ntrees_opts = c(1, 5)
 #'learn_rate_opts = c(0.1, 0.01)
@@ -431,7 +428,7 @@ h2o.set_s3_credentials <- function(secretKeyId, secretAccessKey, sessionToken = 
 #'
 #'hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
 #'# Tempdir is chosen arbitrarily. May be any valid folder on an H2O-supported filesystem.
-#'baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex,
+#'baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris,
 #' hyper_params = hyper_parameters, export_checkpoints_dir = tempdir())
 #'# Remove everything from the cluster or restart it
 #'h2o.removeAll()
