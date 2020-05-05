@@ -113,8 +113,7 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       }
 
       if( _train != null ) {
-        int nonFeatureColCount = (_parms._start_column!=null?1:0) + (_parms._stop_column!=null?1:0) + 
-            (_parms._interactions_only!=null?_parms._interactions_only.length:0);
+        int nonFeatureColCount = (_parms._start_column!=null?1:0) + (_parms._stop_column!=null?1:0); 
         if (_train.numCols() < (2 + nonFeatureColCount))
           error("_train", "Training data must have at least 2 features (incl. response).");
       }
