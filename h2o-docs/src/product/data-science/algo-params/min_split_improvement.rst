@@ -9,7 +9,7 @@ Description
 
 This option specifies the minimum relative improvement in squared error reduction in order for a split to occur. When properly tuned, this option can help reduce overfitting because the algorithm will stop splitting when all the possible splits lead to worse error measures. In addition, a single tree will stop splitting when there are no more splits that satisfy the ``min_rows`` parameter, if it reaches ``max_depth``, or if there are no splits that satisfy this ``min_split_improvement`` parameter.
 
-This value defaults to 0.00001. Optimal values for this parameter are in the 1e-10...1e-3 range.
+This value defaults to 0.00001 for all models except XGBoost, which defaults to 0. Optimal values for this parameter are in the 1e-10...1e-3 range.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
