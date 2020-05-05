@@ -85,28 +85,26 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
 
       if (_parms._interactions != null) {
         for (String col : _parms._interactions) {
-          if (_train.vec(col) == null) {
+          if (col != null && !col.isEmpty() && _train.vec(col) == null) {
             error("interactions", col + " not found in the training frame");
-
           }
         }
       }
 
       if (_parms._interactions_only != null) {
         for (String col : _parms._interactions_only) {
-          if (_train.vec(col) == null) {
+          if (col != null && !col.isEmpty() && _train.vec(col) == null) {
             error("interactions_only", col + " not found in the training frame");
-
           }
         }
       }
 
       if (_parms._interaction_pairs != null) {
         for (StringPair pair : _parms._interaction_pairs) {
-          if (_train.vec(pair._a) == null) {
+          if (pair._a != null && !pair._a.isEmpty() && _train.vec(pair._a) == null) {
             error("interaction_pairs", pair._a + " not found in the training frame");
           }
-          if (_train.vec(pair._b) == null) {
+          if (pair._b != null && !pair._b.isEmpty() && _train.vec(pair._b) == null) {
             error("interaction_pairs", pair._b + " not found in the training frame");
           }
         }
