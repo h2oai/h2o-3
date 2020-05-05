@@ -1944,8 +1944,8 @@ h2o.varimp <- function(object) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
-    if( is.null(vi) ) { # may be glm
-      tvi <- object@model$standardized_coefficient_magnitudes 
+    if( is.null(vi) && !is.null(object@model$standardized_coefficient_magnitudes)) { # may be glm
+      tvi <- object@model$standardized_coefficient_magnitudes
       maxCoeff <- max(tvi$coefficients)
       sumCoeff <- sum(tvi$coefficients)
       scaledCoeff <- tvi$coefficients/maxCoeff
