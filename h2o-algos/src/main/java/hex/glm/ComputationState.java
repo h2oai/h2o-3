@@ -22,13 +22,14 @@ import java.util.Arrays;
 import java.util.Comparator;
 
 import static hex.glm.GLMUtils.calSmoothNess;
+import static hex.glm.GLMUtils.copyGInfo;
 
 public final class ComputationState {
   final boolean _intercept;
   final int _nclasses;
   private final GLMParameters _parms;
   private BetaConstraint _bc;
-  final double _alpha;
+  double _alpha;
   double[] _ymu;
   double [] _u;
   double [] _z;
@@ -40,6 +41,8 @@ public final class ComputationState {
   private GLMGradientInfo _ginfo; // gradient info excluding l1 penalty
   private double _likelihood;
   private double _gradientErr;
+  private boolean _lambdaNull; // true if lambda was not provided by user
+  private double _gMax; // store max value of original gradient without dividing by math.max(1e-2, _parms._alpha[0])
   private DataInfo _activeData;
   private BetaConstraint _activeBC = null;
   private double[] _beta; // vector of coefficients corresponding to active data
@@ -88,6 +91,7 @@ public final class ComputationState {
     this (job, parms, dinfo, bc, nclasses);
     _penaltyMatrix = penaltyMat;
     _gamBetaIndices = gamColInd;
+    _lambdaNull = (_parms._lambda==null) && !(_parms._lambda_search);
   }
 
 
@@ -146,6 +150,8 @@ public final class ComputationState {
   public double get_tau() {
     return _tau;
   }
+  
+  public boolean getLambdaNull() { return _lambdaNull; }
 
   public void set_tau(double tau) {
     _tau=tau;
@@ -163,9 +169,18 @@ public final class ComputationState {
 
   public GLMGradientSolver gslvr(){return _gslvr;}
   public double lambda(){return _lambda;}
+  public double alpha() {return _alpha;}
   public void setLambdaMax(double lmax) {
     _lambdaMax = lmax;
   }
+  public void setgMax(double gmax) {
+    _gMax = gmax;
+  }
+  public void setAlpha(double alpha) {
+    _alpha=alpha;
+    setLambdaMax(_gMax/Math.max(1e-2,alpha)); // need to set _lmax every time alpha value changes
+  }
+
   public void setLambda(double lambda) {
     adjustToNewLambda(0, _lambda);
     // strong rules are to be applied on the gradient with no l2 penalty
@@ -207,7 +222,9 @@ public final class ComputationState {
   public void dropActiveData(){_activeData = null;}
 
   public String toString() {
-    return "iter=" + _iter + " lmb=" + GLM.lambdaFormatter.format(_lambda) + " obj=" + MathUtils.roundToNDigits(objective(),4) + " imp=" + GLM.lambdaFormatter.format(_relImprovement) + " bdf=" + GLM.lambdaFormatter.format(_betaDiff);
+    return "iter=" + _iter + " lmb=" + GLM.lambdaFormatter.format(_lambda) + " alpha=" + 
+            GLM.lambdaFormatter.format(_alpha)+ " obj=" + MathUtils.roundToNDigits(objective(),4) + " imp=" + 
+            GLM.lambdaFormatter.format(_relImprovement) + " bdf=" + GLM.lambdaFormatter.format(_betaDiff);
   }
 
   private void adjustToNewLambda(double lambdaNew, double lambdaOld) {
@@ -259,7 +276,7 @@ public final class ComputationState {
     int P = _dinfo.fullN();
     _activeBC = _bc;
     _activeData = _activeData != null?_activeData:_dinfo;
-    _allIn = _allIn || _parms._alpha[0]*lambdaNew == 0 || _activeBC.hasBounds();
+    _allIn = _allIn || _alpha*lambdaNew == 0 || _activeBC.hasBounds();
     if (!_allIn) {
       int newlySelected = 0;
       final double rhs = Math.max(0,_alpha * (2 * lambdaNew - lambdaOld));
@@ -270,7 +287,7 @@ public final class ComputationState {
         if(j < oldActiveCols.length && oldActiveCols[j] == i)
           j++;
         else if (_ginfo._gradient[i] > rhs || -_ginfo._gradient[i] > rhs)
-          newCols[newlySelected++] = i;
+          newCols[newlySelected++] = i; // choose active columns here
       }
       if(_parms._max_active_predictors != -1 && (oldActiveCols.length + newlySelected -1) > _parms._max_active_predictors){
         Integer [] bigInts = ArrayUtils.toIntegers(newCols, 0, newlySelected);
@@ -308,8 +325,6 @@ public final class ComputationState {
   public boolean _lsNeeded = false;
 
   private DataInfo [] _activeDataMultinomial;
-//  private int [] _classOffsets = new int[]{0};
-
 
   public DataInfo activeDataMultinomial(int c) {return _activeDataMultinomial != null?_activeDataMultinomial[c]:_dinfo;}
 
@@ -653,6 +668,28 @@ public final class ComputationState {
     _likelihood = ginfo._likelihood;
     return (_relImprovement = (objOld - objective())/Math.abs(objOld));
   }
+  
+  double getBetaDiff() {return _betaDiff;}
+  double getGradientErr() {return _gradientErr;}
+  protected void setBetaDiff(double betaDiff) { _betaDiff = betaDiff; }
+  protected void setGradientErr(double gErr) { _gradientErr = gErr; }
+  protected void setGinfo(GLMGradientInfo ginfo) {
+    _ginfo = copyGInfo(ginfo);
+  }
+  protected void setBeta(double[] beta) {
+    if(_beta == null)_beta = beta.clone();
+    else System.arraycopy(beta,0, _beta, 0, beta.length);
+  }
+  
+  protected void setIter(int iteration) {
+    _iter = iteration;
+  }
+  
+  protected void setLikelihood(double llk) { _likelihood = llk; }
+  protected void setAllIn(boolean val) { _allIn = val; }
+  protected void setGslvrNull() { _gslvr = null; }
+  protected void setActiveDataMultinomialNull() { _activeDataMultinomial = null; }
+  protected void setLambdaSimple(double lambda) { _lambda=lambda; }
 
   protected void setHGLMComputationState(double [] beta, double[] ubeta, double[] psi, double[] phi, 
                                          double hlcorrection, double tau, Frame wpsi, String[] randCoeffNames){

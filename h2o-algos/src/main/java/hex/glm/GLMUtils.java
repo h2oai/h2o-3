@@ -33,6 +33,12 @@ public class GLMUtils {
     }
     return gamColIndices;
   }
+  
+  public static GLM.GLMGradientInfo copyGInfo(GLM.GLMGradientInfo ginfo) {
+    double[] gradient = ginfo._gradient.clone();
+    GLM.GLMGradientInfo tempGinfo = new GLM.GLMGradientInfo(ginfo._likelihood, ginfo._objVal, gradient);
+    return tempGinfo;
+  }
 
   public static TwoDimTable combineScoringHistory(TwoDimTable glmSc1, TwoDimTable earlyStopSc2, 
                                                   List<Integer> scoreIterationList) {
