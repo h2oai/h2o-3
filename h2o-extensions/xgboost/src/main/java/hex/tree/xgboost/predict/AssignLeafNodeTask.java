@@ -27,16 +27,19 @@ public abstract class AssignLeafNodeTask extends MRTask<AssignLeafNodeTask> {
         this._p = PredictorFactory.makePredictor(boosterBytes, false);
         this._di = di;
         this._sparse = output._sparse;
-        this._names = makeNames(output._ntrees);
+        this._names = makeNames(output._ntrees, output.nclasses());
         this._resultType = resultType;
     }
 
     protected abstract void assignNodes(final FVec input, final NewChunk[] outs);
     
-    private String[] makeNames(int ntrees) {
-        String[] names = new String[ntrees];
-        for (int i = 0; i < names.length; i++) {
-            names[i] = "T" + (i+1);
+    private String[] makeNames(int ntrees, int nclass) {
+        nclass = nclass > 2 ? nclass : 1;
+        String[] names = new String[ntrees * nclass];
+        for (int t = 0; t < ntrees; t++) {
+            for (int c = 0; c < nclass; c++) {
+                names[t*nclass + c] = "T" + (t+1) + ".C" + (c+1);
+            }
         }
         return names;
     }
