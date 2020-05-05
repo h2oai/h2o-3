@@ -17,7 +17,7 @@ def coxph_validations():
             stop_column="YYY"
         )
         coxph.train(x=["surgery", "transplant", "year"], y="event", training_frame=heart)
-        assert False
+        assert False, "Expected an error to be thrown"
     except H2OResponseError as ex:
         assert "start_column XXX not found in the training frame" in ex.args[0].exception_msg, \
             "There should be an error message for start_column"
@@ -30,7 +30,7 @@ def coxph_validations():
             stop_column="stop"
         )
         coxph.train(x=["age"], y="event", training_frame=heart)
-        assert False
+        assert False, "Expected an error to be thrown"
     except H2OResponseError as ex:
         assert "Training data must have at least 2 features" in ex.args[0].exception_msg
     # interactions column validation
@@ -43,7 +43,7 @@ def coxph_validations():
             interaction_pairs=[("BBB", "transplant")]
         )
         coxph.train(x=["transplant"], y="event", training_frame=heart)
-        assert False
+        assert False, "Expected an error to be thrown"
     except H2OResponseError as ex:
         assert "interactions: ZZZ not found in the training frame" in ex.args[0].exception_msg, \
             "There should be an error message for interactions"
