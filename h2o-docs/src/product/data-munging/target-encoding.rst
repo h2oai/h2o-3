@@ -104,7 +104,7 @@ In this example, we will be trying to predict ``survived`` using the popular tit
 
     # Split the dataset into train and test
     seed=1234
-    splits <- h2o.splitFrame(titanic, seed = seed, ratios = c(0.8), destination_frames = c("train", "test"))
+    splits <- h2o.splitFrame(titanic, seed = seed, ratios = c(0.8))
 
     train <- splits[[1]]
     test <- splits[[2]]
@@ -123,9 +123,15 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     noise = 0.15
 
     # Train a TE model
-    target_encoder <- h2o.targetencoder(training_frame = train, x = encoded_columns, y = "survived",
-                                            fold_column="fold", data_leakage_handling="KFold",
-                                            blending=blended_avg, k=inflection_point, f=smoothing, noise=noise)
+    target_encoder <- h2o.targetencoder(training_frame = train, 
+                                        x = encoded_columns, 
+                                        y = "survived", 
+                                        fold_column="fold", 
+                                        data_leakage_handling="KFold", 
+                                        blending=blended_avg, 
+                                        k=inflection_point, 
+                                        f=smoothing, 
+                                        noise=noise)
 
     # New target encoded train and test sets
     transformed_train <- h2o.transform(target_encoder, train, data_leakage_handling="KFold", noise=noise)

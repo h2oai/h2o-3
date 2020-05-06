@@ -17,19 +17,19 @@ Refer to the `Supported File Formats <http://docs.h2o.ai/h2o/latest-stable/h2o-d
 		library(h2o)
 		h2o.init()
 		irisPath <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv" 
-		iris.hex <- h2o.importFile(path = irisPath, destination_frame = "iris.hex")
+		iris <- h2o.importFile(path = irisPath)
 		  
 		# To import from S3:
 		library(h2o)
 		h2o.init()
 		airlinesURL <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv" 
-		airlines.hex <- h2o.importFile(path = airlinesURL, destination_frame = "airlines.hex")
+		airlines <- h2o.importFile(path = airlinesURL)
 
 		# To import from HDFS, you must include the node name:
 		library(h2o)
 		h2o.init()
 		airlinesURL <- "hdfs://node-1:/user/smalldata/airlines/allyears2k_headers.zip" 
-		airlines.hex <- h2o.importFile(path = airlinesURL, destination_frame = "airlines.hex")
+		airlines <- h2o.importFile(path = airlinesURL)
 	  
    .. code-tab:: python
 

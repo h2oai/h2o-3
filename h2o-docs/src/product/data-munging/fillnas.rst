@@ -11,12 +11,12 @@ Use this function to fill in NA values in a sequential manner up to a specified 
 
        # Create a random data frame with 6 rows and 2 columns. 
        # Specify that no more than 70% of the values are NAs.
-       fr.with.nas = h2o.createFrame(categorical_fraction=0.0,
+       fr_with_nas = h2o.createFrame(categorical_fraction=0.0,
                                      missing_fraction=0.7,
                                      rows=6,
                                      cols=2,
                                      seed=123)
-       fr.with.nas
+       fr_with_nas
                 C1        C2
        1       NaN       NaN
        2 -77.10471 -93.64087
@@ -28,7 +28,7 @@ Use this function to fill in NA values in a sequential manner up to a specified 
        [6 rows x 2 columns]
 
        # Forward fill a row. In R, the values for axis are 1 (row-wise) and 2 (column-wise)
-       fr <- h2o.fillna(fr.with.nas, "forward", axis=1, maxlen=1L)
+       fr <- h2o.fillna(fr_with_nas, "forward", axis=1, maxlen=1L)
        fr
                 C1        C2
        1       NaN       NaN

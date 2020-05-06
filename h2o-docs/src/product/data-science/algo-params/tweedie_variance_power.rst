@@ -62,9 +62,9 @@ Example
 		response <- "y"
 
 		# split into train and validation sets
-		auto.splits <- h2o.splitFrame(data =  auto, ratios = .8)
-		train <- auto.splits[[1]]
-		valid <- auto.splits[[2]]
+		auto_splits <- h2o.splitFrame(data =  auto, ratios = .8)
+		train <- auto_splits[[1]]
+		valid <- auto_splits[[2]]
 
 		# try using the `tweedie_variance_power` parameter:
 		# train your model, where you specify tweedie_variance_power

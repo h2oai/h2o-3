@@ -24,12 +24,12 @@ Example
 		h2o.init()
 
 		# import the iris dataset: 
-		train.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
-		train.hex$constantCol <- 1
+		train <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+		train$constantCol <- 1
 
 		# Build a GBM model. This should run successfully when 
 		# check_constant_response is set to false.
-		iris.gbm.initial <- h2o.gbm(y = 6, x = 1:5, training_frame = train.hex)
+		iris_gbm_initial <- h2o.gbm(y = 6, x = 1:5, training_frame = train)
 
 
    .. code-tab:: python

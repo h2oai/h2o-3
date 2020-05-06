@@ -285,9 +285,9 @@ Below is a simple example showing how to build a KMeans model.
     predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 
     # Split the dataset into a train and valid set:
-    iris.split <- h2o.splitFrame(data = iris, ratios = .8, seed = 1234)
-    train <- iris.split[[1]]
-    valid <- iris.split[[2]]
+    iris_split <- h2o.splitFrame(data = iris, ratios = .8, seed = 1234)
+    train <- iris_split[[1]]
+    valid <- iris_split[[2]]
 
     # Build and train the model:
     iris_kmeans <- h2o.kmeans(k = 10, 

@@ -74,9 +74,9 @@ Example
 		response <- 'class'
 
 		# split into train and validation
-		iris.splits <- h2o.splitFrame(data = iris, ratios = .8)
-		train <- iris.splits[[1]]
-		valid <- iris.splits[[2]]
+		iris_splits <- h2o.splitFrame(data = iris, ratios = .8)
+		train <- iris_splits[[1]]
+		valid <- iris_splits[[2]]
 
 		# try using the `link` parameter:
 		iris_glm <- h2o.glm(x = predictors, y = response, family = 'multinomial', link = 'family_default',

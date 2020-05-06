@@ -33,9 +33,9 @@ Example
 		response <- 'C55'
 
 		# split into train and validation sets
-		covtype.splits <- h2o.splitFrame(data =  covtype, ratios = .8, seed = 1234)
-		train <- covtype.splits[[1]]
-		valid <- covtype.splits[[2]]
+		covtype_splits <- h2o.splitFrame(data =  covtype, ratios = .8, seed = 1234)
+		train <- covtype_splits[[1]]
+		valid <- covtype_splits[[2]]
 
 		# try using the max_hit_ratio_k parameter:
 		# max_hit_ratio_k does not affect the actual model fit, and is for information

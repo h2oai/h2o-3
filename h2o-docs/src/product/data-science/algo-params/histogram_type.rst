@@ -64,17 +64,17 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-		train <- airlines.splits[[1]]
-		valid <- airlines.splits[[2]]
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+		train <- airlines_splits[[1]]
+		valid <- airlines_splits[[2]]
 
 		# try using the `histogram_type` parameter:
-		airlines.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
+		airlines_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
 		                        validation_frame = valid, histogram_type = "UniformAdaptive" , 
 		                        seed = 1234)
 
 		# print the AUC for the validation data
-		print(h2o.auc(airlines.gbm, valid = TRUE))
+		print(h2o.auc(airlines_gbm, valid = TRUE))
 
 
 		# Example of values to grid over for `histogram_type`

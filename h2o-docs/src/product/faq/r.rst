@@ -207,9 +207,9 @@ For the following example:
 
 ::
 
-    out.h2o.rf = h2o.randomForest( x=c("x1", "x2", "x3", "w"), y="y", training_frame=h2o.df.train, seed=555, model_id= "my.model.1st.try.out.h2o.rf" )
+    out_h2o_rf = h2o.randomForest( x=c("x1", "x2", "x3", "w"), y="y", training_frame=h2o_df_train, seed=555, model_id= "my_model_1st_try_out_h2o_rf" )
 
-Use ``out.h2o.rf@model$run_time`` to determine the value of the
+Use ``out_h2o_rf@model$run_time`` to determine the value of the
 ``run_time`` variable.
 
 --------------

@@ -47,9 +47,9 @@ Each metric is described in greater detail in the sections that follow. The exam
         response <- "cylinders"
 
         # split into train and validation sets
-        cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
-        train <- cars.splits[[1]]
-        valid <- cars.splits[[2]]
+        cars_splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]]
 
         # build and train the model:
         cars.gbm <- h2o.gbm(x = predictors, 
@@ -106,13 +106,13 @@ Using the previous example, run the following to retrieve the R2 value.
    .. code-tab:: r R
 
         # retrieve the r2 value:
-        r2.basic <- h2o.r2(cars.gbm)
-        r2.basic
+        r2_basic <- h2o.r2(cars_gbm)
+        r2_basic
         [1] 0.9930651
 
         # retrieve the r2 value for the validation data:
-        r2.basic_valid <- h2o.r2(cars.gbm, valid=TRUE)
-        r2.basic_valid
+        r2_basic_valid <- h2o.r2(cars_gbm, valid=TRUE)
+        r2_basic_valid
         [1] 0.9886704
 
    .. code-tab:: python
@@ -146,13 +146,13 @@ Using the previous example, run the following to retrieve the MSE value.
    .. code-tab:: r R
 
         # retrieve the mse value:
-        mse.basic <- h2o.mse(cars.gbm)
-        mse.basic
+        mse_basic <- h2o.mse(cars_gbm)
+        mse_basic
         [1] 0.01917327
 
         # retrieve the mse value for both the training and validation data:
-        mse.basic_valid <- h2o.mse(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-        mse.basic_valid
+        mse_basic_valid <- h2o.mse(cars_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        mse_basic_valid
              train      valid 
         0.01917327 0.03769792 
 
@@ -192,13 +192,13 @@ Using the previous example, run the following to retrieve the RMSE value.
    .. code-tab:: r R
 
         # retrieve the rmse value:
-        rmse.basic <- h2o.rmse(cars.gbm)
-        rmse.basic
+        rmse_basic <- h2o.rmse(cars_gbm)
+        rmse_basic
         [1] 0.1384676
 
         # retrieve the rmse value for both the training and validation data:
-        rmse.basic_valid <- h2o.rmse(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-        rmse.basic_valid
+        rmse_basic_valid <- h2o.rmse(cars_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        rmse_basic_valid
              train     valid 
         0.1384676  0.1941595  
    
@@ -237,13 +237,13 @@ Using the previous example, run the following to retrieve the RMSLE value.
    .. code-tab:: r R
 
         # retrieve the rmsle value:
-        rmsle.basic <- h2o.rmsle(cars.gbm)
-        rmsle.basic
+        rmsle_basic <- h2o.rmsle(cars_gbm)
+        rmsle_basic
         [1] 0.02332083
 
         # retrieve the rmsle value for both the training and validation data:
-        rmsle.basic_valid <- h2o.rmsle(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-        rmsle.basic_valid
+        rmsle_basic_valid <- h2o.rmsle(cars_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        rmsle_basic_valid
              train      valid 
         0.02332083 0.03359130  
    
@@ -280,13 +280,13 @@ Using the previous example, run the following to retrieve the MAE value.
    .. code-tab:: r R
 
         # retrieve the mae value:
-        mae.basic <- h2o.mae(cars.gbm)
-        mae.basic
+        mae_basic <- h2o.mae(cars_gbm)
+        mae_basic
         [1] 0.06140515
 
         # retrieve the mae value for both the training and validation data:
-        mae.basic_valid <- h2o.mae(cars.gbm, train=TRUE, valid=TRUE, xval=FALSE)
-        mae.basic_valid
+        mae_basic_valid <- h2o.mae(cars_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        mae_basic_valid
              train      valid 
         0.06140515 0.07947862 
 
@@ -342,12 +342,12 @@ Each metric is described in greater detail in the sections that follow. The exam
         response <- "IsDepDelayed"
 
         # split into train and validation
-        airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-        train <- airlines.splits[[1]]
-        valid <- airlines.splits[[2]]
+        airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+        train <- airlines_splits[[1]]
+        valid <- airlines_splits[[2]]
 
         # build a model
-        airlines.gbm <- h2o.gbm(x = predictors, 
+        airlines_gbm <- h2o.gbm(x = predictors, 
                                 y = response, 
                                 training_frame = train,
                                 validation_frame = valid, 
@@ -355,7 +355,7 @@ Each metric is described in greater detail in the sections that follow. The exam
                                 seed = 1234)
 
         # retrieve the model performance
-        perf <- h2o.performance(airlines.gbm, valid)
+        perf <- h2o.performance(airlines_gbm, valid)
         perf
 
    .. code-tab:: python
@@ -707,14 +707,14 @@ Using the previous example, run the following to retrieve the logloss value.
         [1] 0.5967029
 
         # retrieve the logloss value for both the training and validation data:
-        h2o.logloss(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        h2o.logloss(airlines_gbm, train=TRUE, valid=TRUE, xval=FALSE)
             train     valid 
         0.5607155 0.5967029 
 
    .. code-tab:: python
     
         # retrieve the logloss for the performance object:
-        perf.gini()
+        perf.logloss()
         0.5967028742962095
 
         # retrieve the logloss for both the training and validation data:
@@ -741,7 +741,7 @@ Using the previous example, run the following to retrieve the AUC.
         [1] 0.741497
 
         # retrieve the AUC for both the training and validation data:
-        h2o.auc(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        h2o.auc(airlines_gbm, train=TRUE, valid=TRUE, xval=FALSE)
             train     valid 
         0.7857921 0.7414970
 
@@ -776,7 +776,7 @@ Using the previous example, run the following to retrieve the AUCPR.
         [1] 0.7609887
 
         # retrieve the AUCPR for both the training and validation data:
-        h2o.pr_auc(airlines.gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        h2o.pr_auc(airlines_gbm, train=TRUE, valid=TRUE, xval=FALSE)
             train     valid 
         0.8019599 0.7609887
 
@@ -959,7 +959,6 @@ Examples:
    .. code-tab:: r R
 
         # import the airlines dataset:
-        from h2o.estimators import H2OGradientBoostingEstimator
         airlines <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
         # set the factors:
@@ -975,18 +974,18 @@ Examples:
         response <- "IsDepDelayed"
 
         # split the training and validation sets:
-        airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-        train <- airlines.splits[[1]]
-        valid <- airlines.splits[[2]]
+        airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+        train <- airlines_splits[[1]]
+        valid <- airlines_splits[[2]]
 
         # build and train the model using the misclassification stopping metric:
-        airlines.gbm <- h2o.gbm(x = predictors, y = response, 
+        airlines_gbm <- h2o.gbm(x = predictors, y = response, 
                                 training_frame = train, validation_frame = valid, 
                                 stopping_metric = "misclassification", stopping_rounds = 3, 
                                 stopping_tolerance = 1e-2, seed = 1234)
 
         # retrieve the auc value:
-        h2o.auc(airlines.gbm, valid = TRUE)
+        h2o.auc(airlines_gbm, valid = TRUE)
 
 
    .. code-tab:: python
@@ -1047,18 +1046,18 @@ Examples:
         response <- "IsDepDelayed"
 
         # split the training and validation sets:
-        airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-        train <- airlines.splits[[1]]
-        valid <- airlines.splits[[2]]
+        airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+        train <- airlines_splits[[1]]
+        valid <- airlines_splits[[2]]
 
         # build and train the model using the lift_top_group stopping metric:
-        airlines.gbm <- h2o.gbm(x = predictors, y = response, 
+        airlines_gbm <- h2o.gbm(x = predictors, y = response, 
                                 training_frame = train, validation_frame = valid, 
                                 stopping_metric = "lift_top_group", stopping_rounds = 3, 
                                 stopping_tolerance = 1e-2, seed = 1234)
 
         # retrieve the auc value:
-        h2o.auc(airlines.gbm, valid = TRUE)
+        h2o.auc(airlines_gbm, valid = TRUE)
 
 
    .. code-tab:: python
@@ -1116,9 +1115,9 @@ Examples:
         response = "acceleration"
 
         #split the training and validation sets:
-        p.sid <- h2o.runif(cars, seed=1234)
-        train <- h2o.assign(cars[p.sid > .2, ], "train")
-        test <- h2o.assign(cars[p.sid <= .2, ], "test")
+        p_sid <- h2o.runif(cars, seed=1234)
+        train <- h2o.assign(cars[p_sid > .2, ], "train")
+        test <- h2o.assign(cars[p_sid <= .2, ], "test")
 
         # build and train the model using the deviance stopping metric:
         cars_gbm <- h2o.gbm(x=predictors, y=repsonse, 
@@ -1172,9 +1171,9 @@ Examples:
         response = "acceleration"
 
         #split the training and validation sets:
-        p.sid <- h2o.runif(cars, seed=1234)
-        train <- h2o.assign(cars[p.sid > .2, ], "train")
-        test <- h2o.assign(cars[p.sid <= .2, ], "test")
+        p_sid <- h2o.runif(cars, seed=1234)
+        train <- h2o.assign(cars[p_sid > .2, ], "train")
+        test <- h2o.assign(cars[p_sid <= .2, ], "test")
 
         # build and train the model using the mean_per_class_error stopping metric:
         cars_gbm <- h2o.gbm(x=predictors, y=repsonse, 
@@ -1242,9 +1241,9 @@ Examples:
         cars["cylinders"] = as.factor(cars["cylinders"])
 
         # split the training and validation sets:
-        cars.splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
-        train <- cars.splits[[1]]
-        valid <- cars.splits[[2]]
+        cars_splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]]
 
         # set the predictors columns, response column, and distribution type: 
         predictors <- c("displacement","power","weight","acceleration","year")
@@ -1305,9 +1304,9 @@ Examples:
         prostate[,2] <- as.factor(prostate[,2])
 
         # split the training and validation sets:
-        pros.split <- h2o.splitFrame(data = prostate, ratio = .8, seed = 1234)
-        train <- pros.split[[1]]
-        valid <- pros.split[[2]]
+        pros_split <- h2o.splitFrame(data = prostate, ratio = .8, seed = 1234)
+        train <- pros_split[[1]]
+        valid <- pros_split[[2]]
 
         # build and train the model:
         pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
@@ -1384,14 +1383,14 @@ Examples:
         pros[,9] <- as.factor(pros[,9])
 
         # split the training and validation sets:
-        p.sid <- h2o.runif(pros, seed=1234)
-        pros.train <- h2o.assign(pros[p.sid > .2, ], "pros.train")
-        pros.test <- h2o.assign(pros[p.sid <= .2, ], "pros.test")
+        p_sid <- h2o.runif(pros, seed=1234)
+        train <- h2o.assign(pros[p_sid > .2, ], "train")
+        test <- h2o.assign(pros[p_sid <= .2, ], "test")
 
         # build and train the model:
         pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
-                            training_frame = pros.train, 
-                            validation_frame = pros.test, 
+                            training_frame = train, 
+                            validation_frame = test, 
                             nfolds = 2)
 
         # build the roc curve:
@@ -1449,9 +1448,9 @@ Examples:
         cars["cylinders"] = as.factor(cars["cylinders"])
 
         # split the training and validation sets:
-        cars.splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
-        train <- cars.splits[[1]]
-        valid <- cars.splits[[2]
+        cars_splits <- h2o.splitFrame(data = cars, ratio = .8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]
 
         # set the predictors columns, response column, and distribution type:
         predictors <- c("displacement","power","weight","acceleration","year")
@@ -1638,32 +1637,31 @@ This section provides examples of performing predictions in Python and R. Refer 
         h2o.init()
 
         # Import the prostate dataset
-        prostate.hex <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv", 
-                                       destination_frame = "prostate.hex")
+        prostate <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 
         # Split dataset giving the training dataset 75% of the data
-        prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
+        prostate_split <- h2o.splitFrame(data=prostate, ratios=0.75)
 
         # Create a training set from the 1st dataset in the split
-        prostate.train <- prostate.split[[1]]
+        prostate_train <- prostate_split[[1]]
 
         # Create a testing set from the 2nd dataset in the split
-        prostate.test <- prostate.split[[2]]
+        prostate_test <- prostate_split[[2]]
 
         # Convert the response column to a factor
-        prostate.train$CAPSULE <- as.factor(prostate.train$CAPSULE)
+        prostate_train$CAPSULE <- as.factor(prostate_train$CAPSULE)
 
         # Build a GBM model
         model <- h2o.gbm(y="CAPSULE",
                          x=c("AGE", "RACE", "PSA", "GLEASON"),
-                         training_frame=prostate.train,
+                         training_frame=prostate_train,
                          distribution="bernoulli",
                          ntrees=100,
                          max_depth=4,
                          learn_rate=0.1)
 
         # Predict using the GBM model and the testing dataset
-        pred <- h2o.predict(object=model, newdata=prostate.test)
+        pred <- h2o.predict(object=model, newdata=prostate_test)
         pred
           predict         p0          p1
         1       0 0.7414373 0.25856274
@@ -1743,7 +1741,7 @@ Using the previous example, run the following to predict the leaf node assignmen
   
         # Predict the leaf node assigment using the GBM model and test data.
         # Predict based on the path from the root node of the tree.
-        predict_lna <- h2o.predict_leaf_node_assignment(model, prostate.test)
+        predict_lna <- h2o.predict_leaf_node_assignment(model, prostate_test)
 
         # View a summary of the leaf node assignment prediction
         summary(predict_lna$T1.C1, exact_quantiles=TRUE)
@@ -1776,7 +1774,7 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
    .. code-tab:: r R
   
         # Predict the contributions using the GBM model and test data.
-        contributions <- h2o.predict_contributions(model, prostate.test)
+        contributions <- h2o.predict_contributions(model, prostate_test)
         contributions
 
         AGE        RACE       PSA        GLEASON    BiasTerm
@@ -1849,7 +1847,7 @@ Using the previous example, run the following to predict probabilities at each s
    .. code-tab:: r R
   
         # Predict the class probabilities using the GBM model and test data.
-        staged_predict_proba <- h2o.staged_predict_proba(model, prostate.test)
+        staged_predict_proba <- h2o.staged_predict_proba(model, prostate_test)
 
 
    .. code-tab:: python
@@ -1879,7 +1877,7 @@ Using the previous example, run the following to the find frequency of each feat
   
         # Retrieve the number of occurrences of each feature for given observations
         # on their respective paths in a tree ensemble model
-        feature_frequencies <- h2o.feature_frequencies(model, prostate.train)
+        feature_frequencies <- h2o.feature_frequencies(model, prostate_train)
         feature_frequencies
 
         AGE RACE PSA GLEASON

@@ -36,7 +36,7 @@ Example
 		response <- "Claims"
 
 		# Train the model
-		negativebinomial.fit <- h2o.glm(x=predictors, 
+		negativebinomial_fit <- h2o.glm(x=predictors, 
 		                                y=response, 
 		                                training_frame=h2o_df, 
 		                                family="negativebinomial", 

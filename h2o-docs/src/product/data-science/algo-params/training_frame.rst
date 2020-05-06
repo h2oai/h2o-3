@@ -38,9 +38,9 @@ Example
 		response <- "economy_20mpg"
 
 		# split into train and validation sets
-		cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-		train <- cars.split[[1]]
-		valid <- cars.split[[2]]
+		cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+		train <- cars_split[[1]]
+		valid <- cars_split[[2]]
 
 		# try using the `training_frame` parameter:
 		# train your model, where you specify your 'x' predictors, your 'y' the response column

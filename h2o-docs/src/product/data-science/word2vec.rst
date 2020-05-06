@@ -115,9 +115,8 @@ Below is a simple example showing how to build a Word2vec model.
    	h2o.init()
 
    	# Import the craigslist dataset into H2O:
-   	job.titles.path = "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/craigslistJobTitles.csv"
-   	job.titles <- h2o.importFile(job.titles.path, 
-                                     destination_frame = "jobtitles", 
+   	job_titles_path = "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/craigslistJobTitles.csv"
+   	job_title <- h2o.importFile(job_titles_path,  
                                      col.names = c("category", "jobtitle"), 
                                      col.types = c("Enum", "String"), 
                                      header = TRUE)
@@ -140,39 +139,39 @@ Below is a simple example showing how to build a Word2vec model.
    	}
 
    	# Make the 'predict' function:
-   	.predict <- function(job.title, w2v, gbm) {
-   		words <- tokenize(as.character(as.h2o(job.title)))
-   		job.title.vec <- h2o.transform(w2v, words, aggregate_method = "AVERAGE")
-   		h2o.predict(gbm, job.title.vec)
+   	.predict <- function(job_title, w2v, gbm) {
+   		words <- tokenize(as.character(as.h2o(job_title)))
+   		job_title_vec <- h2o.transform(w2v, words, aggregate_method = "AVERAGE")
+   		h2o.predict(gbm, job_title_vec)
    	}
 
    	# Break job titles into sequence of words:
-   	words <- tokenize(job.titles$jobtitle)
+   	words <- tokenize(job_titles$jobtitle)
 
    	# Build the word2vec model:
-   	w2v.model <- h2o.word2vec(words, sent_sample_rate = 0, epochs = 10)
+   	w2v_model <- h2o.word2vec(words, sent_sample_rate = 0, epochs = 10)
 
    	# Find synonyms for the word "teacher":
-   	print(h2o.findSynonyms(w2v.model, "teacher", count = 5))
+   	print(h2o.findSynonyms(w2v_model, "teacher", count = 5))
 
    	# Calculate a vector for each job title:
-   	job.title.vecs <- h2o.transform(w2v.model, words, aggregate_method = "AVERAGE")
+   	job_title_vecs <- h2o.transform(w2v_model, words, aggregate_method = "AVERAGE")
 
    	# Prepare training & validation data (keep only job titles made of known words):
-   	valid.job.titles <- ! is.na(job.title.vecs$C1)
-   	data <- h2o.cbind(job.titles[valid.job.titles, "category"], job.title.vecs[valid.job.titles, ])
-   	data.split <- h2o.splitFrame(data, ratios = 0.8)
+   	valid_job_titles <- ! is.na(job_title_vecs$C1)
+   	data <- h2o.cbind(job.titles[valid_job_titles, "category"], job_title_vecs[valid_job_titles, ])
+   	data_split <- h2o.splitFrame(data, ratios = 0.8)
 
    	# Build a basic GBM model:
-   	gbm.model <- h2o.gbm(x = names(job.title.vecs), 
+   	gbm_model <- h2o.gbm(x = names(job_title_vecs), 
                              y = "category", 
-                             training_frame = data.split[[1]], 
-                             validation_frame = data.split[[2]])
+                             training_frame = data_split[[1]], 
+                             validation_frame = data_split[[2]])
 
    	# Predict:
-   	print(.predict("school teacher having holidays every month", w2v.model, gbm.model))
-   	print(.predict("developer with 3+ Java experience, jumping", w2v.model, gbm.model))
-   	print(.predict("Financial accountant CPA preferred", w2v.model, gbm.model))
+   	print(.predict("school teacher having holidays every month", w2v_model, gbm_model))
+   	print(.predict("developer with 3+ Java experience, jumping", w2v_model, gbm_model))
+   	print(.predict("Financial accountant CPA preferred", w2v_model, gbm_model))
 
 
    .. code-tab:: python

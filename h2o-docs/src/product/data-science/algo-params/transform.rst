@@ -33,15 +33,15 @@ Example
         h2o.init()
 
         # Load the Birds dataset
-        birds.hex <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
+        birds <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/birds.csv")
 
         # Train using Standardized transform
-        birds.pca <- h2o.prcomp(training_frame = birds.hex, transform = "STANDARDIZE",
+        birds_pca <- h2o.prcomp(training_frame = birds, transform = "STANDARDIZE",
                                 k = 3, pca_method="Power", use_all_factor_levels=TRUE, 
                                 impute_missing=TRUE)
 
         # View the importance of components
-        birds.pca@model$importance
+        birds_pca@model$importance
         Importance of components: 
                                     pc1      pc2      pc3
         Standard deviation     1.496991 1.351000 1.014182
@@ -49,7 +49,7 @@ Example
         Cumulative Proportion  0.289987 0.526171 0.659269
 
         # View the eigenvectors
-        birds.pca@model$eigenvectors
+        birds_pca@model$eigenvectors
         Rotation: 
                           pc1      pc2       pc3
         patch.Ref1a  0.007207 0.007449  0.001161
@@ -68,12 +68,12 @@ Example
         log.ENN.  -0.231368 -0.640231  0.026325
 
         # Train again using Normalize transform
-        birds2.pca <- h2o.prcomp(training_frame = birds.hex, transform = "NORMALIZE",
+        birds2_pca <- h2o.prcomp(training_frame = birds, transform = "NORMALIZE",
                                  k = 3, pca_method="Power", use_all_factor_levels=TRUE, 
                                  impute_missing=TRUE)
 
         # View the importance of components
-        birds2.pca@model$importance
+        birds2_pca@model$importance
         Importance of components: 
                                     pc1      pc2      pc3
         Standard deviation     0.632015 0.531616 0.517096
@@ -81,7 +81,7 @@ Example
         Cumulative Proportion  0.166444 0.284208 0.395626
 
         # View the eigenvectors
-        birds2.pca@model$eigenvectors
+        birds2_pca@model$eigenvectors
         Rotation: 
                         pc1       pc2       pc3
         patch.Ref1a 0.026631 -0.006839 0.008674

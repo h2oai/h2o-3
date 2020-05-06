@@ -49,9 +49,9 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-		train <- airlines.splits[[1]]
-		valid <- airlines.splits[[2]]
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+		train <- airlines_splits[[1]]
+		valid <- airlines_splits[[2]]
 
 		# number of factor levels range from 2 to 2439
 		# ('FlightNum', [2439])
@@ -66,11 +66,11 @@ Example
 		bin_num = c(8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096)
 		label = c("8", "16" ,"32", "64", "128", "256", "512", "1024", "2048", "4096")
 		lapply(seq_along(1:length(bin_num)),function(num) {
-		  airlines.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
+		  airlines_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
 		                          nbins_cats = bin_num[num], nfolds = 5, seed = 1234)
 		  # print the value used and AUC score for train and valid
-		  print(paste(label[num], 'training score',  h2o.auc(airlines.gbm, train = TRUE)))
-		  print(paste(label[num], 'validation score',  h2o.auc(airlines.gbm, valid = TRUE)))
+		  print(paste(label[num], 'training score',  h2o.auc(airlines_gbm, train = TRUE)))
+		  print(paste(label[num], 'validation score',  h2o.auc(airlines_gbm, valid = TRUE)))
 		})
 
 

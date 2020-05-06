@@ -58,9 +58,9 @@ Example
 		response <- 'C55'
 
 		# split into train and validation sets
-		covtype.splits <- h2o.splitFrame(data =  covtype, ratios = .8, seed = 1234)
-		train <- covtype.splits[[1]]
-		valid <- covtype.splits[[2]]
+		covtype_splits <- h2o.splitFrame(data =  covtype, ratios = .8, seed = 1234)
+		train <- covtype_splits[[1]]
+		valid <- covtype_splits[[2]]
 
 		# try using the `mtries` parameter:
 		cov_drf <- h2o.randomForest(x = predictors, y = response, training_frame = train,

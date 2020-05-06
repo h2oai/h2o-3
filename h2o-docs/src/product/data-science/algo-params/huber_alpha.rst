@@ -41,9 +41,9 @@ Example
 		insurance['Age'] <- as.factor(insurance['Age'])
 
 		# split into train and validation sets
-		insurance.splits <- h2o.splitFrame(data =  insurance, ratios = .8, seed = 1234)
-		train <- insurance.splits[[1]]
-		valid <- insurance.splits[[2]]
+		insurance_splits <- h2o.splitFrame(data =  insurance, ratios = .8, seed = 1234)
+		train <- insurance_splits[[1]]
+		valid <- insurance_splits[[2]]
 
 		# try using the `huber_alpha` parameter:
 		# train your model, where you specify the distribution as huber

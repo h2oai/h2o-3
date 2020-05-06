@@ -108,9 +108,9 @@ Example
 		response <- "cylinders"
 
 		# split into train and validation sets
-		cars.splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
-		train <- cars.splits[[1]]
-		valid <- cars.splits[[2]]
+		cars_splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
+		train <- cars_splits[[1]]
+		valid <- cars_splits[[2]]
 
 		# try using the distribution parameter:
 		# train a GBM

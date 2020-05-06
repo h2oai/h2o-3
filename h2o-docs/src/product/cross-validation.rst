@@ -152,8 +152,8 @@ The frame of cross-validated predictions is a single-column frame, where each ro
         h2o.init()
 
         # H2O Cross-validated K-means example
-        prostate.hex <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
-        fit <- h2o.kmeans(training_frame = prostate.hex,
+        prostate <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv.zip")
+        fit <- h2o.kmeans(training_frame = prostate,
                           k = 10,
                           x = c("AGE", "RACE", "VOL", "GLEASON"),
                           nfolds = 5,  #If you want to specify folds directly, then use "fold_column" arg

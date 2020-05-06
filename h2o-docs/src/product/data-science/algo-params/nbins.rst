@@ -46,19 +46,19 @@ Example
 		response <- "eyeDetection"
 
 		# split into train and validation
-		eeg.splits <- h2o.splitFrame(data =  eeg, ratios = .8, seed = 1234)
-		train <- eeg.splits[[1]]
-		valid <- eeg.splits[[2]]
+		eeg_splits <- h2o.splitFrame(data =  eeg, ratios = .8, seed = 1234)
+		train <- eeg_splits[[1]]
+		valid <- eeg_splits[[2]]
 
 		# try a range of nbins: 
 		bin_num = c(8, 16, 32, 64, 128, 256, 512)
 		label = c("8", "16", "32", "64", "128", "256", "512")
 		lapply(seq_along(1:length(bin_num)),function(num) {
-		  eeg.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
+		  eeg_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
 		                          nbins = bin_num[num], nfolds = 5, seed = 1234)
 		  # print the value used and AUC score for train and valid
-		  print(paste(label[num], 'training score',  h2o.auc(eeg.gbm, train = TRUE)))
-		  print(paste(label[num], 'validation score',  h2o.auc(eeg.gbm, valid = TRUE)))
+		  print(paste(label[num], 'training score',  h2o.auc(eeg_gbm, train = TRUE)))
+		  print(paste(label[num], 'validation score',  h2o.auc(eeg_gbm, valid = TRUE)))
 		})
 
 

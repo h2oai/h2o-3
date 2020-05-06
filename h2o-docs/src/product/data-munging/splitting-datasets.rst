@@ -12,33 +12,33 @@ Note that when splitting frames, H2O does not give an exact split. It's designed
 		h2o.init()
 		
 		# Import the prostate dataset
-		prostate.hex <- h2o.importFile(path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv", destination_frame = "prostate.hex")
-		print(dim(prostate.hex))
+		prostate <- h2o.importFile(path = "http://h2o-public-test-data.s3.amazonaws.com/smalldata/prostate/prostate.csv")
+		print(dim(prostate))
 		[1] 380   9 
 		
 		# Split dataset giving the training dataset 75% of the data
-		prostate.split <- h2o.splitFrame(data=prostate.hex, ratios=0.75)
-		print(dim(prostate.split[[1]]))
+		prostate_split <- h2o.splitFrame(data=prostate, ratios=0.75)
+		print(dim(prostate_split[[1]]))
 		[1] 291   9
-		print(dim(prostate.split[[2]]))
+		print(dim(prostate_split[[2]]))
 		[1] 89  9
 		
 		# Create a training set from the 1st dataset in the split
-		prostate.train <- prostate.split[[1]]
+		prostate_train <- prostate_split[[1]]
 		
 		# Create a testing set from the 2nd dataset in the split
-		prostate.test <- prostate.split[[2]]
+		prostate_test <- prostate_split[[2]]
 		
 		# Generate a GLM model using the training dataset. x represesnts the predictor column, and y represents the target index.
-		prostate.glm <- h2o.glm(y = "CAPSULE", 
+		prostate_glm <- h2o.glm(y = "CAPSULE", 
 		                        x = c("AGE", "RACE", "PSA", "DCAPS"), 
-		                        training_frame=prostate.train, 
+		                        training_frame=prostate_train, 
 		                        family="binomial", 
 		                        nfolds=10, 
 		                        alpha=0.5)
 		
 		# Predict using the GLM model and the testing dataset
-		pred = h2o.predict(object=prostate.glm, newdata=prostate.test)
+		pred = h2o.predict(object=prostate_glm, newdata=prostate_test)
 		
 		# View a summary of the prediction with a probability of TRUE
 		summary(pred$p1, exact_quantiles=TRUE)

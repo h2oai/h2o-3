@@ -13,19 +13,19 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
 		
 		# Import an existing training dataset
 		ecg1Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv"
-		ecg1.hex <- h2o.importFile(path=ecg1Path, destination_frame="ecg1.hex")
-		print(dim(ecg1.hex))
+		ecg1 <- h2o.importFile(path=ecg1Path)
+		print(dim(ecg1))
 		[1] 20 210 
 
 		# Import an existing testing dataset
 		ecg2Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_test.csv"
-		ecg2.hex <- h2o.importFile(path=ecg2Path, destination_frame="ecg2.hex")
-		print(dim(ecg2.hex))
+		ecg2 <- h2o.importFile(path=ecg2Path)
+		print(dim(ecg2))
 		[1] 23 210
 
 		# Combine the two datasets into a single, larger dataset
-		ecgCombine.hex <- h2o.rbind(ecg1.hex, ecg2.hex)
-		print(dim(ecgCombine.hex))
+		ecgCombine <- h2o.rbind(ecg1, ecg2)
+		print(dim(ecgCombine))
 		[1] 43 210
 
 

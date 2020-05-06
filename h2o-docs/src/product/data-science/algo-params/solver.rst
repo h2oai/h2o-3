@@ -65,9 +65,9 @@ Example
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and validation sets
-		boston.splits <- h2o.splitFrame(data =  boston, ratios = .8)
-		train <- boston.splits[[1]]
-		valid <- boston.splits[[2]]
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = .8)
+		train <- boston_splits[[1]]
+		valid <- boston_splits[[2]]
 
 		# try using the `solver` parameter:
 		boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,

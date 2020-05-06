@@ -28,12 +28,12 @@ Example
 		heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
 		# split the dataset into train and test datasets
-		heart.split <- h2o.splitFrame(data=heart, ratios=.8, seed=1234)
-		train <- heart.split[[1]]
-		test <- heart.split[[2]]
+		heart_split <- h2o.splitFrame(data=heart, ratios=.8, seed=1234)
+		train <- heart_split[[1]]
+		test <- heart_split[[2]]
 
 		# train a CoxPH model
-		coxph.model <- h2o.coxph(x="age", 
+		coxph_model <- h2o.coxph(x="age", 
 		                         event_column="event", 
 		                         start_column="start", 
 		                         stop_column="stop", 
@@ -41,7 +41,7 @@ Example
 		                         lre_min=9)
 
 		# run prediction against the test dataset
-		predicted <- h2o.predict(coxph.model, test)
+		predicted <- h2o.predict(coxph_model, test)
 
 		# view the predictions
 		predicted

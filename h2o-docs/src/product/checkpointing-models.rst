@@ -88,10 +88,10 @@ The following example demonstrates how to build a deep learning model that will 
       # a piece off to demonstrate adding new data with checkpointing. 
       # In a real world scenario, however, you would not have your 
       # new data at this point.
-      mnist_original.split <- h2o.splitFrame(data = mnist_original,ratios = c(0.7, 0.15), seed = 1234)
-      train <- mnist_original.split[[1]]
-      valid <- mnist_original.split[[2]]
-      new_data <- mnist_original.split[[3]]
+      mnist_original_split <- h2o.splitFrame(data = mnist_original,ratios = c(0.7, 0.15), seed = 1234)
+      train <- mnist_original_split[[1]]
+      valid <- mnist_original_split[[2]]
+      new_data <- mnist_original_split[[3]]
 
       # Build the first deep learning model, specifying the model_id so you 
       # can indicate which model to use when you want to continue training.
@@ -282,10 +282,10 @@ The following example demonstrates how to build a distributed random forest mode
       # a piece off to demonstrate adding new data with checkpointing.
       # In a real world scenario, however, you would not have your
       # new data at this point.
-      cars.split <- h2o.splitFrame(data = cars,ratios = c(0.7, 0.15), seed = 1234)
-      train <- cars.split[[1]]
-      valid <- cars.split[[2]]
-      new_data <- cars.split[[3]]
+      cars_split <- h2o.splitFrame(data = cars,ratios = c(0.7, 0.15), seed = 1234)
+      train <- cars_split[[1]]
+      valid <- cars_split[[2]]
+      new_data <- cars_split[[3]]
 
       # Build the first DRF model, specifying the model_id so you can
       # indicate which model to use when you want to continue training.
@@ -451,10 +451,10 @@ The following example demonstrates how to build a gradient boosting model that w
       # a piece off to demonstrate adding new data with checkpointing. 
       # In a real world scenario, however, you would not have your 
       # new data at this point.
-      cars.split <- h2o.splitFrame(data = cars,ratios = c(0.7, 0.15), seed = 1234)
-      train <- cars.split[[1]]
-      valid <- cars.split[[2]]
-      new_data <- cars.split[[3]]
+      cars_split <- h2o.splitFrame(data = cars,ratios = c(0.7, 0.15), seed = 1234)
+      train <- cars_split[[1]]
+      valid <- cars_split[[2]]
+      new_data <- cars_split[[3]]
 
       # Build the first GBM model, specifying the model_id so you can
       # indicate which model to use when you want to continue training.

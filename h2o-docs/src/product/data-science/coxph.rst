@@ -205,12 +205,12 @@ Below is a simple example showing how to build a CoxPH model.
     heart <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/coxph_test/heart.csv")
 
     # Split the dataset into a train and test set:
-    heart.split <- h2o.splitFrame(data=heart, ratios=.8, seed=1234)
-    train <- heart.split[[1]]
-    test <- heart.split[[2]]
+    heart_split <- h2o.splitFrame(data=heart, ratios=.8, seed=1234)
+    train <- heart_split[[1]]
+    test <- heart_split[[2]]
 
     # Build and train the model:
-    coxph.model <- h2o.coxph(x = "age", 
+    coxph_model <- h2o.coxph(x = "age", 
                              event_column = "event",
                              start_column="start", 
                              stop_column = "stop", 

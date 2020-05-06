@@ -102,9 +102,9 @@ Below is a simple example showing how to build a Generalized Low Rank model.
     arrestsH2O <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
 
     # Split the dataset into a train and valid set:
-    arrests.splits <- h2o.splitFrame(data = arrestsH2O, ratios = .8, seed = 1234)
-    train <- arrests.splits[[1]]
-    valid <- arrests.splits[[2]]
+    arrests_splits <- h2o.splitFrame(data = arrestsH2O, ratios = .8, seed = 1234)
+    train <- arrests_splits[[1]]
+    valid <- arrests_splits[[2]]
 
     # Build and train the model:
     glrm_model = h2o.glrm(training_frame = train, 

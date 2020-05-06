@@ -40,14 +40,14 @@ Example
 		response <- "survived"
 
 		# split into train and validation
-		titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
-		train <- titanic.splits[[1]]
-		valid <- titanic.splits[[2]]
+		titanic_splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
+		train <- titanic_splits[[1]]
+		valid <- titanic_splits[[2]]
 
 		# try using the `learn_rate` parameter: 
 		# because we use a small learning_rate, we set ntrees to a much higer number
 		# early stopping makes it okay to use 'more than enough' trees
-		titanic.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
+		titanic_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
 		                       ntrees = 10000, learn_rate = .01, 
 		                       # use early stopping once the validation AUC doesn't improve by at least 0.01%
 		                       # for 5 consecutive scoring events
@@ -56,7 +56,7 @@ Example
 		                       stopping_metric = "AUC", seed = 1234)
 
 		# print the auc for the validation data
-		print(h2o.auc(titanic.gbm, valid = TRUE))
+		print(h2o.auc(titanic_gbm, valid = TRUE))
 
 
    .. code-tab:: python

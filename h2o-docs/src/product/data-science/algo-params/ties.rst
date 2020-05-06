@@ -47,12 +47,12 @@ Example
         stop <- "stop"
 
         # train your model
-        coxph.h2o <- h2o.coxph(x=x, event_column=y, 
+        coxph_h2o <- h2o.coxph(x=x, event_column=y, 
                                start_column=start, stop_column=stop, 
-                               ties="breslow", training_frame=heart.hex)
+                               ties="breslow", training_frame=heart)
 
         # view the model details
-        coxph.h2o
+        coxph_h2o
         Model Details:
         ==============
 

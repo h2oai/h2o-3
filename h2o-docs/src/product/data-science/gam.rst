@@ -418,9 +418,9 @@ Below are simple examples showing how to use GAM in R and Python.
     h2o_data["C11"] <- as.factor(h2o_data["C11"])
 
     # split into train and test sets
-    h2o_data.splits <- h2o.splitFrame(data=h2o_data, ratios=.8)
-    train <- h2o_data.splits[[1]]
-    test <- h2o_data.splits[[2]]
+    splits <- h2o.splitFrame(data=h2o_data, ratios=.8)
+    train <- splits[[1]]
+    test <- splits[[2]]
 
     # Set the predictor and response columns
     predictors <- colnames(train[1:2])

@@ -35,12 +35,12 @@ Example
         stop <- "stop"
 
         # train your model
-        coxph.h2o <- h2o.coxph(x=x, event_column=y, 
+        coxph_h2o <- h2o.coxph(x=x, event_column=y, 
                                start_column=start, stop_column=stop, 
                                training_frame=heart.hex)
 
         # view the model details
-        coxph.h2o
+        coxph_h2o
         Model Details:
         ==============
 

@@ -41,9 +41,9 @@ Example
 		response <- "survived"
 
 		# split into train and validation
-		titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
-		train <- titanic.splits[[1]]
-		valid <- titanic.splits[[2]]
+		titanic_splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
+		train <- titanic_splits[[1]]
+		valid <- titanic_splits[[2]]
 
 		# try using the pred_noise_bandwidth parameter:
 		titanic_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,

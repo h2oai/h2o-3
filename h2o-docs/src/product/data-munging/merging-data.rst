@@ -20,8 +20,8 @@ Note that in order for a merge to work in multinode clusters, one of the dataset
 		                    citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
 		
 		# Create the H2O data frames from the inputted data.
-		l.hex <- as.h2o(left)
-		print(l.hex)
+		left_frame <- as.h2o(left)
+		print(left_frame)
 		        fruit  color
 		 1      apple    red
 		 2     orange orange
@@ -32,8 +32,8 @@ Note that in order for a merge to work in multinode clusters, one of the dataset
 		
 		[6 rows x 2 columns]
 		
-		r.hex <- as.h2o(right)
-		print(r.hex)
+		right_frame <- as.h2o(right)
+		print(right_frame)
 		        fruit citrus
 		 1      apple  FALSE
 		 2     orange   TRUE
@@ -45,8 +45,8 @@ Note that in order for a merge to work in multinode clusters, one of the dataset
 		[6 rows x 2 columns]
 		
 		# Merge the data frames. The result is a single dataset with three columns.
-		left.hex <- h2o.merge(l.hex, r.hex, all.x = TRUE)
-		print(left.hex)
+		new_frame <- h2o.merge(left_frame, right_frame, all.x = TRUE)
+		print(new_frame)
 		       fruit  color citrus
 		1  blueberry   blue   <NA>
 		2      apple    red  FALSE

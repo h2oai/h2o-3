@@ -75,19 +75,19 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-		train <- airlines.splits[[1]]
-		valid <- airlines.splits[[2]]
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+		train <- airlines_splits[[1]]
+		valid <- airlines_splits[[2]]
 
 		# try using the `stopping_rounds` parameter: 
 		# train your model, where you specify the stopping_metric, stopping_rounds, 
 		# and stopping_tolerance
-		airlines.gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
+		airlines_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, validation_frame = valid,
 		                        stopping_metric = "AUC", stopping_rounds = 3,
 		                        stopping_tolerance = 1e-2, seed = 1234)
 
 		# print the auc for the validation data
-		print(h2o.auc(airlines.gbm, valid = TRUE))
+		print(h2o.auc(airlines_gbm, valid = TRUE))
 
 
    .. code-tab:: python

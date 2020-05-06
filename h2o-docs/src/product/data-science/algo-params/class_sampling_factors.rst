@@ -39,9 +39,9 @@ Example
 		response <- 'C55'
 
 		# split into train and validation sets
-		covtype.splits <- h2o.splitFrame(data =  covtype, ratios = .8, seed = 1234)
-		train <- covtype.splits[[1]]
-		valid <- covtype.splits[[2]]
+		covtype_splits <- h2o.splitFrame(data =  covtype, ratios = .8, seed = 1234)
+		train <- covtype_splits[[1]]
+		valid <- covtype_splits[[2]]
 
 		# look at the frequencies of each class
 		print(h2o.table(covtype['C55']))

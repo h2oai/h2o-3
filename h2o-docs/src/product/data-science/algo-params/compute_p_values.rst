@@ -46,9 +46,9 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8)
-		train <- airlines.splits[[1]]
-		valid <- airlines.splits[[2]]
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8)
+		train <- airlines_splits[[1]]
+		valid <- airlines_splits[[2]]
 
 		# try using the `compute_p_values` parameter:
 		airlines_glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
