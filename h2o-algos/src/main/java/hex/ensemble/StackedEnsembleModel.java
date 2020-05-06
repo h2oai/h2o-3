@@ -150,7 +150,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         Frame.deleteTempFrameAndItsNonSharedVecs(baseModelPredictions[i], levelOneFrame);
       }
     }
-
     // Add response column to level one frame
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
     
@@ -426,10 +425,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       parms._link = GLMModel.GLMParameters.Link.family_default;
       if (this._output.isBinomialClassifier()) {
          parms._family = GLMModel.GLMParameters.Family.binomial;
+         _parms._distribution = DistributionFamily.bernoulli;
       } else if (this._output.isClassifier()) {
         parms._family = GLMModel.GLMParameters.Family.multinomial;
+        _parms._distribution = DistributionFamily.multinomial;
       } else {
         parms._family = GLMModel.GLMParameters.Family.gaussian;
+        _parms._distribution = DistributionFamily.gaussian;
       }
     }
   }
