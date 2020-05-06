@@ -300,7 +300,7 @@ public class DataInfo extends Keyed<DataInfo> {
     }
     _numMeans = new double[numNums()];
     _numNAFill = new double[numNums()];
-    int numIdx=0;
+    int numIdx=0; // index into the _numMeans
     for(int i=0;i<nnums;++i) {
       String name = train.name(nums[i]);
       Vec v = train.vec(nums[i]);
@@ -528,7 +528,7 @@ public class DataInfo extends Keyed<DataInfo> {
     // now do the interaction vecs -- these happen to always sit first in the "nums" section of _adaptedFrame
     // also, these have the exact same filtering logic as the categoricals above
     int prev=j=0; // reset j for _numOffsets
-    if( _interactionVecs!=null ) {
+    if( _interactionVecs!=null && (_numOffsets.length > intLvls.length) ) { // second condition happens when there are no num columns
       while( i < cols.length && cols[i] < _numOffsets[intLvls.length]) {
         int[] lvls = MemoryManager.malloc4(_numOffsets[j+1] - _numOffsets[j]);
         int k=0; // same as above
@@ -554,6 +554,8 @@ public class DataInfo extends Keyed<DataInfo> {
     // now numerics
     prev=j=_interactionVecs==null?0:_interactionVecs.length;
     for(;i<cols.length;++i){
+      if (j>=_numOffsets.length)  // happens when there are no num, enumxnum, numxnum columns
+        break;
       int numsToIgnore = (cols[i]-_numOffsets[j]);
       for(int k=0;k<numsToIgnore;++k){
         ignoredCols[ignoredCnt++] = _cats+prev++;
@@ -1190,9 +1192,20 @@ public class DataInfo extends Keyed<DataInfo> {
   public int getInteractionOffset(Chunk[] chunks, int cid, int rid) {
     boolean useAllFactors = ((InteractionWrappedVec)chunks[cid].vec())._useAllFactorLevels;
     InteractionWrappedVec.InteractionWrappedChunk c = (InteractionWrappedVec.InteractionWrappedChunk)chunks[cid];
-    if(      c._c1IsCat ) return (int)c._c[0].at8(rid)-(useAllFactors?0:1);
-    else if( c._c2IsCat ) return (int)c._c[1].at8(rid)-(useAllFactors?0:1);
-    return 0;
+    if (c._c1IsCat) { // looking at enum by num or num by enum interaction here
+      if (!c._c[0].isNA(rid)) { // todo: add in other NA fill for enum columns
+        return (int)c._c[0].at8(rid)-(useAllFactors?0:1);
+      } else { // NA at c._c[0].at8(rid)
+        return (int)c._c[0].vec().mode()-(useAllFactors?0:1);
+      }
+    } else if (c._c2IsCat) {
+      if (!c._c[1].isNA(rid)) {
+        return (int)c._c[1].at8(rid)-(useAllFactors?0:1);
+      } else {
+        return (int)c._c[1].vec().mode()-(useAllFactors?0:1);
+      }
+    }
+    return 0; // no offset for num by num interaction column
   }
   public Vec getWeightsVec(){return _adaptedFrame.vec(weightChunkId());}
   public Vec getOffsetVec(){return _adaptedFrame.vec(offsetChunkId());}

@@ -755,6 +755,7 @@ public class StackedEnsembleTest extends TestUtil {
             stackedEnsembleParameters._metalearner_algorithm = metalearner_algo;
             stackedEnsembleParameters._base_models = new Key[] {gbm._key, drf._key};
             stackedEnsembleParameters._seed = seed;
+            stackedEnsembleParameters._score_training_samples = 0; // don't subsample dataset for training metrics so we don't randomly fail the test
             // Invoke Stacked Ensemble and block till end
             StackedEnsemble stackedEnsembleJob = new StackedEnsemble(stackedEnsembleParameters);
             // Get the stacked ensemble
