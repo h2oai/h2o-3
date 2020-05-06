@@ -360,6 +360,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           Log.warn("Stacked Ensemble is not able to inherit distribution from GLM's family " + ((GLMModel.GLMParameters) parms)._family + ".");
         }
       }
+    } else if (parms instanceof DRFModel.DRFParameters) {
+      inferBasicDistribution();
     } else {
       _parms._distribution = parms._distribution;
     }
