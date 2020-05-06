@@ -125,25 +125,27 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
             .map(Key::get)
             .toArray(Model[]::new);
 
-    Frame[] baseModelPredictions = new Frame[usefulBaseModels.length];
+    if (usefulBaseModels.length > 0) {
+      Frame[] baseModelPredictions = new Frame[usefulBaseModels.length];
 
-    // Run scoring of base models in parallel
-    H2O.submitTask(new LocalMR(new MrFun() {
-      @Override
-      protected void map(int id) {
-        baseModelPredictions[id] = usefulBaseModels[id].score(
-                fr,
-                "preds_base_" + seKey + usefulBaseModels[id]._key + fr._key,
-                j,
-                false
-        );
+      // Run scoring of base models in parallel
+      H2O.submitTask(new LocalMR(new MrFun() {
+        @Override
+        protected void map(int id) {
+          baseModelPredictions[id] = usefulBaseModels[id].score(
+                  fr,
+                  "preds_base_" + seKey + usefulBaseModels[id]._key + fr._key,
+                  j,
+                  false
+          );
+        }
+      }, usefulBaseModels.length)).join();
+
+      for (int i = 0; i < usefulBaseModels.length; i++) {
+        StackedEnsemble.addModelPredictionsToLevelOneFrame(usefulBaseModels[i], baseModelPredictions[i], levelOneFrame);
+        DKV.remove(baseModelPredictions[i]._key); //Cleanup
+        Frame.deleteTempFrameAndItsNonSharedVecs(baseModelPredictions[i], levelOneFrame);
       }
-    }, usefulBaseModels.length)).join();
-
-    for (int i = 0; i < usefulBaseModels.length; i++) {
-      StackedEnsemble.addModelPredictionsToLevelOneFrame(usefulBaseModels[i], baseModelPredictions[i], levelOneFrame);
-      DKV.remove(baseModelPredictions[i]._key); //Cleanup
-      Frame.deleteTempFrameAndItsNonSharedVecs(baseModelPredictions[i], levelOneFrame);
     }
 
     // Add response column to level one frame
