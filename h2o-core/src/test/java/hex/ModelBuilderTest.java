@@ -8,6 +8,8 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.parser.BufferedString;
+import water.util.ReflectionUtils;
 import water.test.dummy.DummyModelBuilder;
 import water.test.dummy.DummyModelParameters;
 
@@ -124,6 +126,35 @@ public class ModelBuilderTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testWorkSpaceInit() {
+    DummyModelBuilder builder = new DummyModelBuilder(new DummyModelParameters());
+    // workspace is initialized upon builder instantiation
+    ModelBuilder.Workspace workspace = ReflectionUtils.getFieldValue(builder, "_workspace");
+    assertNotNull(workspace);
+    assertNull(workspace.getToDelete(false));
+    // cheap init keeps workspace unchanged
+    builder.init(false);
+    workspace = ReflectionUtils.getFieldValue(builder, "_workspace");
+    assertNotNull(workspace);
+    assertNull(workspace.getToDelete(false));
+    // it is not possible to get "to delete" structure in for expensive operations
+    try {
+      workspace.getToDelete(true);
+      fail("Exception expected");
+    } catch (IllegalStateException e) {
+      assertEquals(
+              "ModelBuilder was not correctly initialized. Expensive phase requires field `_toDelete` to be non-null. " +
+                      "Does your implementation of init method call super.init(true) or alternatively initWorkspace(true)?", 
+              e.getMessage()
+      );
+    }
+    // expensive init will switch the workspace and let us get "to delete" for expensive ops
+    builder.init(true);
+    workspace = ReflectionUtils.getFieldValue(builder, "_workspace");
+    assertNotNull(workspace.getToDelete(true));
+  }
+  
   @Test
   public void testMakeUnknownModel() {
     try {
