@@ -13,21 +13,10 @@ stackedensemble.varimp.test <- function() {
   y <- "AGE"
   nfolds <- 5
 
-  my_gbm <- h2o.gbm(x = x,
-                    y = y,
-                    training_frame = train,
-                    distribution = "gaussian",
-                    max_depth = 3,
-                    learn_rate = 0.2,
-                    nfolds = nfolds,
-                    fold_assignment = "Modulo",
-                    keep_cross_validation_predictions = TRUE,
-                    seed = 1)
-
   my_rf <- h2o.randomForest(x = x,
                             y = y,
                             training_frame = train,
-                            ntrees = 30,
+                            ntrees = 10,
                             nfolds = nfolds,
                             fold_assignment = "Modulo",
                             keep_cross_validation_predictions = TRUE,
@@ -36,7 +25,7 @@ stackedensemble.varimp.test <- function() {
   my_xrf <- h2o.randomForest(x = x,
                              y = y,
                              training_frame = train,
-                             ntrees = 50,
+                             ntrees = 10,
                              histogram_type = "Random",
                              nfolds = nfolds,
                              fold_assignment = "Modulo",
@@ -48,7 +37,7 @@ stackedensemble.varimp.test <- function() {
                                training_frame = train,
                                validation_frame = test,  #also test that validation_frame is working
                                model_id = "my_ensemble_gaussian",
-                               base_models = list(my_gbm@model_id, my_rf@model_id, my_xrf@model_id))
+                               base_models = list(my_rf, my_xrf))
 
   w = tryCatch(h2o.varimp(stack), warning=function(w) return(w))
   expect_equal(w$message, "This model doesn't have variable importances")
