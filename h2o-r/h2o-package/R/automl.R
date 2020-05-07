@@ -71,10 +71,10 @@
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate_hf <- h2o.uploadFile(path = prostate_path, header = TRUE)
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
 #' y <- "CAPSULE"
-#' prostate_hf[,y] <- as.factor(prostate_hf[,y])
-#' aml <- h2o.automl(y = y, training_frame = prostate_hf, max_runtime_secs = 30)
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 30)
 #' }
 #' @export
 h2o.automl <- function(x, y, training_frame,
@@ -482,10 +482,12 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate_hf <- h2o.uploadFile(path = prostate_path, header = TRUE)
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
 #' y <- "CAPSULE"
-#' prostate_hf[,y] <- as.factor(prostate_hf[,y])
-#' aml <- h2o.automl(y = y, training_frame = prostate_hf, max_runtime_secs = 30)
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, 
+#'                   max_runtime_secs = 30, project_name = "prostate")
+#' aml2 <- h2o.get_automl("prostate")
 #' }
 #' @export
 h2o.get_automl <- function(project_name) {
@@ -535,10 +537,12 @@ h2o.getAutoML <- function(project_name) {
 #' library(h2o)
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
-#' prostate_hf <- h2o.uploadFile(path = prostate_path, header = TRUE)
+#' prostate <- h2o.importFile(path = prostate_path, header = TRUE)
 #' y <- "CAPSULE"
-#' prostate_hf[,y] <- as.factor(prostate_hf[,y])
-#' aml <- h2o.automl(y = y, training_frame = prostate_hf, max_runtime_secs = 30)
+#' prostate[,y] <- as.factor(prostate[,y])  #convert to factor for classification
+#' aml <- h2o.automl(y = y, training_frame = prostate, max_runtime_secs = 30)
+#' lb <- h2o.get_leaderboard(aml)
+#' head(lb)
 #' }
 #' @export
 h2o.get_leaderboard <- function(object, extra_columns=NULL) {
