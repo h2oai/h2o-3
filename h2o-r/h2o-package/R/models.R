@@ -4785,6 +4785,7 @@ h2o.upload_mojo <- function(mojo_local_file_path){
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @param threshold A threshold value from 0 to 1 included.
+#' @return Returns the previous threshold used in the model.
 #'
 #' @examples 
 #' \dontrun{
