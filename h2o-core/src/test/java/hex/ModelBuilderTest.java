@@ -8,7 +8,6 @@ import water.*;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.parser.BufferedString;
 import water.util.ReflectionUtils;
 import water.test.dummy.DummyModelBuilder;
 import water.test.dummy.DummyModelParameters;
