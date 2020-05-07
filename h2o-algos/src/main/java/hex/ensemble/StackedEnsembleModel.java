@@ -473,6 +473,33 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         throw new H2OIllegalArgumentException("Base model is not supervised: "+aModel._key.toString());
       }
 
+      // FIXME: I think we should do these checks even for the first base model {
+      if (require_consistent_training_frames) {
+        if (trainingFrameRows < 0) trainingFrameRows = _parms.train().numRows();
+        Frame aTrainingFrame = aModel._parms.train(); // can be null when aModel was imported
+        if (aTrainingFrame == null) { // The aModel was probably loaded from a different session.
+          Log.warn("Training frame of model \"" + aModel._key + "\"  is null. " +
+                  "Assuming it's same as the training frame of this Stacked Ensemble.");
+          aTrainingFrame = DKV.getGet(aModel._output._cross_validation_holdout_predictions_frame_id);
+          if (aTrainingFrame == null) {
+            throw new H2OIllegalArgumentException("Base model \"" + aModel._key + "\" is missing cross validation holdout predictions.");
+          }
+        }
+        if (trainingFrameRows != aTrainingFrame.numRows())
+          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames."
+                  +" Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
+      }
+
+      if (cv_required_on_base_model) {
+        // If we don't have a fold_column require:
+        // nfolds > 1
+        // nfolds consistent across base models
+        if (aModel._parms._fold_column == null && aModel._parms._nfolds < 2)
+          throw new H2OIllegalArgumentException("Base model does not use cross-validation: " + aModel._parms._nfolds);
+        if (!aModel._parms._keep_cross_validation_predictions)
+          throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
+      }
+      // FIXME: }
       if (retrievedFirstModelParams) {
         // check that the base models are all consistent with first based model
 
@@ -484,13 +511,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns."
                   +" Found: "+responseColumn+" (StackedEnsemble) and "+aModel._parms._response_column+" (model "+k+").");
 
-        if (require_consistent_training_frames) {
-          if (trainingFrameRows < 0) trainingFrameRows = _parms.train().numRows();
-          Frame aTrainingFrame = aModel._parms.train();
-          if (trainingFrameRows != aTrainingFrame.numRows())
-            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames."
-                    +" Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
-        }
 
         if (cv_required_on_base_model) {
 
@@ -501,11 +521,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           }
 
           if (aModel._parms._fold_column == null) {
-            // If we don't have a fold_column require:
-            // nfolds > 1
-            // nfolds consistent across base models
-            if (aModel._parms._nfolds < 2)
-              throw new H2OIllegalArgumentException("Base model does not use cross-validation: "+aModel._parms._nfolds);
             if (basemodel_nfolds != aModel._parms._nfolds)
               throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
 
@@ -516,9 +531,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
             if (!aModel._parms._fold_column.equals(basemodel_fold_column))
               throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
           }
-
-          if (! aModel._parms._keep_cross_validation_predictions)
-            throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: "+aModel._parms._nfolds);
         }
 
         if (inferredDistributionFromFirstModel) {
