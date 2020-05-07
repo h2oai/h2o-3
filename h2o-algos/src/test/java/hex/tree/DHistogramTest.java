@@ -37,7 +37,7 @@ public class DHistogramTest extends TestUtil {
       DKV.put(hq);
       Scope.track_generic(hq);
 
-      DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, -0.001,
+      DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, false, -0.001,
               SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null);
       histo.init();
 
@@ -59,7 +59,7 @@ public class DHistogramTest extends TestUtil {
       DKV.put(hq);
       Scope.track_generic(hq);
 
-      DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, -0.001,
+      DHistogram histo = new DHistogram("test", 20, 1024, (byte) 1, -1, 2, false, -0.001,
               SharedTreeModel.SharedTreeParameters.HistogramType.QuantilesGlobal, 42L, hq._key, null);
       histo.init();
 

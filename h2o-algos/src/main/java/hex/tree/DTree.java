@@ -286,8 +286,12 @@ public class DTree extends Iced {
         if( h._isInt > 0 && !(min+1 < maxEx ) )
           continue; // This column will not split again
         assert min < maxEx && adj_nbins > 1 : ""+min+"<"+maxEx+" nbins="+adj_nbins;
-        
-        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, cs);
+
+        // only count NAs if we have any going our way (note: NAvsREST doesn't build a histo for the NA direction)
+        final boolean hasNAs = (_nasplit == DHistogram.NASplitDir.NALeft && way == 0 || 
+                _nasplit == DHistogram.NASplitDir.NARight && way == 1) && h.hasNABin();
+
+        nhists[j] = DHistogram.make(h._name, adj_nbins, h._isInt, min, maxEx, hasNAs,h._seed*0xDECAF+(way+1), parms, h._globalQuantilesKey, cs);
         cnt++;                    // At least some chance of splitting
       }
       return cnt == 0 ? null : nhists;
@@ -328,7 +332,8 @@ public class DTree extends Iced {
     // Can return null for 'all columns'.
     public int[] scoreCols() {
       DTree tree = _tree;
-      if (tree.actual_mtries() == _hs.length && tree._mtrys_per_tree == _hs.length) return null;
+      if (tree.actual_mtries() == _hs.length && tree._mtrys_per_tree == _hs.length)
+        return null;
 
       // per-tree pre-selected columns
       int[] activeCols = tree._cols;
@@ -342,7 +347,7 @@ public class DTree extends Iced {
         int idx = activeCols[i];
         assert(idx == i || tree._mtrys_per_tree < _hs.length);
         if( _hs[idx]==null ) continue; // Ignore not-tracked cols
-        assert _hs[idx]._min < _hs[idx]._maxEx && _hs[idx].nbins() > 1 : "broken histo range "+_hs[idx];
+        assert _hs[idx]._min < _hs[idx]._maxEx && _hs[idx].actNBins() > 1 : "broken histo range "+_hs[idx];
         cols[len++] = idx;        // Gather active column
       }
 //      Log.info("These columns can be split: " + Arrays.toString(Arrays.copyOfRange(cols, 0, len)));
