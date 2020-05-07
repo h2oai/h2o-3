@@ -69,8 +69,8 @@ public class GBMTest extends TestUtil {
       return new GBMModel.GBMParameters() {
         @Override
         Constraints emptyConstraints(Frame f) {
-          if (_distribution == DistributionFamily.gaussian || _distribution == DistributionFamily.bernoulli) {
-            return new Constraints(new int[f.numCols()], _distribution, true);
+          if (_distribution == DistributionFamily.gaussian || _distribution == DistributionFamily.bernoulli || _distribution == DistributionFamily.tweedie) {
+            return new Constraints(new int[f.numCols()], DistributionFactory.getDistribution(this), true);
           } else 
             return null;
         }
@@ -215,7 +215,7 @@ public class GBMTest extends TestUtil {
     }
 
   }
-  
+
   @Test public void testBasicGBM() {
     // Regression tests
     basicGBM("./smalldata/junit/cars.csv",
@@ -3686,6 +3686,15 @@ public class GBMTest extends TestUtil {
 
   @Test
   public void testMonotoneConstraintsProstate() {
+    checkMonotoneConstraintsProstate(DistributionFamily.tweedie);
+  }
+
+  @Test
+  public void testMonotoneConstraintsProstateTweedie() {
+    checkMonotoneConstraintsProstate(DistributionFamily.gaussian);
+  }
+
+  private void checkMonotoneConstraintsProstate(DistributionFamily distributionFamily) {
     try {
       Scope.enter();
       Frame f = Scope.track(parse_test_file("smalldata/logreg/prostate.csv"));
@@ -3699,6 +3708,7 @@ public class GBMTest extends TestUtil {
       parms._ignored_columns = new String[]{"ID"};
       parms._ntrees = 50;
       parms._seed = 42;
+      parms._distribution = distributionFamily;
 
       String[] uniqueAges = Scope.track(f.vec("AGE").toCategoricalVec()).domain();
 
@@ -3743,10 +3753,10 @@ public class GBMTest extends TestUtil {
       parms._response_column = "CAPSULE";
       parms._train = f._key;
       parms._monotone_constraints = new KeyValue[]{new KeyValue("AGE", 1)};
-      parms._distribution = DistributionFamily.tweedie;
+      parms._distribution = DistributionFamily.quantile;
 
       expectedException.expectMessage("ERRR on field: _monotone_constraints: " +
-              "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: tweedie.");
+              "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: quantile.");
       GBMModel model = new GBM(parms).trainModel().get();
       Scope.track_generic(model);
     } finally {

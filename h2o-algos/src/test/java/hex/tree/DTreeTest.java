@@ -1,5 +1,6 @@
 package hex.tree;
 
+import hex.DistributionFactory;
 import hex.tree.DHistogram.NASplitDir;
 import hex.genmodel.utils.DistributionFamily;
 import org.junit.Test;
@@ -19,7 +20,7 @@ public class DTreeTest {
     DHistogram hs = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, true, 0.01,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null);
     hs.init();
-    hs.updateHisto(ws, null, cs, ys,rows, rows.length, 0);
+    hs.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0);
 
     // 1. min_rows = #NAs
     DTree.Split s1 = DTree.findBestSplitPoint(hs, 0, 20, 0, Double.NaN, Double.NaN, false);
@@ -33,7 +34,7 @@ public class DTreeTest {
     DHistogram hsN = new DHistogram("test_hs", 2, 2, (byte) 0, 0, 2, true, -9,
             SharedTreeModel.SharedTreeParameters.HistogramType.UniformAdaptive, 123, null, null);
     hsN.init();
-    hsN.updateHisto(ws, null, cs, ys,rows, rows.length, 0);
+    hsN.updateHisto(ws, null, cs, ys, null, rows, rows.length, 0);
     DTree.Split s3 = DTree.findBestSplitPoint(hsN, 0, 21, 0, Double.NaN, Double.NaN, false);
     assertNotNull(s3); // split was made thanks to the negative split improvement
     assertEquals(s3._se, seNonNA(ws, cs, ys), 0); // SE is actually the non-NA SE
@@ -68,7 +69,7 @@ public class DTreeTest {
   }
 
   private static DHistogram makeHisto(int nbins, double min_pred, double max_pred) {
-    Constraints c = new Constraints(new int[]{1}, DistributionFamily.gaussian, true)
+    Constraints c = new Constraints(new int[]{1}, DistributionFactory.getDistribution(DistributionFamily.gaussian), true)
             .withNewConstraint(0, 1, min_pred)
             .withNewConstraint(0, 0, max_pred);
     assertEquals(min_pred, c._min, 0);
@@ -104,7 +105,7 @@ public class DTreeTest {
         se_max_pred += (max_pred - ys[i]) * (max_pred - ys[i]);
       }
     }
-    hs.updateHisto(ws, null, cs, ys, rows, N, 0);
+    hs.updateHisto(ws, new double[N], cs, ys, null, rows, N, 0);
     
     if (na_percent == 1.0) {
       return new ExpectedSplitInfo(NASplitDir.NAvsREST, se, se_max_pred, se_min_pred);

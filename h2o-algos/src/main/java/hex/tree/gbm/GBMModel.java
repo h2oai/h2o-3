@@ -59,9 +59,10 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
       }
       boolean useBounds = _distribution == DistributionFamily.gaussian ||
               _distribution == DistributionFamily.bernoulli ||
+              _distribution == DistributionFamily.tweedie ||
               _distribution == DistributionFamily.quasibinomial ||
               _distribution == DistributionFamily.multinomial;
-      return new Constraints(cs, _distribution, useBounds);
+      return new Constraints(cs, DistributionFactory.getDistribution(this), useBounds);
     }
 
     // allows to override the behavior in tests (eg. create empty constraints and test execution as if constraints were used)
