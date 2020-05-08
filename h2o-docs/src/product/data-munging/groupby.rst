@@ -77,7 +77,7 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
         flightsByMonth <- h2o.group_by(data = airlines, 
                                        by = "Month", 
                                        nrow("Month"), 
-                                       gb.control=list(na.methods="rm"))
+                                       gb.control = list(na.methods = "rm"))
         flightsByMonth_R <- as.data.frame(flightsByMonth)
         flightsByMonth_R
           Month   nrow
