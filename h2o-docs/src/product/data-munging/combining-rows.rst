@@ -13,7 +13,7 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
 		
 		# Import an existing training dataset
 		ecg1Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_train.csv"
-		ecg1 <- h2o.importFile(path=ecg1Path)
+		ecg1 <- h2o.importFile(path = ecg1Path)
 		print(dim(ecg1))
 		[1] 20 210 
 
@@ -89,4 +89,3 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
 		 0.752855  -0.168504   -0.750161  -2.46084
 
 		[200 rows x 4 columns]
-
