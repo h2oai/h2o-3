@@ -133,7 +133,7 @@ In order to reproduce the model on a machine with a different number of CPU core
 
            # Load data with defined chunk size
            raw_train <- h2o.importFile(PATH_TO_TRAIN_FILE, parse = FALSE)
-           training_frame <- h2o.parseRaw(data=raw_train, 
+           training_frame <- h2o.parseRaw(data = raw_train, 
                                           chunk_size = CHUNK_SIZE_TRAIN)
 
       .. code-tab:: python
@@ -157,7 +157,7 @@ In order to reproduce the model on a machine with a different number of CPU core
 
        # Load data with defined chunk size
        raw_train <- h2o.importFile(PATH_TO_TRAIN_FILE, parse = FALSE)
-       training_frame <- h2o.parseRaw(data=raw_train, 
+       training_frame <- h2o.parseRaw(data = raw_train, 
                                       chunk_size = CHUNK_SIZE_TRAIN)
 
     .. code-tab:: python
