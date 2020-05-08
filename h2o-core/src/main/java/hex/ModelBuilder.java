@@ -613,11 +613,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame cvTrain = new Frame(Key.make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
+      Frame cvTrain = new Frame(Key.make(identifier + "_train"), cv_fr.names(), cv_fr.vecs());
       cvTrain.write_lock(_job);
       cvTrain.add(weightName, weights[2*i]);
       cvTrain.update(_job);
-      Frame cvValid = new Frame(Key.make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
+      Frame cvValid = new Frame(Key.make(identifier + "_valid"), cv_fr.names(), cv_fr.vecs());
       cvValid.write_lock(_job);
       cvValid.add(weightName, weights[2*i+1]);
       cvValid.update(_job);
