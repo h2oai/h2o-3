@@ -365,11 +365,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
+      Key k = job._key;
       Frame tr = train();
       if (tr != null)
-        tr.read_lock(job._key);
+        read_lock_frame(tr, k);
       if (_valid != null && !_train.equals(_valid))
-        _valid.get().read_lock(job._key);
+        read_lock_frame(_valid.get(), k);
+    }
+
+    private void read_lock_frame(Frame fr, Key k) {
+      if (_is_cv_model)
+        fr.write_lock_to_read_lock(k);
+      else
+        fr.read_lock(k);
     }
 
     /** Read-UnLock both training and validation User frames.  This method is

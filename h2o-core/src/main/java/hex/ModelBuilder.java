@@ -597,7 +597,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
+  private ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
@@ -613,13 +613,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame cvTrain = new Frame(Key.<Frame>make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
+      Frame cvTrain = new Frame(Key.make(identifier + "_train"), cv_fr.names(), cv_fr.vecs());
+      cvTrain.write_lock(_job);
       cvTrain.add(weightName, weights[2*i]);
-      DKV.put(cvTrain);
-      Frame cvValid = new Frame(Key.<Frame>make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
+      cvTrain.update(_job);
+      Frame cvValid = new Frame(Key.make(identifier + "_valid"), cv_fr.names(), cv_fr.vecs());
+      cvValid.write_lock(_job);
       cvValid.add(weightName, weights[2*i+1]);
-      DKV.put(cvValid);
-
+      cvValid.update(_job);
+      
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
       cv_mb.setTrain(cvTrain);

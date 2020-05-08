@@ -154,6 +154,28 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     }
   }
 
+  /** Atomically convert an existing write-lock on this to a read-lock, preventing future deletes or updates */
+  public void write_lock_to_read_lock(Key<Job> job_key) {
+    if( _key != null ) {
+      Log.debug("convert write-lock to read-lock " + _key + " by job " + job_key);
+      new WriteLockToReadLock(job_key).invoke(_key);
+    }
+  }
+
+  // Convert an existing write-lock to a read-lock
+  static private class WriteLockToReadLock extends TAtomic<Lockable> {
+    final Key<Job> _job_key;    // Job doing the unlocking
+    WriteLockToReadLock( Key<Job> job_key ) { _job_key = job_key; }
+    @Override public Lockable atomic(Lockable old) {
+      if (old == null) 
+        throw new IllegalArgumentException("Nothing to lock!");
+      if (!old.is_wlocked())
+        throw new IllegalArgumentException(old.getClass() + " " + _key + " is not write-locked;  Unable to convert it to read-locked.");
+      old.convert_write_to_read_lock(_job_key);
+      return old;
+    }
+  }
+
   // -----------
   /** Atomically set a new version of self, without changing the locking.  Typically used
    *  to upgrade a write-locked Model to a newer version with more training iterations. */
@@ -229,6 +251,11 @@ public abstract class Lockable<T extends Lockable<T>> extends Keyed<T> {
     assert !is_wlocked();       // not write locked
     _lockers = _lockers == null ? new Key[2] : Arrays.copyOf(_lockers,_lockers.length+1);
     _lockers[_lockers.length-1] = job_key;
+    assert is_locked(job_key);
+  }
+  private void convert_write_to_read_lock(Key<Job> job_key) {
+    assert is_wlocked();
+    _lockers = new Key[]{null, job_key};
     assert is_locked(job_key);
   }
   private void set_unlocked(Key lks[], Key<Job> job_key) {
