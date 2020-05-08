@@ -19,7 +19,7 @@ Note that when using ``rbind``, the two datasets must have the same set of colum
 
 		# Import an existing testing dataset
 		ecg2Path <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/anomaly/ecg_discord_test.csv"
-		ecg2 <- h2o.importFile(path=ecg2Path)
+		ecg2 <- h2o.importFile(path = ecg2Path)
 		print(dim(ecg2))
 		[1] 23 210
 
