@@ -29,7 +29,7 @@ The ``cbind`` function allows you to combine datasets by adding columns from one
 		
 		[6 rows x 2 columns]
 		
-		r_frame <- as.h2o(right)
+		right_frame <- as.h2o(right)
 		print(right_frame)
 		        fruit  citrus
 		 1      apple  FALSE
