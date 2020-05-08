@@ -28,3 +28,4 @@ This section provides examples of common tasks performed when preparing data for
    data-munging/splitting-datasets
    data-munging/target-encoding
    data-munging/tokenize
+   data-munging/date-time
