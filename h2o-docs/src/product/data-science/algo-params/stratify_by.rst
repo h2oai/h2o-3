@@ -40,15 +40,15 @@ Example
 		heart["age"] <- as.factor(heart["age"])
 
 		# train your model
-		coxph_h2o <- h2o.coxph(x=c("year", x), 
-		                       event_column=y, 
-		                       start_column=start, 
-		                       stop_column=stop, 
-		                       stratify_by=x, 
-		                       training_frame=heart)
+		heart_coxph <- h2o.coxph(x = c("year", x), 
+		                         event_column = y, 
+		                         start_column = start, 
+		                         stop_column = stop, 
+		                         stratify_by = x, 
+		                         training_frame = heart)
 
 		# view the model details
-		coxph_h2o
+		heart_coxph
 		Model Details:
 		==============
 
