@@ -89,7 +89,7 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
         flightsByOriginMonth <- h2o.group_by(data = airlines, 
                                              by = cols, 
                                              nrow("Month"), 
-                                             gb.control=list(na.methods="rm"))
+                                             gb.control = list(na.methods = "rm"))
         flightsByOriginMonth_R <- as.data.frame(flightsByOriginMonth)
         flightsByOriginMonth_R
             Origin Month nrow
