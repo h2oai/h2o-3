@@ -210,18 +210,18 @@ Below is a simple example showing how to build a CoxPH model.
     test <- heart_split[[2]]
 
     # Build and train the model:
-    coxph_model <- h2o.coxph(x = "age", 
+    heart_coxph <- h2o.coxph(x = "age", 
                              event_column = "event",
-                             start_column="start", 
+                             start_column = "start", 
                              stop_column = "stop", 
                              ties = "breslow", 
                              training_frame = train)
 
     # Eval performance:
-    perf <- h2o.performance(coxph_model)
+    perf <- h2o.performance(heart_coxph)
 
     # Generate predictions on a test set (if necessary):
-    predict <- h2o.predict(coxph_model, newdata = test)
+    predict <- h2o.predict(heart_coxph, newdata = test)
 
 
    .. code-tab:: python
@@ -237,15 +237,15 @@ Below is a simple example showing how to build a CoxPH model.
     train, test = heart.split_frame(ratios = [.8], seed = 1234)   
 
     # Build and train the model:
-    coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
-                                               stop_column="stop", 
-                                               ties="breslow")
-    coxph.train(x="age", 
+    heart_coxph = H2OCoxProportionalHazardsEstimator(start_column="start",
+                                                     stop_column="stop", 
+                                                     ties="breslow")
+    heart_coxph.train(x="age", 
                 y="event", 
                 training_frame=train)
 
     # Generate predictions on a test set (if necessary):
-    pred = coxph.predict(test)
+    pred = heart_coxph.predict(test)
 
 
 
