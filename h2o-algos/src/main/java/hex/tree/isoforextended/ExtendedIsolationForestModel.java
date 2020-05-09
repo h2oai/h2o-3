@@ -21,12 +21,9 @@ import water.util.SBPrintStream;
 public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolationForestModel, ExtendedIsolationForestModel.ExtendedIsolationForestParameters, 
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
     
-    transient IsolationTree[] iTrees;
-    
     public ExtendedIsolationForestModel(Key<ExtendedIsolationForestModel> selfKey, ExtendedIsolationForestParameters parms,
                                         ExtendedIsolationForestOutput output) {
         super(selfKey, parms, output);
-        iTrees = new IsolationTree[_parms._ntrees];
     }
 
     @Override
@@ -53,12 +50,12 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
         
         // compute score for given point
         double pathLength = 0;
-        for (IsolationTree iTree : iTrees) {
+        for (ExtendedIsolationForest.IsolationTree iTree : _output.iTrees) {
             double iTreeScore = iTree.computePathLength(row);
             pathLength += iTreeScore;
 //            System.out.println("iTreeScore " + iTreeScore);
         }
-        pathLength = pathLength / iTrees.length;
+        pathLength = pathLength / _output.iTrees.length;
 //        System.out.println("pathLength " + pathLength);
         double anomalyScore = anomalyScore(pathLength);
 //        System.out.println("Anomaly score " + anomalyScore);
@@ -77,7 +74,8 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
     }
 
     private double anomalyScore(double pathLength) {
-        return Math.pow(2, -1 * (pathLength / IsolationTree.averagePathLengthOfUnsuccesfullSearch(_parms.sampleSize)));
+        return Math.pow(2, -1 * (pathLength / 
+                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(_parms.sampleSize)));
     }
 
     public static class ExtendedIsolationForestParameters extends SharedTreeModel.SharedTreeParameters {
@@ -122,6 +120,8 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
     }
 
     public static class ExtendedIsolationForestOutput extends SharedTreeModel.SharedTreeOutput {
+        
+        public ExtendedIsolationForest.IsolationTree[] iTrees;
         
         public ExtendedIsolationForestOutput(SharedTree b) {
             super(b);

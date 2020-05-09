@@ -1,5 +1,6 @@
 package hex.tree.isoforextended;
 
+import hex.tree.isofor.IsolationForest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
@@ -62,10 +63,13 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
     @Test
     public void avgPathLengTest() {
-        assertEquals(10.244770920116851, IsolationTree.averagePathLengthOfUnsuccesfullSearch(256), 1e-5);
-        assertEquals(11.583643521303037, IsolationTree.averagePathLengthOfUnsuccesfullSearch(500), 1e-5);
-        assertEquals(0, IsolationTree.averagePathLengthOfUnsuccesfullSearch(1), 1e-5);
-        assertEquals(0, IsolationTree.averagePathLengthOfUnsuccesfullSearch(0), 1e-5);
-        assertEquals(0, IsolationTree.averagePathLengthOfUnsuccesfullSearch(-1), 1e-5);
+        assertEquals(10.244770920116851,
+                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(256), 1e-5);
+        assertEquals(11.583643521303037,
+                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(500), 1e-5);
+        assertEquals(1, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(2), 1e-5);
+        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(1), 1e-5);
+        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(0), 1e-5);
+        assertEquals(0, ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(-1), 1e-5);
     }
 }
