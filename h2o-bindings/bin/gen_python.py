@@ -317,6 +317,7 @@ def algo_to_classname(algo):
     if algo == "pca": return "H2OPrincipalComponentAnalysisEstimator"
     if algo == "stackedensemble": return "H2OStackedEnsembleEstimator"
     if algo == "isolationforest": return "H2OIsolationForestEstimator"
+    if algo == "extendedisolationforest": return "H2OExtendedIsolationForestEstimator"
     if algo == "psvm": return "H2OSupportVectorMachineEstimator"
     if algo == "targetencoder": return "H2OTargetEncoderEstimator"
     return "H2O" + algo.capitalize() + "Estimator"
@@ -383,6 +384,7 @@ def main():
         if name == "drf": module = "random_forest"
         if name == "naivebayes": module = "naive_bayes"
         if name == "isolationforest": module = "isolation_forest"
+        if name == "extendedisolationforest": module = "extended_isolation_forest"
         bi.vprint("Generating model: " + name)
         bi.write_to_file("%s.py" % module, gen_module(mb, name))
         category = "Supervised" if mb["supervised"] else "Unsupervised"
