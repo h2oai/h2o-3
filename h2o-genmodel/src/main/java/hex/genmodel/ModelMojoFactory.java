@@ -6,6 +6,8 @@ import hex.genmodel.algos.ensemble.StackedEnsembleMojoReader;
 import hex.genmodel.algos.gam.GamMojoReader;
 import hex.genmodel.algos.gbm.GbmMojoReader;
 import hex.genmodel.algos.glm.GlmMojoReader;
+import hex.genmodel.algos.isoforextended.ExtendedIsolationForestMojoReader;
+import hex.genmodel.algos.pca.PCAMojoReader;
 import hex.genmodel.algos.glrm.GlrmMojoReader;
 import hex.genmodel.algos.isofor.IsolationForestMojoReader;
 import hex.genmodel.algos.kmeans.KMeansMojoReader;
@@ -78,6 +80,9 @@ public class ModelMojoFactory {
 
       case "Isolation Forest":
         return new IsolationForestMojoReader();
+
+      case "Extended Isolation Forest":
+        return new ExtendedIsolationForestMojoReader();
 
       case "K-means":
         return new KMeansMojoReader();

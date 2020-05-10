@@ -1,6 +1,5 @@
 package hex.tree.isoforextended;
 
-import hex.tree.isofor.IsolationForest;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.Scope;
@@ -32,9 +31,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
-            p.extensionLevel = train.numCols() - 1;
-            p._min_rows = 1;
-//            p._sample_size = 5;
+            p.extension_level = train.numCols() - 1;
 
             ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
             ExtendedIsolationForestModel model = eif.trainModel().get();

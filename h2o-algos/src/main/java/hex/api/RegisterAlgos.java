@@ -23,6 +23,7 @@ public class RegisterAlgos extends AlgoAbstractRegister {
             new hex.tree.drf    .DRF         (true),
             new hex.tree.gbm    .GBM         (true),
             new hex.tree.isofor .IsolationForest(true),
+            new hex.tree.isoforextended .ExtendedIsolationForest(true),
             new hex.aggregator  .Aggregator  (true),
             new hex.word2vec    .Word2Vec    (true),
             new hex.ensemble    .StackedEnsemble(true),

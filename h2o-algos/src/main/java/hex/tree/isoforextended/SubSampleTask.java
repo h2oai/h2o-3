@@ -13,12 +13,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  */
 public class SubSampleTask extends MRTask<SubSampleTask> {
 
-    private int subSampleSize;
+    private long subSampleSize;
     private Random random;
     
     private AtomicInteger currentSubSampleSize = new AtomicInteger(-1);
 
-    public SubSampleTask(int subSampleSize, long seed) {
+    public SubSampleTask(long subSampleSize, long seed) {
         this.subSampleSize = subSampleSize;
         this.random = RandomUtils.getRNG(seed);
     }

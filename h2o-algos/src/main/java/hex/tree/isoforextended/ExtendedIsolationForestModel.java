@@ -5,13 +5,10 @@ import hex.ModelMetrics;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTree;
 import hex.tree.SharedTreeModel;
-import hex.tree.isofor.IsolationForestMojoWriter;
 import hex.tree.isofor.ModelMetricsAnomaly;
-import water.Iced;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.MathUtils;
 import water.util.SBPrintStream;
 
 /**
@@ -75,7 +72,7 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
 
     private double anomalyScore(double pathLength) {
         return Math.pow(2, -1 * (pathLength / 
-                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(_parms.sampleSize)));
+                ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(_parms._sample_size)));
     }
 
     public static class ExtendedIsolationForestParameters extends SharedTreeModel.SharedTreeParameters {
@@ -96,14 +93,13 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
         }
 
         // Maximum is N - 1 (N = numCols). Minimum is 0. EIF with extension_level = 0 behaves like Isolation Forest.
-        public int extensionLevel;
+        public int extension_level;
 
-        public int sampleSize;
+        public long _sample_size;
 
         public ExtendedIsolationForestParameters() {
             super();
             _max_depth = 8; // log2(_sample_size)
-            _sample_rate = 0.5;
             _min_rows = 1;
             _min_split_improvement = 0;
             _nbins = 2;
@@ -114,8 +110,9 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
 
             // early stopping
             _stopping_tolerance = 0.01; // (default 0.001 is too low for the default criterion anomaly_score)
-            
-            sampleSize = 256;
+
+            _sample_size = 256;
+            extension_level = 0;
         }        
     }
 

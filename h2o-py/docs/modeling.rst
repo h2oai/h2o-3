@@ -73,12 +73,6 @@ Supervised
     :show-inheritance:
     :members:
 
-:mod:`H2OXGBoostEstimator`
---------------------------
-.. autoclass:: h2o.estimators.xgboost.H2OXGBoostEstimator
-    :show-inheritance:
-    :members:
-
 
 Unsupervised
 ++++++++++++
@@ -92,6 +86,12 @@ Unsupervised
 :mod:`H2OAutoEncoderEstimator`
 ------------------------------
 .. autoclass:: h2o.estimators.deeplearning.H2OAutoEncoderEstimator
+    :show-inheritance:
+    :members:
+
+:mod:`H2OExtendedIsolationForestEstimator`
+------------------------------------------
+.. autoclass:: h2o.estimators.extended_isolation_forest.H2OExtendedIsolationForestEstimator
     :show-inheritance:
     :members:
 

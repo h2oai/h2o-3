@@ -4,10 +4,7 @@ import hex.ModelCategory;
 import hex.ScoreKeeper;
 import hex.psvm.psvm.MatrixUtils;
 import hex.tree.SharedTree;
-import water.DKV;
-import water.Iced;
-import water.Key;
-import water.MRTask;
+import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
@@ -25,11 +22,43 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
 
     transient IsolationTree[] iTrees;
-    
+
+    // Called from an http request
     public ExtendedIsolationForest(ExtendedIsolationForestModel.ExtendedIsolationForestParameters parms) {
         super(parms);
         init(false);
     }
+
+    public ExtendedIsolationForest(ExtendedIsolationForestModel.ExtendedIsolationForestParameters parms, Key<ExtendedIsolationForestModel> key) {
+        super(parms, key);
+        init(false);
+    }
+
+    public ExtendedIsolationForest(ExtendedIsolationForestModel.ExtendedIsolationForestParameters parms, Job job) {
+        super(parms, job);
+        init(false);
+    }
+
+    public ExtendedIsolationForest(boolean startup_once) {
+        super(new ExtendedIsolationForestModel.ExtendedIsolationForestParameters(), startup_once);
+    }
+
+//    TODO avalenta uncomment this method broke Python API generating
+//    @Override
+//    public void init(boolean expensive) {
+//        super.init(expensive);
+//        System.out.println("init");
+//        long extensionLevelMax = _parms.train().numCols() - 1;
+//        if (_parms.extension_level < 0 || _parms.extension_level > extensionLevelMax) {
+//            throw new IllegalStateException("Parameter extension_level must be in interval [0, "
+//                    + extensionLevelMax + "] but it is " + _parms.extension_level);
+//        }
+//        long sampleSizeMax = _parms.train().numRows();
+//        if (_parms._sample_size < 0 || _parms._sample_size > sampleSizeMax) {
+//            throw new IllegalStateException("Parameter sample_size must be in interval [0, "
+//                    + sampleSizeMax + "] but it is " + _parms._sample_size);
+//        }        
+//    }                
 
     @Override
     protected double score1(Chunk[] chks, double offset, double weight, double[] fs, int row) {
@@ -96,16 +125,15 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
         @Override
         protected boolean buildNextKTrees() {
-            int heightLimit = (int) Math.ceil(MathUtils.log2(_parms.sampleSize));
-
+            int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
             int randomUnit =  _rand.nextInt();
 
-            Frame subSample = new SubSampleTask(_parms.sampleSize, _parms._seed + randomUnit)
+            Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
                     .doAll(new byte[]{Vec.T_NUM, Vec.T_NUM} , _train.vecs(new int[]{0,1})).outputFrame(Key.make(), null, null);
 //            System.out.println("subSample size: " + subSample.numRows());
             DKV.put(subSample);
-
-            IsolationTree iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extensionLevel);
+            
+            IsolationTree iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level);
             iTree.buildTree();
 //            iTree.clean();
 //            iTree.print();
