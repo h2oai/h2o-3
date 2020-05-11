@@ -468,27 +468,49 @@ Information about how to cite the H2O software in general is covered in the `H2O
 Random Grid Search Parameters
 -----------------------------
 
-AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.  Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
+AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search. Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
 
 
-**GLM Hyperparameters**
+GLM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
 
--  ``alpha``
--  ``missing_values_handling``
++-----------------------------+---------------------------------------------------------------------------------------------+
+| Parameter                   | Range                                                                                       |
++=============================+=============================================================================================+
+| ``alpha``                   | 0 for Lasso; 1 for Ridge; and anything in between for the amount of mixing between the two. |
++-----------------------------+---------------------------------------------------------------------------------------------+
+| ``missing_values_handling`` | MeanImputation, Skip, or PlugValues                                                         |
++-----------------------------+---------------------------------------------------------------------------------------------+
 
 
-**XGBoost Hyperparameters**
+XGBoost Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~
 
--  ``ntrees``
--  ``max_depth``
--  ``min_rows``
--  ``min_sum_hessian_in_leaf``
--  ``sample_rate``
--  ``col_sample_rate``
--  ``col_sample_rate_per_tree``
--  ``booster``
--  ``reg_lambda``
--  ``reg_alpha``
++------------------------------+---------------------------------------------------------------------------------------------+
+| Parameter                    | Range                                                                                       |
++==============================+=============================================================================================+
+| ``booster``                  | A booster type of ``gbtree`` (default), ``gblinear``, or ``dart``                           |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``col_sample_rate``          | 0.0 to 1.0                                                                                  |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``col_sample_rate_per_tree`` | 0.0 to 1.0                                                                                  |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``max_depth``                | An integer. 0 specifies no limit. Defaults to 6.                                            |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_rows``                 | > 0. Defaults to 1.                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_sum_hessian_in_leaf``  | A float. Defaults to 100.                                                                   |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``ntrees``                   | An integer. Defaults to 50.                                                                 |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``reg_alpha``                | A float. Defaults to 0.                                                                     |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``reg_lambda``               | A float. Defaults to 1.                                                                     |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``sample_rate``              | A float from 0.0 to 1.0. Defaults to 1.0                                                    |
++------------------------------+---------------------------------------------------------------------------------------------+
+
+
 
 **GBM Hyperparameters**
 
