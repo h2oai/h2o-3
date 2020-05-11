@@ -474,45 +474,83 @@ AutoML performs hyperparameter search over a variety of H2O algorithms in order 
 GLM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~
 
+This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GLMStepsProvider.java>`__
+
 +-----------------------------+---------------------------------------------------------------------------------------------+
-| Parameter                   | Range                                                                                       |
+| Parameter                   | Searchable Values                                                                           |
 +=============================+=============================================================================================+
-| ``alpha``                   | 0 for Lasso; 1 for Ridge; and anything in between for the amount of mixing between the two. |
+| ``alpha``                   | Values searched over: {0.0, 0.2, 0.4, 0.6, 0.8, 1.0}                                        |
 +-----------------------------+---------------------------------------------------------------------------------------------+
-| ``missing_values_handling`` | MeanImputation, Skip, or PlugValues                                                         |
+| ``missing_values_handling`` | Hard coded model: ``MeanImputation``                                                        |
 +-----------------------------+---------------------------------------------------------------------------------------------+
 
 
 XGBoost Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~
 
+This table shows the XGBoost values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/XGBoostSteps.java>`__
+
 +------------------------------+---------------------------------------------------------------------------------------------+
-| Parameter                    | Range                                                                                       |
+| Parameter                    | Searchable Values                                                                           |
 +==============================+=============================================================================================+
-| ``booster``                  | A booster type of ``gbtree`` (default), ``gblinear``, or ``dart``                           |
+| ``backend``                  | Hard coded model: Auto (GPU will be used if available)                                      |
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``col_sample_rate``          | 0.0 to 1.0                                                                                  |
+| ``booster``                  | Hard coded model: ``gbtree``                                                                |
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``col_sample_rate_per_tree`` | 0.0 to 1.0                                                                                  |
+| ``col_sample_rate``          | Values searched over: {0.6, 0.8, 1.0}                                                       |
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``max_depth``                | An integer. 0 specifies no limit. Defaults to 6.                                            |
+| ``col_sample_rate_per_tree`` | Values searched over: {0.7, 0.8, 0.9, 1.0}                                                  |
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``min_rows``                 | > 0. Defaults to 1.                                                                         |
+| ``dmatrix_type``             | Hard coded model: Auto                                                                      |
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``min_sum_hessian_in_leaf``  | A float. Defaults to 100.                                                                   |
+| ``grow_policy``              | Hard coded model: ``depthwise``                                                             |
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``ntrees``                   | An integer. Defaults to 50.                                                                 |
+| ``learn_rate``               | Hard coded model: 0.3                                                                       |
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``reg_alpha``                | A float. Defaults to 0.                                                                     |
+| ``max_abs_leafnode_pred``    | Hard coded model: 0.0                                                                       |
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``reg_lambda``               | A float. Defaults to 1.                                                                     |
+| ``max_bins``                 | Hard coded model: 256                                                                       | 
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``sample_rate``              | A float from 0.0 to 1.0. Defaults to 1.0                                                    |
+| ``max_depth``                | Values searched over for LightGBM: {10, 20, 50};                                            | 
+|                              | else: {5, 10, 15, 20}                                                                       |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``max_leaves``               | Values searched over: {1<<5, 1<<10, 1<<15, 1<<20}                                           |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_data_in_leaf``         | Hard coded model: 0.0                                                                       |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_rows``                 | Values searched over: {0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0}                          |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_split_improvement``    | Hard coded model: 0.0                                                                       |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_sum_hessian_in_leaf``  | Values searched over: {0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0}                          |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``normalize_type``           | Hard coded model: ``tree``                                                                  |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``ntrees``                   | Hard coded model: 10000                                                                     |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``one_drop``                 | Hard coded model for ``booster=dart``: false                                                |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``rate_drop``                | Hard coded model: 0.0                                                                       |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``reg_alpha``                | Values searched over: {0.001f, 0.01f, 0.1f, 1f, 10f, 100f}                                  |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``reg_lambda``               | Values searched over: {0.001f, 0.01f, 0.1f, 0.5f, 1f}                                       |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``sample_rate``              | Values searched over: {0.6, 0.8, 1.0}                                                       |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``sample_type``              | Hard coded model: ``uniform``                                                               |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``skip_drop``                | Hard coded model for ``booster=dart``: 0.0                                                  |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``tree_method``              | Hard coded model: ``exact`` for small/medium datasets; ``approx`` for very large datasets   |
 +------------------------------+---------------------------------------------------------------------------------------------+
 
 
+GBM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
 
-**GBM Hyperparameters**
+This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GBMStepsProvider.java>`__
+
 
 -  ``histogram_type``
 -  ``ntrees``
