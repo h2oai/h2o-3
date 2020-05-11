@@ -1,15 +1,15 @@
 package hex.tree.isoforextended;
 
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
+import water.DKV;
+import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
-
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -40,19 +40,38 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
             Frame test = Scope.track(parse_test_file("smalldata/anomaly/heatmap_data.csv"));
             Frame out = model.score(test);
-            Frame.CSVStreamParams params = new Frame.CSVStreamParams();
-            byte[] buffer = new byte[1<<20];
-            int bytesRead;
-            try {
-                try (InputStream frameToStream = out.toCSV(params);
-                     OutputStream outStream = new FileOutputStream("eif.csv")) {
-                    while((bytesRead=frameToStream.read(buffer)) > 0) { // for our toCSV stream, return 0 as EOF, not -1
-                        outStream.write(buffer, 0, bytesRead);
-                    }
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            Scope.track_generic(out);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    @Ignore
+    public void testBasicWithCategoricalData() {
+        try {
+            Scope.enter();
+            Frame train = new TestFrameBuilder()
+                    .withVecTypes(Vec.T_NUM, Vec.T_CAT)
+                    .withDataForCol(0, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
+                    .withDataForCol(1, ar("B", "C", "D", "E", "B", "C", "D", "E", "A", "B"))
+                    .build();
+            Scope.track(train);
+
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p = new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 100;
+            p._sample_size = 2;
+            p.extension_level = train.numCols() - 1;
+
+            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
+            ExtendedIsolationForestModel model = eif.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+
+            Frame out = model.score(train);
+            Scope.track_generic(out);
         } finally {
             Scope.exit();
         }
