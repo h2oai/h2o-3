@@ -474,7 +474,7 @@ AutoML performs hyperparameter search over a variety of H2O algorithms in order 
 GLM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~
 
-This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GLMStepsProvider.java>`__
+This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GLMStepsProvider.java>`__.
 
 +-----------------------------+---------------------------------------------------------------------------------------------+
 | Parameter                   | Searchable Values                                                                           |
@@ -488,7 +488,7 @@ This table shows the GLM values that are searched over when performing AutoML gr
 XGBoost Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-This table shows the XGBoost values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/XGBoostSteps.java>`__
+This table shows the XGBoost values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/XGBoostSteps.java>`__.
 
 +------------------------------+---------------------------------------------------------------------------------------------+
 | Parameter                    | Searchable Values                                                                           |
@@ -521,7 +521,7 @@ This table shows the XGBoost values that are searched over when performing AutoM
 GBM Hyperparameters
 ~~~~~~~~~~~~~~~~~~~
 
-This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GBMStepsProvider.java>`__
+This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GBMStepsProvider.java>`__.
 
 +------------------------------+---------------------------------------------------------------------------------------------+
 | Parameter                    | Searchable Values                                                                           |
@@ -549,7 +549,7 @@ This table shows the GLM values that are searched over when performing AutoML gr
 Deep Learning Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-This table shows the Deep Learning values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/DeepLearningStepsProvider.java>`__
+This table shows the Deep Learning values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/DeepLearningStepsProvider.java>`__.
 
 +------------------------------+----------------------------------------------------------------------------------------------------------+
 | Parameter                    | Searchable Values                                                                                        |
