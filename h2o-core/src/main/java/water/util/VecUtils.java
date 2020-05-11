@@ -906,10 +906,10 @@ public class VecUtils {
 
   /**
    * 
-   * @return Vector dimension of frame.numCols with values from uniform distribution with bounds taken from frame.
+   * @return Array dimension of frame.numCols with values from uniform distribution with bounds taken from frame.
    *         For example first value of the result is from Unif(First column min value, First column max value)
    */
-  public static Vec uniformDistrFromFrame(Frame frame, long seed) {
+  public static double[] uniformDistrFromFrame(Frame frame, long seed) {
     double[] p = new double[frame.numCols()];
     Vec[] vecs = frame.vecs();
     Random random = RandomUtils.getRNG(seed);
@@ -919,7 +919,7 @@ public class VecUtils {
       double max = vec.max();
       p[i] = min + random.nextDouble() * (max - min);
     }
-    return Vec.makeVec(p, Vec.newKey());
+    return p;
   }
 
   /**

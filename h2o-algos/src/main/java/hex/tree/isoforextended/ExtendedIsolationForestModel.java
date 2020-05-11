@@ -43,12 +43,11 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
     protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
         super.score0(data, preds, offset, ntrees);
         if (ntrees >= 1) preds[1] = preds[0] / ntrees;
-        Vec row = Vec.makeVec(data, Vec.newKey());
         
         // compute score for given point
         double pathLength = 0;
         for (ExtendedIsolationForest.IsolationTree iTree : _output.iTrees) {
-            double iTreeScore = iTree.computePathLength(row);
+            double iTreeScore = iTree.computePathLength(data);
             pathLength += iTreeScore;
 //            System.out.println("iTreeScore " + iTreeScore);
         }

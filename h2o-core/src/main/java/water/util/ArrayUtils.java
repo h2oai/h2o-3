@@ -748,6 +748,10 @@ public class ArrayUtils {
     return false;
   }
 
+  public static byte[] subarray(byte[] a, int off, int len) {
+    return Arrays.copyOfRange(a,off,off+len);
+  }
+  
   public static <T> T[] subarray(T[] a, int off, int len) {
     return Arrays.copyOfRange(a,off,off+len);
   }
@@ -1048,14 +1052,30 @@ public class ArrayUtils {
   }
   public static double[] gaussianVector(int n) { return gaussianVector(n, System.currentTimeMillis()); }
   public static double[] gaussianVector(int n, long seed) { return gaussianVector(n, getRNG(seed)); }
-  public static double[] gaussianVector(int n, Random random) {
+  public static double[] gaussianVector(int n, Random random) { return gaussianVector(n, random, 0); }
+  public static double[] gaussianVector(int n, long seed, int zeroNum) {return gaussianVector(n, getRNG(seed), zeroNum); }
+  /**
+   * Make a new array initialized to random Gaussian N(0,1) values with the given seed.
+   * Make randomly selected {@code zeroNum} items zeros. Used in Extended isolation forest.
+   *
+   * @param n length of generated vector
+   * @param zeroNum set randomly selected {@code zeroNum} items of vector to zero
+   * @return array with gaussian values. Randomly selected {@code zeroNum} item values are zeros.
+   */
+  public static double[] gaussianVector(int n, Random random, int zeroNum) {
     if(n <= 0) return null;
     double[] result = new double[n];  // ToDo: Get rid of this new action.
 
     for(int i = 0; i < n; i++)
       result[i] = random.nextGaussian();
+
+    for (int i = 0; i < zeroNum; i++) {
+        int randomItem = Math.abs(random.nextInt());
+        randomItem = randomItem % n;
+        result[randomItem] = 0;
+      }    
     return result;
-  }
+  }  
 
   /** Remove the array allocation in this one */
   public static double[] gaussianVector(long seed, double[] vseed) {

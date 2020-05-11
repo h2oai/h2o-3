@@ -8,6 +8,7 @@ import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
+import water.util.ArrayUtils;
 import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.VecUtils;
@@ -110,6 +111,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
     }
 
     public int k = 0;
+
     private class ExtendedIsolationForestDriver extends Driver {
 
         @Override
@@ -126,13 +128,15 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         @Override
         protected boolean buildNextKTrees() {
             int heightLimit = (int) Math.ceil(MathUtils.log2(_parms._sample_size));
-            int randomUnit =  _rand.nextInt();
+            int randomUnit = _rand.nextInt();
+
+            // remove auto generated features
+            byte[] subTypes = ArrayUtils.subarray(_train.types(), 0, _train.numCols() - 4);
+            Vec[] subFrame = ArrayUtils.subarray(_train.vecs(), 0, _train.numCols() - 4);
 
             Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
-                    .doAll(new byte[]{Vec.T_NUM, Vec.T_NUM} , _train.vecs(new int[]{0,1})).outputFrame(Key.make(), null, null);
-//            System.out.println("subSample size: " + subSample.numRows());
-            DKV.put(subSample);
-            
+                    .doAll(subTypes, subFrame).outputFrame(Key.make(), null, null);
+
             IsolationTree iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level);
             iTree.buildTree();
 //            iTree.clean();
@@ -147,10 +151,10 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         protected void initializeModelSpecifics() {
             iTrees = new IsolationTree[_parms._ntrees];
         }
-        
+
     }
 
-    public static class IsolationTree extends Iced {
+    public static class IsolationTree extends Iced<IsolationTree> {
         private Node[] nodes;
 
         private Key<Frame> frameKey;
@@ -172,32 +176,33 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             nodes[0] = new Node(frame._key, frame.numRows(), 0);
             for (int i = 0; i < nodes.length; i++) {
                 Node node = nodes[i];
-                if (node == null || node.external)
+                if (node == null || node.external) {
                     continue;
+                }
                 Frame nodeFrame = node.getFrame();
                 int currentHeight = node.height;
                 if (node.height >= heightLimit || nodeFrame.numRows() <= 1) {
                     node.external = true;
                     node.size = nodeFrame.numRows();
                     node.height = currentHeight;
+                    DKV.remove(node.frameKey);
                 } else {
                     currentHeight++;
 
-                    node.p = VecUtils.uniformDistrFromFrameMR(nodeFrame, seed + i);
-                    node.pp = FrameUtils.asDoubles(node.p);
-                    node.n = VecUtils.makeGaussianVec(nodeFrame.numCols(), nodeFrame.numCols() - extensionLevel - 1, seed + i);
-                    node.nn = FrameUtils.asDoubles(node.n);
-                    Frame sub = MatrixUtils.subtractionMtv(nodeFrame, node.p);
-                    Vec mul = MatrixUtils.productMtv2(sub, node.n);
+                    node.p = VecUtils.uniformDistrFromFrame(nodeFrame, seed + i);
+                    node.n = ArrayUtils.gaussianVector(nodeFrame.numCols(), seed + i, nodeFrame.numCols() - extensionLevel - 1);
+                    Frame sub = MatrixUtils.subtractionMtArray(nodeFrame, node.p);
+                    Vec mul = MatrixUtils.ProductMtArray(sub, node.n);
                     Frame left = new FilterLtTask(mul, 0).doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
-                    Frame right = new FilterGteRightTask(mul, 0).doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
-                    DKV.remove(node.frameKey);
-                    DKV.put(left);
-                    DKV.put(right);
+                    Frame right = new FilterGteTask(mul, 0).doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
+                    DKV.remove(nodeFrame._key);
 
-                    if ((2 * i + 1) < nodes.length) {
+                    if ((2 * i + 2) < nodes.length) {
                         nodes[2 * i + 1] = new Node(left._key, left.numRows(), currentHeight);
                         nodes[2 * i + 2] = new Node(right._key, right.numRows(), currentHeight);
+                    } else {
+                        DKV.remove(left._key);
+                        DKV.remove(right._key);
                     }
                 }
             }
@@ -223,13 +228,13 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             System.out.println("");
         }
 
-        public double computePathLength(Vec row) {
+        public double computePathLength(double[] row) {
             int position = 0;
             Node node = nodes[0];
             double score = 0;
             while (!node.external) {
-                Vec sub = MatrixUtils.subtractionVtv(row, Vec.makeVec(node.pp, Vec.newKey()));
-                double mul = MatrixUtils.productVtV(sub, Vec.makeVec(node.nn, Vec.newKey()));
+                double[] sub = ArrayUtils.subtract(row, node.p);
+                double mul = ArrayUtils.innerProduct(sub, node.n);
                 if (mul <= 0) {
                     position = 2 * position + 1;
                 } else {
@@ -244,12 +249,10 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             return score;
         }
 
-        private static class Node extends Iced {
+        private static class Node extends Iced<Node> {
             private Key<Frame> frameKey;
-            private Vec n;
-            private double[] nn;
-            public double[] pp;
-            private Vec p;
+            private double[] n;
+            public double[] p;
 
             int height;
             boolean external = false;
@@ -262,7 +265,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             }
 
             Frame getFrame() {
-                return DKV.get(frameKey).get();
+                return DKV.getGet(frameKey);
             }
         }
 
@@ -278,8 +281,8 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
                 return 1;
             return 2 * MathUtils.harmonicNumberEstimation(n - 1) - (2.0 * (n - 1.0)) / n;
         }
-    }    
-    
+    }
+
     private static class PrintRowsMRTask extends MRTask<PrintRowsMRTask> {
 
         @Override
@@ -291,6 +294,6 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
                 System.out.println();
             }
         }
-    }    
+    }
 
 }
