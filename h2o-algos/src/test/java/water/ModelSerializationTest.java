@@ -2,6 +2,8 @@ package water;
 
 import hex.tree.isofor.IsolationForest;
 import hex.tree.isofor.IsolationForestModel;
+import hex.tree.isoforextended.ExtendedIsolationForest;
+import hex.tree.isoforextended.ExtendedIsolationForestModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -131,6 +133,21 @@ public class ModelSerializationTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testExtendedIsolationForestModel() throws IOException {
+    ExtendedIsolationForestModel model = null;
+    ExtendedIsolationForestModel loadedModel = null;
+    try {
+      model = prepareExtIsoForModel("smalldata/logreg/prostate.csv", ar("ID", "CAPSULE"), 5, 1);
+      loadedModel = saveAndLoad(model);
+      assertModelBinaryEquals(model, loadedModel);
+    } finally {
+      if (model != null)
+        model.delete();
+      if (loadedModel != null)
+        loadedModel.delete();
+    }
+  }
 
   @Test
   public void testGLMModel() throws IOException {
@@ -195,6 +212,23 @@ public class ModelSerializationTest extends TestUtil {
       if (f!=null) f.delete();
     }
   }
+
+  private ExtendedIsolationForestModel prepareExtIsoForModel(String dataset, String[] ignoredColumns,
+                                                             int ntrees, int extensionLevel) {
+    Frame f = parse_test_file(dataset);
+    try {
+      ExtendedIsolationForestModel.ExtendedIsolationForestParameters eifParams =
+              new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+      eifParams._train = f._key;
+      eifParams._ntrees = ntrees;
+      eifParams.extension_level = extensionLevel;
+      eifParams._score_each_iteration = true;
+
+      return new ExtendedIsolationForest(eifParams).trainModel().get();
+    } finally {
+      if (f != null) f.delete();
+    }
+  }  
 
   private GLMModel prepareGLMModel(String dataset, String[] ignoredColumns, String response, GLMModel.GLMParameters.Family family) {
     Frame f = parse_test_file(dataset);
