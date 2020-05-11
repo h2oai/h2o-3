@@ -2,6 +2,64 @@
 
 ## H2O
 
+### Zahradnik (3.30.0.3) - 5/12/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7362'>PUBDEV-7362</a>] - Using h2o.merge in R to join a single row H2OFrame where the join is on a <dbl> column to another frame no longer fail or returns the wrong number of rows. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7454'>PUBDEV-7454</a>] - Fixed an issue that caused the h2o.get_leaderboard function to fail for a re-attached H2OAutoML object. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7492'>PUBDEV-7492</a>] - Improved validation and error messages for CoxPH.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7498'>PUBDEV-7498</a>] - In XGBoost, the `predict_leaf_node_assignment` parameter now works correctly with multiclass.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7517'>PUBDEV-7517</a>] - Fixed an issue that caused GBM to fail when it encountered a bin that included a single value and the rest NAs.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3292'>PUBDEV-3292</a>] - Added a new DropDuplicatesRows method. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6250'>PUBDEV-6250</a>] - PDPs can now be calculated for multiclass problems. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7507'>PUBDEV-7507</a>] - Improved MOJOs by making them aware of model metadata. (STILL OPEN)
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6003'>PUBDEV-6003</a>] - In AutoML, added a table with parameter values and random grid space ranges. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6938'>PUBDEV-6938</a>] - Added the TF-IDF (term frequency-inverse document frequency) algorithm. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7103'>PUBDEV-7103</a>] - UpdateD the AutoML example in the R package. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7438'>PUBDEV-7438</a>] - PDPs now allow y-axis scaling options.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7463'>PUBDEV-7463</a>] - Improved speed for training and prediction of Stacked Ensembles.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7343'>PUBDEV-7343</a>] - Improved the Hive import documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7500'>PUBDEV-7500</a>] - Improved documentation for Quantiles in the User Guide. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7505'>PUBDEV-7505</a>] - Fixed the documented default value for `min_split_improvement` parameter in XGBoost.
+</li>
+</ul>
+
+
+
 ### Zahradnik (3.30.0.2) - 4/28/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/index.html</a>
