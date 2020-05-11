@@ -978,7 +978,7 @@ h2o.performance <- function(model, newdata=NULL, train=FALSE, valid=FALSE, xval=
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
 #' prostate_gbm <- h2o.gbm(3:9, "CAPSULE", prostate)
-#' pred <- h2o.predict(prostate_gbm, prostate)[,3] ## class-1 probability
+#' pred <- h2o.predict(prostate_gbm, prostate)[, 3] ## class-1 probability
 #' h2o.make_metrics(pred, prostate$CAPSULE)
 #' }
 #' @export
@@ -1041,7 +1041,7 @@ h2o.make_metrics <- function(predicted, actuals, domain=NULL, distribution=NULL,
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.auc(perf)
@@ -1107,7 +1107,7 @@ h2o.auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.aucpr(perf)
@@ -1179,7 +1179,7 @@ h2o.pr_auc <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.mean_per_class_error(perf)
@@ -1243,7 +1243,7 @@ h2o.mean_per_class_error <- function(object, train=FALSE, valid=FALSE, xval=FALS
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' p_sid <- h2o.runif(prostate)
 #' prostate_train <- prostate[p_sid > .2,]
-#' prostate_glm <- h2o.glm(x=3:7, y=2, training_frame=prostate_train)
+#' prostate_glm <- h2o.glm(x = 3:7, y = 2, training_frame = prostate_train)
 #' aic_basic <- h2o.aic(prostate_glm)
 #' print(aic_basic)
 #' }
@@ -1444,7 +1444,7 @@ h2o.HGLMMetrics <- function(object) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.giniCoef(perf)
@@ -1500,9 +1500,9 @@ h2o.giniCoef <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "cylinders"
-#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 #' train <- cars_split[[1]]
 #' valid <- cars_split[[2]]
 #' cars_glm <- h2o.glm(balance_classes = TRUE, 
@@ -1538,9 +1538,9 @@ h2o.coef <- function(object) {
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "cylinders"
-#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 #' train <- cars_split[[1]]
 #' valid <- cars_split[[2]]
 #' cars_glm <- h2o.glm(balance_classes = TRUE, 
@@ -1612,7 +1612,7 @@ grabCoeff <- function(tempTable, nameStart, standardize=FALSE) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.mse(perf)
@@ -1685,7 +1685,7 @@ h2o.mse <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
 #'
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' perf <- h2o.performance(model, prostate)
 #' h2o.rmse(perf)
@@ -1874,7 +1874,7 @@ h2o.rmsle <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
 #' cars_splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
 #' train <- cars_splits[[1]]
@@ -1935,7 +1935,7 @@ h2o.logloss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' f <- "http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate_complete.csv.zip"
 #' pros <- h2o.importFile(f)
 #' response <- "GLEASON"
-#' predictors <- c("ID","AGE","CAPSULE","DCAPS","PSA","VOL","DPROS")
+#' predictors <- c("ID", "AGE", "CAPSULE", "DCAPS", "PSA", "VOL", "DPROS")
 #' model <- h2o.glm(x = predictors, y = response, training_frame = pros)
 #' h2o.varimp(model)
 #' }
@@ -2005,9 +2005,9 @@ h2o.varsplits <- function(object) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 #' train <- cars_split[[1]]
 #' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, 
@@ -2063,13 +2063,13 @@ h2o.get_ntrees_actual <- function(object) {
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/chicago/chicagoCensus.csv"
 #' census <- h2o.importFile(f)
-#' census[,1] <- as.factor(census[,1])
-#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
-#'                             hidden = c(17,191), 
+#' census[, 1] <- as.factor(census[, 1])
+#' dl_model <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
+#'                             hidden = c(17, 191), 
 #'                             epochs = 1,
 #'                             balance_classes = FALSE,
 #'                             export_weights_and_biases = TRUE)
-#' h2o.weights(dlmodel, matrix_id = 1)
+#' h2o.weights(dl_model, matrix_id = 1)
 #' }
 #' @export
 h2o.weights <- function(object, matrix_id=1){
@@ -2097,14 +2097,14 @@ h2o.weights <- function(object, matrix_id=1){
 #' 
 #' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/chicago/chicagoCensus.csv"
 #' census <- h2o.importFile(f)
-#' census[,1] <- as.factor(census[,1])
+#' census[, 1] <- as.factor(census[, 1])
 #' 
-#' dlmodel <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
-#'                             hidden = c(17,191),
+#' dl_model <- h2o.deeplearning(x = c(1:3), y = 4, training_frame = census,
+#'                             hidden = c(17, 191),
 #'                             epochs = 1, 
 #'                             balance_classes = FALSE, 
 #'                             export_weights_and_biases = TRUE)
-#' h2o.biases(dlmodel, vector_id = 1)
+#' h2o.biases(dl_model, vector_id = 1)
 #' }
 #' @export
 h2o.biases <- function(object, vector_id=1){
@@ -2389,9 +2389,9 @@ h2o.specificity <- function(object, thresholds){
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 #' train <- cars_split[[1]]
 #' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, 
@@ -2421,9 +2421,9 @@ h2o.find_threshold_by_max_metric <- function(object, metric) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 #' train <- cars_split[[1]]
 #' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, 
@@ -2458,7 +2458,7 @@ h2o.find_row_by_threshold <- function(object, threshold) {
 #' library(h2o)
 #' h2o.init()
 #' fr <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_train.csv")
-#' h2o.ceiling(fr[,1])
+#' h2o.ceiling(fr[, 1])
 #' }
 #' @export
 h2o.centers <- function(object) { as.data.frame(object@model$centers[,-1]) }
@@ -2643,8 +2643,8 @@ h2o.totss <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", 
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' h2o.num_iterations(prostate_glm)
@@ -2770,8 +2770,8 @@ h2o.cluster_sizes <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", nfolds = 0, 
 #'                         alpha = 0.5, lambda_search = FALSE)
 #' h2o.null_deviance(prostate_glm, train = TRUE)
@@ -2832,8 +2832,8 @@ h2o.null_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", 
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' h2o.residual_deviance(prostate_glm, train = TRUE)
@@ -2894,8 +2894,8 @@ h2o.residual_deviance <- function(object, train=FALSE, valid=FALSE, xval=FALSE) 
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", 
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' h2o.residual_dof(prostate_glm, train = TRUE)
@@ -2956,8 +2956,8 @@ h2o.residual_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", nfolds = 0, 
 #'                         alpha = 0.5, lambda_search = FALSE)
 #' h2o.null_dof(prostate_glm, train = TRUE)
@@ -3025,13 +3025,13 @@ h2o.null_dof <- function(object, train=FALSE, valid=FALSE, xval=FALSE) {
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, distribution = "bernoulli",
-#'                  training_frame = prostate, validation_frame = prostate, nfolds=3)
+#'                  training_frame = prostate, validation_frame = prostate, nfolds = 3)
 #' h2o.gainsLift(model)              ## extract training metrics
-#' h2o.gainsLift(model, valid=TRUE)  ## extract validation metrics (here: the same)
-#' h2o.gainsLift(model, xval =TRUE)  ## extract cross-validation metrics
-#' h2o.gainsLift(model, newdata=prostate) ## score on new data (here: the same)
+#' h2o.gainsLift(model, valid = TRUE)  ## extract validation metrics (here: the same)
+#' h2o.gainsLift(model, xval = TRUE)  ## extract cross-validation metrics
+#' h2o.gainsLift(model, newdata = prostate) ## score on new data (here: the same)
 #' # Generating a ModelMetrics object
 #' perf <- h2o.performance(model, prostate)
 #' h2o.gainsLift(perf)               ## extract from existing metrics object
@@ -3112,7 +3112,7 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' h2o.confusionMatrix(model, prostate)
 #' # Generating a ModelMetrics object
@@ -3248,13 +3248,13 @@ setMethod("h2o.confusionMatrix", "H2OModelMetrics", function(object, thresholds=
 #'     library(h2o)
 #'     h2o.init()
 #'
-#'     df <- as.h2o(mlbench::mlbench.friedman1(10000,1))
-#'     rng <- h2o.runif(df, seed=1234)
-#'     train <- df[rng<0.8,]
-#'     valid <- df[rng>=0.8,]
+#'     df <- as.h2o(mlbench::mlbench.friedman1(10000, 1))
+#'     rng <- h2o.runif(df, seed = 1234)
+#'     train <- df[rng < 0.8,]
+#'     valid <- df[rng >= 0.8,]
 #'
 #'     gbm <- h2o.gbm(x = 1:10, y = "y", training_frame = train, validation_frame = valid,
-#'                    ntrees=500, learn_rate=0.01, score_each_iteration = TRUE)
+#'                    ntrees = 500, learn_rate = 0.01, score_each_iteration = TRUE)
 #'     plot(gbm)
 #'     plot(gbm, timestep = "duration", metric = "deviance")
 #'     plot(gbm, timestep = "number_of_trees", metric = "deviance")
@@ -3382,7 +3382,7 @@ plot.H2OModel <- function(x, timestep = "AUTO", metric = "AUTO", ...) {
 #' h2o.init()
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
+#' prostate[, 2] <- as.factor(prostate[, 2])
 #' model <- h2o.gbm(x = 3:9, y = 2, training_frame = prostate, distribution = "bernoulli")
 #' h2o.varimp_plot(model)
 #'
@@ -3455,8 +3455,8 @@ h2o.varimp_plot <- function(model, num_of_features = NULL){
 #'
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #'                          training_frame = prostate, family = "binomial",
 #'                          nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' h2o.std_coef_plot(prostate_glm)
@@ -3589,7 +3589,7 @@ screeplot.H2ODimReductionModel <- function(x, npcs, type = "barplot", main, ...)
 #' 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' cars_pca <- h2o.prcomp(cars, transform = "STANDARDIZE", 
 #'                        k = 3, x = predictors, seed = 12345)
 #' h2o.sdev(cars_pca)
@@ -3778,9 +3778,9 @@ plot.H2OTabulate <- function(x, xlab = x$cols[1], ylab = x$cols[2], base_size = 
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 #' train <- cars_split[[1]]
 #' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
@@ -3808,13 +3808,13 @@ h2o.cross_validation_models <- function(object) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 #' train <- cars_split[[1]]
 #' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-#'                     nfolds = 5,  keep_cross_validation_fold_assignment= TRUE, seed = 1234)
+#'                     nfolds = 5,  keep_cross_validation_fold_assignment = TRUE, seed = 1234)
 #' h2o.cross_validation_fold_assignment(cars_gbm)
 #' }
 #' @export
@@ -3868,9 +3868,9 @@ h2o.cross_validation_holdout_predictions <- function(object) {
 #' f <- "https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv"
 #' cars <- h2o.importFile(f)
 #' cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' response <- "economy_20mpg"
-#' cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+#' cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 #' train <- cars_split[[1]]
 #' valid <- cars_split[[2]]
 #' cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train, 
@@ -3919,8 +3919,8 @@ h2o.cross_validation_predictions <- function(object) {
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate[, "CAPSULE"] <- as.factor(prostate[, "CAPSULE"] )
-#' prostate[, "RACE"] <- as.factor(prostate[,"RACE"] )
-#' prostate_gbm <- h2o.gbm(x = c("AGE","RACE"),
+#' prostate[, "RACE"] <- as.factor(prostate[, "RACE"] )
+#' prostate_gbm <- h2o.gbm(x = c("AGE", "RACE"),
 #'                         y = "CAPSULE",
 #'                         training_frame = prostate,
 #'                         ntrees = 10,
@@ -4680,11 +4680,11 @@ h2o.get_seed <- get_seed.H2OModel
 #'
 #' # Train a very simple GBM model
 #' features <- c("Sepal.Length", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-#' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
+#' original_model <- h2o.gbm(x = features, y = "Species", training_frame = data)
 #'
 #' # Download the trained GBM model as MOJO (temporary directory used in this example)
 #' mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
-#' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+#' mojo_original_path <- paste0(tempdir(), "/", mojo_original_name)
 #'
 #' # Import the MOJO as Generic model
 #' generic_model <- h2o.genericModel(mojo_original_path)
@@ -4714,7 +4714,7 @@ h2o.genericModel <- function(mojo_file_path){
 #'
 #' # Train a very simple GBM model
 #' features <- c("Sepal.Length", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-#' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
+#' original_model <- h2o.gbm(x = features, y = "Species", training_frame = data)
 #'
 #' # Download the trained GBM model as MOJO (temporary directory used in this example)
 #' mojo_original_path <- h2o.save_mojo(original_model, path = tempdir())
@@ -4749,11 +4749,11 @@ h2o.import_mojo <- function(mojo_file_path){
 #'
 #' # Train a very simple GBM model
 #' features <- c("Sepal.Length", "Sepal.Length", "Sepal.Width", "Petal.Length", "Petal.Width")
-#' original_model <- h2o.gbm(x=features, y = "Species", training_frame = data)
+#' original_model <- h2o.gbm(x = features, y = "Species", training_frame = data)
 #'
 #' # Download the trained GBM model as MOJO (temporary directory used in this example)
 #' mojo_original_name <- h2o.download_mojo(model = original_model, path = tempdir())
-#' mojo_original_path <- paste0(tempdir(),"/",mojo_original_name)
+#' mojo_original_path <- paste0(tempdir(), "/", mojo_original_name)
 #'
 #' # Upload the MOJO from local filesystem and obtain a Generic model
 #' mojo_model <- h2o.upload_mojo(mojo_original_path)
@@ -4781,8 +4781,8 @@ h2o.upload_mojo <- function(mojo_local_file_path){
 #' 
 #' prostate_path <- system.file("extdata", "prostate.csv", package = "h2o")
 #' prostate <- h2o.importFile(prostate_path)
-#' prostate[,2] <- as.factor(prostate[,2])
-#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"), 
+#' prostate[, 2] <- as.factor(prostate[, 2])
+#' prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"), 
 #'                         training_frame = prostate, family = "binomial", 
 #'                         nfolds = 0, alpha = 0.5, lambda_search = FALSE)
 #' old_threshold <- h2o.reset_threshold(prostate_glm, 0.9)

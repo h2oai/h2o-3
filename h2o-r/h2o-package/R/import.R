@@ -333,7 +333,7 @@ h2o.import_hive_table <- function(database, table, partitions = NULL, allow_mult
 #' # h2o.init()
 #' # prostate_path = system.file("extdata", "prostate.csv", package = "h2o")
 #' # prostate = h2o.importFile(path = prostate_path)
-#' # prostate_glm = h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' # prostate_glm = h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #' #   training_frame = prostate, family = "binomial", alpha = 0.5)
 #' # glmmodel_path = h2o.saveModel(prostate_glm, dir = "/Users/UserName/Desktop")
 #' # glmmodel_load = h2o.loadModel(glmmodel_path)

@@ -869,7 +869,7 @@ h2o.is_client <- function() get("IS_CLIENT", .pkg.env)
 #' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
 #' iris <- h2o.importFile(f)
 #' iris["class"] <- as.factor(iris["class"])
-#' predictors <- c("sepal_len","sepal_wid","petal_len","petal_wid")
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' splits <- h2o.splitFrame(iris, ratios = 0.8, seed = 1234)
 #' train <- splits[[1]]
 #' valid <- splits[[2]]
@@ -895,7 +895,7 @@ h2o.no_progress <- function() assign("PROGRESS_BAR", FALSE, .pkg.env)
 #' f <- "http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv"
 #' iris <- h2o.importFile(f)
 #' iris["class"] <- as.factor(iris["class"])
-#' predictors <- c("sepal_len","sepal_wid","petal_len","petal_wid")
+#' predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
 #' splits <- h2o.splitFrame(iris, ratios = 0.8, seed = 1234)
 #' train <- splits[[1]]
 #' valid <- splits[[2]]
