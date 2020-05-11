@@ -10,7 +10,8 @@ test.automl.documentation.suite <- function() {
     prostate_hf[,y] <- as.factor(prostate_hf[,y])
     aml <- h2o.automl(y = y, training_frame = prostate_hf, max_runtime_secs = 30)
 
-    print(aml@leaderboard)
+    lb <- h2o.get_leaderboard(aml)
+    head(lb)
   }
 
 
