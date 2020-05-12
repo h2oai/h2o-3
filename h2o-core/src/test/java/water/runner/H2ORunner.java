@@ -2,7 +2,6 @@ package water.runner;
 
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.internal.runners.model.EachTestNotifier;
@@ -18,7 +17,6 @@ import water.TestUtil;
 import water.Value;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.IcedHashSet;
 import water.util.Log;
 
 import java.util.HashSet;
@@ -29,7 +27,7 @@ import java.util.Set;
 @Ignore
 public class H2ORunner extends BlockJUnit4ClassRunner {
     private final TestClass testClass;
-    private final HashSet doonlyTestsNames;
+    private final HashSet doOnlyTestNames;
     private final HashSet ignoreTestsNames;
 
     /**
@@ -41,7 +39,7 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
     public H2ORunner(Class<?> klass) throws InitializationError {
         super(klass);
         testClass = getTestClass();
-        doonlyTestsNames = new HashSet();
+        doOnlyTestNames = new HashSet();
         ignoreTestsNames = new HashSet();
         createTestFilters();
         TestUtil.stall_till_cloudsize(fetchCloudSize());
@@ -173,7 +171,7 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         final String testName = child.getDeclaringClass().getName() + "#" + child.getMethod().getName();
         
         final boolean isConfiguredAsIgnored = this.ignoreTestsNames.contains(testName);
-        final boolean isConfiguredAsDoOnly = this.doonlyTestsNames.contains(testName);
+        final boolean isConfiguredAsDoOnly = this.doOnlyTestNames.contains(testName);
         
         return isAnnotatedAsIgnored || (isConfiguredAsIgnored && !isConfiguredAsDoOnly);
     }
@@ -189,12 +187,12 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
             }
         }
 
-        final String doonlyTests = System.getProperty("doonly.tests");
-        if (doonlyTests != null) {
-            final String[] split = doonlyTests.split(",");
+        final String doOnlytestsInput = System.getProperty("doonly.tests");
+        if (doOnlytestsInput != null) {
+            final String[] split = doOnlytestsInput.split(",");
             if (split.length != 1 && !split[0].equals("")) {
-                for (final String ignoredTestName : split) {
-                    this.doonlyTestsNames.add(ignoredTestName);
+                for (final String doOnlyTestName : split) {
+                    this.doOnlyTestNames.add(doOnlyTestName);
                 }
             }
         }
