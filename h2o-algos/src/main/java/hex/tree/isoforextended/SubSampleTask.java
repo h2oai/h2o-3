@@ -9,13 +9,14 @@ import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
+ * Task to create random sub-sample of given Frame with defined subSampleSize
  * TODO avalenta make subsampling randomized and guarantee given size for small datasets
  */
 public class SubSampleTask extends MRTask<SubSampleTask> {
 
     private long subSampleSize;
     private Random random;
-    
+
     private AtomicInteger currentSubSampleSize = new AtomicInteger(-1);
 
     public SubSampleTask(long subSampleSize, long seed) {
