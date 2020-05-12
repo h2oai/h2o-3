@@ -272,25 +272,41 @@ public class ArrayUtilsTest {
   public void testSubArrayByte() {
     byte[] a = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
     byte[] subA = ArrayUtils.subarray(a, 0, 6);
-    assertArrayEquals(subA, new byte[]{0, 1, 2, 3, 4, 5});
+    assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5}, subA);
 
     byte[] subA2 = ArrayUtils.subarray(a, 1, 6);
-    assertArrayEquals(subA2, new byte[]{1, 2, 3, 4, 5, 6});
+    assertArrayEquals(new byte[]{1, 2, 3, 4, 5, 6}, subA2);
 
     subA2[2] = 2;
     assertArrayEquals(subA2, new byte[]{1, 2, 2, 4, 5, 6});
-    assertArrayEquals(a, new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+    assertArrayEquals(new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9}, a);
   }
 
   @Test
   public void testGaussianVector() {
     double[] a = ArrayUtils.gaussianVector(5, 0xCAFFE);
-    assertArrayEquals(a, new double[]{0.86685, 0.539654, 1.65799, -0.16698, 2.332985}, 1e-3);
+    assertArrayEquals(new double[]{0.86685, 0.539654, 1.65799, -0.16698, 2.332985}, a, 1e-3);
   }
 
   @Test
   public void testGaussianVector2() {
     double[] a = ArrayUtils.gaussianVector(5, 0xCAFFE, 2);
-    assertArrayEquals(a, new double[]{0.86685, 0, 1.65799, -0.16698, 0}, 1e-3);
+    assertArrayEquals(new double[]{0.86685, 0, 1.65799, -0.16698, 0}, a, 1e-3);
+  }
+
+  @Test
+  public void testInnerProductDouble() {
+    double[] a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
+    double[] b = new double[]{2, 2, 2, 2, 2, 2};
+    double res = ArrayUtils.innerProduct(a, b);
+    assertEquals(21, res, 0);
+  }
+
+  @Test
+  public void testSubDouble() {
+    double[] a = new double[]{1, 2.5, 2.25, -6.25, 4, 7};
+    double[] b = new double[]{2, 2, 2, 2, 2, 2};
+    double[] res = ArrayUtils.subtract(a, b);
+    assertArrayEquals(new double[]{-1, 0.5, 0.25, -8.25, 2, 5}, res, 0);
   }
 }
