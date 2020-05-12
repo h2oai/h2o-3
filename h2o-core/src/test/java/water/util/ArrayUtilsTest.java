@@ -242,4 +242,18 @@ public class ArrayUtilsTest {
     assertArrayEquals(new double[]{1.0, 42.0}, toDouble(new int[]{1, 42}), 0);
   }
 
+  @Test
+  public void testSubArrayByte() {
+    byte[] a = new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
+    byte[] subA = ArrayUtils.subarray(a, 0, 6);
+    assertArrayEquals(subA, new byte[]{0, 1, 2, 3, 4, 5});
+
+    byte[] subA2 = ArrayUtils.subarray(a, 1, 6);
+    assertArrayEquals(subA2, new byte[]{1, 2, 3, 4, 5, 6});
+
+    subA2[2] = 2;
+    assertArrayEquals(subA2, new byte[]{1, 2, 2, 4, 5, 6});
+    assertArrayEquals(a, new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+  }
+
 }
