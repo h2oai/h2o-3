@@ -281,4 +281,16 @@ public class ArrayUtilsTest {
     assertArrayEquals(subA2, new byte[]{1, 2, 2, 4, 5, 6});
     assertArrayEquals(a, new byte[]{0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
   }
+
+  @Test
+  public void testGaussianVector() {
+    double[] a = ArrayUtils.gaussianVector(5, 0xCAFFE);
+    assertArrayEquals(a, new double[]{0.86685, 0.539654, 1.65799, -0.16698, 2.332985}, 1e-3);
+  }
+
+  @Test
+  public void testGaussianVector2() {
+    double[] a = ArrayUtils.gaussianVector(5, 0xCAFFE, 2);
+    assertArrayEquals(a, new double[]{0.86685, 0, 1.65799, -0.16698, 0}, 1e-3);
+  }
 }
