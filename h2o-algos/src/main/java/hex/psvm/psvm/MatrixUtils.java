@@ -1,6 +1,5 @@
 package hex.psvm.psvm;
 
-import water.Key;
 import water.MRTask;
 import water.fvec.*;
 import water.util.ArrayUtils;
@@ -33,6 +32,7 @@ public class MatrixUtils {
 
   /**
    * Calculates matrix-vector product M'v
+   *
    * @param m Frame representing matrix M (m x n)
    * @param v Vec representing vector v (m x 1)
    * @return m-element array representing the result of the product
@@ -44,32 +44,38 @@ public class MatrixUtils {
 
   /**
    * Previous Mtv method is for v of dimension (m x 1) here it is for (n x 1)
-   * 
+   * <p>
    * Calculates matrix-vector product M'v
-   * 
+   *
    * @param m Frame representing matrix M (m x n)
    * @param v Vec representing vector v (n x 1)
    * @return m-element array representing the result of the product
    */
   public static Vec productMtv2(Frame m, Vec v) {
+    if (v.length() != m.numCols()) {
+      throw new UnsupportedOperationException("Vector elements number must be the same as matrix column number");
+    }
     Vec result = new ProductMtvTask2(v).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
     return result;
   }
 
   /**
-   * Same as productMtv2 but here is array. 
-   *
+   * Same as productMtv2 but here is array.
+   * <p>
    * Calculates matrix-vector product M'v
    *
-   * @param m Frame representing matrix M (m x n)
+   * @param m     Frame representing matrix M (m x n)
    * @param array Array representing vector v (n x 1). Size of array here is significantly smaller. Vector would be
-   *             too much. 
+   *              too much.
    * @return m-element array representing the result of the product
    */
-  public static Vec ProductMtArray(Frame m, double [] array) {
-    Vec result = new ProductMtArray(array).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
+  public static Vec productMtv2Array(Frame m, double[] array) {
+    if (array.length != m.numCols()) {
+      throw new UnsupportedOperationException("Array elements number must be the same as matrix column number");
+    }
+    Vec result = new ProductMtv2Array(array).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
     return result;
-  }  
+  }
 
   /**
    * Calculates vector-vector product v1*v2
@@ -79,28 +85,31 @@ public class MatrixUtils {
    * @return double value (vector 1 x 1)
    */
   public static double productVtV(Vec v1, Vec v2) {
+    if (v2.length() != v1.length()) {
+      throw new UnsupportedOperationException("Vector elements number must be the same");
+    }
     return new ProductMtvTask().doAll(v1, v2)._result[0];
   }
 
   /**
    * Calculates matrix-array subtraction M'array
    *
-   * @param m Frame representing matrix M (m x n)
+   * @param m     Frame representing matrix M (m x n)
    * @param array Array representing vector v (n x 1). Size of array here is significantly smaller. Vector would be
-   *              too much. 
+   *              too much.
    * @return (m x n)-element array representing the result of the subtraction
    */
-  public static Frame subtractionMtArray(Frame m, double [] array) {
+  public static Frame subtractionMtArray(Frame m, double[] array) {
     if (array.length != m.numCols()) {
       throw new UnsupportedOperationException("Array elements number must be the same as matrix column number");
     }
     Frame result = new SubtractionMtArrayTask(array).doAll(m.types(), m).outputFrame();
     return result;
   }
-  
+
   /**
    * Calculates matrix-vector subtraction M'v
-   * 
+   *
    * @param m Frame representing matrix M (m x n)
    * @param v Vec representing vector v (n x 1)
    * @return (m x n)-element array representing the result of the subtraction
@@ -204,9 +213,9 @@ public class MatrixUtils {
 
   static class SubtractionMtArrayTask extends MRTask<SubtractionMtArrayTask> {
 
-    private double [] v;
+    private double[] v;
 
-    public SubtractionMtArrayTask(double [] v) {
+    public SubtractionMtArrayTask(double[] v) {
       this.v = v;
     }
 
@@ -218,7 +227,7 @@ public class MatrixUtils {
         }
       }
     }
-  }  
+  }
 
   static class SubtractionVtvTask extends MRTask<SubtractionVtvTask> {
 
@@ -228,7 +237,7 @@ public class MatrixUtils {
         nc.addNum(cs[0].atd(row) - cs[1].atd(row));
       }
     }
-  }  
+  }
 
   static class ProductMtvTask2 extends MRTask<ProductMtvTask2> {
     private final Vec v;
@@ -236,7 +245,7 @@ public class MatrixUtils {
     public ProductMtvTask2(Vec v) {
       this.v = v;
     }
-    
+
     @Override
     public void map(Chunk[] cs, NewChunk nc) {
       for (int row = 0; row < cs[0]._len; row++) {
@@ -249,10 +258,10 @@ public class MatrixUtils {
     }
   }
 
-  static class ProductMtArray extends MRTask<ProductMtArray> {
-    private final double [] array;
+  static class ProductMtv2Array extends MRTask<ProductMtv2Array> {
+    private final double[] array;
 
-    public ProductMtArray(double [] array) {
+    public ProductMtv2Array(double[] array) {
       this.array = array;
     }
 
@@ -266,6 +275,6 @@ public class MatrixUtils {
         nc.addNum(sum);
       }
     }
-  }  
+  }
 
 }
