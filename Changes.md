@@ -9,10 +9,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/in
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7362'>PUBDEV-7362</a>] - Using h2o.merge in R to join a single row H2OFrame where the join is on a <dbl> column to another frame no longer fail or returns the wrong number of rows. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7454'>PUBDEV-7454</a>] - Fixed an issue that caused the h2o.get_leaderboard function to fail for a re-attached H2OAutoML object. (STILL OPEN)
-</li>
+
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7492'>PUBDEV-7492</a>] - Improved validation and error messages for CoxPH.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7498'>PUBDEV-7498</a>] - In XGBoost, the `predict_leaf_node_assignment` parameter now works correctly with multiclass.
@@ -20,26 +17,11 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/in
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7517'>PUBDEV-7517</a>] - Fixed an issue that caused GBM to fail when it encountered a bin that included a single value and the rest NAs.
 </li>
 </ul>
-
-<h4>New Feature</h4>
-
-<ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3292'>PUBDEV-3292</a>] - Added a new DropDuplicatesRows method. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6250'>PUBDEV-6250</a>] - PDPs can now be calculated for multiclass problems. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7507'>PUBDEV-7507</a>] - Improved MOJOs by making them aware of model metadata. (STILL OPEN)
-</li>
-</ul>
     
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6003'>PUBDEV-6003</a>] - In AutoML, added a table with parameter values and random grid space ranges. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6938'>PUBDEV-6938</a>] - Added the TF-IDF (term frequency-inverse document frequency) algorithm. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7103'>PUBDEV-7103</a>] - UpdateD the AutoML example in the R package. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7103'>PUBDEV-7103</a>] - UpdateD the AutoML example in the R package.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7438'>PUBDEV-7438</a>] - PDPs now allow y-axis scaling options.
 </li>
