@@ -21,7 +21,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/in
 <h4>Improvement</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7103'>PUBDEV-7103</a>] - UpdateD the AutoML example in the R package.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7103'>PUBDEV-7103</a>] - Updated the AutoML example in the R package.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7438'>PUBDEV-7438</a>] - PDPs now allow y-axis scaling options.
 </li>
