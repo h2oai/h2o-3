@@ -2,7 +2,6 @@ package water.runner;
 
 import org.junit.AfterClass;
 import org.junit.Before;
-import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.internal.AssumptionViolatedException;
 import org.junit.internal.runners.model.EachTestNotifier;
@@ -28,6 +27,8 @@ import java.util.Set;
 @Ignore
 public class H2ORunner extends BlockJUnit4ClassRunner {
     private final TestClass testClass;
+    private final HashSet<String> doOnlyTestNames;
+    private final HashSet<String> ignoreTestsNames;
 
     /**
      * Creates a BlockJUnit4ClassRunner to run {@code klass}
@@ -38,6 +39,9 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
     public H2ORunner(Class<?> klass) throws InitializationError {
         super(klass);
         testClass = getTestClass();
+        doOnlyTestNames = new HashSet();
+        ignoreTestsNames = new HashSet();
+        createTestFilters();
         TestUtil.stall_till_cloudsize(fetchCloudSize());
     }
 
@@ -150,14 +154,49 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
 
     private int fetchCloudSize() {
         final CloudSize annotation = testClass.getAnnotation(CloudSize.class);
-        if (annotation == null) throw new IllegalStateException("@CloudSize annotation is missing for test class: " + testClass.getName());
+        if (annotation == null)
+            throw new IllegalStateException("@CloudSize annotation is missing for test class: " + testClass.getName());
 
         final int cloudSize = annotation.value();
 
-        if(cloudSize < 1) throw new IllegalStateException("@CloudSize annotation must specify sizes greater than zero. Given value: " + cloudSize);
+        if (cloudSize < 1)
+            throw new IllegalStateException("@CloudSize annotation must specify sizes greater than zero. Given value: " + cloudSize);
 
         return cloudSize;
     }
 
+    @Override
+    protected boolean isIgnored(FrameworkMethod child) {
+        final boolean isAnnotatedAsIgnored = super.isIgnored(child); // Marked as ignored by @Ignored annotation
+        final String testName = child.getDeclaringClass().getName() + "#" + child.getMethod().getName();
+        
+        final boolean isConfiguredAsIgnored = this.ignoreTestsNames.contains(testName);
+        final boolean isConfiguredAsDoOnly = this.doOnlyTestNames.contains(testName);
+        
+        return isAnnotatedAsIgnored || (isConfiguredAsIgnored && !isConfiguredAsDoOnly);
+    }
+
+    private void createTestFilters() {
+        final String ignoreTests = System.getProperty("ignore.tests");
+        if (ignoreTests != null) {
+            final String[] split = ignoreTests.split(",");
+            if (split.length != 1 && !split[0].equals("")) {
+                for (final String ignoredTestName : split) {
+                    this.ignoreTestsNames.add(ignoredTestName);
+                }
+            }
+        }
+
+        final String doOnlytestsInput = System.getProperty("doonly.tests");
+        if (doOnlytestsInput != null) {
+            final String[] split = doOnlytestsInput.split(",");
+            if (split.length != 1 && !split[0].equals("")) {
+                for (final String doOnlyTestName : split) {
+                    this.doOnlyTestNames.add(doOnlyTestName);
+                }
+            }
+        }
+
+    }
 
 }
