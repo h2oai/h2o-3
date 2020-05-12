@@ -32,6 +32,8 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/in
 <h4>Docs</h4>
 
 <ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6003'>PUBDEV-6003</a>] - Added tables showing parameter values and random grid space ranges to the AutoML chapter.
+</li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7343'>PUBDEV-7343</a>] - Improved the Hive import documentation.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7500'>PUBDEV-7500</a>] - Improved documentation for Quantiles in the User Guide. 
