@@ -246,8 +246,8 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         h2o.init()
 
         # Import a sample binary outcome train/test set into H2O
-        train = h2o.import_file("https://s3.amazonaws.com/testng/higgs/higgs_train_10k.csv")
-        test = h2o.import_file("https://s3.amazonaws.com/testng/higgs/higgs_test_5k.csv")
+        train = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_train_10k.csv")
+        test = h2o.import_file("https://s3.amazonaws.com/erin-data/higgs/higgs_test_5k.csv")
 
         # Identify predictors and response
         x = train.columns
