@@ -31,6 +31,7 @@ from .estimators.random_forest import H2ORandomForestEstimator
 from .estimators.stackedensemble import H2OStackedEnsembleEstimator
 from .estimators.word2vec import H2OWord2vecEstimator
 from .estimators.isolation_forest import H2OIsolationForestEstimator
+from .estimators.extended_isolation_forest import H2OExtendedIsolationForestEstimator
 from .exceptions import H2OConnectionError, H2OValueError
 from .expr import ExprNode
 from .frame import H2OFrame
@@ -847,6 +848,7 @@ def get_model(model_id):
             m = H2ODeepLearningEstimator()
     elif algo == "stackedensemble": m = H2OStackedEnsembleEstimator()
     elif algo == "isolationforest": m = H2OIsolationForestEstimator()
+    elif algo == "extendedisolationforest": m = H2OExtendedIsolationForestEstimator()
     else:
         raise ValueError("Unknown algo type: " + algo)
     m._resolve_model(model_id, model_json)
