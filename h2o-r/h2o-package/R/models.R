@@ -3912,6 +3912,7 @@ h2o.cross_validation_predictions <- function(object) {
 #'  If the files already exists, they will be overridden. Files are only saves if plot = TRUE (default).
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @param row_index Row for which partial dependence will be calculated instead of the whole input frame.
+#' @param target Target class for multinomial model.    
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -3931,16 +3932,17 @@ h2o.cross_validation_predictions <- function(object) {
 #' @export
 
 h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE,
-                            weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL,
-row_index=-1) {
+                            weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL, 
+                            row_index=-1, target=NULL) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
-  if( is(object, "H2OMultinomialModel")) stop("object must be a regression model or binary classfier")
-  if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary classfier")
+  if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary and multinomial classfier")
   if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
   if(!is.numeric(nbins) | !(nbins > 0) ) stop("nbins must be a positive numeric")
   if(!is.logical(plot)) stop("plot must be a logical value")
   if(!is.logical(plot_stddev)) stop("plot must be a logical value")
   if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
+  if((is(object, "H2OMultinomialModel")) && (is.null(target))) stop("target parameter has to be set for multinomial classification")
+  if((!is.null(target)) && (!is.character(target))) stop("target must be a string value")  
   noPairs = missing(col_pairs_2dpdp)
   noCols = missing(cols)
   if(noCols && noPairs) cols =  object@parameters$x # set to default only if both are missing
@@ -4038,6 +4040,10 @@ row_index=-1) {
     parms$user_cols <- paste0("[", paste(user_cols, collapse=','), "]")
     parms$user_splits <- paste0("[", paste(user_values, collapse=','), "]")
     parms$num_user_splits <- paste0("[", paste(user_num_splits, collapse=','), "]")
+  }
+  
+  if(!is.null(target)) {
+    parms$target <- target
   }
 
   if(!missing(destination_key)) parms$destination_key = destination_key

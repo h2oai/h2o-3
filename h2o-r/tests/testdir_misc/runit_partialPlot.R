@@ -154,22 +154,30 @@ test <- function() {
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$mean_response, iris_pps[[i]]$mean_response)))))
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$stddev_response, iris_pps[[i]]$stddev_response)))))
   checkTrue(all(unlist(lapply(1:4, function(i) checkEqualsNumeric(iris_pps2[[i]]$std_error_mean_response, iris_pps[[i]]$std_error_mean_response)))))
-  
+    
+  # Ask to score on multinomial case
+  iris_hex = as.h2o( iris)
+  iris_gbm = h2o.gbm(x = 1:4, y = 5, training_frame = iris_hex)
+  h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Sepal.Length", target="setosa")
+    
   ## Check failure cases
   ## 1) Selection of incorrect columns 
   expect_error(h2o.partialPlot(object = prostate_drf, data = prostate_hex[-2], cols = "AGE"), "is not a column name")
   expect_error(h2o.partialPlot(object = prostate_drf, data = prostate_hex, cols = "BLAH"), "Invalid column names")
-  
-  ## 2) Ask to score on unsupported multinomial case 
-  iris_hex = as.h2o( iris)
-  iris_gbm = h2o.gbm(x = 1:4, y = 5, training_frame = iris_hex)
-  expect_error(h2o.partialPlot(object = iris_gbm, data = iris_hex, "Sepal.Length"), "object must be a regression model or binary classfier")
-  
-  ## 3) Nbins is smaller than cardinality of a categorical column
+    
+  ## 2) Nbins is smaller than cardinality of a categorical column
   prostate_hex[ ,"AGE"] = as.factor(prostate_hex[ ,"AGE"])
   prostate_gbm = h2o.gbm(x = c("AGE", "RACE"), y = "CAPSULE", training_frame = prostate_hex, ntrees = 10, seed = seed)
   expect_error(h2o.partialPlot(object = prostate_gbm, data = prostate_hex),"Column AGE's cardinality")
-  
+    
+  ## 3) Target is not set for multinomial classification  
+  expect_error(h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Sepal.Length"), "Target parameter has to be set for multinomial classification")
+
+  ## 4) Target class is not in target domain   
+  expect_error(h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Sepal.Length", target="Iris"), "\n\nERROR MESSAGE:\n\nIncorrect target class: Iris.\n\n")
+
+  ## 5) Target is set for non multinomial problem
+  expect_error(h2o.partialPlot(object = prostate_drf, data = prostate_hex, target="iris"), "\n\nERROR MESSAGE:\n\nTarget parameters is available only for multinomial classification.\n\n")
 }
 
 doTest("Test Partial Dependence Plots in H2O: ", test)
