@@ -468,7 +468,7 @@ Information about how to cite the H2O software in general is covered in the `H2O
 Random Grid Search Parameters
 -----------------------------
 
-AutoML performs a hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In the table below, we list the hyperparameters, along with all potential values that can be randomly chosen in the search. If these models also have a non-default value set for a hyperparamter, we identify it in the list as well. Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
+AutoML performs a hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In the table below, we list the hyperparameters, along with all potential values that can be randomly chosen in the search. If these models also have a non-default value set for a hyperparameter, we identify it in the list as well. Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
 
 
 GLM Hyperparameters
@@ -507,9 +507,9 @@ This table shows the XGBoost values that are searched over when performing AutoM
 +------------------------------+---------------------------------------------------------------------------------------------+
 | ``ntrees``                   | Hard coded: ``10000`` (true value found by early stopping)                                  |                                               
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``reg_alpha``                | ``{0.001f, 0.01f, 0.1f, 1f, 10f, 100f}``                                                    |
+| ``reg_alpha``                | ``{0.001, 0.01, 0.1, 1, 10, 100}``                                                    |
 +------------------------------+---------------------------------------------------------------------------------------------+
-| ``reg_lambda``               | ``{0.001f, 0.01f, 0.1f, 0.5f, 1f}``                                                         |
+| ``reg_lambda``               | ``{0.001, 0.01, 0.1, 0.5, 1}``                                                         |
 +------------------------------+---------------------------------------------------------------------------------------------+
 | ``sample_rate``              | ``{0.6, 0.8, 1.0}``                                                                         |
 +------------------------------+---------------------------------------------------------------------------------------------+
