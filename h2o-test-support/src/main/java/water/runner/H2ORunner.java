@@ -42,7 +42,6 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
         doOnlyTestNames = new HashSet();
         ignoreTestsNames = new HashSet();
         createTestFilters();
-        TestUtil.stall_till_cloudsize(fetchCloudSize());
     }
 
 
@@ -75,6 +74,8 @@ public class H2ORunner extends BlockJUnit4ClassRunner {
      */
     private void leaf(Statement statement, Description description,
                       RunNotifier notifier) {
+        TestUtil.stall_till_cloudsize(fetchCloudSize());
+        
         final EachTestNotifier eachNotifier = new EachTestNotifier(notifier, description);
         eachNotifier.fireTestStarted();
         try {

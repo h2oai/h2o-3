@@ -2,6 +2,48 @@
 
 ## H2O
 
+### Zahradnik (3.30.0.3) - 5/12/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7492'>PUBDEV-7492</a>] - Improved validation and error messages for CoxPH.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7498'>PUBDEV-7498</a>] - In XGBoost, the `predict_leaf_node_assignment` parameter now works correctly with multiclass.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7517'>PUBDEV-7517</a>] - Fixed an issue that caused GBM to fail when it encountered a bin that included a single value and the rest NAs.
+</li>
+</ul>
+    
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7103'>PUBDEV-7103</a>] - Updated the AutoML example in the R package.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7438'>PUBDEV-7438</a>] - PDPs now allow y-axis scaling options.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7463'>PUBDEV-7463</a>] - Improved speed for training and prediction of Stacked Ensembles.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6003'>PUBDEV-6003</a>] - Added tables showing parameter values and random grid space ranges to the AutoML chapter.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7343'>PUBDEV-7343</a>] - Improved the Hive import documentation.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7500'>PUBDEV-7500</a>] - Improved documentation for Quantiles in the User Guide. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7505'>PUBDEV-7505</a>] - Fixed the documented default value for `min_split_improvement` parameter in XGBoost.
+</li>
+</ul>
+
+
+
 ### Zahradnik (3.30.0.2) - 4/28/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/2/index.html</a>
