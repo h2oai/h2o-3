@@ -11,10 +11,10 @@ def extended_isolation_forest():
 
     train = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/single_blob.csv"))
 
-    if_model = H2OExtendedIsolationForestEstimator(ntrees=7, seed=12, sample_size=5)
-    if_model.train(training_frame=train)
+    eif_model = H2OExtendedIsolationForestEstimator(ntrees=7, seed=12, sample_size=5)
+    eif_model.train(training_frame=train)
 
-    print(if_model)
+    print(eif_model)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(extended_isolation_forest)
