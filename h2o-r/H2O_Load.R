@@ -16,7 +16,7 @@ function() {
               "import.R", "frame.R", "kvstore.R", "grid.R", "generic.R"
               "parse.R", "export.R", "models.R", "edicts.R", "coxph.R", "coxphutils.R", "glm.R", "glrm.R", "pca.R", "kmeans.R",
               "gbm.R", "deeplearning.R", "deepwater.R", "naivebayes.R", "randomforest.R", "svd.R", "locate.R", "predict.R",
-              "isolationforest.R", "psvm.R")
+              "isolationforest.R", "extendedisolationforest.R", "psvm.R")
   require(jsonlite); require(RCurl)
   invisible(lapply(to_src,function(x){source(paste(FULL.PATH, x, sep = ""))}))
 }
