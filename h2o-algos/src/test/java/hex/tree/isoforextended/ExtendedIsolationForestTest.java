@@ -38,7 +38,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.track_generic(model);
             assertNotNull(model);
 
-            Frame test = Scope.track(parse_test_file("smalldata/anomaly/heatmap_data.csv"));
+            Frame test = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
             Frame out = model.score(test);
             Scope.track_generic(out);
         } finally {
@@ -168,10 +168,10 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     .withDataForCol(2, ard(0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0))
                     .build();
             Scope.track(m);
-            Vec v = Vec.makeVec(ard(2.0, 2.0, 0.0, -1.2, 5.5, -5.5, 6.5, 5.5, -5.5), Vec.newKey());
+            Vec v = Vec.makeVec(ard(2.0, 2.0, 0.0, -1.2, 5.5, -5.5, 6.5, 5.5, -5.5, -7.5), Vec.newKey());
 
             Frame resVec = new FilterGteTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), null, null);
-            assertEquals(7, resVec.numRows());
+            assertEquals(6, resVec.numRows());
             assertEquals(3, resVec.numCols());
             DKV.remove(resVec._key);
         } finally {
