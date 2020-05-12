@@ -27,7 +27,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.enter();
             Frame train = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
 
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p = new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
@@ -46,8 +47,89 @@ public class ExtendedIsolationForestTest extends TestUtil {
         }
     }
 
+    /**
+     * Big data equals 65536 x 128
+     */
     @Test
-    @Ignore
+    @Ignore("Expensive")
+    public void testBasicBigData() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(generate_real_only(128, 65536, 0, 0xCAFFE));
+
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 100;
+            p.extension_level = train.numCols() - 1;
+
+            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
+            ExtendedIsolationForestModel model = eif.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+
+            Frame out = model.score(train);
+            Scope.track_generic(out);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    @Ignore("Expensive")
+    public void testBasicBigDataRows() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(generate_real_only(2, 65536, 0, 0xCAFFE));
+
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 100;
+            p.extension_level = train.numCols() - 1;
+
+            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
+            ExtendedIsolationForestModel model = eif.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+
+            Frame out = model.score(train);
+            Scope.track_generic(out);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    @Ignore("Expensive")
+    public void testBasicBigDataCols() {
+        try {
+            Scope.enter();
+            Frame train = Scope.track(generate_real_only(128, 500, 0, 0xCAFFE));
+
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            p._train = train._key;
+            p._seed = 0xDECAF;
+            p._ntrees = 100;
+            p.extension_level = train.numCols() - 1;
+
+            ExtendedIsolationForest eif = new ExtendedIsolationForest(p);
+            ExtendedIsolationForestModel model = eif.trainModel().get();
+            Scope.track_generic(model);
+            assertNotNull(model);
+
+            Frame out = model.score(train);
+            Scope.track_generic(out);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    @Ignore("Not working yet")
     public void testBasicWithCategoricalData() {
         try {
             Scope.enter();
@@ -58,7 +140,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
                     .build();
             Scope.track(train);
 
-            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p = new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
+            ExtendedIsolationForestModel.ExtendedIsolationForestParameters p =
+                    new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
             p._train = train._key;
             p._seed = 0xDECAF;
             p._ntrees = 100;
