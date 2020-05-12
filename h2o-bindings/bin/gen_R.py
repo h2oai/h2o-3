@@ -335,6 +335,7 @@ def main():
             module = "randomForest"
             file_name = "randomforest"
         if name == "isolationforest": module = "isolationForest"
+        if name == "extendedisolationforest": module = "extendedIsolationForest"
         if name == "naivebayes": module = "naiveBayes"
         if name == "stackedensemble": module = "stackedEnsemble"
         if name == "pca": module = "prcomp"
