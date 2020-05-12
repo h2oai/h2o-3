@@ -27,8 +27,8 @@ import java.util.Set;
 @Ignore
 public class H2ORunner extends BlockJUnit4ClassRunner {
     private final TestClass testClass;
-    private final HashSet doOnlyTestNames;
-    private final HashSet ignoreTestsNames;
+    private final HashSet<String> doOnlyTestNames;
+    private final HashSet<String> ignoreTestsNames;
 
     /**
      * Creates a BlockJUnit4ClassRunner to run {@code klass}
