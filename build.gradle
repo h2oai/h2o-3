@@ -24,7 +24,7 @@ buildscript {
         classpath 'org.ow2.asm:asm:5.1'
         classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
-        classpath 'com.github.townsfolk:gradle-release:1.2'
+        classpath 'net.researchgate:gradle-release:2.6.0'
         classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'

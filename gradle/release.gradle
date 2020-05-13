@@ -1,10 +1,11 @@
-apply plugin: 'release'
+apply plugin: 'net.researchgate.release'
 apply plugin: 'nexus-workflow'
 
 release {
-  tagPrefix = "release"
-  // Safe point - do releases only from release branch - can be deleted in future
-  //requireBranch = "testing"
+  tagTemplate = "release"
+    git {
+        requireBranch = "rel-[a-zA-Z]*|master|pavel/gradle-6.3-release"
+    }
 }
 
 // Helper task uploading all artifacts
@@ -21,4 +22,4 @@ nexusStagingRelease.mustRunAfter publishAll
 
 
 // Create release as final step
-createReleaseTag.dependsOn stageAll
+beforeReleaseBuild.dependsOn stageAll
