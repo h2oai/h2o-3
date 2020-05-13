@@ -13,6 +13,8 @@ def extended_isolation_forest_save_and_load():
 
     eif_model = H2OExtendedIsolationForestEstimator(ntrees=7, seed=12, sample_size=5)
     eif_model.train(training_frame=train)
+    anomaly_score = eif_model.predict(train)
+    anomaly = anomaly_score['anomaly_score'].as_data_frame(use_pandas=True)["anomaly_score"]
 
     path = pyunit_utils.locate("results")
 
@@ -21,11 +23,19 @@ def extended_isolation_forest_save_and_load():
 
     assert os.path.isfile(model_path), "Expected load file {0} to exist, but it does not.".format(model_path)
     reloaded = h2o.load_model(model_path)
+    anomaly_score_reloaded = reloaded.predict(train)
+    anomaly_reloaded = anomaly_score_reloaded['anomaly_score'].as_data_frame(use_pandas=True)["anomaly_score"]
 
     assert isinstance(reloaded, 
                       H2OExtendedIsolationForestEstimator), \
         "Expected and H2OExtendedIsolationForestEstimator, but got {0}"\
         .format(reloaded)
+    
+    assert (anomaly[0] == anomaly_reloaded[0]), "Output is not the same after reaload"
+    assert anomaly[5] == anomaly_reloaded[5], "Output is not the same after reaload"
+    assert anomaly[33] == anomaly_reloaded[33], "Output is not the same after reaload"
+    assert anomaly[256] == anomaly_reloaded[256], "Output is not the same after reaload"
+    assert anomaly[499] == anomaly_reloaded[499], "Output is not the same after reaload"
 
 
 if __name__ == "__main__":
