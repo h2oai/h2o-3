@@ -11,8 +11,8 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 public class ExtendedIsolationForestTest extends TestUtil {
 
@@ -42,6 +42,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Frame test = Scope.track(parse_test_file("smalldata/anomaly/single_blob.csv"));
             Frame out = model.score(test);
             Scope.track_generic(out);
+            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
+            assertEquals(train.numRows(), out.numRows());
         } finally {
             Scope.exit();
         }
@@ -71,6 +73,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
             Frame out = model.score(train);
             Scope.track_generic(out);
+            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
+            assertEquals(train.numRows(), out.numRows());
         } finally {
             Scope.exit();
         }
@@ -97,6 +101,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
             Frame out = model.score(train);
             Scope.track_generic(out);
+            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
+            assertEquals(train.numRows(), out.numRows());
         } finally {
             Scope.exit();
         }
@@ -123,6 +129,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
             Frame out = model.score(train);
             Scope.track_generic(out);
+            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
+            assertEquals(train.numRows(), out.numRows());
         } finally {
             Scope.exit();
         }
@@ -155,6 +163,8 @@ public class ExtendedIsolationForestTest extends TestUtil {
 
             Frame out = model.score(train);
             Scope.track_generic(out);
+            assertArrayEquals(new String[]{"anomaly_score", "mean_length"}, out.names());
+            assertEquals(train.numRows(), out.numRows());
         } finally {
             Scope.exit();
         }
