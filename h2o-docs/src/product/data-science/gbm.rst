@@ -371,7 +371,7 @@ Below is a simple example showing how to build a Gradient Boosting Machine model
 
     # Set the predictors and response; set the factors:
     prostate$CAPSULE <- as.factor(prostate$CAPSULE)
-    predictors <- c("ID","AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON")
+    predictors <- c("ID", "AGE", "RACE", "DPROS", "DCAPS", "PSA", "VOL", "GLEASON")
     response <- "CAPSULE"
 
     # Build and train the model:

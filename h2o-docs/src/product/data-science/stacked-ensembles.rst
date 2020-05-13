@@ -123,8 +123,8 @@ Below is a simple example showing how to build a Stacked Ensembles model.
         x <- setdiff(names(train), y)
 
         # For binary classification, response should be a factor
-        train[,y] <- as.factor(train[,y])
-        test[,y] <- as.factor(test[,y])
+        train[, y] <- as.factor(train[, y])
+        test[, y] <- as.factor(test[, y])
 
         # Number of CV folds (to generate level-one data for stacking)
         nfolds <- 5

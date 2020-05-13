@@ -130,7 +130,7 @@ Below is a simple example showing how to build an Isolation Forest model.
         prostate <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 
         # Split dataset giving the training dataset 75% of the data
-        prostate_split <- h2o.splitFrame(data=prostate, ratios=0.75)
+        prostate_split <- h2o.splitFrame(data = prostate, ratios = 0.75)
 
         # Create a training set from the 1st dataset in the split
         train <- prostate_split[[1]]
@@ -139,7 +139,7 @@ Below is a simple example showing how to build an Isolation Forest model.
         test <- prostate_split[[2]]
 
         # Build an Isolation forest model
-        model <- h2o.isolationForest(training_frame=train, 
+        model <- h2o.isolationForest(training_frame = train, 
                                      sample_rate = 0.1, 
                                      max_depth = 20, 
                                      ntrees = 50)

@@ -80,7 +80,7 @@ The following example demonstrates how to build a deep learning model that will 
       # handwritten digit was a 0,1,2,3,4,5,6,7,8, or 9. Before we 
       # set the variables for our predictors and target, we will 
       # convert our target column from type int to type enum.
-      mnist_original[,785] <- as.factor(mnist_original[,785])
+      mnist_original[, 785] <- as.factor(mnist_original[, 785])
       predictors <- c(1:784)
       target <- c(785)
 
@@ -105,12 +105,12 @@ The following example demonstrates how to build a deep learning model that will 
                              distribution = 'multinomial',
                              epochs = 4,
                              activation = 'RectifierWithDropout',
-                             hidden_dropout_ratios = c(0,0),
+                             hidden_dropout_ratios = c(0, 0),
                              seed = 1234)
 
-      print(h2o.mean_per_class_error(dl, valid=TRUE))
+      print(h2o.mean_per_class_error(dl, valid = TRUE))
       [1] 0.06742894
-      print(h2o.logloss(dl, valid=TRUE))
+      print(h2o.logloss(dl, valid = TRUE))
       [[1] 0.3991185
 
       # Checkpoint on the same dataset. This shows how to train an additional
@@ -125,15 +125,15 @@ The following example demonstrates how to build a deep learning model that will 
                                          distribution = 'multinomial',
                                          epochs = 20,
                                          activation = 'RectifierWithDropout',
-                                         hidden_dropout_ratios = c(0,0.5),
+                                         hidden_dropout_ratios = c(0, 0.5),
                                          seed = 1234)
       
 
-      print(h2o.mean_per_class_error(dl_checkpoint1, valid=TRUE))
+      print(h2o.mean_per_class_error(dl_checkpoint1, valid = TRUE))
       [1] 0.05604628
-      print(h2o.logloss(dl_checkpoint1, valid=TRUE))
+      print(h2o.logloss(dl_checkpoint1, valid = TRUE))
       [1] 0.2328195
-      print(improvement_dl <- h2o.logloss(dl, valid=TRUE) - h2o.logloss(dl_checkpoint1, valid=TRUE))
+      print(improvement_dl <- h2o.logloss(dl, valid = TRUE) - h2o.logloss(dl_checkpoint1, valid = TRUE))
       [1] 0.166299
 
       # Checkpoint on a new dataset. Notice that to train on new data, 
@@ -148,14 +148,14 @@ The following example demonstrates how to build a deep learning model that will 
                                          distribution = 'multinomial',
                                          epochs = 15,
                                          activation = 'RectifierWithDropout',
-                                         hidden_dropout_ratios = c(0,0),
+                                         hidden_dropout_ratios = c(0, 0),
                                          seed = 1234)
 
-      print(h2o.mean_per_class_error(dl_checkpoint2, valid=TRUE))
+      print(h2o.mean_per_class_error(dl_checkpoint2, valid = TRUE))
       [1] 0.06610397
-      print(h2o.logloss(dl_checkpoint2, valid=TRUE))
+      print(h2o.logloss(dl_checkpoint2, valid = TRUE))
       [[1] 0.3532841
-      print(improvement_dl <- h2o.logloss(dl, valid=TRUE) - h2o.logloss(dl_checkpoint2, valid=TRUE))
+      print(improvement_dl <- h2o.logloss(dl, valid = TRUE) - h2o.logloss(dl_checkpoint2, valid = TRUE))
       [1] 0.04583448
 
   .. code-tab:: python
@@ -275,7 +275,7 @@ The following example demonstrates how to build a distributed random forest mode
       cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
       # Set the predictor names and the response column name
-      predictors <- c("displacement","power","weight","acceleration","year")
+      predictors <- c("displacement", "power", "weight", "acceleration", "year")
       response <- "economy_20mpg"
 
       # Split the data into training and validation sets, and split
@@ -299,9 +299,9 @@ The following example demonstrates how to build a distributed random forest mode
                               ntrees = 1,
                               seed = 1234)
 
-      print(h2o.mean_per_class_error(drf, valid=TRUE))
+      print(h2o.mean_per_class_error(drf, valid = TRUE))
       [1] 0.09453782
-      print(h2o.logloss(drf, valid=TRUE))
+      print(h2o.logloss(drf, valid = TRUE))
       [1] 3.597789
 
       # Checkpoint on the same dataset. This shows how to train an additional
@@ -315,11 +315,11 @@ The following example demonstrates how to build a distributed random forest mode
                                         ntrees = 10,
                                         seed = 1234)
 
-      print(h2o.mean_per_class_error(drf_continued, valid=TRUE))
+      print(h2o.mean_per_class_error(drf_continued, valid = TRUE))
       [[1] 0.06512605
-      print(h2o.logloss(drf_continued, valid=TRUE))
+      print(h2o.logloss(drf_continued, valid = TRUE))
       [1] 0.1826136
-      print(improvement_drf <- h2o.logloss(drf, valid=TRUE) - h2o.logloss(drf_continued, valid=TRUE))
+      print(improvement_drf <- h2o.logloss(drf, valid = TRUE) - h2o.logloss(drf_continued, valid = TRUE))
       [1] 3.415176
 
       # Checkpoint on a new dataset. Notice that to train on new data, 
@@ -335,11 +335,11 @@ The following example demonstrates how to build a distributed random forest mode
                                       ntrees = 15,
                                       seed = 1234)
 
-      print(h2o.mean_per_class_error(drf_newdata, valid=TRUE))
+      print(h2o.mean_per_class_error(drf_newdata, valid = TRUE))
       [1] 0.07142857
-      print(h2o.logloss(drf_newdata, valid=TRUE))
+      print(h2o.logloss(drf_newdata, valid = TRUE))
       [1] 0.1767007
-      print(improvement_drf <- h2o.logloss(drf, valid=TRUE) - h2o.logloss(drf_newdata, valid=TRUE))
+      print(improvement_drf <- h2o.logloss(drf, valid = TRUE) - h2o.logloss(drf_newdata, valid = TRUE))
       [1] 3.421088
 
   .. code-tab:: python
@@ -444,14 +444,14 @@ The following example demonstrates how to build a gradient boosting model that w
       cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
       # Set the predictor names and the response column name
-      predictors <- c("displacement","power","weight","acceleration","year")
+      predictors <- c("displacement", "power", "weight", "acceleration", "year")
       response <- "economy_20mpg"
 
       # Split the data into training and validation sets, and split
       # a piece off to demonstrate adding new data with checkpointing. 
       # In a real world scenario, however, you would not have your 
       # new data at this point.
-      cars_split <- h2o.splitFrame(data = cars,ratios = c(0.7, 0.15), seed = 1234)
+      cars_split <- h2o.splitFrame(data = cars, ratios = c(0.7, 0.15), seed = 1234)
       train <- cars_split[[1]]
       valid <- cars_split[[2]]
       new_data <- cars_split[[3]]
@@ -468,9 +468,9 @@ The following example demonstrates how to build a gradient boosting model that w
                      ntrees = 5, 
                      seed = 1234)
       
-      print(h2o.mean_per_class_error(gbm, valid=TRUE))
+      print(h2o.mean_per_class_error(gbm, valid = TRUE))
       [1] 0.08613445
-      print(h2o.logloss(gbm, valid=TRUE))
+      print(h2o.logloss(gbm, valid = TRUE))
       [1] 0.3822369
 
       # Checkpoint on the same dataset. This shows how to train an additional
@@ -484,11 +484,11 @@ The following example demonstrates how to build a gradient boosting model that w
                                ntrees = 50,
                                seed = 1234)
 
-      print(h2o.mean_per_class_error(gbm_continued, valid=TRUE))
+      print(h2o.mean_per_class_error(gbm_continued, valid = TRUE))
       [1] 0.02941176
-      print(h2o.logloss(gbm_continued, valid=TRUE))
+      print(h2o.logloss(gbm_continued, valid = TRUE))
       [1] [1] 0.1959525
-      print(improvement_gbm <- h2o.logloss(gbm, valid=TRUE) - h2o.logloss(gbm_continued, valid=TRUE))
+      print(improvement_gbm <- h2o.logloss(gbm, valid = TRUE) - h2o.logloss(gbm_continued, valid=TRUE))
       [1] 0.1862843
 
       # See how the variable importance changes between the original model
@@ -538,11 +538,11 @@ The following example demonstrates how to build a gradient boosting model that w
       True
 
       # Logloss on training and validation data changes as more trees are added (checkpointed model)
-      print(h2o.logloss(gbm_cv, valid=TRUE))
+      print(h2o.logloss(gbm_cv, valid = TRUE))
       [1] 0.3823892
 
       # Validation Logloss for GBM with Checkpointing 
-      print(h2o.logloss(gbm_nocv_checkpoint, valid=TRUE))
+      print(h2o.logloss(gbm_nocv_checkpoint, valid = TRUE))
       [1] 0.3314789
 
   .. code-tab:: python
@@ -673,28 +673,28 @@ The following example demonstrates how to build a gradient boosting model that w
      response <- "class"
 
      # split the training and validation sets:
-     splits <- h2o.splitFrame(iris, ratio=.8)
+     splits <- h2o.splitFrame(iris, ratio = 0.8)
      train <- splits[[1]]
      valid <- splits[[2]]
 
      # build and train the first XGB model; specify the model_id
      # so you can indicate which model to use when you want to continue
      # training:
-     iris_xgb <- h2o.xgboost(model_id='iris_xgb', 
-                             y=response, 
-                             training_frame=train, 
-                             validation_frame=valid)
+     iris_xgb <- h2o.xgboost(model_id = 'iris_xgb', 
+                             y = response, 
+                             training_frame = train, 
+                             validation_frame = valid)
 
      # check the mse value:
      h2o.mse(iris_xgb)
 
      # build and train the second model using the checkpoint
      # you established in the first model:
-     iris_xgb_cont <- h2o.xgboost(y=response, 
-                                  training_frame=train, 
-                                  validation_frame=valid, 
-                                  checkpoint='iris_xgb', 
-                                  ntrees=51)
+     iris_xgb_cont <- h2o.xgboost(y = response, 
+                                  training_frame = train, 
+                                  validation_frame = valid, 
+                                  checkpoint = 'iris_xgb', 
+                                  ntrees = 51)
 
      # check the continued model mse value:
      h2o.mse(iris_xgb_cont)

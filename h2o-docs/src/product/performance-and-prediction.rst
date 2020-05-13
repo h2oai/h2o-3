@@ -43,16 +43,16 @@ Each metric is described in greater detail in the sections that follow. The exam
         cars <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/junit/cars_20mpg.csv")
 
         # set the predictor names and the response column name
-        predictors <- c("displacement","power","weight","acceleration","year")
+        predictors <- c("displacement", "power", "weight", "acceleration", "year")
         response <- "cylinders"
 
         # split into train and validation sets
-        cars_splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
+        cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
         train <- cars_splits[[1]]
         valid <- cars_splits[[2]]
 
         # build and train the model:
-        cars.gbm <- h2o.gbm(x = predictors, 
+        cars_gbm <- h2o.gbm(x = predictors, 
                             y = response, 
                             training_frame = train,
                             validation_frame = valid,
@@ -60,7 +60,7 @@ Each metric is described in greater detail in the sections that follow. The exam
                             seed = 1234)
 
         # retrieve the model performance
-        perf <- h2o.performance(cars.gbm, valid)
+        perf <- h2o.performance(cars_gbm, valid)
         perf
 
    .. code-tab:: python
@@ -151,7 +151,7 @@ Using the previous example, run the following to retrieve the MSE value.
         [1] 0.01917327
 
         # retrieve the mse value for both the training and validation data:
-        mse_basic_valid <- h2o.mse(cars_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        mse_basic_valid <- h2o.mse(cars_gbm, train = TRUE, valid = TRUE, xval = FALSE)
         mse_basic_valid
              train      valid 
         0.01917327 0.03769792 
@@ -197,7 +197,7 @@ Using the previous example, run the following to retrieve the RMSE value.
         [1] 0.1384676
 
         # retrieve the rmse value for both the training and validation data:
-        rmse_basic_valid <- h2o.rmse(cars_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        rmse_basic_valid <- h2o.rmse(cars_gbm, train = TRUE, valid = TRUE, xval = FALSE)
         rmse_basic_valid
              train     valid 
         0.1384676  0.1941595  
@@ -242,7 +242,7 @@ Using the previous example, run the following to retrieve the RMSLE value.
         [1] 0.02332083
 
         # retrieve the rmsle value for both the training and validation data:
-        rmsle_basic_valid <- h2o.rmsle(cars_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        rmsle_basic_valid <- h2o.rmsle(cars_gbm, train = TRUE, valid = TRUE, xval = FALSE)
         rmsle_basic_valid
              train      valid 
         0.02332083 0.03359130  
@@ -285,7 +285,7 @@ Using the previous example, run the following to retrieve the MAE value.
         [1] 0.06140515
 
         # retrieve the mae value for both the training and validation data:
-        mae_basic_valid <- h2o.mae(cars_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        mae_basic_valid <- h2o.mae(cars_gbm, train = TRUE, valid = TRUE, xval = FALSE)
         mae_basic_valid
              train      valid 
         0.06140515 0.07947862 
@@ -342,7 +342,7 @@ Each metric is described in greater detail in the sections that follow. The exam
         response <- "IsDepDelayed"
 
         # split into train and validation
-        airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+        airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8, seed = 1234)
         train <- airlines_splits[[1]]
         valid <- airlines_splits[[2]]
 
@@ -351,7 +351,7 @@ Each metric is described in greater detail in the sections that follow. The exam
                                 y = response, 
                                 training_frame = train,
                                 validation_frame = valid, 
-                                sample_rate =.7, 
+                                sample_rate = 0.7, 
                                 seed = 1234)
 
         # retrieve the model performance
@@ -422,7 +422,7 @@ Using the previous example, run the following to retrieve the Gini coefficient v
         [1] 0.482994
 
         # retrieve the gini value for both the training and validation data:
-        h2o.giniCoef(airlines_gbm, train=TRUE, valid=TRUE, xval=FALSE)
+        h2o.giniCoef(airlines_gbm, train = TRUE, valid = TRUE, xval = FALSE)
             train     valid 
         0.5715841 0.4829940 
 

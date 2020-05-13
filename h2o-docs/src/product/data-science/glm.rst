@@ -956,10 +956,10 @@ Below is a simple example showing how to build a Generalized Linear model.
     predictors <- c("AGE", "RACE", "VOL", "GLEASON")
     response <- "CAPSULE"
 
-    prostate_glm <- h2o.glm(family= "binomial", 
-                            x= predictors, 
-                            y=response, 
-                            training_frame=df, 
+    prostate_glm <- h2o.glm(family = "binomial", 
+                            x = predictors, 
+                            y = response, 
+                            training_frame = df, 
                             lambda = 0, 
                             compute_p_values = TRUE)
 
@@ -998,7 +998,7 @@ Below is a simple example showing how to build a Generalized Linear model.
     [1] -3.4554780 -0.3343734 -0.4295143 -0.9565159 -1.7011907  8.0071033
 
     # Retrieve a graphical plot of the standardized coefficient magnitudes
-    h2o.std_coef_plot(prostate.glm)
+    h2o.std_coef_plot(prostate_glm)
 
    .. code-tab:: python
 

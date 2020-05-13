@@ -59,14 +59,14 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
         h2o.init()
 
         # Import the airlines data set and display a summary.
-        airlinesURL <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
-        airlines <- h2o.importFile(path = airlinesURL)
+        airlines_url <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
+        airlines <- h2o.importFile(path = airlines_url)
         summary(airlines)
 
         # Find number of flights by airport
-        originFlights <- h2o.group_by(data = airlines, by = "Origin", nrow("Origin"), gb.control = list(na.methods = "rm"))
-        originFlights_R <- as.data.frame(originFlights)
-        originFlights_R
+        origin_flights <- h2o.group_by(data = airlines, by = "Origin", nrow("Origin"), gb.control = list(na.methods = "rm"))
+        origin_flights_R <- as.data.frame(origin_flights)
+        origin_flights_R
             Origin nrow
         1      ABE   59
         2      ABQ  876
@@ -74,24 +74,24 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
         ...
 
         # Find number of flights per month
-        flightsByMonth <- h2o.group_by(data = airlines, 
-                                       by = "Month", 
-                                       nrow("Month"), 
-                                       gb.control = list(na.methods = "rm"))
-        flightsByMonth_R <- as.data.frame(flightsByMonth)
-        flightsByMonth_R
+        flights_by_month <- h2o.group_by(data = airlines, 
+                                         by = "Month", 
+                                         nrow("Month"), 
+                                         gb.control = list(na.methods = "rm"))
+        flights_by_month_R <- as.data.frame(flights_by_month)
+        flights_by_month_R
           Month   nrow
         1     1  41979
         2    10   1999
 
         # Find the number of flights in a given month based on the origin
         cols <- c("Origin","Month")
-        flightsByOriginMonth <- h2o.group_by(data = airlines, 
-                                             by = cols, 
-                                             nrow("Month"), 
-                                             gb.control = list(na.methods = "rm"))
-        flightsByOriginMonth_R <- as.data.frame(flightsByOriginMonth)
-        flightsByOriginMonth_R
+        flights_by_origin_month <- h2o.group_by(data = airlines, 
+                                                by = cols, 
+                                                nrow("Month"), 
+                                                gb.control = list(na.methods = "rm"))
+        flights_by_origin_month_R <- as.data.frame(flights_by_origin_month)
+        flights_by_origin_month_R
             Origin Month nrow
         1      ABE     1   59
         2      ABQ     1  846
@@ -103,12 +103,12 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
         # Find months with the highest cancellation ratio
         which(colnames(airlines)=="Cancelled")
         [1] 22
-        cancellationsByMonth <- h2o.group_by(data = airlines, 
-                                             by = "Month", 
-                                             sum("Cancelled"), 
-                                             gb.control=list(na.methods="rm"))
-        cancellation_rate <- cancellationsByMonth$sum_Cancelled/flightsByMonth$nrow
-        rates_table <- h2o.cbind(flightsByMonth$Month,cancellation_rate)
+        cancellations_by_month <- h2o.group_by(data = airlines, 
+                                               by = "Month", 
+                                               sum("Cancelled"), 
+                                               gb.control=list(na.methods="rm"))
+        cancellation_rate <- cancellations_by_month$sum_Cancelled/flights_by_month$nrow
+        rates_table <- h2o.cbind(flights_by_month$Month,cancellation_rate)
         rates_table_R <- as.data.frame(rates_table)
         rates_table_R
           Month sum_Cancelled
@@ -118,10 +118,10 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
         # Use group_by with multiple columns. Summarize the destination, 
         # arrival delays, and departure delays for an origin
         cols <- c("Dest", "IsArrDelayed", "IsDepDelayed")
-        originFlights <- h2o.group_by(data = airlines[c("Origin",cols)], 
-                                      by = "Origin", 
-                                      sum(cols),
-                                      gb.control = list(na.methods = "ignore", col.names = NULL))
+        origin_flights <- h2o.group_by(data = airlines[c("Origin",cols)], 
+                                       by = "Origin", 
+                                       sum(cols),
+                                       gb.control = list(na.methods = "ignore", col.names = NULL))
         
         # Note a warning because col.names null
         res <- h2o.cbind(lapply(cols, function(x){h2o.group_by(airlines,by="Origin",sum(x))}))[,c(1,2,4,6)]

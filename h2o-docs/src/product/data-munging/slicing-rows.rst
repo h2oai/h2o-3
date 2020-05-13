@@ -12,7 +12,7 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
         df <- h2o.importFile(path)
 
         # Slice 1 row by index. 
-        c1 <- df[15,]
+        c1 <- df[15, ]
         print(c1)
           sepal_len sepal_wid petal_len petal_wid       class
         1       5.8         4       1.2       0.2 Iris-setosa
@@ -20,7 +20,7 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
         [1 row x 5 columns] 
 
         # Slice a range of rows.
-        c1_1 <- df[25:49,]
+        c1_1 <- df[25:49, ]
         print(c1_1)
           sepal_len sepal_wid petal_len petal_wid       class
         1       4.8       3.4       1.9       0.2 Iris-setosa
@@ -33,8 +33,8 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
         [25 rows x 5 columns] 
 
         # Slice using a boolean mask. The output dataset will include rows with a sepal length less than 4.6.
-        mask <- df[,"sepal_len"] < 4.6
-        cols <- df[mask,]
+        mask <- df[, "sepal_len"] < 4.6
+        cols <- df[mask, ]
         print(cols)
           sepal_len sepal_wid petal_len petal_wid       class
         1       4.4       2.9       1.4       0.2 Iris-setosa
@@ -46,8 +46,8 @@ H2O lazily slices out rows of data and will only materialize a shared copy upon 
         [5 rows x 5 columns] 
 
         # Filter out rows that contain missing values in a column. Note the use of '!' to perform a logical not.
-        mask <- is.na(df[,"sepal_len"])
-        cols <- df[!mask,]
+        mask <- is.na(df[, "sepal_len"])
+        cols <- df[!mask, ]
         print(cols)
           sepal_len sepal_wid petal_len petal_wid       class
         1       5.1       3.5       1.4       0.2 Iris-setosa

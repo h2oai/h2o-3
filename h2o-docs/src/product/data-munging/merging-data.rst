@@ -14,9 +14,9 @@ Note that in order for a merge to work in multinode clusters, one of the dataset
 		h2o.init()
 		
 		# Create two simple, two-column R data frames by inputting values, ensuring that both have a common column (in this case, "fruit").
-		left <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','blueberry'), 
-		                   color = c('red','orange','yellow','yellow','red','blue'))
-		right <- data.frame(fruit = c('apple','orange','banana','lemon','strawberry','watermelon'), 
+		left <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'blueberry'), 
+		                   color = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'))
+		right <- data.frame(fruit = c('apple', 'orange', 'banana', 'lemon', 'strawberry', 'watermelon'), 
 		                    citrus = c(FALSE, TRUE, FALSE, TRUE, FALSE, FALSE))
 		
 		# Create the H2O data frames from the inputted data.

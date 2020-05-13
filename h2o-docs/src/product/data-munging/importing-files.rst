@@ -29,15 +29,15 @@ The ``importFolder`` (R)/``import_file`` (Python) function can be used to import
 		# To import all .csv files from the prostate_folder directory:
 		library(h2o)
 		h2o.init()
-		prosPath <- system.file("extdata", "prostate_folder", package = "h2o")
-		prostate_pattern <- h2o.importFolder(path = prosPath, 
+		pros_path <- system.file("extdata", "prostate_folder", package = "h2o")
+		prostate_pattern <- h2o.importFolder(path = pros_path, 
 		                                     pattern = ".*.csv")
 		class(prostate_pattern)
 		summary(prostate_pattern)
 
 		# To import all .csv files from an anomaly folder stored locally
-		ecgPath <- "../path_to_h2o-3/smalldata/anomaly/"
-		ecg_pattern <- h2o.importFolder(path=ecgPath, 
+		ecg_path <- "../path_to_h2o-3/smalldata/anomaly/"
+		ecg_pattern <- h2o.importFolder(path = ecg_path, 
 		                                pattern = ".*.csv")
 
 		class(ecg_pattern)

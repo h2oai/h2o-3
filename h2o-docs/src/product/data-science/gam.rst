@@ -403,11 +403,11 @@ Below are simple examples showing how to use GAM in R and Python.
 
     # create frame knots
     knots1 <- c(-1.99905699, -0.98143075, 0.02599159, 1.00770987, 1.99942290)
-    frameKnots1 <- as.h2o(knots1)
+    frame_Knots1 <- as.h2o(knots1)
     knots2 <- c(-1.999821861, -1.005257990, -0.006716042, 1.002197392, 1.999073589)
-    frameKnots2 <- as.h2o(knots2)
+    frame_Knots2 <- as.h2o(knots2)
     knots3 <- c(-1.999675688, -0.979893796, 0.007573327, 1.011437347, 1.999611676)
-    frameKnots3 <- as.h2o(knots3)
+    frame_Knots3 <- as.h2o(knots3)
 
     # import the dataset
     h2o_data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv")
@@ -418,7 +418,7 @@ Below are simple examples showing how to use GAM in R and Python.
     h2o_data["C11"] <- as.factor(h2o_data["C11"])
 
     # split into train and test sets
-    splits <- h2o.splitFrame(data=h2o_data, ratios=.8)
+    splits <- h2o.splitFrame(data = h2o_data, ratios = 0.8)
     train <- splits[[1]]
     test <- splits[[2]]
 
@@ -427,23 +427,23 @@ Below are simple examples showing how to use GAM in R and Python.
     response <- 'C11'
 
     # specify the knots array
-    numKnots <- c(5,5,5)
+    numKnots <- c(5, 5, 5)
 
     # build the GAM model
-    gam_model <- h2o.gam(x=predictors, 
-                         y=response, 
+    gam_model <- h2o.gam(x = predictors, 
+                         y = response, 
                          training_frame = train,
-                         family='multinomial', 
-                         gam_columns=c("C6","C7","C8"), 
-                         scale=c(1,1,1), 
-                         num_knots=numKnots, 
-                         knot_ids=c(h2o.keyof(frameKnots1), h2o.keyof(frameKnots2), h2o.keyof(frameKnots3)))
+                         family = 'multinomial', 
+                         gam_columns = c("C6", "C7", "C8"), 
+                         scale = c(1, 1, 1), 
+                         num_knots = numKnots, 
+                         knot_ids = c(h2o.keyof(frame_Knots1), h2o.keyof(frame_Knots2), h2o.keyof(frame_Knots3)))
 
     # get the model coefficients
     coefficients <- h2o.coef(gam_model)
     
     # generate predictions using the test data
-    pred <- h2o.predict(object=gam_model, newdata=test)
+    pred <- h2o.predict(object = gam_model, newdata = test)
 
    .. code-tab:: python
 

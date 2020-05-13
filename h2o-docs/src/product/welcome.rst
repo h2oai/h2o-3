@@ -130,7 +130,7 @@ At this point, determine whether you want to complete this quick start in either
         >
 
         # Copy and paste the following commands in R to download dependency packages.
-        > pkgs <- c("methods","statmod","stats","graphics","RCurl","jsonlite","tools","utils")
+        > pkgs <- c("methods", "statmod", "stats", "graphics", "RCurl", "jsonlite", "tools", "utils")
         > for (pkg in pkgs) {if (! (pkg %in% rownames(installed.packages()))) { install.packages(pkg) }}
 
         # Run the following command to load the H2O:

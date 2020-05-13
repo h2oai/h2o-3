@@ -16,9 +16,9 @@ Use this function to pivot tables. This is performed by designating three column
         h2o.init()
 
         # Create a simple data frame by inputting values
-        data <- data.frame(colorID = c('1','2','3','3','1','4'), 
-                           value = c('red','orange','yellow','yellow','red','blue'), 
-                           amount = c('4','2','4','3','6','3'))
+        data <- data.frame(colorID = c('1', '2', '3', '3', '1', '4'), 
+                           value = c('red', 'orange', 'yellow', yellow', 'red', 'blue'), 
+                           amount = c('4', '2', '4', '3', '6', '3'))
         df <- as.h2o(data)
         
         # View the dataset
@@ -34,7 +34,7 @@ Use this function to pivot tables. This is performed by designating three column
         [6 rows x 3 columns]
 
         # Pivot the table on the colorID column and aligned on the amount column
-        df2 <- h2o.pivot(df,index="amount",column="colorID",value="value")
+        df2 <- h2o.pivot(df, index = "amount", column = "colorID", value = "value")
         df2
           amount   1   2   3   4
         1      2 NaN   1 NaN NaN

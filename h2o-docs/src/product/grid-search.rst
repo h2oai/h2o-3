@@ -105,8 +105,8 @@ Grid Search Examples
     x <- setdiff(names(data), y)
 
     # For binary classification, response should be a factor
-    data[,y] <- as.factor(data[,y])
-    test[,y] <- as.factor(test[,y])
+    data[, y] <- as.factor(data[, y])
+    test[, y] <- as.factor(test[, y])
 
     # Split data into train & validation
     ss <- h2o.splitFrame(data, seed = 1)

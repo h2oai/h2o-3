@@ -31,10 +31,10 @@ Examples
 		quantile(prostate)
 
 		# Request quantiles for the AGE column:
-		quantile(prostate[,3])
+		quantile(prostate[, 3])
 
 		# Request quantiles for probabilities 0.001 and 0.01 for the AGE column
-		quantile(prostate[,3], prob=c(0.001, 0.01))
+		quantile(prostate[, 3], prob=c(0.001, 0.01))
 
 	.. code-tab:: python
 

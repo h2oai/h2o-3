@@ -120,12 +120,12 @@ Below is a simple example showing how to build a Word2vec model.
                                      col.names = c("category", "jobtitle"), 
                                      col.types = c("Enum", "String"), 
                                      header = TRUE)
-   	STOP_WORDS = c("ax","i","you","edu","s","t","m","subject","can",
-                       "lines","re","what","there","all","we","one","the",
-                       "a","an","of","or","in","for","by","on","but","is",
-                       "in","a","not","with","as","was","if","they","are",
-                       "this","and","it","have","from","at","my","be","by",
-                       "not","that","to","from","com","org","like","likes",
+   	STOP_WORDS = c("ax", "i", "you", "edu", "s", "t", "m", "subject", "can", 
+                       "lines", "re", "what", "there", "all", "we", "one", "the", 
+                       "a", "an", "of", "or", "in", "for", "by", "on", "but", "is", 
+                       "in", "a", "not", "with", "as", "was", "if", "they", "are",
+                       "this", "and", "it", "have", "from", "at", "my", "be", "by",
+                       "not", "that", "to", "from", "com", "org", "like", "likes",
                        "so")
 
    	# Make the 'tokenize' function:

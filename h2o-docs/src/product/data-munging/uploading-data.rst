@@ -17,8 +17,8 @@ Run the following command to load data that resides on the same machine that is 
 	
 		library(h2o)
 		h2o.init()
-		irisPath <- "../smalldata/iris/iris_wheader.csv"
-		iris <- h2o.uploadFile(path = irisPath)
+		iris_path <- "../smalldata/iris/iris_wheader.csv"
+		iris <- h2o.uploadFile(path = iris_path)
 	  
    .. code-tab:: python
    

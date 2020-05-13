@@ -294,7 +294,7 @@ Below is a simple example showing how to build a Random Forest model.
     # Set the predictors and response; 
     # set the response as a factor:
     cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-    predictors <- c("displacement","power","weight","acceleration","year")
+    predictors <- c("displacement", "power", "weight", "acceleration", "year")
     response <- "economy_20mpg"
 
     # Split the dataset into a train and valid set:
