@@ -63,6 +63,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
     @Override
     protected double score1(Chunk[] chks, double offset, double weight, double[] fs, int row) {
+        // not used in the current implementation of Extended Isolation Forest
         return 0;
     }
 
