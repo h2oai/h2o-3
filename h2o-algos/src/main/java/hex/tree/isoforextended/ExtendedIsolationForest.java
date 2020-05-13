@@ -187,24 +187,24 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             _nodes[0] = new Node(frame._key, frame.numRows(), 0);
             for (int i = 0; i < _nodes.length; i++) {
                 Node node = _nodes[i];
-                if (node == null || node.external) {
+                if (node == null || node._external) {
                     continue;
                 }
                 Frame nodeFrame = node.getFrame();
-                int currentHeight = node.height;
-                if (node.height >= _heightLimit || nodeFrame.numRows() <= 1) {
-                    node.external = true;
-                    node.numRows = nodeFrame.numRows();
-                    node.height = currentHeight;
-                    DKV.remove(node.frameKey);
+                int currentHeight = node._height;
+                if (node._height >= _heightLimit || nodeFrame.numRows() <= 1) {
+                    node._external = true;
+                    node._numRows = nodeFrame.numRows();
+                    node._height = currentHeight;
+                    DKV.remove(node._frameKey);
                 } else {
                     currentHeight++;
 
-                    node.p = VecUtils.uniformDistrFromFrame(nodeFrame, _seed + i);
-                    node.n = ArrayUtils.gaussianVector(
+                    node._p = VecUtils.uniformDistrFromFrame(nodeFrame, _seed + i);
+                    node._n = ArrayUtils.gaussianVector(
                             nodeFrame.numCols(), _seed + i, nodeFrame.numCols() - _extensionLevel - 1);
-                    Frame sub = MatrixUtils.subtractionMtv(nodeFrame, node.p);
-                    Vec mul = MatrixUtils.productMtvMath(sub, node.n);
+                    Frame sub = MatrixUtils.subtractionMtv(nodeFrame, node._p);
+                    Vec mul = MatrixUtils.productMtvMath(sub, node._n);
                     Frame left = new FilterLtTask(mul, 0)
                             .doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
                     Frame right = new FilterGteTask(mul, 0)
@@ -238,7 +238,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
                 if (_nodes[i] == null)
                     System.out.print(". ");
                 else
-                    System.out.print(_nodes[i].numRows + " ");
+                    System.out.print(_nodes[i]._numRows + " ");
             }
             System.out.println("");
         }
@@ -251,7 +251,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
                 if (_nodes[i] == null)
                     System.out.print(". ");
                 else
-                    System.out.print(_nodes[i].height + " ");
+                    System.out.print(_nodes[i]._height + " ");
             }
             System.out.println("");
         }
@@ -263,9 +263,9 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             int position = 0;
             Node node = _nodes[0];
             double score = 0;
-            while (!node.external) {
-                double[] sub = ArrayUtils.subtract(row, node.p);
-                double mul = ArrayUtils.innerProduct(sub, node.n);
+            while (!node._external) {
+                double[] sub = ArrayUtils.subtract(row, node._p);
+                double mul = ArrayUtils.innerProduct(sub, node._n);
                 if (mul <= 0) {
                     position = leftChildIndex(position);
                 } else {
@@ -276,7 +276,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
                 else
                     break;
             }
-            score += node.height + averagePathLengthOfUnsuccesfullSearch(node.numRows);
+            score += node._height + averagePathLengthOfUnsuccesfullSearch(node._numRows);
             return score;
         }
 
@@ -286,22 +286,22 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
          * scoring (evaluation) stage.
          */
         private static class Node extends Iced<Node> {
-            private Key<Frame> frameKey;
-            private double[] n;
-            public double[] p;
+            private Key<Frame> _frameKey;
+            private double[] _n;
+            private double[] _p;
 
-            int height;
-            boolean external = false;
-            long numRows;
+            private int _height;
+            private boolean _external = false;
+            private long _numRows;
 
-            public Node(Key<Frame> frameKey, long numRows, int currentHeight) {
-                this.frameKey = frameKey;
-                this.height = currentHeight;
-                this.numRows = numRows;
+            public Node(Key<Frame> _frameKey, long _numRows, int currentHeight) {
+                this._frameKey = _frameKey;
+                this._height = currentHeight;
+                this._numRows = _numRows;
             }
 
             Frame getFrame() {
-                return DKV.getGet(frameKey);
+                return DKV.getGet(_frameKey);
             }
         }
 
