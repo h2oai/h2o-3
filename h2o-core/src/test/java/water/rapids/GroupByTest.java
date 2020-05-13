@@ -11,9 +11,6 @@ import water.fvec.Vec;
 import water.rapids.ast.prims.mungers.AstGroup;
 import water.rapids.vals.ValFrame;
 import water.util.Log;
-import water.util.Pair;
-
-import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
@@ -337,48 +334,68 @@ public class GroupByTest extends TestUtil {
   }
   
   private static Frame getSimpleTestFrame(final String frameName) {
-    String[] strings = new String[] { "a", "b", "a", "c", "b" };
+    String[] strings0 = new String[] { "a", "b", "a", "c", "b" };
+    String[] strings1 = new String[] { "z", "y", "z", "w", "y" };
     long[] nums0 = new long[] { 0, 1, 2, 1, 1 };
     long[] nums1 = new long[] { 2, 3, 2, 4, 3 };
 
     return new TestFrameBuilder()
                 .withName(frameName)
-                .withColNames("Str", "Num_0", "Num_1")
-                .withVecTypes(Vec.T_STR, Vec.T_NUM, Vec.T_NUM)
-                .withDataForCol(0, strings)
-                .withDataForCol(1, nums0)
-                .withDataForCol(2, nums1)
+                .withColNames("Str_0", "Str_1", "Num_0", "Num_1")
+                .withVecTypes(Vec.T_STR, Vec.T_STR, Vec.T_NUM, Vec.T_NUM)
+                .withDataForCol(0, strings0)
+                .withDataForCol(1, strings1)
+                .withDataForCol(2, nums0)
+                .withDataForCol(3, nums1)
                 .withChunkLayout(1, 1, 2, 1)
                 .build();
   }
 
+  @FunctionalInterface
+  private interface GroupByInvocation {
+    Frame run(Frame inputFrame);
+  }
+
   @Test
-  public void testGroupByStringNrow() {
-    String inputFrameName = "testInputFrame";
+  public void testGroupByStringNrowMethod() {
+    GroupByInvocation gbMethodInvocation = inputFrame -> {
+      AstGroup.AGG[] aggs = new AstGroup.AGG[1];
+      aggs[0] = new AstGroup.AGG(AstGroup.FCN.nrow, 2, AstGroup.NAHandling.ALL, -1);
+  
+      int[] groupByColumns = new int[]{ 0, 2, 1 };
+      return new AstGroup().performGroupingWithAggregations(inputFrame,
+                                                            groupByColumns,
+                                                            aggs).getFrame();
+    };
+    
+    testGroupByStringNrow("inputFrame", gbMethodInvocation);
+  }
+
+  @Test
+  public void testGroupByStringNrowAst() {
+    final String inputFrameName = "inputFrame";
+    GroupByInvocation gbAstInvocation = inputFrame -> Rapids.exec("(GB " + inputFrameName + " [0 2 1] nrow 2 \"all\")")
+                                                      .getFrame();
+    testGroupByStringNrow(inputFrameName, gbAstInvocation);
+  }
+  
+  private void testGroupByStringNrow(final String inputFrameName, final GroupByInvocation gbInovcation) {
     Frame inputFrame = getSimpleTestFrame(inputFrameName);
 
     Frame expectedResFrame = new TestFrameBuilder()
-                                  .withColNames("Str", "Num_0", "nrow")
-                                  .withVecTypes(Vec.T_STR, Vec.T_NUM, Vec.T_NUM)
+                                  .withColNames("Str_0", "Num_0", "Str_1", "nrow")
+                                  .withVecTypes(Vec.T_STR, Vec.T_NUM, Vec.T_STR, Vec.T_NUM)
                                   .withDataForCol(0, new String[] { "a", "a", "b", "c" })
                                   .withDataForCol(1, new long[] { 0, 2, 1, 1 })
-                                  .withDataForCol(2, new long[] { 1, 1, 2, 1 })
+                                  .withDataForCol(2, new String[] { "z", "z", "y", "w" })
+                                  .withDataForCol(3, new long[] { 1, 1, 2, 1 })
                                   .build();
     
     try {
       System.out.println("Input frame:");
       System.out.println(inputFrame.toTwoDimTable().toString());
 
-      AstGroup.AGG[] aggs = new AstGroup.AGG[1];
-      aggs[0] = new AstGroup.AGG(AstGroup.FCN.nrow, 2, AstGroup.NAHandling.ALL, -1);
-
-      int[] groupByColumnsNum = new int[]{1};
-      int[] groupByColumnsStr = new int[]{0};
-
-      Frame resFrame = new AstGroup().performGroupingWithAggregations(inputFrame,
-                                                                      groupByColumnsNum,
-                                                                      groupByColumnsStr,
-                                                                      aggs).getFrame();
+      Frame resFrame = gbInovcation.run(inputFrame);
 
       System.out.println("GroupBy result:");
       System.out.println(resFrame.toTwoDimTable().toString());

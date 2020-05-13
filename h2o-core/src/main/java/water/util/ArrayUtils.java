@@ -1401,10 +1401,18 @@ public class ArrayUtils {
       res[i] = ary[idxs[i]];
     return res;
   }
+
   public static int[] select(int[] ary, int[] idxs) {
     int [] res = MemoryManager.malloc4(idxs.length);
     for(int i = 0; i < res.length; ++i)
       res[i] = ary[idxs[i]];
+    return res;
+  }
+
+  public static byte[] select(byte[] array, int[] idxs) {
+    byte[] res = MemoryManager.malloc1(idxs.length);
+    for(int i = 0; i < res.length; ++i)
+      res[i] = array[idxs[i]];
     return res;
   }
 
@@ -2010,4 +2018,21 @@ public class ArrayUtils {
     return false;
   }
 
+  /**
+   * Count number of occurences of element in given array.
+   *
+   * @param array   array in which number of occurences should be counted.
+   * @param element element whose occurences should be counted.
+   *
+   * @return  number of occurences of element in given array.
+   */
+  public static int occurenceCount(byte[] array, byte element) {
+    int cnt = 0;
+
+    for (byte b : array)
+      if (b == element)
+        cnt++;
+
+    return cnt;
+  }
 }

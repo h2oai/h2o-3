@@ -1,7 +1,11 @@
 package water.rapids.ast.prims.mungers;
 
 import water.*;
-import water.fvec.*;
+import water.fvec.Chunk;
+import water.fvec.Frame;
+import water.fvec.NewChunk;
+import water.fvec.Vec;
+import water.parser.BufferedString;
 import water.rapids.Env;
 import water.rapids.Merge;
 import water.rapids.Val;
@@ -27,10 +31,8 @@ import java.util.Arrays;
  * returns a row per unique group, with the first columns being the grouping
  * columns, and the last column(s) the reduction result(s).
  * <p/>
- * However, GroupBy operations will not be performed on String columns.  These columns
- * will be skipped. GroupBy for string columns cannot be performed directly using Ast API, but 
- * there is an internal implementation for such GroupBy operations - 
- * {@link AstGroup#performGroupingWithAggregations(Frame, int[], int[], AGG[])}.
+ * Grouping can be performed on both numeric and string columns, but aggregation
+ * functions are limited to the ones listed in {@link AstGroup.FCN}.
  * <p/>
  * The returned column(s).
  */
@@ -288,25 +290,32 @@ public class AstGroup extends AstPrimitive {
 
     return performGroupingWithAggregations(fr, gbCols, aggs);
   }
-  
+
+  /**
+   * Performs grouping and aggregations on given data.
+   *
+   * @param fr          frame on which grouping should be performed
+   * @param gbCols      indices of columns (of given frame) to be used for grouping.
+   * @param aggs        aggregations to be performed on the grouped data.
+   *
+   * @return  grouped data with aggregations results.
+   */
   public ValFrame performGroupingWithAggregations(Frame fr, int[] gbCols, AGG[] aggs) {
-    return performGroupingWithAggregations(fr, gbCols, new int[]{}, aggs);
-  }
-
-  public ValFrame performGroupingWithAggregations(Frame fr, int[] gbColsNum, int[] gbColsStr, AGG[] aggs) {
     final boolean hasMedian = hasMedian(aggs);
-    final IcedHashSet<G> gss = doGroups(fr, gbColsNum, gbColsStr, aggs, hasMedian, _per_node_aggregates);
+    final byte[] gbColsTypes = ArrayUtils.select(fr.types(), gbCols);
+    
+    final IcedHashSet<G> gss = doGroups(fr, gbCols,  gbColsTypes, aggs, hasMedian, _per_node_aggregates);
     final G[] grps = gss.toArray(new G[gss.size()]);
+    
+    applyOrdering(gbCols, gbColsTypes, grps);
 
-    applyOrdering(gbColsNum, gbColsStr, grps);
+    final int medianActionsNeeded = hasMedian ? calculateMediansForGRPS(fr, gbCols, gbColsTypes, aggs, gss, grps) : -1;
 
-    final int medianActionsNeeded = hasMedian ? calculateMediansForGRPS(fr, gbColsNum, gbColsStr, aggs, gss, grps) : -1;
-
-    MRTask mrFill = prepareMRFillTask(grps, aggs, medianActionsNeeded);
+    MRTask mrFill = prepareMRFillTask(grps, aggs, gbColsTypes, medianActionsNeeded);
 
     String[] fcNames = prepareFCNames(fr, aggs);
 
-    Frame f = buildOutput(gbColsNum, gbColsStr, aggs.length, fr, fcNames, grps.length, mrFill);
+    Frame f = buildOutput(gbCols, aggs.length, fr, fcNames, grps.length, mrFill);
     return new ValFrame(f);
   }
 
@@ -316,21 +325,26 @@ public class AstGroup extends AstPrimitive {
         return true;
     return false;
   }
-
-  private MRTask prepareMRFillTask(final G[] grps, final AGG[] aggs, final int medianCount) {
+  private MRTask prepareMRFillTask(final G[] grps, final AGG[] aggs, final byte[] gbColsTypes, final int medianCount) {
     return new MRTask() {
       @Override
       public void map(Chunk[] c, NewChunk[] ncs) {
         int start = (int) c[0].start();
         for (int i = 0; i < c[0]._len; ++i) {
           G g = grps[i + start];  // One Group per row
-          int gbColsCnt = g._gs.length + g._gsStr.length;
+          int gbColsCnt = g.colsCount();
           int j;
-          // TODO: Columns order - currently string columns are first
-          for (j = 0; j < g._gsStr.length; j++) // The string group key, as a row
-            ncs[j].addStr(g._gsStr[j]);
-          for (j = g._gsStr.length; j < gbColsCnt; j++) // The numeric group key, as a row
-            ncs[j].addNum(g._gs[j - g._gsStr.length]);
+
+          int strIdx = 0;
+          int numIdx = 0;
+
+          for (j = 0; j < gbColsCnt; j++) {
+            if (gbColsTypes[j] == Vec.T_STR)
+              ncs[j].addStr(g._gsStr[strIdx++]);
+            else
+              ncs[j].addNum(g._gs[numIdx++]);
+          }
+
           for (int a = 0; a < aggs.length; a++) {
             if ((medianCount >=0) && g.medianR._isMedian[a])
               ncs[j++].addNum(g.medianR._medians[a]);
@@ -393,25 +407,34 @@ public class AstGroup extends AstPrimitive {
     return aggs;
   }
 
-  // TODO: Currently - Order by string columns first then by numeric columns
-  private void applyOrdering(final int[] gbColsNum, final int[] gbColsStr, G[] grps) {
-    if (gbColsStr.length > 0 || gbColsNum.length > 0)
+  private void applyOrdering(final int[] gbCols, final byte[] gbColsTypes, G[] grps) {
+    if (gbCols.length > 0)
       Arrays.sort(grps, new java.util.Comparator<G>() {
         // Compare 2 groups.  Iterate down _gs, stop when _gs[i] > that._gs[i],
         // or _gs[i] < that._gs[i].  Order by various columns specified by
         // gbCols.  NaN is treated as least
         @Override
         public int compare(G g1, G g2) {
-          for (int i = 0; i < gbColsStr.length; i++) {
-            if (g1._gsStr[i] != null && g2._gsStr[i] == null) return -1;
-            if (g1._gsStr[i] == null && g2._gsStr[i] != null) return 1;
-            if (!g1._gsStr[i].equals(g2._gsStr[i])) return g1._gsStr[i].compareTo(g2._gsStr[i]);
+          int strIdx = 0;
+          int numIdx = 0;
+
+          for (int gbColIdx = 0; gbColIdx < gbCols.length; gbColIdx++) {
+            if (gbColsTypes[gbColIdx] == Vec.T_STR) {
+              if (g1._gsStr[strIdx] != null && g2._gsStr[strIdx] == null) return -1;
+              if (g1._gsStr[strIdx] == null && g2._gsStr[strIdx] != null) return 1;
+              int res = g1._gsStr[strIdx].compareTo(g2._gsStr[strIdx]);
+              if (res != 0) return res;
+              
+              strIdx++;
+            } else {
+              if (Double.isNaN(g1._gs[numIdx]) && !Double.isNaN(g2._gs[numIdx])) return -1;
+              if (!Double.isNaN(g1._gs[numIdx]) && Double.isNaN(g2._gs[numIdx])) return 1;
+              if (g1._gs[numIdx] != g2._gs[numIdx]) return g1._gs[numIdx] < g2._gs[numIdx] ? -1 : 1;
+
+              numIdx++;
+            }
           }
-          for (int i = 0; i < gbColsNum.length; i++) {
-            if (Double.isNaN(g1._gs[i]) && !Double.isNaN(g2._gs[i])) return -1;
-            if (!Double.isNaN(g1._gs[i]) && Double.isNaN(g2._gs[i])) return 1;
-            if (g1._gs[i] != g2._gs[i]) return g1._gs[i] < g2._gs[i] ? -1 : 1;
-          }
+
           return 0;
         }
 
@@ -423,7 +446,7 @@ public class AstGroup extends AstPrimitive {
       });
   }
 
-  private int calculateMediansForGRPS(Frame fr, int[] gbColsNum, int[] gbColsStr, AGG[] aggs, IcedHashSet<G> gss, G[] grps) {
+  private int calculateMediansForGRPS(Frame fr, int[] gbCols, byte[] gbColsTypes, AGG[] aggs, IcedHashSet<G> gss, G[] grps) {
     // median action exists, we do the following three things:
     // 1. Find out how many columns over all groups we need to perform median on
     // 2. Assign an index to the NewChunk that we will be storing the data for each median column for each group
@@ -436,7 +459,7 @@ public class AstGroup extends AstPrimitive {
         }
       }
     }
-    BuildGroup buildMedians = new BuildGroup(gbColsNum, gbColsStr, aggs, gss, grps, numberOfMedianActionsNeeded);
+    BuildGroup buildMedians = new BuildGroup(gbCols, gbColsTypes, aggs, gss, grps, numberOfMedianActionsNeeded);
     Vec[] groupChunks = buildMedians.doAll(numberOfMedianActionsNeeded, Vec.T_NUM, fr).close();
     buildMedians.calcMedian(groupChunks);
     return numberOfMedianActionsNeeded;
@@ -459,27 +482,25 @@ public class AstGroup extends AstPrimitive {
   // Do all the grouping work.  Find groups in frame 'fr', grouped according to
   // the selected 'gbCols' columns, and for each group compute aggregrate
   // results using 'aggs'.  Return an array of groups, with the aggregate results.
-  public static IcedHashSet<G> doGroups(Frame fr, int[] gbColsNum, AGG[] aggs) {
-    return doGroups(fr, gbColsNum, new int[]{}, aggs, false, true);
+  public static IcedHashSet<G> doGroups(Frame fr, int[] gbCols, AGG[] aggs) {
+    final byte[] gbColsTypes = ArrayUtils.select(fr.types(), gbCols);
+
+    return doGroups(fr, gbCols, gbColsTypes, aggs, false, true);
   }
 
-  public static IcedHashSet<G> doGroups(Frame fr, int[] gbColsNum, int[] gbColsStr, AGG[] aggs) {
-    return doGroups(fr, gbColsNum, gbColsStr, aggs, false, true);
-  }
-
-  private static IcedHashSet<G> doGroups(Frame fr, int[] gbColsNum, int[] gbColsStr, AGG[] aggs, boolean hasMedian, boolean perNodeAggregates) {
+  public static IcedHashSet<G> doGroups(Frame fr, int[] gbCols, byte[] gbColsTypes, AGG[] aggs, boolean hasMedian, boolean perNodeAggregates) {
     // do the group by work now
     long start = System.currentTimeMillis();
-    GBTask<?> p1 = makeGBTask(perNodeAggregates, gbColsNum, gbColsStr, aggs, hasMedian).doAll(fr);
+    GBTask<?> p1 = makeGBTask(perNodeAggregates, gbCols, gbColsTypes, aggs, hasMedian).doAll(fr);
     Log.info("Group By Task done in " + (System.currentTimeMillis() - start) / 1000. + " (s)");
     return p1.getGroups();
   }
 
-  private static GBTask<? extends GBTask> makeGBTask(boolean perNodeAggregates, int[] gbColsNum, int[] gbColsStr, AGG[] aggs, boolean hasMedian) {
+  private static GBTask<? extends GBTask> makeGBTask(boolean perNodeAggregates, int[] gbCols, byte[] gbColsTypes, AGG[] aggs, boolean hasMedian) {
     if (perNodeAggregates)
-      return new GBTaskAggsPerNode(gbColsNum, gbColsStr, aggs, hasMedian);
+      return new GBTaskAggsPerNode(gbCols, gbColsTypes, aggs, hasMedian);
     else
-      return new GBTaskAggsPerMap(gbColsNum, gbColsStr, aggs, hasMedian);
+      return new GBTaskAggsPerMap(gbCols, gbColsTypes, aggs, hasMedian);
   }
   
   // Utility for AstDdply; return a single aggregate for counting rows-per-group
@@ -488,36 +509,27 @@ public class AstGroup extends AstPrimitive {
   }
   
   // Build output frame from the multi-column results
-  public static Frame buildOutput(int[] gbColsNum, int noutCols, Frame fr, String[] fcnames, int ngrps, MRTask mrfill) {
-    return buildOutput(gbColsNum, noutCols, fr, fcnames, ngrps, mrfill);
-  }
-  
-  // Build output frame from the multi-column results
-  public static Frame buildOutput(int[] gbColsNum, int[] gbColsStr, int noutCols, Frame fr, String[] fcnames, int ngrps, MRTask mrfill) {
+  public static Frame buildOutput(int[] gbCols, int noutCols, Frame fr, String[] fcnames, int ngrps, MRTask mrfill) {
     // Build the output!
     // the names of columns
-    final int gbColsCnt = gbColsNum.length + gbColsStr.length;
-    final int nCols = gbColsCnt + noutCols;
+    final int nCols = gbCols.length + noutCols;
     String[] names = new String[nCols];
     String[][] domains = new String[nCols][];
     byte[] types = new byte[nCols];
-    // String GroupBy columns
-    for (int i = 0; i < gbColsStr.length; i++) {
-      names[i] = fr.name(gbColsStr[i]);
-      domains[i] = fr.domains()[gbColsStr[i]];
+
+    // GroupBy columns
+    for (int i = 0; i < gbCols.length; i++) {
+      names[i] = fr.name(gbCols[i]);
+      domains[i] = fr.domains()[gbCols[i]];
       types[i] = fr.vec(names[i]).get_type();
     }
-    // Numeric GroupBy columns
-    for (int i = gbColsStr.length; i < gbColsCnt; i++) {
-      names[i] = fr.name(gbColsNum[i - gbColsStr.length]);
-      domains[i] = fr.domains()[gbColsNum[i - gbColsStr.length]];
-      types[i] = fr.vec(names[i]).get_type();
-    }
+
     // Output columns of GroupBy functions
     for (int i = 0; i < fcnames.length; i++) {
-      names[i + gbColsCnt] = fcnames[i];
-      types[i + gbColsCnt] = Vec.T_NUM;
+      names[i + gbCols.length] = fcnames[i];
+      types[i + gbCols.length] = Vec.T_NUM;
     }
+
     Vec v = Vec.makeZero(ngrps); // dummy layout vec
     // Convert the output arrays into a Frame, also doing the post-pass work
     Frame f =  mrfill.doAll(types, new Frame(v)).outputFrame(names, domains);
@@ -565,16 +577,37 @@ public class AstGroup extends AstPrimitive {
   }
 
   private static abstract class GBTask<E extends MRTask<E>> extends MRTask<E> {
-    final int[] _gbColsNum; // Numeric columns used to define group
-    final int[] _gbColsStr; // String columns used to define group
+    final int[] _gbCols; // Columns used to define group
+    final byte[] _gbColsTypes; // Types of gb columns
+    final int _numericGbColsCnt;
+    final int _stringGbColsCnt;
+    
     final AGG[] _aggs;   // Aggregate descriptions
     final boolean _hasMedian;
 
-    GBTask(int[] gbColsNum, int[] gbColsStr, AGG[] aggs, boolean hasMedian) {
-      _gbColsNum = gbColsNum;
-      _gbColsStr = gbColsStr;
+    GBTask(int[] gbCols, byte[] gbColsTypes, AGG[] aggs, boolean hasMedian) {
+      _gbCols = gbCols;
+      _gbColsTypes = gbColsTypes;
+      _stringGbColsCnt = ArrayUtils.occurenceCount(_gbColsTypes, Vec.T_STR);
+      _numericGbColsCnt = gbColsTypes.length - _stringGbColsCnt;
       _aggs = aggs;
       _hasMedian = hasMedian;
+    }
+
+    protected void map(Chunk[] cs, IcedHashSet<G> groups) {
+      G gWork = new G(_numericGbColsCnt, _stringGbColsCnt, _aggs, _hasMedian); // Working Group
+      G gOld;                   // Existing Group to be filled in
+      for (int row = 0; row < cs[0]._len; row++) {
+        // Find the Group being worked on
+        gWork.fill(row, cs, _gbCols, _gbColsTypes);            // Fill the worker Group for the hashtable lookup
+        if (groups.addIfAbsent(gWork) == null) { // Insert if not absent (note: no race, no need for atomic)
+          gOld = gWork;                          // Inserted 'gWork' into table
+          gWork = new G(_numericGbColsCnt, _stringGbColsCnt, _aggs, _hasMedian);   // need entirely new G
+        } else gOld = groups.get(gWork);            // Else get existing group
+
+        for (int i = 0; i < _aggs.length; i++) // Accumulate aggregate reductions
+          _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row));
+      }
     }
     
     abstract IcedHashSet<G> getGroups();
@@ -590,8 +623,8 @@ public class AstGroup extends AstPrimitive {
   private static class GBTaskAggsPerNode extends GBTask<GBTaskAggsPerNode> {
     final IcedHashSet<G> _gss; // Shared per-node, common, racy
 
-    GBTaskAggsPerNode(int[] gbColsNum, int[] gbColsStr, AGG[] aggs, boolean hasMedian) {
-      super(gbColsNum, gbColsStr, aggs, hasMedian);
+    GBTaskAggsPerNode(int[] gbCols, byte[] gbColsTypes, AGG[] aggs, boolean hasMedian) {
+      super(gbCols, gbColsTypes, aggs, hasMedian);
       _gss = new IcedHashSet<>();
     }
 
@@ -599,19 +632,7 @@ public class AstGroup extends AstPrimitive {
     public void map(Chunk[] cs) {
       // Groups found in this Chunk
       IcedHashSet<G> gs = new IcedHashSet<>();
-      G gWork = new G(_gbColsNum.length, _gbColsStr.length, _aggs, _hasMedian); // Working Group
-      G gOld;                   // Existing Group to be filled in
-      for (int row = 0; row < cs[0]._len; row++) {
-        // Find the Group being worked on
-        gWork.fill(row, cs, _gbColsNum, _gbColsStr);            // Fill the worker Group for the hashtable lookup
-        if (gs.addIfAbsent(gWork) == null) { // Insert if not absent (note: no race, no need for atomic)
-          gOld = gWork;                          // Inserted 'gWork' into table
-          gWork = new G(_gbColsNum.length, _gbColsStr.length, _aggs, _hasMedian);   // need entirely new G
-        } else gOld = gs.get(gWork);            // Else get existing group
-
-        for (int i = 0; i < _aggs.length; i++) // Accumulate aggregate reductions
-          _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row));
-      }
+      map(cs, gs);
       // This is a racy update into the node-local shared table of groups
       reduce(gs);               // Atomically merge Group stats
     }
@@ -691,27 +712,15 @@ public class AstGroup extends AstPrimitive {
   public static class GBTaskAggsPerMap extends GBTask<GBTaskAggsPerMap> {
     IcedHashSet<G> _gss; // each map will have its own IcedHashMap
 
-    GBTaskAggsPerMap(int[] gbColsNum, int[] gbColsStr, AGG[] aggs, boolean hasMedian) {
-      super(gbColsNum, gbColsStr, aggs, hasMedian);
+    GBTaskAggsPerMap(int[] gbCols, byte[] gbColsTypes, AGG[] aggs, boolean hasMedian) {
+      super(gbCols, gbColsTypes, aggs, hasMedian);
     }
 
     @Override
     public void map(Chunk[] cs) {
       // Groups found in this Chunk
       _gss = new IcedHashSet<>();
-      G gWork = new G(_gbColsNum.length, _gbColsStr.length, _aggs, _hasMedian); // Working Group
-      G gOld;                   // Existing Group to be filled in
-      for (int row = 0; row < cs[0]._len; row++) {
-        // Find the Group being worked on
-        gWork.fill(row, cs, _gbColsNum, _gbColsStr);            // Fill the worker Group for the hashtable lookup
-        if (_gss.addIfAbsent(gWork) == null) { // Insert if not absent (note: no race, no need for atomic)
-          gOld = gWork;                          // Inserted 'gWork' into table
-          gWork = new G(_gbColsNum.length, _gbColsStr.length, _aggs, _hasMedian);   // need entirely new G
-        } else gOld = _gss.get(gWork);            // Else get existing group
-
-        for (int i = 0; i < _aggs.length; i++) // Accumulate aggregate reductions
-          _aggs[i].op(gOld._dss, gOld._ns, i, cs[_aggs[i]._col].atd(row));
-      }
+      map(cs, _gss);
     }
 
     // combine IcedHashMap from all threads here.
@@ -752,7 +761,7 @@ public class AstGroup extends AstPrimitive {
   // aggregate results, one per aggregate.
   public static class G extends Iced<G> {
     public final double[] _gs;  // Group Key: Array is final; contents change with the "fill"
-    public final String[] _gsStr;  // Group Key: Array is final; contents change with the "fill"
+    public final BufferedString[] _gsStr;  // Group Key: Array is final; contents change with the "fill"
     int _hash;           // Hash is not final; changes with the "fill"
 
     public final double _dss[][];      // Aggregates: usually sum or sum*2
@@ -776,7 +785,11 @@ public class AstGroup extends AstPrimitive {
     
     public G(int ncolsNum, int ncolsStr, AGG[] aggs, boolean hasMedian) {
       _gs = new double[ncolsNum];
-      _gsStr = new String[ncolsStr];
+      _gsStr = new BufferedString[ncolsStr];
+
+      for (int i = 0; i < _gsStr.length; i++)
+        _gsStr[i] = new BufferedString();
+
       int len = aggs == null ? 0 : aggs.length;
       _dss = new double[len][];
       _ns = new long[len];
@@ -794,14 +807,16 @@ public class AstGroup extends AstPrimitive {
         }
       }
     }
+    
+    private int colsCount() { return _gs.length + _gsStr.length; }
 
     public G fill(int row, Chunk chks[]) {
       for (int c = 0; c < chks.length; c++) { // For all selection cols
         Vec vec = chks[c].vec();
-        
+
         // Load into working array
         if (vec.isString())
-          _gsStr[c] = chks[c].stringAt(row);
+          chks[c].atStr(_gsStr[c], row);
         else
           _gs[c] = chks[c].atd(row);
       }
@@ -810,17 +825,24 @@ public class AstGroup extends AstPrimitive {
       return this;
     }
 
-    public G fill(int row, Chunk[] chks, int[] colsNum) { return fill(row, chks, colsNum, new int[]{}); }
+    public G fill(int row, Chunk[] chks, int[] colsNum) {
+      byte[] gbColsTypes = new byte[colsNum.length];
+      Arrays.fill(gbColsTypes, Vec.T_NUM);
 
-    public G fill(int row, Chunk[] chks, int[] colsNum, int[] colsStr) {
-      for (int c = 0; c < colsNum.length; c++) // For all numeric selection cols
+      return fill(row, chks, colsNum, gbColsTypes);
+    }
+
+    public G fill(int row, Chunk[] chks, int[] cols, byte[] gbColsTypes) {
+      int strIdx = 0;
+      int numIdx = 0;
+
+      for (int c = 0; c < cols.length; c++) // For all selection cols
         // Load into working array
-        _gs[c] = chks[colsNum[c]].atd(row);
-      
-      for (int c = 0; c < colsStr.length; c++) // For all string selection cols
-        // Load into working array
-        _gsStr[c] = chks[colsStr[c]].stringAt(row);
-      
+        if (gbColsTypes[c] == Vec.T_STR)
+          chks[cols[c]].atStr(_gsStr[strIdx++], row);
+        else
+          _gs[numIdx++] = chks[cols[c]].atd(row);
+
       _hash = hash();
       return this;
     }
@@ -832,7 +854,7 @@ public class AstGroup extends AstPrimitive {
       h ^= (h >>> 20) ^ (h >>> 12);
       h ^= (h >>> 7) ^ (h >>> 4);
 
-      for (String str : _gsStr) h = 37 * h + str.hashCode();
+      for (BufferedString str : _gsStr) h = 37 * h + str.hashCode();
       
       return (int) ((h ^ (h >> 32)) & 0x7FFFFFFF);
     }
@@ -860,17 +882,21 @@ public class AstGroup extends AstPrimitive {
   // extract the column per groupG per aggregate function into a NewChunk column
   // here.
   private static class BuildGroup extends MRTask<BuildGroup> {
-    final int[] _gbColsNum;
-    final int[] _gbColsStr;
+    final int[] _gbCols;
+    final byte[] _gbColsTypes;
+    final int _numericGbColsCnt;
+    final int _stringGbColsCnt;
     private final AGG[] _aggs;   // Aggregate descriptions
     private final int _medianCols;
     IcedHashSet<G> _gss;
     private G[] _grps;
 
 
-    BuildGroup(int[] gbColsNum, int[] gbColsStr, AGG[] aggs, IcedHashSet<G> gss, G[] grps, int medianCols) {
-      _gbColsNum = gbColsNum;
-      _gbColsStr = gbColsStr;
+    BuildGroup(int[] gbCols, byte[] gbColsTypes, AGG[] aggs, IcedHashSet<G> gss, G[] grps, int medianCols) {
+      _gbCols = gbCols;
+      _gbColsTypes = gbColsTypes;
+      _stringGbColsCnt = ArrayUtils.occurenceCount(_gbColsTypes, Vec.T_STR);
+      _numericGbColsCnt = gbColsTypes.length - _stringGbColsCnt;
       _aggs = aggs;
       _gss = gss;
       _grps = grps;
@@ -879,11 +905,11 @@ public class AstGroup extends AstPrimitive {
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
-      G gWork = new G(_gbColsNum.length, _gbColsStr.length, _aggs, _medianCols > 0); // Working Group
+      G gWork = new G(_numericGbColsCnt, _stringGbColsCnt, _aggs, _medianCols > 0); // Working Group
       G gOld;
 
       for (int row = 0; row < cs[0]._len; row++) {  // for each
-        gWork.fill(row, cs, _gbColsNum, _gbColsStr);
+        gWork.fill(row, cs, _gbCols, _gbColsTypes);
         gOld = _gss.get(gWork);
         for (int i = 0; i < gOld.medianR._isMedian.length; i++) { // Accumulate aggregate reductions
           if (gOld.medianR._isMedian[i]) {  // median action required on column and group
