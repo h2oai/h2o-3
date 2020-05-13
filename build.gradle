@@ -85,6 +85,7 @@ ext {
       project(':h2o-automl'),
       project(':h2o-genmodel-ext-xgboost'),
       project(':h2o-ext-xgboost'),
+      project(':h2o-genmodel-ext-klime'),
       project(':h2o-ext-krbstandalone'),
       project(':h2o-ext-mojo-pipeline'),
       project(':h2o-ext-target-encoder'),
