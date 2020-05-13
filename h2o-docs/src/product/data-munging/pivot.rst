@@ -17,7 +17,7 @@ Use this function to pivot tables. This is performed by designating three column
 
         # Create a simple data frame by inputting values
         data <- data.frame(colorID = c('1', '2', '3', '3', '1', '4'), 
-                           value = c('red', 'orange', 'yellow', yellow', 'red', 'blue'), 
+                           value = c('red', 'orange', 'yellow', 'yellow', 'red', 'blue'), 
                            amount = c('4', '2', '4', '3', '6', '3'))
         df <- as.h2o(data)
         
