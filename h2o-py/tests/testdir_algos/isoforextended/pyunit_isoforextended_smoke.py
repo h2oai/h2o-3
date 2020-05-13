@@ -13,10 +13,19 @@ def extended_isolation_forest():
 
     eif_model = H2OExtendedIsolationForestEstimator(ntrees=7, seed=12, sample_size=5)
     eif_model.train(training_frame=train)
+    anomaly_score = eif_model.predict(train)
+    anomaly = anomaly_score['anomaly_score'].as_data_frame(use_pandas=True)["anomaly_score"]
 
     print(eif_model)
-
-if __name__ == "__main__":
+    
+    assert (abs(anomaly[0] - 0.54)) <= 0.01, "Not expected output: Expected value is about 0.54"
+    assert (abs(anomaly[5] - 0.47)) <= 0.01, "Not expected output: Expected value is about 0.47"
+    assert (abs(anomaly[33] - 0.46)) <= 0.01, "Not expected output: Expected value is about 0.46"
+    assert (abs(anomaly[256] - 0.50)) <= 0.01, "Not expected output: Expected value is about 0.50"
+    assert (abs(anomaly[499] - 0.50)) <= 0.01, "Not expected output: Expected value is about 0.50"
+                                  
+                                                             
+if __name__ == "__main__":        
     pyunit_utils.standalone_test(extended_isolation_forest)
 else:
     extended_isolation_forest()
