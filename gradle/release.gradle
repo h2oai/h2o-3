@@ -4,22 +4,11 @@ apply plugin: 'nexus-workflow'
 release {
     failOnCommitNeeded = true
     tagTemplate = 'jenkins-$version'
-    tagCommitMessage = "[H2O Release] :"
-    newVersionCommitMessage = "[Reverting back to H2O version] :"
+    preTagCommitMessage = "[Release] "
+    tagCommitMessage = "[Release tag] "
+    newVersionCommitMessage = "[Reverting back to version] "
     git {
         requireBranch = "rel-[a-zA-Z]*|master"
         pushToRemote = false
     }
 }
-
-// Helper task uploading all artifacts
-task publishAll
-publishAll.dependsOn {
-    def onlyPublishTasks = subprojects.collectNested { p -> p.tasks.matching {t -> t.name == "publish"} }
-    onlyPublishTasks
-}
-
-// Helper task uploading and releasing all staged artifacts 
-task stageAll
-stageAll.dependsOn publishAll, nexusStagingRelease
-nexusStagingRelease.mustRunAfter publishAll

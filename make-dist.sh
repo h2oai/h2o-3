@@ -68,6 +68,7 @@ if [ -n "$DO_RELEASE" ]; then
 fi
 
 # Run some required gradle tasks to produce final build output.
+./gradlew booklets
 ./gradlew $DO_RELEASE -Prelease.branch=${BRANCH_NAME} -Prelease.useAutomaticVersion=true -Prelease.releaseVersion=${PROJECT_VERSION} -Prelease.newVersion=${CURRENT_VERSION} publish
 
 # Create target dir, which is uploaded to s3.
