@@ -1,7 +1,6 @@
 package hex.schemas;
 
 import com.google.gson.reflect.TypeToken;
-import hex.ensemble.Metalearner;
 import hex.ensemble.Metalearner.Algorithm;
 import hex.ensemble.StackedEnsemble;
 import hex.ensemble.StackedEnsembleModel;
@@ -133,9 +132,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
 
         HashMap<String, String[]> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String[]>>() {
         }.getType());
-        impl._metalearner_parameters_user_override = new HashSet<>(map.size());
         for (Map.Entry<String, String[]> param : map.entrySet()) {
-          impl._metalearner_parameters_user_override.add(param.getKey());
           String[] paramVal = param.getValue();
           if (paramVal.length == 1) {
             p.setProperty(param.getKey(), paramVal[0]);
@@ -151,6 +148,9 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
           case glm:
             paramsSchema = new GLMV3.GLMParametersV3();
             params = new GLMModel.GLMParameters();
+            // FIXME: This is here because there is no Family.AUTO. It enables us to know if the user specified family or not.
+            // FIXME: Family.AUTO will be implemented in https://0xdata.atlassian.net/projects/PUBDEV/issues/PUBDEV-7444
+            ((GLMModel.GLMParameters) params)._family = null;
             break;
           case gbm:
             paramsSchema = new GBMV3.GBMParametersV3();

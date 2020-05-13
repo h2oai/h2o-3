@@ -2,13 +2,15 @@ package hex.ensemble;
 
 import hex.Model;
 import hex.ModelBuilder;
-import hex.ModelCategory;
 import hex.ensemble.Metalearner.Algorithm;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
+import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
@@ -101,93 +103,89 @@ public class Metalearners {
             return ModelBuilder.make(_algo, _metalearnerJob, _metalearnerKey);
         }
 
+        protected String getAlgo() {
+            return _algo;
+        }
+    }
+
+    static class MetalearnerWithDistribution extends SimpleMetalearner {
+        protected DistributionFamily[] _supportedDistributionFamilies;
+        protected MetalearnerWithDistribution(String algo) {
+            super(algo);
+        }
         @Override
-        protected void setCustomParams(Model.Parameters parms) {
-            super.setCustomParams(parms);
-            switch (_parms._distribution) {
-                case bernoulli:
-                case quasibinomial:
-                case multinomial:
-                case poisson:
-                case laplace:
-                case gaussian:
-                case gamma:
-                    setOverridableParm(parms, "distribution", _parms._distribution);
-                    break;
-                case huber:
-                    setOverridableParm(parms, "distribution", _parms._distribution);
-                    setOverridableParm(parms, "huber_alpha", _parms._huber_alpha);
-                    break;
-                case tweedie:
-                    setOverridableParm(parms, "distribution", _parms._distribution);
-                    setOverridableParm(parms, "tweedie_power", _parms._tweedie_power);
-                    break;
-                case quantile:
-                    setOverridableParm(parms, "distribution", _parms._distribution);
-                    setOverridableParm(parms, "quantile_alpha", _parms._quantile_alpha);
-                    break;
-                case custom:
-                    setOverridableParm(parms, "distribution", _parms._distribution);
-                    setOverridableParm(parms, "custom_distribution_func", _parms._custom_distribution_func);
-                    break;
-                default:
-                    throw new H2OIllegalArgumentException("Metalearner doesn't support distribution \""
-                            .concat(_parms._distribution.name())
-                            .concat("\". Please specify desired distribution manually in metalearner_params."));
+        protected void validateParams(Model.Parameters parms) {
+            super.validateParams(parms);
+
+            // Check if distribution family is supported and if not pick a basic one
+            if (!ArrayUtils.contains(_supportedDistributionFamilies, parms._distribution)) {
+                DistributionFamily distribution;
+                if (_model._output.nclasses() == 1) {
+                    distribution = DistributionFamily.gaussian;
+                } else if (_model._output.nclasses() == 2) {
+                    distribution = DistributionFamily.bernoulli;
+                } else {
+                    distribution = DistributionFamily.multinomial;
+                }
+
+                Log.warn("Distribution \"" + parms._distribution +
+                        "\" is not supported by metalearner algorithm \"" + getAlgo() +
+                        "\". Using \"" + distribution + "\" instead.");
+
+                parms._distribution = distribution;
             }
         }
     }
 
-    static class DLMetalearner extends SimpleMetalearner {
+
+    static class DLMetalearner extends MetalearnerWithDistribution {
         public DLMetalearner() {
             super(Algorithm.deeplearning.name());
+            _supportedDistributionFamilies = new DistributionFamily[]{
+                    DistributionFamily.AUTO,
+                    DistributionFamily.bernoulli,
+                    DistributionFamily.multinomial,
+                    DistributionFamily.gaussian,
+                    DistributionFamily.poisson,
+                    DistributionFamily.gamma,
+                    DistributionFamily.laplace,
+                    DistributionFamily.quantile,
+                    DistributionFamily.huber,
+                    DistributionFamily.tweedie,
+            };
         }
 
-        @Override
-        protected void setCustomParams(Model.Parameters parms) {
-            switch (_parms._distribution) {
-                case custom:
-                case quasibinomial:
-                case ordinal:
-                case modified_huber:
-                    throw new H2OIllegalArgumentException("Deep Learning metalearner doesn't support inferred distribution \""
-                            .concat(_parms._distribution.name())
-                            .concat("\". Please specify desired distribution manually in metalearner_params."));
-                case AUTO:
-                    return;
-            }
-            super.setCustomParams(parms);
-        }
     }
 
-    static class DRFMetalearner extends SimpleMetalearner {
+    static class DRFMetalearner extends MetalearnerWithDistribution {
         public DRFMetalearner() {
             super(Algorithm.drf.name());
-        }
-
-        @Override
-        protected void setCustomParams(Model.Parameters parms) {
-            return;
+            _supportedDistributionFamilies = new DistributionFamily[]{
+                    DistributionFamily.AUTO,
+                    DistributionFamily.bernoulli,
+                    DistributionFamily.multinomial,
+                    DistributionFamily.gaussian,
+            };
         }
     }
 
-    static class GBMMetalearner extends SimpleMetalearner {
+    static class GBMMetalearner extends MetalearnerWithDistribution {
         public GBMMetalearner() {
             super(Algorithm.gbm.name());
-        }
-
-        @Override
-        protected void setCustomParams(Model.Parameters parms) {
-            switch (_parms._distribution) {
-                case ordinal:
-                case modified_huber:
-                    throw new H2OIllegalArgumentException("GBM metalearner doesn't support inferred distribution \""
-                            .concat(_parms._distribution.name())
-                            .concat("\". Please specify desired distribution manually in metalearner_params."));
-                case AUTO:
-                    return;
-            }
-            super.setCustomParams(parms);
+            _supportedDistributionFamilies = new DistributionFamily[]{
+                    DistributionFamily.AUTO,
+                    DistributionFamily.bernoulli,
+                    DistributionFamily.quasibinomial,
+                    DistributionFamily.multinomial,
+                    DistributionFamily.gaussian,
+                    DistributionFamily.poisson,
+                    DistributionFamily.gamma,
+                    DistributionFamily.laplace,
+                    DistributionFamily.quantile,
+                    DistributionFamily.huber,
+                    DistributionFamily.tweedie,
+                    DistributionFamily.custom,
+            };
         }
     }
 
@@ -196,54 +194,11 @@ public class Metalearners {
         GLM createBuilder() {
             return ModelBuilder.make("GLM", _metalearnerJob, _metalearnerKey);
         }
-
-        @Override
-        protected void setCustomParams(GLMParameters parms) {
-            switch (_parms._distribution) {
-                case gaussian:
-                    setOverridableParm(parms, "family", GLMParameters.Family.gaussian);
-                    break;
-                case bernoulli:
-                    setOverridableParm(parms, "family", GLMParameters.Family.binomial);
-                    break;
-                case ordinal:
-                    setOverridableParm(parms, "family", GLMParameters.Family.ordinal);
-                    break;
-                case quasibinomial:
-                    setOverridableParm(parms, "family", GLMParameters.Family.quasibinomial);
-                    break;
-                case multinomial:
-                    setOverridableParm(parms, "family", GLMParameters.Family.multinomial);
-                    break;
-                case poisson:
-                    setOverridableParm(parms, "family", GLMParameters.Family.poisson);
-                    break;
-                case gamma:
-                    setOverridableParm(parms, "family", GLMParameters.Family.gamma);
-                    break;
-                case tweedie:
-                    setOverridableParm(parms, "family", GLMParameters.Family.tweedie);
-                    setOverridableParm(parms, "tweedie_power", _parms._tweedie_power);
-                    break;
-                case AUTO:
-                    break;
-                default:
-                    throw new H2OIllegalArgumentException("GLM metalearner doesn't support inferred distribution \""
-                            .concat(_parms._distribution.name())
-                            .concat("\". Please specify desired family and link manually in metalearner_params."));
-            }
-
-        }
     }
 
     static class NaiveBayesMetalearner extends SimpleMetalearner {
         public NaiveBayesMetalearner() {
             super(Algorithm.naivebayes.name());
-        }
-
-        @Override
-        protected void setCustomParams(Model.Parameters parms) {
-            return;
         }
     }
 
@@ -255,19 +210,19 @@ public class Metalearners {
             super.setCustomParams(parms);
 
             //specific to AUTO mode
-            setOverridableParm(parms, "non_negative", true);
+            parms._non_negative = true;
             //parms._alpha = new double[] {0.0, 0.25, 0.5, 0.75, 1.0};
 
             // feature columns are already homogeneous (probabilities); when standardization is enabled,
             // there can be information loss if some columns have very low probabilities compared with others for example (bad model)
             // giving more weight than it should to those columns.
-            setOverridableParm(parms,"standardize",false);
+            parms._standardize = false;
 
             // Enable lambda search if a validation frame is passed in to get a better GLM fit.
             // Since we are also using non_negative to true, we should also set early_stopping = false.
             if (parms._valid != null) {
-                setOverridableParm(parms, "lambda_search", true);
-                setOverridableParm(parms, "early_stopping", false);
+                parms._lambda_search = true;
+                parms._early_stopping = false;
             }
         }
     }

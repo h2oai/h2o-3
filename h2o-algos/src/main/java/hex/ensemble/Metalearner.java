@@ -7,12 +7,8 @@ import hex.ensemble.StackedEnsembleModel.StackedEnsembleParameters;
 import water.DKV;
 import water.Job;
 import water.Key;
-import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.util.Log;
-
-import java.lang.reflect.Field;
-import java.util.Set;
 
 public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Model<M, P, ?>, P extends Model.Parameters> {
 
@@ -41,7 +37,6 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
   protected P _metalearner_parameters;
   protected boolean _hasMetalearnerParams;
   protected long _metalearnerSeed;
-  protected Set<String> _metalearnerParamsUserOverride;
 
   void init(Frame levelOneTrainingFrame,
             Frame levelOneValidationFrame,
@@ -52,8 +47,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
             Job metalearnerJob,
             StackedEnsembleParameters parms,
             boolean hasMetalearnerParams,
-            long metalearnerSeed,
-            Set<String> metalearnerParamsUserOverride) {
+            long metalearnerSeed) {
 
     _levelOneTrainingFrame = levelOneTrainingFrame;
     _levelOneValidationFrame = levelOneValidationFrame;
@@ -65,7 +59,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     _parms = parms;
     _hasMetalearnerParams = hasMetalearnerParams;
     _metalearnerSeed = metalearnerSeed;
-    _metalearnerParamsUserOverride = metalearnerParamsUserOverride;
+
   }
 
   void compute() {
@@ -79,6 +73,8 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
       setCommonParams(builder._parms);
       setCrossValidationParams(builder._parms);
       setCustomParams(builder._parms);
+
+      validateParams(builder._parms);
 
       builder.init(false);
       Job<M> j = builder.trainModel();
@@ -106,22 +102,6 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
 
   abstract B createBuilder();
 
-  /**
-   * This method sets parms.field=value if it wasn't explicitly set by a user.
-   * @param parms
-   * @param field
-   * @param value
-   * @param <T>
-   */
-  protected <T> void setOverridableParm(P parms, String field, T value) {
-    if (_metalearnerParamsUserOverride.contains(field)) return;
-    try {
-      parms.getClass().getField("_".concat(field)).set(parms, value);
-    } catch (IllegalAccessException | NoSuchFieldException e) {
-      throw new H2OIllegalArgumentException("Unable to set field \"".concat(field).concat("\"."));
-    }
-  }
-
   protected void setCommonParams(P parms) {
     if (parms._seed == -1) { //use _metalearnerSeed only as legacy fallback if not set on metalearner_parameters 
       parms._seed = _metalearnerSeed;
@@ -147,6 +127,8 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
   }
 
   protected void setCustomParams(P parms) { }
+
+  protected void validateParams(P parms) { }
 
   protected void cleanup() {
     if (!_parms._keep_base_model_predictions) {
