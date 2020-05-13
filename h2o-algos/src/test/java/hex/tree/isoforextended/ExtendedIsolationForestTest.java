@@ -173,7 +173,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     }
 
     @Test
-    public void FilterLtTaskTest() {
+    public void testFilterLtTask() {
         try {
             Scope.enter();
             Frame m = new TestFrameBuilder()
@@ -196,7 +196,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     }
 
     @Test
-    public void FilterLtTaskCategoricalDataTest() {
+    public void testFilterLtTaskCategoricalData() {
         try {
             Scope.enter();
             Frame m = new TestFrameBuilder()
@@ -218,7 +218,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     }
 
     @Test
-    public void FilterGteTaskTest() {
+    public void testFilterGteTask() {
         try {
             Scope.enter();
             Frame m = new TestFrameBuilder()
@@ -241,7 +241,7 @@ public class ExtendedIsolationForestTest extends TestUtil {
     }
 
     @Test
-    public void FilterGteTaskCategoricalDataTest() {
+    public void testFilterGteTaskCategoricalData() {
         try {
             Scope.enter();
             Frame m = new TestFrameBuilder()
