@@ -73,7 +73,7 @@ publishing {
                   artifact(signature, new Action<MavenArtifact>() {
                       @Override
                       void execute(MavenArtifact t) {
-                          t.classifier = signature.toSignArtifact.classifier != "" ? signature.toSignArtifact.classifier : null
+                          t.classifier = signature.classifier != "" ? signature.classifier : null
                           t.extension = signature.type == "xml.asc" ? "pom.asc" : signature.type
                       }
                   })
