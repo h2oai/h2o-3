@@ -69,7 +69,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
 
   private void checkSanityAndFillParams() {
     if (!((_model_id.get()._output.nclasses()==2) || (_model_id.get()._output.nclasses()==1)))
-      throw H2O.unimpl(); // only for regression and binary classification for now
+      throw H2O.unimpl("Partial Dependence Plot is only available for regression and binary classification.");
     
     _predictor_column = (_model_id.get()._output.nclasses()==1)?0:2;  // regression: column 0, binary classifier: 2
     if (_cols != null || _col_pairs_2dpdp != null) {
