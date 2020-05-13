@@ -168,39 +168,17 @@ Minio Instance
 
 Minio Cloud Storage is an alternative to Amazon AWS S3. When using a Minio server, the following additional parameters are specified in the Java launch command:
 
-- ``endpoint``: Specifies a minio server instance (including address and port). This overrides the existing endpoint, which is currently hardcoded to be AWS S3.
+- ``endpoint``: Specifies a Minio server instance (including address and port). This overrides the existing endpoint, which is currently hardcoded to be AWS S3.
 
 - ``enable.path.style``: Specifies to override the default S3 behavior to expose every bucket as a full DNS enabled path. Note that this is a Minio recommendation.
 
-1. Edit the properties in the ``core-site.xml`` file to include your these new parameters as well as the Access Key ID and Access Key. Refer to the following example:
+1. Launch H2O by entering the following in the command line:
 
   ::
 
-      <property>
-        <name>Dsys.ai.h2o.persist.s3.endPoint</name>
-        <value>example.minio.io:9000</value>
-      </property>
-      <property>
-        <name>Dsys.ai.h2o.persist.s3.enable.path.style</name>
-        <value>true</value>
-      </property>
-      <property>
-        <name>Daws.AccessKeyId</name>
-        <value>[MINIO SECRET KEY]</value>
-      </property>
+      java -Dsys.ai.h2o.persist.s3.endPoint=s3.amazonaws.com -jar h2o.jar
 
-      <property>
-        <name>Daws.SecretAccessKey</name>
-        <value>[MINIO SECRET ACCESS KEY]</value>
-      </property>
-
-2. Launch with the configuration file ``core-site.xml`` by entering the following in the command line:
-
-  ::
-
-      java -jar h2o.jar -hdfs_config core-site.xml
-
-3. Import the data using ``importFile`` with the Minio S3 url path: **s3://bucket/path/to/file.csv**. You can pass the AWS Access Key and Secret Access Key in an S3 URL in Flow, R, or Python (where ``MINIO_ACCESS_KEY`` represents your user name, and ``MINIO_SECRET_KEY`` represents your password).
+2. Import the data using ``importFile`` with the Minio S3 url path: **s3://bucket/path/to/file.csv**. You can pass the AWS Access Key and Secret Access Key in an S3 URL in Flow, R, or Python (where ``MINIO_ACCESS_KEY`` represents your user name, and ``MINIO_SECRET_KEY`` represents your password).
 
  - To import the data from the Flow API:
 
@@ -219,47 +197,6 @@ Minio Cloud Storage is an alternative to Amazon AWS S3. When using a Minio serve
   ::
 
    h2o.import_file(path = "s3://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv")
-
-
-.. _Core-site.xml:
-
-Core-site.xml Example
-'''''''''''''''''''''
-
-The following is an example core-site.xml file:
-
-::
-
-    <?xml version="1.0"?>
-    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
-
-    <!-- Put site-specific property overrides in this file. -->
-
-    <configuration>
-
-        <!--
-        <property>
-        <name>fs.default.name</name>
-        <value>s3://<your s3 bucket></value>
-        </property>
-        -->
-
-        <property>
-            <name>fs.s3.awsAccessKeyId</name>
-            <value>insert access key here</value>
-        </property>
-
-        <property>
-            <name>fs.s3.awsSecretAccessKey</name>
-            <value>insert secret key here</value>
-        </property>
-
-        <property>
-            <name>fs.s3.awsSessionToken</name>
-            <value>insert session token here</value>
-        </property>
-        </configuration>
-
 
 Launching H2O
 '''''''''''''
