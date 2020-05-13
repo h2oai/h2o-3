@@ -3,9 +3,12 @@
 | https://github.com/h2oai/h2o-3#Downloading  | https://github.com/h2oai/h2o-3#Community  |
 |                                             | https://www.h2o.ai/company/team/          |
 
+
 ## Reporting a Vulnerability
 
 To file an issue, head to JIRA: https://0xdata.atlassian.net/projects/PUBDEV/issues
+
+For more information about contributing: https://github.com/h2oai/h2o-3/blob/master/CONTRIBUTING.md
 
 Other questions? Feel free to reach out to StackOverflow: https://stackoverflow.com/questions/tagged/h2o
 
