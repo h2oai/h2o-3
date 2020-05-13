@@ -8,6 +8,7 @@ release {
     newVersionCommitMessage = "[Reverting back to H2O version] :"
     git {
         requireBranch = "rel-[a-zA-Z]*|master"
+        pushToRemote = false
     }
 }
 
