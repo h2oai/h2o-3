@@ -68,7 +68,13 @@ public class ExtendedIsolationForestModel extends SharedTreeModel<ExtendedIsolat
     public ExtendedIsolationForestMojoWriter getMojo() {
         return new ExtendedIsolationForestMojoWriter(this);
     }
-
+    
+    /**
+     * Anomaly score computation comes from Equation 1 in paper
+     *
+     * @param pathLength path from root to leaf
+     * @return anomaly score in range [0, 1]
+     */
     private double anomalyScore(double pathLength) {
         return Math.pow(2, -1 * (pathLength / 
                 ExtendedIsolationForest.IsolationTree.averagePathLengthOfUnsuccesfullSearch(_parms._sample_size)));
