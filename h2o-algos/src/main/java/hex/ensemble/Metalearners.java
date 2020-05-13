@@ -1,5 +1,6 @@
 package hex.ensemble;
 
+import hex.DistributionFactory;
 import hex.Model;
 import hex.ModelBuilder;
 import hex.ensemble.Metalearner.Algorithm;
@@ -134,6 +135,7 @@ public class Metalearners {
 
                 parms._distribution = distribution;
             }
+            _model._dist = DistributionFactory.getDistribution(parms);
         }
     }
 

@@ -22,7 +22,11 @@ import water.api.schemas3.FrameV3;
 import com.google.gson.Gson;
 import water.fvec.Frame;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Properties;
+
 
 
 public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,StackedEnsembleV99,StackedEnsembleV99.StackedEnsembleParametersV99> {
@@ -129,7 +133,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       
       if (metalearner_params != null && !metalearner_params.isEmpty()) {
         Properties p = new Properties();
-
+        
         HashMap<String, String[]> map = new Gson().fromJson(metalearner_params, new TypeToken<HashMap<String, String[]>>() {
         }.getType());
         for (Map.Entry<String, String[]> param : map.entrySet()) {

@@ -152,6 +152,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         Frame.deleteTempFrameAndItsNonSharedVecs(baseModelPredictions[i], levelOneFrame);
       }
     }
+
     // Add response column to level one frame
     levelOneFrame.add(this.responseColumn, adaptFrm.vec(this.responseColumn));
     
@@ -261,6 +262,18 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
   }
 
+  private DistributionFamily familyToDistribution(GLMModel.GLMParameters.Family aFamily) {
+    if (aFamily == GLMModel.GLMParameters.Family.binomial) {
+      return DistributionFamily.bernoulli;
+    }
+    try {
+      return Enum.valueOf(DistributionFamily.class, aFamily.toString());
+    }
+    catch (IllegalArgumentException e) {
+      throw new H2OIllegalArgumentException("Don't know how to find the right DistributionFamily for Family: " + aFamily);
+    }
+  }
+
   private DistributionFamily distributionFamily(Model aModel) {
     // TODO: hack alert: In DRF, _parms._distribution is always set to multinomial.  Yay.
     if (aModel instanceof DRFModel)
@@ -271,22 +284,23 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       else
         return DistributionFamily.gaussian;
 
+    if (aModel instanceof StackedEnsembleModel) {
+      StackedEnsembleModel seModel = (StackedEnsembleModel) aModel;
+      if (Metalearners.getActualMetalearnerAlgo(seModel._parms._metalearner_algorithm) == Metalearner.Algorithm.glm) {
+        return familyToDistribution(((GLMModel.GLMParameters) seModel._parms._metalearner_parameters)._family);
+      }
+      if (seModel._parms._metalearner_parameters._distribution != DistributionFamily.AUTO) {
+        return seModel._parms._metalearner_parameters._distribution;
+      }
+    }
+
     try {
       Field familyField = ReflectionUtils.findNamedField(aModel._parms, "_family");
       Field distributionField = (familyField != null ? null : ReflectionUtils.findNamedField(aModel, "_dist"));
       if (null != familyField) {
         // GLM only, for now
         GLMModel.GLMParameters.Family thisFamily = (GLMModel.GLMParameters.Family) familyField.get(aModel._parms);
-        if (thisFamily == GLMModel.GLMParameters.Family.binomial) {
-          return DistributionFamily.bernoulli;
-        }
-
-        try {
-          return Enum.valueOf(DistributionFamily.class, thisFamily.toString());
-        }
-        catch (IllegalArgumentException e) {
-          throw new H2OIllegalArgumentException("Don't know how to find the right DistributionFamily for Family: " + thisFamily);
-        }
+        return familyToDistribution(thisFamily);
       }
 
       if (null != distributionField) {
@@ -317,34 +331,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     }
   }
 
-  /**
-   * Checks if a user specified "distribution" for metalearner, if so it will use it otherwise returns Distribution
-   * inferred by distributionFamily unless it's a distribution that requires additional params.
-   * In that case, generate Distribution based on `aModel`.
-   * @param aModel
-   * @return Distribution
-   */
-  private Distribution getDistribution(Model aModel) {
-    // Was distribution set by a user?
-    if (_parms._metalearner_parameters._distribution != DistributionFamily.AUTO) {
-      return DistributionFactory.getDistribution(_parms._metalearner_parameters);
-    }
-    DistributionFamily df = distributionFamily(aModel);
-    switch (df) {
-      case tweedie:
-      case huber:
-      case quantile:
-      case custom:
-        if (aModel instanceof GLMModel){
-          GLMModel.GLMParameters parms = (GLMModel.GLMParameters) aModel._parms.clone();
-          parms._distribution = distributionFamily(aModel);
-          return DistributionFactory.getDistribution(parms);
-        }
-        return DistributionFactory.getDistribution(aModel._parms);
-      default:
-        return DistributionFactory.getDistribution(df);
-    }
-  }
+
 
   /**
    * Inherit distribution and its parameters
@@ -352,15 +339,10 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    */
   private void inheritDistributionAndParms(Model.Parameters parms) {
     if (parms instanceof GLMModel.GLMParameters) {
-      if (((GLMModel.GLMParameters) parms)._family == GLMModel.GLMParameters.Family.binomial) {
-        _parms._metalearner_parameters._distribution = DistributionFamily.bernoulli;
-      } else {
-        try {
-          _parms._metalearner_parameters._distribution = Enum.valueOf(DistributionFamily.class,
-                  ((GLMModel.GLMParameters) parms)._family.toString());
-        } catch (IllegalArgumentException e) {
-          Log.warn("Stacked Ensemble is not able to inherit distribution from GLM's family " + ((GLMModel.GLMParameters) parms)._family + ".");
-        }
+      try {
+        _parms._metalearner_parameters._distribution = familyToDistribution(((GLMModel.GLMParameters) parms)._family);
+      } catch (IllegalArgumentException e) {
+        Log.warn("Stacked Ensemble is not able to inherit distribution from GLM's family " + ((GLMModel.GLMParameters) parms)._family + ".");
       }
     } else if (parms instanceof DRFModel.DRFParameters) {
       inferBasicDistribution();
@@ -400,6 +382,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       try {
         metaParams._family = Enum.valueOf(GLMModel.GLMParameters.Family.class, parms._distribution.name());
       } catch (IllegalArgumentException e) {
+        Log.warn("Stacked Ensemble is not able to inherit family from a distribution " + parms._distribution + ".");
         inferBasicDistribution();
       }
     }
@@ -422,15 +405,12 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         inheritFamilyAndParms(_parms._metalearner_parameters);
         return false; // User specified family - no need to infer one; Link will be also used properly if it is specified
       }
-      _dist = getDistribution(aModel);
       inheritFamilyAndParms(aModel._parms);
     } else { // use distribution
       if (_parms._metalearner_parameters._distribution != DistributionFamily.AUTO) {
-        _dist = DistributionFactory.getDistribution(_parms._metalearner_parameters);
         inheritDistributionAndParms(_parms._metalearner_parameters);
         return false; // User specified distribution; no need to infer one
       }
-      _dist = getDistribution(aModel);
       inheritDistributionAndParms(aModel._parms);
     }
     return true;
@@ -456,7 +436,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         _parms._metalearner_parameters._distribution = DistributionFamily.gaussian;
       }
     }
-    _dist = DistributionFactory.getDistribution(_parms._metalearner_parameters._distribution);
   }
 
   void checkAndInheritModelProperties() {
@@ -627,6 +606,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         seed = aModel._parms._seed;
         retrievedFirstModelParams = true;
       }
+
     } // for all base_models
 
     if (null == aModel)
