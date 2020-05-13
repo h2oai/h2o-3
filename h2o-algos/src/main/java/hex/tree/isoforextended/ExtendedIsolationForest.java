@@ -21,7 +21,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         ExtendedIsolationForestModel.ExtendedIsolationForestParameters,
         ExtendedIsolationForestModel.ExtendedIsolationForestOutput> {
 
-    transient IsolationTree[] iTrees;
+    transient IsolationTree[] _iTrees;
 
     // Called from an http request
     public ExtendedIsolationForest(ExtendedIsolationForestModel.ExtendedIsolationForestParameters parms) {
@@ -109,7 +109,7 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         }
     }
 
-    public int k = 0;
+    public int _k = 0;
 
     private class ExtendedIsolationForestDriver extends Driver {
 
@@ -156,7 +156,10 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
     public static class IsolationTree extends Iced<IsolationTree> {
         private Node[] nodes;
 
-        private Key<Frame> frameKey;
+        private Key<Frame> _frameKey;
+        private int _heightLimit;
+        private long _seed;
+        private int _extensionLevel;
         private int heightLimit;
         private long seed;
         private int extensionLevel;
