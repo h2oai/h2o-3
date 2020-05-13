@@ -10,6 +10,7 @@ public final class ExtendedIsolationForestMojoModel extends SharedTreeMojoModel 
 
   @Override
   public double[] unifyPreds(double[] row, double offset, double[] preds) {
+    // not used in the current implementation of Extended Isolation Forest
     return new double[0];
   }
 
