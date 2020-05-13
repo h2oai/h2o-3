@@ -71,7 +71,7 @@ public class MatrixUtils {
    */
   public static Vec productMtv2Array(Frame m, double[] array) {
     if (array.length != m.numCols()) {
-      throw new UnsupportedOperationException("Array elements number must be the same as matrix column number");
+      throw new UnsupportedOperationException("Array elements number must be the same size as matrix column number");
     }
     Vec result = new ProductMtv2Array(array).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
     return result;
@@ -86,7 +86,7 @@ public class MatrixUtils {
    */
   public static double productVtV(Vec v1, Vec v2) {
     if (v2.length() != v1.length()) {
-      throw new UnsupportedOperationException("Vector elements number must be the same");
+      throw new UnsupportedOperationException("Vector elements number must be the same size.");
     }
     return new ProductMtvTask().doAll(v1, v2)._result[0];
   }
@@ -101,7 +101,7 @@ public class MatrixUtils {
    */
   public static Frame subtractionMtArray(Frame m, double[] array) {
     if (array.length != m.numCols()) {
-      throw new UnsupportedOperationException("Array elements number must be the same as matrix column number");
+      throw new UnsupportedOperationException("Array elements number must be the same size as matrix column number.");
     }
     Frame result = new SubtractionMtArrayTask(array).doAll(m.types(), m).outputFrame();
     return result;
@@ -116,7 +116,7 @@ public class MatrixUtils {
    */
   public static Frame subtractionMtv(Frame m, Vec v) {
     if (v.length() != m.numCols()) {
-      throw new UnsupportedOperationException("Vector elements number must be the same as matrix column number");
+      throw new UnsupportedOperationException("Vector elements number must be the same size as matrix column number.");
     }
     Frame result = new SubtractionMtvTask(v).doAll(m.types(), m).outputFrame();
     return result;
@@ -131,7 +131,7 @@ public class MatrixUtils {
    */
   public static Vec subtractionVtv(Vec v1, Vec v2) {
     if (v2.length() != v1.length()) {
-      throw new UnsupportedOperationException("Vector elements number must be the same");
+      throw new UnsupportedOperationException("Vector elements number must be the same size.");
     }
     Vec result = new SubtractionVtvTask().doAll(Vec.T_NUM, v1, v2).outputFrame().vec(0);
     return result;
