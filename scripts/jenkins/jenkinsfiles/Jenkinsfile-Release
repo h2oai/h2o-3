@@ -168,6 +168,7 @@ try {
                                 }
                                 sh """
                                     cd ${env.BUILD_NUMBER_DIR}
+                                    git push
                                     git push --tags
                                 """
                             }
