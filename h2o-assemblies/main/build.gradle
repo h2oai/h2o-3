@@ -3,6 +3,11 @@ apply plugin: 'java'
 apply plugin: 'com.github.hierynomus.license'
 
 description = "H2O Application Assembly"
+
+sourceCompatibility = 1.8
+targetCompatibility = 1.8
+
+
 // Exclude unwanted dependencies
 configurations {
     compile.exclude module: 'junit'
