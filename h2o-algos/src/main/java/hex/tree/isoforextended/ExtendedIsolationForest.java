@@ -193,8 +193,8 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
 
                     node.p = VecUtils.uniformDistrFromFrame(nodeFrame, seed + i);
                     node.n = ArrayUtils.gaussianVector(nodeFrame.numCols(), seed + i, nodeFrame.numCols() - extensionLevel - 1);
-                    Frame sub = MatrixUtils.subtractionMtArray(nodeFrame, node.p);
-                    Vec mul = MatrixUtils.productMtv2Array(sub, node.n);
+                    Frame sub = MatrixUtils.subtractionMtv(nodeFrame, node.p);
+                    Vec mul = MatrixUtils.productMtvMath(sub, node.n);
                     Frame left = new FilterLtTask(mul, 0).doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
                     Frame right = new FilterGteTask(mul, 0).doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
                     DKV.remove(nodeFrame._key);

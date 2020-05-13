@@ -56,22 +56,22 @@ public class MatrixUtilsTest extends TestUtil {
             Frame res = MatrixUtils.subtractionMtv(m, v);
 
             // check result
-            Assert.assertEquals(2, res.vecs().length);
+            Assert.assertEquals("wrong result", m.vecs().length, res.vecs().length);
             for (Vec vec : res.vecs()) {
-                Assert.assertTrue(vec.isConst());
-                Assert.assertEquals(0, vec.min(), 0);
+                Assert.assertTrue("wrong result", vec.isConst());
+                Assert.assertEquals("wrong result", 0, vec.min(), 0);
             }
 
             // check given matrix
             Assert.assertEquals(2, m.vecs().length);
             for (Vec vec : m.vecs()) {
-                Assert.assertTrue(vec.isConst());
-                Assert.assertEquals(1, vec.min(), 0);
+                Assert.assertTrue("Input matrix has changed", vec.isConst());
+                Assert.assertEquals("Input matrix has changed", 1, vec.min(), 0);
             }
 
             // check given vector
-            Assert.assertTrue(v.isConst());
-            Assert.assertEquals(1, v.min(), 0);
+            Assert.assertTrue("Input vector has changed", v.isConst());
+            Assert.assertEquals("Input vector has changed", 1, v.min(), 0);
 
         } finally {
             Scope.exit();
@@ -89,17 +89,17 @@ public class MatrixUtilsTest extends TestUtil {
             Frame res = MatrixUtils.subtractionMtv(m, v);
 
             // check result
-            Assert.assertEquals(m.numRows(), res.numRows());
-            Assert.assertEquals(31.691, res.vec(0).at(0), 1e-3);
-            Assert.assertEquals(-57.398, res.vec(0).at(1024), 1e-3);
+            Assert.assertEquals("wrong result", m.numRows(), res.numRows());
+            Assert.assertEquals("wrong result", 31.691, res.vec(0).at(0), 1e-3);
+            Assert.assertEquals("wrong result", -57.398, res.vec(0).at(1024), 1e-3);
 
             // check given matrix
-            Assert.assertEquals(4, m.vecs().length);
-            Assert.assertEquals(32.691, m.vec(0).at(0), 1e-3);
+            Assert.assertEquals("Input matrix has changed", 4, m.vecs().length);
+            Assert.assertEquals("Input matrix has changed", 32.691, m.vec(0).at(0), 1e-3);
 
             // check given vector
-            Assert.assertTrue(v.isConst());
-            Assert.assertEquals(1, v.min(), 0);
+            Assert.assertTrue("Input vector has changed", v.isConst());
+            Assert.assertEquals("Input vector has changed", 1, v.min(), 0);
 
         } finally {
             Scope.exit();
@@ -118,25 +118,25 @@ public class MatrixUtilsTest extends TestUtil {
             Scope.track(m);
             double[] array = ard(1.0, 1.0);
 
-            Frame res = MatrixUtils.subtractionMtArray(m, array);
+            Frame res = MatrixUtils.subtractionMtv(m, array);
 
             // check result
-            Assert.assertEquals(2, res.vecs().length);
+            Assert.assertEquals("wrong result", m.vecs().length, res.vecs().length);
             for (Vec vec : res.vecs()) {
-                Assert.assertTrue(vec.isConst());
-                Assert.assertEquals(0, vec.min(), 0);
+                Assert.assertTrue("wrong result", vec.isConst());
+                Assert.assertEquals("wrong result", 0, vec.min(), 0);
             }
 
             // check given matrix
             Assert.assertEquals(2, m.vecs().length);
             for (Vec vec : m.vecs()) {
-                Assert.assertTrue(vec.isConst());
-                Assert.assertEquals(1, vec.min(), 0);
+                Assert.assertTrue("Input matrix has changed", vec.isConst());
+                Assert.assertEquals("Input matrix has changed", 1, vec.min(), 0);
             }
 
             // check given array
-            Assert.assertEquals(1, array[0], 0);
-            Assert.assertEquals(1, array[1], 0);
+            Assert.assertEquals("Input array has changed", 1, array[0], 0);
+            Assert.assertEquals("Input array has changed", 1, array[1], 0);
         } finally {
             Scope.exit();
         }
@@ -150,29 +150,29 @@ public class MatrixUtilsTest extends TestUtil {
             Scope.track(m);
             double[] array = ard(1.0, 1.0, 1.0, 1.0);
 
-            Frame res = MatrixUtils.subtractionMtArray(m, array);
+            Frame res = MatrixUtils.subtractionMtv(m, array);
 
             // check result
-            Assert.assertEquals(m.numRows(), res.numRows());
-            Assert.assertEquals(31.691, res.vec(0).at(0), 1e-3);
-            Assert.assertEquals(-57.398, res.vec(0).at(1024), 1e-3);
+            Assert.assertEquals("wrong result", m.numRows(), res.numRows());
+            Assert.assertEquals("wrong result", 31.691, res.vec(0).at(0), 1e-3);
+            Assert.assertEquals("wrong result", -57.398, res.vec(0).at(1024), 1e-3);
 
             // check given matrix
-            Assert.assertEquals(4, m.vecs().length);
-            Assert.assertEquals(32.691, m.vec(0).at(0), 1e-3);
+            Assert.assertEquals("Input matrix has changed", 4, m.vecs().length);
+            Assert.assertEquals("Input matrix has changed", 32.691, m.vec(0).at(0), 1e-3);
 
             // check given array
-            Assert.assertEquals(1, array[0], 0);
-            Assert.assertEquals(1, array[1], 0);
-            Assert.assertEquals(1, array[2], 0);
-            Assert.assertEquals(1, array[3], 0);
+            Assert.assertEquals("Input array has changed", 1, array[0], 0);
+            Assert.assertEquals("Input array has changed", 1, array[1], 0);
+            Assert.assertEquals("Input array has changed", 1, array[2], 0);
+            Assert.assertEquals("Input array has changed", 1, array[3], 0);
         } finally {
             Scope.exit();
         }
     }
 
     @Test
-    public void productMtv2() {
+    public void productMtvMath() {
         try {
             Scope.enter();
             Frame m = new TestFrameBuilder()
@@ -183,22 +183,22 @@ public class MatrixUtilsTest extends TestUtil {
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, 2.0), Vec.newKey());
 
-            Vec resVec = MatrixUtils.productMtv2(m, v);
+            Vec resVec = MatrixUtils.productMtvMath(m, v);
 
             // check result
-            Assert.assertEquals(2, m.vecs().length);
-            Assert.assertEquals(1.0, m.vec(0).at(0), 1e-3);
+            Assert.assertEquals("wrong result", resVec.length(), m.numRows());
+            Assert.assertEquals("wrong result", 1.0, m.vec(0).at(0), 1e-3);
 
             // check given matrix
             Assert.assertEquals(2, m.vecs().length);
             for (Vec vec : m.vecs()) {
-                Assert.assertTrue(vec.isConst());
-                Assert.assertEquals(1, vec.min(), 0);
+                Assert.assertTrue("Input matrix has changed", vec.isConst());
+                Assert.assertEquals("Input matrix has changed", 1, vec.min(), 0);
             }
 
             // check given vector
-            Assert.assertTrue(v.isConst());
-            Assert.assertEquals(2, v.min(), 0);
+            Assert.assertTrue("Input vector has changed", v.isConst());
+            Assert.assertEquals("Input vector has changed", 2, v.min(), 0);
         } finally {
             Scope.exit();
         }
@@ -208,34 +208,34 @@ public class MatrixUtilsTest extends TestUtil {
      * Big data equals 16384
      */
     @Test
-    public void productMtv2BigData() {
+    public void productMtvMathBigData() {
         try {
             Scope.enter();
             Frame m = Scope.track(generate_real_only(4, 16384, 0, 0xCAFFE));
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, 2.0, 2.0, 2.0), Vec.newKey());
 
-            Vec resVec = MatrixUtils.productMtv2(m, v);
+            Vec resVec = MatrixUtils.productMtvMath(m, v);
 
             // check result
-            Assert.assertEquals(m.numRows(), resVec.length());
-            Assert.assertEquals(242.913, resVec.at(0), 1e-3);
-            Assert.assertEquals(-506.966, resVec.at(1024), 1e-3);
+            Assert.assertEquals("wrong result", m.numRows(), resVec.length());
+            Assert.assertEquals("wrong result", 242.913, resVec.at(0), 1e-3);
+            Assert.assertEquals("wrong result", -506.966, resVec.at(1024), 1e-3);
 
             // check given matrix
-            Assert.assertEquals(4, m.vecs().length);
-            Assert.assertEquals(32.691, m.vec(0).at(0), 1e-3);
+            Assert.assertEquals("Input matrix has changed", 4, m.vecs().length);
+            Assert.assertEquals("Input matrix has changed", 32.691, m.vec(0).at(0), 1e-3);
 
             // check given vector
-            Assert.assertTrue(v.isConst());
-            Assert.assertEquals(2, v.min(), 0);
+            Assert.assertTrue("Input vector has changed", v.isConst());
+            Assert.assertEquals("Input vector has changed", 2, v.min(), 0);
         } finally {
             Scope.exit();
         }
     }
 
     @Test
-    public void productMtv2Array() {
+    public void productMtvMathArray() {
         try {
             Scope.enter();
             Frame m = new TestFrameBuilder()
@@ -246,25 +246,25 @@ public class MatrixUtilsTest extends TestUtil {
             Scope.track(m);
             double[] array = new double[]{2.0, 2.0};
 
-            Vec resVec = MatrixUtils.productMtv2Array(m, array);
+            Vec resVec = MatrixUtils.productMtvMath(m, array);
 
             // check result
-            Assert.assertEquals(m.numRows(), resVec.length());
-            Assert.assertEquals(4, resVec.at(0), 0);
-            Assert.assertEquals(4, resVec.at(1), 0);
-            Assert.assertEquals(4, resVec.at(2), 0);
-            Assert.assertEquals(4, resVec.at(3), 0);
+            Assert.assertEquals("wrong result", m.numRows(), resVec.length());
+            Assert.assertEquals("wrong result", 4, resVec.at(0), 0);
+            Assert.assertEquals("wrong result", 4, resVec.at(1), 0);
+            Assert.assertEquals("wrong result", 4, resVec.at(2), 0);
+            Assert.assertEquals("wrong result", 4, resVec.at(3), 0);
 
             // check given matrix
             Assert.assertEquals(2, m.vecs().length);
             for (Vec vec : m.vecs()) {
-                Assert.assertTrue(vec.isConst());
-                Assert.assertEquals(1, vec.min(), 0);
+                Assert.assertTrue("Input matrix has changed", vec.isConst());
+                Assert.assertEquals("Input matrix has changed", 1, vec.min(), 0);
             }
 
             // check given array
-            Assert.assertEquals(2, array[0], 0);
-            Assert.assertEquals(2, array[1], 0);
+            Assert.assertEquals("Input array has changed", 2, array[0], 0);
+            Assert.assertEquals("Input array has changed", 2, array[1], 0);
         } finally {
             Scope.exit();
         }
@@ -274,27 +274,27 @@ public class MatrixUtilsTest extends TestUtil {
      * Big data equals 16384
      */
     @Test
-    public void productMtv2BigDataArray() {
+    public void productMtvMathBigDataArray() {
         try {
             Scope.enter();
             Frame m = Scope.track(generate_real_only(4, 16384, 0, 0xCAFFE));
             Scope.track(m);
             double[] array = new double[]{2.0, 2.0, 2.0, 2.0};
 
-            Vec resVec = MatrixUtils.productMtv2Array(m, array);
+            Vec resVec = MatrixUtils.productMtvMath(m, array);
 
             // check result
-            Assert.assertEquals(m.numRows(), resVec.length());
-            Assert.assertEquals(242.913, resVec.at(0), 1e-3);
-            Assert.assertEquals(-506.966, resVec.at(1024), 1e-3);
+            Assert.assertEquals("wrong result", m.numRows(), resVec.length());
+            Assert.assertEquals("wrong result", 242.913, resVec.at(0), 1e-3);
+            Assert.assertEquals("wrong result", -506.966, resVec.at(1024), 1e-3);
 
             // check given matrix
-            Assert.assertEquals(4, m.vecs().length);
-            Assert.assertEquals(32.691, m.vec(0).at(0), 1e-3);
+            Assert.assertEquals("Input matrix has changed", 4, m.vecs().length);
+            Assert.assertEquals("Input matrix has changed", 32.691, m.vec(0).at(0), 1e-3);
 
             // check given array
-            Assert.assertEquals(2, array[0], 0);
-            Assert.assertEquals(2, array[1], 0);
+            Assert.assertEquals("Input array has changed", 2, array[0], 0);
+            Assert.assertEquals("Input array has changed", 2, array[1], 0);
         } finally {
             Scope.exit();
         }
@@ -310,15 +310,15 @@ public class MatrixUtilsTest extends TestUtil {
             double res = MatrixUtils.productVtV(v1, v2);
 
             // check result
-            Assert.assertEquals(16, res, 0);
+            Assert.assertEquals("wrong result", 16, res, 0);
 
             // check given vector
-            Assert.assertTrue(v1.isConst());
-            Assert.assertEquals(2, v1.min(), 0);
+            Assert.assertTrue("First input vector has changed", v1.isConst());
+            Assert.assertEquals("First input vector has changed", 2, v1.min(), 0);
 
             // check given vector
-            Assert.assertTrue(v2.isConst());
-            Assert.assertEquals(2, v2.min(), 0);
+            Assert.assertTrue("Second input vector has changed", v2.isConst());
+            Assert.assertEquals("Second input vector has changed", 2, v2.min(), 0);
         } finally {
             Scope.exit();
         }
@@ -335,15 +335,15 @@ public class MatrixUtilsTest extends TestUtil {
             double res = MatrixUtils.productVtV(v1, v2);
 
             // check result
-            Assert.assertEquals(529463.066, res, 1e-3);
+            Assert.assertEquals("wrong result", 529463.066, res, 1e-3);
 
             // check given vector
-            Assert.assertEquals(32.691, v1.at(0), 1e-3);
-            Assert.assertEquals(-91.936, v1.at(1024), 1e-3);
+            Assert.assertEquals("First input vector has changed", 32.691, v1.at(0), 1e-3);
+            Assert.assertEquals("First input vector has changed", -91.936, v1.at(1024), 1e-3);
 
             // check given vector
-            Assert.assertEquals(34.599, v2.at(0), 1e-3);
-            Assert.assertEquals(55.136, v2.at(1024), 1e-3);
+            Assert.assertEquals("Second input vector has changed", 34.599, v2.at(0), 1e-3);
+            Assert.assertEquals("Second input vector has changed", 55.136, v2.at(1024), 1e-3);
         } finally {
             Scope.exit();
         }
@@ -359,16 +359,16 @@ public class MatrixUtilsTest extends TestUtil {
             Vec res = MatrixUtils.subtractionVtv(v1, v2);
 
             // check result
-            Assert.assertTrue(res.isConst());
-            Assert.assertEquals(0, res.min(), 0);
+            Assert.assertTrue("wrong result", res.isConst());
+            Assert.assertEquals("wrong result", 0, res.min(), 0);
 
             // check given vector
-            Assert.assertTrue(v1.isConst());
-            Assert.assertEquals(2, v1.min(), 0);
+            Assert.assertTrue("First input vector has changed", v1.isConst());
+            Assert.assertEquals("First input vector has changed", 2, v1.min(), 0);
 
             // check given vector
-            Assert.assertTrue(v2.isConst());
-            Assert.assertEquals(2, v2.min(), 0);
+            Assert.assertTrue("Second input vector has changed", v2.isConst());
+            Assert.assertEquals("Second input vector has changed", 2, v2.min(), 0);
         } finally {
             Scope.exit();
         }
@@ -384,18 +384,18 @@ public class MatrixUtilsTest extends TestUtil {
 
             Vec res = MatrixUtils.subtractionVtv(v1, v2);
             // check result
-            Assert.assertEquals(-1.908, res.at(0), 1e-3);
+            Assert.assertEquals("wrong result", -1.908, res.at(0), 1e-3);
 
             // check given vector
-            Assert.assertEquals(32.691, v1.at(0), 1e-3);
-            Assert.assertEquals(-91.936, v1.at(1024), 1e-3);
+            Assert.assertEquals("First input vector has changed", 32.691, v1.at(0), 1e-3);
+            Assert.assertEquals("First input vector has changed", -91.936, v1.at(1024), 1e-3);
 
             // check given vector
-            Assert.assertEquals(34.599, v2.at(0), 1e-3);
-            Assert.assertEquals(55.136, v2.at(1024), 1e-3);
+            Assert.assertEquals("Second input vector has changed", 34.599, v2.at(0), 1e-3);
+            Assert.assertEquals("Second input vector has changed", 55.136, v2.at(1024), 1e-3);
         } finally {
             Scope.exit();
         }
-    }    
+    }
 
 }

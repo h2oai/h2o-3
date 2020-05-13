@@ -43,7 +43,7 @@ public class MatrixUtils {
   }
 
   /**
-   * Previous Mtv method is for v of dimension (m x 1) here it is for (n x 1)
+   * productMtv method is for v of dimension (m x 1) here it is for (n x 1)
    * <p>
    * Calculates matrix-vector product M'v
    *
@@ -51,17 +51,15 @@ public class MatrixUtils {
    * @param v Vec representing vector v (n x 1)
    * @return m-element array representing the result of the product
    */
-  public static Vec productMtv2(Frame m, Vec v) {
+  public static Vec productMtvMath(Frame m, Vec v) {
     if (v.length() != m.numCols()) {
       throw new UnsupportedOperationException("Vector elements number must be the same as matrix column number");
     }
-    Vec result = new ProductMtvTask2(v).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
+    Vec result = new ProductMtvMathTask(v).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
     return result;
   }
 
   /**
-   * Same as productMtv2 but here is array.
-   * <p>
    * Calculates matrix-vector product M'v
    *
    * @param m     Frame representing matrix M (m x n)
@@ -69,11 +67,11 @@ public class MatrixUtils {
    *              too much.
    * @return m-element array representing the result of the product
    */
-  public static Vec productMtv2Array(Frame m, double[] array) {
+  public static Vec productMtvMath(Frame m, double[] array) {
     if (array.length != m.numCols()) {
       throw new UnsupportedOperationException("Array elements number must be the same size as matrix column number");
     }
-    Vec result = new ProductMtv2Array(array).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
+    Vec result = new ProductMtvMathArray(array).doAll(Vec.T_NUM, m).outputFrame().vecs()[0];
     return result;
   }
 
@@ -99,7 +97,7 @@ public class MatrixUtils {
    *              too much.
    * @return (m x n)-element array representing the result of the subtraction
    */
-  public static Frame subtractionMtArray(Frame m, double[] array) {
+  public static Frame subtractionMtv(Frame m, double[] array) {
     if (array.length != m.numCols()) {
       throw new UnsupportedOperationException("Array elements number must be the same size as matrix column number.");
     }
@@ -137,6 +135,9 @@ public class MatrixUtils {
     return result;
   }
 
+  /**
+   * Task for Matrix-Matrix product. Second Matrix is given as last columns in task input.
+   */
   private static class ProductMMTask extends MRTask<ProductMMTask> {
     // OUT
     private double[] _result;
@@ -169,6 +170,9 @@ public class MatrixUtils {
     }
   }
 
+  /**
+   * Task for Matrix-Vector product. Vector is given as last column in task input.
+   */
   static class ProductMtvTask extends MRTask<ProductMtvTask> {
     // OUT
     private double[] _result;
@@ -193,10 +197,16 @@ public class MatrixUtils {
     }
   }
 
+  /**
+   * Task for Matrix-Vector subtraction.
+   */
   static class SubtractionMtvTask extends MRTask<SubtractionMtvTask> {
 
     private Vec v;
 
+    /**
+     * @param v vector size is the same as number of matrix columns
+     */
     public SubtractionMtvTask(Vec v) {
       this.v = v;
     }
@@ -211,10 +221,16 @@ public class MatrixUtils {
     }
   }
 
+  /**
+   * Task for Matrix-Vector subtraction. Vector is represented as array.
+   */
   static class SubtractionMtArrayTask extends MRTask<SubtractionMtArrayTask> {
 
     private double[] v;
 
+    /**
+     * @param v vector size is the same as number of matrix columns.
+     */
     public SubtractionMtArrayTask(double[] v) {
       this.v = v;
     }
@@ -229,6 +245,9 @@ public class MatrixUtils {
     }
   }
 
+  /**
+   * Task for Vector-Vector subtraction.
+   */
   static class SubtractionVtvTask extends MRTask<SubtractionVtvTask> {
 
     @Override
@@ -239,10 +258,16 @@ public class MatrixUtils {
     }
   }
 
-  static class ProductMtvTask2 extends MRTask<ProductMtvTask2> {
+  /**
+   * Task for Matrix-Vector product.
+   */
+  static class ProductMtvMathTask extends MRTask<ProductMtvMathTask> {
     private final Vec v;
 
-    public ProductMtvTask2(Vec v) {
+    /**
+     * @param v vector size is the same as number of matrix columns
+     */
+    public ProductMtvMathTask(Vec v) {
       this.v = v;
     }
 
@@ -258,10 +283,16 @@ public class MatrixUtils {
     }
   }
 
-  static class ProductMtv2Array extends MRTask<ProductMtv2Array> {
+  /**
+   * Task for Matrix-Vector product. Vector is represented as array.
+   */
+  static class ProductMtvMathArray extends MRTask<ProductMtvMathArray> {
     private final double[] array;
 
-    public ProductMtv2Array(double[] array) {
+    /**
+     * @param array array size is the same as number of matrix columns.
+     */
+    public ProductMtvMathArray(double[] array) {
       this.array = array;
     }
 
