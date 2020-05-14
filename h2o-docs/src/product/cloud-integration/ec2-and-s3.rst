@@ -114,6 +114,45 @@ H2O supports both AWS Credentials (pair consisting of AWS SECRET KEY and AWS SEC
 
 **Note**: Passing credentials in the URL, e.g. ``h2o.importFile(path = "s3://<AWS_ACCESS_KEY>:<AWS_SECRET_KEY>:<AWS_SESSION_TOKEN>@bucket/path/to/file.csv")``, is considered a security risk and is deprecated. 
 
+.. _Core-site.xml:
+
+Core-site.xml Example
+'''''''''''''''''''''
+
+The following is an example core-site.xml file:
+
+::
+
+    <?xml version="1.0"?>
+    <?xml-stylesheet type="text/xsl" href="configuration.xsl"?>
+
+    <!-- Put site-specific property overrides in this file. -->
+
+    <configuration>
+
+        <!--
+        <property>
+        <name>fs.default.name</name>
+        <value>s3://<your s3 bucket></value>
+        </property>
+        -->
+
+        <property>
+            <name>fs.s3.awsAccessKeyId</name>
+            <value>insert access key here</value>
+        </property>
+
+        <property>
+            <name>fs.s3.awsSecretAccessKey</name>
+            <value>insert secret key here</value>
+        </property>
+
+        <property>
+            <name>fs.s3.awsSessionToken</name>
+            <value>insert session token here</value>
+        </property>
+        </configuration>
+
 AWS Multi-Node Instance
 '''''''''''''''''''''''
 
@@ -176,7 +215,7 @@ Minio Cloud Storage is an alternative to Amazon AWS S3. When using a Minio serve
 
   ::
 
-      java -Dsys.ai.h2o.persist.s3.endPoint=s3.amazonaws.com -jar h2o.jar
+      java -Dsys.ai.h2o.persist.s3.endPoint=https://play.min.io:9000 -Dsys.ai.h2o.persist.s3.enable.path.style=true -jar h2o.jar
 
 2. Import the data using ``importFile`` with the Minio S3 url path: **s3://bucket/path/to/file.csv**. You can pass the AWS Access Key and Secret Access Key in an S3 URL in Flow, R, or Python (where ``MINIO_ACCESS_KEY`` represents your user name, and ``MINIO_SECRET_KEY`` represents your password).
 
