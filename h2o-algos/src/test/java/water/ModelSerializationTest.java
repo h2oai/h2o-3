@@ -21,6 +21,7 @@ import hex.tree.drf.DRF;
 import hex.tree.drf.DRFModel;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
+import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -137,15 +138,28 @@ public class ModelSerializationTest extends TestUtil {
   public void testExtendedIsolationForestModel() throws IOException {
     ExtendedIsolationForestModel model = null;
     ExtendedIsolationForestModel loadedModel = null;
+    Frame frame = null;
+    Frame anomaly = null;
+    Frame anomalyLoaded = null;
     try {
-      model = prepareExtIsoForModel("smalldata/logreg/prostate.csv", ar("ID", "CAPSULE"), 5, 1);
+      frame = parse_test_file("smalldata/logreg/prostate.csv");
+      model = prepareExtIsoForModel(frame, ar("ID", "CAPSULE"), 5, 1);
       loadedModel = saveAndLoad(model);
       assertModelBinaryEquals(model, loadedModel);
+      anomaly = model.score(frame);
+      anomalyLoaded = loadedModel.score(frame);
+      assertFrameEquals(anomaly, anomalyLoaded, 1e-3);
     } finally {
       if (model != null)
         model.delete();
       if (loadedModel != null)
         loadedModel.delete();
+      if (frame != null)
+        frame.delete();
+      if (anomaly != null)
+        anomaly.delete();
+      if (anomalyLoaded != null)
+        anomalyLoaded.delete();
     }
   }
 
@@ -213,21 +227,16 @@ public class ModelSerializationTest extends TestUtil {
     }
   }
 
-  private ExtendedIsolationForestModel prepareExtIsoForModel(String dataset, String[] ignoredColumns,
+  private ExtendedIsolationForestModel prepareExtIsoForModel(Frame frame, String[] ignoredColumns,
                                                              int ntrees, int extensionLevel) {
-    Frame f = parse_test_file(dataset);
-    try {
       ExtendedIsolationForestModel.ExtendedIsolationForestParameters eifParams =
               new ExtendedIsolationForestModel.ExtendedIsolationForestParameters();
-      eifParams._train = f._key;
+      eifParams._train = frame._key;
       eifParams._ntrees = ntrees;
       eifParams.extension_level = extensionLevel;
       eifParams._score_each_iteration = true;
 
       return new ExtendedIsolationForest(eifParams).trainModel().get();
-    } finally {
-      if (f != null) f.delete();
-    }
   }  
 
   private GLMModel prepareGLMModel(String dataset, String[] ignoredColumns, String response, GLMModel.GLMParameters.Family family) {
