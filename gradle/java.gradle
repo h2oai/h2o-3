@@ -29,14 +29,6 @@ if (JavaVersion.current().isJava8Compatible()) {
     }
 }
 
-plugins.withType(org.gradle.api.publish.maven.plugins.MavenPublishPlugin) {
-    // Publish it only if "maven-publish" plugin is in the context
-    artifacts {
-        toPublish javadocJar
-        toPublish testJar
-    }
-}
-
 
 clean {
     doLast {
