@@ -92,6 +92,7 @@ publishing {
   }
 
   signing {
+    required { project.ext.isRelease || project.hasProperty("doSignAll")}
     sign publishing.publications.mavenAll
   }
 
