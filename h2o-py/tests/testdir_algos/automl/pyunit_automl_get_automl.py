@@ -3,7 +3,7 @@ import sys, os
 sys.path.insert(1, os.path.join("..","..",".."))
 import h2o
 from tests import pyunit_utils
-from h2o.automl import H2OAutoML
+from h2o.automl import H2OAutoML, get_leaderboard
 from h2o.automl.autoh2o import get_automl
 
 
@@ -37,5 +37,7 @@ def test_get_automl():
     predictions_from_output = get_aml.predict(train)
     assert (predictions == predictions_from_output).all()
 
+    # Test get_leaderboard PUBDEV-7454
+    assert (get_leaderboard(aml) == get_leaderboard(get_aml)).all()
 
 pyunit_utils.run_tests([test_get_automl])

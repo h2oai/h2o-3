@@ -615,5 +615,5 @@ def get_leaderboard(aml, extra_columns=None):
     >>> lb_custom = h2o.automl.get_leaderboard(aml, ['predict_time_per_row_ms', 'training_time_ms'])
     >>> lb_custom_sorted = lb_custom.sort(by='predict_time_per_row_ms')
     """
-    assert_is_type(aml, H2OAutoML)
+    assert_is_type(aml, H2OAutoML, H2OAutoMLOutput)
     return H2OAutoML._fetch_leaderboard(aml.key, extra_columns)
