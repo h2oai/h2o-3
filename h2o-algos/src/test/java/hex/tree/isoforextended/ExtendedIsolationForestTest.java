@@ -197,10 +197,11 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, -1), Vec.newKey());
 
-            Frame resVec = new FilterLtTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), null, null);
-            assertEquals(1, resVec.numRows());
-            assertEquals(4, resVec.numCols());
-            DKV.remove(resVec._key);
+            Frame res = new FilterLtTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), m._names, m.domains());
+
+            assertEquals("Not correctly filtered",1, res.numRows());
+            assertEquals("Column number is wrong",4, res.numCols());
+            DKV.remove(res._key);
         } finally {
             Scope.exit();
         }
@@ -219,10 +220,12 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, 2.0, 0.0, -1.2, 5.5, -5.5, 6.5, 5.5, -5.5, 6.5), Vec.newKey());
 
-            Frame resVec = new FilterLtTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), null, null);
-            assertEquals(3, resVec.numRows());
-            assertEquals(3, resVec.numCols());
-            DKV.remove(resVec._key);
+            Frame res = new FilterLtTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), m._names, m.domains());
+
+            assertTrue("Column is not categorical", res.vec(1).isCategorical());;
+            assertEquals("Not correctly filtered", 3, res.numRows());
+            assertEquals("Column number is wrong",3, res.numCols());
+            DKV.remove(res._key);
         } finally {
             Scope.exit();
         }
@@ -242,10 +245,11 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, -1.0), Vec.newKey());
 
-            Frame resVec = new FilterGteTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), null, null);
-            assertEquals(1, resVec.numRows());
-            assertEquals(4, resVec.numCols());
-            DKV.remove(resVec._key);
+            Frame res = new FilterGteTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), m._names, m.domains());
+
+            assertEquals("Not correctly filtered",1, res.numRows());
+            assertEquals("Column number is wrong",4, res.numCols());
+            DKV.remove(res._key);
         } finally {
             Scope.exit();
         }
@@ -264,10 +268,12 @@ public class ExtendedIsolationForestTest extends TestUtil {
             Scope.track(m);
             Vec v = Vec.makeVec(ard(2.0, 2.0, 0.0, -1.2, 5.5, -5.5, 6.5, 5.5, -5.5, -7.5), Vec.newKey());
 
-            Frame resVec = new FilterGteTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), null, null);
-            assertEquals(6, resVec.numRows());
-            assertEquals(3, resVec.numCols());
-            DKV.remove(resVec._key);
+            Frame res = new FilterGteTask(v, 0).doAll(m.types(), m).outputFrame(Key.make(), m._names, m.domains());
+
+            assertTrue("Column is not categorical", res.vec(1).isCategorical());;
+            assertEquals("Not correctly filtered",6, res.numRows());
+            assertEquals("Column number is wrong",3, res.numCols());
+            DKV.remove(res._key);
         } finally {
             Scope.exit();
         }
