@@ -44,22 +44,23 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
         super(new ExtendedIsolationForestModel.ExtendedIsolationForestParameters(), startup_once);
     }
 
-//    TODO avalenta uncomment this method broke Python API generating
-//    @Override
-//    public void init(boolean expensive) {
-//        super.init(expensive);
-//        System.out.println("init");
-//        long extensionLevelMax = _parms.train().numCols() - 1;
-//        if (_parms.extension_level < 0 || _parms.extension_level > extensionLevelMax) {
-//            throw new IllegalStateException("Parameter extension_level must be in interval [0, "
-//                    + extensionLevelMax + "] but it is " + _parms.extension_level);
-//        }
-//        long sampleSizeMax = _parms.train().numRows();
-//        if (_parms._sample_size < 0 || _parms._sample_size > sampleSizeMax) {
-//            throw new IllegalStateException("Parameter sample_size must be in interval [0, "
-//                    + sampleSizeMax + "] but it is " + _parms._sample_size);
-//        }        
-//    }                
+    @Override
+    public void init(boolean expensive) {
+        super.init(expensive);
+        System.out.println("init");
+        if (_parms.train() != null) {
+            long extensionLevelMax = _parms.train().numCols() - 1;
+            if (_parms.extension_level < 0 || _parms.extension_level > extensionLevelMax) {
+                throw new IllegalStateException("Parameter extension_level must be in interval [0, "
+                        + extensionLevelMax + "] but it is " + _parms.extension_level);
+            }
+            long sampleSizeMax = _parms.train().numRows();
+            if (_parms._sample_size < 0 || _parms._sample_size > sampleSizeMax) {
+                throw new IllegalStateException("Parameter sample_size must be in interval [0, "
+                        + sampleSizeMax + "] but it is " + _parms._sample_size);
+            }
+        }
+    }
 
     @Override
     protected double score1(Chunk[] chks, double offset, double weight, double[] fs, int row) {
