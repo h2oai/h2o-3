@@ -373,7 +373,6 @@ public class StackedEnsembleTest extends TestUtil {
         Assert.assertEquals(4, models.length);
 
         StackedEnsembleParameters seParams = new StackedEnsembleParameters();
-        seParams._distribution = DistributionFamily.bernoulli;
         seParams._train = train._key;
         seParams._blending = blend._key;
         seParams._response_column = target;
