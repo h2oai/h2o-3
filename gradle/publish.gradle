@@ -119,9 +119,9 @@ publishing {
           maven {
               name "LocalNexusRepo"
               if (project.ext.isRelease) {
-                url "${localNexusLocation}/maven-releases"
+                url "${localNexusLocation}/releases"
               } else {
-                url "${localNexusLocation}/maven-snapshots"
+                url "${localNexusLocation}/snapshots"
               }
 
               credentials {
