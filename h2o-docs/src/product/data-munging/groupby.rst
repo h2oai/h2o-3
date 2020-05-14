@@ -65,8 +65,8 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
 
         # Find number of flights by airport
         origin_flights <- h2o.group_by(data = airlines, by = "Origin", nrow("Origin"), gb.control = list(na.methods = "rm"))
-        origin_flights_R <- as.data.frame(origin_flights)
-        origin_flights_R
+        origin_flights_df <- as.data.frame(origin_flights)
+        origin_flights_df
             Origin nrow
         1      ABE   59
         2      ABQ  876
