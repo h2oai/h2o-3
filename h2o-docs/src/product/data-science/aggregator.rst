@@ -89,9 +89,9 @@ Below is a simple example showing how to build a Aggregator model.
         [100 rows x 5 columns]
 
         # Build an aggregated frame using eigan categorical encoding
-        target_num_exemplars = 1000
-        rel_tol_num_exemplars = 0.5
-        encoding = "Eigen"
+        target_num_exemplars <- 1000
+        rel_tol_num_exemplars <- 0.5
+        encoding <- "Eigen"
         agg <- h2o.aggregator(training_frame = df, 
                               target_num_exemplars = target_num_exemplars, 
                               rel_tol_num_exemplars = rel_tol_num_exemplars, 
