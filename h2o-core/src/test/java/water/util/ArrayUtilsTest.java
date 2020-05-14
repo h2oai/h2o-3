@@ -283,6 +283,22 @@ public class ArrayUtilsTest {
   }
 
   @Test
+  public void testSubArray2D() {
+    Integer[][] a = new Integer[][]{{0, 1}, {2, 3, 4}, {5, 6, 7, 8, 9}, {5}, {5, 6}, {5, 6, 8}};
+    Integer[][] subA = ArrayUtils.subarray2DLazy(a, 0, 2);
+    assertArrayEquals("Wrong column subarray", new Integer[][]{{0, 1}, {2, 3, 4}}, subA);
+
+    Integer[][] subA2 = ArrayUtils.subarray2DLazy(a, 1, 5);
+    assertArrayEquals("Wrong column subarray", new Integer[][]{{2, 3, 4}, {5, 6, 7, 8, 9}, {5}, {5, 6}, {5, 6, 8}}, subA2);
+
+    subA2[1][2] = 2;
+    assertArrayEquals("Subarray not changed",
+            new Integer[][]{{2, 3, 4}, {5, 6, 2, 8, 9}, {5}, {5, 6}, {5, 6, 8}}, subA2);
+    assertArrayEquals("Original array not changed",
+            new Integer[][]{{0, 1}, {2, 3, 4}, {5, 6, 2, 8, 9}, {5}, {5, 6}, {5, 6, 8}}, a);
+  }
+
+  @Test
   public void testGaussianVector() {
     double[] a = ArrayUtils.gaussianVector(5, 0xCAFFE);
     assertArrayEquals(new double[]{0.86685, 0.539654, 1.65799, -0.16698, 2.332985}, a, 1e-3);

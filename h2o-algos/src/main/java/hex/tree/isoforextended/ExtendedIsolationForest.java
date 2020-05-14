@@ -12,6 +12,8 @@ import water.util.ArrayUtils;
 import water.util.MathUtils;
 import water.util.VecUtils;
 
+import java.util.Arrays;
+
 /**
  * Extended isolation forest implementation. Algorithm comes from https://arxiv.org/pdf/1811.02141.pdf paper.
  *
@@ -133,9 +135,11 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
             // remove auto generated features
             byte[] subTypes = ArrayUtils.subarray(_train.types(), 0, _train.numCols() - 4);
             Vec[] subFrame = ArrayUtils.subarray(_train.vecs(), 0, _train.numCols() - 4);
+            String[] subNames = ArrayUtils.subarray(_train.names(), 0, _train.numCols() - 4);
+            String[][] subDomains = ArrayUtils.subarray2DLazy(_train.domains(), 0, _train.numCols() - 4);
 
             Frame subSample = new SubSampleTask(_parms._sample_size, _parms._seed + randomUnit)
-                    .doAll(subTypes, subFrame).outputFrame(Key.make(), null, null);
+                    .doAll(subTypes, subFrame).outputFrame(Key.make(), subNames, subDomains);
 
             IsolationTree iTree = new IsolationTree(subSample._key, heightLimit, _parms._seed + randomUnit, _parms.extension_level);
             iTree.buildTree();
@@ -208,9 +212,11 @@ public class ExtendedIsolationForest extends SharedTree<ExtendedIsolationForestM
                     Frame sub = MatrixUtils.subtractionMtv(nodeFrame, node._p);
                     Vec mul = MatrixUtils.productMtvMath(sub, node._n);
                     Frame left = new FilterLtTask(mul, 0)
-                            .doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
+                            .doAll(nodeFrame.types(), nodeFrame)
+                            .outputFrame(Key.make(), nodeFrame._names, nodeFrame.domains());
                     Frame right = new FilterGteTask(mul, 0)
-                            .doAll(nodeFrame.types(), nodeFrame).outputFrame(Key.make(), null, null);
+                            .doAll(nodeFrame.types(), nodeFrame)
+                            .outputFrame(Key.make(), nodeFrame._names, nodeFrame.domains());
                     DKV.remove(nodeFrame._key);
 
                     if (rightChildIndex(i) < _nodes.length) {

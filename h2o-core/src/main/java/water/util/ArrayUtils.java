@@ -756,6 +756,10 @@ public class ArrayUtils {
     return Arrays.copyOfRange(a,off,off+len);
   }
 
+  public static <T> T[][] subarray2DLazy(T[][] a, int columnOffset, int len) {
+    return Arrays.copyOfRange(a, columnOffset, columnOffset + len);
+  }
+
   /** Returns the index of the largest value in the array.
    * In case of a tie, an the index is selected randomly.
    */
