@@ -103,7 +103,7 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     titanic[response] <- as.factor(titanic[response])
 
     # Split the dataset into train and test
-    seed = 1234
+    seed <- 1234
     splits <- h2o.splitFrame(titanic, seed = seed, ratios = c(0.8))
 
     train <- splits[[1]]
