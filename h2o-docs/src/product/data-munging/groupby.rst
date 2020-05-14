@@ -78,8 +78,8 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
                                          by = "Month", 
                                          nrow("Month"), 
                                          gb.control = list(na.methods = "rm"))
-        flights_by_month_R <- as.data.frame(flights_by_month)
-        flights_by_month_R
+        flights_by_month_df <- as.data.frame(flights_by_month)
+        flights_by_month_df
           Month   nrow
         1     1  41979
         2    10   1999
@@ -90,8 +90,8 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
                                                 by = cols, 
                                                 nrow("Month"), 
                                                 gb.control = list(na.methods = "rm"))
-        flights_by_origin_month_R <- as.data.frame(flights_by_origin_month)
-        flights_by_origin_month_R
+        flights_by_origin_month_df <- as.data.frame(flights_by_origin_month)
+        flights_by_origin_month_df
             Origin Month nrow
         1      ABE     1   59
         2      ABQ     1  846
@@ -109,8 +109,8 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
                                                gb.control=list(na.methods="rm"))
         cancellation_rate <- cancellations_by_month$sum_Cancelled/flights_by_month$nrow
         rates_table <- h2o.cbind(flights_by_month$Month,cancellation_rate)
-        rates_table_R <- as.data.frame(rates_table)
-        rates_table_R
+        rates_table_df <- as.data.frame(rates_table)
+        rates_table_df
           Month sum_Cancelled
         1     1   0.025417471
         2    10   0.009504752
@@ -124,7 +124,7 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
                                        gb.control = list(na.methods = "ignore", col.names = NULL))
         
         # Note a warning because col.names null
-        res <- h2o.cbind(lapply(cols, function(x){h2o.group_by(airlines,by="Origin",sum(x))}))[,c(1,2,4,6)]
+        res <- h2o.cbind(lapply(cols, function(x){h2o.group_by(airlines, by = "Origin", sum(x))}))[,c(1,2,4,6)]
         res
           Origin sum_Dest sum_IsArrDelayed sum_IsDepDelayed
         1    ABE     5884               40               30
@@ -145,9 +145,9 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
         [43978, 31]
 
         # Find number of flights by airport
-        originFlights = air.group_by("Origin")
-        originFlights.count()
-        originFlights.get_frame()
+        origin_flights = air.group_by("Origin")
+        origin_fights.count()
+        origin_fights.get_frame()
         Origin      nrow
         --------  ------
         ABE           59
@@ -167,8 +167,8 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
         ...
 
         # Find months with the highest cancellation ratio
-        cancellation_by_month = air.group_by(by='Month').sum('Cancelled', na ="all")
-        flights_by_month = air.group_by('Month').count(na ="all")
+        cancellation_by_month = air.group_by(by='Month').sum('Cancelled', na="all")
+        flights_by_month = air.group_by('Month').count(na="all")
         cancelled = cancellation_by_month.get_frame()['sum_Cancelled']
         flights = flights_by_month.get_frame()['nrow']
         month_count = flights_by_month.get_frame()['Month']
@@ -185,7 +185,7 @@ Note that once the aggregation operations are complete, calling the GroupBy obje
         # arrival delays, and departure delays for an origin
         cols_1 = ['Origin', 'Dest', 'IsArrDelayed', 'IsDepDelayed']
         cols_2 = ["Dest", "IsArrDelayed", "IsDepDelayed"]
-        air[cols_1].group_by(by='Origin').sum(cols_2, na ="ignore").get_frame()
+        air[cols_1].group_by(by='Origin').sum(cols_2, na="ignore").get_frame()
         Origin      sum_Dest    sum_IsDepDelayed    sum_IsArrDelayed
         --------  ----------  ------------------  ------------------
         ABE             5884                  30                  40
