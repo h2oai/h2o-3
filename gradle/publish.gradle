@@ -1,34 +1,12 @@
 apply plugin: 'java'
 apply plugin: 'maven-publish'
-apply plugin: "signing"
-
-// Default task to bundle sources code as jar
-task sourcesJar(type: Jar) {
-  classifier = 'sources'
-  from sourceSets.main.allSource
-}
+apply plugin: 'signing'
 
 // Container for generated POMs (by default added into archive configuration)
 configurations {
     pom {
         transitive = false
     }
-}
-
-configurations {
-    toPublish
-}
-
-artifacts {
-    toPublish sourcesJar
-}
-
-task signAll(type : Sign) {
-    sign configurations.archives
-    // Sign additional artifacts
-    sign configurations.toPublish
-    // Sign only in case of release
-    required = project.ext.isRelease || project.hasProperty("doSignAll")
 }
 
 //
@@ -62,23 +40,6 @@ publishing {
           from components.java
 
           // Publish additional artifacts as documentaiton or source code
-          configurations.toPublish.allArtifacts.each { art ->
-              logger.debug("Publishing artifact for: " + art)
-              artifact art
-          }
-
-          if (signAll.required) {
-              signAll.signatures.all { Signature signature ->
-                  logger.debug("Publishing signature for: " + signature.file + ", type=" + signature.type)
-                  artifact(signature, new Action<MavenArtifact>() {
-                      @Override
-                      void execute(MavenArtifact t) {
-                          t.classifier = signature.classifier != "" ? signature.classifier : null
-                          t.extension = signature.type == "xml.asc" ? "pom.asc" : signature.type
-                      }
-                  })
-              }
-          }
 
           pom.withXml { provider ->
                 def h2oPOM = {
@@ -130,6 +91,10 @@ publishing {
       }
   }
 
+  signing {
+    sign publishing.publications.mavenAll
+  }
+
   repositories {
       maven {
           name "BuildRepo"
@@ -153,9 +118,9 @@ publishing {
           maven {
               name "LocalNexusRepo"
               if (project.ext.isRelease) {
-                url "${localNexusLocation}/releases"
+                url "${localNexusLocation}/maven-releases"
               } else {
-                url "${localNexusLocation}/snapshots"
+                url "${localNexusLocation}/maven-snapshots"
               }
 
               credentials {
