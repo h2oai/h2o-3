@@ -29,7 +29,6 @@ if (JavaVersion.current().isJava8Compatible()) {
     }
 }
 
-
 clean {
     doLast {
         def sandboxes = projectDir.list()

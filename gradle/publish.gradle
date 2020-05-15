@@ -2,11 +2,25 @@ apply plugin: 'java'
 apply plugin: 'maven-publish'
 apply plugin: 'signing'
 
+// Default task to bundle sources code as jar
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from sourceSets.main.allSource
+}
+
 // Container for generated POMs (by default added into archive configuration)
 configurations {
     pom {
         transitive = false
     }
+}
+
+configurations {
+    toPublish
+}
+
+artifacts {
+    toPublish sourcesJar
 }
 
 //
@@ -40,6 +54,10 @@ publishing {
           from components.java
 
           // Publish additional artifacts as documentaiton or source code
+          configurations.toPublish.allArtifacts.each { art ->
+              logger.debug("Publishing artifact for: " + art)
+              artifact art
+          }
 
           pom.withXml { provider ->
                 def h2oPOM = {
