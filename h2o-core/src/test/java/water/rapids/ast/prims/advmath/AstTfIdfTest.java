@@ -37,27 +37,36 @@ public class AstTfIdfTest extends TestUtil {
 
     @Test
     public void testTfIdfSmallData() {
+        testTfIdfSmallData(true);
+    }
+    
+    @Test
+    public void testTfIdfSmallDataWithoutPreprocessing() {
+        testTfIdfSmallData(false);
+    }
+    
+    private static void testTfIdfSmallData(final boolean preprocess) {
         Scope.enter();
         try {
             Session sess = new Session();
             String frameName = "testFrame";
-            
-            Pair<Frame,Frame> testFrames = getSimpleTestFrames(frameName, sess);
+
+            Pair<Frame,Frame> testFrames = getSimpleTestFrames(frameName, sess, preprocess);
             Frame inputFrame = testFrames._1();
             Frame expectedOutputFrame = testFrames._2();
-            
+
             Scope.track(inputFrame);
             Scope.track(expectedOutputFrame);
-            
-            Val resVal = Rapids.exec("(tf-idf " + frameName + ")", sess);
+
+            Val resVal = Rapids.exec("(tf-idf " + frameName + " " + preprocess + ")", sess);
             Assert.assertTrue("Rapid's output is not a H2OFrame.", resVal instanceof ValFrame);
             Frame resFrame = resVal.getFrame();
             Scope.track(resFrame);
 
             Assert.assertEquals("Number of columns in the TF-IDF output frame does not match the expected number.",
-                                expectedOutputFrame.numCols(), resFrame.numCols());
+                    expectedOutputFrame.numCols(), resFrame.numCols());
             Assert.assertEquals("Number of rows in the TF-IDF output frame does not match the expected number.",
-                                expectedOutputFrame.numRows(), resFrame.numRows());
+                    expectedOutputFrame.numRows(), resFrame.numRows());
 
             for(int i = 0; i < expectedOutputFrame.numCols(); i++) {
                 Vec expectedVec = expectedOutputFrame.vec(i);
@@ -66,7 +75,7 @@ public class AstTfIdfTest extends TestUtil {
                     assertStringVecEquals(expectedVec, resFrame.vec(i));
                 else
                     assertVecEquals("Vector (at index " + i + ") in the TF-IDF output frame does not mismatch the expected one.",
-                                    expectedVec, resFrame.vec(i), DELTA);
+                            expectedVec, resFrame.vec(i), DELTA);
             }
         } finally {
             Scope.exit();
@@ -74,8 +83,8 @@ public class AstTfIdfTest extends TestUtil {
     }
     
     @Test
-    public void testDocumentFrequenciesBigData() throws IOException {
-        Assume.assumeThat("DF bigdata tests are enabled", System.getProperty(BIGDATA_TESTS_ENV_VAR_NAME), is(notNullValue()));
+    public void testTfIdfBigData() throws IOException {
+        Assume.assumeThat("TF-IDF bigdata tests are enabled", System.getProperty(BIGDATA_TESTS_ENV_VAR_NAME), is(notNullValue()));
 
         System.out.println("Loading data...");
         File testFile = FileUtils.getFile("bigdata/laptop/text8.gz");
@@ -172,7 +181,7 @@ public class AstTfIdfTest extends TestUtil {
         return Math.log(((double)(documentsCnt + 1)) / (df + 1));
     }
 
-    private static Pair<Frame, Frame> getSimpleTestFrames(final String frameName, final Session session) {
+    private static Frame simpleTestFrame(final String frameName, final Session session) {
         String[] documents = new String[] {
                 "A B C",
                 "A A A Z",
@@ -180,15 +189,43 @@ public class AstTfIdfTest extends TestUtil {
         };
         long[] docIds = new long[] { 0L, 1L, 2L };
 
-        Frame inputFrame = new TestFrameBuilder()
-                                .withName(frameName, session)
-                                .withColNames("Document ID", "Document")
-                                .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                                .withDataForCol(0, docIds)
-                                .withDataForCol(1, documents)
-                                .withChunkLayout(2, 1)
-                                .build();
+        return new TestFrameBuilder()
+                .withName(frameName, session)
+                .withColNames("Document ID", "Document")
+                .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                .withDataForCol(0, docIds)
+                .withDataForCol(1, documents)
+                .withChunkLayout(2, 1)
+                .build();
+    }
 
+    private static Frame preprocessedTestFrame(final String frameName, final Session session) {
+        String[] tokens = new String[] {
+                "A", "B", "C",
+                "A", "A", "A", "Z",
+                "C", "C", "B", "C"
+        };
+        long[] docIds = new long[] { 
+                0, 0, 0,
+                1, 1, 1, 1,
+                2, 2, 2, 2
+        };
+
+        return new TestFrameBuilder()
+                .withName(frameName, session)
+                .withColNames("DocID", "Tokens")
+                .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                .withDataForCol(0, docIds)
+                .withDataForCol(1, tokens)
+                .withChunkLayout(5, 3, 1, 2)
+                .build();
+    }
+    
+    private static Pair<Frame, Frame> getSimpleTestFrames(final String frameName, 
+                                                          final Session session, 
+                                                          final boolean preprocessed) {
+        Frame inputFrame = preprocessed ? simpleTestFrame(frameName, session) : preprocessedTestFrame(frameName, session);
+        
         long[] outDocIds = new long[] {
                 0L, 1L, 0L, 2L, 0L, 2L, 1L
         };

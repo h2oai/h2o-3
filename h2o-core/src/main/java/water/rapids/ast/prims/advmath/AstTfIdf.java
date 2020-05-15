@@ -34,30 +34,40 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
 
     @Override
     public int nargs() {
-        return 1 + 1; // Frame ID and ID of an input frame
+        return 1 + 2; // (tf-idf input_frame_name preprocess)
     }
 
     @Override
     public String[] args() {
-        return new String[]{ "frame" };
+        return new String[]{ "frame", "preprocess" };
     }
 
     @Override
     public Val apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
         Frame inputFrame = stk.track(asts[1].exec(env).getFrame());
-
-        byte[] outputTypes = new byte[]{ Vec.T_NUM, Vec.T_STR };
+        boolean preprocess = asts[2].exec(env).getBool();
 
         // Pre-processing
-        TfIdfPreprocessor preprocessor = new TfIdfPreprocessor();
-        Frame wordFrame = preprocessor.doAll(outputTypes, inputFrame).outputFrame(PREPROCESSED_FRAME_COL_NAMES, null);
+        Frame wordFrame;
+        long documentsCnt;
+        if (preprocess) {
+            byte[] outputTypes = new byte[]{ Vec.T_NUM, Vec.T_STR };
+
+            TfIdfPreprocessor preprocessor = new TfIdfPreprocessor();
+            wordFrame = preprocessor.doAll(outputTypes, inputFrame).outputFrame(PREPROCESSED_FRAME_COL_NAMES, null);
+
+            documentsCnt = inputFrame.numRows();
+        } else {
+            wordFrame = inputFrame;
+            // TODO: Avoid converting to categorical Vec
+            documentsCnt = inputFrame.vec(0).toCategoricalVec().cardinality();
+        }
 
         // DF
         DocumentFrequency dfTaks = new DocumentFrequency();
         Frame dfOutFrame = dfTaks.compute(wordFrame);
 
         // IDF
-        long documentsCnt = inputFrame.numRows();
         InverseDocumentFrequency idf = new InverseDocumentFrequency(documentsCnt);
         Vec idfValues = idf.doAll(new byte[]{ Vec.T_NUM }, dfOutFrame.lastVec()).outputFrame().anyVec();
         // Replace DF column with IDF column
