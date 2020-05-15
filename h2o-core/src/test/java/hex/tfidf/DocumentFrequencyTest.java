@@ -35,26 +35,12 @@ public class DocumentFrequencyTest extends TestUtil {
             put("C", 2L);
             put("Z", 1L);
         }};
-        int expectedDfValuesCnt = expectedDocumentFrequencies.size();
 
         try {
             DocumentFrequency df = new DocumentFrequency();
             Frame outputFrame = df.compute(fr);
-            long outputRowsCnt = outputFrame.numRows();
 
-            Assert.assertEquals(expectedDfValuesCnt, outputRowsCnt);
-
-            Vec outputTokens = outputFrame.vec(0);
-            Vec outputDFs = outputFrame.vec(1);
-
-            for(int row = 0; row < outputRowsCnt; row++) {
-                String token = outputTokens.stringAt(row);
-
-                Assert.assertTrue(expectedDocumentFrequencies.containsKey(token));
-                long expectedTF = expectedDocumentFrequencies.get(token);
-
-                Assert.assertEquals(expectedTF, outputDFs.at8(row));
-            }
+            checkDfOutput(outputFrame, expectedDocumentFrequencies);
 
             outputFrame.remove();
         } finally {
@@ -97,29 +83,15 @@ public class DocumentFrequencyTest extends TestUtil {
         Set<String> doc1Tokens = new HashSet<>(tokens.subList(0, docSplitIndex));
         Set<String> doc2Tokens = new HashSet<>(tokens.subList(docSplitIndex, tokensCnt));
         
-        Map<String, Integer> expectedDFs = doc1Tokens.stream().collect(Collectors.toMap(token -> token, token -> 1));
-        doc2Tokens.forEach(token -> expectedDFs.merge(token, 1, Integer::sum));
-        int expectedDfValuesCnt = expectedDFs.size();
+        Map<String, Long> expectedDFs = doc1Tokens.stream().collect(Collectors.toMap(token -> token, token -> 1L));
+        doc2Tokens.forEach(token -> expectedDFs.merge(token, 1L, Long::sum));
 
         System.out.println("Computing DF...");
         try {
             DocumentFrequency df = new DocumentFrequency();
             Frame outputFrame = df.compute(fr);
-            long outputRowsCnt = outputFrame.numRows();
 
-            Assert.assertEquals(expectedDfValuesCnt, outputRowsCnt);
-
-            Vec outputTokens = outputFrame.vec(0);
-            Vec outputDFs = outputFrame.vec(1);
-
-            for(int row = 0; row < outputRowsCnt; row++) {
-                String token = outputTokens.stringAt(row);
-
-                Assert.assertTrue(expectedDFs.containsKey(token));
-                long expectedTF = expectedDFs.get(token);
-
-                Assert.assertEquals(expectedTF, outputDFs.at8(row));
-            }
+            checkDfOutput(outputFrame, expectedDFs);
 
             System.out.println(outputFrame.toTwoDimTable().toString());
             System.out.println("DF testing finished.");
@@ -128,8 +100,29 @@ public class DocumentFrequencyTest extends TestUtil {
             fr.remove();
         }
     }
+    
+    private static void checkDfOutput(final Frame outputFrame, final Map<String, Long> expectedDocumentFrequencies) {
+        int expectedDfValuesCnt = expectedDocumentFrequencies.size();
+        long outputRowsCnt = outputFrame.numRows();
 
-    private Frame getSimpleTestFrame() {
+        Assert.assertEquals("Number of document frequency values does not match the expected number.",
+                            expectedDfValuesCnt, outputRowsCnt);
+
+        Vec outputTokens = outputFrame.vec(0);
+        Vec outputDFs = outputFrame.vec(1);
+
+        for(int row = 0; row < outputRowsCnt; row++) {
+            String token = outputTokens.stringAt(row);
+
+            Assert.assertTrue("Output token is not in the expected tokens.",
+                              expectedDocumentFrequencies.containsKey(token));
+            long expectedDF = expectedDocumentFrequencies.get(token);
+
+            Assert.assertEquals("Document frequency value mismatch.", expectedDF, outputDFs.at8(row));
+        }
+    }
+
+    private static Frame getSimpleTestFrame() {
         long[] docIds = new long[] {
                 0L, 0L, 0L,
                 1L, 1L, 1L, 1L,
