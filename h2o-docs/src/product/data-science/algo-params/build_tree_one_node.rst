@@ -33,17 +33,17 @@ Example
 		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
 		# set the predictor names and the response column name
-		predictors <- c("displacement","power","weight","acceleration","year")
+		predictors <- c("displacement", "power", "weight", "acceleration", "year")
 		response <- "economy_20mpg"
 
 		# split into train and validation sets
-		cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+		cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 		train <- cars_split[[1]]
 		valid <- cars_split[[2]]
 
 		# try using the `build_tree_one_node` parameter:
 		cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-		                    validation_frame = valid, build_tree_one_node = TRUE ,seed = 1234)
+		                    validation_frame = valid, build_tree_one_node = TRUE, seed = 1234)
 
 		# print the auc for your model
 		print(h2o.auc(cars_gbm, valid = TRUE))

@@ -43,12 +43,12 @@ Example
 		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
 		# set the predictor names and the response column name
-		predictors <- c("displacement","power","weight","acceleration","year")
+		predictors <- c("displacement", "power", "weight", "acceleration", "year")
 		response <- "economy_20mpg"
 
 		# create a fold column with 5 folds
 		# randomly assign fold numbers 0 through 4 for each row in the column
-		fold_numbers <- h2o.kfold_column(cars, nfolds=5)
+		fold_numbers <- h2o.kfold_column(cars, nfolds = 5)
 
 		# rename the column "fold_numbers"
 		names(fold_numbers) <- "fold_numbers"
@@ -57,7 +57,7 @@ Example
 		print(fold_numbers)
 
 		# append the fold_numbers column to the cars dataset
-		cars <- h2o.cbind(cars,fold_numbers)
+		cars <- h2o.cbind(cars, fold_numbers)
 
 		# try using the fold_column parameter:
 		cars_gbm <- h2o.gbm(x = predictors, y = response, training_frame = cars,

@@ -59,13 +59,13 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8)
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8)
 		train <- airlines_splits[[1]]
 		valid <- airlines_splits[[2]]
 
 		# try using the `lambda` parameter:
 		airlines_glm <- h2o.glm(family = 'binomial', x = predictors, y = response, training_frame = train,
-		                        validation_frame = valid, lambda =.0001)
+		                        validation_frame = valid, lambda = 0.0001)
 
 		# print the AUC for the validation data
 		print(h2o.auc(airlines_glm, valid = TRUE))
@@ -81,8 +81,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"))
 
 		## Sort the grid models by AUC
-		sortedGrid <- h2o.getGrid("air_grid", sort_by = "auc", decreasing = TRUE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("air_grid", sort_by = "auc", decreasing = TRUE)
+		sorted_grid
 	
 
    .. code-tab:: python

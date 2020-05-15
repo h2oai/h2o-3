@@ -44,7 +44,7 @@ Example
 		response <- "response"
 
 		# split into train and validation
-		higgs_splits <- h2o.splitFrame(data =  higgs, ratios = .8)
+		higgs_splits <- h2o.splitFrame(data =  higgs, ratios = 0.8)
 		train <- higgs_splits[[1]]
 		valid <- higgs_splits[[2]]
 

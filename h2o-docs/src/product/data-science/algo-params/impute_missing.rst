@@ -30,8 +30,8 @@ Example
 
         # Train with impute_missing enabled
         birds_pca <- h2o.prcomp(training_frame = birds, transform = "STANDARDIZE",
-                                k = 3, pca_method="Power", use_all_factor_levels=TRUE, 
-                                impute_missing=TRUE)
+                                k = 3, pca_method = "Power", use_all_factor_levels = TRUE, 
+                                impute_missing = TRUE)
 
         # View the importance of components
         birds_pca@model$importance
@@ -62,8 +62,8 @@ Example
 
         # Train again without imputing missing values
         birds2_pca <- h2o.prcomp(training_frame = birds, transform = "STANDARDIZE",
-                                 k = 3, pca_method="Power", use_all_factor_levels=TRUE, 
-                                 impute_missing=FALSE)
+                                 k = 3, pca_method = "Power", use_all_factor_levels = TRUE, 
+                                 impute_missing = FALSE)
 
         Warning message:
         In doTryCatch(return(expr), name, parentenv, handler) :

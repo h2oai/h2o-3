@@ -43,10 +43,10 @@ Example
 
 		# set the predictor names 
 		# ignore the 8th column which has the prior known clusters for this dataset
-		predictors <-colnames(seeds)[-length(seeds)]
+		predictors <- colnames(seeds)[-length(seeds)]
 
 		# split into train and validation
-		seeds_splits <- h2o.splitFrame(data = seeds, ratios = .8, seed = 1234)
+		seeds_splits <- h2o.splitFrame(data = seeds, ratios = 0.8, seed = 1234)
 		train <- seeds_splits[[1]]
 		valid <- seeds_splits[[2]]
 
@@ -61,7 +61,7 @@ Example
 		# select the values for `k` to grid over:
 		# Note: this dataset is too small to see significant differences between these options
 		# the purpose of the example is to show how to use grid search with `k` if desired
-		hyper_params <- list( k = c(2,3,7)  )
+		hyper_params <- list( k = c(2, 3, 7) )
 
 		# this example uses cartesian grid search because the search space is small
 		# and we want to see the performance of all models. For a larger search space use
@@ -71,8 +71,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
 
 		## Sort the grid models by TotSS
-		sortedGrid <- h2o.getGrid("seeds_grid", sort_by  = "tot_withinss", decreasing = F)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("seeds_grid", sort_by  = "tot_withinss", decreasing = F)
+		sorted_grid
 	
    .. code-tab:: python
 

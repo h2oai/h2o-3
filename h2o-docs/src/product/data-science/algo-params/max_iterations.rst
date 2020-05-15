@@ -32,11 +32,11 @@ Example
 		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
 		# set the predictor names and the response column name
-		predictors <- c("displacement","power","weight","acceleration","year")
+		predictors <- c("displacement", "power", "weight", "acceleration", "year")
 		response <- "economy_20mpg"
 
 		# split into train and validation
-		cars_splits <- h2o.splitFrame(data = cars, ratios = .8)
+		cars_splits <- h2o.splitFrame(data = cars, ratios = 0.8)
 		train <- cars_splits[[1]]
 		valid <- cars_splits[[2]]
 

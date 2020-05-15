@@ -46,7 +46,7 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8)
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8)
 		train <- airlines_splits[[1]]
 		valid <- airlines_splits[[2]]
 

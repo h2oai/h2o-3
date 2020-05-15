@@ -74,7 +74,7 @@ Example
 		response <- 'class'
 
 		# split into train and validation
-		iris_splits <- h2o.splitFrame(data = iris, ratios = .8)
+		iris_splits <- h2o.splitFrame(data = iris, ratios = 0.8)
 		train <- iris_splits[[1]]
 		valid <- iris_splits[[2]]
 

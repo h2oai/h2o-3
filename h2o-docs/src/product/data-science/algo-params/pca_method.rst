@@ -41,8 +41,8 @@ Example
 
         # Train using the Power pca_method
         birds_pca <- h2o.prcomp(training_frame = birds, transform = "STANDARDIZE",
-                                k = 3, pca_method="Power", use_all_factor_levels=TRUE, 
-                                impute_missing=TRUE)
+                                k = 3, pca_method = "Power", use_all_factor_levels = TRUE, 
+                                impute_missing = TRUE)
 
         # View the importance of components
         birds_pca@model$importance
@@ -73,8 +73,8 @@ Example
 
         # Train again using GLRM pca_method
         birds2_pca <- h2o.prcomp(training_frame = birds, transform = "STANDARDIZE",
-                                 k = 3, pca_method="GLRM", use_all_factor_levels=TRUE, 
-                                 impute_missing=TRUE)
+                                 k = 3, pca_method = "GLRM", use_all_factor_levels = TRUE, 
+                                 impute_missing = TRUE)
 
         # View the importance of components
         birds2_pca@model$importance

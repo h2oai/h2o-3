@@ -46,7 +46,7 @@ Examples
 
         # Introduce a weight column (artificial non-constant) ONLY to the train set (NOT the calibration one)
         weights <- c(0, rep(1, nrow(ecology_train) - 1))
-        ecology.train$weight <- as.h2o(weights)
+        ecology_train$weight <- as.h2o(weights)
 
         # Train an H2O GBM Model with the Calibration dataset
         ecology_model <- h2o.gbm(x = 3:13, y = "Angaus", training_frame = ecology_train,

@@ -41,7 +41,7 @@ Example
 		response <- "survived"
 
 		# split into train and validation
-		titanic_splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
+		titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
 		train <- titanic_splits[[1]]
 		valid <- titanic_splits[[2]]
 
@@ -65,8 +65,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
 
 		## Sort the grid models by AUC
-		sortedGrid <- h2o.getGrid("titanic_grid", sort_by = "auc", decreasing = TRUE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("titanic_grid", sort_by = "auc", decreasing = TRUE)
+		sorted_grid
 
    .. code-tab:: python
 

@@ -33,10 +33,10 @@ Example
 		response <- "CAPSULE"
 
 		# train a model using the monotone_constraints option
-		prostate_gbm <- h2o.gbm(y=response, 
-	                        	monotone_constraints=list(AGE = 1), 
-	                        	seed=1234, 
-	                        	training_frame=prostate)
+		prostate_gbm <- h2o.gbm(y = response, 
+	                        	monotone_constraints = list(AGE = 1), 
+	                        	seed = 1234, 
+	                        	training_frame = prostate)
 
 
    .. code-tab:: python

@@ -41,7 +41,7 @@ Example
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and validation sets
-		boston_splits <- h2o.splitFrame(data =  boston, ratios = .8)
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8)
 		train <- boston_splits[[1]]
 		valid <- boston_splits[[2]]
 
@@ -57,7 +57,7 @@ Example
 		                      validation_frame = valid)
 
 		# print the mse for the validation data
-		print(h2o.mse(boston_glm, valid=TRUE))
+		print(h2o.mse(boston_glm, valid = TRUE))
 
 		# grid over `missing_values_handling`
 		# select the values for `missing_values_handling` to grid over
@@ -73,8 +73,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"))
 
 		# Sort the grid models by mse
-		sortedGrid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
+		sorted_grid
    
    .. code-tab:: python
 

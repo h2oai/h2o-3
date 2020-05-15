@@ -48,7 +48,7 @@ Example
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and validation sets
-		boston_splits <- h2o.splitFrame(data =  boston, ratios = .8)
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8)
 		train <- boston_splits[[1]]
 		valid <- boston_splits[[2]]
 
@@ -56,10 +56,10 @@ Example
 		# train your model, where you specify the lambda_min_ratio
 		boston_glm <- h2o.glm(x = predictors, y = response, training_frame = train,
 		                      validation_frame = valid,
-		                      lambda_min_ratio = .0001)
+		                      lambda_min_ratio = 0.0001)
 
 		# print the mse for the validation data
-		print(h2o.mse(boston_glm, valid=TRUE))
+		print(h2o.mse(boston_glm, valid = TRUE))
 
 
    .. code-tab:: python

@@ -27,7 +27,7 @@ Example
 	test <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_test.csv")
 
 	# train using the `sample_size` parameter:
-	isofor_model <- h2o.isolationForest(training_frame=train, sample_size=5, ntrees=7)
+	isofor_model <- h2o.isolationForest(training_frame = train, sample_size = 5, ntrees = 7)
 
 	# test the prediction
 	anomaly_score <- h2o.predict(isofor_model, test)

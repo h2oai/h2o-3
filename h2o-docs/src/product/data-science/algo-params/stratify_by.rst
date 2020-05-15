@@ -60,5 +60,5 @@ Example
 		        coef    exp(coef) se(coef)  z      p
 		year    4.734   113.717   8973.421  0.001  1
 
-		Likelihood ratio test=1.39  on 1 df, p=0.239
-		n= 172, number of events= 75
+		Likelihood ratio test = 1.39  on 1 df, p = 0.239
+		n = 172, number of events = 75

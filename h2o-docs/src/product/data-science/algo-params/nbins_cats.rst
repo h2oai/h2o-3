@@ -49,7 +49,7 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8, seed = 1234)
 		train <- airlines_splits[[1]]
 		valid <- airlines_splits[[2]]
 
@@ -88,8 +88,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)  
 
 		## Sort the grid models by AUC
-		sortedGrid <- h2o.getGrid("air_grid", sort_by = "auc", decreasing = TRUE)    
-		sortedGrid
+		sorted_grid <- h2o.getGrid("air_grid", sort_by = "auc", decreasing = TRUE)    
+		sorted_grid
 
 	  
    .. code-tab:: python

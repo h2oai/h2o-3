@@ -40,7 +40,7 @@ Example
         dim(df)
         head(df)
         tail(df)
-        summary(df,exact_quantiles=TRUE)
+        summary(df, exact_quantiles = TRUE)
 
         # pick a response for the supervised problem
         response <- "survived"
@@ -54,8 +54,8 @@ Example
         
         # split the data for machine learning
         splits <- h2o.splitFrame(data = df, 
-                                 ratios = c(0.6,0.2), 
-                                 destination_frames = c("train.hex", "valid.hex", "test.hex"), 
+                                 ratios = c(0.6, 0.2), 
+                                 destination_frames = c("train", "valid", "test"), 
                                  seed = 1234)
         train <- splits[[1]]
         valid <- splits[[2]]
@@ -72,8 +72,8 @@ Example
 
         # Determine the best max_depth value to use during a hyper-parameter search.
         # Depth 10 is usually plenty of depth for most datasets, but you never know
-        hyper_params = list( max_depth = seq(1,29,2) )
-        # or hyper_params = list( max_depth = c(4,6,8,12,16,20) ), which is faster for larger datasets
+        hyper_params = list( max_depth = seq(1, 29, 2) )
+        # or hyper_params = list( max_depth = c(4, 6, 8, 12, 16, 20) ), which is faster for larger datasets
 
         grid <- h2o.grid(
           hyper_params = hyper_params,
@@ -82,10 +82,10 @@ Example
           search_criteria = list(strategy = "Cartesian"),
           
           # which algorithm to run
-          algorithm="gbm",
+          algorithm = "gbm",
           
           # identifier for the grid, to later retrieve it
-          grid_id="depth_grid",
+          grid_id = "depth_grid",
           
           # standard model parameters
           x = predictors, 
@@ -129,15 +129,15 @@ Example
         grid                                                                       
 
         # sort the grid models by decreasing AUC
-        sortedGrid <- h2o.getGrid("depth_grid", sort_by="auc", decreasing = TRUE)    
-        sortedGrid
+        sorted_grid <- h2o.getGrid("depth_grid", sort_by="auc", decreasing = TRUE)    
+        sorted_grid
 
         # find the range of max_depth for the top 5 models
-        topDepths = sortedGrid@summary_table$max_depth[1:5]                       
-        minDepth = min(as.numeric(topDepths))
-        maxDepth = max(as.numeric(topDepths))
+        top_depths = sortedGrid@summary_table$max_depth[1:5]                       
+        min_depth = min(as.numeric(top_depths))
+        max_depth = max(as.numeric(top_depths))
           
-        > sortedGrid
+        > sorted_grid
         #H2O Grid Details
         Grid ID: depth_grid 
         Used hyper parameters: 

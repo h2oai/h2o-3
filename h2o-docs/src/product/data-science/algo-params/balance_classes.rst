@@ -43,14 +43,14 @@ Example
 		covtype <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/covtype/covtype.20k.data")
 
 		# convert response column to a factor
-		covtype[,55] <- as.factor(covtype[,55])
+		covtype[, 55] <- as.factor(covtype[, 55])
 
 		# set the predictor names and the response column name
 		predictors <- colnames(covtype[1:54])
 		response <- 'C55'
 
 		# split into train and validation sets
-		covtype_splits <- h2o.splitFrame(data =  covtype, ratios = .8, seed = 1234)
+		covtype_splits <- h2o.splitFrame(data =  covtype, ratios = 0.8, seed = 1234)
 		train <- covtype_splits[[1]]
 		valid <- covtype_splits[[2]]
 
@@ -73,8 +73,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)  
 
 		# Sort the grid models by logloss
-		sortedGrid <- h2o.getGrid("covtype_grid", sort_by = "logloss", decreasing = FALSE)    
-		sortedGrid
+		sorted_grid <- h2o.getGrid("covtype_grid", sort_by = "logloss", decreasing = FALSE)    
+		sorted_grid
 
 
    .. code-tab:: python

@@ -144,7 +144,7 @@ Finally, install the latest stable version of the H2O package for R:
 
 ::
 
-    install.packages("h2o", type="source", repos=(c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R)))
+    install.packages("h2o", type = "source", repos = (c("http://h2o-release.s3.amazonaws.com/h2o/latest_stable_R)))
     library(h2o)
     h2o.init()
 

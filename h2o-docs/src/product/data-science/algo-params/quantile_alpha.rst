@@ -38,7 +38,7 @@ Example
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and validation sets
-		boston_splits <- h2o.splitFrame(data =  boston, ratios = .8, seed = 1234)
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8, seed = 1234)
 		train <- boston_splits[[1]]
 		valid <- boston_splits[[2]]
 
@@ -48,7 +48,7 @@ Example
 		boston_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
 		                      validation_frame = valid,
 		                      distribution = 'quantile',
-		                      quantile_alpha = .8,
+		                      quantile_alpha = 0.8,
 		                      seed = 1234)
 
 		# print the mse for validation set
@@ -56,7 +56,7 @@ Example
 
 		# grid over `quantile_alpha` parameter
 		# select the values for `quantile_alpha` to grid over
-		hyper_params <- list( quantile_alpha = c(.2, .5, .8) )
+		hyper_params <- list( quantile_alpha = c(0.2, 0.5, 0.8) )
 
 		# this example uses cartesian grid search because the search space is small
 		# and we want to see the performance of all models. For a larger search space use
@@ -71,8 +71,8 @@ Example
 		                 seed = 1234)
 
 		# Sort the grid models by MSE
-		sortedGrid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("boston_grid", sort_by = "mse", decreasing = FALSE)
+		sorted_grid
 
    .. code-tab:: python
 

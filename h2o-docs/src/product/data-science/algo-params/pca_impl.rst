@@ -31,10 +31,10 @@ Example
         h2o.init()
 
         # Load the US Arrests dataset
-        arrestsH2O = h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+        arrests = h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
 
         # Train using the JAMA PCA implementation option
-        model <- h2o.prcomp(training_frame=arrestsH2O, k=4, pca_impl="JAMA", seed=1234)
+        model <- h2o.prcomp(training_frame = arrests, k = 4, pca_impl = "JAMA", seed = 1234)
 
         # View the importance of components
         model@model$importance

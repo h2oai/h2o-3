@@ -28,7 +28,7 @@ Example
 
         # Train using all factor levels
         birds_pca <- h2o.prcomp(training_frame = birds, transform = "STANDARDIZE",
-                                k = 3, pca_method="Power", use_all_factor_levels=TRUE)
+                                k = 3, pca_method = "Power", use_all_factor_levels = TRUE)
 
         # View the importance of components
         birds_pca@model$importance
@@ -59,7 +59,7 @@ Example
 
         # Train again without using all factor levels
         birds2_pca <- h2o.prcomp(training_frame = birds, transform = "STANDARDIZE",
-                                 k = 3, pca_method="Power", use_all_factor_levels=FALSE)
+                                 k = 3, pca_method = "Power", use_all_factor_levels = FALSE)
 
         # View the importance of components
         birds2_pca@model$importance

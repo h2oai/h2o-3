@@ -38,7 +38,7 @@ Example
 		response <- "economy_20mpg"
 
 		# split into train and validation sets
-		cars_splits <- h2o.splitFrame(data =  cars, ratios = .8, seed = 1234)
+		cars_splits <- h2o.splitFrame(data =  cars, ratios = 0.8, seed = 1234)
 		train <- cars_splits[[1]]
 		valid <- cars_splits[[2]]
 

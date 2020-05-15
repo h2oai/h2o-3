@@ -52,7 +52,7 @@ Example
 		boston["offset"] <- log(boston["medv"])
 
 		# split into train and validation sets
-		boston_splits <- h2o.splitFrame(data =  boston, ratios = .8, seed = 1234) 
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8, seed = 1234) 
 		train <- boston_splits[[1]]  
 		valid <- boston_splits[[2]] 
 

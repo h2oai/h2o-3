@@ -36,11 +36,11 @@ Example
 		cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
 
 		# set the predictor names and the response column name
-		predictors <- c("displacement","power","weight","acceleration","year")
+		predictors <- c("displacement", "power", "weight", "acceleration", "year")
 		response <- "economy_20mpg"
 
 		# split into train and validation sets
-		cars_split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
+		cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
 		train <- cars_split[[1]]
 		valid <- cars_split[[2]]
 
@@ -66,8 +66,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
 
 		## Sort the grid models by AUC
-		sortedGrid <- h2o.getGrid("cars_grid", sort_by = "auc", decreasing = TRUE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("cars_grid", sort_by = "auc", decreasing = TRUE)
+		sorted_grid
 
 
    .. code-tab:: python

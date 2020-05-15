@@ -50,7 +50,7 @@ Example
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and validation sets
-		boston_splits <- h2o.splitFrame(data =  boston, ratios = .8)
+		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8)
 		train <- boston_splits[[1]]
 		valid <- boston_splits[[2]]
 

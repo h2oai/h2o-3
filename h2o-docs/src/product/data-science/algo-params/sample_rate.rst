@@ -45,13 +45,13 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8, seed = 1234)
 		train <- airlines_splits[[1]]
 		valid <- airlines_splits[[2]]
 
 		# try using the `sample_rate` parameter:
 		airlines_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
-		                        validation_frame = valid, sample_rate =.7 , 
+		                        validation_frame = valid, sample_rate = 0.7 , 
 		                        seed = 1234)
 
 		# print the AUC for the validation data
@@ -59,7 +59,7 @@ Example
 
 
 		# Example of values to grid over for `sample_rate`
-		hyper_params <- list( sample_rate = c(.7, .8, 1) )
+		hyper_params <- list( sample_rate = c(0.7, 0.8, 1) )
 
 		# this example uses cartesian grid search because the search space is small
 		# and we want to see the performance of all models. For a larger search space use
@@ -72,8 +72,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
 
 		## Sort the grid models by AUC
-		sortedGrid <- h2o.getGrid("air_grid", sort_by = "auc", decreasing = TRUE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("air_grid", sort_by = "auc", decreasing = TRUE)
+		sorted_grid
 	
 
    .. code-tab:: python

@@ -41,7 +41,7 @@ Example
 		insurance['Age'] <- as.factor(insurance['Age'])
 
 		# split into train and validation sets
-		insurance_splits <- h2o.splitFrame(data =  insurance, ratios = .8, seed = 1234)
+		insurance_splits <- h2o.splitFrame(data =  insurance, ratios = 0.8, seed = 1234)
 		train <- insurance_splits[[1]]
 		valid <- insurance_splits[[2]]
 
@@ -51,7 +51,7 @@ Example
 		insurance_gbm <- h2o.gbm(x = predictors, y = response, training_frame = train,
 		                      validation_frame = valid,
 		                      distribution = 'huber',
-		                      huber_alpha = .9,
+		                      huber_alpha = 0.9,
 		                      seed = 1234)
 
 		# print the MSE for validation set
@@ -59,7 +59,7 @@ Example
 
 		# grid over `huber_alpha` parameter
 		# select the values for `huber_alpha` to grid over
-		hyper_params <- list( huber_alpha = c(.2, .5, .8) )
+		hyper_params <- list( huber_alpha = c(0.2, 0.5, 0.8) )
 
 		# this example uses cartesian grid search because the search space is small
 		# and we want to see the performance of all models. For a larger search space use
@@ -74,8 +74,8 @@ Example
 		                 seed = 1234)
 
 		# Sort the grid models by MSE
-		sortedGrid <- h2o.getGrid("insurance_grid", sort_by = "mse", decreasing = FALSE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("insurance_grid", sort_by = "mse", decreasing = FALSE)
+		sorted_grid
 
 
    .. code-tab:: python

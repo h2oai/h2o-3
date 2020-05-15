@@ -43,7 +43,7 @@ Example
 		response <- "eyeDetection"
 
 		# split into train and validation
-		eeg_splits <- h2o.splitFrame(data =  eeg, ratios = .8, seed = 1234)
+		eeg_splits <- h2o.splitFrame(data =  eeg, ratios = 0.8, seed = 1234)
 		train <- eeg_splits[[1]]
 		valid <- eeg_splits[[2]]
 
@@ -73,8 +73,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)  
 
 		## Sort the grid models by AUC
-		sortedGrid <- h2o.getGrid("eeg_grid", sort_by = "auc", decreasing = TRUE)    
-		sortedGrid
+		sorted_grid <- h2o.getGrid("eeg_grid", sort_by = "auc", decreasing = TRUE)    
+		sorted_grid
 
 
    .. code-tab:: python
