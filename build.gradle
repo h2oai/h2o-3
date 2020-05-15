@@ -24,8 +24,6 @@ buildscript {
         classpath 'org.ow2.asm:asm:5.1'
         classpath 'com.github.jengelman.gradle.plugins:shadow:4.0.4'
         classpath 'org.gradle.api.plugins:gradle-nexus-plugin:0.7.1'
-        classpath 'net.researchgate:gradle-release:2.6.0'
-        classpath 'com.adaptc.gradle:nexus-workflow:0.6'
         classpath 'org.testng:testng:6.8'
         classpath 'be.insaneprogramming.gradle:animalsniffer-gradle-plugin:+'
         classpath 'me.champeau.gradle:jmh-gradle-plugin:0.4.6'
@@ -49,11 +47,6 @@ plugins {
 // for anything.  Use the jar file produced by the :h2o-assemblies:main subproject.
 //
 apply from: 'gradle/java.gradle'
-
-// For multiproject setup we have to apply release plugin here (we share same release number cross all modules)
-if (project.hasProperty("doRelease")) {
-    apply from: 'gradle/release.gradle'
-}
 
 // Print out time taken for each task so we find things that are slow.
 apply from: 'gradle/timing.gradle'
@@ -362,8 +355,6 @@ task buildH2oDevDist(type: Exec) {
     environment['BRANCH_NAME'] = branchName
     environment['BUILD_NUMBER'] = buildNumber
     environment['LAST_COMMIT_HASH'] = lastCommitHash
-    // For both master and release branch, return the version in gradle.properties to original version
-    environment['CURRENT_VERSION'] = version
     
     commandLine './make-dist.sh'
 }
