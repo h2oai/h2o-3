@@ -55,7 +55,7 @@ publishing {
 
           // Publish additional artifacts as documentaiton or source code
           configurations.toPublish.allArtifacts.each { art ->
-              println("Publishing artifact for: " + art)
+              logger.debug("Publishing artifact for: " + art)
               artifact art
           }
 
