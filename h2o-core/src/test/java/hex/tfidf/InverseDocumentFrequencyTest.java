@@ -30,10 +30,12 @@ public class InverseDocumentFrequencyTest extends TestUtil {
             Vec idfVec = idfTask.outputFrame().anyVec();
             long idfVecSize = idfVec.length();
 
-            Assert.assertEquals(expectedInverseDocumentFrequencies.length, idfVecSize);
+            Assert.assertEquals("Number of inverse document frequency values does not match the expected number.",
+                                expectedInverseDocumentFrequencies.length, idfVecSize);
 
             for (int row = 0; row < idfVecSize; row++)
-                Assert.assertEquals(expectedInverseDocumentFrequencies[row], idfVec.at(row), IDF_DELTA);
+                Assert.assertEquals("Inverse document frequency value mismatch.",
+                                    expectedInverseDocumentFrequencies[row], idfVec.at(row), IDF_DELTA);
 
             idfVec.remove();
         } finally {

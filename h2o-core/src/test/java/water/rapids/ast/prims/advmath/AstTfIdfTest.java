@@ -21,7 +21,6 @@ import java.util.zip.GZIPInputStream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.junit.Assert.assertEquals;
 
 public class AstTfIdfTest extends TestUtil {
 
@@ -51,12 +50,14 @@ public class AstTfIdfTest extends TestUtil {
             Scope.track(expectedOutputFrame);
             
             Val resVal = Rapids.exec("(tf-idf " + frameName + ")", sess);
-            Assert.assertTrue(resVal instanceof ValFrame);
+            Assert.assertTrue("Rapid's output is not a H2OFrame.", resVal instanceof ValFrame);
             Frame resFrame = resVal.getFrame();
             Scope.track(resFrame);
 
-            assertEquals(expectedOutputFrame.numCols(), resFrame.numCols());
-            assertEquals(expectedOutputFrame.numRows(), resFrame.numRows());
+            Assert.assertEquals("Number of columns in the TF-IDF output frame does not match the expected number.",
+                                expectedOutputFrame.numCols(), resFrame.numCols());
+            Assert.assertEquals("Number of rows in the TF-IDF output frame does not match the expected number.",
+                                expectedOutputFrame.numRows(), resFrame.numRows());
 
             for(int i = 0; i < expectedOutputFrame.numCols(); i++) {
                 Vec expectedVec = expectedOutputFrame.vec(i);
@@ -64,7 +65,8 @@ public class AstTfIdfTest extends TestUtil {
                 if (expectedVec.get_type() == Vec.T_STR)
                     assertStringVecEquals(expectedVec, resFrame.vec(i));
                 else
-                    assertVecEquals(expectedVec, resFrame.vec(i), DELTA);
+                    assertVecEquals("Vector (at index " + i + ") in the TF-IDF output frame does not mismatch the expected one.",
+                                    expectedVec, resFrame.vec(i), DELTA);
             }
         } finally {
             Scope.exit();
@@ -99,7 +101,7 @@ public class AstTfIdfTest extends TestUtil {
                 .stream().collect(Collectors.groupingBy(e -> e, Collectors.counting()));
         Map<String, Long> doc2Counts = tokens.subList(docSplitIndex, tokensCnt)
                 .stream().collect(Collectors.groupingBy(e -> e, Collectors.counting()));
-        Map[] expectedTFs = new Map[]{ doc1Counts, doc2Counts };
+        Map<String, Long>[] expectedTFs = new Map[]{ doc1Counts, doc2Counts };
 
         Map<String, Integer> expectedDFs = doc1UniqueTokens.stream().collect(Collectors.toMap(token -> token, token -> 1));
         doc2UniqueTokens.forEach(token -> expectedDFs.merge(token, 1, Integer::sum));
@@ -127,8 +129,10 @@ public class AstTfIdfTest extends TestUtil {
             Scope.track(resFrame);
             
             int expectedNumCols = 5;
-            assertEquals(expectedNumCols, resFrame.numCols());
-            assertEquals(doc1UniqueTokens.size() + doc2UniqueTokens.size(), resFrame.numRows());
+            Assert.assertEquals("Number of columns in the TF-IDF output frame does not match the expected number.",
+                                expectedNumCols, resFrame.numCols());
+            Assert.assertEquals("Number of rows in the TF-IDF output frame does not match the expected number.",
+                                doc1UniqueTokens.size() + doc2UniqueTokens.size(), resFrame.numRows());
             
             Vec outDocIds = resFrame.vec(0);
             Vec outTokens = resFrame.vec(1);
@@ -145,16 +149,19 @@ public class AstTfIdfTest extends TestUtil {
 
                 Map<String, Long> docTfValues = expectedTFs[(int) docId];
 
-                Assert.assertTrue(docTfValues.containsKey(token));
+                Assert.assertTrue("Output token is not in the expected tokens.",
+                                  docTfValues.containsKey(token));
                 long expectedTf = docTfValues.get(token);
-                Assert.assertEquals(expectedTf, tf);
+                Assert.assertEquals("Term frequency value mismatch.", expectedTf, tf);
 
-                Assert.assertTrue(expectedIDFs.containsKey(token));
+                Assert.assertTrue("Output token is not in the expected tokens.",
+                                  expectedIDFs.containsKey(token));
                 double expectedIdf = expectedIDFs.get(token);
-                Assert.assertEquals(expectedIdf, idf, DELTA);
+                Assert.assertEquals("Inverse document frequency value mismatch.", expectedIdf, idf, DELTA);
 
-                Assert.assertTrue(expectedIDFs.containsKey(token));
-                Assert.assertEquals(expectedTf * expectedIdf, tfIdf, DELTA);
+                Assert.assertTrue("Output token is not in the expected tokens.",
+                                  expectedIDFs.containsKey(token));
+                Assert.assertEquals("TF-IDF value mismatch.", expectedTf * expectedIdf, tfIdf, DELTA);
             }
         } finally {
             Scope.exit();
@@ -165,7 +172,7 @@ public class AstTfIdfTest extends TestUtil {
         return Math.log(((double)(documentsCnt + 1)) / (df + 1));
     }
 
-    private Pair<Frame, Frame> getSimpleTestFrames(final String frameName, final Session session) {
+    private static Pair<Frame, Frame> getSimpleTestFrames(final String frameName, final Session session) {
         String[] documents = new String[] {
                 "A B C",
                 "A A A Z",

@@ -27,8 +27,10 @@ public class TfIdfPreprocessorTest extends TestUtil {
             TfIdfPreprocessor preprocessor = new TfIdfPreprocessor().doAll(outputTypes, inputFrame);
             Frame outputFrame = preprocessor.outputFrame();
 
-            assertEquals(expectedOutputFrame.numCols(), outputFrame.numCols());
-            assertEquals(expectedOutputFrame.numRows(), outputFrame.numRows());
+            assertEquals("Number of columns in the preprocessed frame does not match the expected number.", 
+                         expectedOutputFrame.numCols(), outputFrame.numCols());
+            assertEquals("Number of rows in the preprocessed frame does not match the expected number.",
+                         expectedOutputFrame.numRows(), outputFrame.numRows());
 
             for(int i = 0; i < expectedOutputFrame.numCols(); i++) {
                 Vec expectedVec = expectedOutputFrame.vec(i);
@@ -36,7 +38,8 @@ public class TfIdfPreprocessorTest extends TestUtil {
                 if (expectedVec.get_type() == Vec.T_STR)
                     assertStringVecEquals(expectedVec, outputFrame.vec(i));
                 else
-                    assertVecEquals(expectedVec, outputFrame.vec(i), 0);
+                    assertVecEquals("Vector (at index " + i + ") in the preprocessed frame does not mismatch the expected one.", 
+                                    expectedVec, outputFrame.vec(i), 0);
             }
 
             outputFrame.remove();

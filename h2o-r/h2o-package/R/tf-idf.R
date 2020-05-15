@@ -9,7 +9,7 @@ h2o.tf_idf <- function(frame) {
     if( is(frame, 'H2OFrame') ) {
         .newExpr('tf-idf', frame)
     } else {
-        warning(paste0("TF-IDF cannot be computed for class ", class(frame), ". Frame input is required."))
+        warning(paste0("TF-IDF cannot be computed for class ", class(frame), ". H2OFrame input is required."))
         return(NULL)
     }
 }
