@@ -346,10 +346,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
     
     private XGBoostExecutor makeExecutor(XGBoostModel model) {
-      if (H2O.ARGS.externalXGBoostClusterAddress == null) {
+      String propVal = H2O.getSysProperty("xgboost.externalAddress", null);
+      if (propVal == null) {
         return new LocalXGBoostExecutor(model, _train);
       } else {
-        return new RemoteXGBoostExecutor(H2O.ARGS.externalXGBoostClusterAddress, model, _train);
+        return new RemoteXGBoostExecutor(propVal, model, _train);
       }
     }
 
