@@ -27,7 +27,7 @@
 #' # Import the CraigslistJobTitles dataset
 #' f <- "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/"
 #' job_titles <- h2o.importFile(paste0(f, "craigslistJobTitles.csv"), 
-#'                              col.names = c("category", "job_title"),
+#'                              col.names = c("category", "jobtitle"),
 #'                              col.types = c("String", "String"), header = TRUE)
 #' 
 #' # Build and train the Word2Vec model
