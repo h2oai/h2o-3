@@ -1,6 +1,6 @@
-import org.gradle.api.plugins.internal.JvmPluginsHelper
-
 apply plugin: 'scala'
+
+build.finalizedBy(scaladoc)
 
 //
 // The Scala module expects scalaVersion and scalaBaseVersion
@@ -20,18 +20,6 @@ sourceSets {
         }
     }
 }
-
-task scaladocJar(type: Jar) {
-    classifier = 'javadoc'
-    from scaladoc
-}
-
-JvmPluginsHelper.configureDocumentationVariantWithArtifact(
-        "javadocElements", (String) null, "javadoc", [], "scaladocJar", tasks.named("scaladocJar"),
-        JvmPluginsHelper.findJavaComponent(this.components),
-        configurations, tasks, project.getObjects()
-)
-
 
 // Activate Zinc compiler and configure scalac
 tasks.withType(ScalaCompile) {
