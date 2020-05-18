@@ -22,7 +22,7 @@ sourceSets {
 }
 
 task scaladocJar(type: Jar) {
-    classifier = 'scaladoc'
+    classifier = 'javadoc'
     from scaladoc
 }
 
