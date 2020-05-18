@@ -2019,14 +2019,14 @@ public class ArrayUtils {
   }
 
   /**
-   * Count number of occurences of element in given array.
+   * Count number of occurrences of element in given array.
    *
-   * @param array   array in which number of occurences should be counted.
-   * @param element element whose occurences should be counted.
+   * @param array   array in which number of occurrences should be counted.
+   * @param element element whose occurrences should be counted.
    *
-   * @return  number of occurences of element in given array.
+   * @return  number of occurrences of element in given array.
    */
-  public static int occurenceCount(byte[] array, byte element) {
+  public static int occurrenceCount(byte[] array, byte element) {
     int cnt = 0;
 
     for (byte b : array)

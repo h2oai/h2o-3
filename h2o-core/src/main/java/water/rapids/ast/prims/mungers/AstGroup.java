@@ -588,7 +588,7 @@ public class AstGroup extends AstPrimitive {
     GBTask(int[] gbCols, byte[] gbColsTypes, AGG[] aggs, boolean hasMedian) {
       _gbCols = gbCols;
       _gbColsTypes = gbColsTypes;
-      _stringGbColsCnt = ArrayUtils.occurenceCount(_gbColsTypes, Vec.T_STR);
+      _stringGbColsCnt = ArrayUtils.occurrenceCount(_gbColsTypes, Vec.T_STR);
       _numericGbColsCnt = gbColsTypes.length - _stringGbColsCnt;
       _aggs = aggs;
       _hasMedian = hasMedian;
@@ -895,7 +895,7 @@ public class AstGroup extends AstPrimitive {
     BuildGroup(int[] gbCols, byte[] gbColsTypes, AGG[] aggs, IcedHashSet<G> gss, G[] grps, int medianCols) {
       _gbCols = gbCols;
       _gbColsTypes = gbColsTypes;
-      _stringGbColsCnt = ArrayUtils.occurenceCount(_gbColsTypes, Vec.T_STR);
+      _stringGbColsCnt = ArrayUtils.occurrenceCount(_gbColsTypes, Vec.T_STR);
       _numericGbColsCnt = gbColsTypes.length - _stringGbColsCnt;
       _aggs = aggs;
       _gss = gss;

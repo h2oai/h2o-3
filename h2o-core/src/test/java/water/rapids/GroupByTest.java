@@ -400,8 +400,10 @@ public class GroupByTest extends TestUtil {
       System.out.println("GroupBy result:");
       System.out.println(resFrame.toTwoDimTable().toString());
 
-      Assert.assertEquals(expectedResFrame.numCols(), resFrame.numCols());
-      Assert.assertEquals(expectedResFrame.numRows(), resFrame.numRows());
+      Assert.assertEquals("Number of columns in the output frame after groupby does not match the expected number.",
+                          expectedResFrame.numCols(), resFrame.numCols());
+      Assert.assertEquals("Number of rows in the output frame after groupby does not match the expected number.",
+                          expectedResFrame.numRows(), resFrame.numRows());
 
       for(int i = 0; i < expectedResFrame.numCols(); i++) {
         Vec expectedVec = expectedResFrame.vec(i);
@@ -409,7 +411,8 @@ public class GroupByTest extends TestUtil {
         if (expectedVec.get_type() == Vec.T_STR)
           assertStringVecEquals(expectedVec, resFrame.vec(i));
         else
-          assertVecEquals(expectedVec, resFrame.vec(i), 0);
+          assertVecEquals("Vector (at index " + i + ") in the output frame after groupby frame does not mismatch the expected one.",
+                          expectedVec, resFrame.vec(i), 0);
       }
 
       resFrame.remove();
