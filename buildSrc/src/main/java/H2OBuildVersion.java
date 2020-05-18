@@ -87,7 +87,7 @@ public class H2OBuildVersion {
       majorMinorIncremental = _versionFromGradle;
     }
 
-    if (! Pattern.matches("\\d+\\.\\d+\\.\\d+", majorMinorIncremental)) {
+    if (! Pattern.matches("\\d+\\.\\d+\\.\\d+(\\.\\d+)?", majorMinorIncremental)) {
       throw new RuntimeException("majorMinorIncremental is malformed (" + majorMinorIncremental + ")");
     }
 
@@ -95,7 +95,11 @@ public class H2OBuildVersion {
     _buildMajorVersion = parts[0];
     _buildMinorVersion = parts[1];
     _buildIncrementalVersion = parts[2];
-    _buildNumber = calcBuildNumber(_rootDir, _versionFromGradle);
+    if (parts.length == 4) {
+      _buildNumber = parts[3];
+    } else {
+      _buildNumber = calcBuildNumber(_rootDir, _versionFromGradle);
+    }
   }
 
   private String calcBranch() {

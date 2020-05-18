@@ -30,8 +30,8 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public ToEigenVec getToEigenVec() { return null; }
   public boolean shouldReorder(Vec v) { return _parms._categorical_encoding.needsResponse() && isSupervised(); }
 
-  transient private IcedHashMap<Key,String> _toDelete = new IcedHashMap<>();
-  void cleanUp() { FrameUtils.cleanUp(_toDelete); }
+  // initialized to be non-null to provide nicer exceptions when used incorrectly (instead of NPE)
+  private transient Workspace _workspace = new Workspace(false);
 
   public Job<M> _job;     // Job controlling this build
   /** Block till completion, and return the built model from the DKV.  Note the
@@ -597,7 +597,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   }
 
   // Step 3: Build N train & validation frames; build N ModelBuilders; error check them all
-  public ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
+  private ModelBuilder<M, P, O>[] cv_makeFramesAndBuilders( int N, Vec[] weights ) {
     final long old_cs = _parms.checksum();
     final String origDest = _result.toString();
 
@@ -613,13 +613,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     for( int i=0; i<N; i++ ) {
       String identifier = origDest + "_cv_" + (i+1);
       // Training/Validation share the same data, but will have exclusive weights
-      Frame cvTrain = new Frame(Key.<Frame>make(identifier+"_train"),cv_fr.names(),cv_fr.vecs());
+      Frame cvTrain = new Frame(Key.make(identifier + "_train"), cv_fr.names(), cv_fr.vecs());
+      cvTrain.write_lock(_job);
       cvTrain.add(weightName, weights[2*i]);
-      DKV.put(cvTrain);
-      Frame cvValid = new Frame(Key.<Frame>make(identifier+"_valid"),cv_fr.names(),cv_fr.vecs());
+      cvTrain.update(_job);
+      Frame cvValid = new Frame(Key.make(identifier + "_valid"), cv_fr.names(), cv_fr.vecs());
+      cvValid.write_lock(_job);
       cvValid.add(weightName, weights[2*i+1]);
-      DKV.put(cvValid);
-
+      cvValid.update(_job);
+      
       // Shallow clone - not everything is a private copy!!!
       ModelBuilder<M, P, O> cv_mb = (ModelBuilder)this.clone();
       cv_mb.setTrain(cvTrain);
@@ -1168,6 +1170,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
     // NOTE: allow re-init:
     clearInitState();
+    initWorkspace(expensive);
     assert _parms != null;      // Parms must already be set in
 
     if( _parms._train == null ) {
@@ -1486,7 +1489,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     if (fr.numRows()==0) error(field, frDesc + " must have > 0 rows.");
     Frame adapted = new Frame(null /* not putting this into KV */, fr._names.clone(), fr.vecs().clone());
     try {
-      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _toDelete, false);
+      String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _workspace.getToDelete(expensive), false);
       Vec response = adapted.vec(_parms._response_column);
       if (response == null && _parms._response_column != null)
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
@@ -1510,7 +1513,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (scopeTrack)
         Scope.track(encoded);
       else
-        _toDelete.put(encoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
+        _workspace.getToDelete(true).put(encoded._key, Arrays.toString(Thread.currentThread().getStackTrace()));
     }
     return encoded;
   }
@@ -1783,6 +1786,39 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
    */
   public String getName() {
     return getClass().getSimpleName().toLowerCase();
+  }
+
+  private void cleanUp() {
+    _workspace.cleanUp();
+  }
+
+  @SuppressWarnings("WeakerAccess") // optionally allow users create workspace directly (instead of relying on init) 
+  protected final void initWorkspace(boolean expensive) {
+    if (expensive)
+      _workspace = new Workspace(true);
+  }
+
+  static class Workspace {
+    private final IcedHashMap<Key,String> _toDelete;
+
+    private Workspace(boolean expensive) {
+      _toDelete = expensive ? new IcedHashMap<>() : null;
+    }
+
+    IcedHashMap<Key, String> getToDelete(boolean expensive) {
+      if (! expensive)
+        return null; // incorrect usages during "inexpensive" initialization will fail
+      if (_toDelete == null) {
+        throw new IllegalStateException("ModelBuilder was not correctly initialized. " +
+                "Expensive phase requires field `_toDelete` to be non-null. " +
+                "Does your implementation of init method call super.init(true) or alternatively initWorkspace(true)?");
+      }
+      return _toDelete;
+    }
+
+    void cleanUp() {
+      FrameUtils.cleanUp(_toDelete);
+    }
   }
 
 }

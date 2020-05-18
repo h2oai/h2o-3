@@ -1,3 +1,5 @@
+import org.gradle.api.plugins.internal.JvmPluginsHelper
+
 // Gradle file for java-based project
 //
 apply plugin: 'java'
@@ -10,13 +12,19 @@ compileJava {
   options.encoding = "UTF-8"
 }
 
-java {
-    withJavadocJar()
-}
-
 task testJar(type: Jar, dependsOn: testClasses, group: "build") {
     classifier = 'test'
     from sourceSets.test.output
+}
+
+java {
+    withJavadocJar()
+    // add test jar to publish configuration
+    JvmPluginsHelper.configureDocumentationVariantWithArtifact(
+            "testElements", (String) null, "test", [], "testJar", tasks.named("testJar"),
+            JvmPluginsHelper.findJavaComponent(this.components), 
+            configurations, tasks, project.getObjects()
+    )
 }
 
 // Create a configuration containing only for test artifacts
@@ -38,15 +46,6 @@ if (JavaVersion.current().isJava8Compatible()) {
         options.addStringOption('Xdoclint:none', '-quiet')
     }
 }
-
-plugins.withType(org.gradle.api.publish.maven.plugins.MavenPublishPlugin) {
-    // Publish it only if "maven-publish" plugin is in the context
-    artifacts {
-        toPublish javadocJar
-        toPublish testJar
-    }
-}
-
 
 clean {
     doLast {
