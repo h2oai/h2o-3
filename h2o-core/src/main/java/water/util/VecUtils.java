@@ -846,10 +846,10 @@ public class VecUtils {
    * 
    */
   
-  public static class permutateVec extends MRTask<permutateVec>{
+  public static class shuffleVec extends MRTask<shuffleVec>{
     public Vec _vec;
         
-    public permutateVec(Vec vec) {_vec = vec;}
+    public shuffleVec(Vec vec) {this._vec = vec;}
         
         @Override
         public void map(Chunk ch/*, NewChunk nc*/) {
@@ -865,10 +865,39 @@ public class VecUtils {
         }
             
         @Override 
-        public void reduce(permutateVec mrt) {
-            if( _vec != mrt._vec ) _vec = mrt._vec; // my name is jeff
+        public void reduce(shuffleVec mrt) {
+            if( _vec != mrt._vec ) _vec = mrt._vec;
         }
 
     }
-    
+
+    public static class shuffleVecVol2 extends MRTask<shuffleVecVol2>{
+        public double [] _result;
+
+        public shuffleVecVol2() {}
+
+        @Override
+        public void map(Chunk ch/*, NewChunk nc*/) {
+//          nc.alloc_doubles(ch._len);
+            _result = new double [ch._len];
+
+            // to avoid using .set() copy the vector FIXME:
+            for (int i = 0; i < ch._len; ++i) {
+                _result[i] = ch.atd(i);
+            }
+
+            for (int i = 0; i < ch._len; ++i) {
+                int randIndex = i + (int) (Math.random() * (ch._len - i));
+                double tmp = _result[i];
+                _result[i] = _result[randIndex];
+                _result[randIndex] = tmp;
+            }
+        }
+
+        @Override
+        public void reduce(shuffleVecVol2 mrt) {
+            if( _result != mrt._result )
+                _result = mrt._result;
+        }
+    }
 }
