@@ -17,12 +17,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class RemoteXGBoostHandler extends Handler {
 
     private static final Logger LOG = Logger.getLogger(RemoteXGBoostHandler.class);
 
-    private static final Map<Key, LocalXGBoostExecutor> REGISTRY = new HashMap<>();
+    private static final Map<Key, LocalXGBoostExecutor> REGISTRY = new ConcurrentHashMap<>();
 
     private XGBoostExecRespV3 makeResponse(LocalXGBoostExecutor exec) {
         return new XGBoostExecRespV3(exec.modelKey);
