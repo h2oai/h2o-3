@@ -1,6 +1,8 @@
 package water.rapids.ast.prims;
 
 import hex.Model;
+import hex.createframe.CreateFramePostprocessStep;
+import hex.createframe.postprocess.ShuffleOneColumnCfps;
 import hex.tree.gbm.GBMModel;
 import hex.tree.gbm.GBM;
 import org.junit.Assert;
@@ -18,6 +20,9 @@ import water.util.FrameUtils;
 import water.util.MathUtils;
 import water.util.VecUtils;
 
+import java.util.ArrayList;
+import java.util.concurrent.TimeUnit;
+
 import static hex.genmodel.utils.DistributionFamily.gaussian;
 import static org.junit.Assert.assertEquals;
 
@@ -29,47 +34,73 @@ public class FeatureImportance4BBMTest extends TestUtil {
         stall_till_cloudsize(1);
     }
 
+    
     @Test
-    public void permuateVec(){
+    public void shuffleSmallDoubleVec(){
         Frame t = null;
         try {
             Scope.enter();
             t = new TestFrameBuilder()
                     .withVecTypes(Vec.T_NUM, Vec.T_NUM)
                     .withColNames("first", "second")
-                    .withDataForCol(0, ard(1.0, 2.0, 3.0, 4.0))
-                    .withDataForCol(1, ard(1.1, 2.1, 3.1, 4.1))
+                    .withDataForCol(0, ard(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0))
+                    .withDataForCol(1, ard(1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1))
                     .build();
             Scope.track(t);
-            double first_element_of_original_vec = t.vec(0).at(0);
-            Frame test = FrameUtils.permuateVec(t, "first");
+            Vec OG_vec = t.vec("first").doCopy();
+//            VecUtils.shuffleVec new_vv = new VecUtils.shuffleVec(t.vec(0)).doAll(t.vec("first"));
+            Vec new_v = Vec.makeVec(new VecUtils.shuffleVecVol2().doAll(t.vec("first"))._result, Vec.newKey());
 
-            VecUtils.permutateVec new_vv = new VecUtils.permutateVec(t.vec(0)).doAll(t.vec("first"));
+//            Vec new_v = new_vv._vec;
+            double rnd_coe = randomnessCoeefic(OG_vec, new_v);
 
-            Vec new_v = new_vv._vec;
-
+            Assert.assertNotEquals(0, rnd_coe);
             
-            //TODO: return vec to original values
-//            Assert.assertNotEquals(changed_places, 0); // assert fails because the changes on vector remain 
-            
-            //TODO: create a proper procedure to test the randomness Utility
-            /*
-            int changed_places = 0;
-            for (int i = 0; i < new_v.length() ; ++i){
-                if(t.vec(0).at(i) != new_v.at(i))
-                    changed_places++;
-            }
-            */
-            Assert.assertNotEquals(first_element_of_original_vec, new_v.at(0));
-
         } finally {
             Scope.exit();
-            t.remove();
         }
         
     }
-    // Other tests, test nothing of signifigance for now
-    /* 
+    @Test
+    public void shuffleVecBiggerData(){
+        Frame fr = null;
+        try {
+            Scope.enter(); 
+            fr = parse_test_file("./smalldata/airlines/AirlinesTrainWgt.csv"); // has 24422; should be enough to test speed 
+            Scope.track(fr);
+            
+            Vec OG_vec = fr.vec(10).makeCopy();
+
+            /*
+            long startTime_using_set = System.nanoTime();
+            VecUtils.shuffleVec new_vv = new VecUtils.shuffleVec(fr.vec(10)).doAll(fr.vec("Weight"));
+            long endTime_using_set = System.nanoTime();
+            */
+            long startTime_copying_array = System.nanoTime();
+            Vec new_v = Vec.makeVec(new VecUtils.shuffleVecVol2().doAll(fr.vec("Weight"))._result, Vec.newKey());
+            long endTime_copying_array = System.nanoTime();
+
+//            long timeElapsed_1 = endTime_using_set - startTime_using_set;
+//            long timeElapsed_2 = endTime_copying_array - startTime_copying_array;
+
+            double rnd_coe = randomnessCoeefic(OG_vec, new_v);
+
+            Assert.assertNotEquals(0, rnd_coe);
+        } finally {
+            Scope.exit();
+        }
+
+    }
+    // compares values of vec and returns the randomness change. 0 no change, 1.0 all rows shuffled
+    double randomnessCoeefic(Vec og, Vec nw){
+        int changed_places = 0;
+        for (int i = 0; i < nw.length() ; ++i){
+            if(og.at(i) != nw.at(i))
+                changed_places++;
+        }
+        return changed_places * 1.0/nw.length();
+    }
+    
     @Test
     public void initiate() {
         GBMModel gbm = null;
@@ -105,7 +136,7 @@ public class FeatureImportance4BBMTest extends TestUtil {
             assertEquals(79152.12337641386,gbm._output._scored_train[1]._mean_residual_deviance,0.1);
 
             FeatureImportance4BBM Fi = new FeatureImportance4BBM(gbm, fr, fr2);
-            Fi.calculateValues();
+            Fi.getFeatureImportance();
 
         } finally {
             if( fr  != null ) fr .remove();
@@ -116,6 +147,7 @@ public class FeatureImportance4BBMTest extends TestUtil {
     }
 
     //testing if model is getting the GBMmodel on my class (FeatureImportance4BBM.java)
+/*   
     @Test
     public void testPassingModel() throws Exception {
         try {
