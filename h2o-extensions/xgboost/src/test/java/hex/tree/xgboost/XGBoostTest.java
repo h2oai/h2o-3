@@ -776,9 +776,12 @@ public class XGBoostTest extends TestUtil {
 
       XGBoostModel.XGBoostParameters parms = new XGBoostModel.XGBoostParameters();
       parms._train = tfr._key;
+      parms._tree_method = XGBoostModel.XGBoostParameters.TreeMethod.hist;
+      parms._grow_policy = XGBoostModel.XGBoostParameters.GrowPolicy.lossguide;
       parms._response_column = "AGE";
       parms._ignored_columns = new String[]{"ID"};
       parms._backend = XGBoostModel.XGBoostParameters.Backend.cpu;
+      parms._max_bins = 10;
 
       model = new hex.tree.xgboost.XGBoost(parms).trainModel().get();
 
@@ -793,7 +796,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(names, new HashSet<>(Arrays.asList(
               "colsample_bytree", "silent", "tree_method", "seed", "max_depth", "booster", "objective", "nround",
               "lambda", "eta", "grow_policy", "nthread", "alpha", "colsample_bylevel", "subsample", "min_child_weight",
-              "gamma", "max_delta_step")));
+              "gamma", "max_delta_step", "max_bin", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf")));
     } finally {
       Scope.exit();
       if (tfr!=null) tfr.remove();

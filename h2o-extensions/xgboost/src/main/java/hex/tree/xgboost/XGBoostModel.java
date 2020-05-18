@@ -314,14 +314,14 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     // XGBoost specific options
     params.put("grow_policy", p._grow_policy.toString());
-    if (p._grow_policy== XGBoostParameters.GrowPolicy.lossguide) {
-      params.put("max_bins", p._max_bins);
+    if (p._grow_policy == XGBoostParameters.GrowPolicy.lossguide) {
+      params.put("max_bin", p._max_bins);
       params.put("max_leaves", p._max_leaves);
       params.put("min_sum_hessian_in_leaf", p._min_sum_hessian_in_leaf);
       params.put("min_data_in_leaf", p._min_data_in_leaf);
     }
     params.put("booster", p._booster.toString());
-    if (p._booster== XGBoostParameters.Booster.dart) {
+    if (p._booster == XGBoostParameters.Booster.dart) {
       params.put("sample_type", p._sample_type.toString());
       params.put("normalize_type", p._normalize_type.toString());
       params.put("rate_drop", p._rate_drop);
