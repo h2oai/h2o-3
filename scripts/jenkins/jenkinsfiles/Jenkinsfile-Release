@@ -163,8 +163,8 @@ try {
                                         echo "Process release tags"
                                         git tag -d jenkins-rel-latest-stable
                                         git push origin :refs/tags/jenkins-rel-latest-stable
-                                        git tag -a jenkins-${env.PROJECT_VERSION} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
                                         git tag -a jenkins-rel-latest-stable -f -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
+                                        git tag -a jenkins-${env.PROJECT_VERSION} -m "Jenkins build branch_name ${env.BRANCH_NAME} build_number ${env.PROJECT_VERSION}"
                                     """
                                 }
                                 sh """
@@ -527,7 +527,7 @@ private setReleaseJobProperties(final pipelineContext) {
     if (!params.TEST_RELEASE && (env.BRANCH_NAME == 'master' || isReleaseBranch)) {
         env.S3_ROOT = RELEASE_BUCKET
     } else {
-        env.S3_ROOT = "${TEST_RELEASE_BUCKET}"
+        env.S3_ROOT = TEST_RELEASE_BUCKET
     }
     echo "Release will be pushed to ${env.S3_ROOT}"
 

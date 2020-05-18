@@ -9,10 +9,12 @@ import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
 import water.udf.CFuncRef;
 import water.util.Log;
+import water.util.MRUtils;
 import water.util.ReflectionUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.stream.Stream;
 
 import static hex.Model.Parameters.FoldAssignmentScheme.AUTO;
 import static hex.Model.Parameters.FoldAssignmentScheme.Random;
@@ -65,6 +67,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     public String _metalearner_params = new String(); //used for clients code-gen only.
     public Model.Parameters _metalearner_parameters;
     public long _seed;
+    public long _score_training_samples = 10_000;
 
     /**
      * initialize {@link #_metalearner_parameters} with default parameters for the current {@link #_metalearner_algorithm}.
@@ -114,23 +117,34 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
    */
   @Override
   protected Frame predictScoreImpl(Frame fr, Frame adaptFrm, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) {
-    Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + this._key.toString() + fr._key));
+    final String seKey = this._key.toString();
+    Frame levelOneFrame = new Frame(Key.<Frame>make("preds_levelone_" + seKey + fr._key));
 
-    // TODO: we should be able to parallelize scoring of base models
-    for (Key<Model> baseModelKey : _parms._base_models) {
-      if (isUsefulBaseModel(baseModelKey)) {
-        Model baseModel = baseModelKey.get();
+    Model[] usefulBaseModels = Stream.of(_parms._base_models)
+            .filter(this::isUsefulBaseModel)
+            .map(Key::get)
+            .toArray(Model[]::new);
 
-        Frame basePreds = baseModel.score(
-                fr,
-                "preds_base_" + this._key.toString() + fr._key,
-                j,
-                false
-        );
+    if (usefulBaseModels.length > 0) {
+      Frame[] baseModelPredictions = new Frame[usefulBaseModels.length];
 
-        StackedEnsemble.addModelPredictionsToLevelOneFrame(baseModel, basePreds, levelOneFrame);
-        DKV.remove(basePreds._key); //Cleanup
-        Frame.deleteTempFrameAndItsNonSharedVecs(basePreds, levelOneFrame);
+      // Run scoring of base models in parallel
+      H2O.submitTask(new LocalMR(new MrFun() {
+        @Override
+        protected void map(int id) {
+          baseModelPredictions[id] = usefulBaseModels[id].score(
+                  fr,
+                  "preds_base_" + seKey + usefulBaseModels[id]._key + fr._key,
+                  j,
+                  false
+          );
+        }
+      }, usefulBaseModels.length)).join();
+
+      for (int i = 0; i < usefulBaseModels.length; i++) {
+        StackedEnsemble.addModelPredictionsToLevelOneFrame(usefulBaseModels[i], baseModelPredictions[i], levelOneFrame);
+        DKV.remove(baseModelPredictions[i]._key); //Cleanup
+        Frame.deleteTempFrameAndItsNonSharedVecs(baseModelPredictions[i], levelOneFrame);
       }
     }
 
@@ -204,11 +218,17 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     throw new UnsupportedOperationException("StackedEnsembleModel.makeMetricBuilder should never be called!");
   }
 
-  ModelMetrics doScoreMetricsOneFrame(Frame frame, Job job) {
-      Frame pred = this.predictScoreImpl(frame, new Frame(frame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
-//      Frame pred = this.score(frame, null, job, true,  CFuncRef.from(_parms._custom_metric_func));
+  private ModelMetrics doScoreTrainingMetrics(Frame frame, Job job) {
+    Frame scoredFrame = (_parms._score_training_samples > 0 && _parms._score_training_samples < frame.numRows())
+            ? MRUtils.sampleFrame(frame, _parms._score_training_samples, _parms._seed)
+            : frame;
+    try {
+      Frame pred = this.predictScoreImpl(scoredFrame, new Frame(scoredFrame), null, job, true, CFuncRef.from(_parms._custom_metric_func));
       pred.delete();
-      return ModelMetrics.getFromDKV(this, frame);
+      return ModelMetrics.getFromDKV(this, scoredFrame);
+    } finally {
+      if (scoredFrame != frame) scoredFrame.delete();
+    }
   }
 
   void doScoreOrCopyMetrics(Job job) {
@@ -218,7 +238,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     // the metalearner was trained on cv preds, not training preds.  So, rather than clone the metalearner
     // training metrics, we have to re-score the training frame on all the base models, then send these
     // biased preds through to the metalearner, and then compute the metrics there.
-    this._output._training_metrics = doScoreMetricsOneFrame(this._parms.train(), job);
+    this._output._training_metrics = doScoreTrainingMetrics(this._parms.train(), job);
     
     // Validation metrics can be copied from metalearner (may be null).
     // Validation frame was already piped through so there's no need to re-do that to get the same results.
@@ -471,4 +491,3 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     _output._metalearner.deleteCrossValidationFoldAssignment();
   }
 }
-

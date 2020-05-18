@@ -51,6 +51,8 @@ public final class DHistogram extends Iced {
   public char  _nbin;     // Bin count (excluding NA bucket)
   public double _step;     // Linear interpolation step per bin
   public final double _min, _maxEx; // Conservative Min/Max over whole collection.  _maxEx is Exclusive.
+  public final boolean _initNA;  // Does the initial histogram have any NAs? 
+                                 // Needed to correctly count actual number of bins of the initial histogram. 
   public final double _pred1; // We calculate what would be the SE for a possible fallback predictions _pred1
   public final double _pred2; // and _pred2. Currently used for min-max bounds in monotonic GBMs.
 
@@ -191,7 +193,7 @@ public final class DHistogram extends Iced {
       super("column=" + name + " leads to invalid histogram(check numeric range) -> [max=" + maxEx + ", min = " + min + "], step= " + step + ", xbin= " + xbins);
     }
   }
-  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx,
+  public DHistogram(String name, final int nbins, int nbins_cats, byte isInt, double min, double maxEx, boolean initNA,
                     double minSplitImprovement, SharedTreeModel.SharedTreeParameters.HistogramType histogramType, long seed, Key globalQuantilesKey,
                     Constraints cs) {
     assert nbins >= 1;
@@ -215,10 +217,11 @@ public final class DHistogram extends Iced {
     }
     _isInt = isInt;
     _name = name;
-    _min=min;
-    _maxEx=maxEx;               // Set Exclusive max
+    _min = min;
+    _maxEx = maxEx;             // Set Exclusive max
     _min2 = Double.MAX_VALUE;   // Set min/max to outer bounds
     _maxIn= -Double.MAX_VALUE;
+    _initNA = initNA;
     _minSplitImprovement = minSplitImprovement;
     _histoType = histogramType;
     _seed = seed;
@@ -282,17 +285,20 @@ public final class DHistogram extends Iced {
   public int nbins() { return _nbin; }
   // actual number of bins (possibly including NA bin)
   public int actNBins() {
-    return nbins() + (hasNABin() ? 1: 0);
+    return nbins() + (hasNABin() ? 1 : 0);
   }
   public double bins(int b) { return w(b); }
 
-  private boolean hasNABin() {
-    return _vals != null && wNA() > 0;
+  public boolean hasNABin() {
+    if (_vals == null)
+      return _initNA; // we are in the initial histogram (and didn't see the data yet)
+    else
+      return wNA() > 0;
   }
   
   // Big allocation of arrays
   public void init() { init(null);}
-  public void init(double [] vals) {
+  public void init(final double[] vals) {
     assert _vals == null;
     if (_histoType==SharedTreeModel.SharedTreeParameters.HistogramType.Random) {
       // every node makes the same split points
@@ -344,9 +350,10 @@ public final class DHistogram extends Iced {
         }
       }
     }
-    //otherwise AUTO/UniformAdaptive
-    assert(_nbin>0);
-    _vals = vals == null?MemoryManager.malloc8d(_vals_dim*_nbin+_vals_dim):vals;
+    // otherwise AUTO/UniformAdaptive
+    _vals = vals == null ? MemoryManager.malloc8d(_vals_dim * _nbin + _vals_dim) : vals;
+    // this always holds: _vals != null
+    assert _nbin > 0;
   }
 
   // Add one row to a bin found via simple linear interpolation.
@@ -403,9 +410,11 @@ public final class DHistogram extends Iced {
       final double maxIn = v.isCategorical() ? v.domain().length-1 : Math.min(v.max(), Double.MAX_VALUE); // inclusive vector max
       final double maxEx = v.isCategorical() ? v.domain().length : find_maxEx(maxIn,v.isInt()?1:0);     // smallest exclusive max
       final long vlen = v.length();
+      final long nacnt = v.naCnt();
       try {
-        hs[c] = v.naCnt() == vlen || v.isConst(true) ?
-            null : make(fr._names[c], nbins, (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0)), minIn, maxEx, seed, parms, globalQuantilesKey[c], cs);
+        byte type = (byte) (v.isCategorical() ? 2 : (v.isInt() ? 1 : 0));
+        hs[c] = nacnt == vlen || v.isConst(true) ?
+            null : make(fr._names[c], nbins, type, minIn, maxEx, nacnt > 0, seed, parms, globalQuantilesKey[c], cs);
       } catch(StepOutOfRangeException e) {
         hs[c] = null;
         Log.warn("Column " + fr._names[c]  + " with min = " + v.min() + ", max = " + v.max() + " has step out of range (" + e.getMessage() + ") and is ignored.");
@@ -415,14 +424,16 @@ public final class DHistogram extends Iced {
     return hs;
   }
   
-  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, Constraints cs) {
-    return new DHistogram(name,nbins, parms._nbins_cats, isInt, min, maxEx, parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs);
+  public static DHistogram make(String name, final int nbins, byte isInt, double min, double maxEx, boolean hasNAs, 
+                                long seed, SharedTreeModel.SharedTreeParameters parms, Key globalQuantilesKey, Constraints cs) {
+    return new DHistogram(name, nbins, parms._nbins_cats, isInt, min, maxEx, hasNAs, 
+            parms._min_split_improvement, parms._histogram_type, seed, globalQuantilesKey, cs);
   }
 
   // Pretty-print a histogram
   @Override public String toString() {
     StringBuilder sb = new StringBuilder();
-    sb.append(_name).append(":").append(_min).append("-").append(_maxEx).append(" step=" + (1 / _step) + " nbins=" + nbins() + " isInt=" + _isInt);
+    sb.append(_name).append(":").append(_min).append("-").append(_maxEx).append(" step=" + (1 / _step) + " nbins=" + nbins() + " actNBins=" + actNBins() + " isInt=" + _isInt);
     if( _vals != null ) {
       for(int b = 0; b< _nbin; b++ ) {
         sb.append(String.format("\ncnt=%f, [%f - %f], mean/var=", w(b),_min+b/_step,_min+(b+1)/_step));

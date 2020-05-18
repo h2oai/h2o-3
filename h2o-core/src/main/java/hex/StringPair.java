@@ -10,6 +10,6 @@ public class StringPair extends Iced<StringPair> {
     _b = b;
   }
 
-  String _a;
-  String _b;
+  public String _a;
+  public String _b;
 }

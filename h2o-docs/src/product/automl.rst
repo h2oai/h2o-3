@@ -468,51 +468,103 @@ Information about how to cite the H2O software in general is covered in the `H2O
 Random Grid Search Parameters
 -----------------------------
 
-AutoML performs hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In AutoML, the following hyperparameters are supported by grid search.  Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
+AutoML performs a hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In the table below, we list the hyperparameters, along with all potential values that can be randomly chosen in the search. If these models also have a non-default value set for a hyperparameter, we identify it in the list as well. Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
 
 
-**GLM Hyperparameters**
+GLM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
 
--  ``alpha``
--  ``missing_values_handling``
+This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GLMStepsProvider.java>`__.
 
-
-**XGBoost Hyperparameters**
-
--  ``ntrees``
--  ``max_depth``
--  ``min_rows``
--  ``min_sum_hessian_in_leaf``
--  ``sample_rate``
--  ``col_sample_rate``
--  ``col_sample_rate_per_tree``
--  ``booster``
--  ``reg_lambda``
--  ``reg_alpha``
-
-**GBM Hyperparameters**
-
--  ``histogram_type``
--  ``ntrees``
--  ``max_depth``
--  ``min_rows``
--  ``learn_rate``
--  ``sample_rate``
--  ``col_sample_rate``
--  ``col_sample_rate_per_tree``
--  ``min_split_improvement``
++-----------------------------+---------------------------------------------------------------------------------------------+
+| Parameter                   | Searchable Values                                                                           |
++=============================+=============================================================================================+
+| ``alpha``                   | ``{0.0, 0.2, 0.4, 0.6, 0.8, 1.0}``                                                          |
++-----------------------------+---------------------------------------------------------------------------------------------+
 
 
-**Deep Learning Hyperparameters**
+XGBoost Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~
 
--  ``epochs``
--  ``adaptive_rate``
--  ``activation``
--  ``rho``
--  ``epsilon``
--  ``input_dropout_ratio``
--  ``hidden``
--  ``hidden_dropout_ratios``
+This table shows the XGBoost values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/XGBoostSteps.java>`__.
+
++------------------------------+---------------------------------------------------------------------------------------------+
+| Parameter                    | Searchable Values                                                                           |
++==============================+=============================================================================================+
+| ``booster``                  | ``gbtree``, ``dart``                                                                        |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``col_sample_rate``          | ``{0.6, 0.8, 1.0}``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``col_sample_rate_per_tree`` | ``{0.7, 0.8, 0.9, 1.0}``                                                                    |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``max_depth``                | ``{5, 10, 15, 20}``                                                                         |          
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_rows``                 | ``{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0}``                                            |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_sum_hessian_in_leaf``  | ``{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0}``                                            |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``ntrees``                   | Hard coded: ``10000`` (true value found by early stopping)                                  |                                               
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``reg_alpha``                | ``{0.001, 0.01, 0.1, 1, 10, 100}``                                                          |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``reg_lambda``               | ``{0.001, 0.01, 0.1, 0.5, 1}``                                                              |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``sample_rate``              | ``{0.6, 0.8, 1.0}``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+
+
+GBM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GBMStepsProvider.java>`__.
+
++------------------------------+---------------------------------------------------------------------------------------------+
+| Parameter                    | Searchable Values                                                                           |
++==============================+=============================================================================================+
+| ``col_sample_rate``          | ``{0.4, 0.7, 1.0}``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``col_sample_rate_per_tree`` | ``{0.4, 0.7, 1.0}``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``learn_rate``               | Hard coded: ``0.1``                                                                         |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``max_depth``                | ``{3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17}``                                   |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_rows``                 | ``{1, 5, 10, 15, 30, 100}``                                                                 |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``min_split_improvement``    | ``{1e-4, 1e-5}``                                                                            |
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``ntrees``                   | Hard coded: ``10000``  (true value found by early stopping)                                 | 
++------------------------------+---------------------------------------------------------------------------------------------+
+| ``sample_rate``              | ``{0.50, 0.60, 0.70, 0.80, 0.90, 1.00}``                                                    |
++------------------------------+---------------------------------------------------------------------------------------------+
+
+
+Deep Learning Hyperparameters
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This table shows the Deep Learning values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/DeepLearningStepsProvider.java>`__.
+
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| Parameter                    | Searchable Values                                                                                        |
++==============================+==========================================================================================================+
+| ``activation``               | Hard coded: ``RectifierWithDropout``                                                                     |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``epochs``                   | Hard coded: ``10000`` (true value found by early stopping)                                               |                                                 
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``epsilon``                  | ``{1e-6, 1e-7, 1e-8, 1e-9}``                                                                             |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``hidden``                   |  - Grid search 1: ``{50}, {200}, {500}``                                                                 |
+|                              |  - Grid search 2: ``{50, 50}, {200, 200}, {500, 500}``                                                   |
+|                              |  - Grid search 3: ``{50, 50, 50}, {200, 200, 200}, {500, 500, 500}``                                     |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``hidden_dropout_ratios``    |  - Grid search 1: ``{0.1}, {0.2}, {0.3}, {0.4}, {0.5}``                                                  |
+|                              |  - Grid search 2: ``{0.1, 0.1}, {0.2, 0.2}, {0.3, 0.3}, {0.4, 0.4}, {0.5, 0.5}``                         |
+|                              |  - Grid search 3: ``{0.1, 0.1, 0.1}, {0.2, 0.2, 0.2} {0.3, 0.3, 0.3}, {0.4, 0.4, 0.4}, {0.5, 0.5, 0.5}`` |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``input_dropout_ratio``      | ``{0.0, 0.05, 0.1, 0.15, 0.2}``                                                                          |
++------------------------------+----------------------------------------------------------------------------------------------------------+
+| ``rho``                      | ``{0.9, 0.95, 0.99}``                                                                                    |
++------------------------------+----------------------------------------------------------------------------------------------------------+
 
 
 Additional Information

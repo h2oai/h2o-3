@@ -1944,8 +1944,8 @@ h2o.varimp <- function(object) {
   o <- object
   if( is(o, "H2OModel") ) {
     vi <- o@model$variable_importances
-    if( is.null(vi) ) { # may be glm
-      tvi <- object@model$standardized_coefficient_magnitudes 
+    if( is.null(vi) && !is.null(object@model$standardized_coefficient_magnitudes)) { # may be glm
+      tvi <- object@model$standardized_coefficient_magnitudes
       maxCoeff <- max(tvi$coefficients)
       sumCoeff <- sum(tvi$coefficients)
       scaledCoeff <- tvi$coefficients/maxCoeff
@@ -4773,6 +4773,7 @@ h2o.upload_mojo <- function(mojo_local_file_path){
 #'
 #' @param object An \linkS4class{H2OModel} object.
 #' @param threshold A threshold value from 0 to 1 included.
+#' @return Returns the previous threshold used in the model.
 #'
 #' @examples 
 #' \dontrun{

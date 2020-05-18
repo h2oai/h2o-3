@@ -40,7 +40,7 @@ test.glm.interactions3 <- function() {
     print( paste0("H2O Coeff2: ",  h2o_coef2))
     print( paste0("R   Coeff: ",  R_coef))
     expect_true( abs( h2o_coef1-R_coef) < 1e-11 )
-    expect_true( abs( h2o_coef2-h2o_coef2 ) < 1e-15  )
+    expect_true( abs( h2o_coef2-h2o_coef1 ) < 1e-15  )
 
 
 
