@@ -6,10 +6,7 @@ import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
 
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 public class XGBoostSaveMatrixTask extends AbstractXGBoostTask<XGBoostSaveMatrixTask> {
 
@@ -33,8 +30,8 @@ public class XGBoostSaveMatrixTask extends AbstractXGBoostTask<XGBoostSaveMatrix
             LOG.debug("Created directory for saving matrix " + directory.getAbsolutePath());
         }
         File matrixFile = getMatrixFile(new File(_saveMatrixDirectory));
-        try (DataOutputStream dos = new DataOutputStream(new FileOutputStream(matrixFile))) {
-            _matrixLoader.makeLocalMatrix().writeTo(dos);
+        try (ObjectOutputStream os = new ObjectOutputStream(new FileOutputStream(matrixFile))) {
+            os.writeObject(_matrixLoader.makeLocalMatrix());
         } catch (IOException e) {
             throw new RuntimeException("Failed to save the matrix to file-system.", e);
         }

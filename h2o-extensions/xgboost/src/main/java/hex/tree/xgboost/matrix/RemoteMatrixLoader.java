@@ -5,10 +5,7 @@ import hex.tree.xgboost.exec.XGBoostHttpClient;
 import org.apache.log4j.Logger;
 import water.H2O;
 
-import java.io.DataInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
+import java.io.*;
 
 public class RemoteMatrixLoader extends MatrixLoader {
 
@@ -21,11 +18,11 @@ public class RemoteMatrixLoader extends MatrixLoader {
         this.remoteDirectory = remoteDirectory;
         this.remoteNodes = nodes;
     }
-    
+
     private DMatrixProvider loadProvider(File file) {
-        try (DataInputStream is = new DataInputStream(new FileInputStream(file))) {
-            return MatrixLoader.DMatrixProvider.readFrom(is);
-        } catch (IOException e) {
+        try (ObjectInputStream is = new ObjectInputStream(new FileInputStream(file))) {
+            return (DMatrixProvider) is.readObject();
+        } catch (ClassNotFoundException | IOException e) {
             throw new RuntimeException("Failed to read matrix data into memory", e);
         }
     }

@@ -54,14 +54,14 @@ public class SparseMatrixFactory {
         return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di.fullN(), resp, weights, offsets).get();
     }
     
-    public static class SparseDMatrixProvider extends MatrixLoader.DMatrixProvider implements Serializable {
+    public static class SparseDMatrixProvider extends MatrixLoader.DMatrixProvider {
 
-        private final long[][] rowHeaders;
-        private final int[][] colIndices;
-        private final float[][] sparseData;
-        private final DMatrix.SparseType csr;
-        private final int shape;
-        private final long nonZeroElementsCount;
+        private long[][] rowHeaders;
+        private int[][] colIndices;
+        private float[][] sparseData;
+        private DMatrix.SparseType csr;
+        private int shape;
+        private long nonZeroElementsCount;
 
         public SparseDMatrixProvider(
             long[][] rowHeaders,
@@ -84,27 +84,35 @@ public class SparseMatrixFactory {
             this.nonZeroElementsCount = nonZeroElementsCount;
         }
 
+        public SparseDMatrixProvider() {}
+
         @Override
         public DMatrix makeDMatrix() throws XGBoostError {
-            return new DMatrix(rowHeaders, colIndices, sparseData, csr, shape, (int) actualRows+1, nonZeroElementsCount);
+            return new DMatrix(rowHeaders, colIndices, sparseData, csr, shape, (int) actualRows + 1, nonZeroElementsCount);
         }
 
         @Override
-        public void writeTo(DataOutputStream os) throws IOException {
-            os.write(SPARSE);
-            try (ObjectOutputStream out = new ObjectOutputStream(os)) {
-                // TODO find out if a custom serializer has any benefits over java serialization
-                out.writeObject(this);
-            }               
+        public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+            out.writeObject(rowHeaders);
+            out.writeObject(colIndices);
+            out.writeObject(sparseData);
+            out.writeInt(csr.ordinal());
+            out.writeInt(shape);
+            out.writeLong(nonZeroElementsCount);
         }
 
-        public static SparseDMatrixProvider readFrom(DataInputStream is) throws IOException {
-            try (ObjectInputStream ois = new ObjectInputStream(is)) {
-                return (SparseDMatrixProvider) ois.readObject();
-            } catch (ClassNotFoundException e) {
-                throw new RuntimeException("Failed to read DMatrix data.", e);
-            }
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+            rowHeaders = (long[][]) in.readObject();
+            colIndices = (int[][]) in.readObject();
+            sparseData = (float[][]) in.readObject();
+            csr = DMatrix.SparseType.values()[in.readInt()];
+            shape = in.readInt();
+            nonZeroElementsCount = in.readLong();
         }
+
     }
 
     private static SparseDMatrixProvider toDMatrix(

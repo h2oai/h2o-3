@@ -12,9 +12,7 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeightAndOffset;
 
@@ -41,7 +39,7 @@ public class DenseMatrixFactory {
     
     public static class DenseDMatrixProvider extends MatrixLoader.DMatrixProvider {
 
-        private final BigDenseMatrix data;
+        private BigDenseMatrix data;
 
         protected DenseDMatrixProvider(
             long actualRows,
@@ -54,39 +52,36 @@ public class DenseMatrixFactory {
             this.data = data;
         }
 
+        public DenseDMatrixProvider() {}
+
         @Override
         public DMatrix makeDMatrix() throws XGBoostError {
             return new DMatrix(data, Float.NaN);
         }
 
-        public void writeTo(DataOutputStream dos) throws IOException {
-            dos.write(DENSE);
-            dos.writeLong(actualRows);
-            writeFloatArray(dos, response);
-            writeFloatArray(dos, weights);
-            writeFloatArray(dos, offsets);
-            dos.writeInt(data.nrow);
-            dos.writeInt(data.ncol);
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+            out.writeInt(data.nrow);
+            out.writeInt(data.ncol);
             final long size = (long) data.nrow * data.ncol;
             for (long i = 0; i < size; i++) {
-                dos.writeFloat(data.get(i));
+                out.writeFloat(data.get(i));
             }
         }
-        
-        public static DenseDMatrixProvider readFrom(DataInputStream dis) throws IOException {
-            final long actualRows = dis.readLong();
-            final float[] response = readFloatArray(dis);
-            final float[] weights = readFloatArray(dis);
-            final float[] offsets = readFloatArray(dis);
-            final int nrow = dis.readInt();
-            final int ncol = dis.readInt();
-            BigDenseMatrix data = new BigDenseMatrix(nrow, ncol);
-            final long size = nrow * ncol;
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+            final int nrow = in.readInt();
+            final int ncol = in.readInt();
+            data = new BigDenseMatrix(nrow, ncol);
+            final long size = (long) nrow * ncol;
             for (long i = 0; i < size; i++) {
-                data.set(i, dis.readFloat());
+                data.set(i, in.readFloat());
             }
-            return new DenseDMatrixProvider(actualRows, response, weights, offsets, data);
         }
+
     }
     
     public static DenseDMatrixProvider dense(

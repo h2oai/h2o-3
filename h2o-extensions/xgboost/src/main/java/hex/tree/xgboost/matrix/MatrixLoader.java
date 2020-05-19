@@ -4,31 +4,16 @@ import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.Iced;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.Serializable;
+import java.io.*;
 
 public abstract class MatrixLoader extends Iced<MatrixLoader> {
     
-    public static abstract class DMatrixProvider implements Serializable {
+    public static abstract class DMatrixProvider implements Externalizable {
 
-        protected static final byte SPARSE = 1;
-        protected static final byte DENSE = 0;
-
-        public static DMatrixProvider readFrom(DataInputStream is) throws IOException {
-            int isSparse = is.read();
-            if (isSparse == SPARSE) {
-                return SparseMatrixFactory.SparseDMatrixProvider.readFrom(is);
-            } else {
-                return DenseMatrixFactory.DenseDMatrixProvider.readFrom(is);
-            }
-        }
-        
-        protected final long actualRows;
-        protected final float[] response;
-        protected final float[] weights;
-        protected final float[] offsets;
+        protected long actualRows;
+        protected float[] response;
+        protected float[] weights;
+        protected float[] offsets;
 
         protected DMatrixProvider(long actualRows, float[] response, float[] weights, float[] offsets) {
             this.actualRows = actualRows;
@@ -36,6 +21,8 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
             this.weights = weights;
             this.offsets = offsets;
         }
+        
+        public DMatrixProvider() {}
 
         protected abstract DMatrix makeDMatrix() throws XGBoostError;
         
@@ -52,29 +39,21 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
             return mat;
         }
 
-        public abstract void writeTo(DataOutputStream dos) throws IOException;
-
-        protected void writeFloatArray(DataOutputStream dos, float[] a) throws IOException {
-            if (a == null) {
-                dos.writeInt(-1);
-            } else {
-                dos.writeInt(a.length);
-                for (float v : a) dos.writeFloat(v);
-            }
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(actualRows);
+            out.writeObject(response);
+            out.writeObject(weights);
+            out.writeObject(offsets);
         }
 
-        public static float[] readFloatArray(DataInputStream dis) throws IOException {
-            int length = dis.readInt();
-            if (length == -1) {
-                return null;
-            } else {
-                float[] a = new float[length];
-                for (int i = 0; i < a.length; i++) a[i] = dis.readFloat();
-                return a;
-            }
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            actualRows = in.readLong();
+            response = (float[]) in.readObject();
+            weights = (float[]) in.readObject();
+            offsets = (float[]) in.readObject();
         }
-
-
     }
     
     public abstract DMatrixProvider makeLocalMatrix() throws IOException;
