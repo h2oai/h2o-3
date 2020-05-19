@@ -248,7 +248,7 @@ class SingleThreadRadixOrder extends DTask<SingleThreadRadixOrder> {
       _obatch = _o[batch0];
     }
     int offset = (int) (start % _batchSize);
-    for (int i=1; i<len; i++) {
+    for (int i=1; i<len; i++) { // like bubble sort
       int cmp = keycmp(_xbatch, offset+i, _xbatch, offset+i-1);  // TO DO: we don't need to compare the whole key here.  Set cmpLen < keySize
       if (cmp < 0) {
         System.arraycopy(_xbatch, (offset+i)*_keySize, keytmp, 0, _keySize);
