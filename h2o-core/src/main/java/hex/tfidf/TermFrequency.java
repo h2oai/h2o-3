@@ -26,12 +26,10 @@ public class TermFrequency {
         AstGroup.AGG[] aggs = new AstGroup.AGG[1];
         aggs[0] = new AstGroup.AGG(AstGroup.FCN.nrow, 0, AstGroup.NAHandling.ALL, -1);
 
-        int[] groupByColumnsNum = new int[]{ 0 };
-        int[] groupByColumnsStr = new int[]{ 1 };
+        int[] groupByColumns = new int[]{ 0, 1 };
 
         Frame tfFrame = new AstGroup().performGroupingWithAggregations(wordFrame,
-                                                                       groupByColumnsNum,
-                                                                       groupByColumnsStr,
+                                                                       groupByColumns,
                                                                        aggs).getFrame();
         tfFrame.setNames(OUTPUT_FRAME_COL_NAMES);
 

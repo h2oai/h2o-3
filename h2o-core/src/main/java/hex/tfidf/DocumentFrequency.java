@@ -25,25 +25,21 @@ public class DocumentFrequency {
     public Frame compute(Frame wordFrame) {
         AstGroup.AGG[] preprAggs = new AstGroup.AGG[]{};
 
-        int[] preprGroupByColumnsNum = new int[]{ 0 };
-        int[] preprGroupByColumnsStr = new int[]{ 1 };
+        int[] preprGroupByColumns = new int[]{ 0, 1 };
         
         // Preprocess frame to get single token per document
         Frame uniqueWordsPerDocFrame = new AstGroup().performGroupingWithAggregations(wordFrame,
-                                                                                      preprGroupByColumnsNum,
-                                                                                      preprGroupByColumnsStr,
+                                                                                      preprGroupByColumns,
                                                                                       preprAggs).getFrame();
         
         AstGroup.AGG[] aggs = new AstGroup.AGG[1];
         aggs[0] = new AstGroup.AGG(AstGroup.FCN.nrow, 0, AstGroup.NAHandling.ALL, -1);
         
-        int[] groupByColumnsNum = new int[]{ };
-        int[] groupByColumnsStr = new int[]{ 1 };
+        int[] groupByColumns = new int[]{ 1 };
         
         // Construct final frame with DF values
         Frame dfFrame = new AstGroup().performGroupingWithAggregations(uniqueWordsPerDocFrame,
-                                                                       groupByColumnsNum,
-                                                                       groupByColumnsStr,
+                                                                       groupByColumns,
                                                                        aggs).getFrame();
         dfFrame.setNames(OUTPUT_FRAME_COL_NAMES);
         
