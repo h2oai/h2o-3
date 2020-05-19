@@ -12,7 +12,6 @@ import hex.glm.GLMModel;
 import water.DKV;
 import water.Job;
 import water.Key;
-import water.util.PojoUtils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -145,11 +144,11 @@ public class StackedEnsembleStepsProvider
                     boolean hasMonotoneConstrains(Key<Model> modelKey) {
                         Model model = DKV.getGet(modelKey);
                         try {
-                            KeyValue[] mc = (KeyValue[]) PojoUtils.getFieldValue(
-                                    model._parms, "_monotone_constraints",
-                                    PojoUtils.FieldNaming.CONSISTENT);
+                            KeyValue[] mc = (KeyValue[]) model._parms.getClass()
+                                    .getField("_monotone_constraints")
+                                    .get(model._parms);
                             return mc != null && mc.length > 0;
-                        } catch (IllegalArgumentException e) {
+                        } catch (NoSuchFieldException | IllegalAccessException e) {
                             return false;
                         }
                     }
@@ -185,6 +184,18 @@ public class StackedEnsembleStepsProvider
                         return Stream.of(getTrainedModelsKeys())
                                 .filter(k -> !isStackedEnsemble(k) && hasMonotoneConstrains(k))
                                 .toArray(Key[]::new);
+                    }
+
+                    @Override
+                    protected StackedEnsembleParameters getStackedEnsembleParameters(Key<Model>[] baseModels, boolean isLast) {
+                        StackedEnsembleParameters params = super.getStackedEnsembleParameters(baseModels, isLast);
+                        GLMModel.GLMParameters metalearnerParams = new GLMModel.GLMParameters();
+                        // Ensure that we have non negative constraint to make it easier to reason about the whole ensemble
+                        // Hard wired in case Metalearner.Algorithm.AUTO changes its implementation
+                        metalearnerParams._non_negative = true;
+                        params._metalearner_algorithm = Metalearner.Algorithm.glm;
+                        params._metalearner_parameters = metalearnerParams;
+                        return params;
                     }
 
                     @Override
