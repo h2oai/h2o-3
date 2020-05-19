@@ -358,7 +358,7 @@ public class AutoMLTest extends water.TestUtil {
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
         put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 2*10);
+        put(Algo.StackedEnsemble, 3*10);
       }};
       int maxTotalWork = 0;
       for (Map.Entry<Algo, Integer> entry : defaultAllocs.entrySet()) {
@@ -398,7 +398,7 @@ public class AutoMLTest extends water.TestUtil {
         put(Algo.GBM, 5*10+1*60); // models+grids
         put(Algo.GLM, 1*10);
         put(Algo.XGBoost, 3*10+1*100); // models+grids
-        put(Algo.StackedEnsemble, 2*10);
+        put(Algo.StackedEnsemble, 3*10);
       }};
       Map<Algo, Integer> exploitationAllocs = new HashMap<Algo, Integer>(){{
         put(Algo.GBM, 1*10);
