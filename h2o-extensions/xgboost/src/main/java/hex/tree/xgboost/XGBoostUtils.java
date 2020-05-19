@@ -2,6 +2,7 @@ package hex.tree.xgboost;
 
 import hex.DataInfo;
 import hex.tree.xgboost.matrix.DenseMatrixFactory;
+import hex.tree.xgboost.matrix.MatrixLoader;
 import hex.tree.xgboost.matrix.SparseMatrixFactory;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
@@ -57,12 +58,12 @@ public class XGBoostUtils {
      * @return DMatrix
      * @throws XGBoostError
      */
-    public static DMatrix convertFrameToDMatrix(DataInfo di,
+    public static MatrixLoader.DMatrixProvider convertFrameToDMatrix(DataInfo di,
                                                 Frame frame,
                                                 String response,
                                                 String weight,
                                                 String offset,
-                                                boolean sparse) throws XGBoostError {
+                                                boolean sparse) {
         assert di != null;
         int[] chunks = VecUtils.getLocalChunkIds(frame.anyVec());
         final Vec responseVec = frame.vec(response);
@@ -77,7 +78,7 @@ public class XGBoostUtils {
         }
         final int nRows = (int) nRowsL;
 
-        final DMatrix trainMat;
+        final MatrixLoader.DMatrixProvider trainMat;
 
         // In the future this 2 arrays might also need to be rewritten into float[][],
         // but only if we want to handle datasets over 2^31-1 on a single machine. For now I'd leave it as it is.
@@ -96,15 +97,6 @@ public class XGBoostUtils {
         } else {
             LOG.debug("Treating matrix as dense.");
             trainMat = DenseMatrixFactory.dense(frame, chunks, nRows, nRowsByChunk, weightVec, offsetsVec, responseVec, di, resp, weights, offsets);
-        }
-
-        assert trainMat.rowNum() == nRows;
-        trainMat.setLabel(resp);
-        if (weights != null) {
-            trainMat.setWeight(weights);
-        }
-        if (offsets != null) {
-            trainMat.setBaseMargin(offsets);
         }
         return trainMat;
     }

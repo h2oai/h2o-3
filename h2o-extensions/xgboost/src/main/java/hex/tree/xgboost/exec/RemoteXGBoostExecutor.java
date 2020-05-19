@@ -30,7 +30,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         DataInfo dataInfo = model.model_info().dataInfo();
         req.parms = XGBoostModel.createParamsMap(model._parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = BoosterParms.fromMap(req.parms).toTwoDimTable();
-        MatrixLoader loader = new FrameMatrixLoader(model, train);
+        FrameMatrixLoader loader = new FrameMatrixLoader(model, train);
         req.matrix_dir_path = H2O.ICE_ROOT.toString() + "/" + modelKey.toString();
         req.save_matrix_path = model._parms._save_matrix_directory;
         req.nodes = collectNodes(trainFrameNodes);

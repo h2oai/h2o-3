@@ -2,37 +2,62 @@ package hex.tree.xgboost.task;
 
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.matrix.MatrixLoader;
+import ml.dmlc.xgboost4j.java.DMatrix;
+import ml.dmlc.xgboost4j.java.XGBoostError;
+import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.IcedHashMapGeneric;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 /**
  * Initializes XGBoost training (converts Frame to set of node-local DMatrices)
  */
-public class XGBoostSetupTask extends XGBoostSaveMatrixTask {
+public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
+
+  private static final Logger LOG = Logger.getLogger(XGBoostSetupTask.class);
 
   private final BoosterParms _boosterParms;
   private final byte[] _checkpoint;
   private final IcedHashMapGeneric.IcedHashMapStringString _rabitEnv;
+  private final MatrixLoader _matrixLoader;
+  private final String _saveMatrixDirectory;
 
   public XGBoostSetupTask(
       Key modelKey, String saveMatrixDirectory, BoosterParms boosterParms,
       byte[] checkpointToResume, Map<String, String> rabitEnv, boolean[] nodes,
-      MatrixLoader loader
+      MatrixLoader matrixLoader
   ) {
-    super(modelKey, saveMatrixDirectory, nodes, loader);
+    super(modelKey, nodes);
     _boosterParms = boosterParms;
     _checkpoint = checkpointToResume;
+    _matrixLoader = matrixLoader;
+    _saveMatrixDirectory = saveMatrixDirectory;
     (_rabitEnv = new IcedHashMapGeneric.IcedHashMapStringString()).putAll(rabitEnv);
   }
 
   @Override
   protected void execute() {
-    super.execute();
+    DMatrix matrix;
+    try {
+      matrix = _matrixLoader.makeLocalMatrix().get();
+    } catch (XGBoostError | IOException e) {
+      throw new IllegalStateException("Failed to create XGBoost DMatrix", e);
+    }
+    if (_saveMatrixDirectory != null) {
+      File directory = new File(_saveMatrixDirectory);
+      if (directory.mkdirs()) {
+        LOG.debug("Created directory for matrix export: " + directory.getAbsolutePath());
+      }
+      File path = XGBoostSaveMatrixTask.getMatrixFile(directory);
+      LOG.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
+      matrix.saveBinary(path.getAbsolutePath());
+    }
     if (matrix == null)
       throw new IllegalStateException("Node " + H2O.SELF + " is supposed to participate in XGB training " +
               "but it doesn't have a DMatrix!");

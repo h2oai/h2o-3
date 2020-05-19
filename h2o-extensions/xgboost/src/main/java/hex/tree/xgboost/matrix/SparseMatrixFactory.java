@@ -11,9 +11,11 @@ import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 
-import static hex.tree.xgboost.matrix.MatrixFactoryUtils.*;
+import java.io.*;
+
+import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeightAndOffset;
+import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseWeightAndOffset;
 import static water.MemoryManager.*;
-import static water.MemoryManager.malloc4;
 
 /*
 - truly sparse matrix - no categoricals
@@ -21,10 +23,10 @@ import static water.MemoryManager.malloc4;
  */
 public class SparseMatrixFactory {
 
-    public static DMatrix csr(
+    public static MatrixLoader.DMatrixProvider csr(
         Frame frame, int[] chunksIds, Vec weightsVec, Vec offsetsVec, Vec responseVec, // for setupLocal
         DataInfo di, float[] resp, float[] weights, float[] offsets
-    ) throws XGBoostError {
+    ) {
 
         SparseMatrixDimensions sparseMatrixDimensions = calculateCSRMatrixDimensions(frame, chunksIds, weightsVec, di);
         SparseMatrix sparseMatrix = allocateCSRMatrix(sparseMatrixDimensions);
@@ -34,7 +36,7 @@ public class SparseMatrixFactory {
             di, sparseMatrix, sparseMatrixDimensions,
             responseVec, resp, weights, offsets);
 
-        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di.fullN());
+        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di.fullN(), resp, weights, offsets);
     }
 
     public static DMatrix csr(
@@ -49,15 +51,68 @@ public class SparseMatrixFactory {
             chunks, weight,
             di, sparseMatrix._rowHeaders, sparseMatrix._sparseData, sparseMatrix._colIndices,
             respIdx, resp, weights, offsetIdx, offsets);
-        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di.fullN());
+        return toDMatrix(sparseMatrix, sparseMatrixDimensions, actualRows, di.fullN(), resp, weights, offsets).get();
+    }
+    
+    public static class SparseDMatrixProvider extends MatrixLoader.DMatrixProvider implements Serializable {
+
+        private final long[][] rowHeaders;
+        private final int[][] colIndices;
+        private final float[][] sparseData;
+        private final DMatrix.SparseType csr;
+        private final int shape;
+        private final long nonZeroElementsCount;
+
+        public SparseDMatrixProvider(
+            long[][] rowHeaders,
+            int[][] colIndices,
+            float[][] sparseData,
+            DMatrix.SparseType csr,
+            int shape,
+            long nonZeroElementsCount,
+            int actualRows,
+            float[] response,
+            float[] weights,
+            float[] offsets
+        ) {
+            super(actualRows, response, weights, offsets);
+            this.rowHeaders = rowHeaders;
+            this.colIndices = colIndices;
+            this.sparseData = sparseData;
+            this.csr = csr;
+            this.shape = shape;
+            this.nonZeroElementsCount = nonZeroElementsCount;
+        }
+
+        @Override
+        public DMatrix makeDMatrix() throws XGBoostError {
+            return new DMatrix(rowHeaders, colIndices, sparseData, csr, shape, (int) actualRows+1, nonZeroElementsCount);
+        }
+
+        @Override
+        public void writeTo(DataOutputStream os) throws IOException {
+            os.write(SPARSE);
+            try (ObjectOutputStream out = new ObjectOutputStream(os)) {
+                // TODO find out if a custom serializer has any benefits over java serialization
+                out.writeObject(this);
+            }               
+        }
+
+        public static SparseDMatrixProvider readFrom(DataInputStream is) throws IOException {
+            try (ObjectInputStream ois = new ObjectInputStream(is)) {
+                return (SparseDMatrixProvider) ois.readObject();
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("Failed to read DMatrix data.", e);
+            }
+        }
     }
 
-    private static DMatrix toDMatrix(SparseMatrix sm, SparseMatrixDimensions smd, int actualRows, int shape) throws XGBoostError {
-        DMatrix trainMat = new DMatrix(sm._rowHeaders, sm._colIndices, sm._sparseData,
-            DMatrix.SparseType.CSR, shape, actualRows + 1,
-            smd._nonZeroElementsCount);
-        assert trainMat.rowNum() == actualRows;
-        return trainMat;
+    private static SparseDMatrixProvider toDMatrix(
+        SparseMatrix sm, SparseMatrixDimensions smd, int actualRows, int shape, float[] resp, float[] weights, float[] offsets) {
+        return new SparseDMatrixProvider(
+            sm._rowHeaders, sm._colIndices, sm._sparseData, DMatrix.SparseType.CSR, shape, smd._nonZeroElementsCount, 
+            actualRows, resp, weights, offsets
+        );
     }
     
     static class NestedArrayPointer {

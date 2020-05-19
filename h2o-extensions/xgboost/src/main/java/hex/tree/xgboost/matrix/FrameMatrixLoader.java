@@ -3,8 +3,6 @@ package hex.tree.xgboost.matrix;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.XGBoostModelInfo;
 import hex.tree.xgboost.XGBoostUtils;
-import ml.dmlc.xgboost4j.java.DMatrix;
-import ml.dmlc.xgboost4j.java.XGBoostError;
 import water.fvec.Frame;
 
 public class FrameMatrixLoader extends MatrixLoader {
@@ -22,7 +20,7 @@ public class FrameMatrixLoader extends MatrixLoader {
     }
 
     @Override
-    public DMatrix makeLocalMatrix() throws XGBoostError {
+    public DMatrixProvider makeLocalMatrix() {
         return XGBoostUtils.convertFrameToDMatrix(
             _modelInfo.dataInfo(),
             _trainFrame,
