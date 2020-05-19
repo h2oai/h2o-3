@@ -136,7 +136,7 @@ public class XGBoostUtilsTest extends TestUtil {
                 frame, null, true, DataInfo.TransformType.NONE, false, 
                 false, false), 
             frame, "C3", null, null, true
-        );
+        ).get();
         assertNotNull(response);
         assertEquals(3, response.rowNum());
         assertArrayEquals(arf(0, 3, 0), response.getLabel(), 0f);
