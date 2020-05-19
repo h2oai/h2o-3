@@ -37,7 +37,7 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         MatrixLoader loader = new RemoteMatrixLoader(init.matrix_dir_path, init.nodes);
         byte[] checkpoint = null;
         if (init.has_checkpoint) {
-            XGBoostHttpClient http = new XGBoostHttpClient(init.nodes[0]);
+            XGBoostHttpClient http = new XGBoostHttpClient(init.nodes[0], H2O.ARGS.jks != null);
             XGBoostExecReq.GetCheckPoint req = new XGBoostExecReq.GetCheckPoint();
             req.matrix_dir_path = init.matrix_dir_path;
             checkpoint = http.postBytes(null, "getCheckpoint", req);

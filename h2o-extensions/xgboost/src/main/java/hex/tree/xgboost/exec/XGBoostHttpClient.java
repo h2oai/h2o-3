@@ -6,18 +6,24 @@ import hex.schemas.XGBoostExecRespV3;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.conn.ssl.NoopHostnameVerifier;
+import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
+import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.ssl.SSLContexts;
 import org.apache.http.util.EntityUtils;
 import org.apache.log4j.Logger;
 import water.Key;
 
+import javax.net.ssl.SSLContext;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.http.HttpHeaders.CONTENT_TYPE;
@@ -28,6 +34,7 @@ public class XGBoostHttpClient {
     private static final Logger LOG = Logger.getLogger(XGBoostHttpClient.class);
 
     private final String baseUri;
+    private final HttpClientBuilder clientBuilder;
 
     interface ResponseTransformer<T> {
         T transform(HttpEntity e) throws IOException;
@@ -49,8 +56,28 @@ public class XGBoostHttpClient {
         return resp;
     };
 
-    public XGBoostHttpClient(String baseUri) {
-        this.baseUri = "http://" + baseUri + "/3/XGBoostExecutor.";
+    public XGBoostHttpClient(String baseUri, boolean https) {
+        this.baseUri = (https ? "https" : "http") + "://" + baseUri + "/3/XGBoostExecutor.";
+        this.clientBuilder = createClientBuilder(https);
+    }
+
+    private HttpClientBuilder createClientBuilder(boolean https) {
+        try {
+            HttpClientBuilder builder = HttpClientBuilder.create();
+            if (https) {
+                SSLContext sslContext = SSLContexts.custom()
+                    .loadTrustMaterial(TrustSelfSignedStrategy.INSTANCE)
+                    .build();
+                SSLConnectionSocketFactory sslFactory = new SSLConnectionSocketFactory(
+                    sslContext,
+                    NoopHostnameVerifier.INSTANCE
+                );
+                builder.setSSLSocketFactory(sslFactory);
+            }
+            return builder;
+        } catch (GeneralSecurityException e) {
+            throw new RuntimeException("Failed to initialize HTTP client.", e);
+        }
     }
 
     public XGBoostExecRespV3 postJson(Key key, String method, XGBoostExecReq reqContent) {
@@ -74,7 +101,7 @@ public class XGBoostHttpClient {
         HttpPost httpReq = new HttpPost(baseUri + method);
         httpReq.setEntity(new StringEntity(req.toJsonString(), UTF_8));
         httpReq.setHeader(CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
-        try (CloseableHttpClient client = HttpClientBuilder.create().build();
+        try (CloseableHttpClient client = clientBuilder.build();
              CloseableHttpResponse response = client.execute(httpReq)) {
             if (response.getStatusLine().getStatusCode() != OK.getCode()) {
                 throw new IllegalStateException("Unexpected response (status: " + response.getStatusLine() + ").");

@@ -22,7 +22,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     public final Key modelKey;
     
     public RemoteXGBoostExecutor(String remoteUri, XGBoostModel model, Frame train) {
-        http = new XGBoostHttpClient(remoteUri);
+        http = new XGBoostHttpClient(remoteUri, H2O.ARGS.jks != null);
         modelKey = model._key;
         XGBoostExecReq.Init req = new XGBoostExecReq.Init();
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);

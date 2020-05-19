@@ -36,7 +36,7 @@ public class RemoteMatrixLoader extends MatrixLoader {
             final XGBoostExecReq.GetMatrix req = new XGBoostExecReq.GetMatrix();
             req.matrix_dir_path = remoteDirectory;
             LOG.debug("Downloading matrix data into " + tempFile);
-            final XGBoostHttpClient http = new XGBoostHttpClient(remoteNode);
+            final XGBoostHttpClient http = new XGBoostHttpClient(remoteNode, H2O.ARGS.jks != null);
             http.postFile(null, "getMatrix", req, tempFile);
             LOG.info("Downloading of remote matrix finished. Loading into memory.");
             return loadProvider(tempFile);
