@@ -34,8 +34,8 @@ Example
         x <- setdiff(names(train), y)
 
         # Convert the response column in train and test datasets to a factor    
-        train[,y] <- as.factor(train[,y])
-        test[,y] <- as.factor(test[,y])
+        train[, y] <- as.factor(train[, y])
+        test[, y] <- as.factor(test[, y])
 
 
         # Set number of folds for base learners   

@@ -29,17 +29,17 @@ Example
         higgs <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/higgs_train_5k.csv")
 
         # split the dataset into training and blending frames
-        higgs.splits <- h2o.splitFrame(data =  higgs, ratios = .8, seed = 1234)
-        train <- higgs.splits[[1]]
-        blend <- higgs.splits[[2]]
+        higgs_splits <- h2o.splitFrame(data =  higgs, ratios = 0.8, seed = 1234)
+        train <- higgs_splits[[1]]
+        blend <- higgs_splits[[2]]
 
         # Identify predictors and response
         y <- "response"
         x <- setdiff(names(train), y)
 
         # Convert the response column in train and test datasets to a factor    
-        train[,y] <- as.factor(train[,y])
-        blend[,y] <- as.factor(blend[,y])
+        train[, y] <- as.factor(train[, y])
+        blend[, y] <- as.factor(blend[, y])
 
         # Set number of folds for base learners   
         nfolds <- 3  

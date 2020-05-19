@@ -40,9 +40,9 @@ Example
 		insurance['Age'] <- as.factor(insurance['Age'])
 
 		# split into train and validation sets
-		insurance.splits <- h2o.splitFrame(data =  insurance, ratios = .8, seed = 1234)
-		train <- insurance.splits[[1]]
-		valid <- insurance.splits[[2]]
+		insurance_splits <- h2o.splitFrame(data =  insurance, ratios = 0.8, seed = 1234)
+		train <- insurance_splits[[1]]
+		valid <- insurance_splits[[2]]
 
 		# try using the `tweedie_power` parameter:
 		# train your model, where you specify the distribution as tweedie
@@ -73,8 +73,8 @@ Example
 		                 seed = 1234)
 
 		# Sort the grid models by MSE
-		sortedGrid <- h2o.getGrid("insurance_grid", sort_by = "mse", decreasing = FALSE)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("insurance_grid", sort_by = "mse", decreasing = FALSE)
+		sorted_grid
 
    .. code-tab:: python
 

@@ -44,7 +44,7 @@ cars <- h2o.importFile(f)
 
 # Set predictors and response; set response as a factor
 cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-predictors <- c("displacement","power","weight","acceleration","year")
+predictors <- c("displacement", "power", "weight", "acceleration", "year")
 response <- "economy_20mpg"
 
 # Train the DRF model

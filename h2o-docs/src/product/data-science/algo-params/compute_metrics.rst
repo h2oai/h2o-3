@@ -33,12 +33,12 @@ Example
     	prostate$DPROS <- as.factor(prostate$DPROS)
 
     	# Compare with Naive Bayes when x = 3:9, y = 2, and do not compute metrics
-    	prostate.nb <- h2o.naiveBayes(x = 3:9, y = 2, training_frame = prostate, laplace = 0, compute_metrics = FALSE)
-    	print(prostate.nb) # Note that metrics are not computed and, thus, do not display.
+    	prostate_nb <- h2o.naiveBayes(x = 3:9, y = 2, training_frame = prostate, laplace = 0, compute_metrics = FALSE)
+    	print(prostate_nb) # Note that metrics are not computed and, thus, do not display.
 
     	# Predict on training data
-    	prostate.pred <- predict(prostate.nb, prostate)
-    	print(head(prostate.pred))
+    	prostate_pred <- predict(prostate_nb, prostate)
+    	print(head(prostate_pred))
 
    .. code-tab:: python
 

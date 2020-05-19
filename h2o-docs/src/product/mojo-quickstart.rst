@@ -42,17 +42,17 @@ Step 1: Build and Extract a Model
 
         # 2. Run the following commands to build a simple GBM model.
         library(h2o)
-        h2o.init(nthreads=-1)
+        h2o.init(nthreads = -1)
         path <- system.file("extdata", "prostate.csv", package="h2o")
         h2o_df <- h2o.importFile(path)
         h2o_df$CAPSULE <- as.factor(h2o_df$CAPSULE)
-        model <- h2o.gbm(y="CAPSULE",
-                         x=c("AGE", "RACE", "PSA", "GLEASON"),
-                         training_frame=h2o_df,
-                         distribution="bernoulli",
-                         ntrees=100,
-                         max_depth=4,
-                         learn_rate=0.1)
+        model <- h2o.gbm(y = "CAPSULE",
+                         x = c("AGE", "RACE", "PSA", "GLEASON"),
+                         training_frame = h2o_df,
+                         distribution = "bernoulli",
+                         ntrees = 100,
+                         max_depth = 4,
+                         learn_rate = 0.1)
 
         # Download the MOJO and the resulting h2o-genmodel.jar file 
         # to a new **experiment** folder. Note that the ``h2o-genmodel.jar`` file 

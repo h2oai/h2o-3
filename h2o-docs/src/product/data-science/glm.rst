@@ -956,25 +956,25 @@ Below is a simple example showing how to build a Generalized Linear model.
     predictors <- c("AGE", "RACE", "VOL", "GLEASON")
     response <- "CAPSULE"
 
-    prostate.glm <- h2o.glm(family= "binomial", 
-                            x= predictors, 
-                            y=response, 
-                            training_frame=df, 
+    prostate_glm <- h2o.glm(family = "binomial", 
+                            x = predictors, 
+                            y = response, 
+                            training_frame = df, 
                             lambda = 0, 
                             compute_p_values = TRUE)
 
     # Coefficients that can be applied to the non-standardized data
-    h2o.coef(prostate.glm)
+    h2o.coef(prostate_glm)
       Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
     -6.67515539 -0.44278752 -0.58992326 -0.01788870 -0.01278335  1.25035939
 
     # Coefficients fitted on the standardized data (requires standardize=TRUE, which is on by default)
-    h2o.coef_norm(prostate.glm)
+    h2o.coef_norm(prostate_glm)
       Intercept      RACE.1      RACE.2         AGE         VOL     GLEASON 
     -0.07610006 -0.44278752 -0.58992326 -0.11676080 -0.23454402  1.36533415 
 
     # Print the coefficients table
-    prostate.glm@model$coefficients_table
+    prostate_glm@model$coefficients_table
     Coefficients: glm coefficients
           names coefficients std_error   z_value  p_value standardized_coefficients
     1 Intercept    -6.675155  1.931760 -3.455478 0.000549                 -0.076100
@@ -985,20 +985,20 @@ Below is a simple example showing how to build a Generalized Linear model.
     6   GLEASON     1.250359  0.156156  8.007103 0.000000                  1.365334
 
     # Print the standard error
-    prostate.glm@model$coefficients_table$std_error
+    prostate_glm@model$coefficients_table$std_error
     [1] 1.931760363 1.324230832 1.373465793 0.018701933 0.007514354 0.156156271
 
     # Print the p values
-    prostate.glm@model$coefficients_table$p_value
+    prostate_glm@model$coefficients_table$p_value
     [1] 5.493181e-04 7.380978e-01 6.675490e-01 3.388116e-01 8.890718e-02
     [6] 1.221245e-15
 
     # Print the z values
-    prostate.glm@model$coefficients_table$z_value
+    prostate_glm@model$coefficients_table$z_value
     [1] -3.4554780 -0.3343734 -0.4295143 -0.9565159 -1.7011907  8.0071033
 
     # Retrieve a graphical plot of the standardized coefficient magnitudes
-    h2o.std_coef_plot(prostate.glm)
+    h2o.std_coef_plot(prostate_glm)
 
    .. code-tab:: python
 

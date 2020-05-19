@@ -24,7 +24,7 @@ H2O lazily slices out columns of data and will only materialize a shared copy up
     	[150 rows x 5 columns] 
 
     	# Slice 1 column by index
-    	c1 <- df[,1]
+    	c1 <- df[, 1]
     	print(c1)
     	  sepal_len
     	1       5.1

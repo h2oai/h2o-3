@@ -41,15 +41,15 @@ Example
         h2odata$Device <- h2o.asfactor(h2odata$Device)
 
         # Train and view the model
-        m11H2O <- h2o.glm(x=xlist, 
-                          y=yresp, 
-                          family="gaussian", 
+        m11H2O <- h2o.glm(x = xlist, 
+                          y = yresp, 
+                          family = "gaussian", 
                           rand_family = c("gaussian"), 
-                          rand_link=c("identity"), 
-                          training_frame=h2odata, 
-                          HGLM=TRUE, 
-                          random_columns=z, 
-                          calc_like=TRUE)
+                          rand_link = c("identity"), 
+                          training_frame = h2odata, 
+                          HGLM = TRUE, 
+                          random_columns = z, 
+                          calc_like = TRUE)
         print(m11H2O)
 
    .. code-tab:: python

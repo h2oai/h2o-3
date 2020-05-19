@@ -48,7 +48,7 @@
 #' cars <- h2o.importFile(f)
 #' 
 #' # Set the predictors
-#' predictors <- c("displacement","power","weight","acceleration","year")
+#' predictors <- c("displacement", "power", "weight", "acceleration", "year")
 #' 
 #' # Train the IF model
 #' cars_if <- h2o.isolationForest(x = predictors, training_frame = cars,

@@ -103,8 +103,8 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     titanic[response] <- as.factor(titanic[response])
 
     # Split the dataset into train and test
-    seed=1234
-    splits <- h2o.splitFrame(titanic, seed = seed, ratios = c(0.8), destination_frames = c("train", "test"))
+    seed <- 1234
+    splits <- h2o.splitFrame(titanic, seed = seed, ratios = c(0.8))
 
     train <- splits[[1]]
     test <- splits[[2]]
@@ -123,12 +123,18 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     noise = 0.15
 
     # Train a TE model
-    target_encoder <- h2o.targetencoder(training_frame = train, x = encoded_columns, y = "survived",
-                                            fold_column="fold", data_leakage_handling="KFold",
-                                            blending=blended_avg, k=inflection_point, f=smoothing, noise=noise)
+    target_encoder <- h2o.targetencoder(training_frame = train, 
+                                        x = encoded_columns, 
+                                        y = "survived", 
+                                        fold_column = "fold", 
+                                        data_leakage_handling = "KFold", 
+                                        blending = blended_avg, 
+                                        k = inflection_point, 
+                                        f = smoothing, 
+                                        noise = noise)
 
     # New target encoded train and test sets
-    transformed_train <- h2o.transform(target_encoder, train, data_leakage_handling="KFold", noise=noise)
+    transformed_train <- h2o.transform(target_encoder, train, data_leakage_handling = "KFold", noise = noise)
     transformed_test <- h2o.transform(target_encoder, test, noise=0.0)
 
     # Train a GBM (with TE) model
@@ -138,18 +144,18 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     gbm_with_te <- h2o.gbm(x = features_with_te,
                            y = response,
                            training_frame = transformed_train,
-                           fold_column="fold",
-                           score_tree_interval=5,
+                           fold_column = "fold",
+                           score_tree_interval = 5,
                            ntrees = 10000,
                            max_depth = 6,
                            min_rows = 1,
-                           sample_rate=0.8,
-                           col_sample_rate=0.8,
-                           seed=1234,
-                           stopping_rounds=5,
-                           stopping_metric="auto",
-                           stopping_tolerance=0.001,
-                           model_id="gbm_with_te")
+                           sample_rate = 0.8,
+                           col_sample_rate = 0.8,
+                           seed = 1234,
+                           stopping_rounds = 5,
+                           stopping_metric = "auto",
+                           stopping_tolerance = 0.001,
+                           model_id = "gbm_with_te")
 
     # Measuring performance on a transformed_test split
     with_te_test_predictions <- predict(gbm_with_te, transformed_test)
@@ -164,18 +170,18 @@ In this example, we will be trying to predict ``survived`` using the popular tit
     gbm_baseline <- h2o.gbm(x = features,
                             y = response,
                             training_frame = train,
-                            fold_column="fold",
-                            score_tree_interval=5,
+                            fold_column = "fold",
+                            score_tree_interval = 5,
                             ntrees = 10000,
                             max_depth = 6,
                             min_rows = 1,
-                            sample_rate=0.8,
-                            col_sample_rate=0.8,
-                            seed=1234,
-                            stopping_rounds=5,
-                            stopping_metric="auto",
-                            stopping_tolerance=0.001,
-                            model_id="gbm_baseline")
+                            sample_rate = 0.8,
+                            col_sample_rate = 0.8,
+                            seed = 1234,
+                            stopping_rounds = 5,
+                            stopping_metric = "auto",
+                            stopping_tolerance = 0.001,
+                            model_id = "gbm_baseline")
 
     # Measuring performance on a test split
     baseline_test_predictions <- predict(gbm_baseline, test)

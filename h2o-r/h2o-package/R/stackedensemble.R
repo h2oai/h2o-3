@@ -53,8 +53,8 @@
 #' x <- setdiff(names(train), y)
 #' 
 #' # For binary classification, response should be a factor
-#' train[,y] <- as.factor(train[,y])
-#' test[,y] <- as.factor(test[,y])
+#' train[, y] <- as.factor(train[, y])
+#' test[, y] <- as.factor(test[, y])
 #' 
 #' # Number of CV folds
 #' nfolds <- 5

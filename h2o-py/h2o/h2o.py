@@ -1192,6 +1192,7 @@ def remove_all(retained=None):
     Removes all objects from H2O with possibility to specify models and frames to retain.
     Retained keys must be keys of models and frames only. For models retained, training and validation frames are retained as well.
     Cross validation models of a retained model are NOT retained automatically, those must be specified explicitely.
+    
     :param retained: Keys of models and frames to retain
 
     :examples:

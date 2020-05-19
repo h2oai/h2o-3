@@ -103,9 +103,9 @@ h2o.removeAll <- function(timeout_secs=0, retained_elements = c()) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' iris_hex <- as.h2o(iris)
-#' model <- h2o.glm(1:4,5,training = iris_hex, family = "multinomial")
-#' h2o.rm(iris_hex)
+#' iris <- as.h2o(iris)
+#' model <- h2o.glm(1:4,5,training = iris, family = "multinomial")
+#' h2o.rm(iris)
 #' }
 #' @export
 h2o.rm <- function(ids, cascade=TRUE) {
@@ -146,7 +146,7 @@ h2o.rm <- function(ids, cascade=TRUE) {
 #' train <- h2o.importFile(f)
 #' y <- "species"
 #' x <- setdiff(names(train), y)
-#' train[,y] <- as.factor(train[,y])
+#' train[, y] <- as.factor(train[, y])
 #' nfolds <- 5
 #' num_base_models <- 2
 #' my_gbm <- h2o.gbm(x = x, y = y, training_frame = train, 

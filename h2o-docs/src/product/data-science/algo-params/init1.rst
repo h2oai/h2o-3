@@ -64,10 +64,10 @@ Example
 
 		# set the predictor names 
 		# ignore the 8th column which has the prior known clusters for this dataset
-		predictors <-colnames(seeds)[-length(seeds)]
+		predictors <- colnames(seeds)[-length(seeds)]
 
 		# split into train and validation
-		seeds_splits <- h2o.splitFrame(data = seeds, ratios = .8, seed = 1234)
+		seeds_splits <- h2o.splitFrame(data = seeds, ratios = 0.8, seed = 1234)
 		train <- seeds_splits[[1]]
 		valid <- seeds_splits[[2]]
 
@@ -92,8 +92,8 @@ Example
 		                 search_criteria = list(strategy = "Cartesian"), seed = 1234)
 
 		## Sort the grid models by TotSS
-		sortedGrid <- h2o.getGrid("seeds_grid", sort_by  = "tot_withinss", decreasing = F)
-		sortedGrid
+		sorted_grid <- h2o.getGrid("seeds_grid", sort_by  = "tot_withinss", decreasing = F)
+		sorted_grid
 
 
 	
