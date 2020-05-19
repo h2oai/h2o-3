@@ -132,7 +132,7 @@ public class AstTfIdfTest extends TestUtil {
                                     .build();
             Scope.track(inputFrame);
 
-            Val resVal = Rapids.exec("(tf-idf " + frameName + ")", sess);
+            Val resVal = Rapids.exec("(tf-idf " + frameName + " true)", sess);
             Assert.assertTrue(resVal instanceof ValFrame);
             Frame resFrame = resVal.getFrame();
             Scope.track(resFrame);
