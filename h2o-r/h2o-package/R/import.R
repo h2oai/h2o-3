@@ -29,6 +29,8 @@
 #'
 #' @param path The complete URL or normalized file path of the file to be
 #'        imported. Each row of data appears as one line of the file.
+#' @param destination_frame (Optional) The unique hex key assigned to the imported file. If none
+#'        is given, a key will automatically be generated based on the URL path.
 #' @param pattern (Optional) Character string containing a regular expression to match file(s) in
 #'        the folder.
 #' @param parse (Optional) A logical value indicating whether the file should be
