@@ -1,6 +1,4 @@
-package hex.genmodel.algos.klime;
-
-import hex.genmodel.easy.prediction.RegressionModelPrediction;
+package hex.genmodel.easy.prediction;
 
 public class KLimeModelPrediction extends RegressionModelPrediction {
     /**

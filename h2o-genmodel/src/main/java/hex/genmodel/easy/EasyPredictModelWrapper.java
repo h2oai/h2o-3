@@ -791,6 +791,18 @@ public class EasyPredictModelWrapper implements Serializable {
     return p;
   }
 
+  public KLimeModelPrediction predictKLime(RowData data) throws PredictException {
+    double[] preds = preamble(ModelCategory.Regression, data);
+
+    KLimeModelPrediction p = new KLimeModelPrediction();
+    p.value = preds[0];
+    p.cluster = (int) preds[1];
+    p.reasonCodes = new double[preds.length - 2];
+    System.arraycopy(preds, 2, p.reasonCodes, 0, p.reasonCodes.length);
+
+    return p;
+  }
+
   //----------------------------------------------------------------------
   // Transparent methods passed through to GenModel.
   //----------------------------------------------------------------------
