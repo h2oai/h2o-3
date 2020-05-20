@@ -26,8 +26,11 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
 
         protected abstract DMatrix makeDMatrix() throws XGBoostError;
         
-        public DMatrix get() throws XGBoostError {
+        protected void dispose() {}
+        
+        public final DMatrix get() throws XGBoostError {
             DMatrix mat = makeDMatrix();
+            dispose();
             assert mat.rowNum() == actualRows;
             mat.setLabel(response);
             if (weights != null) {

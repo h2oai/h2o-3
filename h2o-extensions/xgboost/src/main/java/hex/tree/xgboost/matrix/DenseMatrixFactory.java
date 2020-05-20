@@ -60,6 +60,14 @@ public class DenseMatrixFactory {
         }
 
         @Override
+        protected void dispose() {
+            if (data != null) {
+                data.dispose();
+                data = null;
+            }
+        }
+
+        @Override
         public void writeExternal(ObjectOutput out) throws IOException {
             super.writeExternal(out);
             out.writeInt(data.nrow);
@@ -94,10 +102,11 @@ public class DenseMatrixFactory {
             long actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, offsetVec, responseVec, di, resp, weights, offsets);
             assert data.nrow == actualRows;
             return new DenseDMatrixProvider(actualRows, resp, weights, offsets, data);
-        } finally {
+        } catch (Exception e) {
             if (data != null) {
                 data.dispose();
             }
+            throw new RuntimeException("Error while create off-heap matrix.", e);
         }
     }
 
