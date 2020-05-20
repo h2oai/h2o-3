@@ -28,12 +28,12 @@ class H2OXGBoostEstimator(H2OEstimator):
                    "max_runtime_secs", "seed", "distribution", "tweedie_power", "categorical_encoding", "quiet_mode",
                    "checkpoint", "export_checkpoints_dir", "ntrees", "max_depth", "min_rows", "min_child_weight",
                    "learn_rate", "eta", "sample_rate", "subsample", "col_sample_rate", "colsample_bylevel",
-                   "col_sample_rate_per_tree", "colsample_bytree", "max_abs_leafnode_pred", "max_delta_step",
-                   "monotone_constraints", "score_tree_interval", "min_split_improvement", "gamma", "nthread",
-                   "save_matrix_directory", "build_tree_one_node", "calibrate_model", "calibration_frame", "max_bins",
-                   "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf", "sample_type", "normalize_type",
-                   "rate_drop", "one_drop", "skip_drop", "tree_method", "grow_policy", "booster", "reg_lambda",
-                   "reg_alpha", "dmatrix_type", "backend", "gpu_id"}
+                   "col_sample_rate_per_tree", "colsample_bytree", "colsample_bynode", "max_abs_leafnode_pred",
+                   "max_delta_step", "monotone_constraints", "score_tree_interval", "min_split_improvement", "gamma",
+                   "nthread", "save_matrix_directory", "build_tree_one_node", "calibrate_model", "calibration_frame",
+                   "max_bins", "max_leaves", "sample_type", "normalize_type", "rate_drop", "one_drop", "skip_drop",
+                   "tree_method", "grow_policy", "booster", "reg_lambda", "reg_alpha", "dmatrix_type", "backend",
+                   "gpu_id"}
 
     def __init__(self, **kwargs):
         super(H2OXGBoostEstimator, self).__init__()
@@ -1278,6 +1278,21 @@ class H2OXGBoostEstimator(H2OEstimator):
 
 
     @property
+    def colsample_bynode(self):
+        """
+        Column sample rate per tree node (from 0.0 to 1.0)
+
+        Type: ``float``  (default: ``1``).
+        """
+        return self._parms.get("colsample_bynode")
+
+    @colsample_bynode.setter
+    def colsample_bynode(self, colsample_bynode):
+        assert_is_type(colsample_bynode, None, numeric)
+        self._parms["colsample_bynode"] = colsample_bynode
+
+
+    @property
     def max_abs_leafnode_pred(self):
         """
         (same as max_delta_step) Maximum absolute value of a leaf node prediction
@@ -1619,70 +1634,6 @@ class H2OXGBoostEstimator(H2OEstimator):
     def max_leaves(self, max_leaves):
         assert_is_type(max_leaves, None, int)
         self._parms["max_leaves"] = max_leaves
-
-
-    @property
-    def min_sum_hessian_in_leaf(self):
-        """
-        For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting
-
-        Type: ``float``  (default: ``100``).
-
-        :examples:
-
-        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
-        >>> titanic['survived'] = titanic['survived'].asfactor()
-        >>> predictors = titanic.columns
-        >>> del predictors[1:3]
-        >>> response = 'survived'
-        >>> train, valid = titanic.split_frame(ratios=[.8],
-        ...                                    seed=1234)
-        >>> titanic_xgb = H2OXGBoostEstimator(min_sum_hessian_in_leaf=90.5,
-        ...                                   seed=1234)
-        >>> titanic_xgb.train(x=predictors,
-        ...                   y=response,
-        ...                   training_frame=train,
-        ...                   validation_frame=valid)
-        >>> titanic_xgb.auc(valid=True)
-        """
-        return self._parms.get("min_sum_hessian_in_leaf")
-
-    @min_sum_hessian_in_leaf.setter
-    def min_sum_hessian_in_leaf(self, min_sum_hessian_in_leaf):
-        assert_is_type(min_sum_hessian_in_leaf, None, float)
-        self._parms["min_sum_hessian_in_leaf"] = min_sum_hessian_in_leaf
-
-
-    @property
-    def min_data_in_leaf(self):
-        """
-        For tree_method=hist only: the mininum data in a leaf to keep splitting
-
-        Type: ``float``  (default: ``0``).
-
-        :examples:
-
-        >>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
-        >>> titanic['survived'] = titanic['survived'].asfactor()
-        >>> predictors = titanic.columns
-        >>> del predictors[1:3]
-        >>> response = 'survived'
-        >>> train, valid = titanic.split_frame(ratios=[.8],
-        ...                                    seed=1234)
-        >>> titanic_xgb = H2OXGBoostEstimator(min_data_in_leaf=0.55,
-        ...                                   seed=1234)
-        >>> titanic_xgb.train(x=predictors,
-        ...                   y=response,
-        ...                   training_frame=train,
-        ...                   validation_frame=valid)
-        >>> titanic_xgb.auc(valid=True)
-        """
-        return self._parms.get("min_data_in_leaf")
-
-    @min_data_in_leaf.setter
-    def min_data_in_leaf(self, min_data_in_leaf):
-        assert_is_type(min_data_in_leaf, None, float)
-        self._parms["min_data_in_leaf"] = min_data_in_leaf
 
 
     @property

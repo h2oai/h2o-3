@@ -113,8 +113,6 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
                         xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//                        xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-                        xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
                     }
 
                     return trainModel(xgBoostParameters);
@@ -134,8 +132,6 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
                         xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//                        xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-                        xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
                     }
 
                     return trainModel(xgBoostParameters);
@@ -155,8 +151,6 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         xgBoostParameters._max_leaves = 1 << xgBoostParameters._max_depth;
                         xgBoostParameters._max_depth = xgBoostParameters._max_depth * 2;
-//                        xgBoostParameters._min_data_in_leaf = (float) xgBoostParameters._min_rows;
-                        xgBoostParameters._min_sum_hessian_in_leaf = (float) xgBoostParameters._min_rows;
                     }
 
                     return trainModel(xgBoostParameters);
@@ -175,7 +169,6 @@ public class XGBoostSteps extends ModelingSteps {
                     if (_emulateLightGBM) {
                         searchParams.put("_max_leaves", new Integer[]{1<<5, 1<<10, 1<<15, 1<<20});
                         searchParams.put("_max_depth", new Integer[]{10, 20, 50});
-                        searchParams.put("_min_sum_hessian_in_leaf", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});
                     } else {
                         searchParams.put("_max_depth", new Integer[]{5, 10, 15, 20});
                         searchParams.put("_min_rows", new Double[]{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0});  // = _min_child_weight

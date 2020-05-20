@@ -155,10 +155,6 @@ Defining an XGBoost Model
 
 -  **max_leaves**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 0.
 
--  **min_sum_hessian_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
-
--  **min_data_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
-
 -  **booster**: Specify the booster type. This can be one of the following: ``gbtree``, ``gblinear``, or ``dart``. 
    Note that ``gbtree`` and ``dart`` use a tree-based model while ``gblinear`` uses linear function. This value 
    defaults to ``gbtree``. Together with ``tree_method`` this will also determine the ``updater`` XGBoost parameter:
@@ -219,8 +215,6 @@ When the above are configured, then the following additional "LightGBM" options 
 
 - ``max_bin``
 - ``max_leaves``
-- ``min_sum_hessian_in_leaf``
-- ``min_data_in_leaf``
 
 XGBoost Only Options
 ~~~~~~~~~~~~~~~~~~~~

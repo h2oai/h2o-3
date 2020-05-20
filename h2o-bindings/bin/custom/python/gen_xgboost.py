@@ -802,38 +802,6 @@ examples = dict(
 ...                   validation_frame=valid)
 >>> print(titanic_xgb.auc(valid=True))
 """,
-    min_sum_hessian_in_leaf="""
->>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
->>> titanic['survived'] = titanic['survived'].asfactor()
->>> predictors = titanic.columns
->>> del predictors[1:3]
->>> response = 'survived'
->>> train, valid = titanic.split_frame(ratios=[.8],
-...                                    seed=1234)
->>> titanic_xgb = H2OXGBoostEstimator(min_sum_hessian_in_leaf=90.5,
-...                                   seed=1234)
->>> titanic_xgb.train(x=predictors,
-...                   y=response,
-...                   training_frame=train,
-...                   validation_frame=valid)
->>> titanic_xgb.auc(valid=True)
-""",
-    min_data_in_leaf="""
->>> titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
->>> titanic['survived'] = titanic['survived'].asfactor()
->>> predictors = titanic.columns
->>> del predictors[1:3]
->>> response = 'survived'
->>> train, valid = titanic.split_frame(ratios=[.8],
-...                                    seed=1234)
->>> titanic_xgb = H2OXGBoostEstimator(min_data_in_leaf=0.55,
-...                                   seed=1234)
->>> titanic_xgb.train(x=predictors,
-...                   y=response,
-...                   training_frame=train,
-...                   validation_frame=valid)
->>> titanic_xgb.auc(valid=True)
-""",
     sample_type="""
 >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 >>> airlines["Year"]= airlines["Year"].asfactor()

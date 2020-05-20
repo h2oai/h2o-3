@@ -1023,10 +1023,6 @@ The available options vary depending on the selected model. If an option is only
 
 -  **max_bin**: (XGBoost) For tree_method=hist only: specify the maximum number of bins for binning continuous features.
 
--  **min_sum_hessian_in_leaf**: (XGBoost) For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting
-
--  **min_data_in_leaf**: (XGBoost) For tree_method=hist only: the mininum data in a leaf to keep splitting
-
 -  **booster**: (XGBoost) Specify the booster type. This can be one of the following: "gbtree", "gblinear", or "dart". Note that "gbtree" and "dart" use a tree-based model while "gblinear" uses linear function. This value defaults to "gbtree".
 
 -  **reg_lambda**: (XGBoost) Specify a value for L2 regularization. 
