@@ -7,6 +7,7 @@ import water.fvec.*;
 import water.util.ArrayUtils;
 import water.util.FileUtils;
 import water.util.Log;
+import water.util.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -695,12 +696,8 @@ public class ParseSetup extends Iced {
     // "2012_somedata" ==> "X2012_somedata"
     if( !Character.isJavaIdentifierStart(n.charAt(0)) ) n = "X"+n;
     // "human%Percent" ==> "human_Percent"
-    char[] cs = n.toCharArray();
-    for( int i=1; i<cs.length; i++ )
-      if( !Character.isJavaIdentifierPart(cs[i]) )
-        cs[i] = '_';
+    n = StringUtils.sanitizeIdentifier(n);
     // "myName" ==> "myName.hex"
-    n = new String(cs);
     int i = 0;
     String res = n + ".hex";
     Key k = Key.make(res);

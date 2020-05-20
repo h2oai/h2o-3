@@ -103,11 +103,7 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
       lastStartTime = startTime;
     }
 
-    // if user offers a different response column,
-    //   the new models will be added to a new Leaderboard, without removing the previous one.
-    // otherwise, the new models will be added to the existing leaderboard.
-    Key<AutoML> key = Key.make(buildSpec.project()+keySeparator+buildSpec.input_spec.response_column);
-    AutoML aml = new AutoML(key, startTime, buildSpec);
+    AutoML aml = new AutoML(startTime, buildSpec);
     startAutoML(aml);
     return aml;
   }
@@ -192,8 +188,11 @@ public final class AutoML extends Lockable<AutoML> implements TimedH2ORunnable {
     super(null);
   }
 
+  public AutoML(Date startTime, AutoMLBuildSpec buildSpec) {
+    this(null, startTime, buildSpec);
+  }
   public AutoML(Key<AutoML> key, Date startTime, AutoMLBuildSpec buildSpec) {
-    super(key == null ? Key.make(buildSpec.project()) : key);
+    super(key == null ? buildSpec.makeKey() : key);
     try {
       _startTime = startTime;
       _eventLog = EventLog.getOrMake(_key);
