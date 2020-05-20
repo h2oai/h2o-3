@@ -14,6 +14,7 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.rapids.FeatureImportance4BBM;
+import water.rapids.ShuffleVec;
 import water.util.ArrayUtils;
 import org.junit.BeforeClass;
 import water.util.FrameUtils;
@@ -61,36 +62,7 @@ public class FeatureImportance4BBMTest extends TestUtil {
         }
         
     }
-    @Test
-    public void shuffleVecBiggerData(){
-        Frame fr = null;
-        try {
-            Scope.enter(); 
-            fr = parse_test_file("./smalldata/airlines/AirlinesTrainWgt.csv"); // has 24422; should be enough to test speed 
-            Scope.track(fr);
-            
-            Vec OG_vec = fr.vec(10).makeCopy();
 
-            /*
-            long startTime_using_set = System.nanoTime();
-            VecUtils.shuffleVec new_vv = new VecUtils.shuffleVec(fr.vec(10)).doAll(fr.vec("Weight"));
-            long endTime_using_set = System.nanoTime();
-            */
-            long startTime_copying_array = System.nanoTime();
-            Vec new_v = Vec.makeVec(new VecUtils.shuffleVecVol2().doAll(fr.vec("Weight"))._result, Vec.newKey());
-            long endTime_copying_array = System.nanoTime();
-
-//            long timeElapsed_1 = endTime_using_set - startTime_using_set;
-//            long timeElapsed_2 = endTime_copying_array - startTime_copying_array;
-
-            double rnd_coe = randomnessCoeefic(OG_vec, new_v);
-
-            Assert.assertNotEquals(0, rnd_coe);
-        } finally {
-            Scope.exit();
-        }
-
-    }
     // compares values of vec and returns the randomness change. 0 no change, 1.0 all rows shuffled
     double randomnessCoeefic(Vec og, Vec nw){
         int changed_places = 0;
@@ -100,6 +72,47 @@ public class FeatureImportance4BBMTest extends TestUtil {
         }
         return changed_places * 1.0/nw.length();
     }
+    
+    public double [] randomnessCoef(Frame fr, double [] res){
+        // copy vecs to check on permuated ones
+        Vec OG_vec[] = new Vec[fr.numCols()];
+        for (int i = 0 ; i <  fr.numCols(); i ++)
+            OG_vec[i] = fr.vec(i).makeCopy();
+
+        String [] features = fr.names();
+        ShuffleVec shf = new ShuffleVec(fr);
+        Vec shf_v;
+        for (int i = 0 ; i <  fr.numCols(); i ++){
+            String col_name = features[i];
+            shf_v = ShuffleVec.ShuffleTask.shuffle(fr.vec(col_name));
+            res[i] = randomnessCoeefic(OG_vec[i] , shf_v);
+        }
+        return res;
+    }
+    
+    @Test
+    public void shuffleVecBiggerData(){
+        Frame fr = null;
+        try {
+            Scope.enter(); 
+            fr = parse_test_file("./smalldata/airlines/AirlinesTrainWgt.csv"); // has 24422; should be enough to test speed 
+            Scope.track(fr);
+//            long timeElapsed_1 = endTime_using_set - startTime_using_set;
+            double res [] = new double [fr.numCols()];
+            res = randomnessCoef(fr, res);
+//            long timeElapsed_2 = endTime_copying_array - startTime_copying_array;
+            for (int i = 0 ; i < fr.numCols() ; ++i){
+                Assert.assertNotEquals(0, res[i]);
+                // TODO check if low random coeficent and try if shuffling again, if that doesnt work FIXME
+            }
+            
+//            Assert.assertNotEquals(0, rnd_coe);
+        } finally {
+            Scope.exit();
+        }
+
+    }
+   
     
     @Test
     public void initiate() {
