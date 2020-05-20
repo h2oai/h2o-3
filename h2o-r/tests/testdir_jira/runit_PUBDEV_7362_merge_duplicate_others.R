@@ -158,7 +158,7 @@ assertMergeCorrect <- function(mergedFrame, resultF) {
     print(mergedFrame,n=nrow(mergedFrame))
     print("Expected Frame")
     print(resultF,n=nrow(resultF))
-    compareFrames(mergedFrame, resultF, prob=1)
+    compareFrames(mergedFrame, resultF, prob=1, enum2String=TRUE)
 }
 
 doTest("PUBDEV-7362: check merge", test)

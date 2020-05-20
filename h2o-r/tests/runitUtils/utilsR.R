@@ -931,27 +931,33 @@ random_NN <- function(actFunc, max_layers, max_node_number) {
 # Parameters:  frame1, frame2: H2O frames to be compared.
 #              tolerance: tolerance of comparison
 #----------------------------------------------------------------------
-compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6) {
+compareFrames <- function(frame1, frame2, prob=0.5, tolerance=1e-6, enum2String=FALSE) {
   expect_true(nrow(frame1) == nrow(frame2) && ncol(frame1) == ncol(frame2), info="frame1 and frame2 are different in size.")
+  rframe1 <- as.data.frame(frame1)
+  rframe2 <- as.data.frame(frame2)
   for (colInd in c(1:ncol(frame1))) {
-
     notNumericCols = !(h2o.isnumeric(frame1[,colInd]) && h2o.isnumeric(frame2[,colInd]))
     if (notNumericCols) {
-      temp1 = frame1[,colInd]
-      temp2 = frame2[,colInd]
+      if (enum2String) {
+        temp1 <- as.character(rframe1[,colInd])
+        temp2 <- as.character(rframe2[,colInd])
+      } else {
+        temp1 <- as.factor(rframe1[,colInd])
+        temp2 <- as.factor(rframe2[,colInd])
+      }
     } else { 
-      temp1=as.numeric(frame1[,colInd])
-      temp2=as.numeric(frame2[,colInd])
+      temp1 <- as.numeric(rframe1[,colInd])
+      temp2 <- as.numeric(rframe2[,colInd])
     }
     for (rowInd in c(1:nrow(frame1))) {
       if (runif(1,0,1) <= prob)
-        if (is.na(temp1[rowInd, 1])) {
-          expect_true(is.na(temp2[rowInd, 1]), info=paste0("Errow at row ", rowInd, ". Frame is value is na but Frame 2 value is ", temp2[rowInd,1]))
+        if (is.na(temp1[rowInd])) {
+          expect_true(is.na(temp2[rowInd]), info=paste0("Errow at row ", rowInd, ". Frame is value is na but Frame 2 value is ", temp2[rowInd]))
         } else {
           if (notNumericCols)
-            expect_true(temp1[rowInd,1]==temp2[rowInd,1],info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd,1], ". Frame 2 value ", temp2[rowInd,1]))
+            expect_true(temp1[rowInd]==temp2[rowInd],info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd], ". Frame 2 value ", temp2[rowInd]))
           else          
-            expect_true((abs(temp1[rowInd,1]-temp2[rowInd,1])/max(1,abs(temp1[rowInd,1]), abs(temp2[rowInd,1])))< tolerance, info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd,1], ". Frame 2 value ", temp2[rowInd,1]))
+            expect_true((abs(temp1[rowInd]-temp2[rowInd])/max(1,abs(temp1[rowInd]), abs(temp2[rowInd])))< tolerance, info=paste0("Error at row ", rowInd, ". Frame 1 value ", temp1[rowInd], ". Frame 2 value ", temp2[rowInd]))
         }
     }
   }
