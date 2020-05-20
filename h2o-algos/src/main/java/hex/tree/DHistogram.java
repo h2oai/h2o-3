@@ -491,7 +491,7 @@ public final class DHistogram extends Iced {
       _vals[_vals_dim*b + 0] += weight;
       _vals[_vals_dim*b + 1] += wy;
       _vals[_vals_dim*b + 2] += wyy;
-      if (_vals_dim >= 5 && !Double.isNaN(resp[k])) { // FIXME: This was wrong before!
+      if (_vals_dim >= 5 && !Double.isNaN(resp[k])) { // FIXME (PUBDEV-7553): This needs to be applied even with monotone constraints disabled
         _vals[_vals_dim * b + 3] += weight * (_pred1 - y) * (_pred1 - y);
         _vals[_vals_dim * b + 4] += weight * (_pred2 - y) * (_pred2 - y);
         if (_vals_dim >= 6) {
