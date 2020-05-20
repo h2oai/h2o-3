@@ -4,7 +4,7 @@
 #' @examples
 #' \dontrun{
 #' if (Sys.info()['sysname'] == "Darwin" && Sys.info()['release'] == '13.4.0') {
-#'   quit(save="no")
+#'   quit(save = "no")
 #' } else {
 #'  h2o.init(nthreads = 2)
 #' }

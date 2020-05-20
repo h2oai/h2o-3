@@ -91,9 +91,9 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-		train <- airlines.splits[[1]]
-		valid <- airlines.splits[[2]]
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8, seed = 1234)
+		train <- airlines_splits[[1]]
+		valid <- airlines_splits[[2]]
 
 		# try using the `categorical_encoding` parameter:
 		encoding = "OneHotExplicit"

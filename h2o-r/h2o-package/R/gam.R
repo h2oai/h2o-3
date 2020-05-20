@@ -117,7 +117,7 @@
 #' prostate <- h2o.uploadFile(path = prostate_path)
 #' prostate$CAPSULE <- as.factor(prostate$CAPSULE)
 #' h2o.gam(y = "CAPSULE", x = c("RACE"), gam_columns = c("PSA"),
-#'      training_frame = prostate,family = "binomial")
+#'      training_frame = prostate, family = "binomial")
 #' 
 #' }
 #' @export

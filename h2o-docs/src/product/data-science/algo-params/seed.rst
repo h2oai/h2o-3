@@ -44,19 +44,19 @@ Example
 		response <- "IsDepDelayed"
 
 		# split into train and validation
-		airlines.splits <- h2o.splitFrame(data =  airlines, ratios = .8, seed = 1234)
-		train <- airlines.splits[[1]]
-		valid <- airlines.splits[[2]]
+		airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8, seed = 1234)
+		train <- airlines_splits[[1]]
+		valid <- airlines_splits[[2]]
 
 
 		# try using the `seed` parameter with a stochastic parameter like `col_sample_rate`: 
 		# run this model twice to see if the results are different (they will be the same)
 		# build your model:
 		gbm_w_seed_1 <- h2o.gbm(x = predictors, y = response, training_frame = train,
-		                        validation_frame = valid, col_sample_rate =.7 , 
+		                        validation_frame = valid, col_sample_rate = 0.7 , 
 		                        seed = 1234)
 		gbm_w_seed_2 <- h2o.gbm(x = predictors, y = response, training_frame = train,
-		                        validation_frame = valid, col_sample_rate =.7 , 
+		                        validation_frame = valid, col_sample_rate = 0.7 , 
 		                        seed = 1234)
 
 		# print the auc for the validation data for model with a seed
@@ -70,9 +70,9 @@ Example
 		# build your model:
 
 		gbm_wo_seed_1 <- h2o.gbm(x = predictors, y = response, training_frame = train,
-		                        validation_frame = valid, col_sample_rate =.7)
+		                        validation_frame = valid, col_sample_rate = 0.7)
 		gbm_wo_seed_2 <- h2o.gbm(x = predictors, y = response, training_frame = train,
-		                        validation_frame = valid, col_sample_rate =.7)
+		                        validation_frame = valid, col_sample_rate = 0.7)
 
 		# print the auc for the validation data for model with no seed
 		print(paste('auc for the 1st model built WITHOUT a seed:',

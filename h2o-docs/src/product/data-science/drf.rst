@@ -294,13 +294,13 @@ Below is a simple example showing how to build a Random Forest model.
     # Set the predictors and response; 
     # set the response as a factor:
     cars["economy_20mpg"] <- as.factor(cars["economy_20mpg"])
-    predictors <- c("displacement","power","weight","acceleration","year")
+    predictors <- c("displacement", "power", "weight", "acceleration", "year")
     response <- "economy_20mpg"
 
     # Split the dataset into a train and valid set:
-    cars.split <- h2o.splitFrame(data = cars,ratios = 0.8, seed = 1234)
-    train <- cars.split[[1]]
-    valid <- cars.split[[2]]
+    cars_split <- h2o.splitFrame(data = cars, ratios = 0.8, seed = 1234)
+    train <- cars_split[[1]]
+    valid <- cars_split[[2]]
 
     # Build and train the model:
     cars_drf <- h2o.randomForest(x = predictors, 

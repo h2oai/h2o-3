@@ -27,7 +27,7 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
         model <- h2o.deeplearning(params)
 
         # save the model
-        model_path <- h2o.saveModel(object=model, path=getwd(), force=TRUE)
+        model_path <- h2o.saveModel(object = model, path = getwd(), force = TRUE)
         print(model_path)
         /tmp/mymodel/DeepLearning_model_R_1441838096933
 
@@ -35,7 +35,7 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
         saved_model <- h2o.loadModel(model_path)
 
         # download the model built above to your local machine
-        my_local_model <- h2o.download_model(model, path="/Users/UserName/Desktop")
+        my_local_model <- h2o.download_model(model, path = "/Users/UserName/Desktop")
 
         # upload the model that you just downloded above 
         # to the H2O cluster
@@ -75,7 +75,7 @@ In R and Python, you can save a model locally or to HDFS using the ``h2o.saveMod
         hdfs_name_node <- "node-1"
         hdfs_tmp_dir <- "/tmp/runit"
         model_path <- sprintf("hdfs://%s%s", hdfs_name_node, hdfs_tmp_dir)
-        h2o.saveModel(model, path=model_path, name="mymodel")
+        h2o.saveModel(model, path = model_path, name = "mymodel")
 
    .. code-tab:: python
 
@@ -125,7 +125,7 @@ Saving and Importing in R or Python
 
         data <- h2o.importFile(path = 'training_dataset.csv')
         cols <- c("Some column", "Another column")
-        original_model <- h2o.glm(x=cols, y = "response", training_frame = data)    
+        original_model <- h2o.glm(x = cols, y = "response", training_frame = data)    
 
         path <- "/path/to/model/directory"
         mojo_destination <- h2o.save_mojo(original_model, path = path)
@@ -221,7 +221,7 @@ Examples
 
         data <- h2o.importFile(path = 'training_dataset.csv')
         cols <- c("Some column", "Another column")
-        original_model <- h2o.glm(x=cols, y = "response", training_frame = data)    
+        original_model <- h2o.glm(x = cols, y = "response", training_frame = data)    
 
         path <- "/path/to/model/directory"
         mojo_destination <- h2o.download_mojo(model = original_model, path = path)

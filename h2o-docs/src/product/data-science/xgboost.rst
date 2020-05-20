@@ -328,9 +328,9 @@ Below is a simple example showing how to build a XGBoost model.
     response <- "survived"
 
     # Split the dataset into a train and valid set:
-    titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
-    train <- titanic.splits[[1]]
-    valid <- titanic.splits[[2]]
+    titanic_splits <- h2o.splitFrame(data =  titanic, ratios = 0.8, seed = 1234)
+    train <- titanic_splits[[1]]
+    valid <- titanic_splits[[2]]
 
     # Build and train the model:
     titanic_xgb <- h2o.xgboost(x = predictors, 

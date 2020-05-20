@@ -20,8 +20,8 @@ The ``impute`` function accepts the following arguments:
       	h2o.init()
 
         # Upload the Airlines dataset
-        filePath <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
-        air <- h2o.importFile(filePath, "air")
+        file_path <- "https://s3.amazonaws.com/h2o-airlines-unpacked/allyears2k.csv"
+        air <- h2o.importFile(file_path, "air")
         print(dim(air))
         43978    31
 

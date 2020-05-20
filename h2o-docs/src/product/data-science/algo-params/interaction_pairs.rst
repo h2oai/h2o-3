@@ -32,31 +32,31 @@ Example
         df <-  h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 
         # specify the columns to include
-        XY <- names(df)[c(1,2,3,4,6,8,9,13,17,18,19,31)
+        XY <- names(df)[c(1, 2, 3, 4, 6, 8, 9, 13, 17, 18, 19, 31)
 
         # specify the predictor column indices to interact
-        interactions <- XY[c(5,7,9)]
+        interactions <- XY[c(5, 7, 9)]
 
         # train the model and build the coefficients table
-        m1 <- h2o.glm(x=XY[-length(XY)],
-    	             y=XY[length(XY)],
-    	             training_frame=df,
-    	             interactions=interactions, 
-    	             lambda_search=TRUE,
-    	             family="binomial")
+        m1 <- h2o.glm(x = XY[-length(XY)],
+    	             y = XY[length(XY)],
+    	             training_frame = df,
+    	             interactions = interactions, 
+    	             lambda_search = TRUE,
+    	             family = "binomial")
         m1_coefs <- m1@model$coefficients_table
 
         # train the model with the interaction pairs
-        m2 <- h2o.glm(x=XY[-length(XY)],
-    	              y=XY[length(XY)],
-    	              training_frame=df,
-    	              interaction_pairs=list(
+        m2 <- h2o.glm(x = XY[-length(XY)],
+    	              y = XY[length(XY)],
+    	              training_frame = df,
+    	              interaction_pairs = list(
     	               c("CRSDepTime", "UniqueCarrier"),
     	               c("CRSDepTime", "Origin"),
     	               c("UniqueCarrier", "Origin")
     	               ),
-    	              lambda_search=TRUE,
-    	              family="binomial")
+    	              lambda_search = TRUE,
+    	              family = "binomial")
         m2_coefs <- m2@model$coefficients_table
 
    .. code-tab:: python

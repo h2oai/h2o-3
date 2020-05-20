@@ -146,7 +146,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
 
     // get left batches
     _leftKO.initKeyOrder(_leftSB._msb,/*left=*/true);
-    final long leftN = leftSortedOXHeader._numRows;
+    final long leftN = leftSortedOXHeader._numRows; // number of leftframe rows to fetch for leftMSB
     assert leftN >= 1;
 
     // get right batches
@@ -174,12 +174,13 @@ class BinaryMerge extends DTask<BinaryMerge> {
 
     // Find left and right MSB extents in terms of the key boundaries they represent
     // _riteSB._msb==-1 indicates that no right MSB should be looked at
-    final long leftMin = _leftSB.min();  // the first key possible in this bucket
-    final long leftMax = _leftSB.max();  // the last  key possible in this bucket
+    final long leftMin = _leftSB.min();  // the minimum possible key value in this bucket
+    final long leftMax = _leftSB.max();  // the maximum possible key value in this bucket
     // if _riteSB._msb==-1 then the values in riteMin and riteMax here are redundant and not used
-    final long riteMin = _riteSB._msb==-1 ? -1 : _riteSB.min();  // the first key possible in this bucket
-    final long riteMax = _riteSB._msb==-1 ? -1 : _riteSB.max();  // the last  key possible in this bucket
+    final long riteMin = _riteSB._msb==-1 ? -1 : _riteSB.min();  // the minimum possible key value in this bucket
+    final long riteMax = _riteSB._msb==-1 ? -1 : _riteSB.max();  // the maximum possible key value in this bucket
 
+    // _leftFrom and leftTo refers to the row indices to perform merging/search for each MSB value
     _leftFrom =   (_riteSB._msb==-1 || leftMin>=riteMin || (_allLeft && _riteSB._msb==0  )) ? -1    : bsearchLeft(riteMin, /*retLow*/true , leftN);
     long leftTo = (_riteSB._msb==-1 || leftMax<=riteMax || (_allLeft && _riteSB._msb==255)) ? leftN : bsearchLeft(riteMax, /*retLow*/false, leftN);
     // The (_allLeft && rightMSB==0) part is to include those keys in that
@@ -190,7 +191,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     // lowest right keys, because stitching assumes unique MSB/MSB pairs.
 
     long retSize = leftTo - _leftFrom - 1;   // since leftTo and leftFrom are 1 outside the extremes
-    assert retSize >= 0;
+    assert retSize >= 0; // retSize is number of rows to include in final merged frame
     if (retSize==0) { tryComplete(); return; } // nothing can match, even when allLeft
 
     _retBatchSize = 1048576;   // must set to be the same from RadixOrder.java
@@ -667,7 +668,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
           // Fetch the left rows and mark the contiguous from-ranges each left row should be recycled over
           // TODO: when single node, not needed
           // TODO could loop through batches rather than / and % wastefully
-          long row = _leftKO.at8order(leftLoc);
+          long row = _leftKO.at8order(leftLoc); // global row number of matched row in left frame
           int chkIdx = _leftSB._vec.elem2ChunkIdx(row); //binary search in espc
           int ni = _leftSB._chunkNode[chkIdx]; // node index
           long pnl = perNodeLeftLoc[ni]++;    // pnl = per node location
@@ -678,10 +679,10 @@ class BinaryMerge extends DTask<BinaryMerge> {
         if (prevf == f && prevl == l)
           continue;  // don't re-fetch the same matching rows (cartesian). We'll repeat them locally later.
         prevf = f; prevl = l;
-        for (int r=0; r<l; r++) {
+        for (int r=0; r<l; r++) { // locate the corresponding matching row in right frame
           long loc = f+r-1;  // -1 because these are 0-based where 0 means no-match and 1 refers to the first row
           // TODO: could take / and % outside loop in cases where it doesn't span a batch boundary
-          long row = _riteKO.at8order(loc);
+          long row = _riteKO.at8order(loc); // right frame global row number that matches left frame
           // find the owning node for the row, using local operations here
           int chkIdx = _riteSB._vec.elem2ChunkIdx(row); //binary search in espc
           int ni = _riteSB._chunkNode[chkIdx];
@@ -694,7 +695,7 @@ class BinaryMerge extends DTask<BinaryMerge> {
     // TODO assert that perNodeRite and Left are exactly equal to the number
     // expected and allocated.
     Arrays.fill(perNodeLeftLoc ,0); // clear for reuse below
-    Arrays.fill(perNodeRightLoc,0);
+    Arrays.fill(perNodeRightLoc,0); // denotes number of rows fetched 
   }
 
   private void chunksGetRawRemoteRows(final long perNodeLeftRows[][][], final long perNodeRightRows[][][], 

@@ -65,15 +65,15 @@ Below is a simple example showing how to build a Aggregator model.
 
         # Create a random frame with 5 columns and 100 rows
         df <- h2o.createFrame(
-          rows=100,
-          cols=5,
-          categorical_fraction=0.6,
-          integer_fraction=0,
-          binary_fraction=0,
-          real_range=100,
-          integer_range=100,
-          missing_fraction=0,
-          seed=123
+          rows = 100,
+          cols = 5,
+          categorical_fraction = 0.6,
+          integer_fraction = 0,
+          binary_fraction = 0,
+          real_range = 100,
+          integer_range = 100,
+          missing_fraction = 0,
+          seed = 123
         )
 
         # View the dataframe
@@ -89,13 +89,13 @@ Below is a simple example showing how to build a Aggregator model.
         [100 rows x 5 columns]
 
         # Build an aggregated frame using eigan categorical encoding
-        target_num_exemplars=1000
-        rel_tol_num_exemplars=0.5
-        encoding="Eigen"
-        agg <- h2o.aggregator(training_frame=df, 
-                              target_num_exemplars=target_num_exemplars, 
-                              rel_tol_num_exemplars=rel_tol_num_exemplars, 
-                              categorical_encoding=encoding)
+        target_num_exemplars <- 1000
+        rel_tol_num_exemplars <- 0.5
+        encoding <- "Eigen"
+        agg <- h2o.aggregator(training_frame = df, 
+                              target_num_exemplars = target_num_exemplars, 
+                              rel_tol_num_exemplars = rel_tol_num_exemplars, 
+                              categorical_encoding = encoding)
 
         # Use the aggregated frame to create a new dataframe 
         new_df <- h2o.aggregated_frame(agg)

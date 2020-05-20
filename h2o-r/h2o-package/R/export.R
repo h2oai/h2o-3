@@ -156,7 +156,7 @@ h2o.downloadCSV <- function(data, filename) {
 #' # h2o.init()
 #' # prostate <- h2o.importFile(path = paste("https://raw.github.com",
 #' #    "h2oai/h2o-2/master/smalldata/logreg/prostate.csv", sep = "/"))
-#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #' #    training_frame = prostate, family = "binomial", alpha = 0.5)
 #' # h2o.saveModel(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
@@ -186,7 +186,7 @@ h2o.saveModel <- function(object, path="", force=FALSE) {
 #' # library(h2o)
 #' # h2o.init()
 #' # prostate <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
-#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #' #                         training_frame = prostate, family = "binomial", alpha = 0.5)
 #' # h2o.saveMojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
@@ -212,7 +212,7 @@ h2o.saveMojo <- function(object, path="", force=FALSE) {
 #' # library(h2o)
 #' # h2o.init()
 #' # prostate <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package="h2o"))
-#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #' #                         training_frame = prostate, family = "binomial", alpha = 0.5)
 #' # h2o.save_mojo(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
@@ -241,7 +241,7 @@ h2o.save_mojo <- function(object, path="", force=FALSE) {
 #' # library(h2o)
 #' # h2o.init()
 #' # prostate <- h2o.uploadFile(path = system.file("extdata", "prostate.csv", package = "h2o"))
-#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE","RACE","PSA","DCAPS"),
+#' # prostate_glm <- h2o.glm(y = "CAPSULE", x = c("AGE", "RACE", "PSA", "DCAPS"),
 #' #                         training_frame = prostate, family = "binomial", alpha = 0.5)
 #' # h2o.saveModelDetails(object = prostate_glm, path = "/Users/UserName/Desktop", force = TRUE)
 #' }
@@ -267,7 +267,7 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #' library(h2o)
 #' h2o.init()
 #'
-#'iris.hex <- as.h2o(iris)
+#'iris <- as.h2o(iris)
 #'
 #'ntrees_opts = c(1, 5)
 #'learn_rate_opts = c(0.1, 0.01)
@@ -275,7 +275,7 @@ h2o.saveModelDetails <- function(object, path="", force=FALSE) {
 #'
 #'hyper_parameters = list(ntrees = ntrees_opts, learn_rate = learn_rate_opts)
 #'# Tempdir is chosen arbitrarily. May be any valid folder on an H2O-supported filesystem.
-#'baseline_grid <- h2o.grid("gbm", grid_id="gbm_grid_test", x=1:4, y=5, training_frame=iris.hex,
+#'baseline_grid <- h2o.grid(algorithm = "gbm", grid_id = "gbm_grid_test", x = 1:4, y = 5, training_frame = iris,
 #' hyper_params = hyper_parameters)
 #'
 #'grid_path <- h2o.saveGrid(grid_directory = tempdir(), grid_id = baseline_grid@grid_id)

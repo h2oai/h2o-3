@@ -99,12 +99,12 @@ Below is a simple example showing how to build a Generalized Low Rank model.
     h2o.init()
 
     # Import the USArrests dataset into H2O:
-    arrestsH2O <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+    arrests <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
 
     # Split the dataset into a train and valid set:
-    arrests.splits <- h2o.splitFrame(data = arrestsH2O, ratios = .8, seed = 1234)
-    train <- arrests.splits[[1]]
-    valid <- arrests.splits[[2]]
+    arrests_splits <- h2o.splitFrame(data = arrests, ratios = 0.8, seed = 1234)
+    train <- arrests_splits[[1]]
+    valid <- arrests_splits[[2]]
 
     # Build and train the model:
     glrm_model = h2o.glrm(training_frame = train, 
@@ -113,9 +113,9 @@ Below is a simple example showing how to build a Generalized Low Rank model.
                           gamma_x = 0.5, 
                           gamma_y = 0.5,  
                           max_iterations = 700, 
-                          recover_svd=TRUE, 
-                          init="SVD", 
-                          transform= "STANDARDIZE")
+                          recover_svd = TRUE, 
+                          init = "SVD", 
+                          transform = "STANDARDIZE")
 
     # Eval performance:
     arrests_perf <- h2o.performance(glrm_model)

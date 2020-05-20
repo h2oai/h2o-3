@@ -40,15 +40,15 @@ Example
 		heart["age"] <- as.factor(heart["age"])
 
 		# train your model
-		coxph.h2o <- h2o.coxph(x=c("year", x), 
-		                       event_column=y, 
-		                       start_column=start, 
-		                       stop_column=stop, 
-		                       stratify_by=x, 
-		                       training_frame=heart)
+		heart_coxph <- h2o.coxph(x = c("year", x), 
+		                         event_column = y, 
+		                         start_column = start, 
+		                         stop_column = stop, 
+		                         stratify_by = x, 
+		                         training_frame = heart)
 
 		# view the model details
-		coxph.h2o
+		heart_coxph
 		Model Details:
 		==============
 
@@ -60,5 +60,5 @@ Example
 		        coef    exp(coef) se(coef)  z      p
 		year    4.734   113.717   8973.421  0.001  1
 
-		Likelihood ratio test=1.39  on 1 df, p=0.239
-		n= 172, number of events= 75
+		Likelihood ratio test = 1.39  on 1 df, p = 0.239
+		n = 172, number of events = 75

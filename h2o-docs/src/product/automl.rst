@@ -170,8 +170,8 @@ Here’s an example showing basic usage of the ``h2o.automl()`` function in *R* 
         x <- setdiff(names(train), y)
 
         # For binary classification, response should be a factor
-        train[,y] <- as.factor(train[,y])
-        test[,y] <- as.factor(test[,y])
+        train[, y] <- as.factor(train[, y])
+        test[, y] <- as.factor(test[, y])
 
         # Run AutoML for 20 base models (limited to 1 hour max runtime by default)
         aml <- h2o.automl(x = x, y = y, 
