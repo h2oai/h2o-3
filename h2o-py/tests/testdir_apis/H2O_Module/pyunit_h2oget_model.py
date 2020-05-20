@@ -19,8 +19,14 @@ def h2oget_model():
     model2 = h2o.get_model(model.model_id)
     assert_is_type( model, H2OGeneralizedLinearEstimator)
     assert_is_type(model2, H2OGeneralizedLinearEstimator)
-    assert (model._model_json['output']['model_category']==model2._model_json['output']['model_category']) and \
-           (model2._model_json['output']['model_category']=='Binomial'), "h2o.get_model() command is not working"
+    assert (model._model_json['output']['model_category'] == model2._model_json['output']['model_category']) and \
+           (model2._model_json['output']['model_category'] == 'Binomial'), "h2o.get_model() command is not working"
+
+    # test the convenience version of the function (extract model id from a single row H2OFrame with "model" column)
+    model_id_frame = h2o.H2OFrame({"col_1": [42], "model": [model.model_id]})
+    model3 = h2o.get_model(model_id_frame)
+    assert model3.model_id == model.model_id
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(h2oget_model)

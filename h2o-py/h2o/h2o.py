@@ -989,7 +989,13 @@ def get_model(model_id):
     ...             training_frame=airlines)
     >>> model2 = h2o.get_model(model.model_id)
     """
-    assert_is_type(model_id, str)
+    assert_is_type(model_id, str, H2OFrame)
+    if isinstance(model_id, H2OFrame):
+        if "model" not in model_id.names:
+            raise H2OValueError("When an H2OFrame is used to represent model_id it needs to have `model` column")
+        if model_id.nrow != 1:
+            raise H2OValueError("When an H2OFrame is used to represent model_id it needs to have exactly 1 row")
+        model_id = model_id["model"].as_data_frame(use_pandas=False)[1][0]
     model_json = api("GET /3/Models/%s" % model_id)["models"][0]
     algo = model_json["algo"]
     # still some special handling for AutoEncoder: would be cleaner if we could get rid of this
