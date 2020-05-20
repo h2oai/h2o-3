@@ -2,8 +2,8 @@ package hex.tree.xgboost;
 
 import hex.DataInfo;
 import hex.tree.xgboost.matrix.DenseMatrixFactory;
+import hex.tree.xgboost.matrix.MatrixLoader;
 import hex.tree.xgboost.matrix.SparseMatrixFactory;
-import hex.tree.xgboost.util.FeatureScore;
 import ml.dmlc.xgboost4j.java.DMatrix;
 import ml.dmlc.xgboost4j.java.XGBoostError;
 import org.apache.log4j.Logger;
@@ -13,8 +13,6 @@ import water.fvec.Vec;
 import water.util.VecUtils;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import static water.H2O.technote;
 import static water.MemoryManager.malloc4f;
@@ -23,7 +21,15 @@ public class XGBoostUtils {
 
     private static final Logger LOG = Logger.getLogger(XGBoostUtils.class);
 
-    public static String makeFeatureMap(Frame f, DataInfo di) {
+    public static void createFeatureMap(XGBoostModel model, Frame train) {
+        // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
+        DataInfo dataInfo = model.model_info().dataInfo();
+        assert dataInfo != null;
+        String featureMap = makeFeatureMap(train, dataInfo);
+        model.model_info().setFeatureMap(featureMap);
+    }
+
+    private static String makeFeatureMap(Frame f, DataInfo di) {
         // set the names for the (expanded) columns
         String[] coefnames = di.coefNames();
         StringBuilder sb = new StringBuilder();
@@ -52,12 +58,12 @@ public class XGBoostUtils {
      * @return DMatrix
      * @throws XGBoostError
      */
-    public static DMatrix convertFrameToDMatrix(DataInfo di,
+    public static MatrixLoader.DMatrixProvider convertFrameToDMatrix(DataInfo di,
                                                 Frame frame,
                                                 String response,
                                                 String weight,
                                                 String offset,
-                                                boolean sparse) throws XGBoostError {
+                                                boolean sparse) {
         assert di != null;
         int[] chunks = VecUtils.getLocalChunkIds(frame.anyVec());
         final Vec responseVec = frame.vec(response);
@@ -72,7 +78,7 @@ public class XGBoostUtils {
         }
         final int nRows = (int) nRowsL;
 
-        final DMatrix trainMat;
+        final MatrixLoader.DMatrixProvider trainMat;
 
         // In the future this 2 arrays might also need to be rewritten into float[][],
         // but only if we want to handle datasets over 2^31-1 on a single machine. For now I'd leave it as it is.
@@ -91,15 +97,6 @@ public class XGBoostUtils {
         } else {
             LOG.debug("Treating matrix as dense.");
             trainMat = DenseMatrixFactory.dense(frame, chunks, nRows, nRowsByChunk, weightVec, offsetsVec, responseVec, di, resp, weights, offsets);
-        }
-
-        assert trainMat.rowNum() == nRows;
-        trainMat.setLabel(resp);
-        if (weights != null) {
-            trainMat.setWeight(weights);
-        }
-        if (offsets != null) {
-            trainMat.setBaseMargin(offsets);
         }
         return trainMat;
     }

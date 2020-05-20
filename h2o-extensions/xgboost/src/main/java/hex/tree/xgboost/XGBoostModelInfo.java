@@ -31,8 +31,10 @@ final public class XGBoostModelInfo extends Iced {
     _featureMap = featureMap;
   }
 
-  public void setBoosterBytes(byte[] boosterBytes) {
-    _boosterBytes = boosterBytes;
+  public void updateBoosterBytes(byte[] boosterBytes) {
+    if (boosterBytes != null) {
+      _boosterBytes = boosterBytes;
+    }
   }
 
   @Override

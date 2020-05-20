@@ -10,10 +10,10 @@ import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
 import hex.tree.PlattScalingHelper;
 import hex.tree.TreeUtils;
-import hex.tree.xgboost.rabit.RabitTrackerH2O;
-import hex.tree.xgboost.task.XGBoostCleanupTask;
-import hex.tree.xgboost.task.XGBoostSetupTask;
-import hex.tree.xgboost.task.XGBoostUpdateTask;
+import hex.tree.xgboost.exec.LocalXGBoostExecutor;
+import hex.tree.xgboost.exec.RemoteXGBoostExecutor;
+import hex.tree.xgboost.exec.XGBoostExecutor;
+import hex.tree.xgboost.predict.XGBoostVariableImportance;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -27,15 +27,9 @@ import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
-import water.util.Log;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -116,7 +110,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       if (H2O.SELF.getSecurityManager().securityEnabled && !H2O.ARGS.allow_insecure_xgboost) {
         throw new H2OIllegalArgumentException("Cannot run XGBoost on an SSL enabled cluster larger than 1 node. XGBoost does not support SSL encryption.");
       } else {
-        Log.info("Executing XGBoost on an secured cluster might compromise security.");
+        LOG.info("Executing XGBoost on an secured cluster might compromise security.");
       }
     }
     if (H2O.ARGS.client && _parms._build_tree_one_node)
@@ -350,6 +344,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         buildModelImpl();
       }
     }
+    
+    private XGBoostExecutor makeExecutor(XGBoostModel model) {
+      String propVal = H2O.getSysProperty("xgboost.externalAddress", null);
+      if (propVal == null) {
+        return new LocalXGBoostExecutor(model, _train);
+      } else {
+        return new RemoteXGBoostExecutor(propVal, model, _train);
+      }
+    }
 
     final void buildModelImpl() {
       final XGBoostModel model;
@@ -370,49 +373,15 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         model._output._sparse = isTrainDatasetSparse();
       }
 
-      File featureMapFile = null;
-      try {
-        
-        XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(_train);
-
-        // Prepare Rabit tracker for this job
-        // This cannot be H2O.getCloudSize() as a frame might not be distributed on all the nodes
-        // In such a case we'll perform training only on a subset of nodes while XGBoost/Rabit would keep waiting
-        // for H2O.getCloudSize() number of requests/responses.
-        final RabitTrackerH2O rt = new RabitTrackerH2O(trainFrameNodes.getNumNodes());
-        startRabitTracker(rt);
-
-        // Create a "feature map" and store in a temporary file (for Variable Importance, MOJO, ...)
-        DataInfo dataInfo = model.model_info().dataInfo();
-        assert dataInfo != null;
-        String featureMap = XGBoostUtils.makeFeatureMap(_train, dataInfo);
-        model.model_info().setFeatureMap(featureMap);
-        featureMapFile = createFeatureMapFile(featureMap);
-
-        BoosterParms boosterParms = XGBoostModel.createParams(_parms, model._output.nclasses(), dataInfo.coefNames());
-        model._output._native_parameters = boosterParms.toTwoDimTable();
-
-        byte[] checkpointBytes = null;
-        if (_parms.hasCheckpoint()) {
-          checkpointBytes = model.model_info()._boosterBytes;
-        }
-        XGBoostSetupTask setupTask = new XGBoostSetupTask(model, _parms, boosterParms, checkpointBytes, getWorkerEnvs(rt), trainFrameNodes).run();
-        try {
-          XGBoostUpdateTask nullModelTask = new XGBoostUpdateTask(setupTask, 0).run();
-          BoosterProvider boosterProvider = new BoosterProvider(model.model_info(), featureMapFile, nullModelTask);
-          scoreAndBuildTrees(setupTask, boosterProvider, model);
-        } finally {
-          XGBoostCleanupTask.cleanUp(setupTask);
-          stopRabitTracker(rt);
-        }
-      } catch (XGBoostError xgBoostError) {
-        throw new RuntimeException("XGBoost failure", xgBoostError);
+      XGBoostUtils.createFeatureMap(model, _train);
+      XGBoostVariableImportance variableImportance = model.setupVarImp();
+      try (XGBoostExecutor exec = makeExecutor(model)) {
+        model.model_info().updateBoosterBytes(exec.setup());
+        scoreAndBuildTrees(model, exec, variableImportance);
+      } catch (Exception e) {
+        throw new RuntimeException("Error while training XGBoost model", e);
       } finally {
-        if (featureMapFile != null) {
-          if (! featureMapFile.delete()) {
-            LOG.warn("Unable to delete file " + featureMapFile + ". Please do a manual clean-up.");
-          }
-        }
+        variableImportance.cleanup();
         // Unlock & save results
         model.unlock(_job);
       }
@@ -451,33 +420,17 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           || ((_train.numRows() * totalColumns) > Integer.MAX_VALUE);
     }
 
-    // For feature importances - write out column info
-    private File createFeatureMapFile(String featureMap) {
-      try {
-        File fmFile = Files.createTempFile("h2o_xgb_" + _result.toString(), ".txt").toFile();
-        fmFile.deleteOnExit();
-        try (OutputStream os = new FileOutputStream(fmFile)) {
-          os.write(featureMap.getBytes());
-        }
-        return fmFile;
-      } catch (IOException e) {
-        throw new RuntimeException("Cannot generate feature map file" , e);
-      }
-    }
-
-    private void scoreAndBuildTrees(final XGBoostSetupTask setupTask, final BoosterProvider boosterProvider,
-                                    final XGBoostModel model) throws XGBoostError {
+    private void scoreAndBuildTrees(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp) {
       for (int tid = 0; tid < _ntrees; tid++) {
         // During first iteration model contains 0 trees, then 1-tree, ...
-        boolean scored = doScoring(model, boosterProvider, false);
+        boolean scored = doScoring(model, exec, varImp, false);
         if (scored && ScoreKeeper.stopEarly(model._output.scoreKeepers(), _parms._stopping_rounds, ScoreKeeper.ProblemType.forSupervised(_nclass > 1), _parms._stopping_metric, _parms._stopping_tolerance, "model's last", true)) {
           LOG.info("Early stopping triggered - stopping XGBoost training");
           break;
         }
 
         Timer kb_timer = new Timer();
-        XGBoostUpdateTask t = new XGBoostUpdateTask(setupTask, tid).run();
-        boosterProvider.reset(t);
+        exec.update(tid);
         LOG.info((tid + 1) + ". tree was built in " + kb_timer.toString());
         _job.update(1);
 
@@ -498,13 +451,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
           constraintCheckEnabled()
       ) {
         _job.update(0, "Checking monotonicity constraints on the final model");
-        boosterProvider.updateBooster();
+        model.model_info().updateBoosterBytes(exec.updateBooster());
         checkConstraints(model.model_info(), monotoneConstraints);
       }
       
       _job.update(0, "Scoring the final model");
       // Final scoring
-      doScoring(model, boosterProvider, true);
+      doScoring(model, exec, varImp, true);
       // Finish remaining work (if stopped early)
       _job.update(_parms._ntrees-model._output._ntrees);
     }
@@ -535,8 +488,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       float[] maxs = new float[tree.length];
       int[] max_ids = new int[tree.length];
       rollupMinMaxPreds(tree, 0, mins, min_ids, maxs, max_ids);
-      for (int i = 0; i < tree.length; i++) {
-        RegTreeNode node = tree[i];
+      for (RegTreeNode node : tree) {
         if (node.isLeaf()) continue;
         String splitColumn = featureProperties._names[node.getSplitIndex()];
         if (!monotoneConstraints.containsKey(splitColumn)) continue;
@@ -584,37 +536,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       max_ids[nid] = max_ids[max_id];
     }
 
-    // Don't start the tracker for 1 node clouds -> the GPU plugin fails in such a case
-    private void startRabitTracker(RabitTrackerH2O rt) {
-      if (H2O.CLOUD.size() > 1) {
-        rt.start(0);
-      }
-    }
-
-    private void stopRabitTracker(RabitTrackerH2O rt) {
-      if(H2O.CLOUD.size() > 1) {
-        rt.waitFor(0);
-        rt.stop();
-      }
-    }
-
-    // XGBoost seems to manipulate its frames in case of a 1 node distributed version in a way the GPU plugin can't handle
-    // Therefore don't use RabitTracker envs for 1 node
-    private Map<String, String> getWorkerEnvs(RabitTrackerH2O rt) {
-      if(H2O.CLOUD.size() > 1) {
-        return rt.getWorkerEnvs();
-      } else {
-        return new HashMap<>();
-      }
-    }
-
     long _firstScore = 0;
     long _timeLastScoreStart = 0;
     long _timeLastScoreEnd = 0;
 
-    private boolean doScoring(XGBoostModel model,
-                              BoosterProvider boosterProvider,
-                              boolean finalScoring) throws XGBoostError {
+    private boolean doScoring(final XGBoostModel model, final XGBoostExecutor exec, XGBoostVariableImportance varImp, boolean finalScoring) {
       boolean scored = false;
       long now = System.currentTimeMillis();
       if (_firstScore == 0) _firstScore = now;
@@ -633,11 +559,11 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
               (timeToScore && _parms._score_tree_interval == 0) || // use time-based duty-cycle heuristic only if the user didn't specify _score_tree_interval
               manualInterval) {
         _timeLastScoreStart = now;
-        boosterProvider.updateBooster(); // retrieve booster, expensive!
+        model.model_info().updateBoosterBytes(exec.updateBooster());
         model.doScoring(_train, _parms.train(), _valid, _parms.valid());
         _timeLastScoreEnd = System.currentTimeMillis();
         XGBoostOutput out = model._output;
-        final Map<String, FeatureScore> varimp = model.setupVarImp(boosterProvider._featureMapFile).getFeatureScores();
+        final Map<String, FeatureScore> varimp = varImp.getFeatureScores(model.model_info()._boosterBytes);
         out._varimp = computeVarImp(varimp);
         out._model_summary = createModelSummaryTable(out._ntrees, null);
         out._scoring_history = createScoringHistoryTable(out, model._output._scored_train, out._scored_valid, _job, out._training_time_ms, _parms._custom_metric_func != null, false);
@@ -682,31 +608,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       j++;
     }
     return new XgbVarImp(names, gains, covers, freqs);
-  }
-
-  private static final class BoosterProvider {
-    final XGBoostModelInfo _modelInfo;
-    final File _featureMapFile;
-    XGBoostUpdateTask _updateTask;
-
-    BoosterProvider(XGBoostModelInfo modelInfo, File featureMapFile, XGBoostUpdateTask updateTask) {
-      _modelInfo = modelInfo;
-      _featureMapFile = featureMapFile;
-      _updateTask = updateTask;
-      _modelInfo.setBoosterBytes(_updateTask.getBoosterBytes());
-    }
-
-    final void reset(XGBoostUpdateTask updateTask) {
-      _updateTask = updateTask;
-    }
-
-    final void updateBooster() {
-      if (_updateTask == null) {
-        throw new IllegalStateException("Booster can be retrieved only once!");
-      }
-      final byte[] boosterBytes = _updateTask.getBoosterBytes();
-      _modelInfo.setBoosterBytes(boosterBytes);
-    }
   }
 
   private static volatile boolean DEFAULT_GPU_BLACKLISTED = false;

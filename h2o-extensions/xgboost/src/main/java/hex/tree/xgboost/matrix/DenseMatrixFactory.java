@@ -12,6 +12,8 @@ import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
+import java.io.*;
+
 import static hex.tree.xgboost.matrix.MatrixFactoryUtils.setResponseAndWeightAndOffset;
 
 public class DenseMatrixFactory {
@@ -35,20 +37,76 @@ public class DenseMatrixFactory {
         }
     }
     
-    public static DMatrix dense(
+    public static class DenseDMatrixProvider extends MatrixLoader.DMatrixProvider {
+
+        private BigDenseMatrix data;
+
+        protected DenseDMatrixProvider(
+            long actualRows,
+            float[] response,
+            float[] weights,
+            float[] offsets,
+            BigDenseMatrix data
+        ) {
+            super(actualRows, response, weights, offsets);
+            this.data = data;
+        }
+
+        public DenseDMatrixProvider() {}
+
+        @Override
+        public DMatrix makeDMatrix() throws XGBoostError {
+            return new DMatrix(data, Float.NaN);
+        }
+
+        @Override
+        protected void dispose() {
+            if (data != null) {
+                data.dispose();
+                data = null;
+            }
+        }
+
+        @Override
+        public void writeExternal(ObjectOutput out) throws IOException {
+            super.writeExternal(out);
+            out.writeInt(data.nrow);
+            out.writeInt(data.ncol);
+            final long size = (long) data.nrow * data.ncol;
+            for (long i = 0; i < size; i++) {
+                out.writeFloat(data.get(i));
+            }
+        }
+
+        @Override
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            super.readExternal(in);
+            final int nrow = in.readInt();
+            final int ncol = in.readInt();
+            data = new BigDenseMatrix(nrow, ncol);
+            final long size = (long) nrow * ncol;
+            for (long i = 0; i < size; i++) {
+                data.set(i, in.readFloat());
+            }
+        }
+
+    }
+    
+    public static DenseDMatrixProvider dense(
         Frame f, int[] chunks, int nRows, int[] nRowsByChunk, Vec weightVec, Vec offsetVec, Vec responseVec,
         DataInfo di, float[] resp, float[] weights, float[] offsets
-    ) throws XGBoostError {
+    ) {
         BigDenseMatrix data = null;
         try {
             data = allocateDenseMatrix(nRows, di);
             long actualRows = denseChunk(data, chunks, nRowsByChunk, f, weightVec, offsetVec, responseVec, di, resp, weights, offsets);
             assert data.nrow == actualRows;
-            return new DMatrix(data, Float.NaN);
-        } finally {
+            return new DenseDMatrixProvider(actualRows, resp, weights, offsets, data);
+        } catch (Exception e) {
             if (data != null) {
                 data.dispose();
             }
+            throw new RuntimeException("Error while create off-heap matrix.", e);
         }
     }
 

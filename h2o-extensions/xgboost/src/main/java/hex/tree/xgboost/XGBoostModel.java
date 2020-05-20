@@ -251,8 +251,8 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       return XGBoostParameters.Backend.cpu;
     }
   }
-
-  public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
+  
+  public static Map<String, Object> createParamsMap(XGBoostParameters p, int nClasses, String[] coefNames) {
     Map<String, Object> params = new HashMap<>();
 
     // Common parameters with H2O GBM
@@ -430,8 +430,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       LOG.info(" " + s.getKey() + " = " + s.getValue());
     }
     LOG.info("");
+    return Collections.unmodifiableMap(params);
+  }
 
-    return BoosterParms.fromMap(Collections.unmodifiableMap(params));
+  public static BoosterParms createParams(XGBoostParameters p, int nClasses, String[] coefNames) {
+    return BoosterParms.fromMap(createParamsMap(p, nClasses, coefNames));
   }
 
   /** Performs deep clone of given model.  */
@@ -552,11 +555,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     return new XGBoostJavaBigScorePredict(model_info, _output, di, _parms, defaultThreshold());
   }
   
-  public XGBoostVariableImportance setupVarImp(File featureMapFile) {
+  public XGBoostVariableImportance setupVarImp() {
     if (PredictConfiguration.useJavaScoring()) {
       return new XGBoostJavaVariableImportance(model_info);
     } else {
-      return new XGBoostNativeVariableImportance(model_info, featureMapFile);
+      return new XGBoostNativeVariableImportance(_key, model_info.getFeatureMap());
     }
   }
 
