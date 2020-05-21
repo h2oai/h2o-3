@@ -21,6 +21,8 @@ import java.io.InputStream;
 import java.net.MalformedURLException;
 import java.net.URLDecoder;
 import java.util.Arrays;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Utilities supporting HTTP server-side functionality, without depending on specific version of Jetty, or on Jetty at all.
@@ -171,6 +173,21 @@ public class ServletUtils {
     }
     catch (Exception e) {
       throw new RuntimeException(e);
+    }
+  }
+  
+  public static String[] parseUriParams(String uri, HttpServletResponse response, Pattern p, int numParams) throws IOException {
+    Matcher m = p.matcher(uri);
+    if (!m.matches()) {
+      ServletUtils.setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
+      response.getWriter().write("Improperly formatted URI");
+      return null;
+    } else {
+      String[] result = new String[numParams];
+      for (int i = 0; i < numParams; i++) {
+        result[i] = m.group(i+1);
+      }
+      return result;
     }
   }
 
