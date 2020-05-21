@@ -412,7 +412,7 @@ h2o.predict.H2OAutoML <- function(object, newdata, ...) {
   is_progress <- isTRUE(as.logical(.h2o.is_progress()))
   if (show_progress) h2o.show_progress() else h2o.no_progress()
   frame <- tryCatch(
-    as.h2o(table, destination_frame=destination_frame),
+    suppressWarnings(as.h2o(table, destination_frame=destination_frame)),
     error = identity,
     finally = if (is_progress) h2o.show_progress() else h2o.no_progress()
   )
