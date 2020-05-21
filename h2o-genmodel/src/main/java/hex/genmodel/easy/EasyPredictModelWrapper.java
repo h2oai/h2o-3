@@ -362,7 +362,8 @@ public class EasyPredictModelWrapper implements Serializable {
         return transformWithTargetEncoding(data);
       case AnomalyDetection:
         return predictAnomalyDetection(data);
-
+      case KLime:
+        return predictKLime(data);
       case Unknown:
         throw new PredictException("Unknown model category");
       default:
