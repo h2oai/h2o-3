@@ -32,10 +32,11 @@ public abstract class SharedTreeMojoModelWithContributions extends SharedTreeMoj
     }
     
     protected abstract PredictContributions getContributionsPredictor(TreeSHAPPredictor<double[]> treeSHAPPredictor);
-    
+
     protected static class SharedTreeContributionsPredictor extends ContributionsPredictor<double[]> {
+
         public SharedTreeContributionsPredictor(SharedTreeMojoModel model, TreeSHAPPredictor<double[]> treeSHAPPredictor) {
-            super(model._nfeatures + 1, treeSHAPPredictor);
+            super(model._nfeatures + 1, model._names, treeSHAPPredictor);
         }
 
         @Override

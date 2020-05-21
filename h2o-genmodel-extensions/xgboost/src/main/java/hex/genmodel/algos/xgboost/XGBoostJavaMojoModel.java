@@ -110,7 +110,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   public final PredictContributions makeContributionsPredictor() {
     TreeSHAPPredictor<FVec> treeSHAPPredictor = _treeSHAPPredictor != null ? 
             _treeSHAPPredictor : makeTreeSHAPPredictor(_predictor);
-    return new XGBoostContributionsPredictor(treeSHAPPredictor);
+    return new XGBoostContributionsPredictor(this, treeSHAPPredictor);
   }
 
   static ObjFunction getObjFunction(String name) {
@@ -156,8 +156,8 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
   }
 
   private final class XGBoostContributionsPredictor extends ContributionsPredictor<FVec> {
-    private XGBoostContributionsPredictor(TreeSHAPPredictor<FVec> treeSHAPPredictor) {
-      super(_nums + _catOffsets[_cats] + 1, treeSHAPPredictor);
+    private XGBoostContributionsPredictor(XGBoostMojoModel model, TreeSHAPPredictor<FVec> treeSHAPPredictor) {
+      super(_nums + _catOffsets[_cats] + 1, makeContributionNames(model), treeSHAPPredictor);
     }
 
     @Override
@@ -165,4 +165,23 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
       return _1hotFactory.fromArray(input);
     }
   }
+
+  private static String[] makeContributionNames(XGBoostMojoModel m) {
+    final String[] names = new String[m._nums + m._catOffsets[m._cats] + 1];
+    final String[] features = m.features();
+    int i = 0;
+    for (int c = 0; c < features.length; c++) {
+      if (m._domains[c] == null) {
+        names[i++] = features[c];
+      } else {
+        for (String d : m._domains[c])
+          names[i++] = features[c] + "." + d;
+        names[i++] = features[c] + ".missing(NA)";
+      }
+    }
+    names[i++] = "BiasTerm";
+    assert names.length == i;
+    return names;
+  }
+
 }
