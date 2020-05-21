@@ -31,6 +31,7 @@ automl.get.automl.test <- function() {
     expect_equal(aml1@leaderboard, get_aml1@leaderboard)
     expect_equal(h2o.dim(aml1@event_log), h2o.dim(get_aml1@event_log))
     expect_equal(h2o.get_leaderboard(aml1), h2o.get_leaderboard(get_aml1))
+    expect_equal(h2o.get_leaderboard(aml1, "ALL"), h2o.get_leaderboard(get_aml1, "ALL"))
 }
 
 doTest("AutoML h2o.get_automl Test", automl.get.automl.test)

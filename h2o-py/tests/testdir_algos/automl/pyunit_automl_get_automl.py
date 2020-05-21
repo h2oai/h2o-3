@@ -39,5 +39,6 @@ def test_get_automl():
 
     # Test get_leaderboard PUBDEV-7454
     assert (get_leaderboard(aml) == get_leaderboard(get_aml)).all()
+    assert (get_leaderboard(aml, 'ALL') == get_leaderboard(get_aml, 'ALL')).all()
 
 pyunit_utils.run_tests([test_get_automl])
