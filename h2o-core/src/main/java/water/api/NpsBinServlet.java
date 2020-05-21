@@ -18,22 +18,20 @@ import java.util.regex.Pattern;
 /**
  */
 public class NpsBinServlet extends HttpServlet {
+  
+  private static final Pattern URL_PATTERN = Pattern.compile(".*/NodePersistentStorage.bin/([^/]+)/([^/]+)");
 
   @Override
   protected void doGet(HttpServletRequest request, HttpServletResponse response) {
     String uri = ServletUtils.getDecodedUri(request);
     try {
-      Pattern p = Pattern.compile(".*/NodePersistentStorage.bin/([^/]+)/([^/]+)");
-      Matcher m = p.matcher(uri);
-      boolean b = m.matches();
-      if (!b) {
-        ServletUtils.setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
-        response.getWriter().write("Improperly formatted URI");
+      String[] params = ServletUtils.parseUriParams(uri, response, URL_PATTERN, 2);
+      if (params == null) {
         return;
       }
+      String categoryName = params[0];
+      String keyName = params[1];
 
-      String categoryName = m.group(1);
-      String keyName = m.group(2);
       NodePersistentStorage nps = H2O.getNPS();
       AtomicLong length = new AtomicLong();
       InputStream is = nps.get(categoryName, keyName, length);
@@ -69,17 +67,12 @@ public class NpsBinServlet extends HttpServlet {
   protected void doPost(HttpServletRequest request, HttpServletResponse response) {
     String uri = ServletUtils.getDecodedUri(request);
     try {
-      Pattern p = Pattern.compile(".*NodePersistentStorage.bin/([^/]+)/([^/]+)");
-      Matcher m = p.matcher(uri);
-      boolean b = m.matches();
-      if (!b) {
-        ServletUtils.setResponseStatus(response, HttpServletResponse.SC_BAD_REQUEST);
-        response.getWriter().write("Improperly formatted URI");
+      String[] params = ServletUtils.parseUriParams(uri, response, URL_PATTERN, 2);
+      if (params == null) {
         return;
       }
-
-      String categoryName = m.group(1);
-      String keyName = m.group(2);
+      String categoryName = params[0];
+      String keyName = params[1];
 
       InputStream is = ServletUtils.extractPartInputStream(request, response);
       if (is == null) {
