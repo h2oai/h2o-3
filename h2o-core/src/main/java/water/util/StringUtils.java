@@ -201,4 +201,13 @@ public class StringUtils {
   public static String toString(byte[] bytes, int from, int length) {
     return new String(bytes, from, length, Charset.forName("UTF-8"));
   }
+
+  public static String sanitizeIdentifier(String id) {
+    char[] cs = id.toCharArray();
+    for( int i=1; i<cs.length; i++ )
+      if( !Character.isJavaIdentifierPart(cs[i]) )
+        cs[i] = '_';
+    return new String(cs);
+  }
+
 }
