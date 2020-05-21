@@ -59,7 +59,7 @@ public class NonBlockingHashMapTest {
     @Override
     public void run() {
       for (int i = 0; i < 100000; i++) {
-        K k = new K(System.currentTimeMillis(), this);
+        K k = new K(System.nanoTime(), this);
         K old = map.putIfAbsent(k, k);
         if (old == null) {
           nInserts++;

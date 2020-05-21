@@ -1,7 +1,6 @@
 package hex.tree;
 
 import hex.Distribution;
-import hex.DistributionFactory;
 import sun.misc.Unsafe;
 import water.*;
 import water.fvec.Frame;
@@ -96,13 +95,18 @@ public final class DHistogram extends Iced {
    */
   public double seP2NA() { return _vals[_vals_dim*_nbin+4]; }
   public double denNA() { return _vals[_vals_dim*_nbin+5]; }
+  public double nomNA() { return _vals[_vals_dim*_nbin+6]; }
 
   final boolean hasPreds() {
     return _vals_dim >= 5;
   } 
 
   final boolean hasDenominator() {
-    return _vals_dim == 6;
+    return _vals_dim >= 6;
+  }
+
+  final boolean hasNominator() {
+    return _vals_dim == 7;
   }
 
   // Atomically updated double min/max
@@ -160,19 +164,6 @@ public final class DHistogram extends Iced {
     double[/*nbins*/] splitPts;
   }
 
-
-  public static int[] activeColumns(DHistogram[] hist) {
-    int[] cols = new int[hist.length];
-    int len=0;
-    for( int i=0; i<hist.length; i++ ) {
-      if (hist[i]==null) continue;
-      assert hist[i]._min < hist[i]._maxEx && hist[i].nbins() > 1 : "broken histo range "+ hist[i];
-      cols[len++] = i;        // Gather active column
-    }
-//    cols = Arrays.copyOfRange(cols, len, hist.length);
-    return cols;
-  }
-
   public void setMin( double min ) {
     long imin = Double.doubleToRawLongBits(min);
     double old = _min2;
@@ -202,12 +193,15 @@ public final class DHistogram extends Iced {
     if (cs != null) {
       _pred1 = cs._min;
       _pred2 = cs._max;
-      if (! cs.needsGammaDenum()) {
+      if (!cs.needsGammaDenom() && !cs.needsGammaNom()) {
         _vals_dim = Double.isNaN(_pred1) && Double.isNaN(_pred2) ? 3 : 5;
         _dist = null; // intentionally cause NPE if used incorrectly
-      } else {
+      } else if (!cs.needsGammaNom()) {
         _vals_dim = 6;
-        _dist = DistributionFactory.getDistribution(cs._dist);
+        _dist = cs._dist;
+      } else {
+        _vals_dim = 7;
+        _dist = cs._dist;
       }
     } else {
       _pred1 = Double.NaN;
@@ -472,18 +466,20 @@ public final class DHistogram extends Iced {
    * @param ws observation weights
    * @param resp original response (response column of the outer model, needed to calculate Gamma denominator) 
    * @param cs column data
-   * @param ys response column of the regression tree (eg. GBM residuals, not the original model response!) 
+   * @param ys response column of the regression tree (eg. GBM residuals, not the original model response!)
+   * @param preds current model predictions (optional, provided only if needed)
    * @param rows rows sorted by leaf assignemnt
    * @param hi  upper bound on index into rows array to be processed by this call (exclusive)
    * @param lo  lower bound on index into rows array to be processed by this call (inclusive)
    */
-  void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, int [] rows, int hi, int lo){
+  void updateHisto(double[] ws, double resp[], double[] cs, double[] ys, double[] preds, int[] rows, int hi, int lo){
     // Gather all the data for this set of rows, for 1 column and 1 split/NID
     // Gather min/max, wY and sum-squares.
     for(int r = lo; r< hi; ++r) {
-      int k = rows[r];
-      double weight = ws[k];
-      if (weight == 0) continue;
+      final int k = rows[r];
+      final double weight = ws[k];
+      if (weight == 0)
+        continue;
       double col_data = cs[k];
       if (col_data < _min2) _min2 = col_data;
       if (col_data > _maxIn) _maxIn = col_data;
@@ -495,11 +491,14 @@ public final class DHistogram extends Iced {
       _vals[_vals_dim*b + 0] += weight;
       _vals[_vals_dim*b + 1] += wy;
       _vals[_vals_dim*b + 2] += wyy;
-      if (_vals_dim >= 5) {
+      if (_vals_dim >= 5 && !Double.isNaN(resp[k])) { // FIXME (PUBDEV-7553): This needs to be applied even with monotone constraints disabled
         _vals[_vals_dim * b + 3] += weight * (_pred1 - y) * (_pred1 - y);
         _vals[_vals_dim * b + 4] += weight * (_pred2 - y) * (_pred2 - y);
-        if (_vals_dim == 6) {
-          _vals[_vals_dim * b + 5] += _dist.gammaDenom(weight, resp[k], y, Double.NaN);
+        if (_vals_dim >= 6) {
+          _vals[_vals_dim * b + 5] += _dist.gammaDenom(weight, resp[k], y, preds[k]);
+          if (_vals_dim == 7) {
+            _vals[_vals_dim * b + 6] += _dist.gammaNum(weight, resp[k], y, preds[k]);
+          }
         }
       }
     }
