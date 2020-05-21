@@ -60,6 +60,11 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
+   training-models
+
+.. toctree::
+   :maxdepth: 2
+
    data-science
 
 .. toctree::
