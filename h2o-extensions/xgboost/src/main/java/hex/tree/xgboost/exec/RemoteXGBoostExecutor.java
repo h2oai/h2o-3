@@ -5,16 +5,11 @@ import hex.schemas.XGBoostExecRespV3;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.matrix.FrameMatrixLoader;
-import hex.tree.xgboost.matrix.MatrixLoader;
-import hex.tree.xgboost.task.XGBoostSaveMatrixTask;
+import hex.tree.xgboost.task.XGBoostUploadMatrixTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
 
 public class RemoteXGBoostExecutor implements XGBoostExecutor {
 
@@ -22,7 +17,8 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     public final Key modelKey;
     
     public RemoteXGBoostExecutor(String remoteUri, XGBoostModel model, Frame train) {
-        http = new XGBoostHttpClient(remoteUri, H2O.ARGS.jks != null);
+        boolean https = H2O.ARGS.jks != null;
+        http = new XGBoostHttpClient(remoteUri, https);
         modelKey = model._key;
         XGBoostExecReq.Init req = new XGBoostExecReq.Init();
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
@@ -30,26 +26,31 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         DataInfo dataInfo = model.model_info().dataInfo();
         req.parms = XGBoostModel.createParamsMap(model._parms, model._output.nclasses(), dataInfo.coefNames());
         model._output._native_parameters = BoosterParms.fromMap(req.parms).toTwoDimTable();
-        FrameMatrixLoader loader = new FrameMatrixLoader(model, train);
-        req.matrix_dir_path = H2O.ICE_ROOT.toString() + "/" + modelKey.toString();
         req.save_matrix_path = model._parms._save_matrix_directory;
         req.nodes = collectNodes(trainFrameNodes);
-        new XGBoostSaveMatrixTask(modelKey, req.matrix_dir_path, trainFrameNodes._nodes, loader).run();
-        if (model._parms.hasCheckpoint()) {
-            req.has_checkpoint = true;
-            saveCheckpointBoosterToFile(model, req.matrix_dir_path);
-        }
         XGBoostExecRespV3 resp = http.postJson(modelKey, "init", req);
+        String[] remoteNodes = resp.readData();
         assert modelKey.equals(resp.key.key());
+        uploadCheckpointBooster(model);
+        uploadMatrices(model, train, trainFrameNodes, remoteNodes, https);
     }
 
-    private void saveCheckpointBoosterToFile(XGBoostModel model, String matrix_dir_path) {
-        File checkpointFile = new File(matrix_dir_path, "checkpoint.bin");
-        try (FileOutputStream fos = new FileOutputStream(checkpointFile)) {
-            fos.write(model.model_info()._boosterBytes);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to write checkpoint into file.", e);
+    private void uploadMatrices(
+        XGBoostModel model,
+        Frame train,
+        XGBoostSetupTask.FrameNodes trainFrameNodes,
+        String[] remoteNodes,
+        boolean https
+    ) {
+        FrameMatrixLoader loader = new FrameMatrixLoader(model, train);
+        new XGBoostUploadMatrixTask(modelKey, trainFrameNodes._nodes, loader, remoteNodes, https).run();
+    }
+
+    private void uploadCheckpointBooster(XGBoostModel model) {
+        if (!model._parms.hasCheckpoint()) {
+            return;
         }
+        http.uploadBytes(modelKey, "checkpoint", model.model_info()._boosterBytes);
     }
 
     private String[] collectNodes(XGBoostSetupTask.FrameNodes nodes) {
@@ -65,7 +66,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     @Override
     public byte[] setup() {
         XGBoostExecReq req = new XGBoostExecReq(); // no req params
-        return http.postBytes(modelKey, "setup", req);
+        return http.downloadBytes(modelKey, "setup", req);
     }
 
     @Override
@@ -79,7 +80,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     @Override
     public byte[] updateBooster() {
         XGBoostExecReq req = new XGBoostExecReq(); // no req params
-        return http.postBytes(modelKey, "getBooster", req);
+        return http.downloadBytes(modelKey, "getBooster", req);
     }
 
     @Override
