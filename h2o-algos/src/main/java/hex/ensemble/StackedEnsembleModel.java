@@ -402,13 +402,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
       // FIXME: This is here because there is no Family.AUTO. It enables us to know if the user specified family or not.
       // FIXME: Family.AUTO will be implemented in https://0xdata.atlassian.net/projects/PUBDEV/issues/PUBDEV-7444
       if (((GLMModel.GLMParameters)_parms._metalearner_parameters)._family != null) {
-        inheritFamilyAndParms(_parms._metalearner_parameters);
         return false; // User specified family - no need to infer one; Link will be also used properly if it is specified
       }
       inheritFamilyAndParms(aModel._parms);
     } else { // use distribution
       if (_parms._metalearner_parameters._distribution != DistributionFamily.AUTO) {
-        inheritDistributionAndParms(_parms._metalearner_parameters);
         return false; // User specified distribution; no need to infer one
       }
       inheritDistributionAndParms(aModel._parms);
@@ -448,7 +446,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     Model aModel = null;
     boolean retrievedFirstModelParams = false;
     boolean inferredDistributionFromFirstModel = false;
-    boolean inferredFromGLM = false;
+    GLMModel firstGLM = null;
     boolean blending_mode = _parms._blending != null;
     boolean cv_required_on_base_model = !blending_mode;
     boolean require_consistent_training_frames = !blending_mode && !_parms._is_cv_model;
@@ -476,32 +474,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         throw new H2OIllegalArgumentException("Base model is not supervised: "+aModel._key.toString());
       }
 
-      if (require_consistent_training_frames) {
-        if (trainingFrameRows < 0) trainingFrameRows = _parms.train().numRows();
-        Frame aTrainingFrame = aModel._parms.train(); // can be null when aModel was imported
-        if (aTrainingFrame == null) { // The aModel was probably loaded from a different session.
-          Log.warn("Training frame of model \"" + aModel._key + "\"  is null. " +
-                  "Assuming it's same as the training frame of this Stacked Ensemble.");
-          aTrainingFrame = DKV.getGet(aModel._output._cross_validation_holdout_predictions_frame_id);
-          if (aTrainingFrame == null) {
-            throw new H2OIllegalArgumentException("Base model \"" + aModel._key + "\" is missing cross validation holdout predictions.");
-          }
-        }
-        if (trainingFrameRows != aTrainingFrame.numRows())
-          throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames."
-                  +" Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
-      }
-
-      if (cv_required_on_base_model) {
-        // If we don't have a fold_column require:
-        // nfolds > 1
-        // nfolds consistent across base models
-        if (aModel._parms._fold_column == null && aModel._parms._nfolds < 2)
-          throw new H2OIllegalArgumentException("Base model does not use cross-validation: " + aModel._parms._nfolds);
-        if (!aModel._parms._keep_cross_validation_predictions)
-          throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: " + aModel._parms._nfolds);
-      }
-
       if (retrievedFirstModelParams) {
         // check that the base models are all consistent with first based model
 
@@ -513,6 +485,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           throw new H2OIllegalArgumentException("Base models are inconsistent: they use different response columns."
                   +" Found: "+responseColumn+" (StackedEnsemble) and "+aModel._parms._response_column+" (model "+k+").");
 
+        if (require_consistent_training_frames) {
+          if (trainingFrameRows < 0) trainingFrameRows = _parms.train().numRows();
+          Frame aTrainingFrame = aModel._parms.train(); // FIXME: can be null when aModel was imported
+          if (trainingFrameRows != aTrainingFrame.numRows())
+            throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames."
+                    +" Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
+        }
 
         if (cv_required_on_base_model) {
 
@@ -523,6 +502,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
           }
 
           if (aModel._parms._fold_column == null) {
+            // If we don't have a fold_column require:
+            // nfolds > 1
+            // nfolds consistent across base models
+            if (aModel._parms._nfolds < 2)
+              throw new H2OIllegalArgumentException("Base model does not use cross-validation: "+aModel._parms._nfolds);
             if (basemodel_nfolds != aModel._parms._nfolds)
               throw new H2OIllegalArgumentException("Base models are inconsistent: they use different values for nfolds.");
 
@@ -533,17 +517,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
             if (!aModel._parms._fold_column.equals(basemodel_fold_column))
               throw new H2OIllegalArgumentException("Base models are inconsistent: they use different fold_columns.");
           }
+          if (! aModel._parms._keep_cross_validation_predictions)
+            throw new H2OIllegalArgumentException("Base model does not keep cross-validation predictions: "+aModel._parms._nfolds);
         }
 
         if (inferredDistributionFromFirstModel) {
-          // In GLM, we get _family instead of _distribution.
-          // Further, we have Family.binomial instead of DistributionFamily.bernoulli.
-          // We also handle DistributionFamily.AUTO in distributionFamily()
-          //
-          // Hack alert: DRF only does Bernoulli and Gaussian, so only compare _domains.length above.
-          // TODO: If we're set to DistributionFamily.AUTO then GLM might auto-conform the response column
-          // giving us inconsistencies.
-
           // Check inferred params and if they differ fallback to basic distribution of model category
           if (!(aModel instanceof DRFModel) && distributionFamily(aModel) == distributionFamily(this)) {
             boolean sameParams = true;
@@ -565,11 +543,11 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
             if ((aModel instanceof GLMModel) &&
                     (Metalearners.getActualMetalearnerAlgo(_parms._metalearner_algorithm) == Metalearner.Algorithm.glm) &&
                     !((GLMModel.GLMParameters) _parms._metalearner_parameters)._link.equals(((GLMModel) aModel)._parms._link)) {
-              if (inferredFromGLM) {
-                sameParams = false;
+              if (firstGLM == null) {
+                firstGLM = (GLMModel) aModel;
+                inheritFamilyAndParms(firstGLM._parms);
               } else {
-                inheritFamilyAndParms(aModel._parms);
-                inferredFromGLM = true;
+                sameParams = false;
               }
             }
 
@@ -592,7 +570,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         // !retrievedFirstModelParams: this is the first base_model
         this.modelCategory = aModel._output.getModelCategory();
         inferredDistributionFromFirstModel = inferDistributionOrFamily(aModel);
-        inferredFromGLM = aModel instanceof GLMModel && inferredDistributionFromFirstModel;
+        firstGLM = aModel instanceof GLMModel && inferredDistributionFromFirstModel ? (GLMModel) aModel : null;
         responseColumn = aModel._parms._response_column;
 
         if (! _parms._response_column.equals(responseColumn))  // _params._response_column can't be null, validated by ModelBuilder

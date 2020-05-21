@@ -73,8 +73,8 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
       setCommonParams(builder._parms);
       setCrossValidationParams(builder._parms);
       setCustomParams(builder._parms);
-
       validateParams(builder._parms);
+      prepareModel(builder._parms);
 
       builder.init(false);
       Job<M> j = builder.trainModel();
@@ -129,6 +129,8 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
   protected void setCustomParams(P parms) { }
 
   protected void validateParams(P parms) { }
+
+  protected void prepareModel(P parms) {}
 
   protected void cleanup() {
     if (!_parms._keep_base_model_predictions) {
