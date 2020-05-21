@@ -12,6 +12,7 @@ import water.fvec.Vec;
 import water.util.IcedHashMapGeneric;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 /**
@@ -45,7 +46,7 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
     DMatrix matrix;
     try {
       matrix = _matrixLoader.makeLocalMatrix().get();
-    } catch (XGBoostError e) {
+    } catch (XGBoostError | IOException e) {
       throw new IllegalStateException("Failed to create XGBoost DMatrix", e);
     }
     if (_saveMatrixDirectory != null) {
@@ -53,18 +54,18 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
       if (directory.mkdirs()) {
         LOG.debug("Created directory for matrix export: " + directory.getAbsolutePath());
       }
-      File path = getMatrixFile(directory);
+      File path = XGBoostSaveMatrixTask.getMatrixFile(directory);
       LOG.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
       matrix.saveBinary(path.getAbsolutePath());
     }
+    if (matrix == null)
+      throw new IllegalStateException("Node " + H2O.SELF + " is supposed to participate in XGB training " +
+              "but it doesn't have a DMatrix!");
+
     _rabitEnv.put("DMLC_TASK_ID", String.valueOf(H2O.SELF.index()));
 
     XGBoostUpdater thread = XGBoostUpdater.make(_modelKey, matrix, _boosterParms, _checkpoint, _rabitEnv);
     thread.start(); // we do not need to wait for the Updater to init Rabit - subsequent tasks will wait
-  }
-
-  public static File getMatrixFile(File dir) {
-    return new File(dir, "matrix.part" + H2O.SELF.index());
   }
 
   /**

@@ -22,12 +22,13 @@ public class XGBoostExecReqV3 extends Schema<Iced, XGBoostExecReqV3> {
     @API(help="Identifier")
     public KeyV3 key;
 
-    @API(help="Arbitrary request data stored as Base64 encoded binary")
+    @API(help="Request data stored as Base64 binary")
     public String data;
 
     @SuppressWarnings("unchecked")
-    public <T> T readData() {
+    public <T> T readReq() {
         return (T) AutoBuffer.javaSerializeReadPojo(Base64.decodeBase64(data));
     }
+
 
 }

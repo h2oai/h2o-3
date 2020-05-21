@@ -59,6 +59,6 @@ public abstract class MatrixLoader extends Iced<MatrixLoader> {
         }
     }
     
-    public abstract DMatrixProvider makeLocalMatrix();
+    public abstract DMatrixProvider makeLocalMatrix() throws IOException;
     
 }

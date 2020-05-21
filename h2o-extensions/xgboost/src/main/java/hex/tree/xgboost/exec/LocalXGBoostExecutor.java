@@ -1,12 +1,11 @@
 package hex.tree.xgboost.exec;
 
 import hex.DataInfo;
-import hex.genmodel.utils.IOUtils;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.matrix.FrameMatrixLoader;
 import hex.tree.xgboost.matrix.MatrixLoader;
-import hex.tree.xgboost.matrix.FileMatrixLoader;
+import hex.tree.xgboost.matrix.RemoteMatrixLoader;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
 import hex.tree.xgboost.task.XGBoostCleanupTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
@@ -15,23 +14,15 @@ import water.H2O;
 import water.Key;
 import water.fvec.Frame;
 
-import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
 public class LocalXGBoostExecutor implements XGBoostExecutor {
 
-    interface CheckpointProvider { byte[] get(); }
-
     public final Key modelKey;
-    private final BoosterParms boosterParams;
-    private final MatrixLoader loader;
-    private final CheckpointProvider checkpointProvider;
-    private final boolean[] nodes;
-    private final String saveMatrixDirectory;
     private final RabitTrackerH2O rt;
-
-    private XGBoostSetupTask setupTask;
+    private final XGBoostSetupTask setupTask;
+    
     private XGBoostUpdateTask updateTask;
     
     /**
@@ -40,29 +31,20 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     public LocalXGBoostExecutor(Key key, XGBoostExecReq.Init init) {
         modelKey = key;
         rt = setupRabitTracker(init.num_nodes);
-        boosterParams = BoosterParms.fromMap(init.parms);
-        nodes = new boolean[H2O.CLOUD.size()];
+        BoosterParms boosterParams = BoosterParms.fromMap(init.parms);
+        boolean[] nodes = new boolean[H2O.CLOUD.size()];
         for (int i = 0; i < init.num_nodes; i++) nodes[i] = init.nodes[i] != null;
-        final String matrixDirPath = H2O.ICE_ROOT.toString() + "/" + modelKey.toString();
-        new File(matrixDirPath).mkdirs();
-        loader = new FileMatrixLoader(matrixDirPath);
-        saveMatrixDirectory = init.save_matrix_path;
-        checkpointProvider = () -> {
-            if (!init.has_checkpoint) {
-                return null;
-            } else {
-                File checkpointFile = new File(matrixDirPath + "/" + "checkpoint.bin");
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                try (FileInputStream fis = new FileInputStream(checkpointFile)) {
-                    IOUtils.copyStream(fis, bos);
-                } catch (IOException e) {
-                    throw new RuntimeException("Failed writing data to response.", e);
-                } finally {
-                    checkpointFile.delete();
-                }
-                return bos.toByteArray();
-            }
-        };
+        MatrixLoader loader = new RemoteMatrixLoader(init.matrix_dir_path, init.nodes);
+        byte[] checkpoint = null;
+        if (init.has_checkpoint) {
+            XGBoostHttpClient http = new XGBoostHttpClient(init.nodes[0], H2O.ARGS.jks != null);
+            XGBoostExecReq.GetCheckPoint req = new XGBoostExecReq.GetCheckPoint();
+            req.matrix_dir_path = init.matrix_dir_path;
+            checkpoint = http.postBytes(null, "getCheckpoint", req);
+        }
+        setupTask = new XGBoostSetupTask(
+            modelKey, init.save_matrix_path, boosterParams, checkpoint, getRabitEnv(), nodes, loader
+        );
     }
 
     /**
@@ -72,26 +54,22 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         modelKey = model._key;
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
         rt = setupRabitTracker(trainFrameNodes.getNumNodes());
+        byte[] checkpointBytes = null;
+        if (model._parms.hasCheckpoint()) {
+            checkpointBytes = model.model_info()._boosterBytes;
+        }
         DataInfo dataInfo = model.model_info().dataInfo();
-        boosterParams = XGBoostModel.createParams(model._parms, model._output.nclasses(), dataInfo.coefNames());
-        model._output._native_parameters = boosterParams.toTwoDimTable();
-        loader = new FrameMatrixLoader(model, train);
-        nodes = trainFrameNodes._nodes;
-        saveMatrixDirectory = model._parms._save_matrix_directory;
-        checkpointProvider = () -> {
-            if (model._parms.hasCheckpoint()) {
-                return model.model_info()._boosterBytes;
-            } else {
-                return null;
-            }
-        };
+        BoosterParms boosterParms = XGBoostModel.createParams(model._parms, model._output.nclasses(), dataInfo.coefNames());
+        model._output._native_parameters = boosterParms.toTwoDimTable();
+        MatrixLoader loader = new FrameMatrixLoader(model, train);
+        setupTask = new XGBoostSetupTask(
+            modelKey, model._parms._save_matrix_directory, boosterParms, checkpointBytes, 
+            getRabitEnv(), trainFrameNodes._nodes, loader
+        );
     }
     
     @Override
     public byte[] setup() {
-        setupTask = new XGBoostSetupTask(
-            modelKey, saveMatrixDirectory, boosterParams, checkpointProvider.get(), getRabitEnv(), nodes, loader
-        );
         setupTask.run();
         updateTask = new XGBoostUpdateTask(setupTask, 0).run();
         return updateTask.getBoosterBytes();

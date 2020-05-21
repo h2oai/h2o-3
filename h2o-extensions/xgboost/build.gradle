@@ -10,9 +10,7 @@ dependencies {
     compile project(":h2o-genmodel")
     compile project(":h2o-genmodel-ext-xgboost")
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
-    compileOnly "javax.servlet:javax.servlet-api:3.0.1"
     compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"
-    compile "org.apache.httpcomponents:httpmime:${httpClientVersion}"
 
     // XGBoost dependencies published into Maven central by H2O
     // Versioning rules may differ for XGBoost artifacts published by H2O
