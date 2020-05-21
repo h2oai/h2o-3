@@ -1,6 +1,7 @@
 package hex.genmodel.algos.tree;
 
 import hex.genmodel.PredictContributions;
+import hex.genmodel.utils.ArrayUtils;
 
 public abstract class ContributionsPredictor<E> implements PredictContributions {
   private final int _ncontribs;
@@ -9,9 +10,9 @@ public abstract class ContributionsPredictor<E> implements PredictContributions 
 
   private static final ThreadLocal<Object> _workspace = new ThreadLocal<>();
 
-  public ContributionsPredictor(int ncontribs, String[] contributionNames, TreeSHAPPredictor<E> treeSHAPPredictor) {
+  public ContributionsPredictor(int ncontribs, String[] featureContributionNames, TreeSHAPPredictor<E> treeSHAPPredictor) {
     _ncontribs = ncontribs;
-    _contribution_names = contributionNames;
+    _contribution_names = ArrayUtils.append(featureContributionNames, "BiasTerm");
     _treeSHAPPredictor = treeSHAPPredictor;
   }
 

@@ -157,7 +157,7 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
 
   private final class XGBoostContributionsPredictor extends ContributionsPredictor<FVec> {
     private XGBoostContributionsPredictor(XGBoostMojoModel model, TreeSHAPPredictor<FVec> treeSHAPPredictor) {
-      super(_nums + _catOffsets[_cats] + 1, makeContributionNames(model), treeSHAPPredictor);
+      super(_nums + _catOffsets[_cats] + 1, makeFeatureContributionNames(model), treeSHAPPredictor);
     }
 
     @Override
@@ -166,8 +166,8 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
     }
   }
 
-  private static String[] makeContributionNames(XGBoostMojoModel m) {
-    final String[] names = new String[m._nums + m._catOffsets[m._cats] + 1];
+  private static String[] makeFeatureContributionNames(XGBoostMojoModel m) {
+    final String[] names = new String[m._nums + m._catOffsets[m._cats]];
     final String[] features = m.features();
     int i = 0;
     for (int c = 0; c < features.length; c++) {
@@ -179,7 +179,6 @@ public final class XGBoostJavaMojoModel extends XGBoostMojoModel implements Pred
         names[i++] = features[c] + ".missing(NA)";
       }
     }
-    names[i++] = "BiasTerm";
     assert names.length == i;
     return names;
   }
