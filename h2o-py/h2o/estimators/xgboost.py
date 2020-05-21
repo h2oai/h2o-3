@@ -1283,6 +1283,24 @@ class H2OXGBoostEstimator(H2OEstimator):
         Column sample rate per tree node (from 0.0 to 1.0)
 
         Type: ``float``  (default: ``1``).
+
+        :examples:
+
+        >>> airlines= h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+        >>> airlines["Year"] = airlines["Year"].asfactor()
+        >>> airlines["Month"] = airlines["Month"].asfactor()
+        >>> airlines["DayOfWeek"] = airlines["DayOfWeek"].asfactor()
+        >>> airlines["Cancelled"] = airlines["Cancelled"].asfactor()
+        >>> airlines['FlightNum'] = airlines['FlightNum'].asfactor()
+        >>> predictors = ["Origin", "Dest", "Year", "UniqueCarrier",
+        ...               "DayOfWeek", "Month", "Distance", "FlightNum"]
+        >>> response = "IsDepDelayed"
+        >>> train, valid= airlines.split_frame(ratios=[.8], seed=1234)
+        >>> airlines_xgb = H2OXGBoostEstimator(colsample_bynode=.5,
+        ...                                    seed=1234)
+        >>> airlines_xgb.train(x=predictors, y=response,
+        ...                    training_frame=train, validation_frame=valid)
+        >>> print(airlines_xgb.auc(valid=True))
         """
         return self._parms.get("colsample_bynode")
 

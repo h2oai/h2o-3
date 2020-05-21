@@ -770,6 +770,7 @@ XGBoost Hyperparameters
 -  ``col_sample_rate_per tree``
 -  ``col_sample_rate``
 -  ``colsample_bytree``
+-  ``colsample_bynode``
 -  ``distribution``
 -  ``eta``
 -  ``gamma``
