@@ -38,8 +38,6 @@ public class RemoteXGBoostUploadServlet extends HttpServlet {
             if (is == null) {
                 return;
             }
-//            Part filePart = request.getPart("upload");
-//            InputStream is = filePart.getInputStream();
             try (FileOutputStream fos = new FileOutputStream(destFile)) {
                 IOUtils.copyStream(is, fos);
             }
