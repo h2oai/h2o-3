@@ -59,7 +59,7 @@ public class PartialDependenceV3 extends SchemaV3<PartialDependence, PartialDepe
   public KeyV3.PartialDependenceKeyV3 destination_key;
 
   @API(help="Target class for multinomial classification", direction=API.Direction.INPUT)
-  public String target;
+  public String[] targets;
 
   @Override public PartialDependence createImpl( ) { return new PartialDependence(Key.<PartialDependence>make()); }
 }

@@ -3933,7 +3933,7 @@ h2o.cross_validation_predictions <- function(object) {
 
 h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot = TRUE, plot_stddev = TRUE,
                             weight_column=-1, include_na=FALSE, user_splits=NULL, col_pairs_2dpdp=NULL, save_to=NULL, 
-                            row_index=-1, target=NULL) {
+                            row_index=-1, targets=NULL) {
   if(!is(object, "H2OModel")) stop("object must be an H2Omodel")
   if( is(object, "H2OOrdinalModel")) stop("object must be a regression model or binary and multinomial classfier")
   if(!is(data, "H2OFrame")) stop("data must be H2OFrame")
@@ -3941,8 +3941,13 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   if(!is.logical(plot)) stop("plot must be a logical value")
   if(!is.logical(plot_stddev)) stop("plot must be a logical value")
   if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
-  if((is(object, "H2OMultinomialModel")) && (is.null(target))) stop("target parameter has to be set for multinomial classification")
-  if((!is.null(target)) && (!is.character(target))) stop("target must be a string value")  
+  if((is(object, "H2OMultinomialModel"))){
+    if(is.null(targets)) stop("targets parameter has to be set for multinomial classification")
+    for(i in 1:len(targets)){
+        if(!is.character(targets[i])) stop("targets parameter must be a list of string values")
+    }
+  }
+  
   noPairs = missing(col_pairs_2dpdp)
   noCols = missing(cols)
   if(noCols && noPairs) cols =  object@parameters$x # set to default only if both are missing
@@ -4042,8 +4047,8 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     parms$num_user_splits <- paste0("[", paste(user_num_splits, collapse=','), "]")
   }
   
-  if(!is.null(target)) {
-    parms$target <- target
+  if(!is.null(targets)) {
+    parms$targets <- targets
   }
 
   if(!missing(destination_key)) parms$destination_key = destination_key
@@ -4086,7 +4091,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
         ## Added upper and lower std dev confidence bound
         upper = pp[,2] + pp[,3]
         lower = pp[,2] - pp[,3]
-        plot(pp[,1:2], type = "l", main = attr(x,"description"), ylim  = c(min(lower), max(upper)))
+        plot(pp[,1:2], type = "l", maibbn = attr(x,"description"), ylim  = c(min(lower), max(upper)))
 
         polygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper)), col = "grey75", border = F)
         lines(pp[,1], pp[,2], lwd = 2)
@@ -4099,6 +4104,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
     }
   }
+        
   pp.plot2 <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
     xtickMarks <- NULL
     ytickMarks <- NULL

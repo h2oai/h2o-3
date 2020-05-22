@@ -24,7 +24,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
   public int _weight_column_index = -1;  // weight column index, -1 implies no weight
   public boolean _add_missing_na = false; // set to be false for default
   public int _nbins = 20;
-  public String target;
+  public String[] _targets;
   public TwoDimTable[] _partial_dependence_data; //OUTPUT
   public double[] _user_splits = null;    // store all user splits for all column
   public double[][] _user_split_per_col = null; // point to correct location of user splits per column
@@ -35,6 +35,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
   public int _num_2D_pairs = 0; // number of 2D pdp pairs to work on
   public int _num_1D = 0;
   public int _predictor_column; // predictor column to use in calculating partial dependence
+  public int[] _predictor_columns;
 
   public PartialDependence(Key<PartialDependence> dest, Job j) {
     super(dest);
@@ -67,7 +68,23 @@ public class PartialDependence extends Lockable<PartialDependence> {
     _job.start(new PartialDependenceDriver(), _num_1D+_num_2D_pairs);
     return _job;
   }
+  
+  private int findTargetClassPredictorIndex(Model m, String target){
+    int index = Arrays.asList(m._output.classNames()).indexOf(target);
+    if (index == -1) {
+      throw new IllegalArgumentException("Incorrect target class: " + target + ".");
+    }
+    return index+1;
+  }
 
+  private int[] findTargetClassPredictorIndices(Model m, String[] targets){
+    int[] result = new int[targets.length];
+    for(int i=0; i < targets.length; i++){
+      result[i] = findTargetClassPredictorIndex(m, targets[i]);
+    }
+    return result;
+  }
+  
   private void checkSanityAndFillParams() {
     Model m = _model_id.get();
     if (m == null) {
@@ -77,22 +94,21 @@ public class PartialDependence extends Lockable<PartialDependence> {
       throw new IllegalArgumentException("Partial dependence plots are only implemented for supervised models");
     }
     int nclasses = m._output.nclasses();
-    if(nclasses <= 2 && target != null){
+    if(nclasses <= 2 && _targets != null){
       throw new IllegalArgumentException("Target parameters is available only for multinomial classification.");
     }
     if(nclasses == 1){
       _predictor_column = 0;
+      _predictor_columns = new int[]{_predictor_column};
     } else if(nclasses == 2) {
       _predictor_column = 2;
+      _predictor_columns = new int[]{_predictor_column};
     } else {
-      if (target == null) {
+      if (_targets == null) {
         throw new IllegalArgumentException("Target parameters has to be set for multinomial classification.");
+      } else {
+        _predictor_columns = findTargetClassPredictorIndices(m, _targets);
       }
-      int index = Arrays.asList(m._output.classNames()).indexOf(target);
-      if (index == -1) {
-          throw new IllegalArgumentException("Incorrect target class: " + target + ".");
-      }
-      _predictor_column = index+1;
     }
     
     if (_cols != null || _col_pairs_2dpdp != null) {
@@ -100,7 +116,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
       if (_cols != null)
         _cols_1d_2d.addAll(Arrays.asList(_cols));
       if (_col_pairs_2dpdp != null) {
-        _num_2D_pairs = _col_pairs_2dpdp.length;
+        _num_2D_pairs = _col_pairs_2dpdp.length * _predictor_columns.length;
         for (int index=0; index < _num_2D_pairs; index++) {
           if (!(_cols_1d_2d.contains(_col_pairs_2dpdp[index][0]))) 
             _cols_1d_2d.add(_col_pairs_2dpdp[index][0]);
@@ -115,22 +131,21 @@ public class PartialDependence extends Lockable<PartialDependence> {
       Frame f = _frame_id.get();
       if (f==null) throw new IllegalArgumentException("Frame not found.");
 
-      boolean hasFI = Model.GetMostImportantFeatures.class.isAssignableFrom(m.getClass());
       if (Model.GetMostImportantFeatures.class.isAssignableFrom(m.getClass())) {
         _cols = ((Model.GetMostImportantFeatures) m).getMostImportantFeatures(10);
         if (_cols != null) {
-          Log.info("Selecting the top " + _cols.length + " features from the model's variable importances");
+          Log.info("Selecting the top " + _cols.length + " features from the model's variable importances.");
         }
       } else {
         _cols = m._output._names;
         if (_cols != null) {
-          Log.info("Selecting all features from the training data");
+          Log.info("Selecting all features from the training data.");
         }
       }
       _cols_1d_2d = new ArrayList<>();
       _cols_1d_2d.addAll(Arrays.asList(_cols));
     }
-    _num_1D = _cols==null ? 0 : _cols.length;
+    _num_1D = _cols==null ? 0 : _cols.length * _predictor_columns.length;
     if (_nbins < 2) {
       throw new IllegalArgumentException("_nbins must be >=2.");
     }
@@ -203,11 +218,13 @@ public class PartialDependence extends Lockable<PartialDependence> {
       int num_cols_1d_2d = _num_1D+_num_2D_pairs;
       _partial_dependence_data = new TwoDimTable[num_cols_1d_2d];
       
+      int column = 0;
       for (int i = 0; i < num_cols_1d_2d; ++i) {  // take care of the 1d pdp first, then 2d pdp
         boolean workingOn1D = (i < _num_1D);
-        final String col = workingOn1D ? _cols[i] : _col_pairs_2dpdp[i - _num_1D][0];
-        final String col2 = workingOn1D ? null : _col_pairs_2dpdp[i - _num_1D][1];
-        Log.debug("Computing partial dependence of model on '" + col + "'"+(target == null ? "." : " and class "+target+"."));
+        final String col = workingOn1D ? _cols[column] : _col_pairs_2dpdp[column - _num_1D][0];
+        final String col2 = workingOn1D ? null : _col_pairs_2dpdp[column - _num_1D][1];
+        final int whichPredictorColumn = i % _predictor_columns.length;
+        Log.debug("Computing partial dependence of model on '" + col + "'"+(_targets == null ? "." : " and class "+_targets[whichPredictorColumn]+"."));
         double[] colVals = extractColValues(col, _nbins, fr.vec(col));
         double[] col2Vals = workingOn1D ? null : extractColValues(col2, _nbins, fr.vec(col2));
 
@@ -219,14 +236,13 @@ public class PartialDependence extends Lockable<PartialDependence> {
 
         final boolean cat = fr.vec(col).isCategorical();
         final boolean cat2 = workingOn1D ? false : fr.vec(col2).isCategorical();
-        // loop over column values (fill one PartialDependence)
         
+        // loop over column values (fill one PartialDependence)
         if (workingOn1D) {  // 1d pdp 
           for (int k = 0; k < colVals.length; ++k) {
             final double value = colVals[k];
-            final int which = k;
-            CalculatePdpPerBin pdp = new CalculatePdpPerBin(col, col2, value, -1, cat, cat2, which,
-                      false, meanResponse, stddevResponse, stdErrorOfTheMeanResponse, _predictor_column);  // perform actual pdp calculation
+            CalculatePdpPerBin pdp = new CalculatePdpPerBin(col, col2, value, -1, cat, cat2, k,
+                      false, meanResponse, stddevResponse, stdErrorOfTheMeanResponse, _predictor_columns[whichPredictorColumn]);  // perform actual pdp calculation
             fs.add(H2O.submitTask(pdp));
           }
         } else {            // 2d pdp
@@ -239,9 +255,8 @@ public class PartialDependence extends Lockable<PartialDependence> {
             int index2 = k % colLen2;
             final double value = colVals[index1];
             final double value2 = col2Vals[index2];
-            final int which = k;
-            CalculatePdpPerBin pdp = new CalculatePdpPerBin(col, col2, value, value2, cat, cat2, which, true,
-                    meanResponse, stddevResponse,stdErrorOfTheMeanResponse, _predictor_column);  // perform actual pdp calculation
+            CalculatePdpPerBin pdp = new CalculatePdpPerBin(col, col2, value, value2, cat, cat2, k, true,
+                    meanResponse, stddevResponse,stdErrorOfTheMeanResponse, _predictor_columns[whichPredictorColumn]);  // perform actual pdp calculation
             fs.add(H2O.submitTask(pdp));
           }
         }
@@ -249,8 +264,8 @@ public class PartialDependence extends Lockable<PartialDependence> {
 
         if (workingOn1D) {
           _partial_dependence_data[i] = new TwoDimTable("PartialDependence",
-                  _row_index < 0 ? ("Partial Dependence Plot of model " + _model_id + " on column '" + col + "'" + (target == null ? "." : " and class "+ target)) :
-                          ("Partial Dependence Plot of model " + _model_id + " on column '" + col + "'" + (target == null ? "'" : " and class "+target) +" for row " + _row_index),
+                  _row_index < 0 ? ("Partial Dependence Plot of model " + _model_id + " on column '" + col + "'" + (_targets == null ? "." : " and class "+ _targets[whichPredictorColumn])) :
+                          ("Partial Dependence Plot of model " + _model_id + " on column '" + col + "'" + (_targets == null ? "'" : " and class "+_targets[whichPredictorColumn]) +" for row " + _row_index),
                   new String[colVals.length],
                   new String[]{col, "mean_response", "stddev_response", "std_error_mean_response"},
                   new String[]{cat ? "string" : "double", "double", "double", "double"},
@@ -270,7 +285,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
         }
         for (int j = 0; j < meanResponse.length; ++j) {
           int colIndex = 0;
-          int countval1 = workingOn1D?j:j/col2Vals.length;
+          int countval1 = workingOn1D? j : j / col2Vals.length;
           if (fr.vec(col).isCategorical()) {
             if (_add_missing_na && Double.isNaN(colVals[countval1]))
               _partial_dependence_data[i].set(j, colIndex, ".missing(NA)"); // accomodate NA
@@ -296,6 +311,11 @@ public class PartialDependence extends Lockable<PartialDependence> {
           _partial_dependence_data[i].set(j, colIndex++, meanResponse[j]);
           _partial_dependence_data[i].set(j, colIndex++, stddevResponse[j]);
           _partial_dependence_data[i].set(j, colIndex++, stdErrorOfTheMeanResponse[j]);
+        }
+        if(_targets == null){
+          column++;
+        } else if((i+1) % _targets.length == 0){
+          column++;
         }
         _job.update(1);
         update(_job);
