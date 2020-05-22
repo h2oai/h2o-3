@@ -335,60 +335,60 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   /**
    * Inherit distribution and its parameters
-   * @param parms
+   * @param baseModelParms
    */
-  private void inheritDistributionAndParms(Model.Parameters parms) {
-    if (parms instanceof GLMModel.GLMParameters) {
+  private void inheritDistributionAndParms(Model.Parameters baseModelParms) {
+    if (baseModelParms instanceof GLMModel.GLMParameters) {
       try {
-        _parms._metalearner_parameters._distribution = familyToDistribution(((GLMModel.GLMParameters) parms)._family);
+        _parms._metalearner_parameters._distribution = familyToDistribution(((GLMModel.GLMParameters) baseModelParms)._family);
       } catch (IllegalArgumentException e) {
-        Log.warn("Stacked Ensemble is not able to inherit distribution from GLM's family " + ((GLMModel.GLMParameters) parms)._family + ".");
+        Log.warn("Stacked Ensemble is not able to inherit distribution from GLM's family " + ((GLMModel.GLMParameters) baseModelParms)._family + ".");
       }
-    } else if (parms instanceof DRFModel.DRFParameters) {
+    } else if (baseModelParms instanceof DRFModel.DRFParameters) {
       inferBasicDistribution();
     } else {
-      _parms._metalearner_parameters._distribution = parms._distribution;
+      _parms._metalearner_parameters._distribution = baseModelParms._distribution;
     }
     // deal with parameterized distributions
-    switch (parms._distribution) {
+    switch (baseModelParms._distribution) {
       case custom:
-          _parms._metalearner_parameters._custom_distribution_func = parms._custom_distribution_func;
+          _parms._metalearner_parameters._custom_distribution_func = baseModelParms._custom_distribution_func;
         break;
       case huber:
-          _parms._metalearner_parameters._huber_alpha = parms._huber_alpha;
+          _parms._metalearner_parameters._huber_alpha = baseModelParms._huber_alpha;
         break;
       case tweedie:
-        _parms._metalearner_parameters._tweedie_power = parms._tweedie_power;
+        _parms._metalearner_parameters._tweedie_power = baseModelParms._tweedie_power;
         break;
       case quantile:
-        _parms._metalearner_parameters._quantile_alpha = parms._quantile_alpha;
+        _parms._metalearner_parameters._quantile_alpha = baseModelParms._quantile_alpha;
         break;
     }
   }
 
   /**
    * Inherit family and its parameters
-   * @param parms
+   * @param baseModelParms
    */
-  private void inheritFamilyAndParms(Model.Parameters parms) {
+  private void inheritFamilyAndParms(Model.Parameters baseModelParms) {
     GLMModel.GLMParameters metaParams = (GLMModel.GLMParameters) _parms._metalearner_parameters;
-    if (parms instanceof GLMModel.GLMParameters) {
-      GLMModel.GLMParameters glmParams = (GLMModel.GLMParameters) parms;
+    if (baseModelParms instanceof GLMModel.GLMParameters) {
+      GLMModel.GLMParameters glmParams = (GLMModel.GLMParameters) baseModelParms;
       metaParams._family = glmParams._family;
       metaParams._link = glmParams._link;
-    } else if (parms instanceof DRFModel.DRFParameters) {
+    } else if (baseModelParms instanceof DRFModel.DRFParameters) {
       inferBasicDistribution();
     } else {
       try {
-        metaParams._family = Enum.valueOf(GLMModel.GLMParameters.Family.class, parms._distribution.name());
+        metaParams._family = Enum.valueOf(GLMModel.GLMParameters.Family.class, baseModelParms._distribution.name());
       } catch (IllegalArgumentException e) {
-        Log.warn("Stacked Ensemble is not able to inherit family from a distribution " + parms._distribution + ".");
+        Log.warn("Stacked Ensemble is not able to inherit family from a distribution " + baseModelParms._distribution + ".");
         inferBasicDistribution();
       }
     }
     // deal with parameterized distributions
     if (metaParams._family == GLMModel.GLMParameters.Family.tweedie) {
-      _parms._metalearner_parameters._tweedie_power = parms._tweedie_power;
+      _parms._metalearner_parameters._tweedie_power = baseModelParms._tweedie_power;
     }
   }
 
@@ -540,14 +540,13 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
                 sameParams = _parms._metalearner_parameters._quantile_alpha == aModel._parms._quantile_alpha;
                 break;
             }
-            if ((aModel instanceof GLMModel) &&
-                    (Metalearners.getActualMetalearnerAlgo(_parms._metalearner_algorithm) == Metalearner.Algorithm.glm) &&
-                    !((GLMModel.GLMParameters) _parms._metalearner_parameters)._link.equals(((GLMModel) aModel)._parms._link)) {
+
+            if ((aModel instanceof GLMModel) && (Metalearners.getActualMetalearnerAlgo(_parms._metalearner_algorithm) == Metalearner.Algorithm.glm)) {
               if (firstGLM == null) {
                 firstGLM = (GLMModel) aModel;
                 inheritFamilyAndParms(firstGLM._parms);
               } else {
-                sameParams = false;
+                sameParams = ((GLMModel.GLMParameters) _parms._metalearner_parameters)._link.equals(((GLMModel) aModel)._parms._link);
               }
             }
 

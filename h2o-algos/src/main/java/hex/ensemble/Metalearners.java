@@ -141,7 +141,7 @@ public class Metalearners {
         protected void prepareModel(Model.Parameters parms) {
             super.prepareModel(parms);
             // Create _dist based on potentially coerced _distribution param from validateParams
-          //  _model._dist = DistributionFactory.getDistribution(parms);
+            _model._dist = DistributionFactory.getDistribution(parms);
         }
     }
 
