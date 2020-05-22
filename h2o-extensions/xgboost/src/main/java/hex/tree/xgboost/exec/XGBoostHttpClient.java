@@ -6,11 +6,14 @@ import hex.schemas.XGBoostExecRespV3;
 import org.apache.http.HttpEntity;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIBuilder;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
 import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.ssl.SSLContexts;
@@ -20,9 +23,8 @@ import water.Key;
 
 import javax.net.ssl.SSLContext;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -84,15 +86,8 @@ public class XGBoostHttpClient {
         return post(key, method, reqContent, JsonResponseTransformer);
     }
 
-    public byte[] postBytes(Key key, String method, XGBoostExecReq reqContent) {
+    public byte[] downloadBytes(Key key, String method, XGBoostExecReq reqContent) {
         return post(key, method, reqContent, ByteArrayResponseTransformer);
-    }
-
-    public File postFile(Key key, String method, XGBoostExecReq reqContent, File dest) {
-        return post(key, method, reqContent, (e) -> {
-            IOUtils.copyStream(e.getContent(), new FileOutputStream(dest));
-            return dest;
-        });
     }
 
     private <T> T post(Key key, String method, XGBoostExecReq reqContent, ResponseTransformer<T> transformer) {
@@ -101,8 +96,31 @@ public class XGBoostHttpClient {
         HttpPost httpReq = new HttpPost(baseUri + method);
         httpReq.setEntity(new StringEntity(req.toJsonString(), UTF_8));
         httpReq.setHeader(CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType());
+        return executeRequestAndReturnResponse(httpReq, transformer);
+    }
+    
+    public XGBoostExecRespV3 uploadBytes(Key key, String dataType, byte[] data) {
+        URIBuilder builder;
+        HttpPost httpReq;
+        try {
+            builder = new URIBuilder(baseUri + "upload");
+            builder.setParameter("model_key", key.toString())
+                .setParameter("data_type", dataType);
+            httpReq = new HttpPost(builder.build());
+        } catch (URISyntaxException e) {
+            throw new RuntimeException("Failed to build request URI.", e);
+        }
+        HttpEntity entity = MultipartEntityBuilder.create()
+            .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
+            .addBinaryBody("file", data, ContentType.DEFAULT_BINARY, "upload")
+            .build();
+        httpReq.setEntity(entity);
+        return executeRequestAndReturnResponse(httpReq, JsonResponseTransformer);
+    }
+
+    private <T> T executeRequestAndReturnResponse(HttpPost req, ResponseTransformer<T> transformer) {
         try (CloseableHttpClient client = clientBuilder.build();
-             CloseableHttpResponse response = client.execute(httpReq)) {
+             CloseableHttpResponse response = client.execute(req)) {
             if (response.getStatusLine().getStatusCode() != OK.getCode()) {
                 throw new IllegalStateException("Unexpected response (status: " + response.getStatusLine() + ").");
             }

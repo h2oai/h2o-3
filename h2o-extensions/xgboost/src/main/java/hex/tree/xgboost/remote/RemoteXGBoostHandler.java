@@ -5,17 +5,14 @@ import hex.schemas.XGBoostExecReqV3;
 import hex.schemas.XGBoostExecRespV3;
 import hex.tree.xgboost.exec.LocalXGBoostExecutor;
 import hex.tree.xgboost.exec.XGBoostExecReq;
-import hex.tree.xgboost.task.XGBoostSaveMatrixTask;
 import org.apache.log4j.Logger;
+import water.H2O;
 import water.Key;
 import water.api.Handler;
 import water.api.StreamingSchema;
 
 import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -35,10 +32,18 @@ public class RemoteXGBoostHandler extends Handler {
 
     @SuppressWarnings("unused")
     public XGBoostExecRespV3 init(int ignored, XGBoostExecReqV3 req) {
-        XGBoostExecReq.Init init = req.readReq();
+        XGBoostExecReq.Init init = req.readData();
         LocalXGBoostExecutor exec = new LocalXGBoostExecutor(req.key.key(), init);
         REGISTRY.put(exec.modelKey, exec);
-        return makeResponse(exec);
+        return new XGBoostExecRespV3(exec.modelKey, collectNodes());
+    }
+    
+    private final String[] collectNodes() {
+        String[] nodes = new String[H2O.CLOUD.size()];
+        for (int i = 0; i < nodes.length; i++) {
+            nodes[i] = H2O.CLOUD.members()[i].getIpPortString();
+        }
+        return nodes;
     }
 
     @SuppressWarnings("unused")
@@ -51,7 +56,7 @@ public class RemoteXGBoostHandler extends Handler {
     @SuppressWarnings("unused")
     public XGBoostExecRespV3 update(int ignored, XGBoostExecReqV3 req) {
         LocalXGBoostExecutor exec = getExecutor(req);
-        XGBoostExecReq.Update update = req.readReq();
+        XGBoostExecReq.Update update = req.readData();
         exec.update(update.treeId);
         return makeResponse(exec);
     }
@@ -69,35 +74,6 @@ public class RemoteXGBoostHandler extends Handler {
         exec.close();
         REGISTRY.remove(exec.modelKey);
         return makeResponse(exec);
-    }
-
-    @SuppressWarnings("unused")
-    public StreamingSchema getMatrix(int ignored, XGBoostExecReqV3 req) {
-        XGBoostExecReq.GetMatrix matrix = req.readReq();
-        File matrixFile = XGBoostSaveMatrixTask.getMatrixFile(new File(matrix.matrix_dir_path));
-        return streamFile(matrixFile);
-    }
-
-    @SuppressWarnings("unused")
-    public StreamingSchema getCheckpoint(int ignored, XGBoostExecReqV3 req) {
-        XGBoostExecReq.GetCheckPoint checkPoint = req.readReq();
-        File checkpointFile = new File(checkPoint.matrix_dir_path, "checkpoint.bin");
-        return streamFile(checkpointFile);
-    }
-    
-    private StreamingSchema streamFile(File file) {
-        return new StreamingSchema(os -> {
-            LOG.debug("Serving up data file " + file);
-            try (FileInputStream fos = new FileInputStream(file)) {
-                IOUtils.copyStream(fos, os);
-            } catch (IOException e) {
-                LOG.error("Failed writing data to response.", e);
-                throw new RuntimeException("Failed writing data to response.", e);
-            } finally {
-                LOG.debug("Deleting data file " + file);
-                file.delete();
-            }
-        });
     }
 
     private StreamingSchema streamBytes(byte[] data) {
