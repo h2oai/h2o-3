@@ -34,7 +34,6 @@ public class FeatureImportance4BBMTest extends TestUtil {
     public static void stall() {
         stall_till_cloudsize(1);
     }
-
     
     @Test
     public void shuffleSmallDoubleVec(){
@@ -104,6 +103,7 @@ public class FeatureImportance4BBMTest extends TestUtil {
             for (int i = 0 ; i < fr.numCols() ; ++i){
                 Assert.assertNotEquals(0, res[i]);
                 // TODO check if low random coeficent and try if shuffling again, if that doesnt work FIXME
+                // Its fine because the Vec can have the only a few values like Column[1] has only f10 and f1 
             }
             
 //            Assert.assertNotEquals(0, rnd_coe);
@@ -115,10 +115,11 @@ public class FeatureImportance4BBMTest extends TestUtil {
    
     
     @Test
-    public void initiate() {
+    public void Regression() {
         GBMModel gbm = null;
         Frame fr = null, fr2 = null;
         try {
+            Scope.enter();
             fr = parse_test_file("./smalldata/gbm_test/Mfgdata_gaussian_GBM_testing.csv");
             GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
             parms._train = fr._key;
@@ -142,27 +143,22 @@ public class FeatureImportance4BBMTest extends TestUtil {
             // Done building model; produce a score column with predictions
             fr2 = gbm.score(fr);
             //job.response() can be used in place of fr.vecs()[1] but it has been rebalanced
-            double sq_err = new MathUtils.SquareError().doAll(fr.vecs()[1],fr2.vecs()[0])._sum;
-            double mse = sq_err/fr2.numRows();
-            assertEquals(79152.12337641386,mse,0.1);
-            assertEquals(79152.12337641386,gbm._output._scored_train[1]._mse,0.1);
-            assertEquals(79152.12337641386,gbm._output._scored_train[1]._mean_residual_deviance,0.1);
 
-            FeatureImportance4BBM Fi = new FeatureImportance4BBM(gbm, fr, fr2);
+            FeatureImportance4BBM Fi = new FeatureImportance4BBM(gbm, fr, fr2, parms._response_column);
             Fi.getFeatureImportance();
-
+            
         } finally {
             if( fr  != null ) fr .remove();
             if( fr2 != null ) fr2.remove();
             if( gbm != null ) gbm.remove();
+            Scope.exit();
         }        
         
     }
 
     //testing if model is getting the GBMmodel on my class (FeatureImportance4BBM.java)
-/*   
     @Test
-    public void testPassingModel() throws Exception {
+    public void Classification() throws Exception {
         try {
             Scope.enter();
             final String response = "CAPSULE";
@@ -208,15 +204,14 @@ public class FeatureImportance4BBMTest extends TestUtil {
                 // Build a POJO & MOJO, validate same results
                 Assert.assertTrue(gbm.testJavaScoring(fr, scored, 1e-15));
 
-                FeatureImportance4BBM Fi = new FeatureImportance4BBM(gbm);
-
+                FeatureImportance4BBM Fi = new FeatureImportance4BBM(gbm, fr, scored, parms._response_column);
+                Fi.getFeatureImportance("AUC");
             }
-
         } finally {
             Scope.exit();
         }
     }
-
+/*
     @Test
     public void testFoo2() {
         GBMModel gbm = null;
