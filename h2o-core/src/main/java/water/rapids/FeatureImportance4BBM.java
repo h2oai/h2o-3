@@ -1,5 +1,6 @@
 package water.rapids;
 
+import hex.AUC2;
 import hex.Model;
 //import hex.VarImp;
 import water.DKV;
@@ -7,114 +8,122 @@ import water.Key;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
-import water.util.FrameUtils;
-import water.util.MathUtils;
-import water.util.TwoDimTable;
-import water.util.VecUtils;
+import water.util.*;
 
-import java.util.Arrays;
+import java.util.*;
 
 
 public class FeatureImportance4BBM /* extends VarImp */ {
     
-    Model _model;
-    public Frame _ouput; 
-    Frame _train_fr; // original dataset used to train model
-    Frame _validate_dataset; // original dataset used to train model
-    Frame _predcited_frame; 
-    
-    boolean _data_in_holdOut_form; // do I have the data split in train and validation, if not spliting will happen
-    
-    String algo_name; 
-    
+    private Model _model;
+    public Frame _ouput;
+    private Frame _train_fr; // original dataset used to train model
+    private Frame _validate_dataset; // original dataset used to train model
+    private Frame _predcited_frame;
+
+    private boolean _data_in_holdOut_form; // do I have the data split in train and validation, if not spliting will happen
+
+    private String _responce_col;
+
+    private AUC2 og_auc;
+
+    private double original_mse;
+    private double sq_err;
+            
     public FeatureImportance4BBM(Model model) {_model = model;}
-    
+
     public FeatureImportance4BBM(Model model, Frame data_set, Frame prediction_frame) {
         _model = model;
         _train_fr = data_set;
         _data_in_holdOut_form = false;
         _validate_dataset = null;
         _predcited_frame = prediction_frame;
+        _responce_col = _train_fr.name(0); // first column as default
     }
 
-    public FeatureImportance4BBM(Model model, Frame train_data_set, Frame validate_data_set, Frame prediction_frame) {
+    public FeatureImportance4BBM(Model model, Frame data_set, Frame prediction_frame, String response_col) {
         _model = model;
-        _train_fr = train_data_set;
-        _validate_dataset = validate_data_set;
-        _data_in_holdOut_form = true;
-        _predcited_frame = prediction_frame;   
+        _train_fr = data_set;
+        _data_in_holdOut_form = false;
+        _validate_dataset = null;
+        _predcited_frame = prediction_frame;
+        _responce_col = response_col;
     }
     
     
-    /* maybe afeter creating the fld put it in the DKV */
-    public void getFeatureImportance() {
-        if(!_data_in_holdOut_form){
+    //MSE set as default loss function
+    public void getFeatureImportance(){
+        getFeatureImportance("MSE");
+    }
+    
+    public void getFeatureImportance(String metric) {
+        if (!_data_in_holdOut_form) {
             //TODO split the data if needed
         }
-//            Frame deepCopy(String keyName)
-        String [] features = _train_fr.names();
-        
-        // initial criterion
-        double sq_err = new MathUtils.SquareError().doAll(_train_fr.vecs()[1],_predcited_frame.vecs()[0])._sum;
-        double init_mse = sq_err/_predcited_frame.numRows();
 
-        // create a copy of original training data
-        Frame _shuffled_train_fr = _train_fr.deepCopy(Key.make().toString());
-        DKV.put(_shuffled_train_fr);
-        _shuffled_train_fr.vec(0).setNA(1);
+        String[] features = _train_fr.names();
+        HashMap<String, Double> FI = new HashMap<String, Double>(_train_fr.vecs().length);
 
-        double [] mse_all = new double [_train_fr.vecs().length];
-//        ShuffleVec shf = new ShuffleVec(_shuffled_train_fr);          I see it as usefull for later
-
-        for (int f = 1; f < _train_fr.numCols(); f++)//f = 0 is predicted col
+        // original error calc using MSE or AUC as a loss function
+        if (metric.equals("MSE")){
+            sq_err = new MathUtils.SquareError().doAll(_train_fr.vecs()[1], _predcited_frame.vecs()[0])._sum;
+            original_mse = sq_err / _predcited_frame.numRows();
+        }   else    {
+            og_auc = new AUC2(_train_fr.vec(_responce_col), _predcited_frame.vecs()[0]); //claisifiication metric
+        }
+        for (int f = 1; f < _train_fr.numCols(); f++) //f = 0 is predicted col
         {
             //permuate vector
-            ShuffleVec.ShuffleTask.shuffle(_shuffled_train_fr.vec(features[f]));
+            Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(_train_fr.vec(features[f]));
+            Vec og_feature = _train_fr.replace(f, shuffled_feature);
+            DKV.put(_train_fr); // "Caller must perform global update (DKV.put) on this updated frame"
 
             // score the model again and compute diff
-            Frame new_score = _model.score(_shuffled_train_fr);
+            Frame new_score = _model.score(_train_fr);
 
-            // calculate criterion usnig MSE for now TODO calculate critorion based on choice
-            sq_err = new MathUtils.SquareError().doAll(_shuffled_train_fr.vecs()[1],_predcited_frame.vecs()[0])._sum;
+            //calucalate error from new score prediction
+            if (metric.equals("MSE")){ // regression
+                sq_err = new MathUtils.SquareError().doAll(_train_fr.vec(_responce_col), new_score.vecs()[0])._sum;
+                FI.put(features[f], original_mse / (sq_err/new_score.numRows())); // Hashmap of HI feature->FI_mse
+            }   else    {  //clasification
+                AUC2 auc = new AUC2(_train_fr.vec(_responce_col), new_score.vecs()[0]); //claisifiication metric
+                FI.put(features[f], og_auc._auc - auc._auc);
+            }
             
-            // store results in array TODO Use hashmap string (feature) to double (calculation)
-            mse_all[f] = init_mse - sq_err/_predcited_frame.numRows();
+            //return the original data
+            _train_fr.replace(f, og_feature);
+            DKV.put(_train_fr); // "Caller must perform global update (DKV.put) on this updated frame"
 
-            /* TODO create a swaping function */
-//            swap_vecs(_train_fr.vec(f), _shuffled_train_fr.vec(f), features[f]);
-            
-            // lazy add/remove
-            _shuffled_train_fr.remove(features[f]);
-            _shuffled_train_fr.add(features[f], _train_fr.vec(features[f]));
-
-
+            new_score.remove(); // clearing leaks
         }
+        /*return */HashMap<String, Double> sorted_FI_mse = sortHashMapByValues(FI);
     }
-    public void swap_vecs(Vec src, Vec dst, String feature_name){
 
-        if( !src.group().equals(dst.group()) && !Arrays.equals(src.espc(),dst.espc()) )
-            throw new IllegalArgumentException("Vector groups differs - swaping vec'"+ feature_name);
-        if( _train_fr.numRows() != dst.length() )
-            throw new IllegalArgumentException("Vector lengths differ - swaping vec '"+feature_name);
-        System.arraycopy(src,0,dst,1, (int) _train_fr.numRows()); // careful typecasting long to int!!!! FIXME
+    // Sort HashMap in descenting order
+    private LinkedHashMap<String, Double> sortHashMapByValues(
+            HashMap<String, Double> passedMap) {
+        List<String> mapKeys = new ArrayList<>(passedMap.keySet());
+        List<Double> mapValues = new ArrayList<>(passedMap.values());
+        Collections.sort(mapKeys, Collections.reverseOrder());
+        Collections.sort(mapValues, Collections.reverseOrder());
 
-/*
-        System.arraycopy(_names,0,names,0,i);
-        System.arraycopy(_vecs,0,vecs,0,i);
-        System.arraycopy(_keys,0,keys,0,i);
-        names[i] = name;
-        vecs[i] = vec;
-        keys[i] = vec._key;
-        System.arraycopy(_names,i,names,i+1,_names.length-i);
-        System.arraycopy(_vecs,i,vecs,i+1,_vecs.length-i);
-        System.arraycopy(_keys,i,keys,i+1,_keys.length-i);
-        _vecs = vecs;
-        setNames(names);
-        _keys = keys;
-*/
+        LinkedHashMap<String, Double> sortedMap = new LinkedHashMap<>();
 
+        Iterator<Double> valueIt = mapValues.iterator();
+        while (valueIt.hasNext()) {
+            Double val = valueIt.next();
+            Iterator<String> keyIt = mapKeys.iterator();
 
+            while (keyIt.hasNext()) {
+                String key = keyIt.next();
+                Double comp1 = passedMap.get(key);
+                if (comp1.equals(val)) {
+                    keyIt.remove();
+                    sortedMap.put(key, val);
+                    break;
+                }
+            }
+        }
+        return sortedMap;
     }
-    
 }
-
