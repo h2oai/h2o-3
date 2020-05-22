@@ -4,6 +4,9 @@ import hex.genmodel.utils.IOUtils;
 import hex.schemas.XGBoostExecReqV3;
 import hex.schemas.XGBoostExecRespV3;
 import org.apache.http.HttpEntity;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.utils.URIBuilder;
@@ -14,6 +17,7 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.ssl.SSLContexts;
@@ -58,12 +62,12 @@ public class XGBoostHttpClient {
         return resp;
     };
 
-    public XGBoostHttpClient(String baseUri, boolean https) {
+    public XGBoostHttpClient(String baseUri, boolean https, String userName, String password) {
         this.baseUri = (https ? "https" : "http") + "://" + baseUri + "/3/XGBoostExecutor.";
-        this.clientBuilder = createClientBuilder(https);
+        this.clientBuilder = createClientBuilder(https, userName, password);
     }
 
-    private HttpClientBuilder createClientBuilder(boolean https) {
+    private HttpClientBuilder createClientBuilder(boolean https, String userName, String password) {
         try {
             HttpClientBuilder builder = HttpClientBuilder.create();
             if (https) {
@@ -75,6 +79,12 @@ public class XGBoostHttpClient {
                     NoopHostnameVerifier.INSTANCE
                 );
                 builder.setSSLSocketFactory(sslFactory);
+            }
+            if (userName != null) {
+                CredentialsProvider provider = new BasicCredentialsProvider();
+                UsernamePasswordCredentials credentials = new UsernamePasswordCredentials(userName, password);
+                provider.setCredentials(AuthScope.ANY, credentials);
+                builder.setDefaultCredentialsProvider(provider);
             }
             return builder;
         } catch (GeneralSecurityException e) {

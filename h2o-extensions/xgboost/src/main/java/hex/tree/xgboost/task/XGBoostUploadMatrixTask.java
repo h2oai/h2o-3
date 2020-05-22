@@ -15,17 +15,23 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
     private final FrameMatrixLoader matrixLoader;
     private final String[] remoteNodes;
     private final boolean https;
+    private final String userName;
+    private final String password;
 
-    public XGBoostUploadMatrixTask(Key modelKey, boolean[] frameNodes, FrameMatrixLoader loader, String[] remoteNodes, boolean https) {
+    public XGBoostUploadMatrixTask(
+        Key modelKey, boolean[] frameNodes, FrameMatrixLoader loader, String[] remoteNodes, boolean https, String userName, String password
+    ) {
         super(modelKey, frameNodes);
         this.matrixLoader = loader;
         this.remoteNodes = remoteNodes;
         this.https = https;
+        this.userName = userName;
+        this.password = password;
     }
 
     @Override
     protected void execute() {
-        XGBoostHttpClient client = new XGBoostHttpClient(remoteNodes[H2O.SELF.index()], https);
+        XGBoostHttpClient client = new XGBoostHttpClient(remoteNodes[H2O.SELF.index()], https, userName, password);
         try {
             LOG.debug("Writing matrix data into memory buffer");
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
