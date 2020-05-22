@@ -378,8 +378,18 @@ public class EasyPredictModelWrapper implements Serializable {
     return rowDataConverter.getErrorConsumer();
   }
 
-  
-  
+  /**
+   * Returns names of contributions for prediction results with constributions enabled. 
+   * @return array of contribution names (array has same lenght as the actual contributions, last is BiasTerm)
+   */
+  public String[] getContributionNames() {
+    if (predictContributions == null) {
+      throw new IllegalStateException(
+              "Contributions were not enabled using in EasyPredictModelWrapper (use setEnableContributions).");
+    }
+    return predictContributions.getContributionNames();
+  }
+
   /**
    * Make a prediction on a new data point using an AutoEncoder model.
    * @param data A new data point.

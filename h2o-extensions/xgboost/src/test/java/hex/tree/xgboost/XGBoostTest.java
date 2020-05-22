@@ -1730,6 +1730,7 @@ public class XGBoostTest extends TestUtil {
               .setModel(mojo)
               .setEnableContributions(true);
       EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+      assertArrayEquals(contributions.names(), wrapper.getContributionNames());
 
       for (long row = 0; row < fr.numRows(); row++) {
         RowData rd = toRowData(fr, model._output._names, row);
