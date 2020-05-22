@@ -794,7 +794,7 @@ public class XGBoostTest extends TestUtil {
       assertEquals(names, new HashSet<>(Arrays.asList(
               "colsample_bytree", "silent", "tree_method", "seed", "max_depth", "booster", "objective", "nround",
               "lambda", "eta", "grow_policy", "nthread", "alpha", "colsample_bylevel", "subsample", "min_child_weight",
-              "gamma", "max_delta_step", "max_bin", "max_leaves", "min_sum_hessian_in_leaf", "min_data_in_leaf")));
+              "gamma", "max_delta_step", "max_bin", "max_leaves")));
     } finally {
       Scope.exit();
       if (tfr!=null) tfr.remove();

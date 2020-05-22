@@ -130,7 +130,9 @@ Defining an XGBoost Model
 
 -  `col_sample_rate <algo-params/col_sample_rate.html>`__ (alias: ``colsample_bylevel``): Specify the column sampling rate (y-axis) for each split in each level. (Note that this method is sample without replacement.) This value defaults to 1.0, and the range is 0.0 to 1.0. Higher values may improve training accuracy. Test accuracy improves when either columns or rows are sampled. For details, refer to "Stochastic Gradient Boosting" (`Friedman, 1999 <https://statweb.stanford.edu/~jhf/ftp/stobst.pdf>`__).
 
--  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__ (alias: ``colsample_bytree``: Specify the column subsampling rate per tree. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate``, so setting both parameters to 0.8, for example, results in 64% of columns being considered at any given node to split.
+-  `col_sample_rate_per_tree <algo-params/col_sample_rate_per_tree.html>`__ (alias: ``colsample_bytree``): Specify the column subsampling rate per tree. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate`` and ``colsample_bynode``, so setting all parameters to 0.8, for example, results in 51% of columns being considered at any given node to split.
+
+-  `colsample_bynode <algo-params/colsample_bynode.html>`__: Specify the column subsampling rate per tree node. (Note that this method is sample without replacement.) This value defaults to 1.0 and can be a value from 0.0 to 1.0. Note that it is multiplicative with ``col_sample_rate`` and ``col_sample_rate_per_tree``, so setting all parameters to 0.8, for example, results in 51% of columns being considered at any given node to split.
 
 -  `max_abs_leafnode_pred <algo-params/max_abs_leafnode_pred.html>`__ (alias: ``max_delta_step``): Specifies the maximum delta step allowed in each tree’s weight estimation. This value defaults to 0. Setting this value to 0 specifies no constraint. Setting this value to be greater than 0 can help making the update step more conservative and reduce overfitting by limiting the absolute value of a leafe node prediction. This option also helps in logistic regression when a class is extremely imbalanced. 
 
@@ -154,10 +156,6 @@ Defining an XGBoost Model
 -  **max_bins**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of bins for binning continuous features. This value defaults to 256.
 
 -  **max_leaves**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the maximum number of leaves to include each tree. This value defaults to 0.
-
--  **min_sum_hessian_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum sum of hessian in a leaf to keep splitting. This value defaults to 100.
-
--  **min_data_in_leaf**: When ``grow_policy="lossguide"`` and ``tree_method="hist"``, specify the mininum data in a leaf to keep splitting. This value defaults to 0.
 
 -  **booster**: Specify the booster type. This can be one of the following: ``gbtree``, ``gblinear``, or ``dart``. 
    Note that ``gbtree`` and ``dart`` use a tree-based model while ``gblinear`` uses linear function. This value 
@@ -219,8 +217,6 @@ When the above are configured, then the following additional "LightGBM" options 
 
 - ``max_bin``
 - ``max_leaves``
-- ``min_sum_hessian_in_leaf``
-- ``min_data_in_leaf``
 
 XGBoost Only Options
 ~~~~~~~~~~~~~~~~~~~~

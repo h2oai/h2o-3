@@ -94,6 +94,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
 
     public double _col_sample_rate = 1.0;
     public double _colsample_bylevel = 1.0;
+    public double _colsample_bynode = 1.0;
 
     public double _col_sample_rate_per_tree = 1.0; //fraction of columns to sample for each tree
     public double _colsample_bytree = 1.0;
@@ -117,8 +118,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     // LightGBM specific (only for grow_policy == lossguide)
     public int _max_bins = 256;
     public int _max_leaves = 0;
-    public float _min_sum_hessian_in_leaf = 100;
-    public float _min_data_in_leaf = 0;
 
     // XGBoost specific options
     public TreeMethod _tree_method = TreeMethod.auto;
@@ -302,6 +301,9 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("colsample_bylevel", p._col_sample_rate);
       p._colsample_bylevel = p._col_sample_rate;
     }
+    if (p._colsample_bynode != 1.0) {
+      params.put("colsample_bynode", p._colsample_bynode);
+    }    
     if (p._max_delta_step != 0) {
       LOG.info("Using user-provided parameter max_delta_step instead of max_abs_leafnode_pred.");
       params.put("max_delta_step", p._max_delta_step);
@@ -317,8 +319,6 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     if (p._grow_policy == XGBoostParameters.GrowPolicy.lossguide) {
       params.put("max_bin", p._max_bins);
       params.put("max_leaves", p._max_leaves);
-      params.put("min_sum_hessian_in_leaf", p._min_sum_hessian_in_leaf);
-      params.put("min_data_in_leaf", p._min_data_in_leaf);
     }
     params.put("booster", p._booster.toString());
     if (p._booster == XGBoostParameters.Booster.dart) {

@@ -770,6 +770,7 @@ XGBoost Hyperparameters
 -  ``col_sample_rate_per tree``
 -  ``col_sample_rate``
 -  ``colsample_bytree``
+-  ``colsample_bynode``
 -  ``distribution``
 -  ``eta``
 -  ``gamma``
@@ -778,10 +779,8 @@ XGBoost Hyperparameters
 -  ``max_abs_leafnode_pred``
 -  ``max_delta_step``
 -  ``max_depth``
--  ``min_data_in_leaf``
 -  ``min_rows``
 -  ``min_split_improvement``
--  ``min_sum_hessian_in_leaf``
 -  ``normalize_type``
 -  ``ntrees``
 -  ``num_leaves``

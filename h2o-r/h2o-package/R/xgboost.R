@@ -63,6 +63,7 @@
 #' @param colsample_bylevel (same as col_sample_rate) Column sample rate (from 0.0 to 1.0) Defaults to 1.
 #' @param col_sample_rate_per_tree (same as colsample_bytree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
 #' @param colsample_bytree (same as col_sample_rate_per_tree) Column sample rate per tree (from 0.0 to 1.0) Defaults to 1.
+#' @param colsample_bynode Column sample rate per tree node (from 0.0 to 1.0) Defaults to 1.
 #' @param max_abs_leafnode_pred (same as max_delta_step) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param max_delta_step (same as max_abs_leafnode_pred) Maximum absolute value of a leaf node prediction Defaults to 0.0.
 #' @param monotone_constraints A mapping representing monotonic constraints. Use +1 to enforce an increasing constraint and -1 to specify a
@@ -81,8 +82,6 @@
 #' @param calibration_frame Calibration frame for Platt Scaling
 #' @param max_bins For tree_method=hist only: maximum number of bins Defaults to 256.
 #' @param max_leaves For tree_method=hist only: maximum number of leaves Defaults to 0.
-#' @param min_sum_hessian_in_leaf For tree_method=hist only: the mininum sum of hessian in a leaf to keep splitting Defaults to 100.0.
-#' @param min_data_in_leaf For tree_method=hist only: the mininum data in a leaf to keep splitting Defaults to 0.0.
 #' @param sample_type For booster=dart only: sample_type Must be one of: "uniform", "weighted". Defaults to uniform.
 #' @param normalize_type For booster=dart only: normalize_type Must be one of: "tree", "forest". Defaults to tree.
 #' @param rate_drop For booster=dart only: rate_drop (0..1) Defaults to 0.0.
@@ -164,6 +163,7 @@ h2o.xgboost <- function(x,
                         colsample_bylevel = 1,
                         col_sample_rate_per_tree = 1,
                         colsample_bytree = 1,
+                        colsample_bynode = 1,
                         max_abs_leafnode_pred = 0.0,
                         max_delta_step = 0.0,
                         monotone_constraints = NULL,
@@ -177,8 +177,6 @@ h2o.xgboost <- function(x,
                         calibration_frame = NULL,
                         max_bins = 256,
                         max_leaves = 0,
-                        min_sum_hessian_in_leaf = 100.0,
-                        min_data_in_leaf = 0.0,
                         sample_type = c("uniform", "weighted"),
                         normalize_type = c("tree", "forest"),
                         rate_drop = 0.0,
@@ -288,6 +286,8 @@ h2o.xgboost <- function(x,
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if (!missing(colsample_bytree))
     parms$colsample_bytree <- colsample_bytree
+  if (!missing(colsample_bynode))
+    parms$colsample_bynode <- colsample_bynode
   if (!missing(max_abs_leafnode_pred))
     parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
   if (!missing(max_delta_step))
@@ -314,10 +314,6 @@ h2o.xgboost <- function(x,
     parms$max_bins <- max_bins
   if (!missing(max_leaves))
     parms$max_leaves <- max_leaves
-  if (!missing(min_sum_hessian_in_leaf))
-    parms$min_sum_hessian_in_leaf <- min_sum_hessian_in_leaf
-  if (!missing(min_data_in_leaf))
-    parms$min_data_in_leaf <- min_data_in_leaf
   if (!missing(sample_type))
     parms$sample_type <- sample_type
   if (!missing(normalize_type))
@@ -386,6 +382,7 @@ h2o.xgboost <- function(x,
                                         colsample_bylevel = 1,
                                         col_sample_rate_per_tree = 1,
                                         colsample_bytree = 1,
+                                        colsample_bynode = 1,
                                         max_abs_leafnode_pred = 0.0,
                                         max_delta_step = 0.0,
                                         monotone_constraints = NULL,
@@ -399,8 +396,6 @@ h2o.xgboost <- function(x,
                                         calibration_frame = NULL,
                                         max_bins = 256,
                                         max_leaves = 0,
-                                        min_sum_hessian_in_leaf = 100.0,
-                                        min_data_in_leaf = 0.0,
                                         sample_type = c("uniform", "weighted"),
                                         normalize_type = c("tree", "forest"),
                                         rate_drop = 0.0,
@@ -514,6 +509,8 @@ h2o.xgboost <- function(x,
     parms$col_sample_rate_per_tree <- col_sample_rate_per_tree
   if (!missing(colsample_bytree))
     parms$colsample_bytree <- colsample_bytree
+  if (!missing(colsample_bynode))
+    parms$colsample_bynode <- colsample_bynode
   if (!missing(max_abs_leafnode_pred))
     parms$max_abs_leafnode_pred <- max_abs_leafnode_pred
   if (!missing(max_delta_step))
@@ -540,10 +537,6 @@ h2o.xgboost <- function(x,
     parms$max_bins <- max_bins
   if (!missing(max_leaves))
     parms$max_leaves <- max_leaves
-  if (!missing(min_sum_hessian_in_leaf))
-    parms$min_sum_hessian_in_leaf <- min_sum_hessian_in_leaf
-  if (!missing(min_data_in_leaf))
-    parms$min_data_in_leaf <- min_data_in_leaf
   if (!missing(sample_type))
     parms$sample_type <- sample_type
   if (!missing(normalize_type))
