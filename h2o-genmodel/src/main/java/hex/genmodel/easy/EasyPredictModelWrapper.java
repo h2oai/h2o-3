@@ -793,7 +793,7 @@ public class EasyPredictModelWrapper implements Serializable {
   }
 
   public KLimeModelPrediction predictKLime(RowData data) throws PredictException {
-    double[] preds = preamble(ModelCategory.Regression, data);
+    double[] preds = preamble(ModelCategory.KLime, data);
 
     KLimeModelPrediction p = new KLimeModelPrediction();
     p.value = preds[0];
