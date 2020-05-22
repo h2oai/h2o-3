@@ -1,77 +1,21 @@
 Training Models
 ===============
 
-With H2O-3, you can train supervised, unsupervised, and Word2Vec models.
+Use the ``train()`` function to build H2O models.
 
 Supervised Learning
 -------------------
 
-In supervised learning, the dataset is labeled with the answer that algorithm should come up with. Supervised learning takes input variables (x) along with an output variable (y). The output variable represents the column that you want to predict on. The algorithm then uses these variables to learn and approximate the mapping function from the input to the output. Supervised learning algorithms support classification and regression problems.  
+Supervised learning algorithms support classification and regression problems.
 
 Classification and Regression Problems
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In classification problems, the output variable (y) is a categorical value. The answer can be binary (answer is yes/no), or it can be multiclass (answer is dog/cat/mouse).
+In classification problems, the output variable (y) is a categorical value. The answer can be binary (for example, yes/no), or it can be multiclass (for example, dog/cat/mouse).
 
 In regression problems, the output variable (y) is a real or continuous value. An example would be predicting someone's age or predicting the median value of a house. 
 
-Changing the Column Type
-''''''''''''''''''''''''
-
-H2O algorithms will treat a problem as a classification problem if the column type is ``factor`` or a regression problem if the column type is ``numeric``. You can force H2O to use either classification or regression by changing the column type.
-
-.. tabs::
-   .. code-tab:: r R
-
-		library(h2o)
-		h2o.init()
-
-		# import the boston housing dataset:
-		boston <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
-
-		# check the column type for the `chas` column
-		h2o.isnumeric(boston["chas"])
-		[1] TRUE
-
-		# change the column type to a factor
-		boston["chas"] <- as.factor(boston["chas"])
-		# verify that the column is now a factor
-		h2o.isfactor(boston["chas"])
-		[1] TRUE
-
-		# change the column type back to numeric
-		boston["chas"] <- as.numeric(boston["chas"])
-		# verify that the column is numeric and not a factor
-		h2o.isfactor(boston["chas"])
-		[1] FALSE
-		h2o.isnumeric(boston["chas"])
-		[1] TRUE
-
-   .. code-tab:: python
-
-		import h2o
-		from h2o.estimators.glm import H2OGeneralizedLinearEstimator
-		h2o.init()
-
-		# import the boston dataset:
-		boston = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/BostonHousing.csv")
-
-		# check the column type for the `chas` column
-		boston["chas"].isnumeric()
-		[True]
-		# change the column type to a factor
-		boston['chas'] = boston['chas'].asfactor()
-		# verify that the column is now a factor
-		boston["chas"].isfactor()
-		[True]
-
-		# change the column type back to numeric
-		boston["chas"] = boston["chas"].asfactor()
-		# verify that the column is numeric and not a factor
-		boston["chas"].isfactor()
-		[False]
-		boston["chas"].isnumeric()
-		[True]
+**Note**: You can force H2O to use either classification or regression by :ref:`changing the column type <change-column-type>`.
 
 Classification Example
 ''''''''''''''''''''''
@@ -79,7 +23,7 @@ Classification Example
 This example uses the Prostate dataset and :ref:`H2O's GLM algorithm <glm>` to predict the likelihood of a patient being diagnosed with prostate cancer. The dataset includes the following columns:
 
 - **ID**: A row identifier. This can be dropped from the list of predictors.
-- **CAPSULE**: Whether the tumor prenetrated the prostatic capsule
+- **CAPSULE**: Whether the tumor penetrated the prostatic capsule
 - **AGE**: The patient's age
 - **RACE**: The patient's race
 - **DPROS**: The result of the digital rectal exam, where 1=no nodule; 2=unilober nodule on the left; 3 =unilibar nodule on the right; and 4=bilobar nodule.
@@ -158,7 +102,7 @@ This example uses only the AGE, RACE, VOL, and GLEASON columns to make the predi
     train, test = prostate.split_frame(ratios = [0.8], seed = 1234)
 
     # set GLM modeling parameters
-    # and initiliaze model training
+    # and initialize model training
     glm_model = H2OGeneralizedLinearEstimator(family= "binomial", 
                                               lambda_ = 0, 
                                               compute_p_values = True)
@@ -197,7 +141,7 @@ This example uses the Boston Housing data and :ref:`H2O's GLM algorithm <glm>` t
 - **nox**: Nitric oxides concentration (parts per 10 million)
 - **rm**: The average number of rooms per dwelling
 - **age**: The proportion of owner-occupied units built prior to 1940
-- **dis**: The weighted distances to five Boston employment centres
+- **dis**: The weighted distances to five Boston employment centers
 - **rad**: The index of accessibility to radial highways
 - **tax**: The full-value property-tax rate per $10,000
 - **ptratio**: The pupil-teacher ratio by town
@@ -231,7 +175,7 @@ This example uses the Boston Housing data and :ref:`H2O's GLM algorithm <glm>` t
 		boston["chas"] <- as.factor(boston["chas"])
 
 		# split into train and test sets
-		boston_splits <- h2o.splitFrame(data =  boston, ratios = 0.8, seed = 1234)
+		boston_splits <- h2o.splitFrame(data = boston, ratios = 0.8, seed = 1234)
 		train <- boston_splits[[1]]
 		test <- boston_splits[[2]]
 
@@ -310,18 +254,409 @@ This example uses the Boston Housing data and :ref:`H2O's GLM algorithm <glm>` t
 		[10 rows x 1 column]
 
 Unsupervised Learning
----------------------
+----------------------
 
-In unsupervised learning, the model is provided with a dataset that isn't labeled - i.e., without an explicit outcome that the algorithm should return. In this case, the algorithm attempts to find patterns and structure in the data by extracting useful features. The model organizes the data in different ways, depending on the algorithm (clustering, anomaly detection, autoencoders, etc). 
+Unsupervised learning algorithms include clustering and anomaly detection. Unsupervised learning algorithms such as GLRM and PCA can also be used to perform dimensionality reduction.
 
 Clustering Example
 ~~~~~~~~~~~~~~~~~~
 
-The example below uses K-Means to perform a simple clustering model.
+The example below uses the :ref:`K-Means <kmeans>` algorithm to build a simple clustering model of the Iris dataset.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+    # Set the predictors:
+    predictors <- c("sepal_len", "sepal_wid", "petal_len", "petal_wid")
+
+    # Split the dataset into a train and valid set:
+    iris_split <- h2o.splitFrame(data = iris, ratios = 0.8, seed = 1234)
+    train <- iris_split[[1]]
+    valid <- iris_split[[2]]
+
+    # Build and train the model:
+    iris_kmeans <- h2o.kmeans(k = 10, 
+                              estimate_k = TRUE, 
+                              standardize = FALSE, 
+                              seed = 1234, 
+                              x = predictors, 
+                              training_frame = train, 
+                              validation_frame = valid)
+
+    # Eval performance:
+    perf <- h2o.performance(iris_kmeans)
+    perf
+
+    H2OClusteringMetrics: kmeans
+    ** Reported on training data. **
+
+    Total Within SS:  63.09516
+    Between SS:  483.8141
+    Total SS:  546.9092 
+    Centroid Statistics: 
+      centroid     size within_cluster_sum_of_squares
+    1        1 36.00000                      11.08750
+    2        2 51.00000                      30.78627
+    3        3 36.00000                      21.22139
+
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2OKMeansEstimator
+    h2o.init()
+
+    # Import the iris dataset into H2O:
+    iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+    # Set the predictors:
+    predictors = ["sepal_len", "sepal_wid", "petal_len", "petal_wid"]
+
+    # Split the dataset into a train and valid set:
+    train, valid = iris.split_frame(ratios=[.8], seed=1234)
+
+    # Build and train the model:
+    iris_kmeans = H2OKMeansEstimator(k=10, 
+                                     estimate_k=True, 
+                                     standardize=False, 
+                                     seed=1234)
+    iris_kmeans.train(x=predictors, 
+                      training_frame=train, 
+                      validation_frame=valid)
+
+    # Eval performance:
+    perf = iris_kmeans.model_performance()
+    perf
+
+    ModelMetricsClustering: kmeans
+    ** Reported on train data. **
+    
+    MSE: NaN
+    RMSE: NaN
+    Total Within Cluster Sum of Square Error: 63.09516069071749
+    Total Sum of Square Error to Grand Mean: 546.9092331233204
+    Between Cluster Sum of Square Error: 483.8140724326029
+
+    Centroid Statistics: 
+        centroid    size    within_cluster_sum_of_squares
+    --  ----------  ------  -------------------------------
+        1           36      11.0875
+        2           51      30.7863
+        3           36      21.2214
+
+Anomaly Detection Example
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This example uses the :ref:`isoforest` algorithm to detect anomalies in the Electrocardiograms (ECG) dataset.
+
+.. tabs::
+   .. code-tab:: r R
+
+	library(h2o)
+	h2o.init()
+
+	# import the ecg discord datasets:
+	train <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_train.csv")
+	test <- h2o.importFile("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_test.csv")
+
+	# train using the `sample_size` parameter:
+	isofor_model <- h2o.isolationForest(training_frame = train, 
+	                                    sample_size = 5, 
+	                                    ntrees = 7, 
+	                                    seed = 12345,
+	                                    validation_frame = test)
+
+	# test the predictions and retrieve the mean_length.
+	# mean_length is the average number of splits it took to isolate 
+	# the record across all the decision trees in the forest. Records 
+	# with a smaller mean_length are more likely to be anomalous 
+	# because it takes fewer partitions of the data to isolate them.
+	pred <- h2o.predict(isofor_model, test)
+	pred
+	    predict mean_length
+	1 0.5555556    1.857143
+	2 0.5555556    1.857143
+	3 0.3333333    2.142857
+	4 1.0000000    1.285714
+	5 0.7777778    1.571429
+	6 0.6666667    1.714286
+
+	[23 rows x 2 columns]
+
+
+   .. code-tab:: python
+
+	import h2o
+	from h2o.estimators.isolation_forest import H2OIsolationForestEstimator
+	h2o.init()
+
+	# import the ecg discord datasets:
+	train = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_train.csv")
+	test = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/anomaly/ecg_discord_test.csv")
+
+	# build a model using the `sample_size` parameter:
+	isofor_model = H2OIsolationForestEstimator(sample_size = 5, ntrees = 7, seed = 12345) 
+	isofor_model.train(training_frame = train)
+
+	# test the predictions and retrieve the mean_length.
+	# mean_length is the average number of splits it took to isolate 
+	# the record across all the decision trees in the forest. Records 
+	# with a smaller mean_length are more likely to be anomalous 
+	# because it takes fewer partitions of the data to isolate them.
+	pred = isofor_model.predict(test)
+	pred
+	  predict    mean_length
+	---------  -------------
+	 0.555556        1.85714
+	 0.555556        1.85714
+	 0.333333        2.14286
+	 1               1.28571
+	 0.777778        1.57143
+	 0.666667        1.71429
+	 0.666667        1.71429
+	 0               2.57143
+	 0.888889        1.42857
+	 0.777778        1.57143
+
+	[23 rows x 2 columns]
+
+Dimensionality Reduction Example
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Below is a simple example showing how to use the :ref:`GLRM <glrm>` algorithm for dimensionality reduction of the USArrests dataset.
+
+.. tabs::
+   .. code-tab:: r R
+
+    library(h2o)
+    h2o.init()
+
+    # Import the USArrests dataset into H2O:
+    arrests <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+
+    # Split the dataset into a train and valid set:
+    arrests_splits <- h2o.splitFrame(data = arrests, ratios = 0.8, seed = 1234)
+    train <- arrests_splits[[1]]
+    valid <- arrests_splits[[2]]
+
+    # Build and train the model:
+    glrm_model = h2o.glrm(training_frame = train, 
+                          k = 4, 
+                          loss = "Quadratic", 
+                          gamma_x = 0.5, 
+                          gamma_y = 0.5,  
+                          max_iterations = 700, 
+                          recover_svd = TRUE, 
+                          init = "SVD", 
+                          transform = "STANDARDIZE")
+
+    # Eval performance:
+    arrests_perf <- h2o.performance(glrm_model)
+    arrests_perf
+    H2ODimReductionMetrics: glrm
+    ** Reported on training data. **
+
+    Sum of Squared Error (Numeric):  1.983347e-13
+    Misclassification Error (Categorical):  0
+    Number of Numeric Entries:  144
+    Number of Categorical Entries:  0
+
+    # Generate predictions on a validation set:
+    arrests_pred <- h2o.predict(glrm_model, newdata = valid)
+    arrests_pred
+      reconstr_Murder reconstr_Assault reconstr_UrbanPop reconstr_Rape
+    1       0.2710690        0.2568493       -1.08479880  -0.281431002
+    2       2.3535244        0.5080499       -0.39237403   0.357493436
+    3      -1.3270945       -1.3460498       -0.60010146  -1.113046938
+    4       1.8692325        0.9626034        0.02308083  -0.007606243
+    5      -1.3513091       -1.0230776       -1.01555632  -1.468004959
+    6       0.8764339        1.5726620        0.09232330   0.560326590
+
+    [14 rows x 4 columns] 
+
+   .. code-tab:: python
+
+    import h2o
+    from h2o.estimators import H2OGeneralizedLowRankEstimator
+    h2o.init()
+
+    # Import the USArrests dataset into H2O:
+    arrestsH2O = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/pca_test/USArrests.csv")
+
+    # Split the dataset into a train and valid set:
+    train, valid = arrestsH2O.split_frame(ratios = [.8], seed = 1234)
+
+    # Build and train the model:
+    glrm_model = H2OGeneralizedLowRankEstimator(k = 4, 
+                                                loss = "quadratic", 
+                                                gamma_x = 0.5, 
+                                                gamma_y = 0.5, 
+                                                max_iterations = 700, 
+                                                recover_svd = True, 
+                                                init = "SVD", 
+                                                transform = "standardize")
+    glrm_model.train(training_frame=train) 
+
+    # Eval performance
+    arrests_perf = glrm_model.model_performance()
+    arrests_perf
+
+    ModelMetricsGLRM: glrm
+    ** Reported on train data. **
+
+    MSE: NaN
+    RMSE: NaN
+    Sum of Squared Error (Numeric): 1.983347263428422e-13
+    Misclassification Error (Categorical): 0.0
+
+    # Generate predictions on a validation set:
+    pred = glrm_model.predict(valid)
+    pred
+      reconstr_Murder    reconstr_Assault    reconstr_UrbanPop    reconstr_Rape
+    -----------------  ------------------  -------------------  ---------------
+            0.271069             0.256849           -1.0848         -0.281431
+            2.35352              0.50805            -0.392374        0.357493
+            -1.32709             -1.34605            -0.600101       -1.11305
+            1.86923              0.962603            0.0230808      -0.00760624
+            -1.35131             -1.02308            -1.01556        -1.468
+            0.876434             1.57266             0.0923233       0.560327
+            -0.794373            -0.23359             1.33869        -0.605964
+            1.07015              1.03437             0.577021        1.30067
+            -0.818588            -0.795801           -0.253889       -0.585681
+            -0.0679354           -0.113971            1.61566        -0.352423
+
+    [14 rows x 4 columns]
 
 
 
 Training Segments
 -----------------
 
+In H2O, you can perform segmented-data bulk training on training sets. The ``train_segments()`` function trains an H2O model for each segment (subpopulation) of the training dataset.
+
+Defining a Segmented Model
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``train_segment()`` function accepts the following parameters:
+
+- **x**: A list of column names or indices indicating the predictor columns.
+
+- **y**: An index or a column name indicating the response column.
+
+- **algorithm** (R only): When building a segmented model in R, specify the algorithm to use. Available options include:
+
+  - ``aggregator`` 
+  - ``coxph``
+  - ``deeplearning``
+  - ``gam``
+  - ``gbm``
+  - ``glrm`` 
+  - ``glm`` 
+  - ``isolationforest``
+  - ``kmeans``
+  - ``naivebayes``
+  - ``pca`` 
+  - ``psvm``
+  - ``randomForest``
+  - ``stackedensemble``
+  - ``svd``
+  - ``targetencoder``
+  - ``word2vec`` 
+  - ``xgboost``
+
+- **training_frame**: The H2OFrame having the columns indicated by ``x`` and ``y`` (as well as any additional columns specified by ``fold_column``, ``offset_column``, and ``weights_column``).
+
+- **offset_column**: The name or index of the column in the ``training_frame`` that holds the offsets.
+
+- **fold_column**: The name or index of the column in the ``training_frame`` that holds the per-row fold assignments.
+
+- **weights_column**: The name or index of the column in the ``training_frame`` that holds the per-row weights.
+
+- **validation_frame**: The H2OFrame with validation data to be scored on while training.
+
+- **max_runtime_secs**: Maximum allowed runtime in seconds for each model training. Use 0 to disable. Please note that regardless of how this parameter is set, a model will be built for each input segment. This parameter only affects individual model training.
+
+- **segments** (Python)/**segment_columns** (R): A list of columns to segment by. H2O will group the training (and validation) dataset by the segment-by columns and train a separate model for each segment (group of rows). As an alternative to providing a list of columns, users can also supply an explicit enumeration of segments to build the models for. This enumeration needs to be represented as H2OFrame.
+
+- **segment_models_id**: Identifier for the returned collection of Segment Models. If not specified it will be automatically generated.
+
+- **parallelism**: Level of parallelism of the bulk segment models building. This is the maximum number of models each H2O node will be building in parallel.
+
+- **verbose**: Enable to print additional information during model building. Defaults to False.
+
+Segmented Model Example
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Below is a simple example describing how to train a segmented model. A more detailed example is available in the `H2O Segment Model Building <https://github.com/h2oai/h2o-tutorials/blob/master/tutorials/segment_model_building/h2o-segment-model-building.ipynb>`__ demo. 
+
+.. tabs::
+   .. code-tab:: r R
+
+	library(h2o)
+	h2o.init()
+
+	# import the titanic dataset
+	titanic <-  h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+
+
+	# set the predictor and response columns
+	predictors <- c("name", "sex", "age", "sibsp", "parch", "ticket", "fare", "cabin")
+	response <- "survived"
+
+	# convert the response columnn to a factor
+	titanic['survived'] <- as.factor(titanic['survived'])
+
+	# split the dataset into training and validation datasets
+	titanic.splits <- h2o.splitFrame(data =  titanic, ratios = .8, seed = 1234)
+	train <- titanic.splits[[1]]
+	valid <- titanic.splits[[2]]
+
+	# train a segmented model by iterating over the plcass column
+	titanic_models <- h2o.train_segments(algorithm = "gbm",
+	                                     segment_columns = "pclass",
+	                                     x = predictors,
+	                                     y = response,
+	                                     training_frame = train,
+	                                     validation_frame = valid,
+	                                     seed = 1234)
+
+	# convert the segmented models to an H2OFrame
+	as.data.frame(titanic_models)
+
+
+   .. code-tab:: python
+
+	import h2o
+	from h2o.estimators.gbm import H2OGradientBoostingEstimator
+	h2o.init()
+
+	# import the titanic dataset:
+	titanic = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/gbm_test/titanic.csv")
+
+	# set the predictor and response columns
+	predictors = ["name", "sex", "age", "sibsp", "parch", "ticket", "fare", "cabin"]
+	response = "survived"
+
+	# convert the response columnn to a factor
+	titanic[response] = titanic[response].asfactor()
+
+	# split the dataset into training and validation datasets
+	train, valid = titanic.split_frame(ratios = [.8], seed = 1234)
+
+	# train a segmented model by iterating over the plcass column
+	titanic_gbm = H2OGradientBoostingEstimator(seed = 1234)
+	titanic_models = titanic_gbm.train_segments(segments = ["pclass"],
+	                                            x = predictors,
+	                                            y = response,
+	                                            training_frame = train,
+	                                            validation_frame = valid)
+
+	# convert the segmented models to an H2OFrame
+	titanic_models.as_frame()
 

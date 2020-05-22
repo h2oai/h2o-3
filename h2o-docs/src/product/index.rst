@@ -60,12 +60,12 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
-   training-models
+   data-science
 
 .. toctree::
    :maxdepth: 2
 
-   data-science
+   training-models
 
 .. toctree::
    :maxdepth: 2

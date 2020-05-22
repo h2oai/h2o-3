@@ -35,7 +35,7 @@ The steps below describe the individual tasks involved in training and testing a
 
    a. Train each of the L base algorithms on the training set.
    b. Perform k-fold cross-validation on each of these learners and collect the cross-validated predicted values from each of the L algorithms.
-   c. The N cross-validated predicted values from each of the L algorithms can be combined to form a new N x L matrix. This matrix, along wtih the original response vector, is called the "level-one" data. (N = number of rows in the training set.)
+   c. The N cross-validated predicted values from each of the L algorithms can be combined to form a new N x L matrix. This matrix, along with the original response vector, is called the "level-one" data. (N = number of rows in the training set.)
    d. Train the metalearning algorithm on the level-one data.
       The "ensemble model" consists of the L base learning models and the metalearning model, which can then be used to generate predictions on a test set.
 
