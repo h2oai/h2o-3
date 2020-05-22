@@ -146,7 +146,11 @@
 #' )
 #' predictors = 1:20
 #' target = "y"
-#' glm = h2o.glm(x = predictors, y = target, training_frame = bank, family = "binomial", standardize = TRUE,
+#' glm = h2o.glm(x = predictors, 
+#'               y = target, 
+#'               training_frame = bank, 
+#'               family = "binomial", 
+#'               standardize = TRUE,
 #'               lambda_search = TRUE)
 #' h2o.std_coef_plot(glm, num_of_features = 20)
 #' }
