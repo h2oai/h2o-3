@@ -10,7 +10,7 @@ import water.util.Pair;
 
 import static org.junit.Assert.assertEquals;
 
-public class TfIdfPreprocessorTest extends TestUtil {
+public class TfIdfPreprocessorTaskTest extends TestUtil {
 
     @BeforeClass()
     public static void setup() { stall_till_cloudsize(1); }
@@ -24,7 +24,7 @@ public class TfIdfPreprocessorTest extends TestUtil {
         byte[] outputTypes = new byte[]{ Vec.T_NUM, Vec.T_STR };
 
         try {
-            TfIdfPreprocessor preprocessor = new TfIdfPreprocessor().doAll(outputTypes, inputFrame);
+            TfIdfPreprocessorTask preprocessor = new TfIdfPreprocessorTask().doAll(outputTypes, inputFrame);
             Frame outputFrame = preprocessor.outputFrame();
 
             assertEquals("Number of columns in the preprocessed frame does not match the expected number.", 
@@ -58,13 +58,13 @@ public class TfIdfPreprocessorTest extends TestUtil {
         long[] docIds = new long[] { 0L, 1L, 2L };
 
         Frame inputFrame = new TestFrameBuilder()
-                               .withName("data")
-                               .withColNames("Document ID", "Document")
-                               .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                               .withDataForCol(0, docIds)
-                               .withDataForCol(1, documents)
-                               .withChunkLayout(2, 1)
-                               .build();
+                                .withName("data")
+                                .withColNames("Document ID", "Document")
+                                .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                                .withDataForCol(0, docIds)
+                                .withDataForCol(1, documents)
+                                .withChunkLayout(2, 1)
+                                .build();
 
         long[] outDocIds = new long[] {
                 0L, 0L, 0L,
@@ -78,12 +78,12 @@ public class TfIdfPreprocessorTest extends TestUtil {
         };
 
         Frame expectedOutFrame = new TestFrameBuilder()
-                                     .withName("expectedOutputFrame")
-                                     .withColNames("Document ID", "Token")
-                                     .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                                     .withDataForCol(0, outDocIds)
-                                     .withDataForCol(1, outTokens)
-                                     .build();
+                                      .withName("expectedOutputFrame")
+                                      .withColNames("Document ID", "Token")
+                                      .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                                      .withDataForCol(0, outDocIds)
+                                      .withDataForCol(1, outTokens)
+                                      .build();
 
         return new Pair<>(inputFrame, expectedOutFrame);
     }

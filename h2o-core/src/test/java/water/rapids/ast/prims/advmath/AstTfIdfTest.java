@@ -1,6 +1,10 @@
 package water.rapids.ast.prims.advmath;
 
-import org.junit.*;
+import org.apache.log4j.Logger;
+import org.junit.Assume;
+import org.junit.BeforeClass;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.Scope;
 import water.TestUtil;
@@ -15,18 +19,24 @@ import water.util.FileUtils;
 import water.util.Pair;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.*;
 
 public class AstTfIdfTest extends TestUtil {
-
+    
     private static final String BIGDATA_TESTS_ENV_VAR_NAME = "testTfIdfBigdata";
     private static final double DELTA = 0.0001;
-
+    
+    private static Logger log = Logger.getLogger(AstTfIdfTest.class);
+    
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
 
@@ -59,14 +69,14 @@ public class AstTfIdfTest extends TestUtil {
             Scope.track(expectedOutputFrame);
 
             Val resVal = Rapids.exec("(tf-idf " + frameName + " " + preprocess + ")", sess);
-            Assert.assertTrue("Rapid's output is not a H2OFrame.", resVal instanceof ValFrame);
+            assertTrue("Rapid's output is not a H2OFrame.", resVal instanceof ValFrame);
             Frame resFrame = resVal.getFrame();
             Scope.track(resFrame);
 
-            Assert.assertEquals("Number of columns in the TF-IDF output frame does not match the expected number.",
-                    expectedOutputFrame.numCols(), resFrame.numCols());
-            Assert.assertEquals("Number of rows in the TF-IDF output frame does not match the expected number.",
-                    expectedOutputFrame.numRows(), resFrame.numRows());
+            assertEquals("Number of columns in the TF-IDF output frame does not match the expected number.",
+                         expectedOutputFrame.numCols(), resFrame.numCols());
+            assertEquals("Number of rows in the TF-IDF output frame does not match the expected number.",
+                         expectedOutputFrame.numRows(), resFrame.numRows());
 
             for(int i = 0; i < expectedOutputFrame.numCols(); i++) {
                 Vec expectedVec = expectedOutputFrame.vec(i);
@@ -75,7 +85,7 @@ public class AstTfIdfTest extends TestUtil {
                     assertStringVecEquals(expectedVec, resFrame.vec(i));
                 else
                     assertVecEquals("Vector (at index " + i + ") in the TF-IDF output frame does not mismatch the expected one.",
-                            expectedVec, resFrame.vec(i), DELTA);
+                                    expectedVec, resFrame.vec(i), DELTA);
             }
         } finally {
             Scope.exit();
@@ -86,12 +96,12 @@ public class AstTfIdfTest extends TestUtil {
     public void testTfIdfBigData() throws IOException {
         Assume.assumeThat("TF-IDF bigdata tests are enabled", System.getProperty(BIGDATA_TESTS_ENV_VAR_NAME), is(notNullValue()));
 
-        System.out.println("Loading data...");
+        log.debug("Loading data...");
         File testFile = FileUtils.getFile("bigdata/laptop/text8.gz");
         List<String> tokens = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(testFile))))
-                .lines().collect(Collectors.toList());
+                                    .lines().collect(Collectors.toList());
         int tokensCnt = tokens.size();
-        System.out.println(tokensCnt + " words have been loaded.");
+        log.debug(tokensCnt + " words have been loaded.");
 
         int docSplitIndex = tokensCnt / 2;
         List<String> doc1Tokens = tokens.subList(0, docSplitIndex);
@@ -121,7 +131,7 @@ public class AstTfIdfTest extends TestUtil {
         try {
             Session sess = new Session();
             String frameName = "testFrame";
-            
+
             Frame inputFrame = new TestFrameBuilder()
                                     .withName(frameName, sess)
                                     .withColNames("Document ID", "Document")
@@ -132,17 +142,18 @@ public class AstTfIdfTest extends TestUtil {
                                     .build();
             Scope.track(inputFrame);
 
+            log.debug("Computing TF-IDF...");
             Val resVal = Rapids.exec("(tf-idf " + frameName + " true)", sess);
-            Assert.assertTrue(resVal instanceof ValFrame);
+            assertTrue(resVal instanceof ValFrame);
             Frame resFrame = resVal.getFrame();
             Scope.track(resFrame);
-            
+
             int expectedNumCols = 5;
-            Assert.assertEquals("Number of columns in the TF-IDF output frame does not match the expected number.",
-                                expectedNumCols, resFrame.numCols());
-            Assert.assertEquals("Number of rows in the TF-IDF output frame does not match the expected number.",
-                                doc1UniqueTokens.size() + doc2UniqueTokens.size(), resFrame.numRows());
-            
+            assertEquals("Number of columns in the TF-IDF output frame does not match the expected number.",
+                         expectedNumCols, resFrame.numCols());
+            assertEquals("Number of rows in the TF-IDF output frame does not match the expected number.",
+                         doc1UniqueTokens.size() + doc2UniqueTokens.size(), resFrame.numRows());
+
             Vec outDocIds = resFrame.vec(0);
             Vec outTokens = resFrame.vec(1);
             Vec outTF = resFrame.vec(2);
@@ -158,25 +169,93 @@ public class AstTfIdfTest extends TestUtil {
 
                 Map<String, Long> docTfValues = expectedTFs[(int) docId];
 
-                Assert.assertTrue("Output token is not in the expected tokens.",
-                                  docTfValues.containsKey(token));
+                assertTrue("Output token is not in the expected tokens.", docTfValues.containsKey(token));
                 long expectedTf = docTfValues.get(token);
-                Assert.assertEquals("Term frequency value mismatch.", expectedTf, tf);
+                assertEquals("Term frequency value mismatch.", expectedTf, tf);
 
-                Assert.assertTrue("Output token is not in the expected tokens.",
-                                  expectedIDFs.containsKey(token));
+                assertTrue("Output token is not in the expected tokens.", expectedIDFs.containsKey(token));
                 double expectedIdf = expectedIDFs.get(token);
-                Assert.assertEquals("Inverse document frequency value mismatch.", expectedIdf, idf, DELTA);
+                assertEquals("Inverse document frequency value mismatch.", expectedIdf, idf, DELTA);
 
-                Assert.assertTrue("Output token is not in the expected tokens.",
-                                  expectedIDFs.containsKey(token));
-                Assert.assertEquals("TF-IDF value mismatch.", expectedTf * expectedIdf, tfIdf, DELTA);
+                assertTrue("Output token is not in the expected tokens.", expectedIDFs.containsKey(token));
+                assertEquals("TF-IDF value mismatch.", expectedTf * expectedIdf, tfIdf, DELTA);
+            }
+
+            if (log.isDebugEnabled()) {
+                log.debug(resFrame.toTwoDimTable().toString());
+                log.debug("TF-IDF testing finished.");
             }
         } finally {
             Scope.exit();
         }
     }
-    
+
+    @Test
+    public void testIncorrectInputTypes() {
+        Scope.enter();
+        try {
+            Session sess = new Session();
+            String frameName = "testFrame";
+            Frame inputFrame = new TestFrameBuilder()
+                                    .withName(frameName, sess)
+                                    .withVecTypes(Vec.T_STR, Vec.T_STR)
+                                    .withDataForCol(0, new String[]{ "a" })
+                                    .withDataForCol(1, new String[]{ "b" })
+                                    .build();
+            Scope.track(inputFrame);
+
+            testIncorrectInput(sess, frameName);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testEmptyInput() {
+        Scope.enter();
+        try {
+            Session sess = new Session();
+            String frameName = "testFrame";
+            Frame inputFrame = new TestFrameBuilder()
+                                    .withName(frameName, sess)
+                                    .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                                    .withDataForCol(0, new long[]{})
+                                    .withDataForCol(1, new String[]{})
+                                    .build();
+            Scope.track(inputFrame);
+
+            testIncorrectInput(sess, frameName);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testIncorrectInputColumnsCnt() {
+        Scope.enter();
+        try {
+            Session sess = new Session();
+            String frameName = "testFrame";
+            Frame inputFrame = new TestFrameBuilder()
+                                    .withName(frameName, sess)
+                                    .withVecTypes(Vec.T_NUM)
+                                    .withDataForCol(0, new long[]{})
+                                    .build();
+            Scope.track(inputFrame);
+
+            testIncorrectInput(sess, frameName);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    private static void testIncorrectInput(final Session sess, final String frameName) {
+        try {
+            Rapids.exec("(tf-idf " + frameName + " false)", sess);
+            fail("IllegalArgumentException is expected for incorrect input.");
+        } catch(IllegalArgumentException ignored) {}
+    }
+
     private static double idf(long df, long documentsCnt) {
         return Math.log(((double)(documentsCnt + 1)) / (df + 1));
     }
@@ -190,13 +269,13 @@ public class AstTfIdfTest extends TestUtil {
         long[] docIds = new long[] { 0L, 1L, 2L };
 
         return new TestFrameBuilder()
-                .withName(frameName, session)
-                .withColNames("Document ID", "Document")
-                .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                .withDataForCol(0, docIds)
-                .withDataForCol(1, documents)
-                .withChunkLayout(2, 1)
-                .build();
+                    .withName(frameName, session)
+                    .withColNames("Document ID", "Document")
+                    .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                    .withDataForCol(0, docIds)
+                    .withDataForCol(1, documents)
+                    .withChunkLayout(2, 1)
+                    .build();
     }
 
     private static Frame preprocessedTestFrame(final String frameName, final Session session) {
@@ -212,13 +291,13 @@ public class AstTfIdfTest extends TestUtil {
         };
 
         return new TestFrameBuilder()
-                .withName(frameName, session)
-                .withColNames("DocID", "Tokens")
-                .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                .withDataForCol(0, docIds)
-                .withDataForCol(1, tokens)
-                .withChunkLayout(5, 3, 1, 2)
-                .build();
+                    .withName(frameName, session)
+                    .withColNames("DocID", "Tokens")
+                    .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                    .withDataForCol(0, docIds)
+                    .withDataForCol(1, tokens)
+                    .withChunkLayout(5, 3, 1, 2)
+                    .build();
     }
     
     private static Pair<Frame, Frame> getSimpleTestFrames(final String frameName, 

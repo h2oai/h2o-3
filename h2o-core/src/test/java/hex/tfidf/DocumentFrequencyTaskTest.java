@@ -1,6 +1,6 @@
 package hex.tfidf;
 
-import org.junit.Assert;
+import org.apache.log4j.Logger;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -17,10 +17,14 @@ import java.util.zip.GZIPInputStream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-public class DocumentFrequencyTest extends TestUtil {
+public class DocumentFrequencyTaskTest extends TestUtil {
 
     private static final String BIGDATA_TESTS_ENV_VAR_NAME = "testDFBigdata";
+
+    private static Logger log = Logger.getLogger(DocumentFrequencyTaskTest.class);
     
     @BeforeClass()
     public static void setup() { stall_till_cloudsize(1); }
@@ -37,8 +41,7 @@ public class DocumentFrequencyTest extends TestUtil {
         }};
 
         try {
-            DocumentFrequency df = new DocumentFrequency();
-            Frame outputFrame = df.compute(fr);
+            Frame outputFrame = DocumentFrequencyTask.compute(fr);
 
             checkDfOutput(outputFrame, expectedDocumentFrequencies);
 
@@ -52,12 +55,12 @@ public class DocumentFrequencyTest extends TestUtil {
     public void testDocumentFrequenciesBigData() throws IOException {
         Assume.assumeThat("DF bigdata tests are enabled", System.getProperty(BIGDATA_TESTS_ENV_VAR_NAME), is(notNullValue()));
 
-        System.out.println("Loading data...");
+        log.debug("Loading data...");
         File testFile = FileUtils.getFile("bigdata/laptop/text8.gz");
         List<String> tokens = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(testFile))))
                 .lines().collect(Collectors.toList());
         int tokensCnt = tokens.size();
-        System.out.println(tokensCnt + " words have been loaded.");
+        log.debug(tokensCnt + " words have been loaded.");
 
         int docSplitIndex = tokensCnt / 2;
         long[] docIds = new long[tokensCnt];
@@ -72,13 +75,13 @@ public class DocumentFrequencyTest extends TestUtil {
             chunkLayout.add(divRemainder);
 
         Frame fr = new TestFrameBuilder()
-                .withName("data")
-                .withColNames("DocID", "Token")
-                .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                .withDataForCol(0, docIds)
-                .withDataForCol(1, tokens.toArray(new String[0]))
-                .withChunkLayout(chunkLayout.stream().mapToLong(Integer::intValue).toArray())
-                .build();
+                        .withName("data")
+                        .withColNames("DocID", "Token")
+                        .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                        .withDataForCol(0, docIds)
+                        .withDataForCol(1, tokens.toArray(new String[0]))
+                        .withChunkLayout(chunkLayout.stream().mapToLong(Integer::intValue).toArray())
+                        .build();
 
         Set<String> doc1Tokens = new HashSet<>(tokens.subList(0, docSplitIndex));
         Set<String> doc2Tokens = new HashSet<>(tokens.subList(docSplitIndex, tokensCnt));
@@ -86,15 +89,16 @@ public class DocumentFrequencyTest extends TestUtil {
         Map<String, Long> expectedDFs = doc1Tokens.stream().collect(Collectors.toMap(token -> token, token -> 1L));
         doc2Tokens.forEach(token -> expectedDFs.merge(token, 1L, Long::sum));
 
-        System.out.println("Computing DF...");
+        log.debug("Computing DF...");
         try {
-            DocumentFrequency df = new DocumentFrequency();
-            Frame outputFrame = df.compute(fr);
+            Frame outputFrame = DocumentFrequencyTask.compute(fr);
 
             checkDfOutput(outputFrame, expectedDFs);
 
-            System.out.println(outputFrame.toTwoDimTable().toString());
-            System.out.println("DF testing finished.");
+            if (log.isDebugEnabled()) {
+                log.debug(outputFrame.toTwoDimTable().toString());
+                log.debug("DF testing finished.");
+            }
             outputFrame.remove();
         } finally {
             fr.remove();
@@ -105,8 +109,8 @@ public class DocumentFrequencyTest extends TestUtil {
         int expectedDfValuesCnt = expectedDocumentFrequencies.size();
         long outputRowsCnt = outputFrame.numRows();
 
-        Assert.assertEquals("Number of document frequency values does not match the expected number.",
-                            expectedDfValuesCnt, outputRowsCnt);
+        assertEquals("Number of document frequency values does not match the expected number.",
+                     expectedDfValuesCnt, outputRowsCnt);
 
         Vec outputTokens = outputFrame.vec(0);
         Vec outputDFs = outputFrame.vec(1);
@@ -114,11 +118,10 @@ public class DocumentFrequencyTest extends TestUtil {
         for(int row = 0; row < outputRowsCnt; row++) {
             String token = outputTokens.stringAt(row);
 
-            Assert.assertTrue("Output token is not in the expected tokens.",
-                              expectedDocumentFrequencies.containsKey(token));
+            assertTrue("Output token is not in the expected tokens.", expectedDocumentFrequencies.containsKey(token));
             long expectedDF = expectedDocumentFrequencies.get(token);
 
-            Assert.assertEquals("Document frequency value mismatch.", expectedDF, outputDFs.at8(row));
+            assertEquals("Document frequency value mismatch.", expectedDF, outputDFs.at8(row));
         }
     }
 

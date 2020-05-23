@@ -1,6 +1,5 @@
 package hex.tfidf;
 
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
@@ -8,8 +7,10 @@ import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 
+import static org.junit.Assert.assertEquals;
 
-public class InverseDocumentFrequencyTest extends TestUtil {
+
+public class InverseDocumentFrequencyTaskTest extends TestUtil {
 
     private static final double IDF_DELTA = 0.0001;
     private static final int DOCUMENTS_CNT = 3;
@@ -25,17 +26,17 @@ public class InverseDocumentFrequencyTest extends TestUtil {
                                                                     0.28768, 0.69314, 0.28768, 0.28768 };
 
         try {
-            InverseDocumentFrequency idfTask = new InverseDocumentFrequency(DOCUMENTS_CNT)
+            InverseDocumentFrequencyTask idfTask = new InverseDocumentFrequencyTask(DOCUMENTS_CNT)
                                                     .doAll(new byte[]{ Vec.T_NUM }, fr.vec(0));
             Vec idfVec = idfTask.outputFrame().anyVec();
             long idfVecSize = idfVec.length();
 
-            Assert.assertEquals("Number of inverse document frequency values does not match the expected number.",
-                                expectedInverseDocumentFrequencies.length, idfVecSize);
+            assertEquals("Number of inverse document frequency values does not match the expected number.",
+                         expectedInverseDocumentFrequencies.length, idfVecSize);
 
             for (int row = 0; row < idfVecSize; row++)
-                Assert.assertEquals("Inverse document frequency value mismatch.",
-                                    expectedInverseDocumentFrequencies[row], idfVec.at(row), IDF_DELTA);
+                assertEquals("Inverse document frequency value mismatch.",
+                             expectedInverseDocumentFrequencies[row], idfVec.at(row), IDF_DELTA);
 
             idfVec.remove();
         } finally {
