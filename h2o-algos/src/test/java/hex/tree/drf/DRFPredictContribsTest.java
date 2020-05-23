@@ -97,6 +97,7 @@ public class DRFPredictContribsTest extends TestUtil {
                     .setModel(drf.toMojo())
                     .setEnableContributions(true);
             EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+            assertArrayEquals(contributions.names(), wrapper.getContributionNames());
 
             for (long row = 0; row < fr.numRows(); row++) {
                 RowData rd = toRowData(fr, drf._output._names, row);
@@ -183,6 +184,7 @@ public class DRFPredictContribsTest extends TestUtil {
                     .setModel(drf.toMojo())
                     .setEnableContributions(true);
             EasyPredictModelWrapper wrapper = new EasyPredictModelWrapper(cfg);
+            assertArrayEquals(contributions.names(), wrapper.getContributionNames());
 
             for (long row = 0; row < fr.numRows(); row++) {
                 RowData rd = toRowData(fr, drf._output._names, row);

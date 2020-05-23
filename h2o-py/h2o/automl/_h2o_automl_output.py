@@ -10,6 +10,7 @@ class H2OAutoMLOutput(H2OAutoMLBaseMixin, Keyed):
 
     def __init__(self, state):
         self._project_name = state['project_name']
+        self._key = state['json']['automl_id']['name']
         self._leader = state['leader']
         self._leaderboard = state['leaderboard']
         self._event_log = el = state['event_log']
@@ -53,7 +54,7 @@ class H2OAutoMLOutput(H2OAutoMLBaseMixin, Keyed):
     #-------------------------------------------------------------------------------------------------------------------
     @property
     def key(self):
-        return self.project_name
+        return self._key
 
     def detach(self):
         self._project_name = None
