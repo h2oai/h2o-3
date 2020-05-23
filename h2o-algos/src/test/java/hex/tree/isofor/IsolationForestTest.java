@@ -8,6 +8,8 @@ import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
 import water.util.ArrayUtils;
 
 import static org.junit.Assert.*;
