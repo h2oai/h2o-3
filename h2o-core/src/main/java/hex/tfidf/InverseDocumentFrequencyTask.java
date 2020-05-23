@@ -7,7 +7,7 @@ import water.fvec.NewChunk;
 /**
  * Map-reduce task computing inverse document frequency values for words in given documents.
  */
-public class InverseDocumentFrequency extends MRTask<InverseDocumentFrequency> {
+public class InverseDocumentFrequencyTask extends MRTask<InverseDocumentFrequencyTask> {
 
     // IN
     /**
@@ -15,7 +15,7 @@ public class InverseDocumentFrequency extends MRTask<InverseDocumentFrequency> {
      */
     private final long _documentsCnt;
     
-    public InverseDocumentFrequency(long documentsCnt) {
+    public InverseDocumentFrequencyTask(long documentsCnt) {
         _documentsCnt = documentsCnt;
     }
 

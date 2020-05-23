@@ -25,6 +25,9 @@ def tf_idf(frame, preprocess=True):
     :return:    resulting frame with TF-IDF values. 
                 Row format: documentID, word, TF, IDF, TF-IDF
     """
+    input_type = type(frame)
+    if input_type is not H2OFrame:
+        raise ValueError(f"TF-IDF cannot be computed for input of type '{input_type}'. H2OFrame input is required.")
 
     tf_idf_frame = H2OFrame._expr(ExprNode("tf-idf", frame, preprocess))
 

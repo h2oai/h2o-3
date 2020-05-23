@@ -1,7 +1,6 @@
 package hex.tfidf;
 
-import org.junit.Assert;
-import org.junit.Assume;
+import org.apache.log4j.Logger;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import water.TestUtil;
@@ -17,10 +16,15 @@ import java.util.zip.GZIPInputStream;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeThat;
 
-public class TermFrequencyTest extends TestUtil {
+public class TermFrequencyTaskTest extends TestUtil {
 
     private static final String BIGDATA_TESTS_ENV_VAR_NAME = "testTFBigdata";
+
+    private static Logger log = Logger.getLogger(TermFrequencyTaskTest.class);
 
     @BeforeClass()
     public static void setup() {
@@ -48,8 +52,7 @@ public class TermFrequencyTest extends TestUtil {
         };
 
         try {
-            TermFrequency tf = new TermFrequency();
-            Frame outputFrame = tf.compute(fr);
+            Frame outputFrame = TermFrequencyTask.compute(fr);
             checkTfOutput(outputFrame, expectedTermFrequencies);
 
             outputFrame.remove();
@@ -60,14 +63,14 @@ public class TermFrequencyTest extends TestUtil {
 
     @Test
     public void testTermFrequenciesBigData() throws IOException {
-        Assume.assumeThat("TF bigdata tests are enabled", System.getProperty(BIGDATA_TESTS_ENV_VAR_NAME), is(notNullValue()));
+        assumeThat("TF bigdata tests are enabled", System.getProperty(BIGDATA_TESTS_ENV_VAR_NAME), is(notNullValue()));
 
-        System.out.println("Loading data...");
+        log.debug("Loading data...");
         File testFile = FileUtils.getFile("bigdata/laptop/text8.gz");
         List<String> tokens = new BufferedReader(new InputStreamReader(new GZIPInputStream(new FileInputStream(testFile))))
-                .lines().collect(Collectors.toList());
+                                .lines().collect(Collectors.toList());
         int tokensCnt = tokens.size();
-        System.out.println(tokensCnt + " words have been loaded.");
+        log.debug(tokensCnt + " words have been loaded.");
 
         int docSplitIndex = tokensCnt / 2;
         long[] docIds = new long[tokensCnt];
@@ -82,13 +85,13 @@ public class TermFrequencyTest extends TestUtil {
             chunkLayout.add(divRemainder);
 
         Frame fr = new TestFrameBuilder()
-                .withName("data")
-                .withColNames("DocID", "Token")
-                .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                .withDataForCol(0, docIds)
-                .withDataForCol(1, tokens.toArray(new String[0]))
-                .withChunkLayout(chunkLayout.stream().mapToLong(Integer::intValue).toArray())
-                .build();
+                        .withName("data")
+                        .withColNames("DocID", "Token")
+                        .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                        .withDataForCol(0, docIds)
+                        .withDataForCol(1, tokens.toArray(new String[0]))
+                        .withChunkLayout(chunkLayout.stream().mapToLong(Integer::intValue).toArray())
+                        .build();
 
         Map<String, Long> doc1Counts = tokens.subList(0, docSplitIndex)
                 .stream().collect(Collectors.groupingBy(e -> e, Collectors.counting()));
@@ -96,13 +99,15 @@ public class TermFrequencyTest extends TestUtil {
                 .stream().collect(Collectors.groupingBy(e -> e, Collectors.counting()));
         Map<String, Long>[] expectedTFValues = new Map[]{doc1Counts, doc2Counts};
 
-        System.out.println("Computing TF...");
+        log.debug("Computing TF...");
         try {
-            TermFrequency tfTask = new TermFrequency();
-            Frame outputFrame = tfTask.compute(fr);
+            Frame outputFrame = TermFrequencyTask.compute(fr);
             checkTfOutput(outputFrame, expectedTFValues);
 
-            System.out.println("TF testing finished.");
+            if (log.isDebugEnabled()) {
+                log.debug(outputFrame.toTwoDimTable().toString());
+                log.debug("TF testing finished.");
+            }
             outputFrame.remove();
         } finally {
             fr.remove();
@@ -112,8 +117,8 @@ public class TermFrequencyTest extends TestUtil {
     private static void checkTfOutput(final Frame outputFrame, final Map<String, Long>[] expectedTermFrequencies) {
         long outputRowsCnt = outputFrame.numRows();
         long expectedTfValuesCnt = Arrays.stream(expectedTermFrequencies).mapToLong(docTFs -> docTFs.size()).sum();
-        Assert.assertEquals("Number of term frequency values does not match the expected number.",
-                            expectedTfValuesCnt, outputRowsCnt);
+        assertEquals("Number of term frequency values does not match the expected number.",
+                     expectedTfValuesCnt, outputRowsCnt);
 
         Vec outputDocIds = outputFrame.vec(0);
         Vec outputTokens = outputFrame.vec(1);
@@ -123,12 +128,12 @@ public class TermFrequencyTest extends TestUtil {
             String token = outputTokens.stringAt(row);
             Map<String, Long> expectedDocTFs = expectedTermFrequencies[(int) outputDocIds.at8(row)];
 
-            Assert.assertTrue("Output token is not in the expected tokens.",
-                              expectedDocTFs.containsKey(token));
+            assertTrue("Output token is not in the expected tokens.",
+                       expectedDocTFs.containsKey(token));
             long expectedTF = expectedDocTFs.get(token);
 
-            Assert.assertEquals("Term frequency value mismatch.",
-                                expectedTF, outputTFs.at8(row));
+            assertEquals("Term frequency value mismatch.",
+                         expectedTF, outputTFs.at8(row));
         }
     }
 

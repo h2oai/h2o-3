@@ -6,18 +6,22 @@ import water.fvec.NewChunk;
 import water.parser.BufferedString;
 
 /**
- * Map-Reduce task for pre-processing data before computing TF-IDF.
+ * Map-Reduce task for pre-processing data before computing TF-IDF.<br>
+ * <br>
+ * 
+ * <p>
+ * Input row format: <code>documentID, documentString</code>
+ * </p>
  *
- * Input row format: documentID, documentString
- *
- * Output row format: documentID, word
+ * <p>
+ * Output row format: <code>documentID, word</code>
+ * </p>
  */
-public class TfIdfPreprocessor extends MRTask<TfIdfPreprocessor> {
+public class TfIdfPreprocessorTask extends MRTask<TfIdfPreprocessorTask> {
 
     /**
      * Words delimiter regex in documents.
      */
-    // TODO
     private static final String WORDS_DELIMITER_REGEX = "\\s+";
 
     @Override
