@@ -26,7 +26,6 @@ import water.test.util.ConfusionMatrixUtils;
 import water.util.ArrayUtils;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.Random;
 
 import static org.junit.Assert.*;
