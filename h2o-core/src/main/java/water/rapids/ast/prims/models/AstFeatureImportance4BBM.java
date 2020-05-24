@@ -11,6 +11,7 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
 
+
 import java.util.Map;
 import java.util.Map.Entry;
 
@@ -19,22 +20,27 @@ import java.util.HashMap;
 public class AstFeatureImportance4BBM extends AstPrimitive {
 
     @Override
-    public int nargs() {return 1 + 2;} // Perm_feature_importance + Modle + Frame
+    public int nargs() {return 1 + 2;} // Perm_feature_importance + Frame + Model
 
     @Override
-    public String[] args() {return new String [] {"model", "frame"};} 
+    public String[] args() {return new String [] {"frame", "model"};} 
     
     @Override
     public String str() {return "Perm_Feature_importance";} // or call it model_reliance 
     
     @Override
     public ValFrame apply(Env env, Env.StackHelp stk, AstRoot asts[]){
-        Model model = stk.track(asts[1].exec(env)).getModel();
-        Frame fr = stk.track(asts[2].exec(env)).getFrame();
+        Frame fr = stk.track(asts[1].exec(env)).getFrame();
+        Model model = stk.track(asts[2].exec(env)).getModel();
+
+        Frame fr2 = model.score(fr); // prediction on original dataset
         
-        FeatureImportance4BBM fi = new FeatureImportance4BBM(model, fr , null, model._parms._response_column);
+//      model._train.get(); TODO find a way to avoid passing the frame and get it from the model instead
+        
+        FeatureImportance4BBM fi = new FeatureImportance4BBM(model, fr, fr2, model._parms._response_column);
         HashMap<String, Double> FI = fi.getFeatureImportance(); // might be able to use AstPerfectAuc for calculation of AUC 
 
+        
         // Frame contains one row and n features 
         Frame outfr = new Frame(Key.make("feature_imp")); 
         
