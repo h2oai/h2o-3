@@ -1,12 +1,22 @@
 package hex.ensemble;
 
-import hex.tree.xgboost.XGBoostModel.XGBoostParameters;
+import hex.genmodel.utils.DistributionFamily;
 
 public class XGBoostMetalearnerProvider implements MetalearnerProvider<XGBoostMetalearnerProvider.XGBoostMetalearner> {
 
-    static class XGBoostMetalearner extends Metalearners.SimpleMetalearner {
+    static class XGBoostMetalearner extends Metalearners.MetalearnerWithDistribution {
         public XGBoostMetalearner() {
             super(Algorithm.xgboost.name());
+            _supportedDistributionFamilies = new DistributionFamily[]{
+                    DistributionFamily.AUTO,
+                    DistributionFamily.bernoulli,
+                    DistributionFamily.quasibinomial,
+                    DistributionFamily.multinomial,
+                    DistributionFamily.gaussian,
+                    DistributionFamily.poisson,
+                    DistributionFamily.gamma,
+                    DistributionFamily.tweedie,
+            };
         }
     }
 
