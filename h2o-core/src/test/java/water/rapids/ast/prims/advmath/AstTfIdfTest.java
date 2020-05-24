@@ -16,7 +16,6 @@ import water.rapids.Session;
 import water.rapids.Val;
 import water.rapids.vals.ValFrame;
 import water.util.FileUtils;
-import water.util.Pair;
 
 import java.io.*;
 import java.util.HashSet;
@@ -46,29 +45,38 @@ public class AstTfIdfTest extends TestUtil {
     }
 
     @Test
-    public void testTfIdfSmallData() {
-        testTfIdfSmallData(true);
+    public void testTfIdfSmallDataCaseIns() {
+        testTfIdfSmallData(true, false);
     }
     
     @Test
-    public void testTfIdfSmallDataWithoutPreprocessing() {
-        testTfIdfSmallData(false);
+    public void testTfIdfSmallDataCaseSens() {
+        testTfIdfSmallData(true, true);
     }
     
-    private static void testTfIdfSmallData(final boolean preprocess) {
+    @Test
+    public void testTfIdfSmallDataWithoutPreprocessingCaseIns() {
+        testTfIdfSmallData(false, false);
+    }
+    
+    @Test
+    public void testTfIdfSmallDataWithoutPreprocessingCaseSens() {
+        testTfIdfSmallData(false, true);
+    }
+    
+    private static void testTfIdfSmallData(final boolean preprocess, final boolean caseSensitive) {
         Scope.enter();
         try {
             Session sess = new Session();
             String frameName = "testFrame";
-
-            Pair<Frame,Frame> testFrames = getSimpleTestFrames(frameName, sess, preprocess);
-            Frame inputFrame = testFrames._1();
-            Frame expectedOutputFrame = testFrames._2();
-
+            
+            Frame inputFrame = preprocess ? simpleTestFrame(frameName, sess) : preprocessedTestFrame(frameName, sess);
+            Frame expectedOutputFrame = caseSensitive ? getCaseSensExpectedOutput() : getCaseInsensExpectedOutput();
+            
             Scope.track(inputFrame);
             Scope.track(expectedOutputFrame);
 
-            Val resVal = Rapids.exec("(tf-idf " + frameName + " " + preprocess + ")", sess);
+            Val resVal = Rapids.exec("(tf-idf " + frameName + " " + preprocess + " " + caseSensitive + ")", sess);
             assertTrue("Rapid's output is not a H2OFrame.", resVal instanceof ValFrame);
             Frame resFrame = resVal.getFrame();
             Scope.track(resFrame);
@@ -111,7 +119,7 @@ public class AstTfIdfTest extends TestUtil {
                 String.join(" ", doc1Tokens),
                 String.join(" ", doc2Tokens)
         };
-        long[] docIds = new long[] { 0L, 1L };
+        long[] docIds = new long[] { 0, 1 };
 
         Set<String> doc1UniqueTokens = new HashSet<>(doc1Tokens);
         Set<String> doc2UniqueTokens = new HashSet<>(doc2Tokens);
@@ -143,7 +151,7 @@ public class AstTfIdfTest extends TestUtil {
             Scope.track(inputFrame);
 
             log.debug("Computing TF-IDF...");
-            Val resVal = Rapids.exec("(tf-idf " + frameName + " true)", sess);
+            Val resVal = Rapids.exec("(tf-idf " + frameName + " true true)", sess);
             assertTrue(resVal instanceof ValFrame);
             Frame resFrame = resVal.getFrame();
             Scope.track(resFrame);
@@ -263,75 +271,98 @@ public class AstTfIdfTest extends TestUtil {
     private static Frame simpleTestFrame(final String frameName, final Session session) {
         String[] documents = new String[] {
                 "A B C",
-                "A A A Z",
-                "C C B C"
+                "A a a Z",
+                "C c B C"
         };
-        long[] docIds = new long[] { 0L, 1L, 2L };
+        long[] docIds = new long[] { 0, 1, 2 };
 
-        return new TestFrameBuilder()
-                    .withName(frameName, session)
-                    .withColNames("Document ID", "Document")
-                    .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                    .withDataForCol(0, docIds)
-                    .withDataForCol(1, documents)
-                    .withChunkLayout(2, 1)
-                    .build();
+        return getInputFrame(frameName, session, docIds, documents, new long[]{ 2, 1 });
     }
 
     private static Frame preprocessedTestFrame(final String frameName, final Session session) {
         String[] tokens = new String[] {
                 "A", "B", "C",
-                "A", "A", "A", "Z",
-                "C", "C", "B", "C"
+                "A", "a", "a", "Z",
+                "C", "c", "B", "C"
         };
         long[] docIds = new long[] { 
                 0, 0, 0,
                 1, 1, 1, 1,
                 2, 2, 2, 2
         };
-
+        
+        return getInputFrame(frameName, session, docIds, tokens, new long[]{ 5, 3, 1, 2 });
+    }
+    
+    private static Frame getInputFrame(final String frameName, 
+                                       final Session session,
+                                       final long[] docIds, 
+                                       final String[] stringContent, 
+                                       final long[] chunkLayout) {
         return new TestFrameBuilder()
                     .withName(frameName, session)
-                    .withColNames("DocID", "Tokens")
+                    .withColNames("DocID", "Str")
                     .withVecTypes(Vec.T_NUM, Vec.T_STR)
                     .withDataForCol(0, docIds)
-                    .withDataForCol(1, tokens)
-                    .withChunkLayout(5, 3, 1, 2)
+                    .withDataForCol(1, stringContent)
+                    .withChunkLayout(chunkLayout)
                     .build();
     }
     
-    private static Pair<Frame, Frame> getSimpleTestFrames(final String frameName, 
-                                                          final Session session, 
-                                                          final boolean preprocessed) {
-        Frame inputFrame = preprocessed ? simpleTestFrame(frameName, session) : preprocessedTestFrame(frameName, session);
-        
+    private static Frame getCaseSensExpectedOutput() {
         long[] outDocIds = new long[] {
-                0L, 1L, 0L, 2L, 0L, 2L, 1L
+                0, 1, 0, 2, 0, 2, 1, 1, 2
         };
         String[] outTokens = new String[] {
-                "A", "A", "B", "B", "C", "C", "Z"
+                "A", "A", "B", "B", "C", "C", "Z", "a", "c"
         };
         long[] outTFs = new long[] {
-                1L, 3L, 1L, 1L, 1L, 3L, 1L
+                1, 1, 1, 1, 1, 2, 1, 2, 1
         };
-        double[] outIDFs = new double[]{ 
+        double[] outIDFs = new double[]{
+                0.28768, 0.28768, 0.28768, 0.28768, 0.28768, 0.28768, 0.69314, 0.69314, 0.69314
+        };
+        double[] outTFIDFs = new double[]{
+                0.28768, 0.28768, 0.28768, 0.28768, 0.28768, 0.57536, 0.69314, 1.38629, 0.69314
+        };
+
+        return getExpectedOutputFrame(outDocIds, outTokens, outTFs, outIDFs, outTFIDFs);
+    }
+
+    private static Frame getCaseInsensExpectedOutput() {
+        long[] outDocIds = new long[] {
+                0, 1, 0, 2, 0, 2, 1
+        };
+        String[] outTokens = new String[] {
+                "a", "a", "b", "b", "c", "c", "z"
+        };
+        long[] outTFs = new long[] {
+                1, 3, 1, 1, 1, 3, 1
+        };
+        double[] outIDFs = new double[]{
                 0.28768, 0.28768, 0.28768, 0.28768, 0.28768, 0.28768, 0.69314
         };
-        double[] outTFIDFs = new double[]{ 
+        double[] outTFIDFs = new double[]{
                 0.28768, 0.86304, 0.28768, 0.28768, 0.28768, 0.86304, 0.69314
         };
 
-        Frame expectedOutFrame = new TestFrameBuilder()
-                                      .withName("expectedOutputFrame")
-                                      .withColNames("Document ID", "Token", "TF", "IDF", "TF-IDF")
-                                      .withVecTypes(Vec.T_NUM, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
-                                      .withDataForCol(0, outDocIds)
-                                      .withDataForCol(1, outTokens)
-                                      .withDataForCol(2, outTFs)
-                                      .withDataForCol(3, outIDFs)
-                                      .withDataForCol(4, outTFIDFs)
-                                      .build();
+        return getExpectedOutputFrame(outDocIds, outTokens, outTFs, outIDFs, outTFIDFs);
+    }
 
-        return new Pair<>(inputFrame, expectedOutFrame);
+    private static Frame getExpectedOutputFrame(final long[] outDocIds,
+                                                final String[] outTokens,
+                                                final long[] outTFs,
+                                                final double[] outIDFs,
+                                                final double[] outTFIDFs) {
+        return new TestFrameBuilder()
+                    .withName("expectedOutputFrame")
+                    .withColNames("Document ID", "Token", "TF", "IDF", "TF-IDF")
+                    .withVecTypes(Vec.T_NUM, Vec.T_STR, Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+                    .withDataForCol(0, outDocIds)
+                    .withDataForCol(1, outTokens)
+                    .withDataForCol(2, outTFs)
+                    .withDataForCol(3, outIDFs)
+                    .withDataForCol(4, outTFIDFs)
+                    .build();
     }
 }
