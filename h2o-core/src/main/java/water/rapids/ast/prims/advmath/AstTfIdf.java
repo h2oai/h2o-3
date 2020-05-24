@@ -15,6 +15,7 @@ import water.rapids.Rapids;
 import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
+import water.rapids.ast.prims.string.AstToLower;
 import water.rapids.vals.ValFrame;
 
 /**
@@ -50,18 +51,19 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
 
     @Override
     public int nargs() {
-        return 1 + 2; // (tf-idf input_frame_name preprocess)
+        return 1 + 3; // (tf-idf input_frame_name preprocess case_sensitive)
     }
 
     @Override
     public String[] args() {
-        return new String[]{ "frame", "preprocess" };
+        return new String[]{ "frame", "preprocess", "case_sensitive"};
     }
 
     @Override
     public Val apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
         Frame inputFrame = stk.track(asts[1].exec(env).getFrame());
         boolean preprocess = asts[2].exec(env).getBool();
+        boolean caseSensitive = asts[3].exec(env).getBool();
         
         if (inputFrame.anyVec().length() <= 0)
             throw new IllegalArgumentException("Empty input frame provided.");
@@ -69,19 +71,25 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
         Scope.enter();
         Frame tfIdfFrame = null;
         try {
+            // Input check
+            if (inputFrame.numCols() < 2 || !inputFrame.vec(0).isNumeric() || !inputFrame.vec(1).isString())
+                throw new IllegalArgumentException("Incorrect format of a pre-processed input frame." +
+                                                   "Following row format is expected: (numeric) documentID, (string) "
+                                                   + (preprocess ? "documentContent." : "word."));
+
+            // Case sensitivity
+            if (!caseSensitive)
+                inputFrame.replace(1, AstToLower.toLowerStringCol(inputFrame.vec(1)));
+
             // Pre-processing
             Frame wordFrame;
             long documentsCnt;
             if (preprocess) {
                 byte[] outputTypes = new byte[]{Vec.T_NUM, Vec.T_STR};
-
+                
                 wordFrame = new TfIdfPreprocessorTask().doAll(outputTypes, inputFrame).outputFrame(PREPROCESSED_FRAME_COL_NAMES, null);
                 documentsCnt = inputFrame.numRows();
             } else {
-                if (inputFrame.numCols() < 2 || !inputFrame.vec(0).isNumeric() || !inputFrame.vec(1).isString())
-                    throw new IllegalArgumentException("Incorrect format of a pre-processed input frame." +
-                                                       "Following row format is expected: (numeric) documentID, (string) word.");
-
                 wordFrame = inputFrame;
                 String countDocumentsRapid = "(unique (cols " + asts[1].toString() + " [0]))";
                 documentsCnt = Rapids.exec(countDocumentsRapid).getFrame().anyVec().length();

@@ -66,7 +66,7 @@ public class AstToLower extends AstPrimitive {
     return vec.makeCopy(dom);
   }
 
-  private Vec toLowerStringCol(Vec vec) {
+  public static Vec toLowerStringCol(Vec vec) {
     return new MRTask() {
       @Override
       public void map(Chunk chk, NewChunk newChk) {
