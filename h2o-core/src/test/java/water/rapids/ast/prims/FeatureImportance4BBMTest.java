@@ -8,24 +8,23 @@ import hex.tree.gbm.GBM;
 import org.junit.Assert;
 import org.junit.Test;
 import water.DKV;
+import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.rapids.FeatureImportance4BBM;
-import water.rapids.ShuffleVec;
-import water.util.ArrayUtils;
+import water.rapids.*;
+import water.rapids.vals.ValFrame;
+import water.util.*;
 import org.junit.BeforeClass;
-import water.util.FrameUtils;
-import water.util.MathUtils;
-import water.util.VecUtils;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static hex.genmodel.utils.DistributionFamily.gaussian;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 
 public class FeatureImportance4BBMTest extends TestUtil {
@@ -208,6 +207,116 @@ public class FeatureImportance4BBMTest extends TestUtil {
                 Fi.getFeatureImportance("AUC");
             }
         } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test public void testFI4SmallDataAst(){
+        Frame frame = null;
+        Frame fi_frame = null;
+        try {
+            Scope.enter();
+            Session sess = new Session();
+            final String response = "CAPSULE";
+            final String testFile = "./smalldata/logreg/prostate.csv";
+            Frame fr = parse_test_file(testFile)
+                    .toCategoricalCol("RACE")
+                    .toCategoricalCol("GLEASON")
+                    .toCategoricalCol(response);
+            fr.remove("ID").remove();
+            fr.vec("RACE").setDomain(ArrayUtils.append(fr.vec("RACE").domain(), "3"));
+            
+            Scope.track(fr);
+            DKV.put(fr);
+
+                GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+                parms._train = fr._key;
+                parms._response_column = response;
+                parms._ntrees = 5;
+                parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
+
+                GBM job = new GBM(parms);
+                GBMModel gbm = job.trainModel().get();
+                Scope.track_generic(gbm);
+
+
+                // Done building model; produce a score column with predictions
+                Frame scored = gbm.score(fr);
+                Scope.track(scored);
+
+                // Build a POJO & MOJO, validate same results
+                Assert.assertTrue(gbm.testJavaScoring(fr, scored, 1e-15));
+                
+            DKV.put(scored);
+            
+            Val val = Rapids.exec("(Perm_Feature_importance fr scored)", sess);
+            fi_frame = val.getFrame();
+            assertNotNull(fi_frame);
+            assertEquals(Vec.T_NUM, fi_frame.vec(0).get_type());
+            assertEquals(fi_frame.numRows(),fr.numRows() - 1);
+            
+
+
+        } finally {
+            Scope.exit();
+            if (frame != null) frame.remove();
+            if (fi_frame != null) fi_frame.remove();
+        }
+
+    }
+    @Test
+    public void SimpleGenDataSet(){
+        Scope.enter();
+        try {
+            Session sess = new Session();
+            String frameName = "testFrame";
+            
+            String [] mouse_gender = new String [] {"M", "F", "M", "M", "F" , "M", "F", "M", "F"};
+
+            // small mice data set
+            Frame inputFrame = new TestFrameBuilder()
+                    .withName(frameName, sess)
+                    .withColNames("Weight", "Height", "Age", "Gender", "Tail_len")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM, Vec.T_STR, Vec.T_NUM)
+                    .withDataForCol(0, ard(11, 11.5, 19.7, 20.6, 27, 8.5, 14, 18, 16))
+                    .withDataForCol(1, ard (16 ,17 , 25.4, 25, 29.2, 14, 20, 21.2, 16.9) )
+                    .withDataForCol(2, ard(16, 15.4, 22, 19.3, 22.5, 10, 16.2, 20, 23 ))
+                    .withDataForCol(3, mouse_gender)
+                    .withDataForCol(4, ard(1.6, 1.7, 2.5, 2.6, 2.75, 1.4, 2.0, 2.1, 1.6))
+                    .build();
+
+            GBMModel.GBMParameters parms = new GBMModel.GBMParameters();
+            parms._train = inputFrame._key;
+            parms._distribution = gaussian;
+            parms._response_column = inputFrame._names[0]; // Row in col 0, dependent in col 1, predictor in col 2
+            parms._ntrees = 1;
+            parms._max_depth = 1;
+            parms._min_rows = 1;
+            parms._nbins = 20;
+            parms._learn_rate = 1.0f;
+            parms._score_each_iteration=true;
+
+
+            GBM job = new GBM(parms);
+            GBMModel gbm = job.trainModel().get();
+            Scope.track_generic(gbm);
+            DKV.put(gbm);
+
+
+            // Done building model; produce a score column with predictions
+            Frame scored = gbm.score(inputFrame);
+            Scope.track(scored);
+            
+            Scope.track(inputFrame);
+//            Scope.track(expectedOutputFrame);
+
+            
+            Val resVal = Rapids.exec("(Perm_Feature_importance " + frameName + " gbm" + ")", sess); // FIXME: find how to pass the model
+            Assert.assertTrue(resVal instanceof ValFrame);
+            Frame resFrame = resVal.getFrame();
+            
+
+        }   finally {
             Scope.exit();
         }
     }
