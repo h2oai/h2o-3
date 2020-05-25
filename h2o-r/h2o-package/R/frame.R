@@ -4036,8 +4036,8 @@ use.package <- function(package,
             is.character(version), length(version)==1L,
             is.logical(use), length(use)==1L)
 
-   if (package=="data.table" && use) { # not sure if this is needed.  Keeping it for now.
-     if (!("bit64" %in% rownames(installed.packages())) || (packageVersion("bit64") < as.package_version("0.9.7"))) {
+   if (package == "data.table" && use && requireNamespace("data.table", quietly = TRUE)) { # not sure if this is needed.  Keeping it for now.
+     if ((!requireNamespace("bit64", quietly = TRUE)) || (packageVersion("bit64") < as.package_version("0.9.7"))) {
         # print out warning to install bit64 in order to use data.table
        warning("data.table cannot be used without R package bit64 version 0.9.7 or higher.  Please upgrade to take advangage of data.table speedups.")
        return(FALSE)
@@ -4116,7 +4116,7 @@ as.h2o.H2OFrame <- function(x, destination_frame="", ...) {
 #' @seealso \code{\link{use.package}}
 #' @references \url{http://blog.h2o.ai/2016/04/fast-csv-writing-for-r/}
 #' @export
-as.h2o.data.frame <- function(x, destination_frame="", ...) {
+as.h2o.data.frame <- function(x, destination_frame="", use_datatable=TRUE, ...) {
   if( destination_frame=="" ) {
     subx <- destination_frame.guess(deparse(substitute(x)))
     destination_frame <- .key.make(if(nzchar(subx)) subx else "data.frame")
@@ -4133,7 +4133,7 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
   types[types %in% names(class.map)] <- class.map[types[types %in% names(class.map)]]
   verbose <- getOption("h2o.verbose", FALSE)
   if (verbose) pt <- proc.time()[[3]]
-  if (getOption("h2o.fwrite", TRUE) && use.package("data.table")) {
+  if (use_datatable && getOption("h2o.fwrite", TRUE) && use.package("data.table")) {
     data.table::fwrite(x, tmpf, na="NA_h2o", row.names=FALSE, showProgress=FALSE)
     fun <- "fwrite"
   } else {
@@ -4155,7 +4155,7 @@ as.h2o.data.frame <- function(x, destination_frame="", ...) {
 #' To speedup execution time for large sparse matrices, use h2o datatable.  Make sure you have installed and imported data.table and slam packages.
 #' Turn on h2o datatable by options("h2o.use.data.table"=TRUE)
 #' @export
-as.h2o.Matrix <- function(x, destination_frame="", ...) {
+as.h2o.Matrix <- function(x, destination_frame="", use_datatable=TRUE, ...) {
   if( destination_frame=="") {
     subx <- destination_frame.guess(deparse(substitute(x)))
     destination_frame <- .key.make(if(nzchar(subx)) subx else "Matrix")
@@ -4165,11 +4165,12 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
   .key.validate(destination_frame)
 
   tmpf <- tempfile(fileext = ".svm")
-  if (use.package("data.table") && use.package("slam", version="0.1.40", TRUE)) {
+  if (use_datatable && use.package("data.table") && use.package("slam", version="0.1.40", TRUE)) {
     drs <- slam::as.simple_triplet_matrix(x)
     .h2o.write_stm_svm(drs, file = tmpf)
   } else {
-    warning("as.h2o can be slow for large sparse matrices. Install packages data.table and slam to speed up as.h2o.")
+    if (use_datatable)
+      warning("as.h2o can be slow for large sparse matrices. Install packages data.table and slam to speed up as.h2o.")
     .h2o.write.matrix.svmlight(x, file = tmpf)
   }
   h2f <- .h2o.readSVMLight(tmpf, destination_frame = destination_frame)
@@ -4245,7 +4246,7 @@ as.h2o.Matrix <- function(x, destination_frame="", ...) {
 #' as.data.frame(prostate)
 #' }
 #' @export
-as.data.frame.H2OFrame <- function(x, ...) {
+as.data.frame.H2OFrame <- function(x, use_datatable=TRUE, ...) {
   # Force loading of the types
   .fetch.data(x,1L)
     
@@ -4275,7 +4276,7 @@ as.data.frame.H2OFrame <- function(x, ...) {
   useHexString <- getRversion() >= "3.1"
   # We cannot use data.table by default since its handling of escaping inside quoted csv values is not very good
   # in some edge cases its simply impossible to load data in correct format without additional post processing
-  useDataTable <- getOption("h2o.fread", FALSE) && use.package("data.table")
+  useDataTable <- use_datatable && getOption("h2o.fread", FALSE) && use.package("data.table")
   urlSuffix <- paste0('DownloadDataset',
                       '?frame_id=', URLencode(h2o.getId(x)),
                       '&hex_string=', ifelse(useHexString, "true", "false"),
