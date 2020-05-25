@@ -10,7 +10,7 @@ import water.parser.BufferedString;
  * <br>
  * 
  * <p>
- * Input row format: <code>documentID, documentString</code>
+ * Input format - 2 columns: <code>documentID, documentString</code>
  * </p>
  *
  * <p>
@@ -23,11 +23,28 @@ public class TfIdfPreprocessorTask extends MRTask<TfIdfPreprocessorTask> {
      * Words delimiter regex in documents.
      */
     private static final String WORDS_DELIMITER_REGEX = "\\s+";
+    
+    // IN
+    /**
+     * Index of a column containing document IDs in given input frame.
+     */
+    private final int _docIdsColIdx;
+
+    /**
+     * Index of a column containing document contents in given input frame.
+     */
+    private final int _docContentsColIdx;
+
+
+    public TfIdfPreprocessorTask(int docIdsColIdx, int docContentsColIdx) {
+        _docIdsColIdx = docIdsColIdx;
+        _docContentsColIdx = docContentsColIdx;
+    }
 
     @Override
     public void map(Chunk[] cs, NewChunk[] ncs) {
-        Chunk inputDocumentIds = cs[0];
-        Chunk inputDocs = cs[1];
+        Chunk inputDocumentIds = cs[_docIdsColIdx];
+        Chunk inputDocs = cs[_docContentsColIdx];
 
         NewChunk outputDocumentIds = ncs[0];
         NewChunk outputTokens = ncs[1];
