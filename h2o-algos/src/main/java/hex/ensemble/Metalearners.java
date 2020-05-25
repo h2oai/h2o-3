@@ -1,14 +1,17 @@
 package hex.ensemble;
 
+import hex.DistributionFactory;
 import hex.Model;
 import hex.ModelBuilder;
-import hex.ModelCategory;
 import hex.ensemble.Metalearner.Algorithm;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLM;
 import hex.glm.GLMModel;
 import hex.glm.GLMModel.GLMParameters;
 import water.exceptions.H2OIllegalArgumentException;
 import water.nbhm.NonBlockingHashMap;
+import water.util.ArrayUtils;
+import water.util.Log;
 
 import java.util.ServiceLoader;
 import java.util.function.Supplier;
@@ -100,23 +103,89 @@ public class Metalearners {
         ModelBuilder createBuilder() {
             return ModelBuilder.make(_algo, _metalearnerJob, _metalearnerKey);
         }
+
+        protected String getAlgo() {
+            return _algo;
+        }
     }
 
-    static class DLMetalearner extends SimpleMetalearner {
+    static class MetalearnerWithDistribution extends SimpleMetalearner {
+        protected DistributionFamily[] _supportedDistributionFamilies;
+        protected MetalearnerWithDistribution(String algo) {
+            super(algo);
+        }
+        @Override
+        protected void validateParams(Model.Parameters parms) {
+            super.validateParams(parms);
+
+            // Check if distribution family is supported and if not pick a basic one
+            if (!ArrayUtils.contains(_supportedDistributionFamilies, parms._distribution)) {
+                DistributionFamily distribution;
+                if (_model._output.nclasses() == 1) {
+                    distribution = DistributionFamily.gaussian;
+                } else if (_model._output.nclasses() == 2) {
+                    distribution = DistributionFamily.bernoulli;
+                } else {
+                    distribution = DistributionFamily.multinomial;
+                }
+
+                Log.warn("Distribution \"" + parms._distribution +
+                        "\" is not supported by metalearner algorithm \"" + getAlgo() +
+                        "\". Using \"" + distribution + "\" instead.");
+
+                parms._distribution = distribution;
+            }
+        }
+    }
+
+    static class DLMetalearner extends MetalearnerWithDistribution {
         public DLMetalearner() {
             super(Algorithm.deeplearning.name());
+            _supportedDistributionFamilies = new DistributionFamily[]{
+                    DistributionFamily.AUTO,
+                    DistributionFamily.bernoulli,
+                    DistributionFamily.multinomial,
+                    DistributionFamily.gaussian,
+                    DistributionFamily.poisson,
+                    DistributionFamily.gamma,
+                    DistributionFamily.laplace,
+                    DistributionFamily.quantile,
+                    DistributionFamily.huber,
+                    DistributionFamily.tweedie,
+            };
         }
+
     }
 
-    static class DRFMetalearner extends SimpleMetalearner {
+    static class DRFMetalearner extends MetalearnerWithDistribution {
         public DRFMetalearner() {
             super(Algorithm.drf.name());
+            _supportedDistributionFamilies = new DistributionFamily[]{
+                    DistributionFamily.AUTO,
+                    DistributionFamily.bernoulli,
+                    DistributionFamily.multinomial,
+                    DistributionFamily.gaussian,
+            };
         }
     }
 
-    static class GBMMetalearner extends SimpleMetalearner {
+    static class GBMMetalearner extends MetalearnerWithDistribution {
         public GBMMetalearner() {
             super(Algorithm.gbm.name());
+            _supportedDistributionFamilies = new DistributionFamily[]{
+                    DistributionFamily.AUTO,
+                    DistributionFamily.bernoulli,
+                    DistributionFamily.quasibinomial,
+                    DistributionFamily.multinomial,
+                    DistributionFamily.gaussian,
+                    DistributionFamily.poisson,
+                    DistributionFamily.gamma,
+                    DistributionFamily.laplace,
+                    DistributionFamily.quantile,
+                    DistributionFamily.huber,
+                    DistributionFamily.tweedie,
+                    DistributionFamily.custom,
+            };
         }
     }
 
@@ -124,19 +193,6 @@ public class Metalearners {
         @Override
         GLM createBuilder() {
             return ModelBuilder.make("GLM", _metalearnerJob, _metalearnerKey);
-        }
-
-        @Override
-        protected void setCustomParams(GLMParameters parms) {
-            if (_model.modelCategory == ModelCategory.Regression) {
-                parms._family = GLMParameters.Family.gaussian;
-            } else if (_model.modelCategory == ModelCategory.Binomial) {
-                parms._family = GLMParameters.Family.binomial;
-            } else if (_model.modelCategory == ModelCategory.Multinomial) {
-                parms._family = GLMParameters.Family.multinomial;
-            } else {
-                throw new H2OIllegalArgumentException("Family " + _model.modelCategory + "  is not supported.");
-            }
         }
     }
 

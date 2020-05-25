@@ -4,6 +4,7 @@ import hex.Model;
 import hex.ModelBuilder;
 import hex.ModelCategory;
 
+import hex.genmodel.utils.DistributionFamily;
 import hex.grid.Grid;
 import water.DKV;
 import water.Job;
@@ -72,6 +73,10 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
   @Override
   public void init(boolean expensive) {
     super.init(expensive);
+
+    if (_parms._distribution != DistributionFamily.AUTO) {
+      throw new H2OIllegalArgumentException("Setting \"distribution\" to StackedEnsemble is unsupported. Please set it in \"metalearner_parameters\".");
+    }
 
     checkFoldColumnPresent(_parms._metalearner_fold_column, train(), valid(), _parms.blending());
     validateAndExpandBaseModels();

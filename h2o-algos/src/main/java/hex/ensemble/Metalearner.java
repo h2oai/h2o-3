@@ -74,6 +74,8 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
       setCrossValidationParams(builder._parms);
       setCustomParams(builder._parms);
 
+      validateParams(builder._parms);
+
       builder.init(false);
       Job<M> j = builder.trainModel();
       while (j.isRunning()) {
@@ -86,6 +88,8 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
       Log.info("Finished training metalearner model(" + _model._parms._metalearner_algorithm + ").");
 
       _model._output._metalearner = builder.get();
+      _model._dist = _model._output._metalearner._dist;
+
       _model.doScoreOrCopyMetrics(_job);
 
       if (_parms._keep_levelone_frame) {
@@ -125,6 +129,8 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
   }
 
   protected void setCustomParams(P parms) { }
+
+  protected void validateParams(P parms) { }
 
   protected void cleanup() {
     if (!_parms._keep_base_model_predictions) {
