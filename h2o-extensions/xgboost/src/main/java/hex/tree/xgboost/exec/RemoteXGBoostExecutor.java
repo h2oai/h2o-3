@@ -16,9 +16,9 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     public final XGBoostHttpClient http;
     public final Key modelKey;
     
-    public RemoteXGBoostExecutor(String remoteUri, XGBoostModel model, Frame train) {
+    public RemoteXGBoostExecutor(String remoteUri, XGBoostModel model, Frame train, String userName, String password) {
         boolean https = H2O.ARGS.jks != null;
-        http = new XGBoostHttpClient(remoteUri, https);
+        http = new XGBoostHttpClient(remoteUri, https, userName, password);
         modelKey = model._key;
         XGBoostExecReq.Init req = new XGBoostExecReq.Init();
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
@@ -32,18 +32,16 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         String[] remoteNodes = resp.readData();
         assert modelKey.equals(resp.key.key());
         uploadCheckpointBooster(model);
-        uploadMatrices(model, train, trainFrameNodes, remoteNodes, https);
+        uploadMatrices(model, train, trainFrameNodes, remoteNodes, https, userName, password);
     }
 
     private void uploadMatrices(
-        XGBoostModel model,
-        Frame train,
-        XGBoostSetupTask.FrameNodes trainFrameNodes,
-        String[] remoteNodes,
-        boolean https
+        XGBoostModel model, Frame train,
+        XGBoostSetupTask.FrameNodes trainFrameNodes, String[] remoteNodes,
+        boolean https, String userName, String password
     ) {
         FrameMatrixLoader loader = new FrameMatrixLoader(model, train);
-        new XGBoostUploadMatrixTask(modelKey, trainFrameNodes._nodes, loader, remoteNodes, https).run();
+        new XGBoostUploadMatrixTask(modelKey, trainFrameNodes._nodes, loader, remoteNodes, https, userName, password).run();
     }
 
     private void uploadCheckpointBooster(XGBoostModel model) {

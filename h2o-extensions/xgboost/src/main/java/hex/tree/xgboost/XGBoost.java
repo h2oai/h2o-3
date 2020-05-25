@@ -346,11 +346,13 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     }
     
     private XGBoostExecutor makeExecutor(XGBoostModel model) {
-      String propVal = H2O.getSysProperty("xgboost.externalAddress", null);
+      String propVal = H2O.getSysProperty("xgboost.external.address", null);
       if (propVal == null) {
         return new LocalXGBoostExecutor(model, _train);
       } else {
-        return new RemoteXGBoostExecutor(propVal, model, _train);
+        String userName = H2O.getSysProperty("xgboost.external.user", null);
+        String password = H2O.getSysProperty("xgboost.external.password", null);
+        return new RemoteXGBoostExecutor(propVal, model, _train, userName, password);
       }
     }
 
