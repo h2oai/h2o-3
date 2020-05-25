@@ -7,6 +7,7 @@ get_simple_input_test_frame <- function() {
     documents <- c('A B C', 'A a a Z', 'C c B C')
 
     input.r_data <- data.frame(doc_ids, documents, stringsAsFactors=FALSE)
+    colnames(input.r_data) <- c('DocID', 'Document')
     input.h2o_data <- as.h2o(input.r_data)
 }
 
@@ -19,6 +20,7 @@ get_simple_preprocessed_input_test_frame <- function() {
                'C', 'c', 'B', 'C')
 
     input.r_data <- data.frame(doc_ids, words, stringsAsFactors=FALSE)
+    colnames(input.r_data) <- c('DocID', 'Word')
     input.h2o_data <- as.h2o(input.r_data)
 }
 
@@ -43,13 +45,13 @@ get_expected_output_frame <- function(out_doc_ids, out_tokens, out_TFs, out_IDFs
     as.h2o(expected_out.r_data)
 }
 
-testTfIdf <- function(preprocess, caseSens) {
+testTfIdf <- function(preprocess, case_sens, cols=c(0, 1)) {
     Log.info('Constructing test data...')
-    input_frame <- if (preprocess) get_simple_preprocessed_input_test_frame() else get_simple_input_test_frame()
-    expected_output_frame <- if (caseSens) get_expected_output_frame_case_sens() else get_expected_output_frame_case_insens()
+    input_frame <- if (preprocess) get_simple_input_test_frame() else get_simple_preprocessed_input_test_frame()
+    expected_output_frame <- if (case_sens) get_expected_output_frame_case_sens() else get_expected_output_frame_case_insens()
 
     Log.info('Computing TF-IDF...')
-    output_frame <- h2o.tf_idf(input_frame, preprocess)
+    output_frame <- h2o.tf_idf(input_frame, cols[1], cols[2], preprocess, case_sens)
     
     Log.info('Checking results...')
     expect_equal(expected_output_frame, output_frame)
@@ -57,11 +59,11 @@ testTfIdf <- function(preprocess, caseSens) {
 
 applytest <- function() {
     Log.info('TF-IDF case sensitive with pre-processing:')
-    testTfIdf(TRUE, TRUE)
+    testTfIdf(TRUE, TRUE, c('DocID', 'Document'))
     Log.info('TF-IDF case sensitive without pre-processing:')
     testTfIdf(FALSE, TRUE)
     Log.info('TF-IDF case insensitive with pre-processing:')
-    testTfIdf(TRUE, FALSE)
+    testTfIdf(TRUE, FALSE, c('DocID', 'Word'))
     Log.info('TF-IDF case insensitive without pre-processing:')
     testTfIdf(FALSE, FALSE)
 }

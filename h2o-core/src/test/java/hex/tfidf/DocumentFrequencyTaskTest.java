@@ -8,6 +8,7 @@ import water.TestUtil;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
+import water.rapids.ast.prims.mungers.AstGroup;
 import water.util.FileUtils;
 
 import java.io.*;
@@ -82,6 +83,9 @@ public class DocumentFrequencyTaskTest extends TestUtil {
                         .withDataForCol(1, tokens.toArray(new String[0]))
                         .withChunkLayout(chunkLayout.stream().mapToLong(Integer::intValue).toArray())
                         .build();
+        Frame uniqueWordsPerDocFrame = new AstGroup().performGroupingWithAggregations(fr,
+                                                                                      new int[]{ 0, 1 },
+                                                                                      new AstGroup.AGG[]{}).getFrame();
 
         Set<String> doc1Tokens = new HashSet<>(tokens.subList(0, docSplitIndex));
         Set<String> doc2Tokens = new HashSet<>(tokens.subList(docSplitIndex, tokensCnt));
@@ -91,7 +95,7 @@ public class DocumentFrequencyTaskTest extends TestUtil {
 
         log.debug("Computing DF...");
         try {
-            Frame outputFrame = DocumentFrequencyTask.compute(fr);
+            Frame outputFrame = DocumentFrequencyTask.compute(uniqueWordsPerDocFrame);
 
             checkDfOutput(outputFrame, expectedDFs);
 
@@ -102,6 +106,7 @@ public class DocumentFrequencyTaskTest extends TestUtil {
             outputFrame.remove();
         } finally {
             fr.remove();
+            uniqueWordsPerDocFrame.remove();
         }
     }
     
@@ -128,13 +133,13 @@ public class DocumentFrequencyTaskTest extends TestUtil {
     private static Frame getSimpleTestFrame() {
         long[] docIds = new long[] {
                 0L, 0L, 0L,
-                1L, 1L, 1L, 1L,
-                2L, 2L, 2L, 2L
+                1L, 1L,
+                2L, 2L
         };
         String[] tokens = new String[] {
                 "A", "B", "C",
-                "A", "A", "A", "Z",
-                "C", "C", "B", "C"
+                "A", "Z",
+                "C", "B"
         };
 
         return new TestFrameBuilder()
@@ -143,7 +148,7 @@ public class DocumentFrequencyTaskTest extends TestUtil {
                     .withVecTypes(Vec.T_NUM, Vec.T_STR)
                     .withDataForCol(0, docIds)
                     .withDataForCol(1, tokens)
-                    .withChunkLayout(4, 3, 1, 2, 1)
+                    .withChunkLayout(2, 3, 1, 1)
                     .build();
     }
 }

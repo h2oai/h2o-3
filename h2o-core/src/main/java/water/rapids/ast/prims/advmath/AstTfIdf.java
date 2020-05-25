@@ -17,18 +17,27 @@ import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.ast.prims.string.AstToLower;
 import water.rapids.vals.ValFrame;
+import water.util.ArrayUtils;
 
 /**
  * Primitive AST operation to compute TF-IDF values for given document corpus.<br>
  * 
  * <br>
- * Input formats:
- * <p>
- * (Default) Row format when pre-processing is enabled: see {@link TfIdfPreprocessorTask}.
- * </p>
- * <p>
- * Row format when pre-processing is disabled: <code>documentID, word<code/>
- * </p>
+ * <b>Parameters:</b>
+ * <p><ul>
+ * <li><code>frame</code> - Input frame containing data for whose TF-IDF values should be computed
+ * <li><code>doc_id_idx</code> - Index of a column containing document IDs
+ * <li><code>text_idx</code> - Index of a column containing words/documents (depending on the <code>preprocess</code> parameter)
+ * <li><code>preprocess</code> - Flag indicating whether input should be pre-processed or not
+ * <li><code>case_sensitive</code> - Flag indicating whether input should be treated as a case sensitive data
+ * </ul><p>
+ * 
+ * <br>
+ * <b>Content of a column with index <code>content_idx</code>:</b>
+ * <p><ul>
+ * <li>See {@link TfIdfPreprocessorTask} - (default) when pre-processing is enabled
+ * <li><code>word</code> - when pre-processing is disabled
+ * </ul><p>
  */
 public class AstTfIdf extends AstPrimitive<AstTfIdf> {
 
@@ -51,19 +60,21 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
 
     @Override
     public int nargs() {
-        return 1 + 3; // (tf-idf input_frame_name preprocess case_sensitive)
+        return 1 + 5; // (tf-idf input_frame_name doc_id_col_idx text_col_idx preprocess case_sensitive)
     }
 
     @Override
     public String[] args() {
-        return new String[]{ "frame", "preprocess", "case_sensitive"};
+        return new String[]{ "frame", "doc_id_idx", "text_idx", "preprocess", "case_sensitive"};
     }
 
     @Override
     public Val apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
         Frame inputFrame = stk.track(asts[1].exec(env).getFrame());
-        boolean preprocess = asts[2].exec(env).getBool();
-        boolean caseSensitive = asts[3].exec(env).getBool();
+        final int docIdIdx = (int) asts[2].exec(env).getNum();
+        final int contentIdx = (int) asts[3].exec(env).getNum();
+        final boolean preprocess = asts[4].exec(env).getBool();
+        final boolean caseSensitive = asts[5].exec(env).getBool();
         
         if (inputFrame.anyVec().length() <= 0)
             throw new IllegalArgumentException("Empty input frame provided.");
@@ -71,44 +82,54 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
         Scope.enter();
         Frame tfIdfFrame = null;
         try {
-            // Input check
-            if (inputFrame.numCols() < 2 || !inputFrame.vec(0).isNumeric() || !inputFrame.vec(1).isString())
-                throw new IllegalArgumentException("Incorrect format of a pre-processed input frame." +
+            // Input checks
+            int inputFrameColsCnt = inputFrame.numCols();
+            if (docIdIdx >= inputFrameColsCnt || contentIdx >= inputFrameColsCnt)
+                throw new IllegalArgumentException("Provided column index is out of bounds. Number of columns in the input frame: "
+                                                   + inputFrameColsCnt);
+            
+            Vec docIdVec = inputFrame.vec(docIdIdx);
+            Vec contentVec = inputFrame.vec(contentIdx);
+            
+            if (!docIdVec.isNumeric() || !contentVec.isString())
+                throw new IllegalArgumentException("Incorrect format of input frame." +
                                                    "Following row format is expected: (numeric) documentID, (string) "
                                                    + (preprocess ? "documentContent." : "word."));
 
             // Case sensitivity
             if (!caseSensitive)
-                inputFrame.replace(1, AstToLower.toLowerStringCol(inputFrame.vec(1)));
+                inputFrame.replace(contentIdx, AstToLower.toLowerStringCol(inputFrame.vec(contentIdx)));
 
             // Pre-processing
             Frame wordFrame;
             long documentsCnt;
             if (preprocess) {
-                byte[] outputTypes = new byte[]{Vec.T_NUM, Vec.T_STR};
+                byte[] outputTypes = new byte[]{ Vec.T_NUM, Vec.T_STR };
                 
-                wordFrame = new TfIdfPreprocessorTask().doAll(outputTypes, inputFrame).outputFrame(PREPROCESSED_FRAME_COL_NAMES, null);
+                wordFrame = new TfIdfPreprocessorTask(docIdIdx, contentIdx).doAll(outputTypes, inputFrame)
+                                .outputFrame(PREPROCESSED_FRAME_COL_NAMES, null);
                 documentsCnt = inputFrame.numRows();
             } else {
-                wordFrame = inputFrame;
-                String countDocumentsRapid = "(unique (cols " + asts[1].toString() + " [0]))";
+                String[] columnsNames = ArrayUtils.select(inputFrame.names(), new int[]{ docIdIdx, contentIdx });
+                wordFrame = inputFrame.subframe(columnsNames);
+                String countDocumentsRapid = "(unique (cols " + asts[1].toString() + " [" + docIdIdx + "]))";
                 documentsCnt = Rapids.exec(countDocumentsRapid).getFrame().anyVec().length();
             }
-            
-            // DF
-            Frame dfOutFrame = DocumentFrequencyTask.compute(wordFrame);
-            Scope.track(dfOutFrame);
-
-            // IDF
-            InverseDocumentFrequencyTask idf = new InverseDocumentFrequencyTask(documentsCnt);
-            Vec idfValues = idf.doAll(new byte[]{Vec.T_NUM}, dfOutFrame.lastVec()).outputFrame().anyVec();
-            // Replace DF column with IDF column
-            dfOutFrame.remove(dfOutFrame.numCols() - 1);
-            dfOutFrame.add(IDF_COL_NAME, idfValues);
 
             // TF
             Frame tfOutFrame = TermFrequencyTask.compute(wordFrame);
             Scope.track(tfOutFrame);
+            
+            // DF
+            Frame dfOutFrame = DocumentFrequencyTask.compute(tfOutFrame);
+            Scope.track(dfOutFrame);
+
+            // IDF
+            InverseDocumentFrequencyTask idf = new InverseDocumentFrequencyTask(documentsCnt);
+            Vec idfValues = idf.doAll(new byte[]{ Vec.T_NUM }, dfOutFrame.lastVec()).outputFrame().anyVec();
+            // Replace DF column with IDF column
+            dfOutFrame.remove(dfOutFrame.numCols() - 1);
+            dfOutFrame.add(IDF_COL_NAME, idfValues);
 
             // Intermediate frame containing both TF and IDF values
             tfOutFrame.replace(1, tfOutFrame.vecs()[1].toCategoricalVec());

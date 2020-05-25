@@ -24,7 +24,7 @@ public class TfIdfPreprocessorTaskTest extends TestUtil {
         byte[] outputTypes = new byte[]{ Vec.T_NUM, Vec.T_STR };
 
         try {
-            TfIdfPreprocessorTask preprocessor = new TfIdfPreprocessorTask().doAll(outputTypes, inputFrame);
+            TfIdfPreprocessorTask preprocessor = new TfIdfPreprocessorTask(0, 2).doAll(outputTypes, inputFrame);
             Frame outputFrame = preprocessor.outputFrame();
 
             assertEquals("Number of columns in the preprocessed frame does not match the expected number.", 
@@ -59,10 +59,11 @@ public class TfIdfPreprocessorTaskTest extends TestUtil {
 
         Frame inputFrame = new TestFrameBuilder()
                                 .withName("data")
-                                .withColNames("Document ID", "Document")
-                                .withVecTypes(Vec.T_NUM, Vec.T_STR)
+                                .withColNames("Document ID", "Col", "Document")
+                                .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_STR)
                                 .withDataForCol(0, docIds)
-                                .withDataForCol(1, documents)
+                                .withDataForCol(1, new long[]{ 0, 0, 0 })
+                                .withDataForCol(2, documents)
                                 .withChunkLayout(2, 1)
                                 .build();
 

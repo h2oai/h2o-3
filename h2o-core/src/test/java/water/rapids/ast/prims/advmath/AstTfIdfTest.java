@@ -18,10 +18,7 @@ import water.rapids.vals.ValFrame;
 import water.util.FileUtils;
 
 import java.io.*;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.zip.GZIPInputStream;
 
@@ -76,7 +73,7 @@ public class AstTfIdfTest extends TestUtil {
             Scope.track(inputFrame);
             Scope.track(expectedOutputFrame);
 
-            Val resVal = Rapids.exec("(tf-idf " + frameName + " " + preprocess + " " + caseSensitive + ")", sess);
+            Val resVal = Rapids.exec(String.format("(tf-idf %s %d %d %b %b)", frameName,  1, 2, preprocess, caseSensitive), sess);
             assertTrue("Rapid's output is not a H2OFrame.", resVal instanceof ValFrame);
             Frame resFrame = resVal.getFrame();
             Scope.track(resFrame);
@@ -151,7 +148,7 @@ public class AstTfIdfTest extends TestUtil {
             Scope.track(inputFrame);
 
             log.debug("Computing TF-IDF...");
-            Val resVal = Rapids.exec("(tf-idf " + frameName + " true true)", sess);
+            Val resVal = Rapids.exec(String.format("(tf-idf %s %d %d true true)", frameName,  0, 1), sess);
             assertTrue(resVal instanceof ValFrame);
             Frame resFrame = resVal.getFrame();
             Scope.track(resFrame);
@@ -212,7 +209,7 @@ public class AstTfIdfTest extends TestUtil {
                                     .build();
             Scope.track(inputFrame);
 
-            testIncorrectInput(sess, frameName);
+            testIncorrectInput(sess, frameName, 0, 1);
         } finally {
             Scope.exit();
         }
@@ -232,14 +229,14 @@ public class AstTfIdfTest extends TestUtil {
                                     .build();
             Scope.track(inputFrame);
 
-            testIncorrectInput(sess, frameName);
+            testIncorrectInput(sess, frameName, 0, 1);
         } finally {
             Scope.exit();
         }
     }
 
     @Test
-    public void testIncorrectInputColumnsCnt() {
+    public void testOutOfBoundsColumn() {
         Scope.enter();
         try {
             Session sess = new Session();
@@ -247,19 +244,20 @@ public class AstTfIdfTest extends TestUtil {
             Frame inputFrame = new TestFrameBuilder()
                                     .withName(frameName, sess)
                                     .withVecTypes(Vec.T_NUM)
-                                    .withDataForCol(0, new long[]{})
+                                    .withDataForCol(0, new long[]{ 1, 2 })
                                     .build();
             Scope.track(inputFrame);
 
-            testIncorrectInput(sess, frameName);
+            testIncorrectInput(sess, frameName, 1, 2);
         } finally {
             Scope.exit();
         }
     }
 
-    private static void testIncorrectInput(final Session sess, final String frameName) {
+    private static void testIncorrectInput(final Session sess, final String frameName, 
+                                           final int docIdsColIdx, final int contentsColIdx) {
         try {
-            Rapids.exec("(tf-idf " + frameName + " false)", sess);
+            Rapids.exec(String.format("(tf-idf %s %d %d true true)", frameName,  docIdsColIdx, contentsColIdx), sess);
             fail("IllegalArgumentException is expected for incorrect input.");
         } catch(IllegalArgumentException ignored) {}
     }
@@ -299,12 +297,16 @@ public class AstTfIdfTest extends TestUtil {
                                        final long[] docIds, 
                                        final String[] stringContent, 
                                        final long[] chunkLayout) {
+        long[] colValues = new long[docIds.length];
+        Arrays.fill(colValues, 1);
+
         return new TestFrameBuilder()
                     .withName(frameName, session)
-                    .withColNames("DocID", "Str")
-                    .withVecTypes(Vec.T_NUM, Vec.T_STR)
-                    .withDataForCol(0, docIds)
-                    .withDataForCol(1, stringContent)
+                    .withColNames("Col", "DocID", "Str")
+                    .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_STR)
+                    .withDataForCol(0, colValues)
+                    .withDataForCol(1, docIds)
+                    .withDataForCol(2, stringContent)
                     .withChunkLayout(chunkLayout)
                     .build();
     }
