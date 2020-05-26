@@ -255,9 +255,12 @@ GPU Support
 GPU support is available in H2O's XGBoost if the following requirements are met:
 
 - NVIDIA GPUs (GPU Cloud, DGX Station, DGX-1, or DGX-2)
-- CUDA 8
+- CUDA 9
 
-You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
+**Notes**:
+
+ - You can verify that your CUDA runtime version is CUDA 9 by typing ``ls /usr/local/cuda``. If this does not point to CUDA 9, and you have CUDA 9 installed, then create a symlink that points to CUDA 9.
+ - You can monitor your GPU utilization via the ``nvidia-smi`` command. Refer to https://developer.nvidia.com/nvidia-system-management-interface for more information.
 
 Limitations
 ~~~~~~~~~~~
