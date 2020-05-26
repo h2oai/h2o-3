@@ -542,7 +542,7 @@ In H2O, you can perform segmented-data bulk training on training sets. The ``tra
 Defining a Segmented Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``train_segment()`` function accepts the following parameters:
+The ``train_segments()`` function accepts the following parameters:
 
 - **x**: A list of column names or indices indicating the predictor columns.
 
