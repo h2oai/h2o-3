@@ -132,7 +132,7 @@ This example uses only the AGE, RACE, VOL, and GLEASON columns to make the predi
 Regression Example
 ''''''''''''''''''
 
-This example uses the Boston Housing data and :ref:`H2O's GLM algorithm <glm>` to predict the median home based using all available features. The dataset includes the following columns:
+This example uses the Boston Housing data and :ref:`H2O's GLM algorithm <glm>` to predict the median home price using all available features. The dataset includes the following columns:
 
 - **crim**: The per capita crime rate by town
 - **zn**: The proportion of residential land zoned for lots over 25,000 sq.ft
@@ -369,8 +369,7 @@ This example uses the :ref:`isoforest` algorithm to detect anomalies in the Elec
 	isofor_model <- h2o.isolationForest(training_frame = train, 
 	                                    sample_size = 5, 
 	                                    ntrees = 7, 
-	                                    seed = 12345,
-	                                    validation_frame = test)
+	                                    seed = 12345)
 
 	# test the predictions and retrieve the mean_length.
 	# mean_length is the average number of splits it took to isolate 

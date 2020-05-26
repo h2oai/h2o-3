@@ -51,7 +51,7 @@ H2O algorithms will treat a problem as a classification problem if the column ty
 		[True]
 
 		# change the column type back to numeric
-		boston["chas"] = boston["chas"].asfactor()
+		boston["chas"] = boston["chas"].asnumeric()
 		# verify that the column is numeric and not a factor
 		boston["chas"].isfactor()
 		[False]
