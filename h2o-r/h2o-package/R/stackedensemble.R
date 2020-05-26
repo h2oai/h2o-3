@@ -38,6 +38,7 @@
 #' @param score_training_samples Specify the number of training set samples for scoring. The value must be >= 0. To use all training samples,
 #'        enter 0. Defaults to 10000.
 #' @param keep_levelone_frame \code{Logical}. Keep level one frame used for metalearner training. Defaults to FALSE.
+#' @param checkpoint Model checkpoint to resume training with.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
 #' @examples
 #' \dontrun{
@@ -106,6 +107,7 @@ h2o.stackedEnsemble <- function(x,
                                 seed = -1,
                                 score_training_samples = 10000,
                                 keep_levelone_frame = FALSE,
+                                checkpoint = NULL,
                                 export_checkpoints_dir = NULL)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -168,6 +170,8 @@ h2o.stackedEnsemble <- function(x,
     parms$score_training_samples <- score_training_samples
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
+  if (!missing(checkpoint))
+    parms$checkpoint <- checkpoint
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
 
@@ -236,6 +240,7 @@ h2o.stackedEnsemble <- function(x,
                                                 seed = -1,
                                                 score_training_samples = 10000,
                                                 keep_levelone_frame = FALSE,
+                                                checkpoint = NULL,
                                                 export_checkpoints_dir = NULL,
                                                 segment_columns = NULL,
                                                 segment_models_id = NULL,
@@ -303,6 +308,8 @@ h2o.stackedEnsemble <- function(x,
     parms$score_training_samples <- score_training_samples
   if (!missing(keep_levelone_frame))
     parms$keep_levelone_frame <- keep_levelone_frame
+  if (!missing(checkpoint))
+    parms$checkpoint <- checkpoint
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
 

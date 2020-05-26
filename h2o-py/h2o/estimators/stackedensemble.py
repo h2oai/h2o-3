@@ -64,7 +64,7 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
                    "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
                    "metalearner_fold_column", "metalearner_params", "seed", "score_training_samples",
-                   "keep_levelone_frame", "export_checkpoints_dir"}
+                   "keep_levelone_frame", "checkpoint", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
@@ -658,6 +658,21 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def keep_levelone_frame(self, keep_levelone_frame):
         assert_is_type(keep_levelone_frame, None, bool)
         self._parms["keep_levelone_frame"] = keep_levelone_frame
+
+
+    @property
+    def checkpoint(self):
+        """
+        Model checkpoint to resume training with.
+
+        Type: ``str``.
+        """
+        return self._parms.get("checkpoint")
+
+    @checkpoint.setter
+    def checkpoint(self, checkpoint):
+        assert_is_type(checkpoint, None, str, H2OEstimator)
+        self._parms["checkpoint"] = checkpoint
 
 
     @property

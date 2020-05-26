@@ -26,7 +26,6 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
   // common parameters for the base models (keeping them public for backwards compatibility, although it's nonsense)
   public ModelCategory modelCategory;
-  public long trainingFrameRows = -1;
 
   public String responseColumn = null;
 
@@ -92,6 +91,45 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     
     public final Frame blending() { return _blending == null ? null : _blending.get(); }
 
+    public void checkAndInheritCheckpointParams(StackedEnsembleModel model) {
+      StackedEnsembleParameters parms = model._parms;
+      if (_base_models == null || _base_models.length == 0) {
+        _base_models = parms._base_models.clone();
+      } else {
+        for (int i = 0; i < _base_models.length; i++) {
+          if (!_base_models[i].equals(parms._base_models[i]))
+            throw new IllegalArgumentException(
+                    "Base models on " + (i + 1) + "th place differ between checkpointed " +
+                            "model and the new one. Checkpoint's base model: \"" + _base_models[i] +
+                            "\", new model's base model: \"" + parms._base_models[i] + "\"."
+            );
+        }
+      }
+      if ((blending()==null) != (parms.blending()==null))
+        throw new IllegalArgumentException("Stacked Ensemble must be the same type " +
+                "(CV/Blending) as the check point.");
+
+      if ((_fold_column == null && parms._fold_column != null) ||
+              (_fold_column != null && _fold_column.equals(parms._fold_column)))
+        throw new IllegalArgumentException("Checkpoint's fold_column == \"" +
+                parms._fold_column + "\" is different than specified == \"" + _fold_column + "\"");
+
+      if (_metalearner_algorithm != parms._metalearner_algorithm)
+        throw new IllegalArgumentException("Checkpoint's metalearner_algorithm is different than specified!");
+
+      switch (_metalearner_algorithm) {
+        case gbm:
+        case drf:
+        case xgboost:
+        case deeplearning:
+          _metalearner_parameters._checkpoint = model._output._metalearner._key;
+          break;
+        default:
+          throw new IllegalArgumentException(
+                  "Checkpointing is allowed only with metalearner of one of the following " +
+                          "types: GBM, DRF, XGBoost, Deep Learning.");
+      }
+    }
   }
 
   public static class StackedEnsembleOutput extends Model.Output {
@@ -109,6 +147,19 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     //This especially useful when building SE models incrementally (e.g. in AutoML).
     //The Set is instantiated and filled only if StackedEnsembleParameters#_keep_base_model_predictions=true.
     public Key<Frame>[] _base_model_predictions_keys; 
+  }
+
+
+  protected StackedEnsembleModel deepClone(Key<StackedEnsembleModel> result) {
+    StackedEnsembleModel newModel = IcedUtils.deepCopy(this);
+    newModel._key = result;
+    // Do not clone model metrics
+    newModel._output.clearModelMetrics(false);
+    newModel._output._training_metrics = null;
+    newModel._output._validation_metrics = null;
+
+    newModel._output._metalearner = null;
+    return newModel;
   }
 
   /**
@@ -453,6 +504,8 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
     
     //following variables are collected from the 1st base model (should be identical across base models), i.e. when beenHere=false
     int basemodel_nfolds = -1;
+    long trainingFrameRows = -1;
+
     Parameters.FoldAssignmentScheme basemodel_fold_assignment = null;
     String basemodel_fold_column = null;
     long seed = -1;
@@ -567,6 +620,7 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
         }
       } else {
         // !retrievedFirstModelParams: this is the first base_model
+        trainingFrameRows = aModel._parms.train().numRows();
         this.modelCategory = aModel._output.getModelCategory();
         inferredDistributionFromFirstModel = inferDistributionOrFamily(aModel);
         firstGLM = aModel instanceof GLMModel && inferredDistributionFromFirstModel ? (GLMModel) aModel : null;

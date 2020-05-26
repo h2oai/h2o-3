@@ -80,6 +80,45 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     checkFoldColumnPresent(_parms._metalearner_fold_column, train(), valid(), _parms.blending());
     validateAndExpandBaseModels();
+    if (_parms.hasCheckpoint()) {
+      StackedEnsembleModel checkpointedModel = (StackedEnsembleModel) DKV.getGet(_parms._checkpoint);
+      validateCheckpoint(checkpointedModel);
+      _parms.checkAndInheritCheckpointParams(checkpointedModel);
+    }
+  }
+
+  private void validateCheckpoint(StackedEnsembleModel checkpointedModel) {
+    if (checkpointedModel == null)
+      throw new IllegalArgumentException("Checkpoint doesn't exist.");
+    if (_parms.blending() == null) {
+      if (!_parms.train()._key.equals(checkpointedModel._parms.train()._key))
+        Log.warn("Training Stacked Ensemble on new data with CV mode.");
+        // Or we could:
+        // throw new IllegalArgumentException("Checkpoints work only with blending or CV with the original data set!");
+    } else {
+      for (int i = 0; i < _parms.train().domains().length; i++) {
+        if (_parms.blending().domains()[i] == null && checkpointedModel._parms.blending().domains()[i] == null)
+          continue;
+        if (_parms.blending().domains()[i].length > checkpointedModel._parms.blending().domains()[i].length) {
+          throw new IllegalArgumentException(
+                  "Checkpointed model had " + checkpointedModel._parms.blending().domains()[i].length +
+                          " levels but the blending frame has " + _parms.blending().domains()[i].length +
+                          "levels."
+          );
+        }
+        for (int j = 0; j < _parms.blending().domains()[i].length; j++) {
+          // Do a quick check if the elements are present in same order otherwise use try to look for the element in the whole domain
+          if (((checkpointedModel._parms.blending().domains()[i].length > j &&
+                  checkpointedModel._parms.blending().domains()[i][j] != _parms.blending().domains()[i][j])) ||
+                  ArrayUtils.contains(checkpointedModel._parms.blending().domains()[i], _parms.blending().domains()[i][j])) {
+            throw new IllegalArgumentException(
+                    "Blending frame has an unseen category by checkpointed model: " +
+                            _parms.blending()._names[i] + " = " + _parms.blending().domains()[i][j]
+            );
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -279,8 +318,17 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       init(true);
       if (error_count() > 0) throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(StackedEnsemble.this);
 
-      _model = new StackedEnsembleModel(dest(), _parms, new StackedEnsembleModel.StackedEnsembleOutput(StackedEnsemble.this));
-      _model._output._stacking_strategy = strategy();
+      if (_parms.hasCheckpoint()){
+        StackedEnsembleModel model = ((StackedEnsembleModel)DKV.getGet(_parms._checkpoint)).deepClone(_result);
+        // Override original parameters by new parameters
+        model._parms = _parms;
+        // We create a new model
+        _model = model;
+      } else {
+        _model = new StackedEnsembleModel(dest(), _parms, new StackedEnsembleModel.StackedEnsembleOutput(StackedEnsemble.this));
+        _model._output._stacking_strategy = strategy();
+      }
+
       try {
         _model.delete_and_lock(_job); // and clear & write-lock it (smashing any prior)
         _model.checkAndInheritModelProperties();
@@ -346,7 +394,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     @Override
     protected Frame getPredictionsForBaseModel(Model model, Frame actualsFrame, boolean isTraining) {
       Frame fr;
-      if (isTraining) {
+      if (isTraining && ! _model._parms.hasCheckpoint()) {
         // for training, retrieve predictions from cv holdout predictions frame as all base models are required to get built with keep_cross_validation_frame=true
         if (null == model._output._cross_validation_holdout_predictions_frame_id)
           throw new H2OIllegalArgumentException("Failed to find the xval predictions frame id. . .  Looks like keep_cross_validation_predictions wasn't set when building the models.");

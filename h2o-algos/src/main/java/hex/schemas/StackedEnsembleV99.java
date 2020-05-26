@@ -46,6 +46,7 @@ public class StackedEnsembleV99 extends ModelBuilderSchema<StackedEnsemble,Stack
       "seed",
       "score_training_samples",
       "keep_levelone_frame",
+      "checkpoint",
       "export_checkpoints_dir"
     };
 
