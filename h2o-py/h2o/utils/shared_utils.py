@@ -8,24 +8,24 @@
 This file INTENTIONALLY has NO module dependencies!
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from .compatibility import *  # NOQA
 
-import imp
+import csv
+import imp  # keeping this deprecated module as soon as we keep supporting Py2.7
+import io
 import itertools
 import os
 import re
-import sys
-import zipfile
-import io
+import shutil
 import string
 import subprocess
-import csv
-import shutil
+import sys
 import tempfile
+import zipfile
 
-from h2o.exceptions import H2OValueError
-from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.typechecks import assert_is_type, is_type, numeric
 from h2o.backend.server import H2OLocalServer
+from h2o.exceptions import H2OValueError
+from h2o.utils.typechecks import assert_is_type, is_type, numeric
 
 _id_ctr = 0
 

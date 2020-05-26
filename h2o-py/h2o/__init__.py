@@ -7,6 +7,10 @@
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+from codecs import open
+import os
+import zipfile
+
 from h2o.h2o import (connect, init, api, connection,
                      lazy_import, upload_file, import_file, import_sql_table, import_sql_select, import_hive_table,
                      parse_setup, parse_raw, assign, deep_copy, get_model, get_grid, get_frame,
@@ -26,9 +30,6 @@ from h2o.h2o import (connect, init, api, connection,
 from h2o.frame import H2OFrame  # NOQA
 from h2o.utils.shared_utils import mojo_predict_csv, mojo_predict_pandas
 
-import zipfile
-import os
-from codecs import open
 here = os.path.abspath(os.path.dirname(__file__))
 
 def readTxtFromWhl(name, fallback):
@@ -39,13 +40,13 @@ def readTxtFromWhl(name, fallback):
     else:
         return fallback
 
-try:         
+try:
     with open(os.path.join(here, 'buildinfo.txt'), encoding='utf-8') as f:
         __buildinfo__ = f.read()
 except:
     try:
-        __buildinfo__ = readTxtFromWhl('h2o/buildinfo.txt', "unknown")    
-    except:                
+        __buildinfo__ = readTxtFromWhl('h2o/buildinfo.txt', "unknown")
+    except:
         __buildinfo__ = "unknown"
 
 try:
@@ -54,7 +55,7 @@ try:
 except:
     try:
         __version__ = readTxtFromWhl('h2o/version.txt', "0.0.local")
-    except:        
+    except:
         __version__ = "0.0.local"
 
 if (__version__.endswith("99999")):

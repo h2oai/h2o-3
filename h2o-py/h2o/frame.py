@@ -6,17 +6,18 @@ H2O data frame.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import csv
 import datetime
 import functools
+from io import StringIO
 import os
 import sys
 import tempfile
 import traceback
-import warnings
-from io import StringIO
 from types import FunctionType
+import warnings
 
 import h2o
 from h2o.base import Keyed
@@ -25,8 +26,6 @@ from h2o.exceptions import H2OTypeError, H2OValueError
 from h2o.expr import ExprNode
 from h2o.group_by import GroupBy
 from h2o.job import H2OJob
-from h2o.utils.compatibility import *  # NOQA
-from h2o.utils.compatibility import viewitems, viewvalues
 from h2o.utils.config import get_config_value
 from h2o.utils.shared_utils import (_handle_numpy_array, _handle_pandas_data_frame, _handle_python_dicts,
                                     _handle_python_lists, _is_list, _is_str_list, _py_tmp_key, _quoted,

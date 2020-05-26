@@ -1,8 +1,10 @@
 # -*- encoding: utf-8 -*-
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
+
+import copy
 
 from h2o.two_dim_table import H2OTwoDimTable
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type
 
 
@@ -43,7 +45,6 @@ class ConfusionMatrix(object):
         if table_header is None: table_header = "Confusion Matrix (Act/Pred)"
         col_header = [""]  # no column label for the "rows" column
         if domains is not None:
-            import copy
             row_header = copy.deepcopy(domains)
             col_header += copy.deepcopy(domains)
         else:

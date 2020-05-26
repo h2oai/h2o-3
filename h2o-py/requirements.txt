@@ -1,26 +1,45 @@
-pip
-colorama>=0.3.8
+# [required dependencies]
 future
 requests
-winkerberos >= 0.5.0; sys.platform == 'win32'
-pykerberos >= 1.1.8, < 2.0.0; sys.platform != 'win32'
-gssapi
 tabulate
-slam
-cython
-twine
-urllib3
-grip
-wheel
-numpy
-scipy
-pandas
-statsmodels
-patsy
-sklearn
-six
-seaborn
-matplotlib
-numpydoc
-mysqlclient
-recommonmark
+colorama>=0.3.8
+
+# [optional/integration dependencies]
+# [-authentication]
+pykerberos >= 1.1.8, < 2.0.0; sys.platform != 'win32'
+winkerberos >= 0.5.0; sys.platform == 'win32'
+gssapi
+
+# [-data science]
+#numpy
+#pandas
+#scipy
+#sklearn
+
+# [-plotting]
+#matplotlib
+#mplot3d
+
+# [-environment]
+#ipython
+#ipykernel
+
+# [demos dependencies]
+#termios; sys.platform != 'win32'
+#msvcrt; sys.platform == 'win32'
+
+#slam
+#cython
+#twine
+#urllib3
+#grip
+#wheel
+#numpy
+#scipy
+#statsmodels
+#patsy
+#six
+#seaborn
+#numpydoc
+#mysqlclient
+#recommonmark

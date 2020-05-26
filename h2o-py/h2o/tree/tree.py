@@ -1,8 +1,10 @@
-import h2o
 import math
+
+import h2o
 from h2o.estimators import H2OXGBoostEstimator
 
-class H2OTree():
+
+class H2OTree(object):
     """
     Represents a model of a Tree built by one of H2O's tree algorithms (GBM, Random Forest, XGBoost, Isolation Forest).
     
@@ -993,5 +995,5 @@ class H2OSplitNode(H2ONode):
         ...                           right_levels)
         >>> split_node.show
         """
-        print(self.__str__())
-        
+        print(self)
+

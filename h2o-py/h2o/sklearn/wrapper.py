@@ -8,8 +8,8 @@ The only requirements from the original estimator are the following:
 from collections import defaultdict, OrderedDict
 import copy
 from functools import partial, update_wrapper, wraps
-import imp
 import sys
+import types
 from weakref import ref
 
 from sklearn.base import is_classifier, is_regressor, BaseEstimator, TransformerMixin, ClassifierMixin, RegressorMixin
@@ -70,7 +70,7 @@ def register_module(module_name):
     :return: the module with given name.
     """
     if module_name not in sys.modules:
-        mod = imp.new_module(module_name)
+        mod = types.ModuleType(module_name)
         sys.modules[module_name] = mod
     return sys.modules[module_name]
 

@@ -7,13 +7,15 @@ H2O TargetEncoder.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import warnings
+
 from h2o.expr import ExprNode
 from h2o.frame import H2OFrame
 from h2o.utils.typechecks import (assert_is_type)
 from h2o import get_frame
-import warnings
 
 __all__ = ("TargetEncoder", )
+
 
 class TargetEncoder(object):
 

@@ -1,6 +1,7 @@
 # -*- encoding: utf-8 -*-
 """Information about the backend H2O cluster."""
 from __future__ import division, print_function, absolute_import, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import sys
 import time
@@ -9,7 +10,6 @@ import json
 import h2o
 from h2o.exceptions import H2OConnectionError, H2OServerError
 from h2o.display import H2ODisplay
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type
 from h2o.utils.shared_utils import get_human_readable_bytes, get_human_readable_time
 from h2o.two_dim_table import H2OTwoDimTable

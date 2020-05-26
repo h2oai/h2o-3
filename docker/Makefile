@@ -199,6 +199,36 @@ ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
 endif
 
 ifneq ($(CI), 1)
+dev-python-3.8-openjdk-7: dev-python-3.8
+endif
+dev-python-3.8-openjdk-7:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.8-openjdk-7$(GPU_SUFFIX):$(VERSION) \
+		-f jenkins-images/Dockerfile-openjdk-others \
+		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.8 \
+		--build-arg INSTALL_JAVA_VERSION=1.7.0 \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.8-openjdk-7$(GPU_SUFFIX):$(VERSION)
+endif
+
+ifneq ($(CI), 1)
+dev-python-3.8-jdk-%: dev-python-3.8
+endif
+dev-python-3.8-jdk-%:
+	docker build -t harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.8-jdk-$*$(GPU_SUFFIX):$(VERSION) \
+		-f jenkins-images/Dockerfile-jdk-others \
+		--build-arg GPU_SUFFIX=$(GPU_SUFFIX) \
+		--build-arg FROM_VERSION=$(VERSION) \
+		--build-arg FROM_IMAGE=harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.8 \
+		--build-arg INSTALL_JAVA_VERSION=$* \
+		.
+ifeq ($(shell echo $(PUSH) | tr [:upper:] [:lower:] ),true)
+	docker push harbor.h2o.ai/opsh2oai/h2o-3/dev-python-3.8-jdk-$*$(GPU_SUFFIX):$(VERSION)
+endif
+
+ifneq ($(CI), 1)
 dev-mojocompat: dev-python-3.6
 endif
 dev-mojocompat:

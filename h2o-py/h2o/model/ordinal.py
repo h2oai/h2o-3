@@ -2,11 +2,10 @@
 from __future__ import absolute_import, division, print_function, unicode_literals
 from h2o.utils.compatibility import *  # NOQA
 
-from ..frame import H2OFrame
 import h2o
-from .model_base import ModelBase
 from h2o.utils.typechecks import assert_is_type
-
+from ..frame import H2OFrame
+from .model_base import ModelBase
 
 
 class H2OOrdinalModel(ModelBase):

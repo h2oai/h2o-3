@@ -6,12 +6,14 @@ Group-by operations on an H2OFrame.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
+
+import warnings
 
 import h2o
 from h2o.expr import ExprNode
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import is_type
-import warnings
+
 
 class GroupBy(object):
     """

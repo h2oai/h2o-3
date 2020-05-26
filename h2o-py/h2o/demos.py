@@ -6,14 +6,14 @@ Interactive demos for the h2o-py library.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+# noinspection PyUnresolvedReferences
+from h2o.utils.compatibility import *  # NOQA
 
 import linecache
 import os
 import sys
 
 import h2o
-# noinspection PyUnresolvedReferences
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type
 
 

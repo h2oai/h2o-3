@@ -1,15 +1,15 @@
 # -*- encoding: utf-8 -*-
 from __future__ import division, print_function, absolute_import, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
+import os
 import uuid
 
 import h2o
 from h2o.frame import H2OFrame
 from h2o.transforms.transform_base import H2OTransformer
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import assert_is_type
-import os
 
 
 class H2OAssembly(object):
