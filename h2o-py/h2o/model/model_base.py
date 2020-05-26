@@ -1230,7 +1230,7 @@ class ModelBase(h2o_meta(Keyed)):
                     if axes_3d is None or cm is None or plt is None:    # quit if cannot find toolbox
                         break
                     fig_plotted = self.__plot_2d_pdp(fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pps[i], nbins,
-                                                     user_cols, user_num_splits, plot_stddev, cm, i, target)                  
+                                                     user_cols, user_num_splits, plot_stddev, cm, i)                  
                 else:  # plot 1D pdp
                     if targets is None or target:
                         fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, target)
@@ -1247,7 +1247,7 @@ class ModelBase(h2o_meta(Keyed)):
                 plt.savefig(save_to_file)
 
     def __plot_2d_pdp(self, fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pp, nbins, user_cols, user_num_splits, 
-                      plot_stddev, cm, i, target):
+                      plot_stddev, cm, i):
         ax = fig.add_subplot(gxs[i], projection='3d')
         col_pairs = col_pairs_2dpdp[i-num_1dpdp]
         x = self.__grab_values(pp, 0, data, col_pairs[0], ax) # change to numpy 2d_array
@@ -1271,10 +1271,7 @@ class ModelBase(h2o_meta(Keyed)):
         ax.set_ylabel(col_pairs[1])
         ax.set_ylim(min(y), max(y))
         ax.set_zlabel('Partial dependence')
-        if target is not None:
-            title = '2D partial dependence plot for '+col_pairs[0] + ' and '+col_pairs[1]+', class '+target
-        else: 
-            title = '2D partial dependence plot for '+col_pairs[0] + ' and '+col_pairs[1]
+        title = '2D partial dependence plot for '+col_pairs[0] + ' and '+col_pairs[1]
         ax.set_title(title)
         return True
     
@@ -1404,7 +1401,7 @@ class ModelBase(h2o_meta(Keyed)):
             min_y = min(min_y, min(y))
             max_y = max(max_y, max(y))
             if plot_stddev:  # set std
-                std = pp[data_start_index + 2]
+                std = pp[pp_start_index + 2]
                 upper = [a + b for a, b in zip(y, std)]  # pp[1] is mean, pp[2] is std
                 lower = [a - b for a, b in zip(y, std)]
                 min_lower = min(min_lower, min(lower))

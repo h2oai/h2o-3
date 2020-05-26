@@ -3912,7 +3912,7 @@ h2o.cross_validation_predictions <- function(object) {
 #'  If the files already exists, they will be overridden. Files are only saves if plot = TRUE (default).
 #' @return Plot and list of calculated mean response tables for each feature requested.
 #' @param row_index Row for which partial dependence will be calculated instead of the whole input frame.
-#' @param target Target class for multinomial model.    
+#' @param target Target classes for multinomial model.    
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -3943,7 +3943,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   if(!is.logical(include_na)) stop("add_missing_NA must be a logical value")
   if((is(object, "H2OMultinomialModel"))){
     if(is.null(targets)) stop("targets parameter has to be set for multinomial classification")
-    for(i in 1:len(targets)){
+    for(i in 1:length(targets)){
         if(!is.character(targets[i])) stop("targets parameter must be a list of string values")
     }
   }
@@ -3989,6 +3989,11 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   if (!missing(cols)) {
     parms$cols <- paste0("[", paste (args$x, collapse = ','), "]")
     numCols = length(cols)
+  }
+  if(is.null(targets)){
+    num_1d_pp_data <- numCols
+  } else {
+    num_1d_pp_data <- numCols * length(targets)
   }
   noCols = missing(cols)
   parms$model_id  <- attr(object, "model_id")
@@ -4048,7 +4053,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   }
   
   if(!is.null(targets)) {
-    parms$targets <- targets
+    parms$targets <- paste0("[", paste (targets, collapse = ','), "]")
   }
 
   if(!missing(destination_key)) parms$destination_key = destination_key
@@ -4059,53 +4064,145 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
   res <- .h2o.__remoteSend(url, method = "GET", h2oRestApiVersion = 3)
 
   ## Change feature names to the original supplied, the following is okay because order is preserved
+      
   pps <- res$partial_dependence_data
+  min_y <- min(pps[[1]][,2])
+  max_y <- max(pps[[1]][,2])
+  min_lower <- min_y
+  max_upper <- max_y
+  col_name_index <- 1
   for (i in 1:length(pps)) {
-    if (!all(is.na(pps[[i]]))) {
-      if (i <=  numCols) {
-      names(pps[[i]]) <-
-        c(cols[i],
-          "mean_response",
-          "stddev_response",
-          "std_error_mean_response")
-      } else {
+    pp <- pps[[i]]
+    if (!all(is.na(pp))) {
+      min_y <- min(min_y, min(pp[,2])) 
+      max_y <- max(max_y, max(pp[,2]))
+      min_lower <- min(min_lower, pp[,2] - pp[,3])
+      max_upper <- max(max_upper, pp[,2] + pp[,3])
+      if (i <= num_1d_pp_data) {
+        if(is.null(targets)){
+          col_name_index = i
+          title <- paste("Partial dependency plot for", cols[col_name_index]) 
+        } else if(!is.null(targets)){
+          if(length(cols) > 1 && i %% length(cols) == 0) {
+            col_name_index = col_name_index + 1
+          }
+          if(length(targets) > 1) {
+            title <- paste("Partial dependency plot for", cols[col_name_index], "and classes\n", paste(targets, collapse=", "))
+          } else {
+            title <- paste("Partial dependency plot for", cols[col_name_index], "and class", targets)
+          }
+        }
         names(pps[[i]]) <-
-          c(col_pairs_2dpdp[[i-numCols]][1],
-            col_pairs_2dpdp[[i-numCols]][2],
+          c(cols[col_name_index],
             "mean_response",
             "stddev_response",
             "std_error_mean_response")
+        attr(pps[[i]],"description") <- title
+      } else {
+        names(pps[[i]]) <-
+          c(col_pairs_2dpdp[[i-num_1d_pp_data]][1],
+            col_pairs_2dpdp[[i-num_1d_pp_data]][2],
+            "mean_response",
+            "stddev_response",
+            "std_error_mean_response")
+        attr(pps[[i]],"description") <- paste('2D partial dependence plot for', col_pairs_2dpdp[[i-num_1d_pp_data]][1], "and", col_pairs_2dpdp[[i-num_1d_pp_data]][1])    
       }
     }
   }
   col_types = unlist(h2o.getTypes(data))
   col_names = names(data)
     
-  pp.plot <- function(pp) {
+  pp.plot.1d <- function(pp) {
     if(!all(is.na(pp))) {
-      type = col_types[which(col_names == names(pp)[1])]
-      if(type == "enum") pp[,1] = factor( pp[,1], levels=pp[,1])
-
-      ## Plot one standard deviation above and below the mean
-      if( plot_stddev) {
-        ## Added upper and lower std dev confidence bound
-        upper = pp[,2] + pp[,3]
-        lower = pp[,2] - pp[,3]
-        plot(pp[,1:2], type = "l", maibbn = attr(x,"description"), ylim  = c(min(lower), max(upper)))
-
-        polygon(c(pp[,1], rev(pp[,1])), c(lower, rev(upper)), col = "grey75", border = F)
-        lines(pp[,1], pp[,2], lwd = 2)
-        lines(pp[,1], lower, col = "blue", lty = 2)
-        lines(pp[,1], upper, col = "blue", lty = 2)
+      x <- pp[,1]
+      y <- pp[,2]
+      stddev <- pp[,3] 
+      type <- col_types[which(col_names == names(pp)[1])]
+      if(type == "enum") {
+        line_type <- "p"
+        xaxt <- "n"
+        lty <- NULL
+        pch <- 19
       } else {
-        plot(pp[,1:2], type = "l", main = attr(x,"description") )
+        line_type <- "l"
+        xaxt <- NULL
+        lty <- 1
+        pch <- NULL
+      }
+      ## Plot one standard deviation above and below the mean
+      if(plot_stddev) {
+        ## Added upper and lower std dev confidence bound
+        upper = y + stddev
+        lower = y - stddev
+        plot(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, col="red", main = attr(pp,"description"), ylim  = c(min(lower), max(upper)))
+        polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor("red", alpha.f = 0.1), border = F)
+        if(type == "enum"){
+          x <- c(1:length(x))
+          arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col="red")
+          axis(1, at=1:length(x), labels=factor(x, labels=x))
+        }
+      } else {
+        plot(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, col="red", main = attr(pp,"description"))
       }
     } else {
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
     }
   }
+
+  pp.plot.1d.multinomial <- function(pps) {
+    colors <- rainbow(length(pps))
+    for(i in 1:length(pps)) {
+      pp <- pps[[i]]
+      if(!all(is.na(pp))) {
+        x <- pp[,1]
+        y <- pp[,2]
+        stddev <- pp[,3]
+        color <- colors[i]
+        title <- attr(pp,"description")
+        type <- col_types[which(col_names == names(pp)[1])]
+        if(type == "enum"){
+           line_type <- "p"
+           xaxt <- "n"
+           lty <- NULL
+           pch <- 19
+        } else {
+          line_type <- "l"
+          xaxt <- NULL
+          lty <- 1
+          pch <- NULL
+        }
+        if(plot_stddev) {
+          upper <- y + stddev
+          lower <- y - stddev
+          if(i == 1){
+            plot(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, main = title, col = color, ylim  = c(min_lower, max_upper + 0.1 * abs(max_upper)))
+          } else {
+            points(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, col = color)
+          }
+          polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor(color, alpha.f = 0.1), border = F)   
+          if(type == "enum"){
+            x <- c(1:length(x))
+            arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col=color)
+            axis(1, at=1:length(x), labels=factor(x, labels=x))
+          }
+        } else {
+          if(i == 1) {
+            plot(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, main = title, col = color, ylim  = c(min_y, max_y + 0.05 * abs(max_y)))
+          } else {
+            points(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, col = color) 
+          }
+          if(line_type == "p"){
+            axis(1, at=1:length(x), labels=factor(x, labels=x))
+          }    
+        }
+        legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))      
+      } else {
+        print("Partial Dependence not calculated--make sure nbins is as high as the level count")
+      }
+    }
+  }      
         
-  pp.plot2 <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
+  pp.plot.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
     xtickMarks <- NULL
     ytickMarks <- NULL
     if (!all(is.na(pp))) {
@@ -4160,45 +4257,72 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
     }
   }
   
-  pp.plot.save <- function(pp) {
+  pp.plot.save.1d <- function(pp) {
     # If user accidentally provides one of the most common suffixes in R, it is removed.
     save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
     destination_file <- paste0(save_to,"_",names(pp)[1],'.png')
     png(destination_file)
-    pp.plot(pp)
+    pp.plot.1d(pp)
     dev.off()
   }
+      
+  pp.plot.save.1d.multinomial <- function(pps) {
+    # If user accidentally provides one of the most common suffixes in R, it is removed.
+    save_to <- gsub(replacement = "",pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
+    destination_file <- paste0(save_to,"_",names(pps[[1]])[1],'.png')
+    png(destination_file)
+    pp.plot.1d.multinomial(pps)
+    dev.off()
+}
 
-  pp.plot.save2 <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
+  pp.plot.save.2d <- function(pp, nBins=nbins, user_cols=NULL, user_num_splits=NULL) {
     # If user accidentally provides one of the most common suffixes in R, it is removed.
     save_to <- gsub(replacement = "", pattern = "(\\.png)|(\\.jpg)|(\\.pdf)", x = save_to)
     colnames = paste0(names(pp)[1], "_", names(pp)[2])
     destination_file <- paste0(save_to,"_",colnames,'.png')
-    pp.plot2(pp, nbins, user_cols, user_num_splits)
+    pp.plot.2d(pp, nbins, user_cols, user_num_splits)
     rgl::snapshot3d(destination_file)
     dev.off()
   }
 
-  if(plot && !noCols) lapply(pps[1:numCols], pp.plot) # plot 1d pdp here
-  if(plot && !noCols && !is.null(save_to)){  # save 1d pdp here
-    lapply(pps[1:numCols], pp.plot.save)
+  # 1D PDP plot and save    
+  if(plot && !noCols) {
+    if(is.null(targets)){ # multonomial PDP
+      lapply(pps[1:num_1d_pp_data], pp.plot.1d)
+      if(!is.null(save_to)){
+        lapply(pps[1:num_1d_pp_data], pp.plot.save.1d)
+      }
+    } else {
+      from <- 1
+      to <- length(targets)
+      for(i in 1:numCols) {
+        pp = pps[from:to]
+        pp.plot.1d.multinomial(pp)
+        if(!is.null(save_to)){
+          pp.plot.save.1d.multinomial(pp)
+        }
+        from <- from + to
+        to <- to + length(targets)
+      }
+    }
   }
-
+          
+  # 2D PDP plot and save
   if (!noPairs && requireNamespace("plot3Drgl", quietly = TRUE) && requireNamespace("rgl", quietly = TRUE)) {
     if (plot && !is.null(save_to)) {
       # plot and save to file
       if (is.null(user_splits)) {
         sapply(
-          pps[(numCols + 1):(numCols + numColPairs)],
-          pp.plot.save2,
+          pps[(num_1d_pp_data + 1):(num_1d_pp_data + numColPairs)],
+          pp.plot.save.2d,
           nBins = nbins,
           user_cols = NULL,
           user_num_splits = NULL
         )
       } else {
         sapply(
-          pps[(numCols + 1):(numCols + numColPairs)],
-          pp.plot.save2,
+          pps[(num_1d_pp_data + 1):(num_1d_pp_data + numColPairs)],
+          pp.plot.save.2d,
           nBins = nbins,
           user_cols = user_cols,
           user_num_splits = user_num_splits
@@ -4209,7 +4333,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       if (is.null(user_splits)) {
         sapply(
           pps[(numCols + 1):(numCols + numColPairs)],
-          pp.plot2,
+          pp.plot.2d,
           nBins = nbins,
           user_cols = NULL,
           user_num_splits = NULL
@@ -4217,7 +4341,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       } else {
         sapply(
           pps[(numCols + 1):(numCols + numColPairs)],
-          pp.plot2,
+          pp.plot.2d,
           nBins = nbins,
           user_cols = user_cols,
           user_num_splits = user_num_splits

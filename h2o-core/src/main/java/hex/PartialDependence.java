@@ -95,7 +95,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
     }
     int nclasses = m._output.nclasses();
     if(nclasses <= 2 && _targets != null){
-      throw new IllegalArgumentException("Target parameters is available only for multinomial classification.");
+      throw new IllegalArgumentException("Targets parameter is available only for multinomial classification.");
     }
     if(nclasses == 1){
       _predictor_column = 0;
@@ -105,7 +105,7 @@ public class PartialDependence extends Lockable<PartialDependence> {
       _predictor_columns = new int[]{_predictor_column};
     } else {
       if (_targets == null) {
-        throw new IllegalArgumentException("Target parameters has to be set for multinomial classification.");
+        throw new IllegalArgumentException("Targets parameter has to be set for multinomial classification.");
       } else {
         _predictor_columns = findTargetClassPredictorIndices(m, _targets);
       }
