@@ -362,7 +362,8 @@ public class EasyPredictModelWrapper implements Serializable {
         return transformWithTargetEncoding(data);
       case AnomalyDetection:
         return predictAnomalyDetection(data);
-
+      case KLime:
+        return predictKLime(data);
       case Unknown:
         throw new PredictException("Unknown model category");
       default:
@@ -798,6 +799,18 @@ public class EasyPredictModelWrapper implements Serializable {
       rawData = fillRawData(data, rawData);
       p.contributions = predictContributions.calculateContributions(rawData);
     }
+    return p;
+  }
+
+  public KLimeModelPrediction predictKLime(RowData data) throws PredictException {
+    double[] preds = preamble(ModelCategory.KLime, data);
+
+    KLimeModelPrediction p = new KLimeModelPrediction();
+    p.value = preds[0];
+    p.cluster = (int) preds[1];
+    p.reasonCodes = new double[preds.length - 2];
+    System.arraycopy(preds, 2, p.reasonCodes, 0, p.reasonCodes.length);
+
     return p;
   }
 

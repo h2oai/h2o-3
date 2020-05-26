@@ -2420,6 +2420,9 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 case Ordinal:
                   p = epmw.predictOrdinal(rowData, offset);
                   break;
+                case KLime:
+                  p = epmw.predictKLime(rowData);
+                  break;
                 default:
                   throw new UnsupportedOperationException("Predicting with offset current not supported for " + genmodel.getModelCategory());
               }

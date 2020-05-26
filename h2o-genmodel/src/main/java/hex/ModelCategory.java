@@ -18,5 +18,6 @@ public enum ModelCategory {
   DimReduction,
   WordEmbedding,
   CoxPH,
-  AnomalyDetection
+  AnomalyDetection,
+  KLime,
 }
