@@ -57,7 +57,7 @@ public class DropDuplicateRowsTask extends MRTask<DropDuplicateRowsTask> {
     return compareRows(chunks, row, previousRowChunks, 0);
   }
 
-  private boolean compareRows(Chunk[] chunksA, int rowA, Chunk[] chunksB, int rowB) {
+  private boolean compareRows(final Chunk[] chunksA, final int rowA, final Chunk[] chunksB, final int rowB) {
     for (final int column : comparedColumnIndices) {
       final boolean isPreviousNA = chunksA[column].isNA(rowA);
       final boolean isCurrentNA = chunksB[column].isNA(rowB);
