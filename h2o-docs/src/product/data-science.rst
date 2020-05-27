@@ -33,6 +33,7 @@ H2O supports the following supervised algorithms:
 .. toctree::
    :maxdepth: 1
 
+   automl
    data-science/coxph
    data-science/deep-learning
    data-science/drf
