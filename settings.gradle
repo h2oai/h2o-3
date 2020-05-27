@@ -185,7 +185,7 @@ if (System.getProperty("user.name").equals("jenkins")
     // env can override gradle property
     targetsFilter = System.getenv("H2O_TARGET")
   } else if (hadoopTargets) {
-    targetsFilter = hadoopTargets;
+    targetsFilter = hadoopTargets
   }
   // Compute targets
   def targets
@@ -199,6 +199,7 @@ if (System.getProperty("user.name").equals("jenkins")
             "mapr4.0", "mapr5.0", "mapr5.1", "mapr5.2", "mapr6.0", "mapr6.1", "iop4.2"
     ]
   }
+  logger.debug("Building hadoops " + targets)
   // Include selected/all Hadoop targets
   if (System.getenv("BUILD_HADOOP") != "false") {
     targets.each { name ->
@@ -206,4 +207,6 @@ if (System.getProperty("user.name").equals("jenkins")
       include "h2o-hadoop-3:h2o-${name}-assembly"
     }
   }
+} else {
+  logger.debug("Not building hadoop jars")
 }
