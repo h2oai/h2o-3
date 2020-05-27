@@ -45,6 +45,11 @@ def pubdev_drop_duplicates():
     compare_dataset_deduplication("smalldata/junit/weather.csv", ["Date"], "first")
     compare_dataset_deduplication("smalldata/junit/weather.csv", ["Date"], "last")
 
+    # Compare CHESS - contains NAs
+    compare_dataset_deduplication("smalldata/parser/orc/orc2csv/chess_train_NA.csv", ["C2"], "first")
+    compare_dataset_deduplication("smalldata/parser/orc/orc2csv/chess_train_NA.csv", ["C2"], "last")
+    
+
 
 def compare_dataset_deduplication(dataPath, columns, keep):
     print(dataPath)

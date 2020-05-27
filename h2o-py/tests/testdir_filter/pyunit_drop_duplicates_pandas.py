@@ -37,8 +37,6 @@ def pubdev_drop_duplicates():
     expected = df.loc[[0, 5, 6, 7]].reset_index(drop=True)
     tm.assert_frame_equal(result, expected)
 
-
-
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pubdev_drop_duplicates)
 else:

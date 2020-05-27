@@ -4,6 +4,7 @@ import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
 import water.fvec.NewChunk;
+import water.fvec.Vec;
 
 /**
  * Performs the row de-duplication itself.
@@ -35,7 +36,7 @@ public class DropDuplicateRowsTask extends MRTask<DropDuplicateRowsTask> {
       } else if (chunkId != 0 && row == 0) {
         equal = compareFirstRowWithPreviousChunk(chunks, row, chunkId);
       } else {
-        equal = compareRows(chunks, row);
+        equal = compareRows(chunks, row, chunks, row - 1);
       }
 
       if (!equal) {
@@ -48,20 +49,37 @@ public class DropDuplicateRowsTask extends MRTask<DropDuplicateRowsTask> {
   }
 
   private boolean compareFirstRowWithPreviousChunk(final Chunk[] chunks, final int row, final int chunkId) {
-    for (int column : comparedColumnIndices) {
-      final double previousValue = chunkBoundaries.vec(column).chunkForChunkIdx(chunkId - 1).atd(0);
-      final double curentValue = chunks[column].atd(row);
-      if (previousValue != curentValue) return false;
-    }
+    final Chunk[] previousRowChunks = new Chunk[chunkBoundaries.numCols()];
 
-    return true;
+    for (int column = 0; column < chunkBoundaries.numCols(); column++) {
+      previousRowChunks[column] = chunkBoundaries.vec(column).chunkForChunkIdx(chunkId - 1);
+    }
+    return compareRows(chunks, row, previousRowChunks, 0);
   }
 
-  private boolean compareRows(final Chunk[] chunks, final int row) {
+  private boolean compareRows(Chunk[] chunksA, int rowA, Chunk[] chunksB, int rowB) {
     for (final int column : comparedColumnIndices) {
-      final double previousValue = chunks[column].atd(row - 1);
-      final double curentValue = chunks[column].atd(row);
-      if (previousValue != curentValue) return false;
+      final boolean isPreviousNA = chunksA[column].isNA(rowA);
+      final boolean isCurrentNA = chunksB[column].isNA(rowB);
+      if (isPreviousNA || isCurrentNA) {
+        return isPreviousNA && isCurrentNA;
+      }
+
+      switch (chunksA[column].vec().get_type()) {
+        case Vec.T_NUM:
+          final double previousDoubleValue = chunksA[column].atd(rowA);
+          final double currentDoubleValue = chunksB[column].atd(rowB);
+          if (previousDoubleValue != currentDoubleValue) return false;
+          break;
+        case Vec.T_CAT:
+        case Vec.T_TIME:
+          final long previousTimeValue = chunksA[column].at8(rowA);
+          final long currentTimeValue = chunksB[column].at8(rowB);
+          if (previousTimeValue != currentTimeValue) return false;
+          break;
+        default:
+          throw new IllegalStateException("Unexpected value: " + chunksA[column].vec().get_type());
+      }
     }
 
     return true;
