@@ -46,14 +46,14 @@ def pubdev_drop_duplicates():
     compare_dataset_deduplication("smalldata/junit/weather.csv", ["Date"], "last")
 
 
-def compare_dataset_deduplication(dataPath, columns, keep, check_dtype=True):
+def compare_dataset_deduplication(dataPath, columns, keep):
     print(dataPath)
     data = h2o.import_file(pyunit_utils.locate(dataPath))
     deduplicated_frame = data.drop_duplicates(columns=columns, keep=keep)
     
     data_pd = data.as_data_frame()
     deduplicated_frame_pd = data_pd.drop_duplicates(subset=columns, keep=keep, ignore_index=True)
-    assert_frame_equal(deduplicated_frame_pd, deduplicated_frame.as_data_frame(), check_dtype=check_dtype)
+    assert_frame_equal(deduplicated_frame_pd, deduplicated_frame.as_data_frame())
 
 
 if __name__ == "__main__":
