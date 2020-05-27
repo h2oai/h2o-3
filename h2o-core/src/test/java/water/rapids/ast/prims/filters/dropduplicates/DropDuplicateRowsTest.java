@@ -10,8 +10,7 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -32,8 +31,6 @@ public class DropDuplicateRowsTest {
       final DropDuplicateRows dropDuplicateRows = new DropDuplicateRows(frame, comparedColumns, KeepOrder.First);
       final Frame deduplicatedFrame = Scope.track(dropDuplicateRows.dropDuplicates());
       assertNotNull(deduplicatedFrame);
-      assertNotNull(DKV.get(frame._key));
-      assertNotNull(DKV.get(deduplicatedFrame._key));
       assertEquals(frame.numCols(), deduplicatedFrame.numCols());
       assertEquals(2, deduplicatedFrame.numRows());
     } finally {
@@ -56,8 +53,6 @@ public class DropDuplicateRowsTest {
       final DropDuplicateRows dropDuplicateRows = new DropDuplicateRows(frame, comparedColumns, KeepOrder.First);
       final Frame deduplicatedFrame = Scope.track(dropDuplicateRows.dropDuplicates());
       assertNotNull(deduplicatedFrame);
-      assertNotNull(DKV.get(frame._key));
-      assertNotNull(DKV.get(deduplicatedFrame._key));
       assertEquals(frame.numCols(), deduplicatedFrame.numCols());
       assertEquals(2, deduplicatedFrame.numRows());
     } finally {
@@ -80,8 +75,6 @@ public class DropDuplicateRowsTest {
       final DropDuplicateRows dropDuplicateRows = new DropDuplicateRows(frame, comparedColumns, KeepOrder.First);
       final Frame deduplicatedFrame = Scope.track(dropDuplicateRows.dropDuplicates());
       assertNotNull(deduplicatedFrame);
-      assertNotNull(DKV.get(frame._key));
-      assertNotNull(DKV.get(deduplicatedFrame._key));
       assertEquals(frame.numCols(), deduplicatedFrame.numCols());
       assertEquals(3, deduplicatedFrame.numRows());
     } finally {
@@ -104,8 +97,6 @@ public class DropDuplicateRowsTest {
       final DropDuplicateRows dropDuplicateRows = new DropDuplicateRows(frame, comparedColumns, KeepOrder.First);
       final Frame deduplicatedFrame = Scope.track(dropDuplicateRows.dropDuplicates());
       assertNotNull(deduplicatedFrame);
-      assertNotNull(DKV.get(frame._key));
-      assertNotNull(DKV.get(deduplicatedFrame._key));
       assertEquals(frame.numCols(), deduplicatedFrame.numCols());
       assertEquals(1, deduplicatedFrame.numRows());
     } finally {
@@ -128,8 +119,6 @@ public class DropDuplicateRowsTest {
       final DropDuplicateRows dropDuplicateRows = new DropDuplicateRows(frame, comparedColumns, KeepOrder.First);
       final Frame deduplicatedFrame = Scope.track(dropDuplicateRows.dropDuplicates());
       assertNotNull(deduplicatedFrame);
-      assertNotNull(DKV.get(frame._key));
-      assertNotNull(DKV.get(deduplicatedFrame._key));
       assertEquals(frame.numCols(), deduplicatedFrame.numCols());
       assertEquals(1, deduplicatedFrame.numRows());
     } finally {
@@ -138,7 +127,7 @@ public class DropDuplicateRowsTest {
   }
 
   @Test
-  public void testDropFirst() {
+  public void testKeepFirst() {
     try {
       Scope.enter();
       final Frame frame = new TestFrameBuilder()
@@ -153,11 +142,9 @@ public class DropDuplicateRowsTest {
       final DropDuplicateRows dropDuplicateRows = new DropDuplicateRows(frame, comparedColumns, KeepOrder.First);
       final Frame deduplicatedFrame = Scope.track(dropDuplicateRows.dropDuplicates());
       assertNotNull(deduplicatedFrame);
-      assertNotNull(DKV.get(frame._key));
-      assertNotNull(DKV.get(deduplicatedFrame._key));
       assertEquals(frame.numCols(), deduplicatedFrame.numCols());
       assertEquals(1, deduplicatedFrame.numRows());
-      assertEquals(6L, deduplicatedFrame.vec("C3").at8(0)); // Last label is in place
+      assertEquals(1L, deduplicatedFrame.vec("C3").at8(0)); // First label is in place
 
       assertNotNull(DKV.get(frame._key));
     } finally {
@@ -166,7 +153,7 @@ public class DropDuplicateRowsTest {
   }
 
   @Test
-  public void testDropLast() {
+  public void testKeepLast() {
     try {
       Scope.enter();
       final Frame frame = new TestFrameBuilder()
@@ -181,14 +168,65 @@ public class DropDuplicateRowsTest {
       final DropDuplicateRows dropDuplicateRows = new DropDuplicateRows(frame, comparedColumns, KeepOrder.Last);
       final Frame deduplicatedFrame = Scope.track(dropDuplicateRows.dropDuplicates());
       assertNotNull(deduplicatedFrame);
-      assertNotNull(DKV.get(frame._key));
-      assertNotNull(DKV.get(deduplicatedFrame._key));
       assertEquals(frame.numCols(), deduplicatedFrame.numCols());
-      assertEquals(1L, deduplicatedFrame.vec("C3").at8(0)); // First label is kept
+      assertEquals(6L, deduplicatedFrame.vec("C3").at8(0)); // Last label is in place
 
       assertNotNull(DKV.get(frame._key));
     } finally {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testDeduplicationWitNaNs() {
+    try {
+      Scope.enter();
+      final Frame frame = new TestFrameBuilder()
+              .withColNames("C1", "C2")
+              .withDataForCol(0, new double[]{Float.NaN, Float.NaN, 3d})
+              .withDataForCol(1, new double[]{Float.NaN, Float.NaN, 5d})
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .build();
+      final int[] comparedColumns = new int[]{0, 1};
+      final DropDuplicateRows dropDuplicateRows = new DropDuplicateRows(frame, comparedColumns, KeepOrder.First);
+      final Frame deduplicatedFrame = Scope.track(dropDuplicateRows.dropDuplicates());
+      assertNotNull(deduplicatedFrame);
+      assertEquals(frame.numCols(), deduplicatedFrame.numCols());
+      assertEquals(2, deduplicatedFrame.numRows());
+      assertTrue(deduplicatedFrame.vec("C1").isNA(0));
+      assertTrue(deduplicatedFrame.vec("C2").isNA(0));
+      assertEquals(3, deduplicatedFrame.vec("C1").at(1), 0d);
+      assertEquals(5, deduplicatedFrame.vec("C2").at(1), 0d);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testDeduplicationWitCategoricalNaNs() {
+    try {
+      Scope.enter();
+      final Frame frame = new TestFrameBuilder()
+              .withColNames("C1", "C2")
+              .withDataForCol(0, new String[]{null, null, "CAT1"})
+              .withDataForCol(1, new String[]{null, null, "CAT1"})
+              .withVecTypes(Vec.T_CAT, Vec.T_CAT)
+              .build();
+      final int[] comparedColumns = new int[]{0, 1};
+      final DropDuplicateRows dropDuplicateRows = new DropDuplicateRows(frame, comparedColumns, KeepOrder.First);
+      final Frame deduplicatedFrame = Scope.track(dropDuplicateRows.dropDuplicates());
+      assertNotNull(deduplicatedFrame);
+      assertEquals(frame.numCols(), deduplicatedFrame.numCols());
+      assertEquals(2, deduplicatedFrame.numRows());
+      assertTrue(deduplicatedFrame.vec("C1").isNA(0));
+      assertTrue(deduplicatedFrame.vec("C2").isNA(0));
+      assertEquals("CAT1", deduplicatedFrame.vec("C1").stringAt(1));
+      assertEquals("CAT1", deduplicatedFrame.vec("C2").stringAt(1));
+      assertEquals(frame.vec("C1").cardinality(), deduplicatedFrame.vec("C1").cardinality());
+      assertEquals(frame.vec("C2").cardinality(), deduplicatedFrame.vec("C2").cardinality());
+    } finally {
+      Scope.exit();
+    }
+  }
+  
 }

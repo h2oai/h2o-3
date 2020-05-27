@@ -1,6 +1,7 @@
 package water.rapids.ast.prims.filters.dropduplicates;
 
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.rapids.Env;
 import water.rapids.Val;
 import water.rapids.ast.AstPrimitive;
@@ -27,7 +28,7 @@ public class AstDropDuplicates extends AstPrimitive<AstDropDuplicates> {
   @Override
   public Val apply(Env env, Env.StackHelp stk, AstRoot[] asts) {
     final Frame deduplicatedFrame = stk.track(asts[1].exec(env)).getFrame();
-    final int[] comparedColumnsIndices = parseComparedColumnIndices(deduplicatedFrame, stk.track(asts[2].exec(env)));
+    final int[] comparedColumnsIndices = parseAndCheckComparedColumnIndices(deduplicatedFrame, stk.track(asts[2].exec(env)));
     final String dropOrderString = asts[3].str();
     final KeepOrder keepOrder = EnumUtils.valueOfIgnoreCase(KeepOrder.class, dropOrderString)
             .orElseThrow(() -> new IllegalArgumentException(String.format("Unknown drop order: '%s'. Known types: %s",
@@ -38,7 +39,7 @@ public class AstDropDuplicates extends AstPrimitive<AstDropDuplicates> {
     return new ValFrame(outputFrame);
   }
 
-  private int[] parseComparedColumnIndices(final Frame deduplicatedFrame, final Val comparedColumns) {
+  private int[] parseAndCheckComparedColumnIndices(final Frame deduplicatedFrame, final Val comparedColumns) {
     final int[] columnRange;
 
     if (comparedColumns.isStr()) {
@@ -57,6 +58,9 @@ public class AstDropDuplicates extends AstPrimitive<AstDropDuplicates> {
         final int columnIndex = deduplicatedFrame.find(columnName);
         if (columnIndex == -1) {
           throw new IllegalArgumentException(String.format("Unknown column name: '%s'", columnName));
+        } else if (deduplicatedFrame.types()[columnIndex] == Vec.T_STR || deduplicatedFrame.types()[columnIndex] == Vec.T_BAD
+                || deduplicatedFrame.types()[columnIndex] == Vec.T_UUID) {
+          throw new IllegalArgumentException(String.format("Column '%s' is of unsupported type %s for row de-duplication.", columnName, Vec.TYPE_STR[deduplicatedFrame.types()[columnIndex]]));
         }
         columnRange[i] = columnIndex;
 

@@ -49,8 +49,6 @@ public class DropDuplicateRows {
 
       outputFrame = Merge.sort(deDuplicatedFrame, deDuplicatedFrame.numCols() - 1);
       outputFrame.remove(outputFrame.numCols() - 1);
-      outputFrame._key = sourceFrame._key != null ? Key.make(sourceFrame._key.toString() + "_deduplicated") : Key.make();
-      DKV.put(outputFrame);
       return outputFrame;
 
     } finally {

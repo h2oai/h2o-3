@@ -36,7 +36,7 @@ public class AstDropDuplicatesTest {
           .withVecTypes(Vec.T_NUM, Vec.T_NUM)
           .build();
 
-      Val val = Rapids.exec(String.format("(dropdup %s ['C1', 'C2'] dropfirst)", frame._key.toString()), session);
+      Val val = Rapids.exec(String.format("(dropdup %s ['C1', 'C2'] first)", frame._key.toString()), session);
       assertNotNull(val);
       assertTrue(val.isFrame());
       final Frame deduplicatedFrame = Scope.track(val.getFrame());
@@ -60,7 +60,7 @@ public class AstDropDuplicatesTest {
           .withName("test")
           .build();
 
-      Val val = Rapids.exec(String.format("(dropdup %s [0:1] dropfirst)", frame._key.toString()));
+      Val val = Rapids.exec(String.format("(dropdup %s [0:1] first)", frame._key.toString()));
       assertNotNull(val);
       assertTrue(val.isFrame());
       final Frame deduplicatedFrame = Scope.track(val.getFrame());
@@ -85,7 +85,7 @@ public class AstDropDuplicatesTest {
 
       expectedException.expect(IllegalArgumentException.class);
       expectedException.expectMessage("Unknown column name: 'C3'");
-      Rapids.exec(String.format("(dropdup %s ['C1', 'C3'] dropfirst)", frame._key.toString()), session);
+      Rapids.exec(String.format("(dropdup %s ['C1', 'C3'] first)", frame._key.toString()), session);
     } finally {
       Scope.exit();
       session.end(null);
@@ -106,7 +106,7 @@ public class AstDropDuplicatesTest {
           .build();
       expectedException.expect(IllegalArgumentException.class);
       expectedException.expectMessage("No such column index: '2', frame has 2 columns,maximum index is 1.");
-      Rapids.exec(String.format("(dropdup %s [0:3] dropfirst)", frame._key.toString()));
+      Rapids.exec(String.format("(dropdup %s [0:3] first)", frame._key.toString()));
     } finally {
       Scope.exit();
     }
@@ -124,7 +124,7 @@ public class AstDropDuplicatesTest {
           .withVecTypes(Vec.T_NUM, Vec.T_NUM)
           .withName("test")
           .build();
-      Val val = Rapids.exec(String.format("(dropdup %s [0,1] dropfirst)", frame._key.toString()));
+      Val val = Rapids.exec(String.format("(dropdup %s [0,1] first)", frame._key.toString()));
       assertNotNull(val);
       assertTrue(val.isFrame());
       final Frame deduplicatedFrame = Scope.track(val.getFrame());
@@ -132,6 +132,27 @@ public class AstDropDuplicatesTest {
 
     } finally {
       Scope.exit();
+    }
+  }
+
+  @Test
+  public void testStringColumnPresent() {
+    final Session session = new Session();
+    try {
+      Scope.enter();
+      final Frame frame = new TestFrameBuilder()
+              .withColNames("C1", "C2")
+              .withDataForCol(0, new double[]{1d, 2d, 3d})
+              .withDataForCol(1, new String[]{"A", "B", "C"})
+              .withVecTypes(Vec.T_NUM, Vec.T_STR)
+              .build();
+
+      expectedException.expect(IllegalArgumentException.class);
+      expectedException.expectMessage("Column 'C2' is of unsupported type String for row de-duplication.");
+      Rapids.exec(String.format("(dropdup %s ['C1', 'C2'] first)", frame._key.toString()), session);
+    } finally {
+      Scope.exit();
+      session.end(null);
     }
   }
 
