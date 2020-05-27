@@ -157,12 +157,13 @@ test <- function() {
     
   ## Ask to score on multinomial case
   iris[,'random'] <- as.factor(as.data.frame(unlist(sample(x = 1:4, size = length(iris[[1]]), replace=TRUE)))[[1]])
-  iris_hex = as.h2o(iris)
-  iris_gbm = h2o.gbm(x = c(1:4,6), y = 5, training_frame = iris_hex)
+  iris_hex <- as.h2o(iris)
+  iris_gbm <- h2o.gbm(x = c(1:4,6), y = 5, training_frame = iris_hex)
     
   # one column  
   h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa"))
   h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa", "virginica", "versicolor"))
+
   h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa"), plot_stddev = FALSE)
   h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa", "virginica", "versicolor"), plot_stddev = FALSE)
 

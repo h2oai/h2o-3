@@ -1225,13 +1225,13 @@ class ModelBase(h2o_meta(Keyed)):
             if targets and len(targets) == 1:
                 target = targets[0]
             for i in range(to_fig):
-                col = cols[i]
                 if i >= num_1dpdp:  # plot 2D pdp
                     if axes_3d is None or cm is None or plt is None:    # quit if cannot find toolbox
                         break
                     fig_plotted = self.__plot_2d_pdp(fig, col_pairs_2dpdp, gxs, num_1dpdp, data, pps[i], nbins,
                                                      user_cols, user_num_splits, plot_stddev, cm, i)                  
                 else:  # plot 1D pdp
+                    col = cols[i]
                     if targets is None or target:
                         fig_plotted = self.__plot_1d_pdp(col, i, data, pps[i], fig, gxs, plot_stddev, target)
                     else:

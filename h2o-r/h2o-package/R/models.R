@@ -3928,6 +3928,14 @@ h2o.cross_validation_predictions <- function(object) {
 #'                         max_depth = 5,
 #'                         learn_rate = 0.1)
 #' h2o.partialPlot(object = prostate_gbm, data = prostate, cols = c("AGE", "RACE"))
+#'
+#' iris_hex <- as.h2o(iris)
+#' iris_gbm <- h2o.gbm(x = c(1:4), y = 5, training_frame = iris_hex)
+#'
+#' # one target class
+#' h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa"))
+#' # three target classes
+#' h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa", "virginica", "versicolor"))
 #' }
 #' @export
 
@@ -4123,6 +4131,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
         xaxt <- "n"
         lty <- NULL
         pch <- 19
+        pp[, 1] <- factor(x, labels=x)
       } else {
         line_type <- "l"
         xaxt <- NULL
@@ -4159,6 +4168,7 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
         stddev <- pp[,3]
         color <- colors[i]
         title <- attr(pp,"description")
+        pp[, 1] <- factor(x, labels=x)
         type <- col_types[which(col_names == names(pp)[1])]
         if(type == "enum"){
            line_type <- "p"
