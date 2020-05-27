@@ -1262,8 +1262,8 @@ class ModelBase(h2o_meta(Keyed)):
         if plot_stddev:
             zupper = [a + b for a, b in zip(pp[2], pp[3])]  # pp[1] is mean, pp[2] is std
             zlower = [a - b for a, b in zip(pp[2], pp[3])]
-            _,_,Zupper = self.__predFor3D(x,y,zupper, col_pairs, nbins, user_cols, user_num_splits)
-            _,_,Zlower = self.__predFor3D(x,y,zlower, col_pairs, nbins, user_cols, user_num_splits)
+            _,_,Zupper = self.__pred_for_3d(x,y,zupper, col_pairs, nbins, user_cols, user_num_splits)
+            _,_,Zlower = self.__pred_for_3d(x,y,zlower, col_pairs, nbins, user_cols, user_num_splits)
             ax.plot_surface(X, Y, Zupper, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='y')
             ax.plot_surface(X, Y, Zlower, cmap=cm.coolwarm,linewidth=0.2, antialiased=False, alpha=0.3, edgecolor='g')
         ax.set_xlabel(col_pairs[0])

@@ -4128,13 +4128,11 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
       type <- col_types[which(col_names == names(pp)[1])]
       if(type == "enum") {
         line_type <- "p"
-        xaxt <- "n"
         lty <- NULL
         pch <- 19
-        pp[, 1] <- factor(x, labels=x)
+        pp[, 1] <- factor(pp[,1], levels=pp[,1])
       } else {
         line_type <- "l"
-        xaxt <- NULL
         lty <- 1
         pch <- NULL
       }
@@ -4143,15 +4141,14 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
         ## Added upper and lower std dev confidence bound
         upper = y + stddev
         lower = y - stddev
-        plot(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, col="red", main = attr(pp,"description"), ylim  = c(min(lower), max(upper)))
+        plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"), ylim  = c(min(lower), max(upper)))
         polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor("red", alpha.f = 0.1), border = F)
         if(type == "enum"){
           x <- c(1:length(x))
           arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col="red")
-          axis(1, at=1:length(x), labels=factor(x, labels=x))
         }
       } else {
-        plot(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, col="red", main = attr(pp,"description"))
+        plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol="red", medlty=0, staplelty=0, boxlty=0, col="red", main = attr(pp,"description"))
       }
     } else {
       print("Partial Dependence not calculated--make sure nbins is as high as the level count")
@@ -4168,16 +4165,14 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
         stddev <- pp[,3]
         color <- colors[i]
         title <- attr(pp,"description")
-        pp[, 1] <- factor(x, labels=x)
         type <- col_types[which(col_names == names(pp)[1])]
         if(type == "enum"){
            line_type <- "p"
-           xaxt <- "n"
            lty <- NULL
            pch <- 19
+           pp[, 1] <- factor(x, labels=x)
         } else {
           line_type <- "l"
-          xaxt <- NULL
           lty <- 1
           pch <- NULL
         }
@@ -4185,21 +4180,20 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
           upper <- y + stddev
           lower <- y - stddev
           if(i == 1){
-            plot(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, main = title, col = color, ylim  = c(min_lower, max_upper + 0.1 * abs(max_upper)))
+            plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, main = title, col = color, ylim  = c(min_lower, max_upper + 0.1 * abs(max_upper)))
           } else {
-            points(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, col = color)
+            points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color)
           }
           polygon(c(x, rev(x)), c(lower, rev(upper)), col = adjustcolor(color, alpha.f = 0.1), border = F)   
           if(type == "enum"){
             x <- c(1:length(x))
             arrows(x, lower, x, upper, code=3, angle=90, length=0.1, col=color)
-            axis(1, at=1:length(x), labels=factor(x, labels=x))
           }
         } else {
           if(i == 1) {
-            plot(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, main = title, col = color, ylim  = c(min_y, max_y + 0.05 * abs(max_y)))
+            plot(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, main = title, col = color, ylim  = c(min_y, max_y + 0.05 * abs(max_y)))
           } else {
-            points(pp[,1:2], type = line_type, pch=pch, xaxt = xaxt, col = color) 
+            points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color) 
           }
           if(line_type == "p"){
             axis(1, at=1:length(x), labels=factor(x, labels=x))
