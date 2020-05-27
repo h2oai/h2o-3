@@ -68,3 +68,4 @@ Miscellaneous
    :maxdepth: 1
 
    data-science/word2vec
+   data-science/tf-idf
