@@ -15,14 +15,14 @@ if (hasCustomHdfsDep) {
 }
 
 dependencies {
-  compile ("org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion") {
+  compile("org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion") {
     force = true
   }
-  compile ("org.apache.hadoop:hadoop-common:$hadoopMavenArtifactVersion") {
+  compile("org.apache.hadoop:hadoop-common:$hadoopMavenArtifactVersion") {
     force = true
   }
   if (hasCustomHdfsDep) {
-    compile ("org.apache.hadoop:${hdfsDependency}:$hadoopMavenArtifactVersion") {
+    compile("org.apache.hadoop:${hdfsDependency}:$hadoopMavenArtifactVersion") {
       force = true
     }
   }
@@ -38,11 +38,11 @@ dependencies {
   compile project(":h2o-web")
   compile project(":h2o-avro-parser")
   // Include GCS persist layer
-  compile(project(":h2o-persist-gcs"))
+  compile project(":h2o-persist-gcs")
   // Include S3 persist layer
-  compile(project(":h2o-persist-s3"))
+  compile project(":h2o-persist-s3")
   // Include HDFS persist layer
-  compile (project(':h2o-persist-hdfs')) {
+  compile(project(':h2o-persist-hdfs')) {
     transitive = false
   }
   compile(project(':h2o-hive')) {
