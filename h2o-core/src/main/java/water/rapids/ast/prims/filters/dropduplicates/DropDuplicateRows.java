@@ -1,6 +1,5 @@
 package water.rapids.ast.prims.filters.dropduplicates;
 
-import water.DKV;
 import water.Key;
 import water.Scope;
 import water.fvec.Frame;
@@ -48,7 +47,7 @@ public class DropDuplicateRows {
               .outputFrame(Key.make(), sourceFrame.names(), sourceFrame.domains())); // Removing duplicates, domains remain the same
 
       outputFrame = Merge.sort(deDuplicatedFrame, deDuplicatedFrame.numCols() - 1);
-      outputFrame.remove(outputFrame.numCols() - 1);
+      Scope.track(outputFrame.remove(outputFrame.numCols() - 1));
       return outputFrame;
 
     } finally {
