@@ -2201,9 +2201,8 @@ def _connect_with_conf(conn_conf):
     if isinstance(conn_conf, dict):
         conf = H2OConnectionConf(config=conn_conf)
     assert_is_type(conf, H2OConnectionConf)
-
-    return connect(url = conf.url, verify_ssl_certificates = conf.verify_ssl_certificates,
-                   auth = conf.auth, proxy = conf.proxy,cookies = conf.cookies, verbose = conf.verbose)
+    return connect(url=conf.url, verify_ssl_certificates=conf.verify_ssl_certificates, cacert=conf.cacert,
+                   auth=conf.auth, proxy=conf.proxy, cookies=conf.cookies, verbose=conf.verbose)
 
 #-----------------------------------------------------------------------------------------------------------------------
 #  ALL DEPRECATED METHODS BELOW
