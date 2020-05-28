@@ -4,10 +4,11 @@ import hex.DataInfo;
 import hex.genmodel.utils.IOUtils;
 import hex.tree.xgboost.BoosterParms;
 import hex.tree.xgboost.XGBoostModel;
+import hex.tree.xgboost.matrix.FileMatrixLoader;
 import hex.tree.xgboost.matrix.FrameMatrixLoader;
 import hex.tree.xgboost.matrix.MatrixLoader;
-import hex.tree.xgboost.matrix.FileMatrixLoader;
 import hex.tree.xgboost.rabit.RabitTrackerH2O;
+import hex.tree.xgboost.remote.RemoteXGBoostUploadServlet;
 import hex.tree.xgboost.task.XGBoostCleanupTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
 import hex.tree.xgboost.task.XGBoostUpdateTask;
@@ -15,9 +16,14 @@ import water.H2O;
 import water.Key;
 import water.fvec.Frame;
 
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+
+import static hex.tree.xgboost.remote.RemoteXGBoostUploadServlet.getCheckpointFile;
 
 public class LocalXGBoostExecutor implements XGBoostExecutor {
 
@@ -43,15 +49,13 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
         boosterParams = BoosterParms.fromMap(init.parms);
         nodes = new boolean[H2O.CLOUD.size()];
         for (int i = 0; i < init.num_nodes; i++) nodes[i] = init.nodes[i] != null;
-        final String matrixDirPath = H2O.ICE_ROOT.toString() + "/" + modelKey.toString();
-        new File(matrixDirPath).mkdirs();
-        loader = new FileMatrixLoader(matrixDirPath);
+        loader = new FileMatrixLoader(modelKey);
         saveMatrixDirectory = init.save_matrix_path;
         checkpointProvider = () -> {
             if (!init.has_checkpoint) {
                 return null;
             } else {
-                File checkpointFile = new File(matrixDirPath + "/" + "checkpoint.bin");
+                File checkpointFile = getCheckpointFile(modelKey.toString());
                 ByteArrayOutputStream bos = new ByteArrayOutputStream();
                 try (FileInputStream fis = new FileInputStream(checkpointFile)) {
                     IOUtils.copyStream(fis, bos);

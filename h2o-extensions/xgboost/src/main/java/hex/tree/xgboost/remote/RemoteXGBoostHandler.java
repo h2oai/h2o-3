@@ -7,34 +7,27 @@ import hex.tree.xgboost.exec.LocalXGBoostExecutor;
 import hex.tree.xgboost.exec.XGBoostExecReq;
 import org.apache.log4j.Logger;
 import water.H2O;
-import water.Key;
 import water.api.Handler;
 import water.api.StreamingSchema;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+
+import static hex.tree.xgboost.remote.XGBoostExecutorRegistry.*;
 
 public class RemoteXGBoostHandler extends Handler {
 
     private static final Logger LOG = Logger.getLogger(RemoteXGBoostHandler.class);
 
-    private static final Map<Key, LocalXGBoostExecutor> REGISTRY = new ConcurrentHashMap<>();
-
     private XGBoostExecRespV3 makeResponse(LocalXGBoostExecutor exec) {
         return new XGBoostExecRespV3(exec.modelKey);
-    }
-    
-    private LocalXGBoostExecutor getExecutor(XGBoostExecReqV3 req) {
-        return REGISTRY.get(req.key.key());
     }
 
     @SuppressWarnings("unused")
     public XGBoostExecRespV3 init(int ignored, XGBoostExecReqV3 req) {
         XGBoostExecReq.Init init = req.readData();
         LocalXGBoostExecutor exec = new LocalXGBoostExecutor(req.key.key(), init);
-        REGISTRY.put(exec.modelKey, exec);
+        storeExecutor(exec);
         return new XGBoostExecRespV3(exec.modelKey, collectNodes());
     }
     
@@ -72,7 +65,7 @@ public class RemoteXGBoostHandler extends Handler {
     public XGBoostExecRespV3 cleanup(int ignored, XGBoostExecReqV3 req) {
         LocalXGBoostExecutor exec = getExecutor(req);
         exec.close();
-        REGISTRY.remove(exec.modelKey);
+        removeExecutor(exec);
         return makeResponse(exec);
     }
 

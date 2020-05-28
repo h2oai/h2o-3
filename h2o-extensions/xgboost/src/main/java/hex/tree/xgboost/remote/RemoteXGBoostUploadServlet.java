@@ -2,7 +2,6 @@ package hex.tree.xgboost.remote;
 
 import hex.genmodel.utils.IOUtils;
 import hex.schemas.XGBoostExecRespV3;
-import hex.tree.xgboost.task.XGBoostSetupTask;
 import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
@@ -18,6 +17,18 @@ import java.io.InputStream;
 public class RemoteXGBoostUploadServlet extends HttpServlet {
 
     private static final Logger LOG = Logger.getLogger(RemoteXGBoostUploadServlet.class);
+    
+    public static File getUploadDir(String key) {
+        return new File(H2O.ICE_ROOT.toString(), key);
+    }
+    
+    public static File getMatrixFile(String key) {
+        return new File(getUploadDir(key), "matrix.part" + H2O.SELF.index());
+    }
+    
+    public static File getCheckpointFile(String key) {
+        return new File(getUploadDir(key), "checkpoint.bin");
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
@@ -25,13 +36,16 @@ public class RemoteXGBoostUploadServlet extends HttpServlet {
         try {
             String model_key = request.getParameter("model_key");
             String data_type = request.getParameter("data_type");
-            LOG.debug("Upload request for " + model_key + " " + data_type + " received");
-            final String dataDirPath = H2O.ICE_ROOT.toString() + "/" + model_key;
+            LOG.info("Upload request for " + model_key + " " + data_type + " received");
             File destFile;
+            File uploadDir = getUploadDir(model_key);
+            if (uploadDir.mkdirs()) {
+                LOG.debug("Created temporary directory " + uploadDir);
+            }
             if ("matrix".equalsIgnoreCase(data_type)) {
-                destFile = XGBoostSetupTask.getMatrixFile(new File(dataDirPath));
+                destFile = getMatrixFile(model_key);
             } else {
-                destFile = new File(dataDirPath, "checkpoint.bin");
+                destFile = getCheckpointFile(model_key);
             }
             LOG.debug("Saving contents into " + destFile);
             InputStream is = ServletUtils.extractPartInputStream(request, response);

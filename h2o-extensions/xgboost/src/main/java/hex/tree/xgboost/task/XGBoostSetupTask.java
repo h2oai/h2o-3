@@ -53,7 +53,7 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
       if (directory.mkdirs()) {
         LOG.debug("Created directory for matrix export: " + directory.getAbsolutePath());
       }
-      File path = getMatrixFile(directory);
+      File path = new File(directory, "matrix.part" + H2O.SELF.index());
       LOG.info("Saving node-local portion of XGBoost training dataset to " + path.getAbsolutePath() + ".");
       matrix.saveBinary(path.getAbsolutePath());
     }
@@ -61,10 +61,6 @@ public class XGBoostSetupTask extends AbstractXGBoostTask<XGBoostSetupTask> {
 
     XGBoostUpdater thread = XGBoostUpdater.make(_modelKey, matrix, _boosterParms, _checkpoint, _rabitEnv);
     thread.start(); // we do not need to wait for the Updater to init Rabit - subsequent tasks will wait
-  }
-
-  public static File getMatrixFile(File dir) {
-    return new File(dir, "matrix.part" + H2O.SELF.index());
   }
 
   /**
