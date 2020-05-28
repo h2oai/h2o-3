@@ -26,9 +26,7 @@ public class JgraphtPrintMojo extends PrintMojo implements MojoPrinter {
 
     private SharedTreeGraph sharedTreeGraph = null;
 
-    public JgraphtPrintMojo() {
-        //no code
-    }
+    public JgraphtPrintMojo() {}
 
     public JgraphtPrintMojo(String outputPath, SharedTreeGraph g) {
         destination = outputPath;

@@ -1,6 +1,6 @@
 package water.util;
 
-import hex.Model;
+import hex.ModelWithVisualization;
 import water.api.StreamWriter;
 
 import java.io.*;
@@ -11,9 +11,9 @@ import java.util.zip.ZipOutputStream;
 
 public class ModelPngWriter implements StreamWriter {
 
-    private final Model model;
+    private final ModelWithVisualization model;
 
-    public ModelPngWriter(Model model) {
+    public ModelPngWriter(ModelWithVisualization model) {
         this.model = model;
     }
 

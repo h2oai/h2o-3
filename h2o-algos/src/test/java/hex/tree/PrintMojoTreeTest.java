@@ -1,6 +1,7 @@
 package hex.tree;
 
 import hex.Model;
+import hex.ModelWithVisualization;
 import hex.genmodel.tools.PrintMojo;
 import hex.tree.gbm.GBM;
 import hex.tree.gbm.GBMModel;
@@ -356,7 +357,7 @@ public class PrintMojoTreeTest {
       
       Model model = new GBM(p).trainModel().get();
       final Path treeOutputPath = folder.newFile("exampleh2o.png").toPath();
-      model.visualize(treeOutputPath.toAbsolutePath().toString());
+      ((ModelWithVisualization) model).visualize(treeOutputPath.toAbsolutePath().toString());
       
       List<Path> fileNames = Files.list(treeOutputPath)
               .sorted(Comparator.reverseOrder())
