@@ -3935,7 +3935,8 @@ h2o.cross_validation_predictions <- function(object) {
 #' # one target class
 #' h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa"))
 #' # three target classes
-#' h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", targets=c("setosa", "virginica", "versicolor"))
+#' h2o.partialPlot(object = iris_gbm, data = iris_hex, cols="Petal.Length", 
+#'                  targets=c("setosa", "virginica", "versicolor"))
 #' }
 #' @export
 
@@ -4195,9 +4196,6 @@ h2o.partialPlot <- function(object, data, cols, destination_key, nbins=20, plot 
           } else {
             points(pp[,1:2], type = line_type, pch=pch, medpch=pch, medcol=color, medlty=0, staplelty=0, boxlty=0, col = color) 
           }
-          if(line_type == "p"){
-            axis(1, at=1:length(x), labels=factor(x, labels=x))
-          }    
         }
         legend("topright",legend=targets, col=colors, lty=lty, pch=pch, bty="n", ncol=length(pps))      
       } else {
