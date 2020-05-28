@@ -1,21 +1,21 @@
 Training Models
 ===============
 
-Use the ``train()`` function to build H2O models.
+H2O supports training of supervised models (where the outcome variable is known) and unsupervised models (unlabeled data). Below we present examples of classification, regression, clustering, dimensionality reduction and training on data segments (train a set of models -- one for each partition of the data).
 
 Supervised Learning
 -------------------
 
 Supervised learning algorithms support classification and regression problems.
 
-Classification and Regression Problems
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Classification and Regression
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-In classification problems, the output variable (y) is a categorical value. The answer can be binary (for example, yes/no), or it can be multiclass (for example, dog/cat/mouse).
+In classification problems, the output or "response" variable is a categorical value. The answer can be binary (for example, yes/no), or it can be multiclass (for example, dog/cat/mouse).
 
-In regression problems, the output variable (y) is a real or continuous value. An example would be predicting someone's age or predicting the median value of a house. 
+In regression problems,  the output or "response" variable is a numeric value. An example would be predicting someone's age or the sale price of a house. 
 
-**Note**: You can force H2O to use either classification or regression by :ref:`changing the column type <change-column-type>`.
+**Classification vs Regression in H2O models**: The way that you tell H2O whether you want to do classification versus regression for a particular supervised algorithm is by encoding the response column as either a categorical/factor type (classification) or a numeric type (regression).  If your column is represented as strings ("yes", "no"), then H2O will automatically encode that column as an categorical/factor (aka. "enum") type when you import your dataset.  However if you have a column with integers that represents a class in a classification problem (0, 1), you will have to :ref:`change the column type <change-column-type>` from numeric to categorical/factor (aka. "enum") type.  The reason that H2O requires the response column to be encoded as the "correct" type for a particular task is to maximze efficiency of the algorithm.
 
 Classification Example
 ''''''''''''''''''''''
@@ -256,7 +256,7 @@ This example uses the Boston Housing data and :ref:`H2O's GLM algorithm <glm>` t
 Unsupervised Learning
 ----------------------
 
-Unsupervised learning algorithms include clustering and anomaly detection. Unsupervised learning algorithms such as GLRM and PCA can also be used to perform dimensionality reduction.
+Unsupervised learning algorithms include clustering and anomaly detection methods. Unsupervised learning algorithms such as GLRM and PCA can also be used to perform dimensionality reduction.
 
 Clustering Example
 ~~~~~~~~~~~~~~~~~~
@@ -537,7 +537,7 @@ Below is a simple example showing how to use the :ref:`GLRM <glrm>` algorithm fo
 Training Segments
 -----------------
 
-In H2O, you can perform segmented-data bulk training on training sets. The ``train_segments()`` function trains an H2O model for each segment (subpopulation) of the training dataset.
+In H2O, you can perform bulk training on segments, or partitions, of the training set. The ``train_segments()`` method in Python and ``h2o.train_segments()`` function in R train an H2O model for each segment (subpopulation) of the training dataset.
 
 Defining a Segmented Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
