@@ -13,7 +13,7 @@ import water.runner.H2ORunner;
 import static org.junit.Assert.*;
 
 @RunWith(H2ORunner.class)
-@CloudSize(5)
+@CloudSize(1)
 public class DropDuplicateRowsTest {
 
   @Test
