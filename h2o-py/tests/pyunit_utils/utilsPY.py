@@ -2968,6 +2968,7 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
 
     na_frame1 = frame1.isna().sum().sum(axis=1)[:,0]
     na_frame2 = frame2.isna().sum().sum(axis=1)[:,0]
+    probVal = numElements/rows1
 
     if compare_NA:      # check number of missing values
         assert na_frame1.flatten() == na_frame2.flatten(), "failed numbers of NA check!  Frame 1 NA number: {0}, frame 2 " \
@@ -2990,86 +2991,17 @@ def compare_frames(frame1, frame2, numElements, tol_time=0, tol_numeric=0, stric
             if str(c2_type) == 'enum':  # orc files do not have enum column type.  We convert it here
                 frame1[col_ind].asfactor()
 
-        if custom_comparators and c1_key in custom_comparators:        
+        if custom_comparators and c1_key in custom_comparators:
             custom_comparators[c1_key](frame1, frame2, col_ind, rows1, numElements)
         elif (str(c1_type) == 'string') or (str(c1_type) == 'enum'):
             # compare string
-            compareOneStringColumn(frame1, frame2, col_ind, rows1, numElements)
+            compare_frames_local_onecolumn_NA_string(frame1[col_ind], frame2[col_ind], prob=probVal)
         else:
             if str(c2_type) == 'time':  # compare time columns
-                compareOneNumericColumn(frame1, frame2, col_ind, rows1, tol_time, numElements)
+                compare_frames_local_onecolumn_NA(frame1[col_ind], frame2[col_ind], prob=probVal, tol=tol_time)
             else:
-                compareOneNumericColumn(frame1, frame2, col_ind, rows1, tol_numeric, numElements)
+                compare_frames_local_onecolumn_NA(frame1[col_ind], frame2[col_ind], prob=probVal, tol=tol_numeric)
     return True
-
-
-def compareOneStringColumn(frame1, frame2, col_ind, rows, numElements):
-    """
-    This function will compare two String columns of two H2O frames to make sure that they are the same.
-
-    :param frame1: H2O frame to be compared
-    :param frame2: H2O frame to be compared
-    :param col_ind: integer denoting column index to compare the two frames
-    :param rows: integer denoting number of rows in the column
-    :param numElements: integer to denote number of rows to compare.  Done to reduce compare time
-    :return: None.  Will throw exceptions if comparison failed.
-    """
-
-    row_indices = list(range(rows))
-    if numElements > 0:
-        random.shuffle(row_indices)
-    else:
-        numElements = rows
-
-    for ele_ind in range(numElements):
-        row_ind = row_indices[ele_ind]
-
-        val1 = frame1[row_ind, col_ind]
-        val2 = frame2[row_ind, col_ind]
-
-        assert val1 == val2, "failed frame values check! frame1 value: {0}, frame2 value: {1} at row {2}, column " \
-                             "{3}".format(val1, val2, row_ind, col_ind)
-
-
-def compareOneNumericColumn(frame1, frame2, col_ind, rows, tolerance, numElements):
-    """
-    This function compares two numeric columns of two H2O frames to make sure that they are close.
-
-    :param frame1: H2O frame to be compared
-    :param frame2: H2O frame to be compared
-    :param col_ind: integer denoting column index to compare the two frames
-    :param rows: integer denoting number of rows in the column
-    :param tolerance: double parameter to limit numerical value difference.
-    :param numElements: integer to denote number of rows to compare.  Done to reduce compare time.
-    :return: None.  Will throw exceptions if comparison failed.
-    """
-
-    row_indices = []
-    if numElements > 0:
-        row_indices = random.sample(range(rows), numElements)
-    else:
-        numElements = rows  # Compare all elements
-        row_indices = list(range(rows))
-
-
-    for ele_ind in range(numElements):
-        row_ind = row_indices[ele_ind]
-
-        val1 = frame1[row_ind, col_ind]
-        val2 = frame2[row_ind, col_ind]
-
-        if not(math.isnan(val1)) and not(math.isnan(val2)): # both frames contain valid elements
-            diff = abs(val1-val2)/max(1, abs(val1), abs(val2))
-            assert diff <= tolerance, "failed frame values check! frame1 value = {0}, frame2 value =  {1}, " \
-                                      "at row {2}, column {3}.  The difference is {4}.".format(val1, val2, row_ind,
-                                                                                               col_ind, diff)
-        elif math.isnan(val1) and math.isnan(val2): # both frame contains missing values
-            continue
-        else:   # something is wrong, one frame got a missing value while the other is fine.
-            assert 1 == 2,  "failed frame values check! frame1 value {0}, frame2 value {1} at row {2}, " \
-                            "column {3}".format(val1, val2, row_ind, col_ind)
-
-import warnings
 
 def expect_warnings(filewithpath, warn_phrase="warn", warn_string_of_interest="warn", number_of_times=1, in_hdfs=False):
     """
@@ -3301,23 +3233,7 @@ def check_ignore_cols_automl(models,names,x,y):
                 "ignored columns are not honored for model " + model
 
 
-def compare_numeric_frames(f1, f2, prob=0.5, tol=1e-6):
-    assert (f1.nrow==f2.nrow) and (f1.ncol==f2.ncol), "The two frames are of different sizes."
-    temp1 = f1.asnumeric()
-    temp2 = f2.asnumeric()
-    for colInd in range(f1.ncol):
-        for rowInd in range(f2.nrow):
-            if (random.uniform(0,1) < prob):
-                if (math.isnan(temp1[rowInd, colInd])):
-                    assert math.isnan(temp2[rowInd, colInd]), "Failed frame values check at row {2} and column {3}! " \
-                                                              "frame1 value: {0}, frame2 value: " \
-                                                              "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd], rowInd, colInd)
-                else:
-                    diff = abs(temp1[rowInd, colInd]-temp2[rowInd, colInd])/max(1.0, abs(temp1[rowInd, colInd]),
-                                                                            abs(temp2[rowInd, colInd]))
-                    assert diff<=tol, "Failed frame values check at row {2} and column {3}! frame1 value: {0}, frame2 value: " \
-                                  "{1}".format(temp1[rowInd, colInd], temp2[rowInd, colInd], rowInd, colInd)
-
+# This method is not changed to local method using as_data_frame because the frame size is too big.
 def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[True, True]):
     for colInd in sorted_column_indices:
         for rowInd in range(0, frame1.nrow-1):
@@ -3344,34 +3260,7 @@ def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[T
                                     assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
                                                                                              "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
                                                                                                                    rowInd+1, frame1[rowInd+1,colInd])
-
-def check_sorted_2_columns(frame1, sorted_column_indices, prob=0.5, ascending=[True, True]):
-    for colInd in sorted_column_indices:
-        for rowInd in range(0, frame1.nrow-1):
-            if (random.uniform(0.0,1.0) < prob):
-                if colInd == sorted_column_indices[0]:
-                    if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
-                        if ascending[colInd]:
-                            assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                     "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                           rowInd+1, frame1[rowInd+1,colInd])
-                        else:
-                            assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                     "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                           rowInd+1, frame1[rowInd+1,colInd])
-                else: # for second column
-                    if not(math.isnan(frame1[rowInd, sorted_column_indices[0]])) and not(math.isnan(frame1[rowInd+1,sorted_column_indices[0]])):
-                        if (frame1[rowInd,sorted_column_indices[0]]==frame1[rowInd+1, sorted_column_indices[0]]):  # meaningful to compare row entries then
-                            if not(math.isnan(frame1[rowInd, colInd])) and not(math.isnan(frame1[rowInd+1,colInd])):
-                                if ascending[colInd]:
-                                    assert frame1[rowInd,colInd] <= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                             "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                                   rowInd+1, frame1[rowInd+1,colInd])
-                                else:
-                                    assert frame1[rowInd,colInd] >= frame1[rowInd+1,colInd], "Wrong sort order: value at row {0}: {1}, value at " \
-                                                                                             "row {2}: {3}".format(rowInd, frame1[rowInd,colInd],
-                                                                                                                   rowInd+1, frame1[rowInd+1,colInd])
-
+# This method is not changed to local method using as_data_frame because the frame size is too big.
 def check_sorted_1_column(frame1, sorted_column_index, prob=0.5, ascending=True):
     totRow = frame1.nrow * prob
     skipRow = int(frame1.nrow/totRow)
