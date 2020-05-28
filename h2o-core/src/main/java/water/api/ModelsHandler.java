@@ -214,7 +214,7 @@ public class ModelsHandler<I extends ModelsHandler.Models, S extends SchemaV3<I,
   public StreamingSchema exportTreeVisualization(int version, ModelExportV3 mexport) {
     Model model = getFromDKV("model_id", mexport.model_id.key());
     if (!(model instanceof ModelWithVisualization))
-      throw new RuntimeException("Trying to visualize model that does not support it.");
+      throw new IllegalArgumentException("Trying to visualize model that does not support it.");
     String filename = JCodeGen.toJavaId(mexport.model_id.key().toString()) + ".zip";
     return new StreamingSchema(new ModelPngWriter((ModelWithVisualization) model), filename);
   }
