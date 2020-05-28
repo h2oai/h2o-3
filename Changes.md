@@ -41,7 +41,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/in
 <ul>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7504'>PUBDEV-7504</a>] - Users now receive a warning if they try to get variable importances in Stacked Ensemble.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7527'>PUBDEV-7527</a>] - In XGBoost, removed the min_sum_hessian_in_leaf and min_data_in_leaf options, which are no longer supported by XGBoost.  
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7527'>PUBDEV-7527</a>] - In XGBoost, removed the min_sum_hessian_in_leaf and min_data_in_leaf options, which are no longer supported by XGBoost. Also added the `colsample_bynode` option.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7549'>PUBDEV-7549</a>] - data.table warning messages are now suppressed inside h2o.automl() in R.
 </li>
