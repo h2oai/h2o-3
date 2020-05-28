@@ -17,7 +17,7 @@ public class ColumnIndicesParser {
    */
   public static int[] parseAndCheckComparedColumnIndices(final Frame deduplicatedFrame, final Val comparedColumns)
       throws IllegalArgumentException {
-    final int[] columnRange;
+    final int[] columnIndices;
 
     if (comparedColumns.isStr()) {
       final String columnName = comparedColumns.getStr();
@@ -25,10 +25,10 @@ public class ColumnIndicesParser {
       if (columnIndex == -1) {
         throw new IllegalArgumentException(String.format("Unknown column name: '%s'", columnName));
       }
-      columnRange = new int[]{columnIndex};
+      columnIndices = new int[]{columnIndex};
     } else if (comparedColumns.isStrs()) {
       final String[] columnNames = comparedColumns.getStrs();
-      columnRange = new int[columnNames.length];
+      columnIndices = new int[columnNames.length];
 
       for (int i = 0; i < columnNames.length; i++) {
         final String columnName = columnNames[i];
@@ -39,21 +39,21 @@ public class ColumnIndicesParser {
           throw new IllegalArgumentException(String.format("Column '%s' is of unsupported type %s for row de-duplication.",
               columnName, Vec.TYPE_STR[deduplicatedFrame.types()[columnIndex]]));
         }
-        columnRange[i] = columnIndex;
+        columnIndices[i] = columnIndex;
       }
 
     } else if (comparedColumns.isNums()) {
       final double[] columnRangeDouble = comparedColumns.getNums();
-      columnRange = new int[columnRangeDouble.length];
+      columnIndices = new int[columnRangeDouble.length];
       for (int i = 0; i < columnRangeDouble.length; i++) {
-        columnRange[i] = (int) columnRangeDouble[i];
-        if (columnRange[i] < 0 || columnRange[i] > deduplicatedFrame.numCols() - 1) {
+        columnIndices[i] = (int) columnRangeDouble[i];
+        if (columnIndices[i] < 0 || columnIndices[i] > deduplicatedFrame.numCols() - 1) {
           throw new IllegalArgumentException(String.format("No such column index: '%d', frame has %d columns," +
-              "maximum index is %d.", columnRange[i], deduplicatedFrame.numCols(), deduplicatedFrame.numCols() - 1));
-        } else if (isUnsupportedVecType(deduplicatedFrame.types()[columnRange[i]])) {
+              "maximum index is %d.", columnIndices[i], deduplicatedFrame.numCols(), deduplicatedFrame.numCols() - 1));
+        } else if (isUnsupportedVecType(deduplicatedFrame.types()[columnIndices[i]])) {
           throw new IllegalArgumentException(String.format("Column '%s' is of unsupported type %s for row de-duplication.",
-              deduplicatedFrame.name(columnRange[i]),
-              Vec.TYPE_STR[deduplicatedFrame.types()[columnRange[i]]]));
+              deduplicatedFrame.name(columnIndices[i]),
+              Vec.TYPE_STR[deduplicatedFrame.types()[columnIndices[i]]]));
         }
       }
     } else {
@@ -61,7 +61,7 @@ public class ColumnIndicesParser {
           "column range. Given type: %s", comparedColumns.type()));
     }
 
-    return columnRange;
+    return columnIndices;
   }
 
   private static boolean isUnsupportedVecType(final byte vecType) {
