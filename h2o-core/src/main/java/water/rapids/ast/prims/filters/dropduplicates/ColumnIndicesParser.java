@@ -49,7 +49,7 @@ public class ColumnIndicesParser {
         columnIndices[i] = (int) columnRangeDouble[i];
         if (columnIndices[i] < 0 || columnIndices[i] > deduplicatedFrame.numCols() - 1) {
           throw new IllegalArgumentException(String.format("No such column index: '%d', frame has %d columns," +
-              "maximum index is %d.", columnIndices[i], deduplicatedFrame.numCols(), deduplicatedFrame.numCols() - 1));
+              "maximum index is %d. ", columnIndices[i], deduplicatedFrame.numCols(), deduplicatedFrame.numCols() - 1));
         } else if (isUnsupportedVecType(deduplicatedFrame.types()[columnIndices[i]])) {
           throw new IllegalArgumentException(String.format("Column '%s' is of unsupported type %s for row de-duplication.",
               deduplicatedFrame.name(columnIndices[i]),
