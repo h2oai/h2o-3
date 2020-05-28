@@ -188,16 +188,6 @@ public class StackedEnsembleStepsProvider
                     }
 
                     @Override
-                    protected StackedEnsembleParameters getStackedEnsembleParameters(Key<Model>[] baseModels, boolean isLast) {
-                        StackedEnsembleParameters params = super.getStackedEnsembleParameters(baseModels, isLast);
-                        GLMModel.GLMParameters metalearnerParams = new GLMModel.GLMParameters();
-                        // AUTO has non negative constraint to make it easier to reason about the whole ensemble
-                        params._metalearner_algorithm = Metalearner.Algorithm.AUTO;
-                        params._metalearner_parameters = metalearnerParams;
-                        return params;
-                    }
-
-                    @Override
                     protected Job<StackedEnsembleModel> startJob() {
                         return stack(_algo + "_MonotonicallyConstrainedModels", getBaseModels(), true);
                     }
