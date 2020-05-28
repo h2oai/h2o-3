@@ -13,8 +13,10 @@ test.pubdev_4897 <- function() {
     dev.off()
     unlink("plot")
     recordedPlotAttributes <- capture.output(str(recordedPlot))
-    xAxisAlignment = grep(pattern = "\\$ x   : num \\[1:3\\] 1 2 3", x = recordedPlotAttributes, ignore.case = TRUE)
-    expect_true(length(xAxisAlignment) > 0)
+    xAxisAlignment1 = grep(pattern = "\\$ x   : num 1", x = recordedPlotAttributes, ignore.case = TRUE)
+    xAxisAlignment2 = grep(pattern = "\\$ x   : num 2", x = recordedPlotAttributes, ignore.case = TRUE)
+    xAxisAlignment3 = grep(pattern = "\\$ x   : num 3", x = recordedPlotAttributes, ignore.case = TRUE)
+    expect_true(xAxisAlignment1 < xAxisAlignment2  && xAxisAlignment3 > xAxisAlignment2)
 }
 
 doTest("PUBDEV-$4897: PDP use different order of categorical", test.pubdev_4897)
