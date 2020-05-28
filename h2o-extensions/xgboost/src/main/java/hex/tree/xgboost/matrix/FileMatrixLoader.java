@@ -21,7 +21,7 @@ public class FileMatrixLoader extends MatrixLoader {
     }
 
     private DMatrixProvider loadProvider(File file) {
-        LOG.info("Loading matrix data from " + file + " of size " + file.length() + ", " + (file.length() / (1000d * 1000 * 1000)) + "G");
+        LOG.info("Loading matrix data from " + file + " of size " + (file.length() / (1000d * 1000 * 1000)) + "G");
         try (ObjectInputStream is = new ObjectInputStream(new FileInputStream(file))) {
             return (DMatrixProvider) is.readObject();
         } catch (ClassNotFoundException | IOException e) {
