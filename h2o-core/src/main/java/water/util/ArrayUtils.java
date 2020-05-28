@@ -1485,10 +1485,10 @@ public class ArrayUtils {
   }
 
   public static double [][] convertTo2DMatrix(double [] x, int N) {
-    assert x.length % N == 0;
-    int len = x.length/N;
+    assert x.length % N == 0: "number of coefficient should be divisible by number of coefficients per class ";
+    int len = x.length/N; // N is number of coefficients per class
     double [][] res = new double[len][];
-    for(int i = 0; i < len; ++i) {
+    for(int i = 0; i < len; ++i) { // go through each class
       res[i] = MemoryManager.malloc8d(N);
       System.arraycopy(x,i*N,res[i],0,N);
     }

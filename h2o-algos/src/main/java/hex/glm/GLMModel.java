@@ -1126,6 +1126,23 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     public String[] coefficientNames() {
       return _coefficient_names;
     }
+
+    // This method is to take the coefficient names of one class and extend it to
+    // coefficient names for all N classes.
+    public String[] multiClassCoeffNames() {
+      String[] responseDomain = _domains[_domains.length-1];
+      String[] multinomialNames = new String[_coefficient_names.length*responseDomain.length];
+      int coeffLen = _coefficient_names.length;
+      int responseLen = responseDomain.length;
+      int counter = 0;
+      for (int respInd = 0; respInd < responseLen; respInd++) {
+        for (int coeffInd = 0; coeffInd < coeffLen; coeffInd++) {
+          multinomialNames[counter++] = _coefficient_names[coeffInd] + "_" + responseDomain[respInd];
+        }
+      }
+      return multinomialNames;
+    }
+    
     public String[] randomcoefficientNames() { return _random_coefficient_names; }
     public double[] ubeta() { return _ubeta; }
 
@@ -1145,37 +1162,29 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return MakeGLMModelHandler.oneHot(fr,interactions,useAll,standardize,false,skipMissing);
     }
 
-    public GLMOutput(DataInfo dinfo, String[] column_names, String[] column_types, String[][] domains, String[] coefficient_names, boolean binomial) {
+    public GLMOutput(DataInfo dinfo, String[] column_names, String[] column_types, String[][] domains, 
+                     String[] coefficient_names, double[] beta, boolean binomial, boolean multinomial, boolean ordinal) {
       super(dinfo._weights, dinfo._offset, dinfo._fold);
       _dinfo = dinfo.clone();
       setNames(column_names, column_types);
       _domains = domains;
       _coefficient_names = coefficient_names;
       _binomial = binomial;
-      _nclasses = binomial?2:1;
+      _multinomial = multinomial;
+      _ordinal = ordinal;
+      _nclasses = _binomial?2:(_multinomial || _ordinal?beta.length/coefficient_names.length:1);
       if(_binomial && domains[domains.length-1] != null) {
         assert domains[domains.length - 1].length == 2:"Unexpected domains " + Arrays.toString(domains);
         binomialClassNames = domains[domains.length - 1];
       }
-    }
-
-    public GLMOutput(DataInfo dinfo, String[] column_names, String[] column_types, String[][] domains, String[] coefficient_names, boolean binomial, double[] beta) {
-      this(dinfo,column_names,column_types, domains,coefficient_names,binomial);
-      assert !ArrayUtils.hasNaNsOrInfs(beta);
-      _global_beta=beta;
+      assert !ArrayUtils.hasNaNsOrInfs(beta): "Coefficients contain NA or Infs.";
+      if (_ordinal || _multinomial)
+        _global_beta_multinomial=ArrayUtils.convertTo2DMatrix(beta, coefficient_names.length);
+      else
+        _global_beta=beta;
       _submodels = new Submodel[]{new Submodel(0,beta,-1,Double.NaN,Double.NaN)};
     }
-
-    public GLMOutput(DataInfo dinfo, String[] column_names, String[] column_types, String[][] domains, String[] coefficient_names, boolean binomial, double[] beta, double[] ubeta) {
-      this(dinfo,column_names,column_types, domains,coefficient_names,binomial);
-      assert !ArrayUtils.hasNaNsOrInfs(beta);
-      _global_beta=beta;
-      _ubeta = ubeta;
-      Submodel sm = new Submodel(0,beta,-1,Double.NaN,Double.NaN);
-      sm.ubeta = Arrays.copyOf(ubeta, ubeta.length);
-      _submodels = new Submodel[]{sm};
-    }
-
+    
     public GLMOutput() {_isSupervised = true; _nclasses = -1;}
 
     public GLMOutput(GLM glm) {
@@ -1362,9 +1371,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int len = b.length/_output.nclasses();
       assert b.length == len*_output.nclasses();
       for(int c = 0; c < _output.nclasses(); ++c) {
-        String prefix =  responseDomain[c] + "_";
+        String postfix =  "_"+responseDomain[c];
         for (int i = 0; i < len; ++i)
-          res.put(prefix + _output._coefficient_names[i], b[c*len+i]);
+          res.put(_output._coefficient_names[i]+postfix, b[c*len+i]);
       }
     } else for (int i = 0; i < b.length; ++i)
         res.put(_output._coefficient_names[i], b[i]);
@@ -1381,9 +1390,9 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       int len = b.length/_output.nclasses();
       assert b.length == len*_output.nclasses();
       for(int c = 0; c < _output.nclasses(); ++c) {
-        String prefix =  responseDomain[c] + "_";
+        String postfix =  "_" + responseDomain[c];
         for (int i = 0; i < len; ++i)
-          res.put(prefix + _output._coefficient_names[i], b[c*len+i]);
+          res.put(_output._coefficient_names[i]+postfix, b[c*len+i]);
       }
     } else {
       if (standardized) b = this._output.getNormBeta();
