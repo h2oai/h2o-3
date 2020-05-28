@@ -195,9 +195,69 @@ def test_stacked_ensemble_accepts_mixed_definition_of_base_models():
     ]
 
 
+def test_stacked_ensemble_is_able_to_use_imported_base_models():
+    import tempfile, shutil, glob
+    train = h2o.import_file(pu.locate("smalldata/iris/iris_train.csv"))
+    test = h2o.import_file(pu.locate("smalldata/iris/iris_test.csv"))
+    x = train.columns
+    y = "species"
+    x.remove(y)
+
+    nfolds = 2
+    gbm = H2OGradientBoostingEstimator(nfolds=nfolds,
+                                       fold_assignment="Modulo",
+                                       keep_cross_validation_predictions=True)
+    gbm.train(x=x, y=y, training_frame=train)
+    drf = H2ORandomForestEstimator(nfolds=nfolds,
+                                  fold_assignment="Modulo",
+                                  keep_cross_validation_predictions=True)
+    drf.train(x=x, y=y, training_frame=train)
+
+    se = H2OStackedEnsembleEstimator(training_frame=train,
+                                     validation_frame=test,
+                                     base_models=[gbm.model_id, drf.model_id])
+    se.train(x=x, y=y, training_frame=train)
+
+    assert len(se.base_models) == 2
+
+    TMP_DIR = tempfile.mkdtemp()
+    try:
+        h2o.save_model(gbm, TMP_DIR + "/gbm.model")
+        h2o.save_model(drf, TMP_DIR + "/drf.model")
+
+        gbm_holdout_id = gbm.cross_validation_holdout_predictions().frame_id
+        drf_holdout_id = drf.cross_validation_holdout_predictions().frame_id
+        h2o.export_file(gbm.cross_validation_holdout_predictions(), TMP_DIR + "/gbm.holdout")
+        h2o.export_file(drf.cross_validation_holdout_predictions(), TMP_DIR + "/drf.holdout")
+
+        h2o.remove_all()
+
+        h2o.import_file(TMP_DIR + "/gbm.holdout", gbm_holdout_id)
+        h2o.import_file(TMP_DIR + "/drf.holdout", drf_holdout_id)
+
+        gbm = h2o.upload_model(glob.glob(TMP_DIR + "/gbm.model/*")[0])
+        drf = h2o.upload_model(glob.glob(TMP_DIR + "/drf.model/*")[0])
+
+        train = h2o.import_file(pu.locate("smalldata/iris/iris_train.csv"), "some_other_name_of_training_frame")
+        test = h2o.import_file(pu.locate("smalldata/iris/iris_test.csv"), "some_other_name_of_test_frame")
+        x = train.columns
+        y = "species"
+        x.remove(y)
+
+        se_loaded = H2OStackedEnsembleEstimator(training_frame=train,
+                                                validation_frame=test,
+                                                base_models=[gbm.model_id, drf.model_id])
+        se_loaded.train(x=x, y=y, training_frame=train)
+
+        assert len(se_loaded.base_models) == 2
+    finally:
+        shutil.rmtree(TMP_DIR)
+
+
 pu.run_tests([
     test_suite_stackedensemble_base_models(),
     test_suite_stackedensemble_base_models(blending=True),
     test_base_models_are_populated,
     test_stacked_ensemble_accepts_mixed_definition_of_base_models(),
+    test_stacked_ensemble_is_able_to_use_imported_base_models,
 ])
