@@ -2,6 +2,73 @@
 
 ## H2O
 
+### Zahradnik (3.30.0.4) - 5/29/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7362'>PUBDEV-7362</a>] - h2o.merge() now works corrctly when you joining an H2O frame where the join is on a <dbl> column to another frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7454'>PUBDEV-7454</a>] - Fixed an issue that caused h2o.get_leaderboard to fail after creating an AutoML object, disconnecting the client, starting a new session, and then reconecting to the running H2O cluster for the re-attached H2OAutoML object.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7491'>PUBDEV-7491</a>] - Stacked Ensemble now inherits distributions/families supported by the metalearner. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7501'>PUBDEV-7501</a>] - Fixed an issue that caused AutoML to fail when the target included special characters.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7565'>PUBDEV-7565</a>] - CAcert is now supported with the Python API. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7569'>PUBDEV-7569</a>] - Water Meter and Form Login now work correctly.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7572'>PUBDEV-7572</a>] - In Aggregator, added support for retrieving the Mappings Frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7582'>PUBDEV-7582</a>] - Added support for using monotone constraints with Tweedie distribution in GBM.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-3292'>PUBDEV-3292</a>] - Added a new drop_duplicates function to drop duplicate observations from an H2O frame.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6250'>PUBDEV-6250</a>] - Partial dependence plots are now available for multiclass problems.
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7504'>PUBDEV-7504</a>] - Users now receive a warning if they try to get variable importances in Stacked Ensemble.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7527'>PUBDEV-7527</a>] - In XGBoost, removed the min_sum_hessian_in_leaf and min_data_in_leaf options, which are no longer supported by XGBoost.  
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7549'>PUBDEV-7549</a>] - data.table warning messages are now suppressed inside h2o.automl() in R.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7518'>PUBDEV-7518</a>] - Added a "Training Models" section to the User Guide, which describes train() and train_segments(). (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7525'>PUBDEV-7525</a>] - Updated XGBoost to indicate that this version requires CUDA 9, and included information showing users how to check their CUDA version.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7526'>PUBDEV-7526</a>] - Added information about GAM support to the missing_values_handling parameter appendix entry.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7528'>PUBDEV-7528</a>] - Added H2O cluster memory best practices for using XGBoost. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7531'>PUBDEV-7531</a>] - Updated the Minio Instance topic and removed references to the core-site.xml, which is not used. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7574'>PUBDEV-7574</a>] - `monotone_constraints` can now be used with `distribution=tweedie`.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7576'>PUBDEV-7576</a>] - Updated the PDP topic to include support for multinomial problems and updated the examples. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7585'>PUBDEV-7585</a>] - In the API-related Changes topic, noted that `min_sum_hessian_in_leaf` and `min_data_in_leaf`  are no longer supported in XGBoost. (STILL OPEN)
+</li>
+</ul>
+
+
 ### Zahradnik (3.30.0.3) - 5/12/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/3/index.html</a>
