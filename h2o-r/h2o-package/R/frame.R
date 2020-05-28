@@ -4053,6 +4053,7 @@ use.package <- function(package,
 #'
 #' @param x An \code{R} object.
 #' @param destination_frame A string with the desired name for the H2OFrame
+#' @param use_datatable allow usage of data.table
 #' @param \dots arguments passed to method arguments.
 #' @export
 #' @examples 
@@ -4246,7 +4247,7 @@ as.h2o.Matrix <- function(x, destination_frame="", use_datatable=TRUE, ...) {
 #' as.data.frame(prostate)
 #' }
 #' @export
-as.data.frame.H2OFrame <- function(x, use_datatable=TRUE, ...) {
+as.data.frame.H2OFrame <- function(x, ...) {
   # Force loading of the types
   .fetch.data(x,1L)
     
@@ -4276,7 +4277,7 @@ as.data.frame.H2OFrame <- function(x, use_datatable=TRUE, ...) {
   useHexString <- getRversion() >= "3.1"
   # We cannot use data.table by default since its handling of escaping inside quoted csv values is not very good
   # in some edge cases its simply impossible to load data in correct format without additional post processing
-  useDataTable <- use_datatable && getOption("h2o.fread", FALSE) && use.package("data.table")
+  useDataTable <- getOption("h2o.fread", FALSE) && use.package("data.table")
   urlSuffix <- paste0('DownloadDataset',
                       '?frame_id=', URLencode(h2o.getId(x)),
                       '&hex_string=', ifelse(useHexString, "true", "false"),
