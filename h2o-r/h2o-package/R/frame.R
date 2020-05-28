@@ -2931,6 +2931,39 @@ cor <- function (x, ...)
 }
 
 #'
+#' Drops duplicated rows.
+#'
+#' Drops duplicated rows across specified columns.
+#'
+#' @param frame An H2OFrame object to drop duplicates on.
+#' @param columns Columns to compare during the duplicate detection process.
+#' @param keep Which rows to keep. The "first" value (default) keeps the first row and delets the rest. 
+#' The "last" keeps the last row.
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' 
+#' data <- as.h2o(iris)
+#' deduplicated_data <- h2o.drop_duplicates(data, c("Species", "Sepal.Length"), keep = "first")
+#' }
+#' @export
+h2o.drop_duplicates <- function(frame , columns, keep = "first") {
+  if (missing(columns)) {
+    stop("Frame to drop duplicates in must be specified.")
+  }
+  
+  if (missing(columns)) {
+    stop("Columns to compare fo de-duplication process must be specified.")
+  }
+  
+  if(length(columns) == 1){
+    columns <- .quote(columns)
+  }
+  .newExpr("dropdup", frame, columns, keep)
+}
+
+#'
 #' Standard Deviation of a column of data.
 #'
 #' Obtain the standard deviation of a column of data.
@@ -4053,6 +4086,7 @@ use.package <- function(package,
 #'
 #' @param x An \code{R} object.
 #' @param destination_frame A string with the desired name for the H2OFrame
+#' @param use_datatable allow usage of data.table
 #' @param \dots arguments passed to method arguments.
 #' @export
 #' @examples 
@@ -4246,7 +4280,7 @@ as.h2o.Matrix <- function(x, destination_frame="", use_datatable=TRUE, ...) {
 #' as.data.frame(prostate)
 #' }
 #' @export
-as.data.frame.H2OFrame <- function(x, use_datatable=TRUE, ...) {
+as.data.frame.H2OFrame <- function(x, ...) {
   # Force loading of the types
   .fetch.data(x,1L)
     
@@ -4276,7 +4310,7 @@ as.data.frame.H2OFrame <- function(x, use_datatable=TRUE, ...) {
   useHexString <- getRversion() >= "3.1"
   # We cannot use data.table by default since its handling of escaping inside quoted csv values is not very good
   # in some edge cases its simply impossible to load data in correct format without additional post processing
-  useDataTable <- use_datatable && getOption("h2o.fread", FALSE) && use.package("data.table")
+  useDataTable <- getOption("h2o.fread", FALSE) && use.package("data.table")
   urlSuffix <- paste0('DownloadDataset',
                       '?frame_id=', URLencode(h2o.getId(x)),
                       '&hex_string=', ifelse(useHexString, "true", "false"),

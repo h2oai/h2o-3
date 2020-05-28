@@ -3326,6 +3326,11 @@ class H2OFrame(Keyed):
         if measure is None: measure = "l2"
         return H2OFrame._expr(expr=ExprNode("distance", self, y, measure))._frame()
 
+    def drop_duplicates(self, columns, keep = "first"):
+        assert_is_type(columns, [int], [str])
+        assert_is_type(keep,  Enum("first", "last"))
+    
+        return H2OFrame._expr(expr=ExprNode("dropdup", self, columns, keep))._frame()
 
     def strdistance(self, y, measure=None, compare_empty=True):
         """
