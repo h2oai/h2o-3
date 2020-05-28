@@ -139,7 +139,7 @@ public class StackedEnsembleStepsProvider
                         return stack(_algo+"_AllModels", getBaseModels(), true);
                     }
                 },
-                new StackedEnsembleModelStep("monotone", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
+                new StackedEnsembleModelStep("monotonic", DEFAULT_MODEL_TRAINING_WEIGHT, aml()) {
                     { _description = _description+" (built using monotonically constrained AutoML models)"; }
 
                     boolean hasMonotoneConstrains(Key<Model> modelKey) {
@@ -167,14 +167,14 @@ public class StackedEnsembleStepsProvider
                         }
                         if (monotoneModels == 1) {
                             aml().job().update(getAllocatedWork().consume(),
-                                    "Only one monotone base model; skipping this StackedEnsemble");
+                                    "Only one monotonic base model; skipping this StackedEnsemble");
                             aml().eventLog().info(EventLogEntry.Stage.ModelTraining,
-                                    String.format("Skipping StackedEnsemble '%s' since there is only one monotone model to stack", _id));
+                                    String.format("Skipping StackedEnsemble '%s' since there is only one monotonic model to stack", _id));
                         } else {
                             aml().job().update(getAllocatedWork().consume(),
-                                    "No monotone base model; skipping this StackedEnsemble");
+                                    "No monotonic base model; skipping this StackedEnsemble");
                             aml().eventLog().info(EventLogEntry.Stage.ModelTraining,
-                                    String.format("Skipping StackedEnsemble '%s' since there is no monotone model to stack", _id));
+                                    String.format("Skipping StackedEnsemble '%s' since there is no monotonic model to stack", _id));
                         }
                         return false;
                     }
@@ -189,7 +189,7 @@ public class StackedEnsembleStepsProvider
 
                     @Override
                     protected Job<StackedEnsembleModel> startJob() {
-                        return stack(_algo + "_MonotonicallyConstrainedModels", getBaseModels(), true);
+                        return stack(_algo + "_Monotonic", getBaseModels(), true);
                     }
                 },
         };

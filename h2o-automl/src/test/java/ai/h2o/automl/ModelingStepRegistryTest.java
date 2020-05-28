@@ -97,7 +97,7 @@ public class ModelingStepRegistryTest extends TestUtil {
                 "def_1", "XRT",
                 "def_1", "def_2", "def_3", "def_4", "def_5", "grid_1", "lr_annealing",
                 "def_1",
-                "best", "all", "monotone",
+                "best", "all", "monotonic",
                 "def_1", "def_2", "def_3", "grid_1", "lr_annealing", "lr_search"
         ), orderedStepIds);
 
