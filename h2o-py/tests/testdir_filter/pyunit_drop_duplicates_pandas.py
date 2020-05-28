@@ -3,8 +3,7 @@ sys.path.insert(1, "../../")
 import h2o
 from tests import pyunit_utils
 from pandas import DataFrame
-import pandas._testing as tm
-
+from pandas.util.testing import assert_frame_equal
 # Compares dropping duplicates with pandas directly
 def pubdev_drop_duplicates():
     df = DataFrame(
@@ -20,22 +19,22 @@ def pubdev_drop_duplicates():
     # single column
     result = h2o_df.drop_duplicates(["AAA"]).as_data_frame()
     expected = df[:2]
-    tm.assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected)
 
     result = h2o_df.drop_duplicates(["AAA"], keep="last").as_data_frame()
     expected = df.loc[[6, 7]].reset_index(drop=True) # Index has to be re-set, as H2O treats it differently
-    tm.assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected)
 
     # multi column
     expected = df.loc[[0, 1, 2, 3]].reset_index(drop=True)
     result = h2o_df.drop_duplicates(["AAA", "B"]).as_data_frame()
-    tm.assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected)
     result = h2o_df.drop_duplicates(["AAA", "B"]).as_data_frame()
-    tm.assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected)
 
     result = h2o_df.drop_duplicates(["AAA", "B"], keep="last").as_data_frame()
     expected = df.loc[[0, 5, 6, 7]].reset_index(drop=True)
-    tm.assert_frame_equal(result, expected)
+    assert_frame_equal(result, expected)
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(pubdev_drop_duplicates)

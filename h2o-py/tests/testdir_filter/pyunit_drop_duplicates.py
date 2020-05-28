@@ -57,7 +57,8 @@ def compare_dataset_deduplication(dataPath, columns, keep):
     deduplicated_frame = data.drop_duplicates(columns=columns, keep=keep)
     
     data_pd = data.as_data_frame()
-    deduplicated_frame_pd = data_pd.drop_duplicates(subset=columns, keep=keep, ignore_index=True)
+    deduplicated_frame_pd = data_pd.drop_duplicates(subset=columns, keep=keep)
+    deduplicated_frame_pd.reset_index(drop=True, inplace=True)
     assert_frame_equal(deduplicated_frame_pd, deduplicated_frame.as_data_frame())
 
 
