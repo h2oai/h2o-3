@@ -9,6 +9,14 @@ def class_extensions():
             out_frame_name = self._model_json["output"]["output_frame"]["name"]
             return H2OFrame.get_frame(out_frame_name)
 
+    @property
+    def mapping_frame(self):
+        if self._model_json is None:
+            return None
+        mj = self._model_json
+        if mj.get("output", {}).get("mapping_frame", {}).get("name") is not None:
+            mapping_frame_name = mj["output"]["mapping_frame"]["name"]
+            return H2OFrame.get_frame(mapping_frame_name)
 
 extensions = dict(
     __class__=class_extensions
@@ -116,8 +124,8 @@ examples = dict(
 ...           "save_mapping_frame": True}
 >>> agg = H2OAggregatorEstimator(**params)
 >>> agg.train(training_frame=df)
->>> new_df = agg.aggregated_frame
->>> new_df
+>>> mapping_frame = agg.mapping_frame
+>>> mapping_frame
 """,
     target_num_exemplars="""
 >>> df = h2o.create_frame(rows=10000,
