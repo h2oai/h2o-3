@@ -85,6 +85,169 @@ Grid Search in R and Python
         {'strategy': "RandomDiscrete", 'stopping_tolerance': 0.001, 'stopping_rounds': 10}
         {'strategy': "RandomDiscrete", 'stopping_metric': "misclassification", 'stopping_tolerance': 0.0005, 'stopping_rounds': 5}
 
+Saving and Loading a Grid Search
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+H2O supports saving and loading grids even after a cluster wipe or complete cluster restart. The ``save_grid`` function will export a grid and its models into a given folder while the ``load_grid`` function loads a previously saved grid and all its models from the given folder.
+
+There are two modes to save a grid (in both R and Python):
+
+- Use auto-checkpointing and supply the ``export_checkpoitns_dir`` parameter
+- Call the new function ``h2o.save_grid`` for manual export
+
+Checkpointing Example
+'''''''''''''''''''''
+
+.. tabs::
+  .. code-tab:: r R
+
+   library(h2o)
+
+   h2o.init()
+
+   # Import the iris dataset into H2O
+   iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+
+   # Set the hyperparameters
+   ntrees_opts = c(1, 5)
+   learn_rate_opts = c(0.1, 0.01)
+   size_of_hyper_space = length(ntrees_opts) * length(learn_rate_opts)
+   hyper_parameters = list(ntrees = ntrees_opts, 
+                           learn_rate = learn_rate_opts)
+
+   # Build the grid and set the grid ID
+   baseline_grid <- h2o.grid("gbm", 
+                             grid_id = "gbm_grid_test", 
+                             x = 1:4, 
+                             y = 5, 
+                             training_frame = iris, 
+                             hyper_params = hyper_parameters, 
+                             export_checkpoints_dir = tempdir())
+   grid_id <- baseline_grid@grid_id
+   baseline_model_count <- length(baseline_grid@model_ids)
+
+   # Wipe the cloud to simulate a cluster restart 
+   #(the models will no longer be available)
+   h2o.removeAll()
+
+   # Retrieve the saved grid
+   grid <- h2o.loadGrid(paste0(tempdir(), "/", grid_id))
+   grid
+
+
+  .. code-tab:: python
+
+   import h2o
+   import tempfile
+   from collections import OrderedDict
+   from h2o.grid.grid_search import H2OGridSearch
+   from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
+   h2o.init()
+
+   # Import the iris dataset into H2O
+   iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+   # Set the hyperparameters
+   ntrees_opts = [1,5]
+   hyper_parameters = OrderedDict()
+   hyper_parameters["ntrees"] = ntrees_opts
+   checkpoints_dir = tempfile.mkdtemp()
+
+   # Build the grid and set the grid ID
+   gs = H2OGridSearch(H2OGradientBoostingEstimator, 
+                      hyper_params=hyper_parameters, 
+                      export_checkpoints_dir=checkpoints_dir)
+   gs.train(x=list(range(4)), y=4, training_frame=iris)
+   grid_id = gs.grid_id
+   old_grid_model_count = len(gs.model_ids)
+
+   # Wipe the cloud to simulate a cluster restart 
+   #(the models will no longer be available)
+   h2o.remove_all()
+
+   # Retrieve the saved grid
+   grid = h2o.load_grid(checkpoints_dir + "/" + grid_id)
+   grid
+
+Manual Export Example
+'''''''''''''''''''''
+
+.. tabs::
+  .. code-tab:: r R
+
+   library(h2o)
+
+   h2o.init()
+
+   # Import the iris datatset
+   iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+
+   # Set the hyperparameters
+   ntrees_opts = c(1, 5)
+   learn_rate_opts = c(0.1, 0.01)
+   size_of_hyper_space = length(ntrees_opts) * length(learn_rate_opts)
+   hyper_parameters = list(ntrees = ntrees_opts, 
+                           learn_rate = learn_rate_opts)
+
+   # Build the grid and set the grid ID
+   baseline_grid <- h2o.grid("gbm", 
+                             grid_id="gbm_grid_test", 
+                             x=1:4, 
+                             y=5, 
+                             training_frame=iris, 
+                             hyper_params = hyper_parameters)
+   grid_id <- baseline_grid@grid_id
+   saved_path <- h2o.saveGrid(grid_directory = tempdir(), 
+                              grid_id = grid_id)
+   baseline_model_count <- length(baseline_grid@model_ids)
+   print(baseline_grid@model_ids)
+
+   # Wipe the cloud to simulate cluster restart 
+   #(the models will no longer be available)
+   h2o.removeAll()
+
+   # Retrieve the saved grid
+   grid <- h2o.loadGrid(saved_path)
+   grid
+
+  .. code-tab:: python
+  
+   import h2o
+   import tempfile
+   from collections import OrderedDict
+   from h2o.grid.grid_search import H2OGridSearch
+   from h2o.estimators.gbm import H2OGradientBoostingEstimator
+
+   h2o.init()
+
+   # Import the iris dataset
+   iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+   # Set the hyperparameters
+   ntrees_opts = [1, 3]
+   learn_rate_opts = [0.1, 0.01, .05]
+   hyper_parameters = OrderedDict()
+   hyper_parameters["learn_rate"] = learn_rate_opts
+   hyper_parameters["ntrees"] = ntrees_opts
+   checkpoints_dir = tempfile.mkdtemp()
+
+   # Build the grid and set the grid ID
+   gs = H2OGridSearch(H2OGradientBoostingEstimator, 
+                      hyper_params=hyper_parameters)
+   gs.train(x=list(range(4)), y=4, training_frame=train)
+   grid_id = gs.grid_id
+   old_grid_model_count = len(gs.model_ids)
+   saved_path = h2o.save_grid(checkpoints_dir, grid_id)
+
+   # Wipe the cloud to simulate cluster restart 
+   #(the models will no longer be available)
+   h2o.remove_all()
+
+   # Retrieve the saved grid
+   grid = h2o.load_grid(saved_path)
+   grid
+
 
 Grid Search Examples
 ~~~~~~~~~~~~~~~~~~~~
@@ -202,7 +365,6 @@ Grid Search Examples
 
     best_gbm_perf1.auc()
     # 0.7781778619721595
-
 
 
 Random Grid Search Examples
