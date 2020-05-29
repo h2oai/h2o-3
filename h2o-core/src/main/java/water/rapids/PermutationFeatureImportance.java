@@ -13,7 +13,6 @@ import java.util.*;
 public class PermutationFeatureImportance /* extends VarImp */ {
     
     private Model _model;
-    public Frame _ouput;
     private Frame _train_fr; // original dataset used to train model
     private Frame _validate_dataset; // original dataset used to train model
     private Frame _predcited_frame;
@@ -30,6 +29,8 @@ public class PermutationFeatureImportance /* extends VarImp */ {
     int m_maxRows;
     TwoDimTable _PFI_metrics_table; // contains feature importance 'score' of each feature
     
+    public TwoDimTable getTable() {return _PFI_metrics_table;}
+    
     public PermutationFeatureImportance(Model model) {_model = model;}
 
     public PermutationFeatureImportance(Model model, Frame data_set, Frame prediction_frame) {
@@ -41,6 +42,12 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         _responce_col = _model._parms._response_column;
         _OGmodel_reliance_scoring_history = _model._output._scoring_history;
     }
+    
+    public void getFrameAndScoredModel(Frame fr, Frame scored){
+        _train_fr = fr;
+        _predcited_frame = scored;
+    }
+    
     /**
      * Creates a `TwoDimTable` having the feature names as columns
      *                                    metrics       as rows     (based from `_model._output._training_metrics`)
@@ -144,13 +151,13 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         hex.ModelMetricsBinomial sh_mm = hex.ModelMetricsBinomial.getFromDKV(_model, _model._parms.train());
 
         if (!Double.isNaN(sh_mm.mse()))
-            _PFI_metrics_table.set(0, skipped? col - 1 : col, 1 - lm.og_mse/sh_mm.mse() ); // 0 is MSE
+            _PFI_metrics_table.set(0, skipped? col - 1 : col,  lm.og_mse/sh_mm.mse() ); // 0 is MSE
 
         if (!Double.isNaN(sh_mm._logloss))
-            _PFI_metrics_table.set(1, skipped? col - 1 : col, 1 - lm.og_logloss/sh_mm.logloss() ); // 1 is LOGLOSS
+            _PFI_metrics_table.set(1, skipped? col - 1 : col, lm.og_logloss/sh_mm.logloss() ); // 1 is LOGLOSS
     
         if (!Double.isNaN(sh_mm.auc_obj()._auc))
-            _PFI_metrics_table.set(2, skipped? col - 1 : col, 1 - lm.og_auc/sh_mm.auc_obj()._auc ); // 2 is AUC
+            _PFI_metrics_table.set(2, skipped? col - 1 : col, lm.og_auc/sh_mm.auc_obj()._auc ); // 2 is AUC
         
     }
     
@@ -188,7 +195,7 @@ public class PermutationFeatureImportance /* extends VarImp */ {
             Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(_train_fr.vec(features[f]));
             Vec og_feature = _train_fr.replace(f, shuffled_feature);
             DKV.put(_train_fr); // "Caller must perform global update (DKV.put) on this updated frame"
-
+            
             // score the model again and compute diff
             Frame new_score = _model.score(_train_fr);
 
@@ -203,7 +210,7 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         }
         HashMap<String, Double> sorted_FI = sortHashMapByValues(_FI);
 //        System.out.print(_PFI_metrics_table);
-        return sortHashMapByValues(_FI);
+        return sortHashMapByValues(_FI); // THIS IS NOT NEEDED, but leaving it for now
     }
     
     // TODO GET RID OF THIS!
