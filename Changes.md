@@ -17,7 +17,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/in
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7501'>PUBDEV-7501</a>] - Fixed an issue that caused AutoML to fail when the target included special characters.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7565'>PUBDEV-7565</a>] - CAcert is now supported with the Python API. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7565'>PUBDEV-7565</a>] - CAcert is now supported with the Python API.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7569'>PUBDEV-7569</a>] - Water Meter and Form Login now work correctly.
 </li>
@@ -50,21 +50,19 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/in
 <h4>Docs</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7518'>PUBDEV-7518</a>] - Added a "Training Models" section to the User Guide, which describes train() and train_segments(). (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7518'>PUBDEV-7518</a>] - Added a "Training Models" section to the User Guide, which describes train() and train_segments(). 
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7525'>PUBDEV-7525</a>] - Updated XGBoost to indicate that this version requires CUDA 9, and included information showing users how to check their CUDA version.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7526'>PUBDEV-7526</a>] - Added information about GAM support to the missing_values_handling parameter appendix entry.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7528'>PUBDEV-7528</a>] - Added H2O cluster memory best practices for using XGBoost. (STILL OPEN)
-</li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7531'>PUBDEV-7531</a>] - Updated the Minio Instance topic and removed references to the core-site.xml, which is not used. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7531'>PUBDEV-7531</a>] - Updated the Minio Instance topic.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7574'>PUBDEV-7574</a>] - `monotone_constraints` can now be used with `distribution=tweedie`.
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7576'>PUBDEV-7576</a>] - Updated the PDP topic to include support for multinomial problems and updated the examples. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7576'>PUBDEV-7576</a>] - Updated the PDP topic to include support for multinomial problems and updated the examples. 
 </li>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7585'>PUBDEV-7585</a>] - In the API-related Changes topic, noted that `min_sum_hessian_in_leaf` and `min_data_in_leaf`  are no longer supported in XGBoost. (STILL OPEN)
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7585'>PUBDEV-7585</a>] - In the API-related Changes topic, noted that `min_sum_hessian_in_leaf` and `min_data_in_leaf`  are no longer supported in XGBoost. 
 </li>
 </ul>
 
