@@ -1,3 +1,5 @@
+.. _isoforest:
+
 Isolation Forest
 ----------------
 

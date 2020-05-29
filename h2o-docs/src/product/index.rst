@@ -65,6 +65,11 @@ Additional Resources:
 .. toctree::
    :maxdepth: 2
 
+   training-models
+
+.. toctree::
+   :maxdepth: 2
+
    cross-validation
 
 .. toctree::

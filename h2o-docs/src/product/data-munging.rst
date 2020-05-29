@@ -14,6 +14,7 @@ This section provides examples of common tasks performed when preparing data for
    data-munging/uploading-data
    data-munging/importing-data
    data-munging/importing-files
+   data-munging/change-column-type
    data-munging/combining-columns
    data-munging/combining-rows
    data-munging/fillnas

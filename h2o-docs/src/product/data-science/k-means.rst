@@ -1,3 +1,5 @@
+.. _kmeans:
+
 K-Means Clustering
 ------------------
 
