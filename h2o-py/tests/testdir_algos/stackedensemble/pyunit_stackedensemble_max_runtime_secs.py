@@ -26,7 +26,7 @@ def prepare_data():
 
 
 def test_stackedensemble_propagates_the_max_runtime_secs():
-    max_runtime_secs = 4
+    max_runtime_secs = 5
     hyper_parameters = dict()
     hyper_parameters["ntrees"] = [1, 3, 5]
     params = dict(
@@ -45,11 +45,44 @@ def test_stackedensemble_propagates_the_max_runtime_secs():
     metalearner = h2o.get_model(se.metalearner()["name"])
 
     # metalearner has the set max_runtine_secs
-    assert metalearner.actual_params['max_runtime_secs'] == max_runtime_secs
+    assert metalearner.actual_params['max_runtime_secs'] <= max_runtime_secs
+    assert metalearner.actual_params['max_runtime_secs'] > 0
 
     # stack ensemble has the set max_runtime_secs
     assert se.max_runtime_secs == max_runtime_secs
 
+
+def test_stackedensemble_respects_the_max_runtime_secs():
+    max_runtime_secs = 1
+    hyper_parameters = dict()
+    hyper_parameters["ntrees"] = [1, 2, 3, 4, 5]
+    params = dict(
+        fold_assignment="modulo",
+        nfolds=3
+    )
+
+    data = prepare_data()
+
+    gs1 = H2OGridSearch(H2OGradientBoostingEstimator(**params), hyper_params=hyper_parameters)
+    gs1.train(data.x, data.y, data.train, validation_frame=data.train)
+
+    big_blending_frame = data.train
+    for i in range(15):
+        big_blending_frame = big_blending_frame.rbind(big_blending_frame)
+
+    se = H2OStackedEnsembleEstimator(
+        base_models=gs1.model_ids,
+        max_runtime_secs=max_runtime_secs,
+        blending_frame=big_blending_frame)
+    se.train(data.x, data.y, data.train)
+
+    assert se.metalearner() is not None
+
+    # We should have SE with just one base model due to time constrains; intercept + base_model ==> 2
+    assert len(se.metalearner().coef()) == 2
+
+
 pu.run_tests([
-    test_stackedensemble_propagates_the_max_runtime_secs
+    test_stackedensemble_propagates_the_max_runtime_secs,
+    test_stackedensemble_respects_the_max_runtime_secs,
 ])

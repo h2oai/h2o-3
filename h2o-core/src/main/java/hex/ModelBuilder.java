@@ -62,6 +62,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     return _job.stop_requested() || timeout();
   }
 
+  protected long remainingTimeSecs() {
+    long remainingTimeMillis = _build_model_countdown.remainingTime();
+    if (remainingTimeMillis == Long.MAX_VALUE)
+      return 0;
+    return (long) Math.ceil(remainingTimeMillis / 1000.0);
+  }
+
   /** Default model-builder key */
   public static <S extends Model> Key<S> defaultKey(String algoName) {
     return Key.make(H2O.calcNextUniqueModelId(algoName));

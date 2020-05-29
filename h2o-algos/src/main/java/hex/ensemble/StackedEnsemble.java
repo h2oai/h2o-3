@@ -219,6 +219,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       List<Frame> baseModelPredictions = new ArrayList<>();
 
       for (Key<Model> k : baseModelKeys) {
+        if (shouldStop()) break;
         if (_model._output._metalearner == null || _model.isUsefulBaseModel(k)) {
           Model aModel = DKV.getGet(k);
           if (null == aModel)
@@ -239,6 +240,18 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
         Scope.untrack(levelOneFrame.keysList());
       }
       return levelOneFrame;
+    }
+
+    private boolean shouldStop() {
+      if (stop_requested()) {
+        if (timeout()) {
+          Log.info("Stopping StackedEnsemble training because of timeout");
+          return true;
+        } else {
+          throw new Job.JobCancelledException();
+        }
+      }
+      return false;
     }
 
     protected Frame buildPredictionsForBaseModel(Model model, Frame frame) {
@@ -321,7 +334,8 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
                 metalearnerJob,
                 _parms,
                 hasMetaLearnerParams,
-                metalearnerSeed
+                metalearnerSeed,
+                _parms._max_runtime_secs == 0 ? 0 : Math.max(remainingTimeSecs(), 1)
         );
         metalearner.compute();
       } else {
