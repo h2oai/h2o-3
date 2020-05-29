@@ -1329,6 +1329,11 @@ Partial Dependence Plots
 
 For models that include only numerical values, you can view a Partial Dependence Plot (PDP) for that model. This provides a graphical representation of the marginal effect of a variable on the class probability (binary and multiclass classification) or response (regression). 
 
+**Notes**:
+
+- For multiclass problems, users must specify a target class
+- In Flow (unlike Python or R), only one target class can be specified for multiclass problems. 
+
 Viewing Partial Dependence Plots
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
