@@ -1,3 +1,5 @@
+.. _glrm:
+
 Generalized Low Rank Models (GLRM)
 ----------------------------------
 
