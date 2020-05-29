@@ -1552,7 +1552,7 @@ Examples:
 Partial Dependence Plots
 ''''''''''''''''''''''''
 
-This plot provides a graphical representation of the marginal effect of a variable on the class probability (classification) or response (regression). Note that this is only available for models that include only numerical values. 
+Use ``partialPlot`` (R)/``partial_plot`` (Python) to create a partial dependece plot. This plot provides a graphical representation of the marginal effect of a variable on the class probability (binary and multiclass classification) or response (regression). Note that this is only available for models that include only numerical values. 
 
 The partial dependence of a given feature :math:`X_j` is the average of the response function :math:`g`, where all the components of :math:`X_j` are set to :math:`x_j` :math:`(X_j = {[x{^{(0)}_j},...,x{^{(N-1)}_j}]}^T)`
 
@@ -1564,16 +1564,40 @@ Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j
 
 **Notes**:
 
-- The partial dependence of a given feature is :math:`Xj` (where :math:`j` is the column index)
-- You can also change the equation to sum from 1 to N instead of 0 to N-1
-- Use the ``col_pairs_2dpdp`` option along with a list containing pairs of column names to generate 2D partial dependence plots
+- The partial dependence of a given feature is :math:`Xj` (where :math:`j` is the column index).
+- You can also change the equation to sum from 1 to N instead of 0 to N-1.
+- Instead of ``cols``, you can use the ``col_pairs_2dpdp`` option along with a list containing pairs of column names to generate 2D partial dependence plots.
+- Multiclass problems require an additional ``targets`` parameter. A `Python demo <https://github.com/h2oai/h2o-3/blob/master/h2o-py/demos/pdp_multiclass.ipynb>`__ is available showing how to retrieve PDPs for multiclass problems.
 
 .. figure:: images/pdp_summary.png
     :alt: Partial Dependence Summary
     :height: 483
     :width: 355
 
-Examples:
+Defining a Partial Dependence Plot
+##################################
+
+The following can be specified when building a partial dependence plot. 
+
+- ``object``: (Required, R only) An H2OModel object.
+- ``data``: (Required) An H2OFrame object used for scoring and constructing the plot.
+- ``cols``: The feature(s) for which partial dependence will be calculated. One of either ``col_pairs_2dpdp`` or ``cols`` must be specified.
+- ``col_pairs_2dpdp``: A two-level nested list like this: col_pairs_2dpdp = list(c("col1_name", "col2_name"), c("col1_name","col3_name"), ...,) where a 2D partial plots will be generated for col1_name, col2_name pair, for col1_name, col3_name pair and whatever other pairs that are specified in the nested list. One of either ``col_pairs_2dpdp`` or ``cols`` must be specified. 
+- ``destination_key``: A key reference to the created partial dependence tables in H2O.
+- ``nbins``: The number of bins used. For categorical columns make sure the number of bins exceed the level count. If you enable ``include_na``, then the returned length will be nbins+1.
+- ``weight_column``: A string denoting which column of data should be used as the weight column.
+- ``plot``: A boolean specifying whether to plot partial dependence table.
+- ``plot_stddev``: A boolean specifying whether to add standard error to partial dependence plot.
+- ``figsize``: Specify the dimension/size of the returning plots. Adjust to fit your output cells.
+- ``server``: Specify whether to activate matplotlib “server” mode. In this case, the plots are saved to a file instead of being rendered.
+- ``include_na``: A boolean specifying whether missing value should be included in the Feature values.
+- ``user_splits``: A two-level nested list containing user-defined split points for pdp plots for each column. If there are two columns using user-defined split points, there should be two lists in the nested list. Inside each list, the first element is the column name followed by values defined by the user.
+- ``save_to`` (R)/``save_to_file`` (Python): Specify a fully qualified name to an image file that the resulting plot should be saved to, e.g. **/home/user/pdpplot.png**. The **png** postfix can be omitted. If the file already exists, it will be overridden. Note that you must also specify ``plot = True`` in order to save plots to a file.
+- ``row_index``: The row for which partial dependence will be calculated instead of the whole input frame.
+- ``targets``: (Required, multiclass only) Specify an array of one or more target classes when building PDPs for multiclass models. If you specify more than one class, then all classes are plot in one graph. (Note that in Flow, only one target can be specified.)
+
+Examples
+########
 
 .. tabs::
    .. code-tab:: r R
@@ -1588,11 +1612,21 @@ Examples:
         # build and train the model:
         pros_gbm <- h2o.gbm(x = c("AGE","RACE"), y = "CAPSULE", 
                             training_frame = prostate, 
-                            ntrees = 10, max_depth = 5, 
-                            learn_rate = 0.1)
+                            ntrees = 10, 
+                            max_depth = 5, 
+                            learn_rate = 0.1,
+                            seed = 1234)
 
-        # build the partial dependence plot:
-        h2o.partialPlot(object = pros_gbm, data = prostate, cols = c("AGE", "RACE"))
+        # build a 1-dimensional partial dependence plot:
+        h2o_1d_pdp = h2o.partialPlot(object = pros_gbm, 
+                                     data = prostate, 
+                                     cols = c("AGE", "RACE"))
+
+        # build a 2-dimensional partial depedence plot:
+        h2o_2d_pdp <- h2o.partialPlot(object = pros_gbm, 
+                                      data = prostate, 
+                                      col_pairs_2dpdp=list(c("RACE", "AGE"), c("AGE", "PSA")),
+                                      plot = FALSE)
 
 
    .. code-tab:: python
@@ -1610,11 +1644,21 @@ Examples:
         response = "CAPSULE"
 
         # build and train the model:
-        pros_gbm = H2OGradientBoostingEstimator(ntrees = 10, max_depth = 5, learn_rate = 0.1)
+        pros_gbm = H2OGradientBoostingEstimator(ntrees = 10, 
+                                                max_depth = 5, 
+                                                learn_rate = 0.1,
+                                                seed = 1234)
         pros_gbm.train(x = predictors, y = response, training_frame = prostate)
 
-        #build the partial dependence plot:
+        # build a 1-dimensional partial dependence plot:
         pros_gbm.partial_plot(data = prostate, cols = ["AGE","RACE"], server=True, plot = True)
+
+        # build a 2-dimensional partial dependence plot:
+        pdp2dOnly = pros_gbm.partial_plot(data = prostate, 
+                                          server = True, 
+                                          plot = False, 
+                                          col_pairs_2dpdp = [['AGE', 'PSA'],['AGE', 'RACE']])
+
 
 Prediction
 ----------
@@ -1699,11 +1743,14 @@ This section provides examples of performing predictions in Python and R. Refer 
         h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
         
         # Generate a GBM model using the training dataset
-        model = H2OGradientBoostingEstimator(distribution="bernoulli",
-                                             ntrees=100,
-                                             max_depth=4,
-                                             learn_rate=0.1)
-        model.train(y="CAPSULE", x=["AGE","RACE","PSA","GLEASON"],training_frame=h2o_df)
+        model = H2OGradientBoostingEstimator(distribution = "bernoulli",
+                                             ntrees = 100,
+                                             max_depth = 4,
+                                             learn_rate = 0.1)
+
+        model.train(y = "CAPSULE", 
+                    x = ["AGE","RACE","PSA","GLEASON"],
+                    training_frame = h2o_df)
         
         # Predict using the GBM model and the testing dataset
         predict = model.predict(test)
