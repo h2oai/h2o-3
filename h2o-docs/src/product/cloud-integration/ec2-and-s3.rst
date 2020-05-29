@@ -205,37 +205,53 @@ Build a cluster of EC2 instances by running the following commands on the host t
 Minio Instance
 ''''''''''''''
 
-Minio Cloud Storage is an alternative to Amazon AWS S3. When using a Minio server, the following additional parameters are specified in the Java launch command:
+Minio Cloud Storage is an alternative to Amazon AWS S3. When connecting to a Minio server, the following additional parameters are specified in the Java launch command:
 
 - ``endpoint``: Specifies a Minio server instance (including address and port). This overrides the existing endpoint, which is currently hardcoded to be AWS S3.
 
 - ``enable.path.style``: Specifies to override the default S3 behavior to expose every bucket as a full DNS enabled path. Note that this is a Minio recommendation.
 
+To pass in AWS credentials, create a ``core-site.xml`` file that contains your Access Key ID and Secret Access Key and use the flag ``-hdfs_config`` flag when launching:
+
+::
+
+       <property>
+         <name>fs.s3.awsAccessKeyId</name>
+         <value>[AWS SECRET KEY]</value>
+       </property>
+
+       <property>
+         <name>fs.s3.awsSecretAccessKey</name>
+         <value>[AWS SECRET ACCESS KEY]</value>
+       </property>
+
 1. Launch H2O by entering the following in the command line:
 
   ::
 
-      java -Dsys.ai.h2o.persist.s3.endPoint=https://play.min.io:9000 -Dsys.ai.h2o.persist.s3.enable.path.style=true -jar h2o.jar
+      java -Dsys.ai.h2o.persist.s3.endPoint=https://play.min.io:9000 -Dsys.ai.h2o.persist.s3.enable.path.style=true -jar h2o.jar -hdfs_config core-site.xml
 
-2. Import the data using ``importFile`` with the Minio S3 url path: **s3://bucket/path/to/file.csv**. You can pass the AWS Access Key and Secret Access Key in an S3 URL in Flow, R, or Python (where ``MINIO_ACCESS_KEY`` represents your user name, and ``MINIO_SECRET_KEY`` represents your password).
+  **Note**: https://play.min.io:9000 is an example Minio server URL.
+
+2. Import the data using ``importFile`` with the Minio S3 url path: **s3://bucket/path/to/file.csv**.
 
  - To import the data from the Flow API:
 
   ::
 
-   importFiles [ "s3://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv" ]
+   importFiles [ "s3://bucket/path/to/file.csv" ]
 
  - To import the data from the R API:
 
   ::
 
-   h2o.importFile(path = "s3://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv")
+   h2o.importFile(path = "s3://bucket/path/to/file.csv")
 
  - To import the data from the Python API:
 
   ::
 
-   h2o.import_file(path = "s3://<MINIO_ACCESS_KEY>:<MINIO_SECRET_KEY>@bucket/path/to/file.csv")
+   h2o.import_file(path = "s3://bucket/path/to/file.csv")
 
 Launching H2O
 '''''''''''''
