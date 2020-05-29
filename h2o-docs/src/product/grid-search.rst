@@ -42,6 +42,8 @@ Grid Search in R and Python
           parameters (e.g., ``list(ntrees = c(1,100), learn_rate = c(0.1, 0.001))``)
        -  ``search_criteria`` optional attribute for specifying a more
           advanced search strategy  
+       -  ``parallelism`` (number of models built in parallel) allows 
+          the "leader node" to search the hyperspace and build models in a parallel way which ultimately speeds up grid search on small data
 
     More about ``search_criteria``:  
 
@@ -71,6 +73,8 @@ Grid Search in R and Python
           (e.g., ``{'ntrees':[1,100], 'learn_rate':[0.1, 0.001]}``
        -  ``search_criteria`` is the optional dictionary for specifying more a
           advanced search strategy
+       -  ``parallelism`` (number of models built in parallel) allows 
+          the "leader node" to search the hyperspace and build models in a parallel way which ultimately speeds up grid search on small data
 
 
     More about ``search_criteria``:  
