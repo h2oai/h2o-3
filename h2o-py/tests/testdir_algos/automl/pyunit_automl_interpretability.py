@@ -24,7 +24,7 @@ def test_automl_creates_interpretable_SE_iff_monotonic_models_exist():
     assert (aml_mono
             .leaderboard
             .as_data_frame()["model_id"]
-            .apply(lambda model_name: "MonotonicallyConstrainedModels" in model_name).any())
+            .apply(lambda model_name: "Monotonic" in model_name).any())
 
     # If we don't have monotonic constraints we shouldn't have monotonically constrained SE
     aml = H2OAutoML(project_name="test_automl_doesnt_create_interpretable_se",
@@ -36,7 +36,7 @@ def test_automl_creates_interpretable_SE_iff_monotonic_models_exist():
     assert not (aml
                 .leaderboard
                 .as_data_frame()["model_id"]
-                .apply(lambda model_name: "MonotonicallyConstrainedModels" in model_name).any())
+                .apply(lambda model_name: "Monotonic" in model_name).any())
 
 
 def test_automl_creates_interpretable_SE_with_only_monotonic_models():
@@ -57,9 +57,9 @@ def test_automl_creates_interpretable_SE_with_only_monotonic_models():
         .leaderboard
         .as_data_frame()["model_id"])
 
-    assert leaderboard.apply(lambda model_name: "MonotonicallyConstrainedModels" in model_name).any()
+    assert leaderboard.apply(lambda model_name: "Monotonic" in model_name).any()
 
-    se_name = leaderboard[leaderboard.apply(lambda model_name: "MonotonicallyConstrainedModels" in model_name)]
+    se_name = leaderboard[leaderboard.apply(lambda model_name: "Monotonic" in model_name)]
     se_mono = h2o.get_model(se_name.iloc[0])
 
     assert leaderboard.apply(lambda model_name: 'GLM' in model_name).any()
