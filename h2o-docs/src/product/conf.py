@@ -237,9 +237,9 @@ html_show_sourcelink = False
 html_context = {
     # Enable the "Edit in GitHub link within the header of each page.
     'display_github': True,
-    # Set the following variables to generate the resulting github URL for each page. 
-    # Format Template: https://{{ github_host|default("github.com") }}
-    #/{{ github_repo }}/blob/{{ github_version }}{{ conf_py_path }}{{ pagename }}{{ suffix }}
+    # Set the following variables to generate the resulting github URL for each page.
+    # Format Template: https://{{github_host|default("github.com")}}
+    #/{{github_repo}}/blob/{{github_version}}{{conf_py_path}}{{pagename}}{{suffix}}
     #https://github.com/h2oai/h2o-3/blob/master/h2o-docs/src/product/index.rst
     'github_repo': 'h2oai/h2o-3',
     'github_version': 'master/h2o-docs/src/product/',
