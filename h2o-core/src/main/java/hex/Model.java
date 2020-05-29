@@ -24,6 +24,7 @@ import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
 import water.persist.Persist;
+import water.rapids.PermutationFeatureImportance;
 import water.udf.CFuncRef;
 import water.util.*;
 
@@ -243,6 +244,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean _keep_cross_validation_fold_assignment = false;
     public boolean _parallelize_cross_validation = true;
     public boolean _auto_rebalance = true;
+    
 
     public void setTrain(Key<Frame> train) {
       this._train = train;
@@ -404,6 +406,18 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
         return Arrays.stream(new String[]{_weights_column, _offset_column, _fold_column, _response_column})
                 .filter(Objects::nonNull)
                 .toArray(String[]::new);
+    }
+
+    /**
+     * Should be called after Model is scored, Otherwise no one can tell you what will happen bro
+     *
+     *
+     * */
+    public void permutationFeatureImportance(){
+      assert this._train.get() != null;
+      
+//      FeatureImportance4BBM Fi = new FeatureImportance4BBM(this, _train.get(), _parms._response_column);
+//      Fi.getFeatureImportance();
     }
 
     /** Read-Lock both training and validation User frames. */
@@ -1371,6 +1385,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             catEncoded
     );
   }
+  
 
   /**
    * @param test Frame to be adapted
@@ -1488,6 +1503,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
             msgs.add(str);
         }
       }
+      
       if( vec != null) {          // I have a column with a matching name
         if( domains[i] != null) { // Model expects an categorical
           if (vec.isString())
@@ -1613,7 +1629,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public Frame score(Frame fr, String destination_key, Job j) throws IllegalArgumentException {
     return score(fr, destination_key, j, true);
   }
-
+  
+  public TwoDimTable getTable(Frame fr, Frame scored){
+    PermutationFeatureImportance fi = new PermutationFeatureImportance(this, fr, scored);
+    fi.getFeatureImportance();
+    return fi.getTable();
+  }
+  
   /**
    * Adds a scoring-related warning. 
    * 
@@ -2079,6 +2101,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public ModelMojoWriter getMojo() {
     throw H2O.unimpl("MOJO format is not available for " + _parms.fullName() + " models.");
   }
+  
 
   /**
    * Specify categorical encoding that should be applied before running score0 method of POJO/MOJO.
