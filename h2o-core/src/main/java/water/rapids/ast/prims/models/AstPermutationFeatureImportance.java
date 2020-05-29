@@ -6,10 +6,11 @@ import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Env;
-import water.rapids.FeatureImportance4BBM;
+import water.rapids.PermutationFeatureImportance;
 import water.rapids.ast.AstPrimitive;
 import water.rapids.ast.AstRoot;
 import water.rapids.vals.ValFrame;
+import water.util.TwoDimTable;
 
 
 import java.util.Map;
@@ -17,7 +18,7 @@ import java.util.Map.Entry;
 
 import java.util.HashMap;
 
-public class AstFeatureImportance4BBM extends AstPrimitive {
+public class AstPermutationFeatureImportance extends AstPrimitive {
 
     @Override
     public int nargs() {return 1 + 2;} // Perm_feature_importance + Frame + Model
@@ -36,10 +37,11 @@ public class AstFeatureImportance4BBM extends AstPrimitive {
         Frame fr2 = model.score(fr); // prediction on original dataset
         
 //      model._train.get(); TODO find a way to avoid passing the frame and get it from the model instead
-        
-        FeatureImportance4BBM fi = new FeatureImportance4BBM(model, fr, fr2, model._parms._response_column);
+
+        PermutationFeatureImportance fi = new PermutationFeatureImportance(model, fr, fr2);
         HashMap<String, Double> FI = fi.getFeatureImportance(); // might be able to use AstPerfectAuc for calculation of AUC 
 
+        TwoDimTable fi_table = model.getTable(fr, fr2);
         
         // Frame contains one row and n features 
         Frame outfr = new Frame(Key.make("feature_imp")); 
