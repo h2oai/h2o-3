@@ -151,7 +151,7 @@ The following is an example core-site.xml file:
             <name>fs.s3.awsSessionToken</name>
             <value>insert session token here</value>
         </property>
-        </configuration>
+    </configuration>
 
 AWS Multi-Node Instance
 '''''''''''''''''''''''
@@ -211,7 +211,7 @@ Minio Cloud Storage is an alternative to Amazon AWS S3. When connecting to a Min
 
 - ``enable.path.style``: Specifies to override the default S3 behavior to expose every bucket as a full DNS enabled path. Note that this is a Minio recommendation.
 
-To pass in AWS credentials, create a ``core-site.xml`` file that contains your Access Key ID and Secret Access Key and use the flag ``-hdfs_config`` flag when launching:
+To pass in credentials, create a ``core-site.xml`` file that contains your Access Key ID and Secret Access Key and use the flag ``-hdfs_config`` flag when launching:
 
 ::
 
