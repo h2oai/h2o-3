@@ -25,7 +25,6 @@ public class AstDropDuplicatesTest {
 
   @Test
   public void testDropDuplicates() {
-    final Session session = new Session();
     try {
       Scope.enter();
       final Frame frame = new TestFrameBuilder()
@@ -36,14 +35,13 @@ public class AstDropDuplicatesTest {
           .withVecTypes(Vec.T_NUM, Vec.T_NUM)
           .build();
 
-      Val val = Rapids.exec(String.format("(dropdup %s ['C1', 'C2'] first)", frame._key.toString()), session);
+      Val val = Rapids.exec(String.format("(dropdup %s ['C1', 'C2'] first)", frame._key.toString()));
       assertNotNull(val);
       assertTrue(val.isFrame());
       final Frame deduplicatedFrame = Scope.track(val.getFrame());
       assertEquals(2, deduplicatedFrame.numRows());
     } finally {
       Scope.exit();
-      session.end(null);
     }
   }
 
@@ -72,7 +70,6 @@ public class AstDropDuplicatesTest {
 
   @Test
   public void testDropDuplicatesUnknownColumnName() {
-    final Session session = new Session();
     try {
       Scope.enter();
       final Frame frame = new TestFrameBuilder()
@@ -85,10 +82,9 @@ public class AstDropDuplicatesTest {
 
       expectedException.expect(IllegalArgumentException.class);
       expectedException.expectMessage("Unknown column name: 'C3'");
-      Rapids.exec(String.format("(dropdup %s ['C1', 'C3'] first)", frame._key.toString()), session);
+      Rapids.exec(String.format("(dropdup %s ['C1', 'C3'] first)", frame._key.toString()));
     } finally {
       Scope.exit();
-      session.end(null);
     }
   }
 
@@ -137,7 +133,6 @@ public class AstDropDuplicatesTest {
 
   @Test
   public void testStringColumnPresent() {
-    final Session session = new Session();
     try {
       Scope.enter();
       final Frame frame = new TestFrameBuilder()
@@ -149,10 +144,9 @@ public class AstDropDuplicatesTest {
 
       expectedException.expect(IllegalArgumentException.class);
       expectedException.expectMessage("Column 'C2' is of unsupported type String for row de-duplication.");
-      Rapids.exec(String.format("(dropdup %s ['C1', 'C2'] first)", frame._key.toString()), session);
+      Rapids.exec(String.format("(dropdup %s ['C1', 'C2'] first)", frame._key.toString()));
     } finally {
       Scope.exit();
-      session.end(null);
     }
   }
 

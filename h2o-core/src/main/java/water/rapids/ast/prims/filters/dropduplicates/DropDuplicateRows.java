@@ -1,13 +1,10 @@
 package water.rapids.ast.prims.filters.dropduplicates;
 
-import water.DKV;
-import water.Key;
 import water.Scope;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.rapids.Merge;
 import water.util.ArrayUtils;
-import water.util.FrameUtils;
 
 import java.util.Arrays;
 
@@ -37,25 +34,21 @@ public class DropDuplicateRows {
     Frame outputFrame = null;
     try {
       Scope.enter();
-      FrameUtils.labelRows(sourceFrame, LABEL_COLUMN_NAME);
-      final Frame sortedFrame = Scope.track(sortByComparedColumns());
+      final Vec labelVec = Scope.track(Vec.makeSeq(1, sourceFrame.numRows()));
+      final Frame fr = new Frame(sourceFrame);
+      fr.add(LABEL_COLUMN_NAME, labelVec);
+      final Frame sortedFrame = Scope.track(sortByComparedColumns(fr));
       final Frame chunkBoundaries = Scope.track(new CollectChunkBorderValuesTask()
               .doAll(sortedFrame.types(), sortedFrame)
-              .outputFrame());
-
+              .outputFrame(null, sortedFrame.names(), sortedFrame.domains()));
       final Frame deDuplicatedFrame = Scope.track(new DropDuplicateRowsTask(chunkBoundaries, comparedColumnIndices)
               .doAll(sortedFrame.types(), sortedFrame)
-              .outputFrame(Key.make(), sourceFrame.names(), sourceFrame.domains())); // Removing duplicates, domains remain the same
+              .outputFrame(null, sortedFrame.names(), sortedFrame.domains())); // Removing duplicates, domains remain the same
 
-      outputFrame = Merge.sort(deDuplicatedFrame, deDuplicatedFrame.numCols() - 1);
+      outputFrame = Scope.track(Merge.sort(deDuplicatedFrame, deDuplicatedFrame.numCols() - 1));
       outputFrame.remove(outputFrame.numCols() - 1);
       return outputFrame;
-
     } finally {
-      final Vec label = sourceFrame.remove(LABEL_COLUMN_NAME);
-      if (label != null) {
-        label.remove();
-      }
       if (outputFrame != null) {
         Scope.exit(outputFrame.keys());
       } else {
@@ -71,8 +64,8 @@ public class DropDuplicateRows {
    *
    * @return A new Frame sorted by all compared columns.
    */
-  private Frame sortByComparedColumns() {
-    final int labelColumnIndex = sourceFrame.find(LABEL_COLUMN_NAME);
+  private Frame sortByComparedColumns(Frame fr) {
+    final int labelColumnIndex = fr.find(LABEL_COLUMN_NAME);
     final int[] sortByColumns = ArrayUtils.append(comparedColumnIndices, labelColumnIndex);
     final boolean ascendingSort = KeepOrder.First == keepOrder;
 
@@ -82,6 +75,6 @@ public class DropDuplicateRows {
     // Label column is sorted differently based on DropOrder
     sortOrder[sortOrder.length - 1] = ascendingSort ? Merge.ASCENDING : Merge.DESCENDING;
 
-    return Merge.sort(sourceFrame, sortByColumns, sortOrder);
+    return Merge.sort(fr, sortByColumns, sortOrder);
   }
 }
