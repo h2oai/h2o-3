@@ -485,3 +485,11 @@ check-leaks:
 		echo "Credentials leaked! Please check $(PWD)/leak-check.out"; \
 		exit 1; \
 	fi
+
+h2o-docker-build:
+    docker build -t h2oai/h2o-open-source:$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release .
+
+h2o-docker-push:
+    docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
+    docker push h2oai/h2o-open-source:$(DOCKER_IMAGE_TAG)
+
