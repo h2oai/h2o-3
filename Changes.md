@@ -2,14 +2,14 @@
 
 ## H2O
 
-### Zahradnik (3.30.0.4) - 5/29/2020
+### Zahradnik (3.30.0.4) - 6/1/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/index.html</a>
 
 <h4>Bug</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7362'>PUBDEV-7362</a>] - h2o.merge() now works corrctly when you joining an H2O frame where the join is on a <dbl> column to another frame.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7362'>PUBDEV-7362</a>] - h2o.merge() now works correctly when you joining an H2O frame where the join is on a <dbl> column to another frame.
 </li>
 <li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7454'>PUBDEV-7454</a>] - Fixed an issue that caused h2o.get_leaderboard to fail after creating an AutoML object, disconnecting the client, starting a new session, and then reconecting to the running H2O cluster for the re-attached H2OAutoML object.
 </li>
