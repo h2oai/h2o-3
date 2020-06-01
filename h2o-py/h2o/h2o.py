@@ -2156,9 +2156,10 @@ def upload_mojo(mojo_path):
 def print_mojo(mojo_path, format="json", tree_index=None):
     """
     Generates string representation of an existing MOJO model. 
-    :param mojo_path:  Path to the MOJO archive on the user's local filesystem
-    :param format:  Output format. Possible values: json (default), dot 
-    :param tree_index:  Index of tree to print (only work dot format)
+
+    :param mojo_path: Path to the MOJO archive on the user's local filesystem
+    :param format: Output format. Possible values: json (default), dot 
+    :param tree_index: Index of tree to print (only work dot format)
     :return: An string representation of given MOJO in given format
 
     :example:
@@ -2171,14 +2172,14 @@ def print_mojo(mojo_path, format="json", tree_index=None):
     >>> learning_rate = 0.1
     >>> depth = 5
     >>> min_rows = 10
-    >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees=ntrees,
-    ...                                        learn_rate=learning_rate,
-    ...                                        max_depth=depth,
-    ...                                        min_rows=min_rows,
-    ...                                        distribution="bernoulli")
-    >>> gbm_h2o.train(x=list(range(1,prostate.ncol)),
-    ...               y="CAPSULE",
-    ...               training_frame=prostate)
+    >>> gbm_h2o = H2OGradientBoostingEstimator(ntrees = ntrees,
+    ...                                        learn_rate = learning_rate,
+    ...                                        max_depth = depth,
+    ...                                        min_rows = min_rows,
+    ...                                        distribution = "bernoulli")
+    >>> gbm_h2o.train(x = list(range(1,prostate.ncol)),
+    ...               y = "CAPSULE",
+    ...               training_frame = prostate)
     >>> mojo_path = gbm_h2o.download_mojo()
     >>> mojo_str = h2o.print_mojo(mojo_path)
     >>> mojo_dict = json.loads(mojo_str)

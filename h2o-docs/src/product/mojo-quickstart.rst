@@ -696,7 +696,17 @@ If you cannot install Graphviz on your environment, another option is to produce
 GBM MOJO to ONNX Converter
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``print_mojo`` function allows a GBM model to be coverted to `ONNX <https://onnx.ai/about.html>`__ representation, which means the model will be rendered in an "open format built to represent" ML models. This allows you to use the model with a variety of frameworks, tools, runtimes, and compilers. The output format is JSON (JavaScript Object Notation).
+The ``print_mojo`` function allows a GBM model to be coverted to `ONNX <https://onnx.ai/about.html>`__ representation, which means the model will be rendered in an "open format built to represent" ML models. This allows you to use the model with a variety of frameworks, tools, runtimes, and compilers. 
+
+When running ``print_mojo``, the following can be specified:
+
+- ``mojo_path``: The path to the MOJO archive on the user’s local filesystem. This defaults to the user's home directory.
+- ``format``: Specify an output format of either ``json`` (default) or ``dot``.
+- ``tree_index``: Specify the index of the tree to print. This can only be used with ``dot`` format.
+
+The output is a string respresentation of the MOJO in either JSON or dot format.
+
+**Note**: ``print_mojo`` can only be used with the Python client. It is not supported in R.
 
 Example
 '''''''
@@ -719,15 +729,18 @@ Example
     depth = 5
     min_rows = 10
 
-    # Build & train the  GBM model
-    gbm_h2o = H2OGradientBoostingEstimator(ntrees=ntrees, learn_rate=learning_rate, max_depth=depth, min_rows=min_rows, distribution="bernoulli")
-    gbm_h2o.train(x=list(range(1,prostate.ncol)), y="CAPSULE", training_frame=prostate)
+    # Build & train the GBM model
+    gbm_h2o = H2OGradientBoostingEstimator(ntrees = ntrees, 
+                                           learn_rate = learning_rate, 
+                                           max_depth = depth, 
+                                           min_rows = min_rows, 
+                                           distribution = "bernoulli")
+    gbm_h2o.train(x = list(range(1,prostate.ncol)), y = "CAPSULE", training_frame = prostate)
 
     # Print all
     mojo_path = gbm_h2o.download_mojo()
     mojo_str = h2o.print_mojo(mojo_path)
     mojo_dict = json.loads(mojo_str)
-
 
 FAQ
 ~~~
