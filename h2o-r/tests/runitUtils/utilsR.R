@@ -1134,7 +1134,7 @@ buildModelSaveMojoTrees <- function(params, model_name) {
     safeSystem(sprintf("rm -fr %s", tmpdir_name))
     safeSystem(sprintf("mkdir -p %s", tmpdir_name))
   }
-  h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
   h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
   return(list("model"=model, "dirName"=tmpdir_name))
@@ -1151,7 +1151,7 @@ buildModelSaveMojoGLM <- function(params) {
     safeSystem(sprintf("rm -fr %s", tmpdir_name))
     safeSystem(sprintf("mkdir -p %s", tmpdir_name))
   }
-  h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
   h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
   return(list("model"=model, "dirName"=tmpdir_name))
@@ -1168,7 +1168,7 @@ shell(sprintf("C:\\cygwin64\\bin\\mkdir.exe -p %s", normalizePath(tmpdir_name)))
 safeSystem(sprintf("rm -fr %s", tmpdir_name))
 safeSystem(sprintf("mkdir -p %s", tmpdir_name))
 }
-h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
 h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
 return(list("model"=model, "dirName"=tmpdir_name))
@@ -1185,7 +1185,7 @@ buildModelSaveMojoGLRM <- function(params) {
     safeSystem(sprintf("rm -fr %s", tmpdir_name))
     safeSystem(sprintf("mkdir -p %s", tmpdir_name))
   }
-  h2o.saveMojo(model, path = tmpdir_name, force = TRUE) # save mojo
+  h2o.save_mojo(model, path = tmpdir_name, force = TRUE) # save mojo
   h2o.saveModel(model, path = tmpdir_name, force=TRUE) # save model to compare mojo/h2o predict offline
 
   return(list("model"=model, "dirName"=tmpdir_name))
