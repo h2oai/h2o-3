@@ -59,6 +59,7 @@ try {
                             <li><strong>Anaconda Upload:</strong> ${params.UPLOAD_TO_ANACONDA}</li>
                             <li><strong>Update Top-level Latest Links</strong> ${params.UPDATE_LATEST}</li>
                             <li><strong>Update Branch Latest Links</strong> ${params.UPDATE_LATEST_BRANCH}</li>
+                            <li><strong>Publish H2O K8S Docker image:</strong> ${params.BUILD_H2O_DOCKER}</li>
                             <li><strong>S3 Root:</strong> ${env.S3_ROOT}</li>
                         </ul>
                     """
@@ -537,7 +538,8 @@ private setReleaseJobProperties(final pipelineContext) {
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build PyPI package. Also if building rel- branch, publish to PyPI', name: 'UPLOAD_PYPI'),
             booleanParam(defaultValue: true, description: 'If set build conda packages and upload them to S3', name: 'BUILD_CONDA'),
-            booleanParam(defaultValue: false, description: 'If set and building rel- branch, publish to Anaconda.', name: 'UPLOAD_TO_ANACONDA')
+            booleanParam(defaultValue: false, description: 'If set and building rel- branch, publish to Anaconda.', name: 'UPLOAD_TO_ANACONDA'),
+            booleanParam(defaultValue: true, description: 'If set, build H2O Docker image and push to H2O official docker hub.', name: 'BUILD_H2O_DOCKER')
         ])
     ]
     if (env.BRANCH_NAME == 'master') {
@@ -576,14 +578,15 @@ private printReleaseConfiguration(final pipelineContext) {
 =======================================
 Configuration:
 ---------------------------------------
-    SHA:                | ${env.GIT_SHA}
-    Branch:             | ${env.BRANCH_NAME}
-    Docker Image:       | ${pipelineContext.getBuildConfig().getReleaseImage()}
-    Test Release:       | ${params.TEST_RELEASE}
-    S3 Bucket:          | ${env.S3_ROOT}
-    Publish to Nexus:   | ${params.UPLOAD_NEXUS}
-    Publish to PyPI:    | ${params.UPLOAD_PYPI}
-    Publish to Conda:   | ${params.UPLOAD_CONDA}
+    SHA:                    | ${env.GIT_SHA}
+    Branch:                 | ${env.BRANCH_NAME}
+    Docker Image:           | ${pipelineContext.getBuildConfig().getReleaseImage()}
+    Test Release:           | ${params.TEST_RELEASE}
+    S3 Bucket:              | ${env.S3_ROOT}
+    Publish to Nexus:       | ${params.UPLOAD_NEXUS}
+    Publish to PyPI:        | ${params.UPLOAD_PYPI}
+    Publish to Conda:       | ${params.UPLOAD_CONDA}
+    Publish to Docker Hub   | ${params.BUILD_H2O_DOCKER}
 =======================================
 """
 }
