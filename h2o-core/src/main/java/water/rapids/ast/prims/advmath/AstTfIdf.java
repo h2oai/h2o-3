@@ -52,7 +52,7 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
     /**
      * Column names to be used for preprocessed frame.
      */
-    private static final String[] PREPROCESSED_FRAME_COL_NAMES = new String[] { "DocID", "Word" };
+    private static final String[] PREPROCESSED_FRAME_COL_NAMES = new String[] { "DocID", "Words" };
     /**
      * Class logger.
      */
@@ -87,18 +87,20 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
             if (docIdIdx >= inputFrameColsCnt || contentIdx >= inputFrameColsCnt)
                 throw new IllegalArgumentException("Provided column index is out of bounds. Number of columns in the input frame: "
                                                    + inputFrameColsCnt);
-            
             Vec docIdVec = inputFrame.vec(docIdIdx);
             Vec contentVec = inputFrame.vec(contentIdx);
             
             if (!docIdVec.isNumeric() || !contentVec.isString())
                 throw new IllegalArgumentException("Incorrect format of input frame." +
                                                    "Following row format is expected: (numeric) documentID, (string) "
-                                                   + (preprocess ? "documentContent." : "word."));
+                                                   + (preprocess ? "documentContent." : "words. " +
+                                                   "Got "+docIdVec.get_type_str() + " and " + contentVec.get_type_str() 
+                                                   +" instead."));
 
             // Case sensitivity
-            if (!caseSensitive)
-                inputFrame.replace(contentIdx, AstToLower.toLowerStringCol(inputFrame.vec(contentIdx)));
+            if (!caseSensitive) {
+                Scope.track(inputFrame.replace(contentIdx, AstToLower.toLowerStringCol(inputFrame.vec(contentIdx))));
+            }
 
             // Pre-processing
             Frame wordFrame;
@@ -115,6 +117,7 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
                 String countDocumentsRapid = "(unique (cols " + asts[1].toString() + " [" + docIdIdx + "]))";
                 documentsCnt = Rapids.exec(countDocumentsRapid).getFrame().anyVec().length();
             }
+            Scope.track(wordFrame);
 
             // TF
             Frame tfOutFrame = TermFrequencyTask.compute(wordFrame);
@@ -127,18 +130,20 @@ public class AstTfIdf extends AstPrimitive<AstTfIdf> {
             // IDF
             InverseDocumentFrequencyTask idf = new InverseDocumentFrequencyTask(documentsCnt);
             Vec idfValues = idf.doAll(new byte[]{ Vec.T_NUM }, dfOutFrame.lastVec()).outputFrame().anyVec();
+            Scope.track(idfValues);
             // Replace DF column with IDF column
-            dfOutFrame.remove(dfOutFrame.numCols() - 1);
+            Vec removedCol = dfOutFrame.remove(dfOutFrame.numCols() - 1);
+            Scope.track(removedCol);
             dfOutFrame.add(IDF_COL_NAME, idfValues);
 
             // Intermediate frame containing both TF and IDF values
-            tfOutFrame.replace(1, tfOutFrame.vecs()[1].toCategoricalVec());
-            dfOutFrame.replace(0, dfOutFrame.vecs()[0].toCategoricalVec());
+            Scope.track(tfOutFrame.replace(1, tfOutFrame.vecs()[1].toCategoricalVec()));
+            Scope.track(dfOutFrame.replace(0, dfOutFrame.vecs()[0].toCategoricalVec()));
             int[][] levelMaps = {
                     CategoricalWrappedVec.computeMap(tfOutFrame.vec(1).domain(), dfOutFrame.vec(0).domain())
             };
             Frame tfIdfIntermediate = Merge.merge(tfOutFrame, dfOutFrame, new int[]{1}, new int[]{0}, false, levelMaps);
-            tfIdfIntermediate.replace(1, tfIdfIntermediate.vecs()[1].toStringVec());
+            Scope.track(tfIdfIntermediate.replace(1, tfIdfIntermediate.vecs()[1].toStringVec()));
 
             // TF-IDF
             int tfOutFrameColCnt = tfIdfIntermediate.numCols();
