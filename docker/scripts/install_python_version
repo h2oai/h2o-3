@@ -26,6 +26,9 @@ for python_version in "${array[@]}"; do
   echo "###### Installing Python ${python_version} ######"
   apt-get update
   DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version} python${python_version}-dev
+  if [[ "3.7 3.8 3.9" == *${python_version}* ]]; then
+      DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version}-distutils
+  fi
   apt-get clean
   rm -rf /var/cache/apt/*
 
