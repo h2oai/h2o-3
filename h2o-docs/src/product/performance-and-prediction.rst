@@ -1618,11 +1618,11 @@ Binomial Examples:
 
 .. figure:: images/pdp_ageVmean.png
   :alt: Partial Dependence Age Vs Mean Plot
-  :scale: 50%
+  :scale: 30%
 
 .. figure:: images/pdp_raceVmean.png
   :alt: Partial Dependence Race Vs Mean Plot
-  :scale: 50%
+  :scale: 30%
 
 
 Multinomial Examples:
