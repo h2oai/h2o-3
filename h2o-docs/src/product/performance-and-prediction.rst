@@ -1713,30 +1713,31 @@ This section provides examples of performing predictions in Python and R. Refer 
                          distribution = "bernoulli",
                          ntrees = 100,
                          max_depth = 4,
-                         learn_rate = 0.1)
+                         learn_rate = 0.1
+                         seed = 1234)
 
         # Predict using the GBM model and the testing dataset
         pred <- h2o.predict(object = model, newdata = prostate_test)
         pred
-          predict         p0          p1
-        1       0 0.7414373 0.25856274
-        2       1 0.3114293 0.68857073
-        3       0 0.9852284 0.01477161
-        4       0 0.6647902 0.33520975
-        5       0 0.6075046 0.39249538
-        6       1 0.4065468 0.59345323
+          predict         p0         p1
+        1       1 0.37356795 0.62643205
+        2       1 0.50297850 0.49702150
+        3       0 0.97500684 0.02499316
+        4       1 0.03893694 0.96106306
+        5       1 0.36803642 0.63196358
+        6       0 0.61619851 0.38380149
 
-        [88 rows x 3 columns] 
+        [94 rows x 3 columns]
 
         # View a summary of the prediction with a probability of TRUE
         summary(pred$p1, exact_quantiles = TRUE)
-         p1                
-         Min.   :0.008925  
-         1st Qu.:0.160050  
-         Median :0.350236  
-         Mean   :0.451507  
-         3rd Qu.:0.818486  
-         Max.   :0.99040  
+         p1               
+         Min.   :0.01371  
+         1st Qu.:0.19169  
+         Median :0.38036  
+         Mean   :0.46153  
+         3rd Qu.:0.76427  
+         Max.   :0.99305 
  
    .. code-tab:: python
 
@@ -1757,7 +1758,8 @@ This section provides examples of performing predictions in Python and R. Refer 
         model = H2OGradientBoostingEstimator(distribution="bernoulli",
                                              ntrees=100,
                                              max_depth=4,
-                                             learn_rate=0.1)
+                                             learn_rate=0.1
+                                             seed=1234)
         model.train(y="CAPSULE", x=["AGE","RACE","PSA","GLEASON"],training_frame=h2o_df)
         
         # Predict using the GBM model and the testing dataset
@@ -1765,20 +1767,21 @@ This section provides examples of performing predictions in Python and R. Refer 
         
         # View a summary of the prediction
         predict.head()
-        predict        p0        p1
-        ---------  --------  --------
-                0  0.8993    0.1007
-                1  0.168391  0.831609
-                1  0.166067  0.833933
-                1  0.327212  0.672788
-                1  0.25991   0.74009
-                0  0.758978  0.241022
-                0  0.540797  0.459203
-                0  0.838489  0.161511
-                0  0.704853  0.295147
-                0  0.642381  0.357619
+          predict         p0         p1
+        ---------  ---------  ---------
+                1  0.156932   0.843068
+                1  0.0356714  0.964329
+                1  0.337696   0.662304
+                0  0.8993     0.1007
+                0  0.980414   0.0195859
+                0  0.732707   0.267293
+                1  0.0802611  0.919739
+                0  0.746197   0.253803
+                0  0.540797   0.459203
+                0  0.569026   0.430974
 
         [10 rows x 3 columns]
+
 
 Predicting Leaf Node Assignment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1801,12 +1804,12 @@ Using the previous example, run the following to predict the leaf node assignmen
         # View a summary of the leaf node assignment prediction
         summary(predict_lna$T1.C1, exact_quantiles = TRUE)
         T1.C1   
-        RRLR:15 
-        RRR :13 
-        LLLR:12 
-        LLLL:11 
-        LLRR: 8 
-        LLRL: 6 
+        RRLR:17 
+        LLRL:14 
+        LLRR:12 
+        LLLL: 9 
+        LLLR: 8 
+        LR  : 7  
 
 
    .. code-tab:: python
@@ -1832,16 +1835,15 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         contributions <- h2o.predict_contributions(model, prostate_test)
         contributions
 
-        AGE        RACE       PSA        GLEASON    BiasTerm
-        ---------  ---------- ---------  ---------  ----------
-        -0.3929753  0.02188157 0.3530045  0.5453218 -0.6589417
-        -0.6489378 -0.24417394 1.0434356  0.7937416 -0.6589417
-         0.3244801 -0.23901901 0.9877144  1.0463049 -0.6589417
-         0.9402978 -0.33412665 2.0499718  1.0571480 -0.6589417
-        -0.7762397  0.03393304 0.1952782  1.8620299 -0.6589417
-         0.5900557  0.03899451 0.6708371 -1.2606093 -0.6589417
+                 AGE       RACE        PSA     GLEASON   BiasTerm
+        1  0.2354442 0.10891530  0.6805168 -0.08492475 -0.4230114
+        2 -0.2292735 0.04030569 -0.5825636  1.18262947 -0.4230114
+        3  0.3438118 0.04973350 -1.7134142 -1.92096162 -0.4230114
+        4  0.3875818 0.17642064  2.7374423  0.32766509 -0.4230114
+        5  0.8319176 0.06423446  0.4820237 -0.41451377 -0.4230114
+        6  0.2011956 0.05311289 -1.3342544  1.02951384 -0.4230114
 
-         [95 rows x 5 columns]
+        [94 rows x 5 columns] 
 
 
    .. code-tab:: python
@@ -1850,20 +1852,20 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         contributions = model.predict_contributions(test)
         contributions
 
-        AGE          RACE        PSA        GLEASON    BiasTerm
-        -----------  ----------  ---------  ---------  ----------
-        -0.414587     0.0263119  -0.120703   0.407889   -0.581522
-         0.0913486    0.0250697  -0.746584   1.16642    -0.581522
-         0.565866     0.0603216   2.51301    0.739406   -0.581522
-        -0.670981     0.0210115   0.164873  -2.03487    -0.581522
-        -0.398603     0.0255295  -0.494069   0.537647   -0.581522
-         0.00915739   0.0458912   0.557667  -0.262171   -0.581522
-        -0.199497    -0.265438    2.18964    2.89974    -0.581522
-        -0.137073     0.0271401  -1.00939    1.47302    -0.581522
-         0.440857     0.0407717  -0.574498  -0.537758   -0.581522
-        -0.901466     0.0216657   0.453894  -2.39536    -0.581522
+              AGE        RACE        PSA    GLEASON    BiasTerm
+        ---------  ----------  ---------  ---------  ----------
+         0.059762   0.0184586   0.241755   1.94278    -0.581522
+         0.565866   0.0603216   2.51301    0.739406   -0.581522
+         0.403617   0.0309407   0.252671   0.567872   -0.581522
+        -1.21601    0.0196891  -1.45049    1.03886    -0.581522
+        -0.119863   0.0302918  -1.03283   -2.20925    -0.581522
+        -0.267365   0.0214974  -1.78324    1.60223    -0.581522
+        -0.413237   0.0354568   0.830573   2.56753    -0.581522
+         0.175868  -0.475495    0.250701  -0.447987   -0.581522
+         0.023115   0.0458912   0.659747  -0.310784   -0.581522
+         0.2697     0.0360893  -0.548406   0.546261   -0.581522
 
-        [58 rows x 5 columns]
+        [61 rows x 5 columns]
 
         # Import required packages for running SHAP commands
         import shap
@@ -1935,15 +1937,15 @@ Using the previous example, run the following to the find frequency of each feat
         feature_frequencies <- h2o.feature_frequencies(model, prostate_train)
         feature_frequencies
 
-        AGE RACE PSA GLEASON
-         98    8 199      46
-        114    6 238      42
-        103    9 227      57
-         94   13 183      53
-        103    9 225      57
-        102    5 238      36
+          AGE RACE PSA GLEASON
+        1  98   12 211      51
+        2 109   17 223      50
+        3 101   16 225      54
+        4 105   24 155      49
+        5 112   24 178      52
+        6 103   24 171      53
 
-        [275 rows x 4 columns]
+        [286 rows x 4 columns]
 
    .. code-tab:: python
 
@@ -1952,20 +1954,20 @@ Using the previous example, run the following to the find frequency of each feat
         feature_frequencies = model.feature_frequencies(train)
         feature_frequencies
 
-        AGE    RACE    PSA    GLEASON
+          AGE    RACE    PSA    GLEASON
         -----  ------  -----  ---------
-        109      10    197         68
-        109       3    220         64
-        101      11    222         66
-        106       6    188         65
-         90       1    199         61
-        130       7    194         65
-        103       3    217         66
-        103      11    203         65
-        102       3    218         66
-        112       6    203         64
+          109      10    197         68
+          109       3    220         64
+          106       6    188         65
+          108      11    215         66
+          130       7    194         65
+          123       9    179         70
+          103       3    217         66
+          103      11    203         65
+          112       6    203         64
+          102       3    199         60
 
-        [273 rows x 4 columns]
+        [261 rows x 4 columns]
 
 Predict using MOJOs
 ~~~~~~~~~~~~~~~~~~~
