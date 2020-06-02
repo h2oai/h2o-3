@@ -1,7 +1,7 @@
 #!/bin/bash -ex
 
-# Script for installing all R versions specified as comma separated list
-# in ${1} or in ${R_VERSIONS}.
+# Script for installing all Py versions specified as comma separated list
+# in ${1} or in ${PYTHON_VERSIONS}.
 
 if [[ ! ${H2O_BRANCH} ]]; then
  echo "H2O_BRANCH must be set"
@@ -24,15 +24,27 @@ wget -nv https://raw.githubusercontent.com/h2oai/h2o-3/${H2O_BRANCH}/h2o-py/docs
 IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
 for python_version in "${array[@]}"; do
   echo "###### Installing Python ${python_version} ######"
+  if [[ "${python_version}" =~ ^([0-9])\.([0-9]+).* ]]; then
+    major=${BATCH_REMATCH[1]}
+    minor=${BATCH_REMATCH[2]}
+  fi
+  if [[ ${major} == "2" ]] ; then pkg_suffix="" ; else pkg_suffix=${major} ; fi
+
   apt-get update
-  DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version} python${python_version}-dev
-  if [[ "3.7 3.8 3.9" == *${python_version}* ]]; then
+
+  DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version} python${python_version}-dev python${pkg_suffix}-setuptools
+  if [[ ${major} -ge 3 && ${minor} -ge 7 ]]; then
       DEBIAN_FRONTEND=noninteractive apt-get -y install python${python_version}-distutils
   fi
   apt-get clean
   rm -rf /var/cache/apt/*
 
+  echo "###### Installing pip for Python ${python_version} ######"
+  python${python_version} -m easy_install pip
+  #python${python_version} -m pip -U install pip
+
   echo "###### Creating Virtualenv for Python ${python_version} ######"
+  python${python_version} -m pip install virtualenv
   mkdir -p /envs/h2o_env_python${python_version}
   chmod a+w -R /envs/h2o_env_python${python_version}
   su jenkins -c "virtualenv -p python${python_version} /envs/h2o_env_python${python_version}"
@@ -40,7 +52,7 @@ for python_version in "${array[@]}"; do
   echo "###### Installing dependencies for Python ${python_version} ######"
   su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && pip uninstall setuptools -y && pip install setuptools" # resinstalling setuptools fixes install issues for sphinx-osexample
   su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && grep -v \"^#\" test-requirements.txt | sed -r 's/(.*)/\"\\1\"/' | xargs -n 1 -L 1 pip install"
-  if [[ $python_version == 3.* ]]; then
+  if [[ ${major} == "3" ]]; then
     su jenkins -c ". /envs/h2o_env_python${python_version}/bin/activate && grep -v \"^#\" docs-requirements.txt | sed -r 's/(.*)/\"\\1\"/' | xargs -n 1 -L 1 pip install"    
   fi
   su jenkins -c "mkdir -p ~/.config/matplotlib/ && echo "backend: Agg" > ~/.config/matplotlib/matplotlibrc"

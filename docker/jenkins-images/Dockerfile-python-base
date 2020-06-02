@@ -12,8 +12,7 @@ RUN \
         libxfixes3 libxi6 libxrandr2 libxrender1 libxss1 libxtst6 ca-certificates fonts-liberation libappindicator1 libnss3 lsb-release xdg-utils libblas-dev liblapack-dev \
         chromium-browser \
         libkrb5-dev \
-        nodejs \
-        python-virtualenv && \
+        nodejs && \
     apt-get clean && \
     rm -rf /var/cache/apt/*
 
