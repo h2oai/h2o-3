@@ -16,7 +16,10 @@ import org.apache.http.conn.ssl.TrustSelfSignedStrategy;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.HttpMultipartMode;
+import org.apache.http.entity.mime.MIME;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.entity.mime.content.AbstractContentBody;
+import org.apache.http.entity.mime.content.InputStreamBody;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
@@ -28,6 +31,8 @@ import water.Key;
 import javax.net.ssl.SSLContext;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.net.URISyntaxException;
 import java.security.GeneralSecurityException;
 
@@ -109,23 +114,72 @@ public class XGBoostHttpClient {
         return executeRequestAndReturnResponse(httpReq, transformer);
     }
     
-    public XGBoostExecRespV3 uploadBytes(Key key, String dataType, byte[] data) {
-        URIBuilder builder;
-        HttpPost httpReq;
+    private HttpPost makeUploadRequest(Key key, String dataType) {
         try {
-            builder = new URIBuilder(baseUri + "upload");
-            builder.setParameter("model_key", key.toString())
+            URIBuilder uri = new URIBuilder(baseUri + "upload");
+            uri.setParameter("model_key", key.toString())
                 .setParameter("data_type", dataType);
-            httpReq = new HttpPost(builder.build());
+            return new HttpPost(uri.build());
         } catch (URISyntaxException e) {
             throw new RuntimeException("Failed to build request URI.", e);
         }
+    }
+    
+    public void uploadBytes(Key key, String dataType, byte[] data) {
+        LOG.info("Request upload " + key + " " + dataType + " " + data.length + " bytes");
+        HttpPost httpReq = makeUploadRequest(key, dataType);
         HttpEntity entity = MultipartEntityBuilder.create()
             .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
             .addBinaryBody("file", data, ContentType.DEFAULT_BINARY, "upload")
             .build();
         httpReq.setEntity(entity);
-        return executeRequestAndReturnResponse(httpReq, JsonResponseTransformer);
+        XGBoostExecRespV3 resp = executeRequestAndReturnResponse(httpReq, JsonResponseTransformer);
+        assert resp.key.key().equals(key);
+    }
+    
+    private static class ObjectBody extends AbstractContentBody {
+        
+        private final Object object;
+
+        private ObjectBody(Object object) {
+            super(ContentType.DEFAULT_BINARY);
+            this.object = object;
+        }
+
+        @Override
+        public String getFilename() {
+            return "upload";
+        }
+
+        @Override
+        public void writeTo(OutputStream out) throws IOException {
+            LOG.debug("Sending matrix data");
+            ObjectOutputStream os = new ObjectOutputStream(out);
+            os.writeObject(object);
+            os.flush();
+        }
+
+        @Override
+        public String getTransferEncoding() {
+            return MIME.ENC_BINARY;
+        }
+
+        @Override
+        public long getContentLength() {
+            return -1;
+        }
+    }
+
+    public void uploadObject(Key key, String dataType, Object data) {
+        LOG.info("Request upload " + key + " " + dataType + " " + data.getClass().getSimpleName());
+        HttpPost httpReq = makeUploadRequest(key, dataType);
+        HttpEntity entity = MultipartEntityBuilder.create()
+            .setMode(HttpMultipartMode.BROWSER_COMPATIBLE)
+            .addPart("file", new ObjectBody(data))
+            .build();
+        httpReq.setEntity(entity);
+        XGBoostExecRespV3 resp = executeRequestAndReturnResponse(httpReq, JsonResponseTransformer);
+        assert resp.key.key().equals(key);
     }
 
     private <T> T executeRequestAndReturnResponse(HttpPost req, ResponseTransformer<T> transformer) {

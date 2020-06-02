@@ -108,6 +108,7 @@ shadowJar {
   mergeServiceFiles()
   // CDH 5.3.0 provides joda-time v1.6 which is too old, shadow the library instead
   relocate 'org.joda.time', 'ai.h2o.org.joda.time'
+  relocate 'org.apache.http', 'ai.h2o.org.apache.http'
   exclude hadoopShadowJarExcludes
   relocate 'com.google.common', 'ai.h2o.com.google.common'
   baseName = 'h2odriver'

@@ -32,17 +32,7 @@ public class XGBoostUploadMatrixTask extends AbstractXGBoostTask<XGBoostUploadMa
     @Override
     protected void execute() {
         XGBoostHttpClient client = new XGBoostHttpClient(remoteNodes[H2O.SELF.index()], https, userName, password);
-        try {
-            LOG.debug("Writing matrix data into memory buffer");
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutputStream os = new ObjectOutputStream(bos);
-            os.writeObject(matrixLoader.makeLocalMatrix());
-            os.close();
-            LOG.debug("Written " + bos.size() + " bytes to memory, uploading.");
-            client.uploadBytes(_modelKey, "matrix", bos.toByteArray());
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to save the matrix to file-system.", e);
-        }
+        client.uploadObject(_modelKey, "matrix", matrixLoader.makeLocalMatrix());
     }
 
 }
