@@ -28,6 +28,10 @@ public class MakeGLMModelHandler extends Handler {
       throw new IllegalArgumentException("missing source model " + args.model);
     String [] names = model._output.coefficientNames();
     Map<String,Double> coefs = model.coefficients();
+    if (args.beta.length != names.length) {
+      throw new IllegalArgumentException("model coefficient length " + names.length + " is different from coefficient" +
+              " provided by user " + args.beta.length+".\n model coefficients needed are:\n"+String.join("\n", names));
+    }
     for(int i = 0; i < args.names.length; ++i)
       coefs.put(args.names[i],args.beta[i]);
     double [] beta = model.beta().clone();
