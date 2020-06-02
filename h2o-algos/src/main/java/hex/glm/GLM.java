@@ -381,7 +381,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
   private transient GLMModel _model;
   @Override
   public int nclasses() {
-    if (_parms._family == Family.multinomial || _parms._family == Family.ordinal)
+    if (_parms._family == Family.multinomial || _parms._family == Family.ordinal || _parms._family == Family.AUTO)
       return _nclass;
     if (Family.binomial == _parms._family || Family.quasibinomial == _parms._family
             || Family.fractionalbinomial == _parms._family)
@@ -422,7 +422,9 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
     return _nullBeta;
   }
 
-  protected boolean computePriorClassDistribution(){return (_parms._family==Family.multinomial)||(_parms._family==Family.ordinal);}
+  protected boolean computePriorClassDistribution() {
+    return (_parms._family == Family.multinomial) || (_parms._family == Family.ordinal) || (_parms._family == Family.AUTO && nclasses() > 2);
+  }
 
   @Override
   public void init(boolean expensive) {
@@ -438,6 +440,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         error("_solver", "Solvers GRADIENT_DESCENT_LH and GRADIENT_DESCENT_SQERR are only " +
                 "supported for ordinal regression.  Do not choose them unless you specify your family to be ordinal");
       switch (_parms._family) {
+        case AUTO:
+          if (nclasses() == 1 & _parms._link != Link.family_default && _parms._link != Link.identity 
+                  && _parms._link != Link.log && _parms._link != Link.inverse) {
+            error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default, identity, log or inverse."));
+          } else if (nclasses() == 2 & _parms._link != Link.family_default && _parms._link != Link.logit) {
+            error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or logit."));
+          } else if (nclasses() > 2 & _parms._link != Link.family_default & _parms._link != Link.multinomial) {
+            error("_family", H2O.technote(2, "AUTO for undelying response requires the link to be family_default or multinomial."));
+          }
+          break;
         case binomial:
           if (!_response.isBinary() && _nclass != 2)
             error("_family", H2O.technote(2, "Binomial requires the response to be a 2-class categorical or a binary column (0/1)"));
@@ -519,6 +531,15 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       _t0 = System.currentTimeMillis();
       if ((_parms._lambda_search || !_parms._intercept || _parms._lambda == null || _parms._lambda[0] > 0) && !_parms._HGLM)
         _parms._use_all_factor_levels = true;
+      if (_parms._family == Family.AUTO) {
+        if (_nclass == 1) {
+          _parms._family = Family.gaussian;
+        } else if (_nclass == 2) {
+          _parms._family = Family.binomial;
+        } else {
+          _parms._family = Family.multinomial;
+        }
+      }
       if (_parms._link == Link.family_default)
         _parms._link = _parms._family.defaultLink;
       if (_parms._plug_values != null) {
