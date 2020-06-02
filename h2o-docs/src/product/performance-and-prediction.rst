@@ -1573,7 +1573,7 @@ Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j
     :height: 483
     :width: 355
 
-Examples:
+Binomial Examples:
 
 .. tabs::
    .. code-tab:: r R
@@ -1615,6 +1615,61 @@ Examples:
 
         #build the partial dependence plot:
         pros_gbm.partial_plot(data = prostate, cols = ["AGE","RACE"], server=True, plot = True)
+
+.. figure:: images/pdp_ageVmean.png
+  :alt: Partial Dependence Age Vs Mean Plot
+  :scale: 50%
+
+.. figure:: images/pdp_raceVmean.png
+  :alt: Partial Dependence Race Vs Mean Plot
+  :scale: 50%
+
+
+Multinomial Examples:
+
+.. tabs::
+    .. code-tab:: r R
+
+        # import the iris dataset:
+        iris <- as.h2o(iris)
+
+        # build and train the model:
+        iris_gbm <- h2o.gbm(x = c(1:4), y = 5, training_frame = iris)
+
+        # build the partial dependence plot:
+        h2o.partialPlot(object = iris_gbm, data = iris, cols="petal_len", targets=c("Iris-setosa", "Iris-virginica", "Iris-versicolor"))
+
+
+    .. code-tab:: python
+
+        # import H2OGeneralizedLinearEstimator and the iris dataset:
+        from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+        # set the factors:
+        iris['class'] = iris['class'].asfactor()
+        iris['random_cat'] = iris['class']
+
+        # set the predictors and response columns:
+        predictors = iris.col_names[:-1]
+        response = 'class'
+
+        # split the dataset into train and valid sets:
+        train, valid = iris.split_frame(ratios = [.8], seed = 1234)
+
+        # build and train the model:
+        model = H2OGeneralizedLinearEstimator(family = 'multinomial')
+        model.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+
+        # build the partial dependence plot:
+        cols = ["petal_len"]
+        targets = ["Iris-setosa"]
+        pdp_petal_len_se = model.partial_plot(data=iris, cols=cols, targets=targets, plot_stddev=False, plot=True, server=True)
+        pdp_petal_len_se
+
+.. figure:: images/pdp_multinomial.png
+  :alt: Multinomial Partial Dependence Plot
+  :scale: 30%
 
 Prediction
 ----------
