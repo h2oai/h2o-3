@@ -693,8 +693,8 @@ If you cannot install Graphviz on your environment, another option is to produce
   :alt: Example Output Picture
   :scale: 50%
 
-GBM MOJO to ONNX Converter
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Printing GBM MOJOs
+~~~~~~~~~~~~~~~~~~
 
 The ``print_mojo`` function allows a GBM model to be coverted to `ONNX <https://onnx.ai/about.html>`__ representation, which means the model will be rendered in an "open format built to represent" ML models. This allows you to use the model with a variety of frameworks, tools, runtimes, and compilers. 
 
