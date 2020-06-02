@@ -227,18 +227,21 @@ try {
                                 if (params.TEST_RELEASE) {
                                     env["DOCKER_IMAGE_NAME"]="h2oai/h2o-open-source-k8s-test"
                                     env["DOCKER_IMAGE_LATEST_TAG"]= "latest" // the most recent test build is always latest
+                                    env["DOCKER_IMAGE_TAG"]= env["PROJECT_VERSION"] + "-" + currentBuild.number
                                 } else {
                                     env["DOCKER_IMAGE_NAME"]="h2oai/h2o-open-source-k8s"
                                     if(env.NIGHTLY_BUILD){
                                         // If the build is not a test build and is nightly, the update the latest-nightly tag.
                                         env["DOCKER_IMAGE_LATEST_TAG"]= "latest-nightly"
+                                        env["DOCKER_IMAGE_TAG"]= env["PROJECT_VERSION"] + "-" + currentBuild.number
                                     } else {
                                         // If the build is not a test build and is an ordinary release, update the latest tag.
                                         // The "latest" tag means stable.
                                         env["DOCKER_IMAGE_LATEST_TAG"]= "latest"
+                                        env["DOCKER_IMAGE_TAG"]= env["PROJECT_VERSION"]
                                     }
                                 }
-                                env["DOCKER_IMAGE_TAG"]= env["PROJECT_VERSION"]
+
                                 sh """
                                       cd ${env.BUILD_NUMBER_DIR}
                                       make -f scripts/jenkins/Makefile.jenkins h2o-docker-build h2o-docker-push
