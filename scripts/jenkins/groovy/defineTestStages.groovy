@@ -177,6 +177,19 @@ def call(final pipelineContext) {
       stageName: 'Py3.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.7',
       timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
+    [
+      stageName: 'Py3.8 Small', target: 'test-pyunit-small', pythonVersion: '3.8',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.8 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.8',
+      timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.8 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.8',
+      timeoutValue: 120, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+
   ]
 
   def BENCHMARK_STAGES = [
