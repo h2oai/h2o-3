@@ -11,7 +11,7 @@
     },
     {
       "type": "cs",
-      "input": "# Did you download the files?\nhasLocalData = true\n# Point to folder containing them\nlocation = \"../../bigdata/laptop/kdd2009/small-churn/\"\n\n# Configure file locations\nif hasLocalData\n trainFile = location + \"kdd_train.csv\"\n validFile = location + \"kdd_valid.csv\"\nelse\n trainFile = \"https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_train.csv\"\n validFile = \"https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_valid.csv\""
+      "input": "# Did you download the files?\nhasLocalData = false\n# Point to folder containing them\nlocation = \"./bigdata/laptop/kdd2009/small-churn/\"\n\n# Configure file locations\nif hasLocalData\n trainFile = location + \"kdd_train.csv\"\n validFile = location + \"kdd_valid.csv\"\nelse\n trainFile = \"https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_train.csv\"\n validFile = \"https://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/kdd2009/small-churn/kdd_valid.csv\""
     },
     {
       "type": "md",
