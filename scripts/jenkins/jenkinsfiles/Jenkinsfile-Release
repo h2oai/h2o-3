@@ -226,11 +226,11 @@ try {
                             withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME')]) {
                                 environment {
                                     if (params.TEST_RELEASE) {
-                                        DOCKER_IMAGE_NAME = "h2oai/h2o-open-source-k8s-test"
+                                        DOCKER_IMAGE_NAME="h2oai/h2o-open-source-k8s-test"
                                     } else {
-                                        DOCKER_IMAGE_NAME = "h2oai/h2o-open-source-k8s"
+                                        DOCKER_IMAGE_NAME="h2oai/h2o-open-source-k8s"
                                     }
-                                    DOCKER_IMAGE_TAG = $ { env.PROJECT_VERSION }
+                                    DOCKER_IMAGE_TAG=${ env.PROJECT_VERSION }
                                 }
                                 sh """
                                       cd ${env.BUILD_NUMBER_DIR}
