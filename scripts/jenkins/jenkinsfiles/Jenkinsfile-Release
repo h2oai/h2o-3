@@ -224,14 +224,12 @@ try {
                             pipelineContext.getBuildSummary().addStageSummary(this, BUILD_H2O_DOCKER_STAGE_NAME, env.BUILD_NUMBER_DIR)
                             pipelineContext.getBuildSummary().setStageDetails(this, BUILD_H2O_DOCKER_STAGE_NAME, env.NODE_NAME, env.WORKSPACE)
                             withCredentials([usernamePassword(credentialsId: 'dockerhub', passwordVariable: 'DOCKERHUB_PASSWORD', usernameVariable: 'DOCKERHUB_USERNAME')]) {
-                                environment {
-                                    if (params.TEST_RELEASE) {
-                                        DOCKER_IMAGE_NAME="h2oai/h2o-open-source-k8s-test"
-                                    } else {
-                                        DOCKER_IMAGE_NAME="h2oai/h2o-open-source-k8s"
-                                    }
-                                    DOCKER_IMAGE_TAG=${ env.PROJECT_VERSION }
+                                if (params.TEST_RELEASE) {
+                                    env["DOCKER_IMAGE_NAME"]="h2oai/h2o-open-source-k8s-test"
+                                } else {
+                                    env["DOCKER_IMAGE_NAME"]="h2oai/h2o-open-source-k8s"
                                 }
+                                env["DOCKER_IMAGE_TAG"]=${ env.PROJECT_VERSION }
                                 sh """
                                       cd ${env.BUILD_NUMBER_DIR}
                                       make -f scripts/jenkins/Makefile.jenkins h2o-docker-build h2o-docker-push
