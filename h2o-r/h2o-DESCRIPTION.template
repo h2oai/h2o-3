@@ -57,7 +57,8 @@ Suggests: ggplot2,
           data.table (>= 1.9.8),
           rgl (>= 0.100.19),
           plot3Drgl (>= 1.0.1),
-          survival
+          survival,
+          plyr
 Collate:
          'aggregator.R'
          'astfun.R'
