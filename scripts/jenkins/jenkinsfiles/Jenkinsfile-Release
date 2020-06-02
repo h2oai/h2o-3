@@ -229,7 +229,7 @@ try {
                                 } else {
                                     env["DOCKER_IMAGE_NAME"]="h2oai/h2o-open-source-k8s"
                                 }
-                                env["DOCKER_IMAGE_TAG"]=${ env.PROJECT_VERSION }
+                                env["DOCKER_IMAGE_TAG"]= env["PROJECT_VERSION"]
                                 sh """
                                       cd ${env.BUILD_NUMBER_DIR}
                                       make -f scripts/jenkins/Makefile.jenkins h2o-docker-build h2o-docker-push
