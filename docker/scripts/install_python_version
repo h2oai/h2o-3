@@ -25,8 +25,8 @@ IFS=',' read -r -a array <<< ${VERSIONS_TO_INSTALL}
 for python_version in "${array[@]}"; do
   echo "###### Installing Python ${python_version} ######"
   if [[ "${python_version}" =~ ^([0-9])\.([0-9]+).* ]]; then
-    major=${BATCH_REMATCH[1]}
-    minor=${BATCH_REMATCH[2]}
+    major=${BASH_REMATCH[1]}
+    minor=${BASH_REMATCH[2]}
   fi
   if [[ ${major} == "2" ]] ; then pkg_suffix="" ; else pkg_suffix=${major} ; fi
 
