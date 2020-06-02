@@ -696,7 +696,7 @@ If you cannot install Graphviz on your environment, another option is to produce
 Printing GBM MOJOs
 ~~~~~~~~~~~~~~~~~~
 
-The ``print_mojo`` function allows a GBM model to be coverted to `ONNX <https://onnx.ai/about.html>`__ representation, which means the model will be rendered in an "open format built to represent" ML models. This allows you to use the model with a variety of frameworks, tools, runtimes, and compilers. 
+The ``print_mojo`` function allows a model to be converted to machine readable representation - either to JSON for further processing or ``dot`` for rendering images.
 
 When running ``print_mojo``, the following can be specified:
 
