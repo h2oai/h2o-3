@@ -147,7 +147,7 @@ public class Score extends CMetricScoringTask<Score> {
       assert preds != null : "Predictions were pre-created";
       mm = _mb.makeModelMetrics(model, fr, adaptedFr, preds);
     } else {
-      boolean calculatePreds = preds == null && model._parms._distribution == DistributionFamily.huber;
+      boolean calculatePreds = preds == null && model.isDistributionHuber();
       // FIXME: PUBDEV-4992 we should avoid doing full scoring!
       if (calculatePreds) {
         Log.warn("Going to calculate predictions from scratch. This can be expensive for large models! See PUBDEV-4992");

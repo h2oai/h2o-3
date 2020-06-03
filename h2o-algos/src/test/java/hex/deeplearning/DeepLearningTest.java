@@ -1881,7 +1881,7 @@ public class DeepLearningTest extends TestUtil {
   @Test
   public void testHuberDeltaLarge() {
     Frame tfr = null;
-    DeepLearningModel dl = null;
+    DeepLearningModel dl = null, dl2 = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -1899,17 +1899,35 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,0.7);
       Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl._output._training_metrics)._MSE,0.7);
 
+      // the same for distribution = AUTO representing Huber:
+      DeepLearningParameters parms2 = new DeepLearningParameters();
+      parms2._train = tfr._key;
+      parms2._response_column = tfr.lastVecName();
+      parms2._reproducible = true;
+      parms2._hidden = new int[]{20,20};
+      parms2._seed = 0xdecaf;
+      parms2._distribution = AUTO;
+      parms2._loss = DeepLearningParameters.Loss.Huber;
+      parms2._huber_alpha = 1; //just like gaussian
+
+      dl2 = new DeepLearning(parms2).trainModel().get();
+      
+      Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl2._output._training_metrics)._mean_residual_deviance,0.7);
+      Assert.assertEquals(12.93808 /*MSE*/,((ModelMetricsRegression)dl2._output._training_metrics)._MSE,0.7);
+
     } finally {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+      if (dl2 != null) dl2.deleteCrossValidationModels();
+      if (dl2 != null) dl2.delete();  
     }
   }
 
   @Test
   public void testHuberDeltaTiny() {
     Frame tfr = null;
-    DeepLearningModel dl = null;
+    DeepLearningModel dl = null, dl2 = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -1930,17 +1948,35 @@ public class DeepLearningTest extends TestUtil {
       Assert.assertEquals((2*2.31398/*MAE*/-delta)*delta,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,2e-2);
       Assert.assertEquals(19.856,((ModelMetricsRegression)dl._output._training_metrics)._MSE,1e-3);
 
+      // the same for distribution = AUTO representing Huber:
+      DeepLearningParameters parms2 = new DeepLearningParameters();
+      parms2._train = tfr._key;
+      parms2._response_column = tfr.lastVecName();
+      parms2._reproducible = true;
+      parms2._hidden = new int[]{20,20};
+      parms2._seed = 0xdecaf;
+      parms2._distribution = AUTO;
+      parms2._loss = DeepLearningParameters.Loss.Huber;
+      parms2._huber_alpha = 1e-2;
+
+      dl2 = new DeepLearning(parms2).trainModel().get();
+      
+      Assert.assertEquals((2*2.31398/*MAE*/-delta)*delta,((ModelMetricsRegression)dl2._output._training_metrics)._mean_residual_deviance,2e-2);
+      Assert.assertEquals(19.856,((ModelMetricsRegression)dl2._output._training_metrics)._MSE,1e-3);
+
     } finally {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+      if (dl2 != null) dl2.deleteCrossValidationModels();
+      if (dl2 != null) dl2.delete();
     }
   }
 
   @Test
   public void testHuber() {
     Frame tfr = null;
-    DeepLearningModel dl = null;
+    DeepLearningModel dl = null, dl2 = null;
 
     try {
       tfr = parse_test_file("./smalldata/gbm_test/BostonHousing.csv");
@@ -1956,10 +1992,26 @@ public class DeepLearningTest extends TestUtil {
 
       Assert.assertEquals(6.4964976811,((ModelMetricsRegression)dl._output._training_metrics)._mean_residual_deviance,1e-5);
 
+      // the same for distribution = AUTO representing Huber:
+      DeepLearningParameters parms2 = new DeepLearningParameters();
+      parms2._train = tfr._key;
+      parms2._response_column = tfr.lastVecName();
+      parms2._reproducible = true;
+      parms2._hidden = new int[]{20,20};
+      parms2._seed = 0xdecaf;
+      parms2._distribution = AUTO;
+      parms2._loss = DeepLearningParameters.Loss.Huber;
+
+      dl2 = new DeepLearning(parms2).trainModel().get();
+
+      Assert.assertEquals(6.4964976811,((ModelMetricsRegression)dl2._output._training_metrics)._mean_residual_deviance,1e-5);
+
     } finally {
       if (tfr != null) tfr.delete();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+      if (dl2 != null) dl2.deleteCrossValidationModels();
+      if (dl2 != null) dl2.delete();
     }
   }
 
@@ -2127,7 +2179,7 @@ public class DeepLearningTest extends TestUtil {
   @Test
   public void testCategoricalEncodingRegressionHuber() {
     Frame tfr = null;
-    DeepLearningModel dl = null;
+    DeepLearningModel dl = null, dl2 = null;
 
     try {
       String response = "age";
@@ -2158,10 +2210,31 @@ public class DeepLearningTest extends TestUtil {
       int mean_residual_deviance_row = Arrays.binarySearch(dl._output._cross_validation_metrics_summary.getRowHeaders(), "mean_residual_deviance");
       Assert.assertEquals(117.8014, Double.parseDouble((String)(dl._output._cross_validation_metrics_summary).get(mean_residual_deviance_row,0)), 1);
 
+      // the same for distribution = AUTO representing Huber:
+      DeepLearningParameters parms2 = new DeepLearningParameters();
+      parms2._train = tfr._key;
+      parms2._valid = tfr._key;
+      parms2._response_column = response;
+      parms2._reproducible = true;
+      parms2._hidden = new int[]{20,20};
+      parms2._seed = 0xdecaf;
+      parms2._nfolds = 3;
+      parms2._distribution = AUTO;
+      parms2._loss = DeepLearningParameters.Loss.Huber;
+      parms2._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.Binary;
+
+      dl2 = new DeepLearning(parms2).trainModel().get();
+
+      Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl2._output._training_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(87.26206135855, ((ModelMetricsRegression)dl2._output._validation_metrics)._mean_residual_deviance,1e-4);
+      Assert.assertEquals(117.8014, ((ModelMetricsRegression)dl2._output._cross_validation_metrics)._mean_residual_deviance,1e-4);
+
     } finally {
       if (tfr != null) tfr.remove();
       if (dl != null) dl.deleteCrossValidationModels();
       if (dl != null) dl.delete();
+      if (dl2 != null) dl2.deleteCrossValidationModels();
+      if (dl2 != null) dl2.delete();
     }
   }
 
