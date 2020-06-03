@@ -3,6 +3,7 @@ package hex.genmodel;
 import com.google.gson.*;
 import hex.genmodel.attributes.ModelAttributes;
 import hex.genmodel.attributes.ModelJsonReader;
+import hex.genmodel.attributes.Table;
 import hex.genmodel.descriptor.ModelDescriptorBuilder;
 import hex.genmodel.utils.ParseUtils;
 import hex.genmodel.utils.StringEscapeUtils;
@@ -200,6 +201,16 @@ public abstract class ModelMojoReader<M extends MojoModel> {
               .build();
       _model._modelAttributes = readModelSpecificAttributes();
     }
+    _model._reproducibilityInformation = readReproducibilityInformation() ;
+  }
+
+  protected Table[] readReproducibilityInformation() {
+    final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
+    if (modelJson != null && modelJson.get("output") != null) {
+      Table[] tables = ModelJsonReader.readTableArray(modelJson, "output.reproducibility_information_table");
+      return tables;
+    }
+    return null;
   }
 
   protected ModelAttributes readModelSpecificAttributes() {

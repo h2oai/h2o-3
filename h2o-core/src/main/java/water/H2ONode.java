@@ -3,12 +3,10 @@ package water;
 import water.nbhm.NonBlockingHashMap;
 import water.nbhm.NonBlockingHashMapLong;
 import water.network.SocketChannelFactory;
-import water.util.ArrayUtils;
-import water.util.Log;
-import water.util.MathUtils;
-import water.util.UnsafeUtils;
+import water.util.*;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -41,7 +39,7 @@ public final class H2ONode extends Iced<H2ONode> implements Comparable {
     
   transient private short _timestamp;
   transient private boolean _removed_from_cloud;
-  transient private volatile boolean _accessed_local_dkv; // Did this remote node ever accessed the local portion of DKV?   
+  transient private volatile boolean _accessed_local_dkv; // Did this remote node ever accessed the local portion of DKV?
 
   public final boolean isClient() {
     return _heartbeat._client;

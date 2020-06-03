@@ -176,6 +176,21 @@ public abstract class SharedTreeModel<
       _modelClassDist = _priorClassDist;
     }
 
+    @Override
+    public TwoDimTable createInputFramesInformationTable(ModelBuilder modelBuilder) {
+      SharedTreeParameters params = (SharedTreeParameters) modelBuilder._parms;
+      TwoDimTable table = super.createInputFramesInformationTable(modelBuilder);
+      table.set(2, 0, "calibration_frame");
+      table.set(2, 1, params.getCalibrationFrame() != null ? params.getCalibrationFrame().checksum() : -1);
+      table.set(2, 2, params.getCalibrationFrame() != null ? Arrays.toString(params.getCalibrationFrame().anyVec().espc()) : -1);
+      return table;
+    }
+
+    @Override
+    public int getInformationTableNumRows() {
+      return super.getInformationTableNumRows() + 1;
+    }
+
     // Append next set of K trees
     public void addKTrees( DTree[] trees) {
       // DEBUG: Print the generated K trees

@@ -13,8 +13,10 @@ import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.QuantileModel;
 import org.joda.time.DateTime;
+import org.joda.time.DateTimeZone;
 import water.*;
 import water.api.ModelsHandler;
+import water.api.RestApiExtension;
 import water.api.StreamWriter;
 import water.api.StreamingSchema;
 import water.api.schemas3.KeyV3;
@@ -23,6 +25,7 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
+import water.parser.ParseTime;
 import water.persist.Persist;
 import water.udf.CFuncRef;
 import water.util.*;
@@ -504,7 +507,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface InteractionBuilder {
     Frame makeInteractions(Frame f);
   }
-
+  
   public static class InteractionSpec extends Iced {
     private String[] _columns;
     private StringPair[] _pairs;
@@ -705,6 +708,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public long _end_time;
     public long _run_time;
     public long _total_run_time; // includes building of cv models
+    public static int INFORMATION_TABLE_NUM_ROWS = 2;
     protected void startClock() { _start_time = System.currentTimeMillis(); }
     protected void stopClock()  {
       _end_time   = System.currentTimeMillis();
@@ -742,6 +746,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _hasFold = b.hasFoldCol();
       _distribution = b._distribution;
       _priorClassDist = b._priorClassDist;
+      _reproducibility_information_table = createReproducibilityInformationTable(b);
       assert(_job==null);  // only set after job completion
       _defaultThreshold = -1;
     }
@@ -786,6 +791,13 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
      * User-facing model summary - Display model type, complexity, size and other useful stats
      */
     public TwoDimTable _model_summary;
+
+    /**
+     * Reproducibility information describing the current cluster configuration, each node configuration
+     * and checksums for each frame used on the input of the algorithm
+     */
+    public TwoDimTable[] _reproducibility_information_table;
+    
 
     /**
      * User-facing model scoring history - 2D table with modeling accuracy as a function of time/trees/epochs/iterations, etc.
@@ -937,6 +949,46 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       if (_cross_validation_metrics!=null) sb.append(_cross_validation_metrics.toString());
       printTwoDimTables(sb, this);
       return sb.toString();
+    }
+
+    private TwoDimTable[] createReproducibilityInformationTable(ModelBuilder modelBuilder) {
+      TwoDimTable nodeInformation = ReproducibilityInformationUtils.createNodeInformationTable();
+      TwoDimTable clusterConfiguration = ReproducibilityInformationUtils.createClusterConfigurationTable();
+      TwoDimTable inputFramesInformation = createInputFramesInformationTable(modelBuilder);
+      TwoDimTable[] tables = {nodeInformation, clusterConfiguration, inputFramesInformation};
+      return tables;
+    }
+
+    public TwoDimTable createInputFramesInformationTable(ModelBuilder modelBuilder) {
+      List<String> colHeaders = new ArrayList<>();
+      List<String> colTypes = new ArrayList<>();
+      List<String> colFormat = new ArrayList<>();
+
+      colHeaders.add("Input Frame"); colTypes.add("string"); colFormat.add("%s");
+      colHeaders.add("Checksum"); colTypes.add("long"); colFormat.add("%d");
+      colHeaders.add("ESPC"); colTypes.add("string"); colFormat.add("%d");
+
+      final int rows = getInformationTableNumRows();
+      TwoDimTable table = new TwoDimTable(
+              "Input Frames Information", null,
+              new String[rows],
+              colHeaders.toArray(new String[0]),
+              colTypes.toArray(new String[0]),
+              colFormat.toArray(new String[0]),
+              "");
+
+      table.set(0, 0, "training_frame");
+      table.set(1, 0, "validation_frame");
+      table.set(0, 1, modelBuilder.train() != null ? modelBuilder.train().checksum() : -1);
+      table.set(1, 1, modelBuilder._valid != null ? modelBuilder.valid().checksum() : -1);
+      table.set(0, 2, modelBuilder.train() != null ? Arrays.toString(modelBuilder.train().anyVec().espc()) : -1);
+      table.set(1, 2, modelBuilder._valid != null ? Arrays.toString(modelBuilder.valid().anyVec().espc()) : -1);
+
+      return table;
+    }
+    
+    public int getInformationTableNumRows() {
+      return INFORMATION_TABLE_NUM_ROWS;
     }
   } // Output
 

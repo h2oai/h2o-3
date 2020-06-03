@@ -1,12 +1,14 @@
 package hex.tree.xgboost;
 
 import hex.Model;
+import hex.ModelBuilder;
 import hex.ScoreKeeper;
 import hex.glm.GLMModel;
 import hex.tree.PlattScalingHelper;
 import water.util.TwoDimTable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class XGBoostOutput extends Model.Output implements Model.GetNTrees, PlattScalingHelper.OutputWithCalibration {
@@ -42,6 +44,21 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Plat
 
   public GLMModel _calib_model;
 
+  @Override
+  public TwoDimTable createInputFramesInformationTable(ModelBuilder modelBuilder) {
+    XGBoostModel.XGBoostParameters params = (XGBoostModel.XGBoostParameters) modelBuilder._parms;
+    TwoDimTable table = super.createInputFramesInformationTable(modelBuilder);
+    table.set(2, 0, "calibration_frame");
+    table.set(2, 1, params.getCalibrationFrame() != null ? params.getCalibrationFrame().checksum() : -1);
+    table.set(2, 2, params.getCalibrationFrame() != null ? Arrays.toString(params.getCalibrationFrame().anyVec().espc()) : -1);
+    return table;
+  }
+
+  @Override
+  public int getInformationTableNumRows() {
+    return super.getInformationTableNumRows() + 1;
+  }
+  
   @Override
   public int getNTrees() {
     return _ntrees;
