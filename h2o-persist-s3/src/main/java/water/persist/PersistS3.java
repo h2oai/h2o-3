@@ -439,6 +439,7 @@ public final class PersistS3 extends Persist {
 
     public boolean containsKey(String k) { return Arrays.binarySearch(_cache,k) >= 0;}
     protected String [] update(){
+      Log.debug("Renewing S3 bucket cache.");
       List<Bucket> l = getClient().listBuckets();
       String [] cache = new String[l.size()];
       int i = 0;
@@ -476,6 +477,7 @@ public final class PersistS3 extends Persist {
 
     @Override
     protected String [] update(){
+      Log.debug("Renewing S3 cache.");
       AmazonS3 s3 = getClient();
       ObjectListing currentList = s3.listObjects(_bucket,"");
       ArrayList<String> res = new ArrayList<>();
