@@ -246,10 +246,10 @@ try {
                                           make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
                                         """
                                     } else {
+                                        env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
                                         if (params.UPDATE_LATEST) {
                                             // If the build is not a test build and is an ordinary release, update the version tag.
                                             // The "latest" tag means stable. If UPDATE_LATEST is set to true, also update the latest docker tag.
-                                            env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
                                             env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
                                             sh """
                                               cd ${env.BUILD_NUMBER_DIR}
@@ -258,7 +258,6 @@ try {
                                         } else {
                                             // If the build is not a test build and is an ordinary release, update the latest tag.
                                             // The "latest" tag means stable. If UPDATE_LATEST is set to false do not update the latest tag and push only the version tag.
-                                            env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
                                             sh """
                                               cd ${env.BUILD_NUMBER_DIR}
                                               make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push
