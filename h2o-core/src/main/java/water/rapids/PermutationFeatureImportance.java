@@ -3,6 +3,7 @@ package water.rapids;
 import hex.*;
 //import hex.VarImp;
 import water.DKV;
+import water.Key;
 import water.fvec.Frame;
 import water.fvec.Vec;
 import water.util.*;
@@ -31,7 +32,17 @@ public class PermutationFeatureImportance /* extends VarImp */ {
     
     public TwoDimTable getTable() {return _PFI_metrics_table;}
     
-    public PermutationFeatureImportance(Model model) {_model = model;}
+    /**
+     * When passing only the Model without Frame (will use models frame)
+     * */
+    public PermutationFeatureImportance(Model model) {
+        _model = model;
+        _train_fr = _model._parms._train.get();
+        _data_in_holdOut_form = false;
+        _validate_dataset = null;
+        _responce_col = _model._parms._response_column;
+        _OGmodel_reliance_scoring_history = _model._output._scoring_history;
+    }
 
     public PermutationFeatureImportance(Model model, Frame data_set, Frame prediction_frame) {
         _model = model;
@@ -133,32 +144,57 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         double og_pr_auc;
         double og_lift;
         double og_clsf_error;
+        
+        // metrics of feature f
+        
+        double m_f_mse; 
+        double m_f_auc;
+        double m_f_logloss;
     }
     /**
      *  Set the values of trained metrics to LocalMetric class
      * */
     private void setOriginalMetrics(LocalMetric m){
-        ModelMetricsBinomial og_mm = (ModelMetricsBinomial)_model._output._training_metrics;
-        if (!Double.isNaN(og_mm.auc_obj()._auc))    m.og_auc = og_mm.auc_obj()._auc;
-        if (!Double.isNaN(og_mm._logloss))          m.og_logloss = og_mm.mse();
+        ModelMetrics og_mm = _model._output._cross_validation_metrics != null ? _model._output._cross_validation_metrics : _model._output._validation_metrics != null ? _model._output._validation_metrics : _model._output._training_metrics;
+
+//        ModelMetricsBinomial og_mm = (ModelMetricsBinomial)_model._output._training_metrics;
+        if (og_mm.auc_obj() != null){// FIXME: checck properly if modell has auc 
+            if (!Double.isNaN(og_mm.auc_obj()._auc))    m.og_auc = og_mm.auc_obj()._auc;
+        }
+        if (og_mm instanceof ModelMetricsBinomial) {
+            if (!Double.isNaN(((ModelMetricsBinomial)og_mm)._logloss)) m.og_logloss = og_mm.mse();
+        }
         if (!Double.isNaN(og_mm.mse()))             m.og_mse = og_mm.mse();
     }
      
     /**
      * Calculate loss function of scored model with shuffled feature and add to to the TwoDimTable 
      * */
-    private void addToFeatureToTable(int col, boolean skipped, LocalMetric lm){
-        hex.ModelMetricsBinomial sh_mm = hex.ModelMetricsBinomial.getFromDKV(_model, _model._parms.train());
+    private LocalMetric addToFeatureToTable(int col, boolean skipped, LocalMetric lm){
 
-        if (!Double.isNaN(sh_mm.mse()))
-            _PFI_metrics_table.set(0, skipped? col - 1 : col,  lm.og_mse/sh_mm.mse() ); // 0 is MSE
-
-        if (!Double.isNaN(sh_mm._logloss))
-            _PFI_metrics_table.set(1, skipped? col - 1 : col, lm.og_logloss/sh_mm.logloss() ); // 1 is LOGLOSS
-    
-        if (!Double.isNaN(sh_mm.auc_obj()._auc))
-            _PFI_metrics_table.set(2, skipped? col - 1 : col, lm.og_auc/sh_mm.auc_obj()._auc ); // 2 is AUC
+//        ModelMetrics sh_mm = _model._output._cross_validation_metrics != null ? _model._output._cross_validation_metrics : _model._output._validation_metrics != null ? _model._output._validation_metrics : _model._output._training_metrics;
+        ModelMetrics sh_mm = ModelMetrics.getFromDKV(_model, _model._parms.train());
         
+//        ModelMetrics mm = hex.ModelMetrics.getFromDKV(_model, _model._parms.train());
+
+        if (!Double.isNaN(sh_mm.mse())) {
+            lm.m_f_mse = lm.og_mse / sh_mm.mse();
+            _PFI_metrics_table.set(0, skipped ? col - 1 : col, lm.m_f_mse); // 0 is MSE
+        }
+        if (sh_mm instanceof ModelMetricsBinomial) {
+            if (!Double.isNaN(((ModelMetricsBinomial) sh_mm)._logloss)) {
+                lm.m_f_logloss = lm.og_logloss / ((ModelMetricsBinomial) sh_mm).logloss();
+                _PFI_metrics_table.set(1, skipped ? col - 1 : col, lm.m_f_logloss); // 1 is LOGLOSS
+
+            }
+        }
+        if (sh_mm.auc_obj() != null) { // FIXME: checck properly if model has auc 
+            if (!Double.isNaN(sh_mm.auc_obj()._auc)) {
+                lm.m_f_auc = lm.og_auc / sh_mm.auc_obj()._auc;
+                _PFI_metrics_table.set(2, skipped ? col - 1 : col, lm.m_f_auc); // 2 is AUC
+            }
+        }
+        return lm;
     }
     
     
@@ -192,27 +228,44 @@ public class PermutationFeatureImportance /* extends VarImp */ {
             }
             
             //shuffle values of feature
+            
             Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(_train_fr.vec(features[f]));
             Vec og_feature = _train_fr.replace(f, shuffled_feature);
-            DKV.put(_train_fr); // "Caller must perform global update (DKV.put) on this updated frame"
-            
+
+            Frame f_cp = new Frame(Key.<Frame>make(_model._key + "_shuffled"), features, _train_fr.vecs());
+            DKV.put(f_cp);
+
             // score the model again and compute diff
             Frame new_score = _model.score(_train_fr);
 
             // set and add new metrics
-            addToFeatureToTable(f, saw_response_col, pfi_m);
+            pfi_m = addToFeatureToTable(f, saw_response_col, pfi_m);
+            putValuesBasedOnModelTask(features[f], pfi_m);
             
             //return the original data
             _train_fr.replace(f, og_feature); // TODO use .add .remove methods to fix leaks (I presume)
-            DKV.put(_train_fr); // "Caller must perform global update (DKV.put) on this updated frame"
+            Frame f_og = new Frame(Key.<Frame>make(_model._key + "_original"), features, _train_fr.vecs());
+            DKV.put(f_og);
+
+//            DKV.put(_train_fr); // "Caller must perform global update (DKV.put) on this updated frame"
 
             new_score.remove(); // clearing (some) leaks i think
         }
         HashMap<String, Double> sorted_FI = sortHashMapByValues(_FI);
 //        System.out.print(_PFI_metrics_table);
-        return sortHashMapByValues(_FI); // THIS IS NOT NEEDED, but leaving it for now
+        return sortHashMapByValues(sorted_FI); // THIS IS NOT NEEDED, but leaving it for now
     }
-    
+
+    private void putValuesBasedOnModelTask(String feature, LocalMetric lmm) {
+        if (_model._output.isBinomialClassifier())
+            _FI.put(feature, lmm.m_f_logloss);  // testing purposes
+        else if (_model._output.isMultinomialClassifier() || _model._output.isClassifier())
+            _FI.put(feature, lmm.m_f_auc);  // testing purposes
+        else    // regression
+            _FI.put(feature, lmm.m_f_mse);  // testing purposes
+            
+    }
+
     // TODO GET RID OF THIS!
     // Sort HashMap in descenting order
     private LinkedHashMap<String, Double> sortHashMapByValues(
