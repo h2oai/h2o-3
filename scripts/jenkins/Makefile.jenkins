@@ -486,17 +486,17 @@ check-leaks:
 		exit 1; \
 	fi
 
-h2o-docker-build:
-	ifeq ($(DOCKER_IMAGE_LATEST_TAG),)
-		SECOND_TAG=-t $(DOCKER_IMAGE_NAME):${DOCKER_IMAGE_LATEST_TAG}
-	endif
-	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) $(SECOND_TAG) -f docker/public/Dockerfile-h2o-release build/
+h2o-k8s-docker-build:
+	 docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release build/
 
-h2o-docker-push:
+h2o-k8s-docker-push:
 	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
 	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
-	ifeq ($(DOCKER_IMAGE_LATEST_TAG),)
-		docker push $(DOCKER_IMAGE_NAME):${DOCKER_IMAGE_LATEST_TAG}
-	endif
 
+h2o-k8s-docker-build-latest:
+	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release build/
 
+h2o-k8s-docker-push-latest:
+	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
+	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
+	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG)
