@@ -693,6 +693,54 @@ If you cannot install Graphviz on your environment, another option is to produce
   :alt: Example Output Picture
   :scale: 50%
 
+Printing GBM MOJOs
+~~~~~~~~~~~~~~~~~~
+
+The ``print_mojo`` function allows a model to be converted to machine readable representation - either to JSON for further processing or ``dot`` for rendering images.
+
+When running ``print_mojo``, the following can be specified:
+
+- ``mojo_path``: The path to the MOJO archive on the user’s local filesystem. This defaults to the user's home directory.
+- ``format``: Specify an output format of either ``json`` (default) or ``dot``.
+- ``tree_index``: Specify the index of the tree to print. This can only be used with ``dot`` format.
+
+The output is a string respresentation of the MOJO in either JSON or dot format.
+
+**Note**: ``print_mojo`` can only be used with the Python client. It is not supported in R.
+
+Example
+'''''''
+
+.. tabs::
+  .. code-tab:: python
+
+    import h2o
+    import json
+    from h2o.estimators import H2OGradientBoostingEstimator
+    h2o.init()
+
+    # Import the prostate dataset
+    prostate = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/prostate/prostate.csv")
+
+    # Define the factor and parameters
+    prostate["CAPSULE"] = prostate["CAPSULE"].asfactor()
+    ntrees = 20
+    learning_rate = 0.1
+    depth = 5
+    min_rows = 10
+
+    # Build & train the GBM model
+    gbm_h2o = H2OGradientBoostingEstimator(ntrees = ntrees, 
+                                           learn_rate = learning_rate, 
+                                           max_depth = depth, 
+                                           min_rows = min_rows, 
+                                           distribution = "bernoulli")
+    gbm_h2o.train(x = list(range(1,prostate.ncol)), y = "CAPSULE", training_frame = prostate)
+
+    # Print all
+    mojo_path = gbm_h2o.download_mojo()
+    mojo_str = h2o.print_mojo(mojo_path)
+    mojo_dict = json.loads(mojo_str)
 
 FAQ
 ~~~
