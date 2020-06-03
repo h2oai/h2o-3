@@ -23,7 +23,8 @@ whitelist = list(
                              "Package suggested but not available for checking"),
   "installed package size" = c("installed size is .*Mb", # h2o.jar is installed
                                "sub-directories of 1Mb or more",
-                               "java .*Mb"),
+                               "java .*Mb",
+                               "R .*Mb"),
   "Rd cross-references" = "Package unavailable to check Rd xrefs" # when linking documentation to optional deps not present at check time
 )
 check_note <- function(details, whitelist, verbose=TRUE) {
