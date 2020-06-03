@@ -5,6 +5,8 @@ import hex.Model;
 import hex.ModelMetricsBinomial;
 import hex.ModelMetricsRegression;
 import hex.SplitFrame;
+import hex.genmodel.algos.tree.SharedTreeNode;
+import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import hex.tree.SharedTreeModel;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -14,6 +16,7 @@ import water.*;
 import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.RebalanceDataSet;
+import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
 import water.util.ArrayUtils;
 import water.util.Log;
@@ -24,8 +27,7 @@ import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class DRFTest extends TestUtil {
   @BeforeClass public static void stall() { stall_till_cloudsize(1); }
@@ -1830,4 +1832,68 @@ public class DRFTest extends TestUtil {
       Scope.exit();
     }
   }
+
+  @Test
+  public void testDeepLeafNodeAssignmentConsistency() {
+    try {
+      Scope.enter();
+      double[] x = new double[10000];
+      double[] y = new double[x.length];
+      for (int i = 1; i < x.length; i++) {
+        x[i] = i;
+        y[i] = Math.pow(i, 3);
+      }
+      Frame tfr = new TestFrameBuilder()
+              .withColNames("w", "x", "y")
+              .withDataForCol(0, y)
+              .withDataForCol(1, x)
+              .withDataForCol(2, y)
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
+              .withChunkLayout(y.length)
+              .build();
+      DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._train = tfr._key;
+      parms._response_column = "y";
+      parms._weights_column = "w";
+      parms._ntrees = 1;
+      parms._max_depth = 40;
+      parms._sample_rate = 1;
+      parms._seed = 1234;
+
+      DRF job = new DRF(parms);
+      DRFModel drf = job.trainModel().get();
+      assertNotNull(drf);
+      Scope.track_generic(drf);
+
+      Frame paths = drf.scoreLeafNodeAssignment(tfr, Model.LeafNodeAssignment.LeafNodeAssignmentType.Path, Key.make());
+      Scope.track(paths);
+      Frame nodeIds = drf.scoreLeafNodeAssignment(tfr, Model.LeafNodeAssignment.LeafNodeAssignmentType.Node_ID, Key.make());
+      Scope.track(nodeIds);
+
+      SharedTreeSubgraph tree = drf.getSharedTreeSubgraph(0, 0);
+      // check assumptions (are we really testing deep trees?)
+      boolean isDeep = false;
+      for (SharedTreeNode n : tree.nodesArray)
+        if (n.getDepth() >= 31) {
+          isDeep = true;
+          break;
+        }
+      assertTrue(isDeep);
+
+      Vec.Reader pathReader = paths.vec(0).new Reader();
+      Vec.Reader nodeIdReader = nodeIds.vec(0).new Reader();
+
+      for (long i = 0; i < tfr.numRows(); i++) {
+        String path = paths.vec(0).domain()[(int) pathReader.at8(i)];
+        int nodeId = (int) nodeIdReader.at8(i);
+        SharedTreeNode node = tree.walkNodes(path);
+        assertNotNull(node);
+        assertTrue(node.isLeaf());
+        assertEquals(nodeId, node.getNodeNumber());
+      }
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }
