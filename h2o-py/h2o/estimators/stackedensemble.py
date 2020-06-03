@@ -64,8 +64,8 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     algo = "stackedensemble"
     param_names = {"model_id", "training_frame", "response_column", "validation_frame", "blending_frame", "base_models",
                    "metalearner_algorithm", "metalearner_nfolds", "metalearner_fold_assignment",
-                   "metalearner_fold_column", "metalearner_params", "max_runtime_secs", "weights_column", "seed",
-                   "score_training_samples", "keep_levelone_frame", "export_checkpoints_dir"}
+                   "metalearner_fold_column", "metalearner_params", "max_runtime_secs", "weights_column",
+                   "offset_column", "seed", "score_training_samples", "keep_levelone_frame", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OStackedEnsembleEstimator, self).__init__()
@@ -583,6 +583,21 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
     def weights_column(self, weights_column):
         assert_is_type(weights_column, None, str)
         self._parms["weights_column"] = weights_column
+
+
+    @property
+    def offset_column(self):
+        """
+        Offset column. This will be added to the combination of columns before applying the link function.
+
+        Type: ``str``.
+        """
+        return self._parms.get("offset_column")
+
+    @offset_column.setter
+    def offset_column(self, offset_column):
+        assert_is_type(offset_column, None, str)
+        self._parms["offset_column"] = offset_column
 
 
     @property

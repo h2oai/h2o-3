@@ -80,6 +80,7 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     checkColumnPresent("fold", _parms._metalearner_fold_column, train(), valid(), _parms.blending());
     checkColumnPresent("weights", _parms._weights_column, train(), valid(), _parms.blending());
+    checkColumnPresent("offset", _parms._offset_column, train(), valid(), _parms.blending());
     validateAndExpandBaseModels();
   }
 
@@ -105,7 +106,20 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
       }
     }
     _parms._base_models = baseModels.toArray(new Key[0]);
+
+
+    for (int i = 0; i < _parms._base_models.length; i++) {
+      Model baseModel = DKV.getGet(_parms._base_models[i]);
+
+      if ((i == 0) && (_parms._offset_column == null))
+        _parms._offset_column = baseModel._parms._offset_column;
+
+      if (((_parms._offset_column == null) && (baseModel._parms._offset_column != null)) ||
+              ((_parms._offset_column != null) && (!_parms._offset_column.equals(baseModel._parms._offset_column))))
+        throw new IllegalArgumentException("All base models have to have the same offset_column!");
+    }
   }
+
 
   /**
    * Checks for presence of a column in given {@link Frame}s. Null column means no checks are done.
@@ -167,6 +181,9 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
 
     if (parms._weights_column != null)
       levelOneFrame.add(parms._weights_column, fr.vec(parms._weights_column));
+
+    if (parms._offset_column != null)
+      levelOneFrame.add(parms._offset_column, fr.vec(parms._offset_column));
 
     levelOneFrame.add(parms._response_column, fr.vec(parms._response_column));
   }

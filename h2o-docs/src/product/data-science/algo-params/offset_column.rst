@@ -1,7 +1,7 @@
 ``offset_column``
 -----------------
 
-- Available in: GBM, Deep Learning, GLM, GAM, CoxPH, XGBoost
+- Available in: GBM, Deep Learning, GLM, GAM, CoxPH, XGBoost, Stacked Ensembles
 - Hyperparameter: no
 
 
