@@ -189,6 +189,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
+  
   public abstract static class Parameters extends Iced<Parameters> {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
@@ -364,18 +365,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /** @return the validation frame instance, or null
      *  if a validation frame was not specified */
     public final Frame valid() { return _valid==null ? null : _valid.get(); }
-
-    /**
-     * Should be called after Model is scored, Otherwise no one can tell you what will happen bro
-     *
-     *
-     * */
-    public void permutationFeatureImportance(){
-      assert this._train.get() != null;
-      
-//      FeatureImportance4BBM Fi = new FeatureImportance4BBM(this, _train.get(), _parms._response_column);
-//      Fi.getFeatureImportance();
-    }
+    
 
     /** Read-Lock both training and validation User frames. */
     public void read_lock_frames(Job job) {
@@ -665,6 +655,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       return pairs;
     }
+
+  }
+
+  /**
+   * Should be called after Model is scored, Otherwise no one can tell you what will happen
+   *
+   *
+   *
+   * @return*/
+  public HashMap<String, Double> permutationFeatureImportance(Model model){
+
+    PermutationFeatureImportance Fi = new PermutationFeatureImportance(model);
+    return Fi.getFeatureImportance();
 
   }
 
