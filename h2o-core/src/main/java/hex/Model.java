@@ -217,6 +217,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
    *  WARNING: Model Parameters is not immutable object and ModelBuilder can modify
    *  them!
    */
+  
   public abstract static class Parameters extends Iced<Parameters> {
     /** Maximal number of supported levels in response. */
     public static final int MAX_SUPPORTED_LEVELS = 1<<20;
@@ -754,6 +755,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       }
       return pairs;
     }
+
+  }
+
+  /**
+   * Should be called after Model is scored, Otherwise no one can tell you what will happen
+   *
+   *
+   *
+   * @return*/
+  public HashMap<String, Double> permutationFeatureImportance(Model model){
+
+    PermutationFeatureImportance Fi = new PermutationFeatureImportance(model);
+    return Fi.getFeatureImportance();
 
   }
 
