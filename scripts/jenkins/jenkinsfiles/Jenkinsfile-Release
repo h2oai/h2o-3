@@ -237,9 +237,11 @@ try {
                                         // If the build is not a test build and is nightly, the update the latest-nightly tag.
                                         env["DOCKER_IMAGE_TAG"] = env["BRANCH_NAME"] + "-" + currentBuild.number
                                     } else {
-                                        // If the build is not a test build and is an ordinary release, update the latest tag.
-                                        // The "latest" tag means stable.
-                                        env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
+                                        if(params.UPDATE_LATEST) {
+                                            // If the build is not a test build and is an ordinary release, update the latest tag.
+                                            // The "latest" tag means stable. Only if required by setting UPDATE_LATEST.
+                                            env["DOCKER_IMAGE_LATEST_TAG"] = "latest"
+                                        }
                                         env["DOCKER_IMAGE_TAG"] = env["PROJECT_VERSION"]
                                     }
                                 }
@@ -545,7 +547,7 @@ private setReleaseJobProperties(final pipelineContext) {
         disableConcurrentBuilds(),
         parameters([
             booleanParam(defaultValue: !isReleaseBranch && env.BRANCH_NAME != 'master', description: "If set don't upload to PyPI and Conda, just build the packages if required; also push to ${TEST_RELEASE_BUCKET} instead of ${RELEASE_BUCKET}", name: 'TEST_RELEASE'),
-            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links', name: 'UPDATE_LATEST'),
+            booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, update top-level latest links and latest DOCKER tag', name: 'UPDATE_LATEST'),
             booleanParam(defaultValue: true, description: 'If set, update latest links for this branch', name: 'UPDATE_LATEST_BRANCH'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set, publish to Nexus', name: 'UPLOAD_NEXUS'),
             booleanParam(defaultValue: isReleaseBranch && !params.TEST_RELEASE, description: 'If set build PyPI package. Also if building rel- branch, publish to PyPI', name: 'UPLOAD_PYPI'),
