@@ -106,19 +106,19 @@ public class ReproducibilityInformationUtils {
 
     @Override
     public void setupLocal() {
-      totalMem = new long[H2O.getCloudSize()];
-      maxMem = new long[H2O.getCloudSize()];
+      totalMem = new long[H2O.CLOUD.size()];
+      maxMem = new long[H2O.CLOUD.size()];
       Arrays.fill(totalMem, -1);
       Arrays.fill(maxMem, -1);
       
-      javaVersion = new String[H2O.getCloudSize()];
-      jvmLaunchParameters = new String[H2O.getCloudSize()];
-      jvmPid = new String[H2O.getCloudSize()];
-      osVersion = new String[H2O.getCloudSize()];
-      machinePhysicalMem = new long[H2O.getCloudSize()];
-      machineLocale = new String[H2O.getCloudSize()];
+      javaVersion = new String[H2O.CLOUD.size()];
+      jvmLaunchParameters = new String[H2O.CLOUD.size()];
+      jvmPid = new String[H2O.CLOUD.size()];
+      osVersion = new String[H2O.CLOUD.size()];
+      machinePhysicalMem = new long[H2O.CLOUD.size()];
+      machineLocale = new String[H2O.CLOUD.size()];
       
-      index = new int[H2O.getCloudSize()];
+      index = new int[H2O.CLOUD.size()];
       Arrays.fill(index, -1);
 
       Runtime runtime = Runtime.getRuntime();
