@@ -19,9 +19,11 @@ import water.fvec.Vec;
 import water.util.ByteStreams;
 import water.util.RIStream;
 
+import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.util.*;
 
@@ -29,7 +31,7 @@ import static water.H2O.OptArgs.SYSTEM_PROP_PREFIX;
 
 /** Persistence backend for S3 */
 public final class PersistS3 extends Persist {
-  private static final Logger LOG = Logger.getLogger(PersistS3.class);
+  private static final Logger LOGGER = Logger.getLogger(PersistS3.class);
 
   private static final String KEY_PREFIX = "s3://";
   private static final int KEY_PREFIX_LEN = KEY_PREFIX.length();
@@ -122,7 +124,7 @@ public final class PersistS3 extends Persist {
       try {
         return new PropertiesCredentials(credentials);
       } catch (IOException e) {
-        LOG.debug(
+        LOGGER.debug(
             "Unable to load AWS credentials from file " + credentials + 
                 "; exists? " + credentials.exists() + ", canRead? " + credentials.canRead() + 
                 ", size=" + credentials.length() + "; problem: " + e.getMessage());
@@ -199,7 +201,7 @@ public final class PersistS3 extends Persist {
     }
   }
   public void importFiles(String path, String pattern, ArrayList<String> files, ArrayList<String> keys, ArrayList<String> fails, ArrayList<String> dels) {
-    LOG.info("ImportS3 processing (" + path + ")");
+    LOGGER.info("ImportS3 processing (" + path + ")");
     // List of processed files
     AmazonS3 s3 = getClient();
     String [] parts = decodePath(path);
@@ -254,7 +256,7 @@ public final class PersistS3 extends Persist {
   }
 
   private static void ignoreAndWait(final Exception e) {
-    LOG.debug("Hit the S3 reset problem, waiting and retrying...", e);
+    LOGGER.debug("Hit the S3 reset problem, waiting and retrying...", e);
     try {
       Thread.sleep(500);
     } catch( InterruptedException ie ) {}
@@ -382,17 +384,17 @@ public final class PersistS3 extends Persist {
   static  AmazonS3Client configureClient(AmazonS3Client s3Client) {
     if (System.getProperty(S3_REGION) != null) {
       String region = System.getProperty(S3_REGION);
-      LOG.debug(String.format("S3 region specified: %s", region) );
+      LOGGER.debug(String.format("S3 region specified: %s", region) );
       s3Client.setRegion(RegionUtils.getRegion(region));
     }
     // Region overrides end-point settings
     if (System.getProperty(S3_END_POINT) != null) {
       String endPoint = System.getProperty(S3_END_POINT);
-      LOG.debug(String.format("S3 endpoint specified: %s", endPoint));
+      LOGGER.debug(String.format("S3 endpoint specified: %s", endPoint));
       s3Client.setEndpoint(endPoint);
     }
     if (System.getProperty(S3_ENABLE_PATH_STYLE) != null && Boolean.valueOf(System.getProperty(S3_ENABLE_PATH_STYLE))) {
-      LOG.debug("S3 path style access enabled");
+      LOGGER.debug("S3 path style access enabled");
       S3ClientOptions sco = new S3ClientOptions();
       sco.setPathStyleAccess(true);
       s3Client.setS3ClientOptions(sco);
@@ -417,7 +419,7 @@ public final class PersistS3 extends Persist {
       if (e.getErrorCode().contains("404")) {
         throw new IOException(e);
       } else {
-        LOG.error("AWS failed for " + Arrays.toString(parts) + ": " + e.getMessage());
+        LOGGER.error("AWS failed for " + Arrays.toString(parts) + ": " + e.getMessage());
         throw e;
       }
     }
@@ -433,7 +435,7 @@ public final class PersistS3 extends Persist {
 
     public boolean containsKey(String k) { return Arrays.binarySearch(_cache,k) >= 0;}
     protected String [] update(){
-      LOG.debug("Renewing S3 bucket cache.");
+      LOGGER.debug("Renewing S3 bucket cache.");
       List<Bucket> l = getClient().listBuckets();
       String [] cache = new String[l.size()];
       int i = 0;
@@ -471,7 +473,7 @@ public final class PersistS3 extends Persist {
 
     @Override
     protected String [] update(){
-      LOG.debug("Renewing S3 cache.");
+      LOGGER.debug("Renewing S3 cache.");
       AmazonS3 s3 = getClient();
       ObjectListing currentList = s3.listObjects(_bucket,"");
       ArrayList<String> res = new ArrayList<>();
