@@ -18,7 +18,9 @@ public class PermutationFeatureImportance /* extends VarImp */ {
     private Frame _validate_dataset; // original dataset used to train model
     private Frame _predcited_frame;
     private String _responce_col;
-
+    String[] _features;
+    String[] _features_without_pred;
+            
     private boolean _data_in_holdOut_form; // do I have the data split in train and validation, if not spliting will happen
 
     HashMap<String, Double> _FI;
@@ -42,6 +44,7 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         _validate_dataset = null;
         _responce_col = _model._parms._response_column;
         _OGmodel_reliance_scoring_history = _model._output._scoring_history;
+        _features = _train_fr.names();
     }
 
     public PermutationFeatureImportance(Model model, Frame data_set, Frame prediction_frame) {
@@ -52,6 +55,7 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         _predcited_frame = prediction_frame;
         _responce_col = _model._parms._response_column;
         _OGmodel_reliance_scoring_history = _model._output._scoring_history;
+        _features = _train_fr.names();
     }
     
     public void getFrameAndScoredModel(Frame fr, Frame scored){
@@ -76,6 +80,7 @@ public class PermutationFeatureImportance /* extends VarImp */ {
                 list.remove(_responce_col);
             features = list.toArray(new String[0]);
         }
+        _features_without_pred = features;
         // all values will be doubles
         String [] metric_values = new String[_train_fr.numCols() - 1]; // minus response col
         Arrays.fill(metric_values, "double");
@@ -161,7 +166,7 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         if (og_mm.auc_obj() != null){// FIXME: checck properly if modell has auc 
             if (!Double.isNaN(og_mm.auc_obj()._auc))    m.og_auc = og_mm.auc_obj()._auc;
         }
-        if (og_mm instanceof ModelMetricsBinomial) {
+        if (og_mm instanceof ModelMetricsBinomial) { //aauc   multi use logloss
             if (!Double.isNaN(((ModelMetricsBinomial)og_mm)._logloss)) m.og_logloss = og_mm.mse();
         }
         if (!Double.isNaN(og_mm.mse()))             m.og_mse = og_mm.mse();
@@ -178,19 +183,19 @@ public class PermutationFeatureImportance /* extends VarImp */ {
 //        ModelMetrics mm = hex.ModelMetrics.getFromDKV(_model, _model._parms.train());
 
         if (!Double.isNaN(sh_mm.mse())) {
-            lm.m_f_mse = lm.og_mse / sh_mm.mse();
+            lm.m_f_mse =  sh_mm.mse() / lm.og_mse;
             _PFI_metrics_table.set(0, skipped ? col - 1 : col, lm.m_f_mse); // 0 is MSE
         }
         if (sh_mm instanceof ModelMetricsBinomial) {
             if (!Double.isNaN(((ModelMetricsBinomial) sh_mm)._logloss)) {
-                lm.m_f_logloss = lm.og_logloss / ((ModelMetricsBinomial) sh_mm).logloss();
+                lm.m_f_logloss =  ((ModelMetricsBinomial) sh_mm).logloss() / lm.og_logloss;
                 _PFI_metrics_table.set(1, skipped ? col - 1 : col, lm.m_f_logloss); // 1 is LOGLOSS
 
             }
         }
         if (sh_mm.auc_obj() != null) { // FIXME: checck properly if model has auc 
             if (!Double.isNaN(sh_mm.auc_obj()._auc)) {
-                lm.m_f_auc = lm.og_auc / sh_mm.auc_obj()._auc;
+                lm.m_f_auc = sh_mm.auc_obj()._auc / lm.og_auc;
                 _PFI_metrics_table.set(2, skipped ? col - 1 : col, lm.m_f_auc); // 2 is AUC
             }
         }
@@ -211,8 +216,6 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         // create the TwoDimtable
         initializeTwoDimTable(); 
         
-        String[] features = _train_fr.names();
-        
         //TODO GET RID OF THIS
         _FI = new HashMap<String, Double>(_train_fr.vecs().length);
         
@@ -221,7 +224,7 @@ public class PermutationFeatureImportance /* extends VarImp */ {
         for (int f = 0; f < _train_fr.numCols(); f++) 
         {
             // skip for response column
-            if (features[f].equals(_responce_col)) {
+            if (_features[f].equals(_responce_col)) {
                 // when adding to TwoDimTable `f` is passed, since TwoDimTable has one column less I need to - 1 at some point
                 saw_response_col = true;
                 continue;
@@ -229,10 +232,10 @@ public class PermutationFeatureImportance /* extends VarImp */ {
             
             //shuffle values of feature
             
-            Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(_train_fr.vec(features[f]));
+            Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(_train_fr.vec(_features[f]));
             Vec og_feature = _train_fr.replace(f, shuffled_feature);
 
-            Frame f_cp = new Frame(Key.<Frame>make(_model._key + "_shuffled"), features, _train_fr.vecs());
+            Frame f_cp = new Frame(Key.<Frame>make(_model._key + "_shuffled"), _features, _train_fr.vecs());
             DKV.put(f_cp);
 
             // score the model again and compute diff
@@ -240,20 +243,54 @@ public class PermutationFeatureImportance /* extends VarImp */ {
 
             // set and add new metrics
             pfi_m = addToFeatureToTable(f, saw_response_col, pfi_m);
-            putValuesBasedOnModelTask(features[f], pfi_m);
+            putValuesBasedOnModelTask(_features[f], pfi_m);
             
             //return the original data
             _train_fr.replace(f, og_feature); // TODO use .add .remove methods to fix leaks (I presume)
-            Frame f_og = new Frame(Key.<Frame>make(_model._key + "_original"), features, _train_fr.vecs());
+            Frame f_og = new Frame(Key.<Frame>make(_model._key + "_original"), _features, _train_fr.vecs());
             DKV.put(f_og);
 
 //            DKV.put(_train_fr); // "Caller must perform global update (DKV.put) on this updated frame"
 
             new_score.remove(); // clearing (some) leaks i think
+            shuffled_feature.remove();
         }
         HashMap<String, Double> sorted_FI = sortHashMapByValues(_FI);
 //        System.out.print(_PFI_metrics_table);
         return sortHashMapByValues(sorted_FI); // THIS IS NOT NEEDED, but leaving it for now
+    }
+    
+    public void OneAtaTime(){
+        int r = 7; // suggested r between 4 and 10
+        List<Map<String, Double>> listOfMap_FI = new ArrayList<Map<String, Double>>();
+        for (int i = 0 ; i < r ; i++){
+            listOfMap_FI.add(getFeatureImportance());
+        }
+//        double mean_of_abs_FI = 1/r * () 
+        double acc_abs = 0;
+        double acc = 0;
+        Map<String, Double> mean_of_abs_Fi = new HashMap<String, Double>();
+        Map<String, Double> standard_dev_of_abs_Fi_part = new HashMap<String, Double>();
+
+        for (int f = 0 ; f < _features_without_pred.length ; f++){
+            for (Map<String, Double> map : listOfMap_FI) {
+                acc_abs += Math.abs(map.get(_features_without_pred[f]));
+                acc += map.get(_features_without_pred[f]);
+            }
+            mean_of_abs_Fi.put(_features_without_pred[f], (1.0/r) * acc_abs);
+            standard_dev_of_abs_Fi_part.put(_features_without_pred[f],  (1/r) * acc);
+        }
+
+        HashMap<String, Double> standard_dev_of_abs_Fi = new HashMap<String, Double>();
+        double acc_std_dev = 0;
+        for (int f = 0 ; f < _features_without_pred.length ; f++){
+            for (Map<String, Double> map : listOfMap_FI) {
+                acc_std_dev += Math.pow(map.get(_features_without_pred[f]) - standard_dev_of_abs_Fi_part.get(_features_without_pred[f]), 2);
+            }    
+            standard_dev_of_abs_Fi.put(_features_without_pred[f], (1.0/r) * acc_std_dev);
+        }
+        
+        boolean ast = true;
     }
 
     private void putValuesBasedOnModelTask(String feature, LocalMetric lmm) {
