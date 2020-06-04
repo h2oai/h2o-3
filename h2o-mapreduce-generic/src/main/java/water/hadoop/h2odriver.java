@@ -1826,7 +1826,9 @@ public class h2odriver extends Configured implements Tool {
       addMapperArg(conf, "-hash_login");
       addMapperConf(conf, "-login_conf", "login.conf", hashFileData);
     }
-
+    if (allow_insecure_xgboost) {
+      addMapperArg(conf, "-allow_insecure_xgboost");
+    }
     conf.set(h2omapper.H2O_MAPPER_ARGS_LENGTH, Integer.toString(mapperArgsLength));
 
     // Config files.
@@ -1865,9 +1867,6 @@ public class h2odriver extends Configured implements Tool {
       securityConf = SecurityUtils.generateSSLConfig(credentials);
       addMapperConf(conf, "", credentials.jks.name, credentials.jks.getLocation());
       addMapperConf(conf, "-internal_security_conf", "default-security.config", securityConf);
-    }
-    if (allow_insecure_xgboost) {
-      addMapperArg(conf, "-allow_insecure_xgboost");
     }
 
     conf.set(h2omapper.H2O_MAPPER_CONF_LENGTH, Integer.toString(mapperConfLength));
