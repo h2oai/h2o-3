@@ -71,7 +71,8 @@ echo "Installing dependencies for R ${R_VERSION}"
   install.packages(c('dplyr', 'text2vec', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
     'bit64', 'HDtweedie', 'jsonlite', 'statmod', 'devtools', 'roxygen2', 'testthat', 'Rcpp', 'fpc', 'RUnit', \
     'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'rgl', 'plot3Drgl'\
-  ))" 2>&1 | tee R.install.1.log
+  )) \
+" 2>&1 | tee R.install.1.log
 checkRInstallLog R.install.1.log
 # Latest XGBoost (from source)
 /usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);install.packages(c("xgboost"), type="source")' | tee R.install.2.log
@@ -86,18 +87,22 @@ checkRInstallLog R.install.2.log
   install_version('survival', version = '2.44-1.1'); \
   install_version('slam', version = '0.1-40'); \
   install_version('latticeExtra', version = '0.6-28'); \
-  install_version('caTools', version = '1.17.1.4');" 2>&1 | tee R.install.3.log
+  install_version('caTools', version = '1.17.1.4'); \
+  install_version('ROCR', version = '1.0.7'); \
+" 2>&1 | tee R.install.3.log
 checkRInstallLog R.install.3.log
 # install packages that need special deps installed above
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); \
-  install.packages(c('ROCR', 'Hmisc'))" 2>&1 | tee R.install.4.log
+  install.packages(c('Hmisc'))\
+" 2>&1 | tee R.install.4.log
 checkRInstallLog R.install.4.log
 # dependecies from GitHub
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58);library(devtools); \
   install_version('glmnet', version = '2.0-2'); \
   install_version('gbm', version = '2.1.3'); \
   install_github('hadley/pkgdown', ref = '9a968e8'); \
-  install_github('Zelazny7/isofor')" 2>&1 | tee R.install.5.log
+  install_github('Zelazny7/isofor') \
+" 2>&1 | tee R.install.5.log
 checkRInstallLog R.install.5.log
 rm R.install.*.log
 # install LiblineaR from S3
