@@ -4,15 +4,11 @@ ARG GRADLE_VERSION
 FROM harbor.h2o.ai/opsh2oai/h2o-3/dev-build-hadoop-gradle-${GRADLE_VERSION}${GPU_SUFFIX}:${FROM_VERSION}
 
 # Install s3cmd
-ENV S3_CMD_VERSION '2.0.1'
+ENV S3_CMD_VERSION '2.1.0'
 RUN \
     cd /opt/ && \
-    pip install 'https://files.pythonhosted.org/packages/d4/70/d60450c3dd48ef87586924207ae8907090de0b306af2bce5d134d78615cb/python_dateutil-2.8.1-py2.py3-none-any.whl' && \
-    wget http://netix.dl.sourceforge.net/project/s3tools/s3cmd/${S3_CMD_VERSION}/s3cmd-${S3_CMD_VERSION}.tar.gz && \
-    tar xzf s3cmd-${S3_CMD_VERSION}.tar.gz && \
-    rm s3cmd-${S3_CMD_VERSION}.tar.gz && \
-    cd s3cmd-${S3_CMD_VERSION} && \
-    python setup.py install
+    pip install python-dateutil==2.8.1 && \
+    pip install -e git+https://github.com/s3tools/s3cmd.git@v${S3_CMD_VERSION}#egg=s3cmd --src=./s3cmd-{S3_CMD_VERSION}
 
 # Install conda
 RUN \
