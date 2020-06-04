@@ -68,32 +68,37 @@ function checkRInstallLog() {
 # Install dependencies
 echo "Installing dependencies for R ${R_VERSION}"
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); \
-  install.packages(c('dplyr', 'text2vec', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
+  install.packages(c( \
+    'dplyr', 'text2vec', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
     'bit64', 'HDtweedie', 'jsonlite', 'statmod', 'devtools', 'roxygen2', 'testthat', 'Rcpp', 'fpc', 'RUnit', \
     'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'rgl', 'plot3Drgl'\
   )) \
 " 2>&1 | tee R.install.1.log
 checkRInstallLog R.install.1.log
 # Latest XGBoost (from source)
-/usr/local/R/current/bin/R -e 'chooseCRANmirror(graphics=FALSE, ind=58);install.packages(c("xgboost"), type="source")' | tee R.install.2.log
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); \
+  install.packages(c('xgboost'), type='source') \
+" 2>&1 | tee R.install.2.log
 checkRInstallLog R.install.2.log
 # RCUrl 1.95-4.12 is the last to support R 3.3
 # survival 2.44-1.1 is the last to support R 3.3
 # slam 0.1-40 is the last to support R 3.3
 # latticeExtra (dependency of Hmisc) 0.6-28 is the last to support R 3.3
 # caTools (dependency of ROCR) requires R 3.6.0 in latest version
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58);library(devtools); \
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); library(devtools); \
   install_version('RCurl', version = '1.95-4.12'); \
   install_version('survival', version = '2.44-1.1'); \
   install_version('slam', version = '0.1-40'); \
   install_version('latticeExtra', version = '0.6-28'); \
   install_version('caTools', version = '1.17.1.4'); \
-  install_version('ROCR', version = '1.0.7'); \
 " 2>&1 | tee R.install.3.log
 checkRInstallLog R.install.3.log
 # install packages that need special deps installed above
-/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); \
-  install.packages(c('Hmisc'))\
+# ROCR 1.0-7 is the last to support R 3.5 and below
+# Hmisc 4.3-0 is the last to support survival 2.44
+/usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); library(devtools); \
+  install_version('ROCR', version = '1.0-7'); \
+  install_version('Hmisc', version = '4.3-0'); \
 " 2>&1 | tee R.install.4.log
 checkRInstallLog R.install.4.log
 # dependecies from GitHub
