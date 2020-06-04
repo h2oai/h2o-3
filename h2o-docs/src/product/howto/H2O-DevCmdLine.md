@@ -141,3 +141,9 @@ For example:
 
   - `-Djava.net.preferIPv6Addresses=true -Djava.net.preferIPv4Addresses=false` - H2O will try to select IPv6
 
+
+## Run to embed into iframe
+
+By default you can't embed web into `iframe`, `object` or similar way because
+`X-Frame-Options` HTTP header is `deny` by default. To change it to `sameorigin`
+start H2O-3 with `java -Dsys.ai.h2o.enable.xframe.samerorigin=true -jar build/h2o.jar`
