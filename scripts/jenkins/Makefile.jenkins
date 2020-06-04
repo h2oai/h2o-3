@@ -488,3 +488,16 @@ check-leaks:
 		echo "Credentials leaked! Please check $(PWD)/leak-check.out"; \
 		exit 1; \
 	fi
+
+h2o-k8s-docker-build:
+	 docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -f docker/public/Dockerfile-h2o-release build/
+
+h2o-k8s-docker-push:
+	docker login -u $(DOCKERHUB_USERNAME) -p $(DOCKERHUB_PASSWORD)
+	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
+
+h2o-k8s-docker-build-latest:
+	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG) -f docker/public/Dockerfile-h2o-release build/
+
+h2o-k8s-docker-push-latest: h2o-k8s-docker-push
+	docker push $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_LATEST_TAG)
