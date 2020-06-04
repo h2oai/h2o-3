@@ -21,7 +21,7 @@ configurations {
 // Dependencies
 dependencies {
     compile project(":h2o-app")
-    runtime project(":${defaultWebserverModule}")
+    runtimeOnly project(":${defaultWebserverModule}")
     compile project(":h2o-web")
     compile project(":h2o-avro-parser")
     compile project(":h2o-persist-gcs")
