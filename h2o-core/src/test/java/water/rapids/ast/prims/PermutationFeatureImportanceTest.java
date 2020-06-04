@@ -41,20 +41,25 @@ public class PermutationFeatureImportanceTest extends TestUtil {
         try {
             Scope.enter();
             t = new TestFrameBuilder()
-                    .withVecTypes(Vec.T_NUM, Vec.T_NUM)
-                    .withColNames("first", "second")
-                    .withDataForCol(0, ard(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0))
-                    .withDataForCol(1, ard(1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1))
+                    .withVecTypes(Vec.T_NUM)
+                    .withColNames("first")
+                    .withDataForCol(0, ard(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0))
+//                    .withDataForCol(1, ard(1.1, 2.1, 3.1, 4.1, 5.1, 6.1, 7.1, 8.1, 9.1, 10.1, 11.1))
                     .build();
             Scope.track(t);
+
+            
             Vec OG_vec = t.vec("first").doCopy();
 //            VecUtils.shuffleVec new_vv = new VecUtils.shuffleVec(t.vec(0)).doAll(t.vec("first"));
-            Vec new_v = Vec.makeVec(new VecUtils.shuffleVecVol2().doAll(t.vec("first"))._result, Vec.newKey());
+//            Vec new_v = Vec.makeVec(new VecUtils.shuffleVecVol2().doAll(t.vec("first"))._result, Vec.newKey());
 
 //            Vec new_v = new_vv._vec;
-            double rnd_coe = randomnessCoeefic(OG_vec, new_v);
-
-            Assert.assertNotEquals(0, rnd_coe);
+            for (int i = 0 ; i < 4 ; i++) {
+                Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(t.vec("first"));
+                double rnd_coe = randomnessCoeefic(OG_vec, shuffled_feature);
+                System.out.println("COEF is  = " + rnd_coe);
+            }
+//            Assert.assertNotEquals(0, rnd_coe);
             
         } finally {
             Scope.exit();
@@ -66,6 +71,8 @@ public class PermutationFeatureImportanceTest extends TestUtil {
     double randomnessCoeefic(Vec og, Vec nw){
         int changed_places = 0;
         for (int i = 0; i < nw.length() ; ++i){
+            double l = og.at(i);
+            double r = nw.at(i);
             if(og.at(i) != nw.at(i))
                 changed_places++;
         }
@@ -90,11 +97,59 @@ public class PermutationFeatureImportanceTest extends TestUtil {
     }
     
     @Test
+    public void shuffleBigVec(){
+        Frame fr = null;
+        try {
+            Scope.enter();
+            fr = parse_test_file("./smalldata/jira/shuffle_test.csv"); // has 1000000 unique values;  
+            Scope.track(fr);
+//            long timeElapsed_1 = endTime_using_set - startTime_using_set;
+
+            Vec vec1 = ShuffleVec.ShuffleTask.shuffle(fr.vec("first"));
+            Vec vec2 = ShuffleVec.ShuffleTask.shuffle(fr.vec("first"));
+
+            for (int i = 0; i < vec1.length() ; ++i){
+                double l = vec1.at(i);
+                double r = vec2.at(i);
+                boolean ast = true;
+            }
+
+            for (int i = 0 ; i < 12 ; i++) {
+                Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(fr.vec("first"));
+                double rnd_coe = randomnessCoeefic(fr.vec("first"), shuffled_feature);
+                System.out.println("COEF is  = " + rnd_coe);
+            }
+//            Assert.assertNotEquals(0, rnd_coe);
+        } finally {
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void shuffleBigVec_2(){
+        Frame fr = null;
+        try {
+            Scope.enter();
+            fr = parse_test_file("./smalldata/jira/shuffle_test_2.csv"); // has 10000000 unique values;  
+            Scope.track(fr);
+//            long timeElapsed_1 = endTime_using_set - startTime_using_set;
+
+            Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(fr.vec("second"));
+            double rnd_coe = randomnessCoeefic(fr.vec("second"), shuffled_feature);
+            System.out.println("COEF is  = " + rnd_coe);
+
+//            Assert.assertNotEquals(0, rnd_coe);
+        } finally {
+            Scope.exit();
+        }
+    }
+    
+    @Test
     public void shuffleVecBiggerData(){
         Frame fr = null;
         try {
             Scope.enter(); 
-            fr = parse_test_file("./smalldata/airlines/AirlinesTrainWgt.csv"); // has 24422; should be enough to test speed 
+            fr = parse_test_file("./smalldata/airlines/AirlinesTrainWgt.csv"); // has 24422;  
             Scope.track(fr);
 //            long timeElapsed_1 = endTime_using_set - startTime_using_set;
             double res [] = new double [fr.numCols()];
@@ -104,6 +159,11 @@ public class PermutationFeatureImportanceTest extends TestUtil {
                 Assert.assertNotEquals(0, res[i]);
                 // TODO check if low random coeficent and try if shuffling again, if that doesnt work FIXME
                 // Its fine because the Vec can have the only a few values like Column[1] has only f10 and f1 
+            }
+            for (int i = 0 ; i < 4 ; i++) {
+                Vec shuffled_feature = ShuffleVec.ShuffleTask.shuffle(fr.vec(0));
+                double rnd_coe = randomnessCoeefic(fr.vec(0), shuffled_feature);
+                System.out.println("COEF is  = " + rnd_coe);
             }
             
 //            Assert.assertNotEquals(0, rnd_coe);
@@ -146,6 +206,7 @@ public class PermutationFeatureImportanceTest extends TestUtil {
 
             PermutationFeatureImportance Fi = new PermutationFeatureImportance(gbm, fr, fr2);
             Fi.getFeatureImportance();
+            
             
         } finally {
             if( fr  != null ) fr .remove();
@@ -207,6 +268,8 @@ public class PermutationFeatureImportanceTest extends TestUtil {
                 PermutationFeatureImportance Fi = new PermutationFeatureImportance(gbm, fr, scored);
                 Fi.getFeatureImportance();
                 System.out.print(Fi.getTable());
+                
+                Fi.OneAtaTime();
             
             }
         } finally {
