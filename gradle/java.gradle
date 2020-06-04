@@ -15,8 +15,7 @@ java {
 }
 
 task testJar(type: Jar, dependsOn: testClasses, group: "build") {
-    classifier = 'test'
-    from sourceSets.test.output
+    from sourceSets.test.output + sourceSets.test.runtimeClasspath
 }
 
 // Enable support for multi-node testing
