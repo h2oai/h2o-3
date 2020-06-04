@@ -11,12 +11,12 @@ import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.fvec.Frame;
+import water.rapids.ast.prims.reducers.AstCumu;
 
-import java.util.Arrays;
-import java.util.Collection;
+import java.lang.reflect.Array;
+import java.util.*;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.*;
 
 @RunWith(Parameterized.class)
 public class XGBoostVarImpComparisonTest extends TestUtil {
@@ -97,15 +97,29 @@ public class XGBoostVarImpComparisonTest extends TestUtil {
             Scope.track_generic(javaModel);
 
             if (nativeModel._output._varimp != javaModel._output._varimp) {
-                assertArrayEquals(nativeModel._output._varimp._names, javaModel._output._varimp._names);
-                assertArrayEquals(nativeModel._output._varimp._varimp, javaModel._output._varimp._varimp, 1e-2f);
-                assertArrayEquals(nativeModel._output._varimp._covers, javaModel._output._varimp._covers, 1e-10f);
-                assertArrayEquals(nativeModel._output._varimp._freqs, javaModel._output._varimp._freqs);
+                // one would think that we could simple compare the arrays here, but on GPU the order of rows is different
+                assertVarimpEquals(nativeModel._output._varimp, javaModel._output._varimp);
             } else {
                 assertNull(nativeModel._output._varimp);
             }
         } finally {
             Scope.exit();
+        }
+    }
+    
+    private static void assertVarimpEquals(XgbVarImp expected, XgbVarImp actual) {
+        List<String> expectedNames = Arrays.asList(expected._names);
+        List<String> actualNames = Arrays.asList(actual._names);
+            assertEquals(
+            "Names array is different", 
+            new HashSet<>(expectedNames), new HashSet<>(actualNames)
+        );
+        for (int expectedIndex = 0; expectedIndex < expected._names.length; expectedIndex++) {
+            int actualIndex = actualNames.indexOf(expectedNames.get(expectedIndex));
+            assertTrue("Name " + expected._names[expectedIndex] + " not found in actuals", actualIndex >= 0);
+            assertEquals(expected._varimp[expectedIndex], actual._varimp[actualIndex], 1e-2f);
+            assertEquals(expected._covers[expectedIndex], actual._covers[actualIndex], 1e-2f);
+            assertEquals(expected._freqs[expectedIndex], actual._freqs[actualIndex]);
         }
     }
 
