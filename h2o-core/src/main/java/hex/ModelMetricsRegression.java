@@ -141,7 +141,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       
       // Deviance method is not supported in custom distribution
       if((m != null && m._parms._distribution != DistributionFamily.custom) || (_dist != null && _dist ._family != DistributionFamily.custom)) {
-        if (m != null && m._parms._distribution != DistributionFamily.huber) {
+        if (m != null && !m.isDistributionHuber()) {
           _sumdeviance += m.deviance(w, yact[0], ds[0]);
         } else if (_dist != null) {
           _sumdeviance += _dist.deviance(w, yact[0], ds[0]);
@@ -169,7 +169,7 @@ public class ModelMetricsRegression extends ModelMetricsSupervised {
       double rmsle = Math.sqrt(_rmslerror/_wcount); //Root Mean Squared Log Error
       if (adaptedFrame ==null) adaptedFrame = f;
       double meanResDeviance = 0;
-      if (m != null && m._parms._distribution == DistributionFamily.huber) {
+      if (m != null && m.isDistributionHuber()){
         assert(_sumdeviance==0); // should not yet be computed
         if (preds != null) {
           Vec actual = adaptedFrame.vec(m._parms._response_column);

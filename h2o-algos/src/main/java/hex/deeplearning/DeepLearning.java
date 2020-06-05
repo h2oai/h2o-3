@@ -3,6 +3,7 @@ package hex.deeplearning;
 import hex.*;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters.MissingValuesHandling;
+import hex.genmodel.utils.DistributionFamily;
 import hex.glm.GLMTask;
 import hex.util.LinearAlgebraUtils;
 import water.*;
