@@ -33,6 +33,7 @@ public class PredictCsv {
   public char separator = ',';   // separator used to delimite input datasets
   public boolean setInvNumNA = false;    // enable .setConvertInvalidNumbersToNa(true)
   public boolean getTreePath = false; // enable tree models to obtain the leaf-assignment information
+  public boolean predictContributions = false; // enable tree models to predict contributions instead of regular predictions
   boolean returnGLRMReconstruct = false; // for GLRM, return x factor by default unless set this to true
   public int glrmIterNumber = -1;  // for GLRM, default to 100.
   // Model instance
@@ -97,6 +98,14 @@ public class PredictCsv {
 
   private void writeTreePathNames(BufferedWriter output) throws Exception {
     String[] columnNames = ((SharedTreeMojoModel) model.m).getDecisionPathNames();
+    writeColumnNames(output, columnNames);
+  }
+
+  private void writeContributionNames(BufferedWriter output) throws Exception {
+    writeColumnNames(output, model.getContributionNames());
+  }
+
+  private void writeColumnNames(BufferedWriter output, String[] columnNames) throws Exception {
     int lastIndex = columnNames.length-1;
     for (int index = 0; index < lastIndex; index++)  {
       output.write(columnNames[index]);
@@ -104,7 +113,6 @@ public class PredictCsv {
     }
     output.write(columnNames[lastIndex]);
   }
-
 
   public void run() throws Exception {
     ModelCategory category = model.getModelCategory();
@@ -152,6 +160,8 @@ public class PredictCsv {
       case Multinomial:
         if (getTreePath) {
           writeTreePathNames(output);
+        } else if (predictContributions) {
+          writeContributionNames(output);
         } else {
           output.write("predict");
           String[] responseDomainValues = model.getResponseDomainValues();
@@ -177,6 +187,8 @@ public class PredictCsv {
       case Regression:
         if (getTreePath) {
           writeTreePathNames(output);
+        } else if (predictContributions) {
+          writeContributionNames(output);
         } else
           output.write("predict");
 
@@ -252,6 +264,8 @@ public class PredictCsv {
             BinomialModelPrediction p = model.predictBinomial(row);
             if (getTreePath) {
               writeTreePaths(p.leafNodeAssignments, output);
+            } else if (predictContributions) {
+              writeContributions(p.contributions, output);
             } else {
               output.write(p.label);
               output.write(",");
@@ -302,6 +316,8 @@ public class PredictCsv {
               RegressionModelPrediction p = model.predictRegression(row);
               if (getTreePath) {
                 writeTreePaths(p.leafNodeAssignments, output);
+              } else if (predictContributions) {
+                writeContributions(p.contributions, output);
               } else
                output.write(myDoubleToString(p.value));
 
@@ -338,7 +354,7 @@ public class PredictCsv {
     }
     catch (Exception e) {
       System.out.println("Caught exception on line " + lineNum);
-      System.out.println("");
+      System.out.println();
       e.printStackTrace();
       System.exit(1);
     } finally {
@@ -358,6 +374,15 @@ public class PredictCsv {
     output.write(treePaths[len]);
   }
 
+  private void writeContributions(float[] contributions, BufferedWriter output) throws Exception {
+    for (int i = 0; i < contributions.length; i++) {
+      if (i > 0) {
+        output.write(",");
+      }
+      output.write(myDoubleToString(contributions[i]));
+    }
+  }
+  
   private void loadModel(String modelName) throws Exception {
     try {
       loadMojo(modelName);
@@ -374,6 +399,9 @@ public class PredictCsv {
 
     if (getTreePath)
       config.setEnableLeafAssignment(true);
+
+    if (predictContributions)
+      config.setEnableContributions(true);
 
     if (returnGLRMReconstruct)
       config.setEnableGLRMReconstrut(true);
@@ -393,6 +421,9 @@ public class PredictCsv {
     if (getTreePath)
       config.setEnableLeafAssignment(true);
 
+    if (predictContributions)
+      config.setEnableContributions(true);
+
     if (returnGLRMReconstruct)
       config.setEnableGLRMReconstrut(true);
     
@@ -403,10 +434,10 @@ public class PredictCsv {
   }
 
   private static void usage() {
-    System.out.println("");
+    System.out.println();
     System.out.println("Usage:  java [...java args...] hex.genmodel.tools.PredictCsv --mojo mojoName");
     System.out.println("             --pojo pojoName --input inputFile --output outputFile --separator sepStr --decimal --setConvertInvalidNum");
-    System.out.println("");
+    System.out.println();
     System.out.println("     --mojo    Name of the zip file containing model's MOJO.");
     System.out.println("     --pojo    Name of the java class containing the model's POJO. Either this ");
     System.out.println("               parameter or --model must be specified.");
@@ -415,11 +446,13 @@ public class PredictCsv {
     System.out.println("     --separator Separator to be used in input file containing test data set.");
     System.out.println("     --decimal Use decimal numbers in the output (default is to use hexademical).");
     System.out.println("     --setConvertInvalidNum Will call .setConvertInvalidNumbersToNa(true) when loading models.");
-    System.out.println("     --leafNodeAssignment will show the leaf node assignment for GBM and DRF instead of the" +
+    System.out.println("     --leafNodeAssignment will show the leaf node assignment for tree based models instead of" +
             " prediction results");
+    System.out.println("     --predictContributions will output prediction contributions (Shapley values) for tree based" +
+            " models instead of regular model predictions");
     System.out.println("     --glrmReconstruct will return the reconstructed dataset for GLRM mojo instead of X factor derived from the dataset.");
     System.out.println("     --glrmIterNumber integer indicating number of iterations to go through when constructing X factor derived from the dataset.");
-    System.out.println("");
+    System.out.println();
     System.exit(1);
   }
 
@@ -483,7 +516,9 @@ public class PredictCsv {
           setInvNumNA=true;
         else if (s.equals("--leafNodeAssignment"))
           getTreePath = true;
-        else if (s.equals("--embedded")) {
+        else if (s.equals("--predictContributions")) {
+          predictContributions = true;
+        } else if (s.equals("--embedded")) {
           loadType = -1;
         } else {
           i++;
@@ -495,7 +530,7 @@ public class PredictCsv {
             case "--pojo":   pojoMojoModelNames=sarg; loadType=0; break;//loadPojo(sarg); break;
             case "--input":  inputCSVFileName = sarg; break;
             case "--output": outputCSVFileName = sarg; break;
-            case "--separator": separator=sarg.charAt(sarg.length()-1);; break;
+            case "--separator": separator=sarg.charAt(sarg.length()-1); break;
             case "--glrmIterNumber": glrmIterNumber=Integer.valueOf(sarg); break;
             default:
               System.out.println("ERROR: Unknown command line argument: " + s);
