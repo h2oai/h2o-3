@@ -616,7 +616,7 @@ Below is a simple example describing how to train a segmented model. A more deta
 	train <- titanic.splits[[1]]
 	valid <- titanic.splits[[2]]
 
-	# train a segmented model by iterating over the plcass column
+	# train a segmented model by iterating over the pclass column
 	titanic_models <- h2o.train_segments(algorithm = "gbm",
 	                                     segment_columns = "pclass",
 	                                     x = predictors,
