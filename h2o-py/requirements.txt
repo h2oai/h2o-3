@@ -27,19 +27,3 @@ gssapi
 # [demos dependencies]
 #termios; sys.platform != 'win32'
 #msvcrt; sys.platform == 'win32'
-
-#slam
-#cython
-#twine
-#urllib3
-#grip
-#wheel
-#numpy
-#scipy
-#statsmodels
-#patsy
-#six
-#seaborn
-#numpydoc
-#mysqlclient
-#recommonmark

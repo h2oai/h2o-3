@@ -71,7 +71,7 @@ echo "Installing dependencies for R ${R_VERSION}"
   install.packages(c( \
     'dplyr', 'text2vec', 'R.utils', 'AUC', 'mlbench', 'flexclust', 'randomForest', \
     'bit64', 'HDtweedie', 'jsonlite', 'statmod', 'devtools', 'roxygen2', 'testthat', 'Rcpp', 'fpc', 'RUnit', \
-    'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'rgl', 'plot3Drgl'\
+    'ade4', 'e1071', 'ggplot2', 'LiblineaR', 'optparse', 'uuid', 'usethis', 'rgl', 'plot3Drgl', 'pkgdown' \
   )) \
 " 2>&1 | tee R.install.1.log
 checkRInstallLog R.install.1.log
@@ -105,7 +105,6 @@ checkRInstallLog R.install.4.log
 /usr/local/R/current/bin/R -e "chooseCRANmirror(graphics=FALSE, ind=58); library(devtools); \
   install_version('glmnet', version = '2.0-2'); \
   install_version('gbm', version = '2.1.3'); \
-  install_github('hadley/pkgdown', ref = '9a968e8'); \
   install_github('Zelazny7/isofor') \
 " 2>&1 | tee R.install.5.log
 checkRInstallLog R.install.5.log
