@@ -101,6 +101,7 @@ public class ArrayUtils {
     return result;
   }
 
+  // Find index of an element out of a sorted array.
   public static<T extends Comparable<T>> int indexOf(T[] arr, T val) {
     int highIndex = arr.length-1;
     int compare0 = val.compareTo(arr[0]); // small shortcut

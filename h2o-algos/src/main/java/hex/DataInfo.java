@@ -360,7 +360,7 @@ public class DataInfo extends Keyed<DataInfo> {
 
   public double[] denormalizeBeta(double [] beta) {
     int N = fullN()+1;
-    assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of" + N;
+    assert (beta.length % N) == 0:"beta len = " + beta.length + " expected multiple of " + N;
     int nclasses = beta.length/N;
     beta = MemoryManager.arrayCopyOf(beta,beta.length);
     if (_predictor_transform == DataInfo.TransformType.STANDARDIZE) {

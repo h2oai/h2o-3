@@ -45,7 +45,7 @@ public final class ComputationState {
   private double _gMax; // store max value of original gradient without dividing by math.max(1e-2, _parms._alpha[0])
   private DataInfo _activeData;
   private BetaConstraint _activeBC = null;
-  private double[] _beta; // vector of coefficients corresponding to active data
+  private double[] _beta; // vector of coefficients corresponding to active data only
   private double[] _ubeta;  // HGLM, store coefficients of random effects;
   private double[] _psi; // HGLM, psi
   private double[] _phi; // HGLM, size random columns levels
@@ -662,7 +662,7 @@ public final class ComputationState {
   protected double updateState(double [] beta,GLMGradientInfo ginfo){
     _betaDiff = ArrayUtils.linfnorm(_beta == null?beta:ArrayUtils.subtract(_beta,beta),false);
     double objOld = objective();
-    if(_beta == null)_beta = beta.clone();
+    if(_beta == null || (beta.length != _beta.length))_beta = beta.clone();
     else System.arraycopy(beta,0,_beta,0,beta.length);
     _ginfo = ginfo;
     _likelihood = ginfo._likelihood;
