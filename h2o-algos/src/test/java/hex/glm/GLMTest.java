@@ -2,11 +2,10 @@ package hex.glm;
 
 import hex.*;
 import hex.DataInfo.TransformType;
-import hex.genmodel.algos.glm.GlmMojoModel;
-import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
+import hex.glm.GLMModel.GLMParameters.MissingValuesHandling;
 import hex.glm.GLMModel.GLMParameters.Solver;
 import hex.glm.GLMModel.GLMWeightsFun;
 import hex.glm.GLMTask.*;

@@ -13,10 +13,10 @@ import hex.optimization.OptimizationUtils.GradientSolver;
 import water.H2O;
 import water.Job;
 import water.MemoryManager;
+import water.fvec.Frame;
 import water.util.ArrayUtils;
 import water.util.Log;
 import water.util.MathUtils;
-import water.fvec.Frame;
 
 import java.util.Arrays;
 import java.util.Comparator;

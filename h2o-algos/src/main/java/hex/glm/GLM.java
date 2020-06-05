@@ -1521,6 +1521,8 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
         while (true) {
           iterCnt++;
           long t1 = System.currentTimeMillis();
+          if (_state.activeData()._activeCols != null && _state.activeData()._activeCols.length != betaCnd.length) 
+            betaCnd = _state.extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
           ComputationState.GramXY gram = _state.computeGram(betaCnd,s);
           long t2 = System.currentTimeMillis();
           if (!_state._lsNeeded && (Double.isNaN(gram.likelihood) || _state.objective(gram.beta, gram.likelihood) > 
@@ -1529,10 +1531,16 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
           } else {
             if (!firstIter && !_state._lsNeeded && !progress(gram.beta, gram.likelihood) && !_checkPointFirstIter) {
               Log.info("DONE after " + (iterCnt-1) + " iterations (1)");
+              _model._betaCndCheckpoint = s == Solver.COORDINATE_DESCENT ? COD_solve(gram, _state._alpha, _state.lambda())
+                      : ADMM_solve(gram.gram, gram.xy);
+              if (_state._activeData._activeCols != null)
+                _model._betaCndCheckpoint = ArrayUtils.expandAndScatter(_model._betaCndCheckpoint, 
+                        _model._output._global_beta.length, _state._activeData._activeCols);
               return;
             }
-            betaCnd = s == Solver.COORDINATE_DESCENT?COD_solve(gram,_state._alpha,_state.lambda())
-                    :ADMM_solve(gram.gram,gram.xy); // this will shrink betaCnd if needed but this call may be skipped
+            if (!_checkPointFirstIter)
+              betaCnd = s == Solver.COORDINATE_DESCENT ? COD_solve(gram, _state._alpha, _state.lambda())
+                      : ADMM_solve(gram.gram, gram.xy); // this will shrink betaCnd if needed but this call may be skipped
           }
           firstIter = false;
           _checkPointFirstIter = false;
@@ -1543,10 +1551,13 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
                  ? new MoreThuente(_state.gslvr(),_state.beta(), _state.ginfo())
                  : new SimpleBacktrackingLS(_state.gslvr(),_state.beta().clone(), _state.l1pen(), _state.ginfo());
             double[] oldBetaCnd = ls.getX();
-            if (betaCnd.length != oldBetaCnd.length) {  // if ln 1453 is skipped and betaCnd.length != _state.beta()
-              betaCnd = _state.extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
-            }
-            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() get the old beta value
+               if (betaCnd.length < oldBetaCnd.length)
+                betaCnd = ArrayUtils.expandAndScatter(betaCnd, _model._output._global_beta.length, 
+                        _state._activeData._activeCols);  // expand betaCnd
+               if (betaCnd.length > oldBetaCnd.length)
+                betaCnd = _state.extractSubRange(betaCnd.length, 0, _state.activeData()._activeCols, betaCnd);
+
+            if (!ls.evaluate(ArrayUtils.subtract(betaCnd, oldBetaCnd, betaCnd))) { // ls.getX() contains the old beta value
               Log.info(LogMsg("Ls failed " + ls));
               return;
             }
