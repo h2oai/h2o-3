@@ -134,7 +134,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
             int colId = ab.get2();
             if (colId == 65535) {
               if (computeLeafAssignment) {
-                bitsRight |= 1 << level;  // mark the end of the tree
+                bitsRight |= 1L << level;  // mark the end of the tree
                 return Double.longBitsToDouble(bitsRight);
               } else {
                 return ab.get4f();
@@ -216,7 +216,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
                     default:
                         assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
                 }
-                if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
+                if (computeLeafAssignment && level < 64) bitsRight |= 1L << level;
                 lmask = (nodeType & 0xC0) >> 2;  // Replace leftmask with the rightmask
             } else {
                 // go LEFT
@@ -227,7 +227,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
             level++;
             if ((lmask & 16) != 0) {
                 if (computeLeafAssignment) {
-                    bitsRight |= 1 << level;  // mark the end of the tree
+                    bitsRight |= 1L << level;  // mark the end of the tree
                     return Double.longBitsToDouble(bitsRight);
                 } else {
                     return ab.get4f();
@@ -986,7 +986,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
           default:
             assert false : "illegal lmask value " + lmask + " in tree " + Arrays.toString(tree);
         }
-        if (computeLeafAssignment && level < 64) bitsRight |= 1 << level;
+        if (computeLeafAssignment && level < 64) bitsRight |= 1L << level;
         lmask = (nodeType & 0xC0) >> 2;  // Replace leftmask with the rightmask
       } else {
         // go LEFT
@@ -997,7 +997,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
       level++;
       if ((lmask & 16) != 0) {
         if (computeLeafAssignment) {
-          bitsRight |= 1 << level;  // mark the end of the tree
+          bitsRight |= 1L << level;  // mark the end of the tree
           return Double.longBitsToDouble(bitsRight);
         } else {
           return ab.get4f();
