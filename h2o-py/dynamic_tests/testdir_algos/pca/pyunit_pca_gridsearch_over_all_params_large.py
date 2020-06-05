@@ -52,7 +52,7 @@ class Test_PCA_grid_search:
     allowed_diff = 1e-2   # difference allow between grid search model and manually built model MSEs
 
     # System parameters, do not change.  Dire consequences may follow if you do
-    current_dir = os.path.dirname(os.path.realpath(sys.argv[1]))    # directory of this test file
+    current_dir = os.path.dirname(os.path.realpath(sys.argv[0]))    # directory of this test file
 
     # following parameters are used to generate hyper-parameters
     max_int_val = 10            # maximum size of random integer values
