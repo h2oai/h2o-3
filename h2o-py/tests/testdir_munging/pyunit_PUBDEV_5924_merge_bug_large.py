@@ -21,29 +21,32 @@ def verify_merge():
     frame2 = frame2_int.cbind(frame2_str.cbind(frame2_enum))
 
     # merge one column only
+    print("Merge on one column")
     frame1.set_names(["f1_1", "f1_2", "f1_3", "f1_4", "f1_5", "f1_6", "enum1", "f1_8", "f1_9"])
     frame2.set_names(["f2_1", "f2_2", "f2_3", "f2_4", "f2_5", "f2_6", "enum1", "f28", "f2_9"])
-    perform_merges_assert_correct_merge(frame1, frame2)
+    perform_merges_assert_correct_merge(frame1, frame2, "enum1")
 
     # merge two columns
+    print("Merge on two columns")
     frame1.set_names(["f1_1", "f1_2", "f1_3", "f1_4", "f1_5", "f1_6", "enum1", "enum2", "f1_9"])
     frame2.set_names(["f2_1", "f2_2", "f2_3", "f2_4", "f2_5", "f2_6", "enum1", "enum2", "f2_9"])
-    perform_merges_assert_correct_merge(frame1, frame2)
+    perform_merges_assert_correct_merge(frame1, frame2, ["enum1", "enum2"])
 
     # merge three columns
+    print("Merge on three columns")
     frame1.set_names(["f1_1", "f1_2", "f1_3", "f1_4", "f1_5", "f1_6", "enum1", "enum2", "enum3"])
     frame2.set_names(["f2_1", "f2_2", "f2_3", "f2_4", "f2_5", "f2_6", "enum1", "enum2", "enum3"])
-    perform_merges_assert_correct_merge(frame1, frame2)
+    perform_merges_assert_correct_merge(frame1, frame2, ["enum1", "enum2", "enum3"])
 
 
-def perform_merges_assert_correct_merge(frame1, frame2):
+def perform_merges_assert_correct_merge(frame1, frame2, sortColumns):
     mergeKeepLeft = frame1.merge(frame2, all_x = True) # should equal to mergeKeepRight2
     mergeKeepRight2 = frame2.merge(frame1, all_y=True)
-    assert_equal_frames(mergeKeepLeft, mergeKeepRight2, "f1_1")
+    assert_equal_frames(mergeKeepLeft, mergeKeepRight2, sortColumns)
 
     mergeKeepRight = frame1.merge(frame2, all_y=True) # should equal to mergeLeft2
     mergeKeepLeft2 = frame2.merge(frame1, all_x = True)
-    assert_equal_frames(mergeKeepRight, mergeKeepLeft2, "f1_1")
+    assert_equal_frames(mergeKeepRight, mergeKeepLeft2, sortColumns)
 
     # merge right, left should all have equal NaNs in them
     assert total_na_cnts(mergeKeepRight)==total_na_cnts(mergeKeepLeft2), \
