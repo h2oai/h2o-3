@@ -239,8 +239,8 @@ try {
                                     env["DOCKER_IMAGE_NAME"] = "h2oai/h2o-open-source-k8s"
                                     // Normal releases go to h2oai/ namespace
                                     if (env.NIGHTLY_BUILD) {
-                                        // If the build is not a test build and is nightly, then push only the branch tag with build number.
-                                        env["DOCKER_IMAGE_TAG"] = env["BRANCH_NAME"] + "-" + currentBuild.number
+                                        // If the build is not a test build and is nightly, then re-write the latest nightly
+                                        env["DOCKER_IMAGE_TAG"] = "nightly"
                                         sh """
                                           cd ${env.BUILD_NUMBER_DIR}
                                           make -f scripts/jenkins/Makefile.jenkins h2o-k8s-docker-build h2o-k8s-docker-push

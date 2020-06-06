@@ -3,4 +3,4 @@ FROM openjdk:11
 RUN mkdir -p /opt/h2oai/h2o-3/
 COPY h2o.jar /opt/h2oai/h2o-3/
 
-CMD java -XX:+UseContainerSupport -jar /opt/h2oai/h2o-3/h2o.jar
+CMD java -XX:+UseContainerSupport -XX:MaxRAMPercentage=50 -jar /opt/h2oai/h2o-3/h2o.jar

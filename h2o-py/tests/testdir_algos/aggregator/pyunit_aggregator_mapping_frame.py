@@ -6,7 +6,7 @@ from tests import pyunit_utils
 
 
 def test_aggregator_get_mapping_frame():
-    winequality_df = h2o.import_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite.csv"))
+    winequality_df = h2o.import_file(pyunit_utils.locate("smalldata/wine/winequality-redwhite-no-BOM.csv"))
 
     params = {
         "target_num_exemplars": 650,

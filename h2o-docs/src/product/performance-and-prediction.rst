@@ -973,7 +973,7 @@ Examples:
                         "DayOfWeek", "Month", "Distance", "FlightNum")
         response <- "IsDepDelayed"
 
-        # split the training and validation sets:
+        # split the data into training and validation sets:
         airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8, seed = 1234)
         train <- airlines_splits[[1]]
         valid <- airlines_splits[[2]]
@@ -1006,7 +1006,7 @@ Examples:
                       "DayOfWeek", "Month", "Distance", "FlightNum"]
         response = "IsDepDelayed"
 
-        # split the training and validation sets:
+        # split the data into training and validation sets:
         train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
 
         # build and train the model using the misclassification stopping metric:
@@ -1045,16 +1045,20 @@ Examples:
                         "DayOfWeek", "Month", "Distance", "FlightNum")
         response <- "IsDepDelayed"
 
-        # split the training and validation sets:
-        airlines_splits <- h2o.splitFrame(data =  airlines, ratios = 0.8, seed = 1234)
+        # split the data into training and validation sets:
+        airlines_splits <- h2o.splitFrame(data = airlines, ratios = 0.8, seed = 1234)
         train <- airlines_splits[[1]]
         valid <- airlines_splits[[2]]
 
         # build and train the model using the lift_top_group stopping metric:
-        airlines_gbm <- h2o.gbm(x = predictors, y = response, 
-                                training_frame = train, validation_frame = valid, 
-                                stopping_metric = "lift_top_group", stopping_rounds = 3, 
-                                stopping_tolerance = 1e-2, seed = 1234)
+        airlines_gbm <- h2o.gbm(x = predictors,
+                                y = response,
+                                training_frame = train,
+                                validation_frame = valid,
+                                stopping_metric = "lift_top_group",
+                                stopping_rounds = 3,
+                                stopping_tolerance = 1e-2,
+                                seed = 1234)
 
         # retrieve the auc value:
         h2o.auc(airlines_gbm, valid = TRUE)
@@ -1078,7 +1082,7 @@ Examples:
                       "DayOfWeek", "Month", "Distance", "FlightNum"]
         response = "IsDepDelayed"
 
-        # split the training and validation sets:
+        # split the data into training and validation sets:
         train, valid= airlines.split_frame(ratios = [.8], seed = 1234)
 
         # build and train the model using the lifttopgroup stopping metric:
@@ -1090,7 +1094,7 @@ Examples:
                            training_frame = train, validation_frame = valid)
 
         # retrieve the auc value:
-        airlines_gbm.auc(valid=True)
+        airlines_gbm.auc(valid = True)
 
 
 Deviance
@@ -1114,14 +1118,14 @@ Examples:
         predictors <- c("economy", "cylinders", "displacement", "power", "weight")
         response = "acceleration"
 
-        #split the training and validation sets:
-        p_sid <- h2o.runif(cars, seed = 1234)
-        train <- h2o.assign(cars[p_sid > 0.2, ], "train")
-        test <- h2o.assign(cars[p_sid <= 0.2, ], "test")
+        #split the data into training and validation sets:
+        cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]
 
         # build and train the model using the deviance stopping metric:
         cars_gbm <- h2o.gbm(x = predictors, y = repsonse, 
-                            training_frame = train, validation_frame = test, 
+                            training_frame = train, validation_frame = valid,
                             stopping_metric = "deviance", stopping_rounds = 3, 
                             stopping_tolerance = 1e-2, seed = 1234)
 
@@ -1139,19 +1143,19 @@ Examples:
         predictors = ["economy","cylinders","displacement","power","weight"]
         response = "acceleration"
 
-        # split the training and validation sets:
-        train, valid = cars.split_frame(ratios=[.8],seed=1234)
+        # split the data into training and validation sets:
+        train, valid = cars.split_frame(ratios = [.8],seed = 1234)
 
         # build and train the model using the deviance stopping metric:
         cars_gbm = H2OGradientBoostingEstimator(stopping_metric = "deviance", 
                                                 stopping_rounds = 3, 
                                                 stopping_tolerance = 1e-2, 
                                                 seed = 1234)
-        cars_gbm.train(x=predictors, y=response, 
-                       training_frame=train, validation_frame=valid)
+        cars_gbm.train(x = predictors, y = response,
+                       training_frame = train, validation_frame = valid)
 
         # retrieve the mse value:
-        cars_gbm.mse(valid=True)
+        cars_gbm.mse(valid = True)
 
 Mean-Per-Class-Error
 ''''''''''''''''''''
@@ -1170,10 +1174,10 @@ Examples:
         predictors <- c("economy", "cylinders", "displacement", "power", "weight")
         response = "acceleration"
 
-        #split the training and validation sets:
-        p_sid <- h2o.runif(cars, seed=1234)
-        train <- h2o.assign(cars[p_sid > 0.2, ], "train")
-        test <- h2o.assign(cars[p_sid <= 0.2, ], "test")
+        #split the data into training and validation sets:
+        cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]
 
         # build and train the model using the mean_per_class_error stopping metric:
         cars_gbm <- h2o.gbm(x = predictors, y = repsonse, 
@@ -1195,7 +1199,7 @@ Examples:
         predictors = ["economy","cylinders","displacement","power","weight"]
         response = "acceleration"
 
-        # split the training and validation sets:
+        # split the data into training and validation sets:
         train, valid = cars.split_frame(ratios=[.8],seed=1234)
 
         # build and train the model using the meanperclasserror stopping metric:
@@ -1207,7 +1211,7 @@ Examples:
                        training_frame=train, validation_frame=valid)
 
         # retrieve the mse value:
-        cars_gbm.mse(valid=True)
+        cars_gbm.mse(valid = True)
 
 In addition to the above options, Logloss, MSE, RMSE, MAE, RMSLE, and AUC can also be used as the stopping metric. 
 
@@ -1240,7 +1244,7 @@ Examples:
         # set the factor
         cars["cylinders"] = as.factor(cars["cylinders"])
 
-        # split the training and validation sets:
+        # split the data into training and validation sets:
         cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
         train <- cars_splits[[1]]
         valid <- cars_splits[[2]]
@@ -1267,13 +1271,11 @@ Examples:
         # set the factor:
         cars["cylinders"] = cars["cylinders"].asfactor()
 
-        # split the training and validation sets:
-        r = cars[0].runif()
-        train = cars[r > .2]
-        valid = cars[r <= .2]
+        # split the data into training and validation sets:
+        train, valid = cars.split_frame(ratios=[.8],seed=1234)
 
         # set the predictors columns, response column, and distribution type:
-        predictors = ["displacement","power","weight","acceleration","year"]
+        predictors = ["displacement", "power", "weight", "acceleration", "year"]
         response_col = "cylinders"
         distribution = "multinomial"
 
@@ -1303,7 +1305,7 @@ Examples:
         # set the factor:
         prostate[, 2] <- as.factor(prostate[, 2])
 
-        # split the training and validation sets:
+        # split the data into training and validation sets:
         pros_split <- h2o.splitFrame(data = prostate, ratio = 0.8, seed = 1234)
         train <- pros_split[[1]]
         valid <- pros_split[[2]]
@@ -1330,10 +1332,8 @@ Examples:
         pros[5] = pros[5].asfactor()
         pros[8] = pros[8].asfactor()
 
-        # split the training and validation sets:
-        r = pros[1].runif()
-        train = pros[r > .2]
-        valid = pros[r <= .2]
+        # split the data into training and validation sets:
+        train, valid = cars.split_frame(ratios=[.8],seed=1234)
 
         # set the predictors and response columns:
         predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"]
@@ -1382,10 +1382,10 @@ Examples:
         pros[, 6] <- as.factor(pros[, 6])
         pros[, 9] <- as.factor(pros[, 9])
 
-        # split the training and validation sets:
-        p_sid <- h2o.runif(pros, seed = 1234)
-        train <- h2o.assign(pros[p_sid > 0.2, ], "train")
-        test <- h2o.assign(pros[p_sid <= 0.2, ], "test")
+        # split the data into training and validation sets:
+        cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
+        train <- cars_splits[[1]]
+        valid <- cars_splits[[2]
 
         # build and train the model:
         pros_gbm <- h2o.gbm(x = 3:9, y = 2, 
@@ -1415,10 +1415,8 @@ Examples:
         predictors = ["AGE","RACE","DPROS","DCAPS","PSA","VOL","GLEASON"] 
         response = "CAPSULE"
 
-        # split the training and validation sets:
-        r = pros[1].runif()
-        train = pros[r > .2]
-        valid = pros[r <= .2]
+        # split the data into training and validation sets:
+        train, valid = cars.split_frame(ratios=[.8],seed=1234)
 
         # build and train the model:
         pros_gbm = H2OGradientBoostingEstimator(nfolds=2)
@@ -1447,7 +1445,7 @@ Examples:
         # set the factor:
         cars["cylinders"] = as.factor(cars["cylinders"])
 
-        # split the training and validation sets:
+        # split the data into training and validation sets:
         cars_splits <- h2o.splitFrame(data = cars, ratio = 0.8, seed = 1234)
         train <- cars_splits[[1]]
         valid <- cars_splits[[2]
@@ -1476,13 +1474,11 @@ Examples:
         # set the factor:
         cars["cylinders"] = cars["cylinders"].asfactor()
 
-        # split the training and validation sets:
-        r = cars[0].runif()
-        train = cars[r > .2]
-        valid = cars[r <= .2]
+        # split the data into training and validation sets:
+        train, valid = cars.split_frame(ratios = [.8], seed = 1234)
 
         # set the predictors columns, repsonse column, and distribution type:
-        predictors = ["displacement","power","weight","acceleration","year"]
+        predictors = ["displacement", "power", "weight", "acceleration", "year"]
         response_col = "cylinders"
         distribution = "multinomial"
 
@@ -1518,10 +1514,13 @@ Examples:
         predictors <- c("AGE", "RACE", "PSA", "DCAPS")
 
         # build and train the model:
-        pros_glm <- h2o.glm(x = predictors, y = response, 
+        pros_glm <- h2o.glm(x = predictors,
+                            y = response,
                             training_frame = prostate, 
-                            family = "binomial", nfolds = 0, 
-                            alpha = 0.5, lambda_search = FALSE)
+                            family = "binomial",
+                            nfolds = 5,
+                            alpha = 0.5,
+                            lambda_search = FALSE)
 
         # build the standardized coefficient magnitudes plot:
         h2o.std_coef_plot(pros_glm)
@@ -1541,10 +1540,11 @@ Examples:
         predictors = ["AGE","RACE","PSA","DCAPS"] 
 
         # build and train the model:
-        glm = H2OGeneralizedLinearEstimator(nfolds = 5, alpha = 0.5, 
+        glm = H2OGeneralizedLinearEstimator(nfolds = 5,
+                                            alpha = 0.5,
                                             lambda_search = False, 
                                             family = "binomial")
-        glm.train(x=predictors, y=response, training_frame=prostate)
+        glm.train(x = predictors, y = response, training_frame = prostate)
 
         # build the standardized coefficient magnitudes plot:
         glm.std_coef_plot()
@@ -1552,7 +1552,7 @@ Examples:
 Partial Dependence Plots
 ''''''''''''''''''''''''
 
-Use ``partialPlot`` (R)/``partial_plot`` (Python) to create a partial dependece plot. This plot provides a graphical representation of the marginal effect of a variable on the class probability (binary and multiclass classification) or response (regression). Note that this is only available for models that include only numerical values. 
+Use ``partialPlot`` (R)/``partial_plot`` (Python) to create a partial dependece plot. This plot provides a graphical representation of the marginal effect of a variable on the class probability (binary and multiclass classification) or response (regression). Note that this is only available for models that include only numerical values.
 
 The partial dependence of a given feature :math:`X_j` is the average of the response function :math:`g`, where all the components of :math:`X_j` are set to :math:`x_j` :math:`(X_j = {[x{^{(0)}_j},...,x{^{(N-1)}_j}]}^T)`
 
@@ -1577,12 +1577,12 @@ Thus, the one-dimensional partial dependence of function :math:`g` on :math:`X_j
 Defining a Partial Dependence Plot
 ##################################
 
-The following can be specified when building a partial dependence plot. 
+The following can be specified when building a partial dependence plot.
 
 - ``object``: (Required, R only) An H2OModel object.
 - ``data``: (Required) An H2OFrame object used for scoring and constructing the plot.
 - ``cols``: The feature(s) for which partial dependence will be calculated. One of either ``col_pairs_2dpdp`` or ``cols`` must be specified.
-- ``col_pairs_2dpdp``: A two-level nested list like this: col_pairs_2dpdp = list(c("col1_name", "col2_name"), c("col1_name","col3_name"), ...,) where a 2D partial plots will be generated for col1_name, col2_name pair, for col1_name, col3_name pair and whatever other pairs that are specified in the nested list. One of either ``col_pairs_2dpdp`` or ``cols`` must be specified. 
+- ``col_pairs_2dpdp``: A two-level nested list like this: col_pairs_2dpdp = list(c("col1_name", "col2_name"), c("col1_name","col3_name"), ...,) where a 2D partial plots will be generated for col1_name, col2_name pair, for col1_name, col3_name pair and whatever other pairs that are specified in the nested list. One of either ``col_pairs_2dpdp`` or ``cols`` must be specified.
 - ``destination_key``: A key reference to the created partial dependence tables in H2O.
 - ``nbins``: The number of bins used. For categorical columns make sure the number of bins exceed the level count. If you enable ``include_na``, then the returned length will be nbins+1.
 - ``weight_column``: A string denoting which column of data should be used as the weight column.
@@ -1596,8 +1596,8 @@ The following can be specified when building a partial dependence plot.
 - ``row_index``: The row for which partial dependence will be calculated instead of the whole input frame.
 - ``targets``: (Required, multiclass only) Specify an array of one or more target classes when building PDPs for multiclass models. If you specify more than one class, then all classes are plot in one graph. (Note that in Flow, only one target can be specified.)
 
-Examples
-########
+Binomial Examples
+#################
 
 .. tabs::
    .. code-tab:: r R
@@ -1612,19 +1612,22 @@ Examples
         # build and train the model:
         pros_gbm <- h2o.gbm(x = c("AGE","RACE"), y = "CAPSULE", 
                             training_frame = prostate, 
-                            ntrees = 10, 
-                            max_depth = 5, 
-                            learn_rate = 0.1,
-                            seed = 1234)
+                            ntrees = 10, max_depth = 5, 
+                            learn_rate = 0.1, seed = 1234)
 
+        # build the partial dependence plot:
+        pros_gbm_plot <- h2o.partialPlot(object = pros_gbm,
+                                         data = prostate,
+                                         plot = TRUE,
+                                         cols = c("AGE", "RACE"))
         # build a 1-dimensional partial dependence plot:
-        h2o_1d_pdp = h2o.partialPlot(object = pros_gbm, 
-                                     data = prostate, 
+        h2o_1d_pdp = h2o.partialPlot(object = pros_gbm,
+                                     data = prostate,
                                      cols = c("AGE", "RACE"))
 
         # build a 2-dimensional partial depedence plot:
-        h2o_2d_pdp <- h2o.partialPlot(object = pros_gbm, 
-                                      data = prostate, 
+        h2o_2d_pdp <- h2o.partialPlot(object = pros_gbm,
+                                      data = prostate,
                                       col_pairs_2dpdp=list(c("RACE", "AGE"), c("AGE", "PSA")),
                                       plot = FALSE)
 
@@ -1644,22 +1647,99 @@ Examples
         response = "CAPSULE"
 
         # build and train the model:
-        pros_gbm = H2OGradientBoostingEstimator(ntrees = 10, 
-                                                max_depth = 5, 
+        pros_gbm = H2OGradientBoostingEstimator(ntrees = 10,
+                                                max_depth = 5,
                                                 learn_rate = 0.1,
                                                 seed = 1234)
         pros_gbm.train(x = predictors, y = response, training_frame = prostate)
+        #build the partial dependence plot:
+        pros_gbm_plot = pros_gbm.partial_plot(data = prostate,
+                                              cols = ["AGE","RACE"],
+                                              plot = True)
+
+.. figure:: images/pdp_ageVmean.png
+  :alt: Partial Dependence Age Vs Mean Plot
+  :scale: 30%
+
+.. figure:: images/pdp_raceVmean.png
+  :alt: Partial Dependence Race Vs Mean Plot
+  :scale: 30%
 
         # build a 1-dimensional partial dependence plot:
         pros_gbm.partial_plot(data = prostate, cols = ["AGE","RACE"], server=True, plot = True)
 
         # build a 2-dimensional partial dependence plot:
-        pdp2dOnly = pros_gbm.partial_plot(data = prostate, 
-                                          server = True, 
-                                          plot = False, 
+        pdp2dOnly = pros_gbm.partial_plot(data = prostate,
+                                          server = True,
+                                          plot = False,
                                           col_pairs_2dpdp = [['AGE', 'PSA'],['AGE', 'RACE']])
 
+Multinomial Examples
+####################
 
+.. tabs::
+    .. code-tab:: r R
+
+        # import the iris dataset:
+        iris <- h2o.importFile("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+        # convert response column to a factor
+        iris[, "class"] <- as.factor(iris[, "class"])
+
+        # split the dataset into train and valid sets
+        iris_splits <- h2o.splitFrame(data =  iris, ratios = 0.8, seed = 1234)
+        train <- iris_splits[[1]]
+        valid <- iris_splits[[2]]
+
+        # build and train the model:
+        iris_glm <- h2o.glm(x = c(1:4),
+                            y = 5,
+                            training_frame = iris,
+                            family = "multinomial",
+                            seed = 1234)
+
+        # build the partial dependence plot:
+        pdp_petal_len_se <- h2o.partialPlot(object = iris_glm,
+                                            data = iris,
+                                            cols = "petal_len",
+                                            targets = c("Iris-setosa", "Iris-virginica", "Iris-versicolor"))
+        pdp_petal_len_se
+
+
+    .. code-tab:: python
+
+        # import H2OGeneralizedLinearEstimator and the iris dataset:
+        from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+
+        # set the factors:
+        iris['class'] = iris['class'].asfactor()
+
+        # set the predictors and response columns:
+        predictors = iris.col_names[:-1]
+        response = 'class'
+
+        # split the dataset into train and valid sets:
+        train, valid = iris.split_frame(ratios = [.8], seed = 1234)
+
+        # build and train the model:
+        model = H2OGeneralizedLinearEstimator(family = 'multinomial')
+        model.train(x = predictors, y = response, training_frame = train, validation_frame = valid)
+
+        # build the partial dependence plot:
+        cols = ["petal_len"]
+        targets = ["Iris-setosa"]
+        pdp_petal_len_se = model.partial_plot(data = iris,
+                                              cols = cols,
+                                              targets = targets,
+                                              plot_stddev = False,
+                                              plot = True,
+                                              server = True)
+        pdp_petal_len_se
+
+.. figure:: images/pdp_multinomial.png
+  :alt: Multinomial Partial Dependence Plot
+  :scale: 30%
 Prediction
 ----------
 
@@ -1684,12 +1764,8 @@ This section provides examples of performing predictions in Python and R. Refer 
         prostate <- h2o.importFile(path = "https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
 
         # Split dataset giving the training dataset 75% of the data
-        prostate_split <- h2o.splitFrame(data = prostate, ratios = 0.75)
-
-        # Create a training set from the 1st dataset in the split
+        prostate_split <- h2o.splitFrame(data = prostate, ratios = 0.75, seed = 1234)
         prostate_train <- prostate_split[[1]]
-
-        # Create a testing set from the 2nd dataset in the split
         prostate_test <- prostate_split[[2]]
 
         # Convert the response column to a factor
@@ -1702,30 +1778,31 @@ This section provides examples of performing predictions in Python and R. Refer 
                          distribution = "bernoulli",
                          ntrees = 100,
                          max_depth = 4,
-                         learn_rate = 0.1)
+                         learn_rate = 0.1,
+                         seed = 1234)
 
         # Predict using the GBM model and the testing dataset
         pred <- h2o.predict(object = model, newdata = prostate_test)
         pred
-          predict         p0          p1
-        1       0 0.7414373 0.25856274
-        2       1 0.3114293 0.68857073
-        3       0 0.9852284 0.01477161
-        4       0 0.6647902 0.33520975
-        5       0 0.6075046 0.39249538
-        6       1 0.4065468 0.59345323
+          predict         p0         p1
+        1       0 0.7260791 0.27392089
+        2       0 0.8193595 0.18064046
+        3       1 0.3400551 0.65994490
+        4       0 0.9853045 0.01469547
+        5       0 0.9411660 0.05883396
+        6       0 0.7392462 0.26075376
 
-        [88 rows x 3 columns] 
+        [90 rows x 3 columns]
 
         # View a summary of the prediction with a probability of TRUE
         summary(pred$p1, exact_quantiles = TRUE)
-         p1                
-         Min.   :0.008925  
-         1st Qu.:0.160050  
-         Median :0.350236  
-         Mean   :0.451507  
-         3rd Qu.:0.818486  
-         Max.   :0.99040  
+         p1
+         Min.   :0.01006
+         1st Qu.:0.15610
+         Median :0.33091
+         Mean   :0.41932
+         3rd Qu.:0.66922
+         Max.   :0.99724
  
    .. code-tab:: python
 
@@ -1735,42 +1812,41 @@ This section provides examples of performing predictions in Python and R. Refer 
         
         # Import the prostate dataset
         h2o_df = h2o.import_file("https://raw.github.com/h2oai/h2o/master/smalldata/logreg/prostate.csv")
-        
-        # Split the data into Train/Test/Validation with Train having 70% and test and validation 15% each
-        train,test,valid = h2o_df.split_frame(ratios=[.7, .15])
 
         # Convert the response column to a factor
         h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
-        
+
+        # Split the data into train and test
+        train, test = h2o_df.split_frame(ratios = [.75], seed = 1234)
+
         # Generate a GBM model using the training dataset
         model = H2OGradientBoostingEstimator(distribution = "bernoulli",
                                              ntrees = 100,
                                              max_depth = 4,
-                                             learn_rate = 0.1)
-
-        model.train(y = "CAPSULE", 
-                    x = ["AGE","RACE","PSA","GLEASON"],
-                    training_frame = h2o_df)
+                                             learn_rate = 0.1,
+                                             seed = 1234)
+        model.train(y = "CAPSULE", x = ["AGE", "RACE", "PSA", "GLEASON"], training_frame = train)
         
         # Predict using the GBM model and the testing dataset
         predict = model.predict(test)
         
         # View a summary of the prediction
-        predict.head()
-        predict        p0        p1
-        ---------  --------  --------
-                0  0.8993    0.1007
-                1  0.168391  0.831609
-                1  0.166067  0.833933
-                1  0.327212  0.672788
-                1  0.25991   0.74009
-                0  0.758978  0.241022
-                0  0.540797  0.459203
-                0  0.838489  0.161511
-                0  0.704853  0.295147
-                0  0.642381  0.357619
+        predict
+          predict         p0         p1
+        ---------  ---------  ---------
+                0  0.726079   0.273921
+                0  0.81936    0.18064
+                1  0.340055   0.659945
+                0  0.985305   0.0146955
+                0  0.941166   0.058834
+                0  0.739246   0.260754
+                1  0.431422   0.568578
+                1  0.0971752  0.902825
+                1  0.595788   0.404212
+                1  0.639923   0.360077
 
-        [10 rows x 3 columns]
+        [90 rows x 3 columns]
+
 
 Predicting Leaf Node Assignment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1793,13 +1869,12 @@ Using the previous example, run the following to predict the leaf node assignmen
         # View a summary of the leaf node assignment prediction
         summary(predict_lna$T1.C1, exact_quantiles = TRUE)
         T1.C1   
-        RRLR:15 
-        RRR :13 
-        LLLR:12 
-        LLLL:11 
-        LLRR: 8 
-        LLRL: 6 
-
+        LRRR:15
+        LLRR:12
+        RLLL:12
+        RLLR:11
+        RRL : 7
+        LRL : 6
 
    .. code-tab:: python
 
@@ -1824,16 +1899,15 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         contributions <- h2o.predict_contributions(model, prostate_test)
         contributions
 
-        AGE        RACE       PSA        GLEASON    BiasTerm
-        ---------  ---------- ---------  ---------  ----------
-        -0.3929753  0.02188157 0.3530045  0.5453218 -0.6589417
-        -0.6489378 -0.24417394 1.0434356  0.7937416 -0.6589417
-         0.3244801 -0.23901901 0.9877144  1.0463049 -0.6589417
-         0.9402978 -0.33412665 2.0499718  1.0571480 -0.6589417
-        -0.7762397  0.03393304 0.1952782  1.8620299 -0.6589417
-         0.5900557  0.03899451 0.6708371 -1.2606093 -0.6589417
+                 AGE       RACE        PSA     GLEASON   BiasTerm
+        1 -0.94655824 -0.47411418  0.5021142  0.1872143 -0.2434755
+        2  0.52227736 -0.35430688 -0.7339548 -0.7025551 -0.2434755
+        3  1.16102529  0.03835530  1.1071422 -1.3999993 -0.2434755
+        4  0.07368658  0.03122047 -1.9287812 -2.1380610 -0.2434755
+        5 -0.02015455  0.06589284 -1.5968542 -0.9778085 -0.2434755
+        6 -0.33494386 -0.58143651 -0.4093136  0.5271149 -0.2434755
 
-         [95 rows x 5 columns]
+        [90 rows x 5 columns]
 
 
    .. code-tab:: python
@@ -1842,20 +1916,20 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         contributions = model.predict_contributions(test)
         contributions
 
-        AGE          RACE        PSA        GLEASON    BiasTerm
-        -----------  ----------  ---------  ---------  ----------
-        -0.414587     0.0263119  -0.120703   0.407889   -0.581522
-         0.0913486    0.0250697  -0.746584   1.16642    -0.581522
-         0.565866     0.0603216   2.51301    0.739406   -0.581522
-        -0.670981     0.0210115   0.164873  -2.03487    -0.581522
-        -0.398603     0.0255295  -0.494069   0.537647   -0.581522
-         0.00915739   0.0458912   0.557667  -0.262171   -0.581522
-        -0.199497    -0.265438    2.18964    2.89974    -0.581522
-        -0.137073     0.0271401  -1.00939    1.47302    -0.581522
-         0.440857     0.0407717  -0.574498  -0.537758   -0.581522
-        -0.901466     0.0216657   0.453894  -2.39536    -0.581522
+               AGE        RACE         PSA    GLEASON    BiasTerm
+        ----------  ----------  ----------  ---------  ----------
+        -0.946558   -0.474114    0.502114    0.187214   -0.243475
+         0.522277   -0.354307   -0.733955   -0.702555   -0.243475
+         1.16103     0.0383553   1.10714    -1.4        -0.243475
+         0.0736866   0.0312205  -1.92878    -2.13806    -0.243475
+        -0.0201546   0.0658928  -1.59685    -0.977809   -0.243475
+        -0.334944   -0.581437   -0.409314    0.527115   -0.243475
+         0.30024     0.0747187  -0.884867    1.02944    -0.243475
+         0.373082    0.0791007   1.72772     0.292584   -0.243475
+        -0.0305803   0.047525   -1.05218     0.89077    -0.243475
+         0.435522    0.0751563   0.0887201  -0.930953   -0.243475
 
-        [58 rows x 5 columns]
+        [90 rows x 5 columns]
 
         # Import required packages for running SHAP commands
         import shap
@@ -1927,15 +2001,15 @@ Using the previous example, run the following to the find frequency of each feat
         feature_frequencies <- h2o.feature_frequencies(model, prostate_train)
         feature_frequencies
 
-        AGE RACE PSA GLEASON
-         98    8 199      46
-        114    6 238      42
-        103    9 227      57
-         94   13 183      53
-        103    9 225      57
-        102    5 238      36
+          AGE RACE PSA GLEASON
+        1  96   15 177      66
+        2 112   17 204      67
+        3 103   17 210      67
+        4 129   18 189      64
+        5 107    7 167      67
+        6 125   19 161      68
 
-        [275 rows x 4 columns]
+        [290 rows x 4 columns]
 
    .. code-tab:: python
 
@@ -1944,20 +2018,20 @@ Using the previous example, run the following to the find frequency of each feat
         feature_frequencies = model.feature_frequencies(train)
         feature_frequencies
 
-        AGE    RACE    PSA    GLEASON
+          AGE    RACE    PSA    GLEASON
         -----  ------  -----  ---------
-        109      10    197         68
-        109       3    220         64
-        101      11    222         66
-        106       6    188         65
-         90       1    199         61
-        130       7    194         65
-        103       3    217         66
-        103      11    203         65
-        102       3    218         66
-        112       6    203         64
+           96      15    177         66
+          112      17    204         67
+          103      17    210         67
+          129      18    189         64
+          107       7    167         67
+          125      19    161         68
+          117      19    145         66
+          108      16    200         71
+          106      16    180         71
+          121      17    186         67
 
-        [273 rows x 4 columns]
+        [290 rows x 4 columns]
 
 Predict using MOJOs
 ~~~~~~~~~~~~~~~~~~~

@@ -600,7 +600,8 @@ class ModelBase(h2o_meta(Keyed)):
 
         Note: standardize = True by default, if set to False then coef() return the coefficients which are fit directly.
         """
-        if self._model_json["output"]['model_category']=="Multinomial":
+        if (self._model_json["output"]['model_category']=="Multinomial") or \
+            (self._model_json["output"]['model_category']=="Ordinal"):
             return self._fillMultinomialDict(False)
         else:
             tbl = self._model_json["output"]["coefficients_table"]

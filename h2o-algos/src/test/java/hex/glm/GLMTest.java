@@ -175,17 +175,17 @@ public class GLMTest  extends TestUtil {
           double temp2 = coeffF.get(key);
           if (Math.abs(temp1 - temp2) > 1e-6) { // coefficient same for categoricals, different for numericals
             String[] coNames = key.split("_");
-            if (!(coNames[1].equals("Intercept"))) {  // skip over intercepts
-              String colnames = coNames[1];
-              interPClass[Integer.valueOf(coNames[0])] += temp2 * cMeans.get(colnames);
+            if (!(coNames[0].equals("Intercept"))) {  // skip over intercepts
+              String colnames = coNames[0];
+              interPClass[Integer.valueOf(coNames[1])] += temp2 * cMeans.get(colnames);
               temp2 = temp2 * cSigmas.get(colnames);
-              assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + coNames[1] + " is " + temp1 + " but actual " + temp2;
+              assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + coNames[0] + " is " + temp1 + " but actual " + temp2;
             }
           }
         }
         // check for equality of intercepts
         for (int index = 0; index < glmF._output._nclasses; index++) {
-          String interceptKey = index + "_Intercept";
+          String interceptKey = "Intercept_" + index;
           double temp1 = coeffSF.get(interceptKey);
           double temp2 = coeffF.get(interceptKey) + interPClass[index];
           assert Math.abs(temp1 - temp2) < 1e-6 : "Expected coefficients for " + interceptKey + " is " + temp1 + " but actual "
