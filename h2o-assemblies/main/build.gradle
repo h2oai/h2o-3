@@ -85,6 +85,7 @@ shadowJar {
     file = file("${buildDir}/reports/license/dependency-license.xml")
     resource = "META-INF/license/h2o-depenencies-licenses.xml"
   }
+  zip64 true
 }
 
 artifacts {

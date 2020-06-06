@@ -7,6 +7,7 @@ import water.init.EmbeddedConfigProvider;
 import water.k8s.api.KubernetesRestApi;
 import water.k8s.lookup.KubernetesDnsLookup;
 import water.k8s.lookup.KubernetesLookup;
+import water.k8s.lookup.KubernetesRestLookup;
 import water.k8s.lookup.LookupConstraintsBuilder;
 import water.util.Log;
 
@@ -52,7 +53,7 @@ public class KubernetesEmbeddedConfigProvider implements EmbeddedConfigProvider 
             Log.info(String.format("'%s' environment variable not set.", K8S_DESIRED_CLUSTER_SIZE_KEY));
         }
 
-        final KubernetesLookup kubernetesDnsDiscovery = KubernetesDnsLookup.fromH2ODefaults();
+        final KubernetesLookup kubernetesDnsDiscovery = new KubernetesRestLookup();
         return kubernetesDnsDiscovery.lookupNodes(lookupConstraintsBuilder.build());
     }
 
