@@ -13,7 +13,8 @@
 #' @param validation_frame Id of the validation data frame.
 #' @param ignore_const_cols \code{Logical}. Ignore constant columns. Defaults to TRUE.
 #' @param score_each_iteration \code{Logical}. Whether to score during each iteration of model training. Defaults to FALSE.
-#' @param loading_name Frame key to save resulting X
+#' @param representation_name Frame key to save resulting X
+#' @param loading_name [Deprecated] Use representation_name instead.  Frame key to save resulting X.
 #' @param transform Transformation of training data Must be one of: "NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE".
 #'        Defaults to NONE.
 #' @param k Rank of matrix approximation Defaults to 1.
@@ -66,6 +67,7 @@ h2o.glrm <- function(training_frame,
                      validation_frame = NULL,
                      ignore_const_cols = TRUE,
                      score_each_iteration = FALSE,
+                     representation_name = NULL,
                      loading_name = NULL,
                      transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
                      k = 1,
@@ -111,6 +113,8 @@ h2o.glrm <- function(training_frame,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
+  if (!missing(representation_name))
+    parms$representation_name <- representation_name
   if (!missing(loading_name))
     parms$loading_name <- loading_name
   if (!missing(transform))
@@ -182,6 +186,9 @@ h2o.glrm <- function(training_frame,
     if( !(missing(k)) && k!=as.integer(nrow(user_y)) ) {
       warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
     }
+    if ( !missing(loading_name)) {
+      warning("Argument loading_name is deprecated.  Use representation_name instead.")
+    }
     parms[["k"]] <- as.numeric(nrow(user_y))
   # } else if( is.null(user_y) ) {
   #  if(!missing(init) && parms[["init"]] == "User")
@@ -214,6 +221,7 @@ h2o.glrm <- function(training_frame,
                                      validation_frame = NULL,
                                      ignore_const_cols = TRUE,
                                      score_each_iteration = FALSE,
+                                     representation_name = NULL,
                                      loading_name = NULL,
                                      transform = c("NONE", "STANDARDIZE", "NORMALIZE", "DEMEAN", "DESCALE"),
                                      k = 1,
@@ -264,6 +272,8 @@ h2o.glrm <- function(training_frame,
     parms$ignore_const_cols <- ignore_const_cols
   if (!missing(score_each_iteration))
     parms$score_each_iteration <- score_each_iteration
+  if (!missing(representation_name))
+    parms$representation_name <- representation_name
   if (!missing(loading_name))
     parms$loading_name <- loading_name
   if (!missing(transform))
@@ -334,6 +344,9 @@ h2o.glrm <- function(training_frame,
     # Set k
     if( !(missing(k)) && k!=as.integer(nrow(user_y)) ) {
       warning("Argument k is not equal to the number of rows in user-specified Y. Ignoring k. Using specified Y.")
+    }
+    if ( !missing(loading_name)) {
+      warning("Argument loading_name is deprecated.  Use representation_name instead.")
     }
     parms[["k"]] <- as.numeric(nrow(user_y))
   # } else if( is.null(user_y) ) {

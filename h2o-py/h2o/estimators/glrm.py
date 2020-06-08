@@ -21,11 +21,11 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
     algo = "glrm"
     param_names = {"model_id", "training_frame", "validation_frame", "ignored_columns", "ignore_const_cols",
-                   "score_each_iteration", "loading_name", "transform", "k", "loss", "loss_by_col", "loss_by_col_idx",
-                   "multi_loss", "period", "regularization_x", "regularization_y", "gamma_x", "gamma_y",
-                   "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed", "init", "svd_method",
-                   "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd", "max_runtime_secs",
-                   "export_checkpoints_dir"}
+                   "score_each_iteration", "representation_name", "loading_name", "transform", "k", "loss",
+                   "loss_by_col", "loss_by_col_idx", "multi_loss", "period", "regularization_x", "regularization_y",
+                   "gamma_x", "gamma_y", "max_iterations", "max_updates", "init_step_size", "min_step_size", "seed",
+                   "init", "svd_method", "user_y", "user_x", "expand_user_y", "impute_original", "recover_svd",
+                   "max_runtime_secs", "export_checkpoints_dir"}
 
     def __init__(self, **kwargs):
         super(H2OGeneralizedLowRankEstimator, self).__init__()
@@ -161,7 +161,7 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
 
     @property
-    def loading_name(self):
+    def representation_name(self):
         """
         Frame key to save resulting X
 
@@ -169,6 +169,39 @@ class H2OGeneralizedLowRankEstimator(H2OEstimator):
 
         :examples:
 
+        >>> acs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
+        >>> acs_fill = acs.drop("ZCTA5")
+        >>> acs_glrm = H2OGeneralizedLowRankEstimator(k=10,
+        ...                                           transform="standardize",
+        ...                                           loss="quadratic",
+        ...                                           regularization_x="quadratic",
+        ...                                           regularization_y="L1",
+        ...                                           gamma_x=0.25,
+        ...                                           gamma_y=0.5,
+        ...                                           max_iterations=1,
+        ...                                           representation_name="acs_full")
+        >>> acs_glrm.train(x=acs_fill.names, training_frame=acs)
+        >>> acs_glrm.loading_name
+        >>> acs_glrm.show()
+        """
+        return self._parms.get("representation_name")
+
+    @representation_name.setter
+    def representation_name(self, representation_name):
+        assert_is_type(representation_name, None, str)
+        self._parms["representation_name"] = representation_name
+
+
+    @property
+    def loading_name(self):
+        """
+        [Deprecated] Use representation_name instead.  Frame key to save resulting X.
+
+        Type: ``str``.
+
+        :examples:
+
+        >>> # loading_name will be deprecated.  Use representation_name instead.    
         >>> acs = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/bigdata/laptop/census/ACS_13_5YR_DP02_cleaned.zip")
         >>> acs_fill = acs.drop("ZCTA5")
         >>> acs_glrm = H2OGeneralizedLowRankEstimator(k=10,
