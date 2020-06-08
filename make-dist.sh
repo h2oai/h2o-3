@@ -52,9 +52,6 @@ function make_hadoop_zip {
   IMAGEDIR=${TOPDIR}/h2o-dist/tmp/${PROJECT_BASE}
 
   mkdir -p $IMAGEDIR
-  mkdir -p $IMAGEDIR/docs-website/h2o-docs
-  cp -rp h2o-docs/src/product/_build/html/* $IMAGEDIR/docs-website/h2o-docs
-  cp -rp h2o-docs/web/* $IMAGEDIR/docs-website/h2o-docs
   cp h2o-hadoop-*/h2o-${HADOOP_VERSION}-assembly/build/libs/h2odriver.jar $IMAGEDIR
   cat h2o-dist/hadoop/README.txt | sed -e "s/SUBST_BRANCH_NAME/${BRANCH_NAME}/g" | sed -e "s/SUBST_BUILD_NUMBER/${BUILD_NUMBER}/g" > ${IMAGEDIR}/README.txt
   cat h2o-dist/hadoop/distribution.info | sed -e "s/H2O_VERSION/${PROJECT_VERSION}/g" | sed -e "s/HADOOP_VERSION/${HADOOP_VERSION}/g" > ${IMAGEDIR}/distribution.info
@@ -80,9 +77,6 @@ echo ${PROJECT_VERSION} > target/project_version
 
 # Create zip files and add them to target.
 make_zip
-
-# Build main h2o sphinx documentation.
-(cd h2o-docs/src/product && sphinx-build -b html -d _build/doctrees . _build/html)
 
 if [ -z "$DO_FAST" ]; then
   for HADOOP_VERSION in $HADOOP_VERSIONS; do
@@ -141,6 +135,11 @@ cp -rp build/repo target/maven
 
 # Generate SHA256 from zip file
 (cd target && sha256sum h2o-*.zip > sha256.txt)
+
+# Build main h2o sphinx documentation.
+cd h2o-docs/src/product
+sphinx-build -b html -d _build/doctrees . _build/html
+cd ../../..
 
 # Add documentation to target.
 mkdir target/docs-website
