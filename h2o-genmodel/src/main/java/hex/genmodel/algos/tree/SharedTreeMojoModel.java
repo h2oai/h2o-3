@@ -114,12 +114,13 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
       return scoreTree(tree, row, computeLeafAssignment, domains);
     }
 
+  public static final int __INTERNAL_MAX_TREE_DEPTH = 64;
   /**
    * Highly efficient (critical path) tree scoring
    *
    * Given a tree (in the form of a byte array) and the row of input data, compute either this tree's
    * predicted value when `computeLeafAssignment` is false, or the the decision path within the tree (but no more
-   * than 64 levels) when `computeLeafAssignment` is true.
+   * than 64 levels) when `computeLeafAssignment` is true. If path has 64 levels or more, Double.NaN is returned.
    *
    * Note: this function is also used from the `hex.tree.CompressedTree` class in `h2o-algos` project.
    */
@@ -134,6 +135,8 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
             int colId = ab.get2();
             if (colId == 65535) {
               if (computeLeafAssignment) {
+                if (level >= __INTERNAL_MAX_TREE_DEPTH)
+                  return Double.NaN;
                 bitsRight |= 1L << level;  // mark the end of the tree
                 return Double.longBitsToDouble(bitsRight);
               } else {
@@ -227,6 +230,8 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
             level++;
             if ((lmask & 16) != 0) {
                 if (computeLeafAssignment) {
+                    if (level >= __INTERNAL_MAX_TREE_DEPTH)
+                      return Double.NaN;
                     bitsRight |= 1L << level;  // mark the end of the tree
                     return Double.longBitsToDouble(bitsRight);
                 } else {
@@ -277,6 +282,7 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
     public interface DecisionPathTracker<T> {
         boolean go(int depth, boolean right);
         T terminate();
+        T invalidPath();
     }
 
     public static class StringDecisionPathTracker implements DecisionPathTracker<String> {
@@ -294,8 +300,12 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
             _pos = 0;
             return path;
         }
+        @Override
+        public String invalidPath() {
+            return null;
+        }
     }
-
+    
     public static class LeafDecisionPathTracker implements DecisionPathTracker<LeafDecisionPathTracker> {
         private final AuxInfoLightReader _auxInfo;
         private boolean _wentRight = false; // Was the last step _right_?
@@ -340,9 +350,18 @@ public abstract class SharedTreeMojoModel extends MojoModel implements TreeBacke
         final int getLeafNodeId() {
           return _nodeId;
         }
+
+        @Override
+        public LeafDecisionPathTracker invalidPath() {
+          _nodeId = -1;
+          return this;
+        }
     }
 
     public static <T> T getDecisionPath(double leafAssignment, DecisionPathTracker<T> tr) {
+        if (Double.isNaN(leafAssignment)) {
+          return tr.invalidPath();
+        }
         long l = Double.doubleToRawLongBits(leafAssignment);
         for (int i = 0; i < 64; ++i) {
             boolean right = ((l>>i) & 0x1L) == 1;
