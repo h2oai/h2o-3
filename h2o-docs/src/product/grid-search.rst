@@ -341,6 +341,7 @@ Using the `Grid Search <#grid-search-examples>`__ example through the hyperparam
   .. code-tab:: python
 
     # Add the save location
+    import tempfile
     checkpoints_dir = tempfile.mkdtemp()
 
     # Train and validate a cartesian grid of GBMs
@@ -402,6 +403,7 @@ Using the `Grid Search <#grid-search-examples>`__ example through the hyperparam
   .. code-tab:: python
 
     # Add the save location
+    import tempfile
     checkpoints_dir = tempfile.mkdtemp()
 
     # Train and validate a cartesian grid of GBMs
@@ -422,7 +424,7 @@ Using the `Grid Search <#grid-search-examples>`__ example through the hyperparam
 
     # Wipe the cloud to simulate cluster restart 
     #(the models will no longer be available)
-    h2o.removeAll()
+    h2o.remove_all()
 
     # Retrieve the saved grid
     grid = h2o.load_grid(saved_path)
