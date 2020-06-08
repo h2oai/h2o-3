@@ -32,7 +32,7 @@ class H2OAutoEncoderGridSearch(object):
         >>> gs.train(x=range(4), training_frame=fr)
         >>> gs.anomaly(fr, per_feature=True)
         """
-         return {model.model_id: model.anomaly(test_data, per_feature) for model in self.models}
+        return {model.model_id: model.anomaly(test_data, per_feature) for model in self.models}
 
 
 
@@ -774,12 +774,34 @@ class H2OClusteringGridSearch(object):
         :param bool valid: If True, then return the cluster sizes for the validation data.
         :param bool xval: If True, then return the cluster sizes for each of the cross-validated splits.
         :returns: the cluster sizes for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.size(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.size(train, valid, xval) for model in self.models}
 
 
     def num_iterations(self):
-        """Get the number of iterations that it took to converge or reach max iterations."""
+        """Get the number of iterations that it took to converge or reach max iterations.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.num_iterations()
+        """
+        
         return {model.model_id: model.num_iterations() for model in self.models}
 
 
@@ -796,6 +818,16 @@ class H2OClusteringGridSearch(object):
         :param bool xval: If True, then return the between cluster sum of squares value for each of the
             cross-validated splits.
         :returns: the between cluster sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.betweenss(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.betweenss(train, valid, xval) for model in self.models}
 
@@ -812,6 +844,16 @@ class H2OClusteringGridSearch(object):
         :param bool valid: If True, then return the total sum of squares for the validation data.
         :param bool xval: If True, then return the total sum of squares for each of the cross-validated splits.
         :returns: the total sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+         gs.totss(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.totss(train, valid, xval) for model in self.models}
 
@@ -829,6 +871,16 @@ class H2OClusteringGridSearch(object):
         :param bool xval: If True, then return the total within cluster sum of squares for each of the
             cross-validated splits.
         :returns: the total within cluster sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.tot_withinss(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.tot_withinss(train, valid, xval) for model in self.models}
 
@@ -846,6 +898,16 @@ class H2OClusteringGridSearch(object):
         :param bool xval: If True, then return the within cluster sum of squares for each of the
             cross-validated splits.
         :returns: the within cluster sum of squares values for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.withinss(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.withinss(train, valid, xval) for model in self.models}
 
@@ -862,17 +924,49 @@ class H2OClusteringGridSearch(object):
         :param bool valid: If True, then return the centroid statistics for the validation data.
         :param bool xval: If True, then return the centroid statistics for each of the cross-validated splits.
         :returns: the centroid statistics for the specified key(s).
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.centroid_stats(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.centroid_stats(train, valid, xval) for model in self.models}
 
 
     def centers(self):
-        """Returns the centers for the KMeans model."""
+        """Returns the centers for the KMeans model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.centers()
+        """
         return {model.model_id: model.centers() for model in self.models}
 
 
     def centers_std(self):
-        """Returns the standardized centers for the kmeans model."""
+        """Returns the standardized centers for the kmeans model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OKMeansEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("https://s3.amazonaws.com/h2o-public-test-data/smalldata/iris/iris_train.csv")
+        >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
+        >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
+        >>> gs.train(x=list(range(4)), training_frame=iris)
+        >>> gs.centers_std()
+        """
         return {model.model_id: model.centers_std() for model in self.models}
 
 
