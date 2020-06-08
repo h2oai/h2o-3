@@ -20,7 +20,7 @@ class H2OAutoEncoderGridSearch(object):
         :example:
 
         >>> from h2o.grid.grid_search import H2OGridSearch
-        >>> form h2o.estimators import H2OAutoEncoderEstimator
+        >>> from h2o.estimators import H2OAutoEncoderEstimator
         >>> rows = [[1,2,3,4,0]*50,
         ...         [2,1,2,4,1]*50,
         ...         [2,1,4,2,1]*50,
@@ -61,10 +61,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -93,10 +93,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -124,10 +124,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -155,10 +155,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -186,10 +186,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -217,10 +217,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -248,10 +248,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -279,10 +279,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -309,10 +309,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -340,10 +340,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -371,10 +371,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -402,10 +402,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -433,10 +433,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -464,10 +464,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -495,10 +495,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -526,10 +526,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -557,10 +557,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -588,10 +588,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -620,10 +620,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -649,10 +649,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -682,10 +682,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -711,10 +711,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
@@ -742,10 +742,10 @@ class H2OBinomialGridSearch(object):
 
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> training_data = h2o.import_file("http://s3.amazonaws.com/h2o-public-test-data/smalldata/logreg/benign.csv")
         >>> gs.train(x=range(3) + range(4,11),
         ...          y=3,
         ...          training_frame=training_data)
