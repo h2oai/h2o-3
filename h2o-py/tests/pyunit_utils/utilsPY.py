@@ -1478,7 +1478,7 @@ def duplicate_scale_cols(col_indices, col_scale, old_filename, new_filename):
     # pd_frame_new = pd.DataFrame()                       # new empty data frame
     #
     # for ind in range(len(col_indices)):     # for each column
-    #     tempc = pd_frame.ix[:, col_indices[ind]]*col_scale[ind]  # extract a column from old data frame and scale it
+    #     tempc = pd_frame.loc[:, col_indices[ind]]*col_scale[ind]  # extract a column from old data frame and scale it
     #     pd_frame_new = pd.concat([pd_frame_new, tempc], axis=1)   # add it to the new data frame
 
     np_frame = np.asmatrix(np.genfromtxt(old_filename, delimiter=',', dtype=None))
@@ -3381,8 +3381,8 @@ def check_data_rows(f1, f2, index_list=[], num_rows=10):
     :param num_rows:
     :return:
     '''
-    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
-    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    temp1 = f1.as_data_frame(use_pandas=True).to_numpy()
+    temp2 = f2.as_data_frame(use_pandas=True).to_numpy()
     if len(index_list)==0:
         index_list = random.sample(range(f1.nrow), num_rows)
 
@@ -3416,8 +3416,8 @@ def compare_data_rows(f1, f2, index_list=[], num_rows=10, tol=1e-3):
     :param num_rows:
     :return:
     '''
-    temp1 = f1.as_data_frame(use_pandas=True).as_matrix()
-    temp2 = f2.as_data_frame(use_pandas=True).as_matrix()
+    temp1 = f1.as_data_frame(use_pandas=True).to_numpy()
+    temp2 = f2.as_data_frame(use_pandas=True).to_numpy()
     if len(index_list)==0:
         index_list = random.sample(range(f1.nrow), num_rows)
 
@@ -3855,8 +3855,8 @@ def __convertH2OFrameToPandas__(h2oFrame, yresp, enumCols=[]):
     pandaF = pd.concat([c0, pandaFtrain], axis=1)
     pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
     newX = list(pandaFtrain.columns.values)
-    data = pandaF.as_matrix(newX)
-    label = pandaF.as_matrix([yresp])
+    data = pandaF.to_numpy(newX)
+    label = pandaF.to_numpy([yresp])
 
     return (data,label)
 

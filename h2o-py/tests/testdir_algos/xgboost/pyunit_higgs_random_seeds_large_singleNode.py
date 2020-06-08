@@ -122,8 +122,8 @@ def genDMatrix(h2oFrame, xlist, yresp, xgb):
     pandaFtrain.drop([yresp], axis=1, inplace=True)
     pandaF = pd.concat([c0, pandaFtrain], axis=1)
     pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
-    data = pandaF.as_matrix(xlist)
-    label = pandaF.as_matrix([yresp])
+    data = pandaF[xlist].to_numpy()
+    label = pandaF[yresp].to_numpy()
 
     return xgb.DMatrix(data=data, label=label)
 

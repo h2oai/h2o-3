@@ -18,8 +18,8 @@ def arlines_test():
                 'ownsTesla': [False, False, False, True, True]}
     train_frame = pd.DataFrame(data = raw_data)
 
-    data = train_frame.as_matrix(['wealthy'])
-    label = train_frame.as_matrix(['ownsTesla'])
+    data = train_framep['wealthy'].to_numpy()
+    label = train_frame['ownsTesla'].to_numpy()
 
     # Native XGBosot model trained first
     dtrain = xgb.DMatrix(data=data, label=label)

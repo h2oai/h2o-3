@@ -68,9 +68,9 @@ air = air_mapped
 
 # <codecell>
 
-air_train = air.ix[air['RandNum'] <= 0.8]
-# air_valid = air.ix[(air['RandNum'] > 0.8) & (air['RandNum'] <= 0.9)]
-air_test  = air.ix[air['RandNum'] > 0.9]
+air_train = air.loc[air['RandNum'] <= 0.8]
+# air_valid = air.loc[(air['RandNum'] > 0.8) & (air['RandNum'] <= 0.9)]
+air_test  = air.loc[air['RandNum'] > 0.9]
 
 print(air_train.shape)
 print(air_test.shape)

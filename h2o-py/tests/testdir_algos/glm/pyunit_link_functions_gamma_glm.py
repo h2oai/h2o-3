@@ -17,7 +17,7 @@ def link_functions_gamma():
   h2o_data.head()
 
   sm_data = pd.read_csv(zipfile.ZipFile(pyunit_utils.locate("smalldata/prostate/prostate_complete.csv.zip")).
-                          open("prostate_complete.csv")).as_matrix()
+                          open("prostate_complete.csv")).to_numpy()
   sm_data_response = sm_data[:,5]
   sm_data_features = sm_data[:,[1,2,3,4,6,7,8,9]]
 

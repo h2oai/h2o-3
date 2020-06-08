@@ -217,6 +217,6 @@ The implementation simply calls the `tolist()` method on the ndarray object. The
 principles that apply to lists are then applied to the result of the `tolist()` operation.
 
 :mod:`pandas.DataFrame` objects can also be converted to H2OFrames. The implementation
-simply calls the `as_matrix()` method on the DataFrame object. The `as_matrix()` method
+simply calls the `to_numpy()` method on the DataFrame object. The `to_numpy()` method
 returns an ndarray object, and the above-described ndarray transformation is then invoked,
 so the rules for Python lists also apply here.

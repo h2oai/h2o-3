@@ -1938,7 +1938,7 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         shap.initjs()
 
         # Convert the H2OFrame to use with SHAP's visualization functions
-        contributions_matrix = contributions.as_data_frame().as_matrix()
+        contributions_matrix = contributions.as_data_frame().to_numpy()
 
         # Calculate SHAP values for all features
         shap_values = contributions_matrix[:,0:4]

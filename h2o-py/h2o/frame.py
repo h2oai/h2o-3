@@ -3937,8 +3937,8 @@ class H2OFrame(Keyed):
         pandaF = pd.concat([c0, pandaFtrain], axis=1)
         pandaF.rename(columns={c0.columns[0]:yresp}, inplace=True)
         newX = list(pandaFtrain.columns.values)
-        data = pandaF.as_matrix(newX)
-        label = pandaF.as_matrix([yresp])
+        data = pandaF.to_numpy(newX)
+        label = pandaF.to_numpy([yresp])
 
         return xgb.DMatrix(data=csr_matrix(data), label=label) \
             if h2oXGBoostModel._model_json['output']['sparse'] else xgb.DMatrix(data=data, label=label)

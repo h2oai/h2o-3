@@ -12,7 +12,7 @@ def test_prostate():
     h2o_data = h2o.upload_file(path=pyunit_utils.locate("smalldata/logreg/prostate.csv"))
     h2o_data.summary()
 
-    sm_data = pd.read_csv(pyunit_utils.locate("smalldata/logreg/prostate.csv")).as_matrix()
+    sm_data = pd.read_csv(pyunit_utils.locate("smalldata/logreg/prostate.csv")).to_numpy()
     sm_data_response = sm_data[:, 1]
     sm_data_features = sm_data[:, 2:]
 

@@ -10,9 +10,9 @@ print(air.head())
 air['RandNum'] = air.random.uniform()
 print(air.head())
 
-air_train = air.ix[air['RandNum'] <= 0.8]
-air_valid = air.ix[(air['RandNum'] > 0.8) & (air['RandNum'] <= 0.9)]
-air_test  = air.ix[air['RandNum'] > 0.9]
+air_train = air.loc[air['RandNum'] <= 0.8]
+air_valid = air.loc[(air['RandNum'] > 0.8) & (air['RandNum'] <= 0.9)]
+air_test  = air.loc[air['RandNum'] > 0.9]
 
 myX = ["Origin", "Dest", "Distance", "UniqueCarrier", "Month", "DayofMonth", "DayOfWeek"]
 myY = "IsDepDelayed"
