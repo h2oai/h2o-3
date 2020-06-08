@@ -853,7 +853,7 @@ class H2OClusteringGridSearch(object):
         >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
         >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
         >>> gs.train(x=list(range(4)), training_frame=iris)
-         gs.totss(train=True, valid=False, xval=False)
+        >>> gs.totss(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.totss(train, valid, xval) for model in self.models}
 
