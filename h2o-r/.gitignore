@@ -1,7 +1,24 @@
+# generated/tmp files
+h2o-package/docs/
+h2o-package/inst/java/
+h2o-package/inst/branch.txt
+h2o-package/inst/source_code_repository_info.txt
+h2o-package/NAMESPACE
+
+R/
 results/
-*.Rout
+
 buildnum.txt
-h2o-r.Rproj
+*.Rd
+*.Rout
 .Rd2pdf*/
 *.tar.gz
 h2o_package.pdf
+
+# user env
+.Rproj.user
+.RData
+.Rhistory
+*.Rproj
+*.Rbuildignore
+Rsandbox
