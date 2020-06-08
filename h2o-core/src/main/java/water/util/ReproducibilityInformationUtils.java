@@ -122,15 +122,17 @@ public class ReproducibilityInformationUtils {
       Arrays.fill(index, -1);
 
       Runtime runtime = Runtime.getRuntime();
-      totalMem[H2O.SELF.index()] = runtime.totalMemory();
-      maxMem[H2O.SELF.index()] = runtime.maxMemory();
-      javaVersion[H2O.SELF.index()] =  "Java " + System.getProperty("java.version") + " (from " + System.getProperty("java.vendor") + ")";
-      jvmLaunchParameters[H2O.SELF.index()] =  ManagementFactory.getRuntimeMXBean().getInputArguments().toString();
-      jvmPid[H2O.SELF.index()] = ManagementFactory.getRuntimeMXBean().getName();
-      osVersion[H2O.SELF.index()] = System.getProperty("os.name") + " " + System.getProperty("os.version") + " (" + System.getProperty("os.arch") + ")";
-      machinePhysicalMem[H2O.SELF.index()] = OSUtils.getTotalPhysicalMemory();
-      machineLocale[H2O.SELF.index()] = Locale.getDefault().toString();
-      index[H2O.SELF.index()] = H2O.SELF.index();
+      if (H2O.SELF.index() >= 0) { // do not fill node info on client node
+        totalMem[H2O.SELF.index()] = runtime.totalMemory();
+        maxMem[H2O.SELF.index()] = runtime.maxMemory();
+        javaVersion[H2O.SELF.index()] = "Java " + System.getProperty("java.version") + " (from " + System.getProperty("java.vendor") + ")";
+        jvmLaunchParameters[H2O.SELF.index()] = ManagementFactory.getRuntimeMXBean().getInputArguments().toString();
+        jvmPid[H2O.SELF.index()] = ManagementFactory.getRuntimeMXBean().getName();
+        osVersion[H2O.SELF.index()] = System.getProperty("os.name") + " " + System.getProperty("os.version") + " (" + System.getProperty("os.arch") + ")";
+        machinePhysicalMem[H2O.SELF.index()] = OSUtils.getTotalPhysicalMemory();
+        machineLocale[H2O.SELF.index()] = Locale.getDefault().toString();
+        index[H2O.SELF.index()] = H2O.SELF.index();
+      }
     }
 
     @Override
