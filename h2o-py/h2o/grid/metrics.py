@@ -16,8 +16,23 @@ class H2OAutoEncoderGridSearch(object):
         :param bool per_feature: Whether to return the square reconstruction error per feature. Otherwise, return
             the mean square error.
         :returns: the reconstruction error.
+
+        :example:
+
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> form h2o.estimators import H2OAutoEncoderEstimator
+        >>> rows = [[1,2,3,4,0]*50,
+        ...         [2,1,2,4,1]*50,
+        ...         [2,1,4,2,1]*50,
+        ...         [0,1,2,34,1]*50,
+        ...         [2,3,4,1,0]*50]
+        >>> fr = h2o.H2OFrame(rows)
+        >>> hyper_parameters = {'activation': "Tanh", 'hidden': [50,50,50]}
+        >>> gs = H2OGridSearch(H2OAutoEncoderEstimator(), hyper_parameters)
+        >>> gs.train(x=range(4), training_frame=fr)
+        >>> gs.anomaly(fr, per_feature=True)
         """
-        return {model.model_id: model.anomaly(test_data, per_feature) for model in self.models}
+         return {model.model_id: model.anomaly(test_data, per_feature) for model in self.models}
 
 
 
