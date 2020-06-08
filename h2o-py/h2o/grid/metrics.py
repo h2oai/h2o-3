@@ -1020,6 +1020,17 @@ class H2OMultinomialGridSearch(object):
         Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
 
         :param data: metric for which the confusion matrix will be calculated.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
+        >>> gs.confusion_matrix(iris)
         """
         return {model.model_id: model.confusion_matrix(data) for model in self.models}
 
@@ -1036,6 +1047,17 @@ class H2OMultinomialGridSearch(object):
         :param bool valid: If valid is True, then return the hit ratio value for the validation data.
         :param bool xval:  If xval is True, then return the hit ratio value for the cross validation data.
         :returns: The hit ratio for this multinomial model.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
+        >>> gs.hit_ratio_table(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.hit_ratio_table(train, valid, xval) for model in self.models}
 
@@ -1052,6 +1074,17 @@ class H2OMultinomialGridSearch(object):
         :param bool valid: If valid is True, then return the mean per class error value for the validation data.
         :param bool xval:  If xval is True, then return the mean per class error value for the cross validation data.
         :returns: The mean per class error for this multinomial model.
+
+        :examples:
+
+        >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
+        ...                                                  hyper_parameters)
+        >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
+        >>> gs.mean_per_class_error(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.mean_per_class_error(train, valid, xval) for model in self.models}
 
