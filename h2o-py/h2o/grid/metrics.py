@@ -982,6 +982,17 @@ class H2ODimReductionGridSearch(object):
         Get the number of iterations that it took to converge or reach max iterations.
 
         :returns: number of iterations (integer)
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLowRankEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> hyper_parameters = {'gamma_x': [0.05, 0.5], 'gamma_y': [0.05,0.5]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(),
+        ...                    hyper_parameters)
+        >>> gs.train(x=iris.names, training_frame=iris)
+        >>> gs.num_iterations()
         """
         return {model.model_id: model.num_iterations for model in self.models}
 
@@ -990,6 +1001,17 @@ class H2ODimReductionGridSearch(object):
         Get the final value of the objective function from the GLRM model.
 
         :returns: final objective value (double)
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLowRankEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> hyper_parameters = {'gamma_x': [0.05, 0.5], 'gamma_y': [0.05,0.5]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(),
+        ...                    hyper_parameters)
+        >>> gs.train(x=iris.names, training_frame=iris)
+        >>> gs.objective()
         """
         return {model.model_id: model.objective for model in self.models}
 
@@ -998,12 +1020,34 @@ class H2ODimReductionGridSearch(object):
         Get the final step size from the GLRM model.
 
         :returns: final step size (double)
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLowRankEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> hyper_parameters = {'gamma_x': [0.05, 0.5], 'gamma_y': [0.05,0.5]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(),
+        ...                    hyper_parameters)
+        >>> gs.train(x=iris.names, training_frame=iris)
+        >>> gs.ofinal_step()
         """
         return {model.model_id: model.final_step for model in self.models}
 
     def archetypes(self):
         """
         :returns: the archetypes (Y) of the GLRM model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLowRankEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris_wheader.csv")
+        >>> hyper_parameters = {'gamma_x': [0.05, 0.5], 'gamma_y': [0.05,0.5]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(),
+        ...                    hyper_parameters)
+        >>> gs.train(x=iris.names, training_frame=iris)
+        >>> gs.archetypes()
         """
         return {model.model_id: model.archetypes for model in self.models}
 
@@ -1099,6 +1143,16 @@ class H2OOrdinalGridSearch(object):
         Returns a confusion matrix based of H2O's default prediction threshold for a dataset.
 
         :param data: metric for which the confusion matrix will be calculated.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}                          >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
+        >>> h2o_df['C11'] = h2o_df['C11'].asfactor()
+        >>> gs.train(x=list(range(0,10)), y="C11", training_frame=h2o_df)
+        >>> gs.confusion_matrix(h2o_df)
         """
         return {model.model_id: model.confusion_matrix(data) for model in self.models}
 
@@ -1115,6 +1169,16 @@ class H2OOrdinalGridSearch(object):
         :param bool valid: If valid is True, then return the hit ratio value for the validation data.
         :param bool xval:  If xval is True, then return the hit ratio value for the cross validation data.
         :returns: The hit ratio for this ordinal model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}                          >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
+        >>> h2o_df['C11'] = h2o_df['C11'].asfactor()
+        >>> gs.train(x=list(range(0,10)), y="C11", training_frame=h2o_df)
+        >>> gs.hit_ratio_table(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.hit_ratio_table(train, valid, xval) for model in self.models}
 
@@ -1131,6 +1195,16 @@ class H2OOrdinalGridSearch(object):
         :param bool valid: If valid is True, then return the mean per class error value for the validation data.
         :param bool xval:  If xval is True, then return the mean per class error value for the cross validation data.
         :returns: The mean per class error for this ordinal model.
+
+        :examples:
+
+        >>> from h2o.estimators import H2OGeneralizedLinearEstimator
+        >>> from h2o.grid.grid_search import H2OGridSearch
+        >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}                          >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
+        >>> h2o_df['C11'] = h2o_df['C11'].asfactor()
+        >>> gs.train(x=list(range(0,10)), y="C11", training_frame=h2o_df)
+        >>> gs.mean_per_class_error(train=True, valid=False, xval=False)
         """
         return {model.model_id: model.mean_per_class_error(train, valid, xval) for model in self.models}
 
