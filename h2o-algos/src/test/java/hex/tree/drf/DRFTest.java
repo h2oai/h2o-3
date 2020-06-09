@@ -1837,28 +1837,33 @@ public class DRFTest extends TestUtil {
   public void testDeepLeafNodeAssignmentConsistency() {
     try {
       Scope.enter();
-      double[] x = new double[10000];
+      double[] x = new double[100];
+      double[] w = new double[x.length];
       double[] y = new double[x.length];
       for (int i = 1; i < x.length; i++) {
         x[i] = i;
-        y[i] = Math.pow(i, 3);
+        w[i] = i + 2 * w[i-1];
+        y[i] = Math.pow(i, 1.5);
       }
       Frame tfr = new TestFrameBuilder()
               .withColNames("w", "x", "y")
-              .withDataForCol(0, y)
+              .withDataForCol(0, w)
               .withDataForCol(1, x)
               .withDataForCol(2, y)
               .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
               .withChunkLayout(y.length)
               .build();
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
+      parms._nbins_top_level = 10000;
+      parms._nbins = 10000;
       parms._train = tfr._key;
       parms._response_column = "y";
       parms._weights_column = "w";
       parms._ntrees = 1;
-      parms._max_depth = 40;
+      parms._max_depth = 64;
       parms._sample_rate = 1;
       parms._seed = 1234;
+      parms._min_split_improvement = 0;
 
       DRF job = new DRF(parms);
       DRFModel drf = job.trainModel().get();
@@ -1872,13 +1877,12 @@ public class DRFTest extends TestUtil {
 
       SharedTreeSubgraph tree = drf.getSharedTreeSubgraph(0, 0);
       // check assumptions (are we really testing deep trees?)
-      boolean isDeep = false;
+      int maxDepth = -1;
       for (SharedTreeNode n : tree.nodesArray)
-        if (n.getDepth() >= 31) {
-          isDeep = true;
-          break;
+        if (n.getDepth() >= maxDepth) {
+          maxDepth = n.getDepth();
         }
-      assertTrue(isDeep);
+      assertTrue(maxDepth > 31);
 
       Vec.Reader pathReader = paths.vec(0).new Reader();
       Vec.Reader nodeIdReader = nodeIds.vec(0).new Reader();
