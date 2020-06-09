@@ -71,6 +71,15 @@ fi
 ./gradlew booklets
 ./gradlew $DO_RELEASE publish
 
+# Generate Py Docs
+(cd h2o-py && sphinx-build -b html docs/ docs/docs/)
+
+# Generate R Docs
+make -f scripts/jenkins/Makefile.jenkins r-generate-docs
+
+# Build main h2o sphinx documentation.
+(cd h2o-docs/src/product && sphinx-build -b html -d _build/doctrees . _build/html)
+
 # Create target dir, which is uploaded to s3.
 mkdir target
 echo ${PROJECT_VERSION} > target/project_version
@@ -119,12 +128,6 @@ done
 cp h2o-py/build/dist/*whl target/Python
 cp h2o-py/build/client/dist/*whl target/Python
 
-cd h2o-py && sphinx-build -b html docs/ docs/docs/
-cd ..
-
-# Generate R Docs
-make -f scripts/jenkins/Makefile.jenkins r-generate-docs
-
 # Add Java bindings Jar to target.
 mkdir -p target/bindings/java
 cp -p h2o-bindings/build/libs/*.jar target/bindings/java
@@ -135,11 +138,6 @@ cp -rp build/repo target/maven
 
 # Generate SHA256 from zip file
 (cd target && sha256sum h2o-*.zip > sha256.txt)
-
-# Build main h2o sphinx documentation.
-cd h2o-docs/src/product
-sphinx-build -b html -d _build/doctrees . _build/html
-cd ../../..
 
 # Add documentation to target.
 mkdir target/docs-website
