@@ -907,7 +907,7 @@ setMethod("show", signature("H2OAutoML"), function(object) {
     cat("\n")
     
     # cross validation metrics summary
-    print(g@leader@model$cross_validation_metrics_summary)
+    print(object@leader@model$cross_validation_metrics_summary)
     
     cat("\nTop models on leaderboard:\n") 
     print(head(object@leaderboard, n = 10))
