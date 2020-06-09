@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0" y="0" width="228.301" height="228.483" xml:space="preserve">
+	<defs>
+		<path id="SVGID_1_" d="M0 0h228.301v228.483H0z"/>
+	</defs>
+	<clipPath id="SVGID_2_">
+		<use xlink:href="#SVGID_1_" overflow="visible"/>
+	</clipPath>
+	<path clip-path="url(#SVGID_2_)" fill="none" stroke="#000" stroke-width="27" stroke-miterlimit="10" d="M9.55 9.542l209.2 209.399m0-209.399L9.55 218.941"/>
+</svg>

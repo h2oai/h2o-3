@@ -1,5 +1,6 @@
 # Docs Front Page
 
-Note that this page is no longer maintained. The docs.h2o.ai site is now maintained outside of the H2O-3 repo.
+This provides links to all H2O-3 docs that are included in a docs-website.zip file. That file is created for users who run H2O-3 in an airgapped environment. 
+
 
 
