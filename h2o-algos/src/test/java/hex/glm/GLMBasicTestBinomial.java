@@ -1,6 +1,7 @@
 package hex.glm;
 
 import hex.CreateFrame;
+import hex.GLMMetrics;
 import hex.ModelMetricsBinomialGLM;
 import hex.SplitFrame;
 import hex.glm.GLMModel.GLMParameters;
@@ -17,10 +18,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.*;
 import water.util.VecUtils;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -1448,6 +1446,34 @@ public class GLMBasicTestBinomial extends TestUtil {
     assertEquals(0,fails);
     predict.delete();
     model.delete();
+  }
+  
+  @Test
+  public void testAUTOBinomial(){
+    Vec cat = Vec.makeVec(new long[]{1,1,1,0,0},new String[]{"black","red"},Vec.newKey());
+    Vec res = Vec.makeVec(new long[]{1,1,0,0,0},new String[]{"sun","moon"},Vec.newKey());
+    Frame fr = new Frame(Key.<Frame>make("fr"), new String[]{"x", "y"}, new Vec[]{cat, res});
+    DKV.put(fr);
+    for (Family family : new Family[]{Family.binomial, Family.AUTO}) {
+      for (GLMParameters.Link link : new GLMParameters.Link[]{GLMParameters.Link.family_default, GLMParameters.Link.logit}) {
+        GLMParameters parms = new GLMParameters();
+        parms._train = fr._key;
+        parms._alpha = new double[]{0};
+        parms._response_column = "y";
+        parms._intercept = false;
+        parms._family = family;
+        parms._link = link;
+        // just make sure it runs
+        GLMModel model = new GLM(parms).trainModel().get();
+        Map<String, Double> coefs = model.coefficients();
+        System.out.println("coefs = " + coefs);
+        Assert.assertEquals(coefs.get("Intercept"), 0, 0);
+        Assert.assertEquals(4.2744474, ((GLMMetrics) model._output._training_metrics).residual_deviance(), 1e-4);
+        System.out.println();
+        model.delete();
+      }
+    }
+    fr.delete();
   }
 
   @BeforeClass

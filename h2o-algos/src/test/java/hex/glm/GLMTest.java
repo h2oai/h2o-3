@@ -242,25 +242,27 @@ public class GLMTest  extends TestUtil {
     Key parsed = Key.make("gaussian_test_data_parsed");
     GLMModel model = null;
     Frame fr = null, res = null;
-    try {
-      // make data so that the expected coefficients is icept = col[0] = 1.0
-      FVecFactory.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
-      fr = ParseDataset.parse(parsed, raw);
-      GLMParameters params = new GLMParameters(Family.gaussian);
-      params._train = fr._key;
-      // params._response = 1;
-      params._response_column = fr._names[1];
-      params._lambda = new double[]{0};
-//      params._standardize= false;
-      model = new GLM(params).trainModel().get();
-      HashMap<String, Double> coefs = model.coefficients();
-      assertEquals(0.0, coefs.get("Intercept"), 1e-4);
-      assertEquals(0.1, coefs.get("x"), 1e-4);
-      testScoring(model,fr);
-    } finally {
-      if (fr != null) fr.remove();
-      if (res != null) res.remove();
-      if (model != null) model.remove();
+    for (Family family : new Family[]{Family.gaussian, Family.AUTO}) {
+      try {
+        // make data so that the expected coefficients is icept = col[0] = 1.0
+        FVecFactory.makeByteVec(raw, "x,y\n0,0\n1,0.1\n2,0.2\n3,0.3\n4,0.4\n5,0.5\n6,0.6\n7,0.7\n8,0.8\n9,0.9");
+        fr = ParseDataset.parse(parsed, raw);
+        GLMParameters params = new GLMParameters(family);
+        params._train = fr._key;
+        // params._response = 1;
+        params._response_column = fr._names[1];
+        params._lambda = new double[]{0};
+  //      params._standardize= false;
+        model = new GLM(params).trainModel().get();
+        HashMap<String, Double> coefs = model.coefficients();
+        assertEquals(0.0, coefs.get("Intercept"), 1e-4);
+        assertEquals(0.1, coefs.get("x"), 1e-4);
+        testScoring(model,fr);
+      } finally {
+        if (fr != null) fr.remove();
+        if (res != null) res.remove();
+        if (model != null) model.remove();
+      }
     }
   }
 
@@ -567,35 +569,37 @@ public class GLMTest  extends TestUtil {
       -4.303234e-04,  2.608783e-05,  7.889196e-05, -3.559375e-04, -5.551586e-04, -2.777131e-04, 6.505911e-04,  1.033867e-05,  1.837583e-05,  6.750772e-04,
        1.247379e-04, -5.408403e-04,  -4.453114e-04,
     };
-  Vec origRes = null;
-    try {
-      fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
-      fr.remove("C21").remove();
-      fr.remove("C29").remove();
-      GLMParameters params = new GLMParameters(Family.multinomial);
-      params._response_column = "C55";
-      // params._response = fr.find(params._response_column);
-      params._ignored_columns = new String[]{};
-      params._train = parsed;
-      params._lambda = new double[]{0};
-      params._alpha = new double[]{0};
-      origRes = fr.remove("C55");
-      Vec res = fr.add("C55",origRes.toCategoricalVec());
-      double [] means = new double [res.domain().length];
-      long [] bins = res.bins();
-      double sumInv = 1.0/ArrayUtils.sum(bins);
-      for(int i = 0; i < bins.length; ++i)
-        means[i] = bins[i]*sumInv;
-      DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
-      GLMTask.GLMMultinomialGradientBaseTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
-      assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
-      System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
-      double [] g = gmt.gradient();
-      for(int i = 0; i < g.length; ++i)
-        assertEquals("Mismatch at coefficient '" + "' (" + i + ")",exp_grad[i], g[i], 1e-8);
-    } finally {
-      if(origRes != null)origRes.remove();
-      if (fr != null) fr.delete();
+    Vec origRes = null;
+    for (Family family : new Family[]{Family.multinomial, Family.AUTO}) {
+      try {
+        fr = parse_test_file(parsed, "smalldata/covtype/covtype.20k.data");
+        fr.remove("C21").remove();
+        fr.remove("C29").remove();
+        GLMParameters params = new GLMParameters(family/*Family.multinomial*/);
+        params._response_column = "C55";
+        // params._response = fr.find(params._response_column);
+        params._ignored_columns = new String[]{};
+        params._train = parsed;
+        params._lambda = new double[]{0};
+        params._alpha = new double[]{0};
+        origRes = fr.remove("C55");
+        Vec res = fr.add("C55",origRes.toCategoricalVec());
+        double [] means = new double [res.domain().length];
+        long [] bins = res.bins();
+        double sumInv = 1.0/ArrayUtils.sum(bins);
+        for(int i = 0; i < bins.length; ++i)
+          means[i] = bins[i]*sumInv;
+        DataInfo dinfo = new DataInfo(fr, null, 1, true, TransformType.STANDARDIZE, DataInfo.TransformType.NONE, true, false, false, false, false, false);
+        GLMTask.GLMMultinomialGradientBaseTask gmt = new GLMTask.GLMMultinomialGradientTask(null,dinfo,0,beta,1.0/fr.numRows()).doAll(dinfo._adaptedFrame);
+        assertEquals(0.6421113,gmt._likelihood/fr.numRows(),1e-8);
+        System.out.println("likelihood = " + gmt._likelihood/fr.numRows());
+        double [] g = gmt.gradient();
+        for(int i = 0; i < g.length; ++i)
+          assertEquals("Mismatch at coefficient '" + "' (" + i + ")",exp_grad[i], g[i], 1e-8);
+      } finally {
+        if(origRes != null)origRes.remove();
+        if (fr != null) fr.delete();
+      }
     }
   }
   //------------ TEST on selected files form small data and compare to R results ------------------------------------

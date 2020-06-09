@@ -354,6 +354,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
       if(_link != Link.family_default) { // check we have compatible link
         switch (_family) {
+          case AUTO:
+            if (_link != Link.family_default & _link != Link.identity & _link != Link.log & _link != Link.inverse 
+                    & _link != Link.logit & _link != Link.multinomial)
+              throw new IllegalArgumentException("Incompatible link function for selected family. Only family_default, identity, log, inverse, logit and multinomial are allowed for family=AUTO");
+            break;
           case gaussian:
             if (_link != Link.identity && _link != Link.log && _link != Link.inverse)
               throw new IllegalArgumentException("Incompatible link function for selected family. Only identity, log and inverse links are allowed for family=gaussian.");
@@ -599,7 +604,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     
     // supported families
     public enum Family {
-      gaussian(Link.identity), binomial(Link.logit), fractionalbinomial(Link.logit), quasibinomial(Link.logit),poisson(Link.log),
+      AUTO(Link.family_default), gaussian(Link.identity), binomial(Link.logit), fractionalbinomial(Link.logit), quasibinomial(Link.logit),poisson(Link.log),
       gamma(Link.inverse), multinomial(Link.multinomial), tweedie(Link.tweedie), ordinal(Link.ologit), 
       negativebinomial(Link.log);
       public final Link defaultLink;
