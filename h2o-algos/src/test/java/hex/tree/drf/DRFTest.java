@@ -1834,36 +1834,52 @@ public class DRFTest extends TestUtil {
   }
 
   @Test
-  public void testDeepLeafNodeAssignmentConsistency() {
+  public void checkDeepLeafNodeAssignmentConsistency() {
+    checkDeepLeafNodeAssignmentConsistency(31, 7);  // old supported maximum
+    checkDeepLeafNodeAssignmentConsistency(48, 10); // random point between 32 and 63 
+    checkDeepLeafNodeAssignmentConsistency(63, 12); // current supported maximum
+    checkDeepLeafNodeAssignmentConsistency(64, 17); // breaking point
+    checkDeepLeafNodeAssignmentConsistency(73, 42); // way past breaking point 
+  }
+
+  /**
+   * Grow and check properties of a very deep tree
+   * 
+   * @param depth desired tree depth 
+   * @param extraObservations how many observations should be classified in the deepest leaf node
+   */
+  private void checkDeepLeafNodeAssignmentConsistency(int depth, int extraObservations) {
     try {
       Scope.enter();
-      double[] x = new double[100];
+      String[] x = new String[depth + extraObservations];
       double[] w = new double[x.length];
       double[] y = new double[x.length];
-      for (int i = 1; i < x.length; i++) {
-        x[i] = i;
-        w[i] = i + 2 * w[i-1];
-        y[i] = Math.pow(i, 1.5);
+      for (int i = 0; i < x.length; i++) {
+        x[i] = String.valueOf(i + 100);
+        w[i] = i > 0 ? (w[i-1] * 2) + 1 : 0;
+        y[i] = i;
       }
       Frame tfr = new TestFrameBuilder()
               .withColNames("w", "x", "y")
               .withDataForCol(0, w)
               .withDataForCol(1, x)
               .withDataForCol(2, y)
-              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_NUM)
-              .withChunkLayout(y.length)
+              .withVecTypes(Vec.T_NUM, Vec.T_CAT, Vec.T_NUM)
+              .withChunkLayout(x.length)
               .build();
       DRFModel.DRFParameters parms = new DRFModel.DRFParameters();
-      parms._nbins_top_level = 10000;
-      parms._nbins = 10000;
+      parms._nbins_top_level = x.length;
+      parms._nbins = x.length;
       parms._train = tfr._key;
       parms._response_column = "y";
       parms._weights_column = "w";
       parms._ntrees = 1;
-      parms._max_depth = 64;
+      parms._max_depth = depth;
       parms._sample_rate = 1;
+      parms._mtries = -2;
       parms._seed = 1234;
       parms._min_split_improvement = 0;
+      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.OneHotExplicit;
 
       DRF job = new DRF(parms);
       DRFModel drf = job.trainModel().get();
@@ -1877,23 +1893,30 @@ public class DRFTest extends TestUtil {
 
       SharedTreeSubgraph tree = drf.getSharedTreeSubgraph(0, 0);
       // check assumptions (are we really testing deep trees?)
-      int maxDepth = -1;
+      int actualDepth = -1;
       for (SharedTreeNode n : tree.nodesArray)
-        if (n.getDepth() >= maxDepth) {
-          maxDepth = n.getDepth();
+        if (n.getDepth() >= actualDepth) {
+          actualDepth = n.getDepth();
         }
-      assertTrue(maxDepth > 31);
+      assertEquals(depth, actualDepth);
 
       Vec.Reader pathReader = paths.vec(0).new Reader();
       Vec.Reader nodeIdReader = nodeIds.vec(0).new Reader();
 
       for (long i = 0; i < tfr.numRows(); i++) {
-        String path = paths.vec(0).domain()[(int) pathReader.at8(i)];
-        int nodeId = (int) nodeIdReader.at8(i);
-        SharedTreeNode node = tree.walkNodes(path);
-        assertNotNull(node);
-        assertTrue(node.isLeaf());
-        assertEquals(nodeId, node.getNodeNumber());
+        if ((depth > 63) && (depth - 63 + extraObservations > i)) {
+          assertTrue(pathReader.isNA(i));
+          assertEquals(-1, nodeIdReader.at8(i));
+        } else {
+          assertFalse(pathReader.isNA(i));
+          assertNotEquals(-1, nodeIdReader.at8(i));
+          String path = paths.vec(0).domain()[(int) pathReader.at8(i)];
+          int nodeId = (int) nodeIdReader.at8(i);
+          SharedTreeNode node = tree.walkNodes(path);
+          assertNotNull(node);
+          assertTrue(node.isLeaf());
+          assertEquals(nodeId, node.getNodeNumber());
+        }
       }
     } finally {
       Scope.exit();

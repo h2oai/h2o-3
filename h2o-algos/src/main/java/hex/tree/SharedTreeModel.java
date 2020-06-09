@@ -398,8 +398,8 @@ public abstract class SharedTreeModel<
     @Override
     protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
       Frame result = doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
-      if (result.vec(0).naCnt() > 0) {
-        Log.warn("Some of the observations were not assigned a Leaf Node ID (NA), " +
+      if (result.vec(0).min() < 0) {
+        Log.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
                 "only tree-paths up to length 64 are supported.");
       }
       return result;
