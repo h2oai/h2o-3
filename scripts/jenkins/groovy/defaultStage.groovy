@@ -20,7 +20,7 @@ def call(final pipelineContext, final stageConfig) {
 
         if (stageConfig.component == pipelineContext.getBuildConfig().COMPONENT_PY || stageConfig.additionalTestPackages.contains(pipelineContext.getBuildConfig().COMPONENT_PY)) {
             installPythonPackage(h2oFolder)
-            if (stageConfig.pythonVersion.startsWith("3.")) {
+            if (stageConfig.pythonVersion.startsWith("3.") && !stageConfig.pythonVersion.startsWith("3.8")) {  //temporarily exclude 3.8 until we have xgboost wheels for 3.8
                 dir(stageConfig.stageDir) {
                     pipelineContext.getUtils().pullXGBWheels(this)
                 }
