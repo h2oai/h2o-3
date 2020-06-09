@@ -37,7 +37,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
   protected P _metalearner_parameters;
   protected boolean _hasMetalearnerParams;
   protected long _metalearnerSeed;
-  protected long _remainingTime;
+  protected long _maxRuntimeSecs;
 
   void init(Frame levelOneTrainingFrame,
             Frame levelOneValidationFrame,
@@ -49,7 +49,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
             StackedEnsembleParameters parms,
             boolean hasMetalearnerParams,
             long metalearnerSeed,
-            long remainingTime) {
+            long maxRuntimeSecs) {
 
     _levelOneTrainingFrame = levelOneTrainingFrame;
     _levelOneValidationFrame = levelOneValidationFrame;
@@ -61,7 +61,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     _parms = parms;
     _hasMetalearnerParams = hasMetalearnerParams;
     _metalearnerSeed = metalearnerSeed;
-    _remainingTime = remainingTime;
+    _maxRuntimeSecs = maxRuntimeSecs;
   }
 
   void compute() {
@@ -113,7 +113,7 @@ public abstract class Metalearner<B extends ModelBuilder<M, P, ?>, M extends Mod
     parms._train = _levelOneTrainingFrame._key;
     parms._valid = (_levelOneValidationFrame == null ? null : _levelOneValidationFrame._key);
     parms._response_column = _model.responseColumn;
-    parms._max_runtime_secs = _remainingTime;
+    parms._max_runtime_secs = _maxRuntimeSecs;
   }
 
   protected void setCrossValidationParams(P parms) {

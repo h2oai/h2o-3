@@ -74,12 +74,11 @@ def test_stackedensemble_respects_the_max_runtime_secs():
         base_models=gs1.model_ids,
         max_runtime_secs=max_runtime_secs,
         blending_frame=big_blending_frame)
-    se.train(data.x, data.y, data.train)
-
-    assert se.metalearner() is not None
-
-    # We should have SE with just one base model due to time constrains; intercept + base_model ==> 2
-    assert len(se.metalearner().coef()) == 2
+    try:
+        se.train(data.x, data.y, data.train)
+        assert False, "This should have failed due to time out."
+    except EnvironmentError:
+        pass
 
 
 pu.run_tests([

@@ -842,3 +842,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
         parms = sup._make_parms(x, y, training_frame, extend_parms_fn=extend_parms, **kwargs)
 
         sup._train(parms, verbose=verbose)
+        if self.metalearner() is None:
+            raise EnvironmentError("Meta learner didn't get to be trained in time."
+                                   "Try increasing max_runtime_secs or setting it to 0 (unlimited).")
