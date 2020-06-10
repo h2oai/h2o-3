@@ -1843,6 +1843,9 @@ Using the previous example, run the following to predict the leaf node assignmen
         # Predict based on the path from the root node of the tree.
         predict_lna = model.predict_leaf_node_assignment(test, "Path")
 
+Note: Leaf node assignment only works for trees of ``max_depth`` up to 63. For 
+deeper trees NA will be returned for paths of lenght 64 or more (-1 for node IDs).
+
 Predict Contributions
 ~~~~~~~~~~~~~~~~~~~~~
 
