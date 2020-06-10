@@ -12,6 +12,7 @@ import warnings
 
 import h2o
 from h2o.base import Keyed
+from h2o.exceptions import H2OResponseError
 from h2o.grid import H2OGridSearch
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
@@ -843,5 +844,5 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
         sup._train(parms, verbose=verbose)
         if self.metalearner() is None:
-            raise EnvironmentError("Meta learner didn't get to be trained in time."
+            raise H2OResponseError("Meta learner didn't get to be trained in time. "
                                    "Try increasing max_runtime_secs or setting it to 0 (unlimited).")

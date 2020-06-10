@@ -6,6 +6,8 @@ from __future__ import print_function
 import h2o
 import sys
 
+from h2o.exceptions import H2OResponseError
+
 sys.path.insert(1, "../../../")  # allow us to run this standalone
 
 from h2o.grid import H2OGridSearch
@@ -77,7 +79,7 @@ def test_stackedensemble_respects_the_max_runtime_secs():
     try:
         se.train(data.x, data.y, data.train)
         assert False, "This should have failed due to time out."
-    except EnvironmentError:
+    except H2OResponseError:
         pass
 
 
