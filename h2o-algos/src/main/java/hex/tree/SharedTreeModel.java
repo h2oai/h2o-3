@@ -3,6 +3,7 @@ package hex.tree;
 import hex.*;
 
 import static hex.genmodel.GenModel.createAuxKey;
+import static hex.genmodel.algos.tree.SharedTreeMojoModel.__INTERNAL_MAX_TREE_DEPTH;
 
 import hex.genmodel.CategoricalEncoding;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
@@ -252,7 +253,7 @@ public abstract class SharedTreeModel<
   }
 
   public static class BufStringDecisionPathTracker implements SharedTreeMojoModel.DecisionPathTracker<BufferedString> {
-    private final byte[] _buf = new byte[64];
+    private final byte[] _buf = new byte[__INTERNAL_MAX_TREE_DEPTH];
     private final BufferedString _bs = new BufferedString(_buf, 0, 0);
     private int _pos = 0;
     @Override
@@ -266,6 +267,10 @@ public abstract class SharedTreeModel<
       _bs.setLen(_pos);
       _pos = 0;
       return _bs;
+    }
+    @Override
+    public BufferedString invalidPath() {
+      return null;
     }
   }
 
@@ -345,9 +350,11 @@ public abstract class SharedTreeModel<
       // convert to categorical
       Vec vv;
       Vec[] nvecs = new Vec[res.vecs().length];
+      boolean hasInvalidPaths = false;
       for(int c=0;c<res.vecs().length;++c) {
         vv = res.vec(c);
         try {
+          hasInvalidPaths = hasInvalidPaths || vv.naCnt() > 0;
           nvecs[c] = vv.toCategoricalVec();
         } catch (Exception e) {
           VecUtils.deleteVecs(nvecs, c);
@@ -357,6 +364,10 @@ public abstract class SharedTreeModel<
       res.delete();
       res = new Frame(destKey, names, nvecs);
       DKV.put(res);
+      if (hasInvalidPaths) {
+        Log.warn("Some of the leaf node assignments were skipped (NA), " +
+                "only tree-paths up to length 64 are supported.");
+      }
       return res;
     }
   }
@@ -386,7 +397,12 @@ public abstract class SharedTreeModel<
 
     @Override
     protected Frame execute(Frame adaptFrm, String[] names, Key<Frame> destKey) {
-      return doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
+      Frame result = doAll(names.length, Vec.T_NUM, adaptFrm).outputFrame(destKey, names, null);
+      if (result.vec(0).min() < 0) {
+        Log.warn("Some of the observations were not assigned a Leaf Node ID (-1), " +
+                "only tree-paths up to length 64 are supported.");
+      }
+      return result;
     }
   }
 
