@@ -6,7 +6,6 @@ import water.network.SocketChannelFactory;
 import water.util.*;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

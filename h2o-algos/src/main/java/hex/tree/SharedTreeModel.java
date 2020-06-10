@@ -188,7 +188,7 @@ public abstract class SharedTreeModel<
 
     @Override
     public int getInformationTableNumRows() {
-      return super.getInformationTableNumRows() + 1;
+      return super.getInformationTableNumRows() + 1;// +1 row for calibration frame
     }
 
     // Append next set of K trees

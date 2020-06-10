@@ -56,7 +56,7 @@ public class XGBoostOutput extends Model.Output implements Model.GetNTrees, Plat
 
   @Override
   public int getInformationTableNumRows() {
-    return super.getInformationTableNumRows() + 1;
+    return super.getInformationTableNumRows() + 1;// +1 row for calibration frame
   }
   
   @Override

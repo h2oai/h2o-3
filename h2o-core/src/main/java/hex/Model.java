@@ -507,7 +507,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public interface InteractionBuilder {
     Frame makeInteractions(Frame f);
   }
-  
+
   public static class InteractionSpec extends Iced {
     private String[] _columns;
     private StringPair[] _pairs;
@@ -708,7 +708,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public long _end_time;
     public long _run_time;
     public long _total_run_time; // includes building of cv models
-    public static int INFORMATION_TABLE_NUM_ROWS = 2;
     protected void startClock() { _start_time = System.currentTimeMillis(); }
     protected void stopClock()  {
       _end_time   = System.currentTimeMillis();
@@ -955,26 +954,21 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       TwoDimTable nodeInformation = ReproducibilityInformationUtils.createNodeInformationTable();
       TwoDimTable clusterConfiguration = ReproducibilityInformationUtils.createClusterConfigurationTable();
       TwoDimTable inputFramesInformation = createInputFramesInformationTable(modelBuilder);
-      TwoDimTable[] tables = {nodeInformation, clusterConfiguration, inputFramesInformation};
-      return tables;
+      return new TwoDimTable[] {nodeInformation, clusterConfiguration, inputFramesInformation};
     }
 
     public TwoDimTable createInputFramesInformationTable(ModelBuilder modelBuilder) {
-      List<String> colHeaders = new ArrayList<>();
-      List<String> colTypes = new ArrayList<>();
-      List<String> colFormat = new ArrayList<>();
-
-      colHeaders.add("Input Frame"); colTypes.add("string"); colFormat.add("%s");
-      colHeaders.add("Checksum"); colTypes.add("long"); colFormat.add("%d");
-      colHeaders.add("ESPC"); colTypes.add("string"); colFormat.add("%d");
+      String[] colHeaders = new String[] {"Input Frame", "Checksum", "ESPC"};
+      String[] colTypes = new String[] {"string", "long", "string"};
+      String[] colFormat = new String[] {"%s", "%d", "%d"};
 
       final int rows = getInformationTableNumRows();
       TwoDimTable table = new TwoDimTable(
               "Input Frames Information", null,
               new String[rows],
-              colHeaders.toArray(new String[0]),
-              colTypes.toArray(new String[0]),
-              colFormat.toArray(new String[0]),
+              colHeaders,
+              colTypes,
+              colFormat,
               "");
 
       table.set(0, 0, "training_frame");
@@ -988,7 +982,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
     
     public int getInformationTableNumRows() {
-      return INFORMATION_TABLE_NUM_ROWS;
+      return 2; // 1 row per each input frame (training frame, validation frame)
     }
   } // Output
 

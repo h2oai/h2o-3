@@ -207,8 +207,7 @@ public abstract class ModelMojoReader<M extends MojoModel> {
   protected Table[] readReproducibilityInformation() {
     final JsonObject modelJson = ModelJsonReader.parseModelJson(_reader);
     if (modelJson != null && modelJson.get("output") != null) {
-      Table[] tables = ModelJsonReader.readTableArray(modelJson, "output.reproducibility_information_table");
-      return tables;
+      return ModelJsonReader.readTableArray(modelJson, "output.reproducibility_information_table");
     }
     return null;
   }
