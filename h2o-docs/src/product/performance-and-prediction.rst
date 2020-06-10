@@ -1823,7 +1823,7 @@ Using the previous example, run the following to predict the leaf node assignmen
 .. tabs::
    .. code-tab:: r R
   
-        # Predict the leaf node assigment using the GBM model and test data.
+        # Predict the leaf node assignment using the GBM model and test data.
         # Predict based on the path from the root node of the tree.
         predict_lna <- h2o.predict_leaf_node_assignment(model, prostate_test)
 
@@ -1839,12 +1839,11 @@ Using the previous example, run the following to predict the leaf node assignmen
 
    .. code-tab:: python
 
-        # Predict the leaf node assigment using the GBM model and test data.
+        # Predict the leaf node assignment using the GBM model and test data.
         # Predict based on the path from the root node of the tree.
         predict_lna = model.predict_leaf_node_assignment(test, "Path")
 
-Note: Leaf node assignment only works for trees of ``max_depth`` up to 63. For 
-deeper trees NA will be returned for paths of lenght 64 or more (-1 for node IDs).
+**Note**: Leaf node assignment only works for trees of ``max_depth`` up to 63. For deeper trees, "NA" will be returned for paths of length 64 or more (-1 for node IDs).
 
 Predict Contributions
 ~~~~~~~~~~~~~~~~~~~~~
