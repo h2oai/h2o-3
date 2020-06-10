@@ -1,8 +1,6 @@
 setwd(normalizePath(dirname(R.utils::commandArgs(asValues=TRUE)$"f")))
 source("../../../scripts/h2o-r-test-setup.R")
 
-
-
 test.CoxPH.heart <- function() {
     heart.hex <- h2o.importFile(locate("smalldata/coxph_test/heart.csv"))
     heart.df <- as.data.frame(heart.hex)

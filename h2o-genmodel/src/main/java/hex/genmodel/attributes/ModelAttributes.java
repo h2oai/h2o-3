@@ -95,6 +95,7 @@ public class ModelAttributes implements Serializable {
       case DimReduction:
       case WordEmbedding:
       case CoxPH:
+        return new MojoModelMetricsRegressionCoxPH();
       default:
         return new MojoModelMetrics(); // Basic model metrics if nothing else is available
     }

@@ -26,7 +26,6 @@ cancer.with.sex <- function () {
 }
 
 test.CoxPH.predict <- function() {
-   
 
     ## Case 1: categoricals, numeric + interactions
     tstdata.1 <- cancer.with.sex()
