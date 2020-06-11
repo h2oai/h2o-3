@@ -7,7 +7,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import water.Job;
-import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.api.schemas3.ModelImportV3;
@@ -15,9 +14,6 @@ import water.api.schemas3.ModelsV3;
 import water.fvec.Frame;
 import water.fvec.TestFrameBuilder;
 import water.fvec.Vec;
-import water.util.FileUtils;
-
-import static org.junit.Assert.assertEquals;
 
 public class ModelsHandlerTest extends TestUtil {
 
