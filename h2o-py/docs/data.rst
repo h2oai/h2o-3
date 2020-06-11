@@ -220,3 +220,10 @@ principles that apply to lists are then applied to the result of the `tolist()` 
 simply calls the `as_matrix()` method on the DataFrame object. The `as_matrix()` method
 returns an ndarray object, and the above-described ndarray transformation is then invoked,
 so the rules for Python lists also apply here.
+
+Setting S3 Credentials
+-------------------------------
+.. automodule:: h2o.persist.persist
+   :members:
+
+
