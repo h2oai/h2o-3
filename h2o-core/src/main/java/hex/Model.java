@@ -11,6 +11,7 @@ import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
+import hex.quantile.QuantileModel;
 import org.joda.time.DateTime;
 import water.*;
 import water.api.ModelsHandler;
@@ -60,7 +61,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     final Key[] modelKeys = KeySnapshot.globalSnapshot().filter(new KeySnapshot.KVFilter() {
       @Override
       public boolean filter(KeySnapshot.KeyInfo k) {
-        return Value.isSubclassOf(k._type, Model.class);
+        return Value.isSubclassOf(k._type, Model.class) && !Value.isSubclassOf(k._type, QuantileModel.class);
       }
     }).keys();
 
