@@ -5,6 +5,7 @@ import time
 import os
 
 import pandas
+from pandas.testing import assert_frame_equal
 
 sys.path.insert(1, "../../")
 import h2o
@@ -131,7 +132,7 @@ def mojo_predict_csv_test(target_dir):
                                                 output_csv_path=output_csv, predict_contributions=True)
     assert contributions_result is not None
     contributions_pandas = pandas.read_csv(output_csv)
-    assert pandas.DataFrame.equals(contribs_reg.as_data_frame(use_pandas=True), contributions_pandas)
+    assert_frame_equal(contribs_reg.as_data_frame(use_pandas=True), contributions_pandas, check_dtype=False)
 
     # =================================================================
     # Binomial
@@ -169,7 +170,7 @@ def mojo_predict_csv_test(target_dir):
     contributions_bin_pandas = pandas.read_csv(output_csv)
     print(contributions_bin_pandas)
     print(contribs_bin.as_data_frame(use_pandas=True))
-    assert pandas.DataFrame.equals(contribs_bin.as_data_frame(use_pandas=True), contributions_bin_pandas)
+    assert_frame_equal(contribs_bin.as_data_frame(use_pandas=True), contributions_bin_pandas, check_dtype=False)
 
     # =================================================================
     # Multinomial
@@ -247,7 +248,7 @@ def mojo_predict_pandas_test(sandbox_dir):
 
     mojo_contributions = h2o.mojo_predict_pandas(dataframe=pandas_frame, mojo_zip_path=model_zip_path,
                                                  genmodel_jar_path=genmodel_path, predict_contributions=True)
-    assert pandas.DataFrame.equals(h2o_contributions.as_data_frame(use_pandas=True), mojo_contributions)
+    assert_frame_equal(h2o_contributions.as_data_frame(use_pandas=True), mojo_contributions, check_dtype=False)
 
 
 csv_test_dir = tempfile.mkdtemp()
