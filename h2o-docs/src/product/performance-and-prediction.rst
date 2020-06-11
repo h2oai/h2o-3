@@ -867,13 +867,7 @@ Comparison
 +-------------+----------+--------------------------+---------------------------------+
 | RMSPE       | percent  | Yes                      | use when target values are      |
 |             | of       |                          | across different scales         |
-|             | target   |                          | target                          |
-|             |          |                          | values                          |
-|             |          |                          | are                             |
-|             |          |                          | across                          |
-|             |          |                          | differ                          |
-|             |          |                          | ent                             |
-|             |          |                          | scales                          |
+|             | target   |                          |                                 |
 +-------------+----------+--------------------------+---------------------------------+
 | MAE         | same as  | No                       |                                 |
 |             | target   |                          |                                 |
@@ -1629,6 +1623,7 @@ Binomial Examples
   :alt: Partial Dependence Age Vs Mean Plot
   :scale: 30%
 
+
 .. figure:: images/pdp_raceVmean.png
   :alt: Partial Dependence Race Vs Mean Plot
   :scale: 30%
@@ -1697,9 +1692,11 @@ Multinomial Examples
                                               server = True)
         pdp_petal_len_se
 
+
 .. figure:: images/pdp_multinomial.png
   :alt: Multinomial Partial Dependence Plot
   :scale: 30%
+
 
 Prediction
 ----------
