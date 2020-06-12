@@ -35,7 +35,6 @@ def test_gam_model_predict():
     max_stopping_rounds = 3  # maximum stopping rounds allowed to be used for early stopping metric
     max_tolerance = 0.1  # maximum tolerance to be used for early stopping metric
     bigger_is_better = [False, True]
-
     print("Building a GAM model without early stop")
     h2o_model_no_early_stop = H2OGeneralizedAdditiveEstimator(family='binomial', gam_columns=["C11"],  scale = [0.0001], 
                                                 score_each_iteration=True)
