@@ -3,7 +3,6 @@ package water;
 import hex.CreateFrame;
 import hex.genmodel.easy.RowData;
 import org.junit.AfterClass;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.rules.TestRule;

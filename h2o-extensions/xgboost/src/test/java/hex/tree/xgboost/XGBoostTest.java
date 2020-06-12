@@ -607,8 +607,10 @@ public class XGBoostTest extends TestUtil {
       XGBoostModel step2Model = new hex.tree.xgboost.XGBoost(step2Parms).trainModel().get();
       Scope.track_generic(step2Model);
       Frame step2Preds = Scope.track(step2Model.score(df));
-      
-      assertFrameEquals(directPreds, step2Preds, 0);
+
+      // on GPU the resume from checkpoint is slightly in-deterministic
+      double delta = (hex.tree.xgboost.XGBoost.hasGPU(H2O.CLOUD.members()[0], 0)) ? 1e-6d : 0;
+      assertFrameEquals(directPreds, step2Preds, delta);
     } finally {
       Scope.exit();
     }
