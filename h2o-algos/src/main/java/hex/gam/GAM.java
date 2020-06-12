@@ -359,13 +359,16 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         _valid = rebalance(cleanUpInputFrame(_parms.valid().clone(), _parms, _gamColNamesCenter, _binvD, _zTranspose, _knots,
                 _numKnots), false, _result+".temporary.valid");
       }
+      Frame newValidFrame = _valid==null?null:new Frame(_valid);
       
       DKV.put(newTFrame); // This one will cause deleted vectors if add to Scope.track
+      if (newValidFrame != null)
+        DKV.put(newValidFrame);
       _job.update(0, "Initializing model training");
-      buildModel(newTFrame); // build gam model 
+      buildModel(newTFrame, newValidFrame); // build gam model 
     }
 
-    public final void buildModel(Frame newTFrame) {
+    public final void buildModel(Frame newTFrame, Frame newValidFrame) {
       GAMModel model = null;
       DataInfo dinfo = null;
       try {
@@ -383,7 +386,7 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
           model._output._gamTransformedTrainCenter = newTFrame._key;
         }
         _job.update(1, "calling GLM to build GAM model...");
-        GLMModel glmModel = buildGLMModel(_parms, newTFrame); // obtained GLM model
+        GLMModel glmModel = buildGLMModel(_parms, newTFrame, newValidFrame); // obtained GLM model
         Scope.track_generic(glmModel);
         _job.update(0, "Building out GAM model...");
         fillOutGAMModel(glmModel, model, dinfo); // build up GAM model
@@ -407,6 +410,9 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
         }
         if (dinfo!=null)
           dinfo.remove();
+        if (newValidFrame != null) {
+          DKV.remove(newValidFrame._key);
+        }
       }
     }
     
@@ -435,8 +441,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       }
     }
 
-    GLMModel buildGLMModel(GAMParameters parms, Frame trainData) {
-      GLMParameters glmParam = GamUtils.copyGAMParams2GLMParams(parms, trainData, valid());  // copy parameter from GAM to GLM
+    GLMModel buildGLMModel(GAMParameters parms, Frame trainData, Frame validFrame) {
+      GLMParameters glmParam = GamUtils.copyGAMParams2GLMParams(parms, trainData, validFrame);  // copy parameter from GAM to GLM
       int numGamCols = _parms._gam_columns.length;
       for (int find = 0; find < numGamCols; find++) {
         if ((_parms._scale != null) && (_parms._scale[find] != 1.0))
@@ -473,8 +479,8 @@ public class GAM extends ModelBuilder<GAMModel, GAMModel.GAMParameters, GAMModel
       model._output._glm_training_metrics = glmModel._output._training_metrics;
       if (valid() != null)
         model._output._glm_validation_metrics = glmModel._output._validation_metrics;
-      model._output._glm_scoring_history = model.copyTwoDimTable(glmModel._output._scoring_history);
       model._output._glm_model_summary = model.copyTwoDimTable(glmModel._output._model_summary);
+      model._output._glm_scoring_history = model.copyTwoDimTable(glmModel._output._scoring_history);
       if (_parms._family == multinomial || _parms._family == ordinal) {
         model._output._coefficients_table = model.genCoefficientTableMultinomial(new String[]{"Coefficients",
                         "Standardized Coefficients"}, model._output._model_beta_multinomial,

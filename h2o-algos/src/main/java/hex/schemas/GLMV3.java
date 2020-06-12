@@ -31,7 +31,8 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "ignored_columns",
             "random_columns", // HGLM denote random columns, array
             "ignore_const_cols",
-            "score_each_iteration",
+            "score_each_iteration", 
+            "score_iteration_interval",
             "offset_column",
             "weights_column",
             "family",
@@ -69,6 +70,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
             "interaction_pairs",
             "obj_reg",
             "export_checkpoints_dir",
+             "stopping_rounds",
+             "stopping_metric",
+             "stopping_tolerance",
             // dead unused args forced here by backwards compatibility, remove in V4
             "balance_classes",
             "class_sampling_factors",
@@ -122,6 +126,9 @@ public class GLMV3 extends ModelBuilderSchema<GLM,GLMV3,GLMV3.GLMParametersV3> {
     " set to True, the value of nlamdas is set to 30 (fewer lambdas" +
     " are needed for ridge regression) otherwise it is set to 100.", level = Level.critical)
     public int nlambdas;
+    
+    @API(help = "Perform scoring for every score_iteration_interval iterations", level = Level.secondary)
+    public int score_iteration_interval;
 
     @API(help = "Standardize numeric columns to have zero mean and unit variance", level = Level.critical)
     public boolean standardize;
