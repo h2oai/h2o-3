@@ -55,13 +55,18 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     public ModelCategory getModelCategory() {
       return ModelCategory.AnomalyDetection;
     }
+
+    @Override
+    public double defaultThreshold() {
+      return _defaultThreshold;
+    }
   }
 
   public IsolationForestModel(Key<IsolationForestModel> selfKey, IsolationForestParameters parms, IsolationForestOutput output ) { super(selfKey, parms, output); }
 
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics");
+    return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics", outputAnomalyFlag());
   }
 
   @Override

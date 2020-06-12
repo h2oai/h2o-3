@@ -199,6 +199,10 @@ public class IsolationForestTest extends TestUtil {
       assertArrayEquals(new String[]{"predict", "score", "mean_length"}, preds.names());
       assertEquals(train.numRows(), preds.numRows());
 
+      assertTrue(model.outputAnomalyFlag());
+      assertEquals(0.73, model._output._defaultThreshold, 1e-6);
+      assertArrayEquals(new long[]{18L, 2L}, preds.vec("predict").bins());
+      
       assertTrue(model.testJavaScoring(train, preds, 1e-8));
 
       assertTrue(model._output._min_path_length < Integer.MAX_VALUE);

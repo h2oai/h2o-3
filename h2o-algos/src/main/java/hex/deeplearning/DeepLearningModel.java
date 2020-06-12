@@ -894,28 +894,6 @@ public class DeepLearningModel extends Model<DeepLearningModel,DeepLearningModel
     }
   }
 
-  /**
-   * Compute quantile-based threshold (in reconstruction error) to find outliers
-   * @param mse Vector containing reconstruction errors
-   * @param quantile Quantile for cut-off
-   * @return Threshold in MSE value for a point to be above the quantile
-   */
-  public double calcOutlierThreshold(Vec mse, double quantile) {
-    Frame mse_frame = new Frame(Key.<Frame>make(), new String[]{"Reconstruction.MSE"}, new Vec[]{mse});
-    DKV.put(mse_frame._key, mse_frame);
-
-    QuantileModel.QuantileParameters parms = new QuantileModel.QuantileParameters();
-    parms._train = mse_frame._key;
-    parms._probs = new double[]{quantile};
-    Job<QuantileModel> job = new Quantile(parms).trainModel();
-    QuantileModel kmm = job.get();
-    job.remove();
-    double q = kmm._output._quantiles[0][0];
-    kmm.delete();
-    DKV.remove(mse_frame._key);
-    return q;
-  }
-
   // helper to push this model to another key (for keeping good models)
   private void putMeAsBestModel(Key bestModelKey) {
     DeepLearningModel bestModel = IcedUtils.deepCopy(this);

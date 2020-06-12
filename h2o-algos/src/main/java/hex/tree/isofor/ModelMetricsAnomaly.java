@@ -37,11 +37,11 @@ public class ModelMetricsAnomaly extends ModelMetricsUnsupervised implements Sco
     private long _nobs = 0;
 
     public MetricBuilderAnomaly() {
-      this("");
+      this("", false);
     }
     
-    public MetricBuilderAnomaly(String description) {
-      _work = new double[2];
+    public MetricBuilderAnomaly(String description, boolean outputAnomalyFlag) {
+      _work = new double[outputAnomalyFlag ? 3 : 2];
       _description = description;
     }
 
