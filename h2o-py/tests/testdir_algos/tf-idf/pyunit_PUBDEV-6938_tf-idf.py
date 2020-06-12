@@ -1,6 +1,8 @@
-from tests import pyunit_utils
+from collections import OrderedDict
+
 from h2o import H2OFrame
 from h2o.information_retrieval.tf_idf import tf_idf
+from tests import pyunit_utils
 
 
 def tf_idf_small_data(preprocess, case_sens, cols=None):
@@ -20,7 +22,7 @@ def get_simple_input_test_frame():
         'C c B C'
     ]
     
-    return H2OFrame({'DocID': doc_ids, 'Document': documents},
+    return H2OFrame(OrderedDict([('DocID', doc_ids), ('Document', documents)]),
                     column_types=['numeric', 'string'])
 
 
@@ -36,7 +38,7 @@ def get_simple_preprocessed_input_test_frame():
         'C', 'c', 'B', 'C'
     ]
     
-    return H2OFrame({'DocID': doc_ids, 'Words': words},
+    return H2OFrame(OrderedDict([('DocID', doc_ids), ('Words', words)]),
                     column_types=['numeric', 'string'])
 
 
@@ -57,8 +59,8 @@ def get_expected_output_frame_case_sens():
 
 
 def get_expected_output_frame(out_doc_ids, out_tokens, out_TFs, out_IDFs, out_TFIDFs):
-    return H2OFrame({'DocID': out_doc_ids, 'Token': out_tokens,
-                     'TF': out_TFs, 'IDF': out_IDFs, 'TF_IDF': out_TFIDFs},
+    return H2OFrame(OrderedDict([('DocID', out_doc_ids), ('Token', out_tokens),
+                                 ('TF', out_TFs), ('IDF', out_IDFs), ('TF_IDF', out_TFIDFs)]),
                      column_types=['numeric', 'string', 'numeric', 'numeric', 'numeric'])
 
 
