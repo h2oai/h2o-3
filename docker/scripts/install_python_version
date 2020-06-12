@@ -27,6 +27,9 @@ for python_version in "${array[@]}"; do
   if [[ "${python_version}" =~ ^([0-9])\.([0-9]+).* ]]; then
     major=${BASH_REMATCH[1]}
     minor=${BASH_REMATCH[2]}
+  else
+    echo "Invalid Python version: ${python_version}"
+    exit 1
   fi
   if [[ ${major} == "2" ]] ; then pkg_suffix="" ; else pkg_suffix=${major} ; fi
 
