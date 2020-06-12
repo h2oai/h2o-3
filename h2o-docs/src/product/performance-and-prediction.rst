@@ -443,7 +443,7 @@ Absolute MCC (Matthews Correlation Coefficient)
 Setting the ``absolute_mcc`` parameter sets the threshold for the model's confusion matrix to a value that generates the highest Matthews Correlation Coefficient. The MCC score provides a measure of how well a binary classifier detects true and false positives, and true and false negatives. The MCC is called a correlation coefficient because it indicates how correlated the actual and predicted values are; 1 indicates a perfect classifier, -1 indicates a classifier that predicts the opposite class from the actual value, and 0 means the classifier does no better than random guessing. 
 
 .. math::
-	MCC = \frac{TP \; x \; TN \; - FP \; x \; FN}{\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}
+    MCC = \frac{TP \; x \; TN \; - FP \; x \; FN}{\sqrt{(TP+FP)(TP+FN)(TN+FP)(TN+FN)}}
 
 **Example**
 
@@ -486,7 +486,7 @@ F1
 The F1 score provides a measure for how well a binary classifier can classify positive cases (given a threshold value). The F1 score is calculated from the harmonic mean of the precision and recall. An F1 score of 1 means both precision and recall are perfect and the model correctly identified all the positive cases and didn't mark a negative case as a positive case. If either precision or recall are very low it will be reflected with a F1 score closer to 0.
 
 .. math::
-	F1 = 2 \;\Big(\; \frac{(precision) \; (recall)}{precision + recall}\; \Big)
+    F1 = 2 \;\Big(\; \frac{(precision) \; (recall)}{precision + recall}\; \Big)
 
 Where:
 
@@ -588,7 +588,7 @@ F2
 The F2 score is the weighted harmonic mean of the precision and recall (given a threshold value). Unlike the F1 score, which gives equal weight to precision and recall, the F2 score gives more weight to recall (penalizing the model more for false negatives then false positives). An F2 score ranges from 0 to 1, with 1 being a perfect model.
 
 .. math::
-	F2 = 5 \;\Big(\; \frac{(precision) \; (recall)}{4\;precision + recall}\; \Big)
+    F2 = 5 \;\Big(\; \frac{(precision) \; (recall)}{4\;precision + recall}\; \Big)
 
 **Example**
 
@@ -867,13 +867,7 @@ Comparison
 +-------------+----------+--------------------------+---------------------------------+
 | RMSPE       | percent  | Yes                      | use when target values are      |
 |             | of       |                          | across different scales         |
-|             | target   |                          | target                          |
-|             |          |                          | values                          |
-|             |          |                          | are                             |
-|             |          |                          | across                          |
-|             |          |                          | differ                          |
-|             |          |                          | ent                             |
-|             |          |                          | scales                          |
+|             | target   |                          |                                 |
 +-------------+----------+--------------------------+---------------------------------+
 | MAE         | same as  | No                       |                                 |
 |             | target   |                          |                                 |
@@ -1051,13 +1045,13 @@ Examples:
         valid <- airlines_splits[[2]]
 
         # build and train the model using the lift_top_group stopping metric:
-        airlines_gbm <- h2o.gbm(x = predictors,
-                                y = response,
-                                training_frame = train,
-                                validation_frame = valid,
-                                stopping_metric = "lift_top_group",
-                                stopping_rounds = 3,
-                                stopping_tolerance = 1e-2,
+        airlines_gbm <- h2o.gbm(x = predictors, 
+                                y = response, 
+                                training_frame = train, 
+                                validation_frame = valid, 
+                                stopping_metric = "lift_top_group", 
+                                stopping_rounds = 3, 
+                                stopping_tolerance = 1e-2, 
                                 seed = 1234)
 
         # retrieve the auc value:
@@ -1125,7 +1119,7 @@ Examples:
 
         # build and train the model using the deviance stopping metric:
         cars_gbm <- h2o.gbm(x = predictors, y = repsonse, 
-                            training_frame = train, validation_frame = valid,
+                            training_frame = train, validation_frame = valid, 
                             stopping_metric = "deviance", stopping_rounds = 3, 
                             stopping_tolerance = 1e-2, seed = 1234)
 
@@ -1151,7 +1145,7 @@ Examples:
                                                 stopping_rounds = 3, 
                                                 stopping_tolerance = 1e-2, 
                                                 seed = 1234)
-        cars_gbm.train(x = predictors, y = response,
+        cars_gbm.train(x = predictors, y = response, 
                        training_frame = train, validation_frame = valid)
 
         # retrieve the mse value:
@@ -1514,12 +1508,12 @@ Examples:
         predictors <- c("AGE", "RACE", "PSA", "DCAPS")
 
         # build and train the model:
-        pros_glm <- h2o.glm(x = predictors,
-                            y = response,
+        pros_glm <- h2o.glm(x = predictors, 
+                            y = response, 
                             training_frame = prostate, 
-                            family = "binomial",
-                            nfolds = 5,
-                            alpha = 0.5,
+                            family = "binomial", 
+                            nfolds = 5, 
+                            alpha = 0.5, 
                             lambda_search = FALSE)
 
         # build the standardized coefficient magnitudes plot:
@@ -1540,8 +1534,8 @@ Examples:
         predictors = ["AGE","RACE","PSA","DCAPS"] 
 
         # build and train the model:
-        glm = H2OGeneralizedLinearEstimator(nfolds = 5,
-                                            alpha = 0.5,
+        glm = H2OGeneralizedLinearEstimator(nfolds = 5, 
+                                            alpha = 0.5, 
                                             lambda_search = False, 
                                             family = "binomial")
         glm.train(x = predictors, y = response, training_frame = prostate)
@@ -1582,7 +1576,7 @@ The following can be specified when building a partial dependence plot.
 - ``object``: (Required, R only) An H2OModel object.
 - ``data``: (Required) An H2OFrame object used for scoring and constructing the plot.
 - ``cols``: The feature(s) for which partial dependence will be calculated. One of either ``col_pairs_2dpdp`` or ``cols`` must be specified.
-- ``col_pairs_2dpdp``: A two-level nested list like this: col_pairs_2dpdp = list(c("col1_name", "col2_name"), c("col1_name","col3_name"), ...,) where a 2D partial plots will be generated for col1_name, col2_name pair, for col1_name, col3_name pair and whatever other pairs that are specified in the nested list. One of either ``col_pairs_2dpdp`` or ``cols`` must be specified.
+- ``col_pairs_2dpdp``: A two-level nested list like this: col_pairs_2dpdp = list(c("col1_name", "col2_name"), c("col1_name","col3_name"), ...,) where a 2D partial plots will be generated for col1_name, col2_name pair, for col1_name, col3_name pair and whatever other pairs that are specified in the nested list. One of either ``col_pairs_2dpdp`` or ``cols`` must be specified. 
 - ``destination_key``: A key reference to the created partial dependence tables in H2O.
 - ``nbins``: The number of bins used. For categorical columns make sure the number of bins exceed the level count. If you enable ``include_na``, then the returned length will be nbins+1.
 - ``weight_column``: A string denoting which column of data should be used as the weight column.
@@ -1616,13 +1610,13 @@ Binomial Examples
                             learn_rate = 0.1, seed = 1234)
 
         # build a 1-dimensional partial dependence plot:
-        h2o_1d_pdp = h2o.partialPlot(object = pros_gbm,
-                                     data = prostate,
+        h2o_1d_pdp = h2o.partialPlot(object = pros_gbm, 
+                                     data = prostate, 
                                      cols = c("AGE", "RACE"))
 
         # build a 2-dimensional partial depedence plot:
-        h2o_2d_pdp <- h2o.partialPlot(object = pros_gbm,
-                                      data = prostate,
+        h2o_2d_pdp <- h2o.partialPlot(object = pros_gbm, 
+                                      data = prostate, 
                                       col_pairs_2dpdp=list(c("RACE", "AGE"), c("AGE", "PSA")),
                                       plot = FALSE)
 
@@ -1641,8 +1635,8 @@ Binomial Examples
         response = "CAPSULE"
 
         # build and train the model:
-        pros_gbm = H2OGradientBoostingEstimator(ntrees = 10,
-                                                max_depth = 5,
+        pros_gbm = H2OGradientBoostingEstimator(ntrees = 10, 
+                                                max_depth = 5, 
                                                 learn_rate = 0.1,
                                                 seed = 1234)
         pros_gbm.train(x = predictors, y = response, training_frame = prostate)
@@ -1660,9 +1654,11 @@ Binomial Examples
   :alt: Partial Dependence Age Vs Mean Plot
   :scale: 30%
 
+
 .. figure:: images/pdp_raceVmean.png
   :alt: Partial Dependence Race Vs Mean Plot
   :scale: 30%
+
 
 Multinomial Examples
 ####################
@@ -1682,16 +1678,16 @@ Multinomial Examples
         valid <- iris_splits[[2]]
 
         # build and train the model:
-        iris_glm <- h2o.glm(x = c(1:4),
+        iris_glm <- h2o.glm(x = c(1:4), 
                             y = 5,
                             training_frame = iris,
                             family = "multinomial",
                             seed = 1234)
 
         # build the partial dependence plot:
-        pdp_petal_len_se <- h2o.partialPlot(object = iris_glm,
-                                            data = iris,
-                                            cols = "petal_len",
+        pdp_petal_len_se <- h2o.partialPlot(object = iris_glm, 
+                                            data = iris, 
+                                            cols = "petal_len", 
                                             targets = c("Iris-setosa", "Iris-virginica", "Iris-versicolor"))
         pdp_petal_len_se
 
@@ -1726,12 +1722,15 @@ Multinomial Examples
                                               cols = cols, 
                                               targets = targets, 
                                               plot_stddev = False, 
-                                              plot = True) 
+                                              plot = True, 
+                                              server = True)
         pdp_petal_len_se
+
 
 .. figure:: images/pdp_multinomial.png
   :alt: Multinomial Partial Dependence Plot
   :scale: 30%
+
 
 Prediction
 ----------
@@ -1789,13 +1788,13 @@ This section provides examples of performing predictions in Python and R. Refer 
 
         # View a summary of the prediction with a probability of TRUE
         summary(pred$p1, exact_quantiles = TRUE)
-         p1
-         Min.   :0.01006
-         1st Qu.:0.15610
-         Median :0.33091
-         Mean   :0.41932
-         3rd Qu.:0.66922
-         Max.   :0.99724
+         p1               
+         Min.   :0.01006  
+         1st Qu.:0.15610  
+         Median :0.33091  
+         Mean   :0.41932  
+         3rd Qu.:0.66922  
+         Max.   :0.99724  
  
    .. code-tab:: python
 
@@ -1809,9 +1808,9 @@ This section provides examples of performing predictions in Python and R. Refer 
         # Convert the response column to a factor
         h2o_df["CAPSULE"] = h2o_df["CAPSULE"].asfactor()
 
-        # Split the data into train and test
+        # Split the data into train and test 
         train, test = h2o_df.split_frame(ratios = [.75], seed = 1234)
-
+        
         # Generate a GBM model using the training dataset
         model = H2OGradientBoostingEstimator(distribution = "bernoulli",
                                              ntrees = 100,
@@ -1864,12 +1863,12 @@ Using the previous example, run the following to predict the leaf node assignmen
         # View a summary of the leaf node assignment prediction
         summary(predict_lna$T1.C1, exact_quantiles = TRUE)
         T1.C1   
-        LRRR:15
-        LLRR:12
-        RLLL:12
-        RLLR:11
-        RRL : 7
-        LRL : 6
+        LRRR:15 
+        LLRR:12 
+        RLLL:12 
+        RLLR:11 
+        RRL : 7 
+        LRL : 6  
 
    .. code-tab:: python
 
@@ -1904,7 +1903,7 @@ H2O-3 supports TreeSHAP for DRF, GBM, and XGBoost. For these problems, the ``pre
         5 -0.02015455  0.06589284 -1.5968542 -0.9778085 -0.2434755
         6 -0.33494386 -0.58143651 -0.4093136  0.5271149 -0.2434755
 
-        [90 rows x 5 columns]
+        [90 rows x 5 columns] 
 
 
    .. code-tab:: python
