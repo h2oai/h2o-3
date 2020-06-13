@@ -7,8 +7,6 @@ Regression model.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
-import imp
-
 from h2o.model.confusion_matrix import ConfusionMatrix
 from h2o.utils.metaclass import BackwardsCompatible, Deprecated as deprecated, h2o_meta
 from h2o.utils.compatibility import *  # NOQA
@@ -1344,7 +1342,6 @@ class H2OBinomialModelMetrics(MetricsBase):
         assert_is_type(type, "roc")
         # check for matplotlib. exit if absent.
         try:
-            imp.find_module('matplotlib')
             import matplotlib
             if server: matplotlib.use('Agg', warn=False)
             import matplotlib.pyplot as plt

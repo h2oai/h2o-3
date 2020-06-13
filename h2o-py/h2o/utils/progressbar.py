@@ -6,6 +6,7 @@ Text progress bar for long-running jobs.
 :license:   Apache License Version 2.0 (see LICENSE for details)
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import math
 import os
@@ -14,7 +15,7 @@ import time
 from types import FunctionType, GeneratorType, MethodType
 
 import colorama
-from h2o.utils.compatibility import *  # NOQA
+
 from h2o.utils.shared_utils import clamp
 from h2o.utils.typechecks import assert_is_type, is_type, numeric
 

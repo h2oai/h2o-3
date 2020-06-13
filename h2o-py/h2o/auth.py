@@ -7,6 +7,10 @@ Data class for SPNEGO authentication.
 """
 from __future__ import absolute_import, division, print_function, unicode_literals
 
+import re
+
+from requests.auth import AuthBase
+
 try:
     import kerberos
 except ImportError:
@@ -20,10 +24,8 @@ try:
 except ImportError:
     raise ImportError("Required gssapi package not found.")
 
-from requests.auth import AuthBase
-import re
 
-from h2o.utils.typechecks import (assert_is_type)
+from h2o.utils.typechecks import assert_is_type
 
 __all__ = ("SpnegoAuth", )
 

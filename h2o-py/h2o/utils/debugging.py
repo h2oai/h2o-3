@@ -7,12 +7,13 @@ Collection of utilities for debugging.
 """
 from __future__ import division, print_function, absolute_import, unicode_literals
 
-import colorama
 import inspect
 import re
 import sys
-from colorama import Style, Fore
 from types import ModuleType
+
+import colorama
+from colorama import Style, Fore
 
 from h2o.exceptions import H2OJobCancelled, H2OSoftError
 from h2o.utils.compatibility import *  # NOQA
@@ -96,7 +97,7 @@ def _except_hook(exc_type, exc_value, exc_tb):
     else:
         _prev_except_hook(exc_type, exc_value, exc_tb)
 
-    # Everythin else is disabled for now, because it generates too much output due to bugs in H2OFrame implementation
+    # Everything else is disabled for now, because it generates too much output due to bugs in H2OFrame implementation
     return
 
     import linecache

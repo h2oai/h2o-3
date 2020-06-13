@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 from __future__ import division, print_function, absolute_import, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 import itertools
 
@@ -14,7 +15,6 @@ from h2o.display import H2ODisplay
 from h2o.grid.metrics import *  # NOQA
 from h2o.utils.metaclass import Alias as alias, BackwardsCompatible, Deprecated as deprecated, h2o_meta
 from h2o.utils.shared_utils import quoted
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.typechecks import assert_is_type, is_type
 
 

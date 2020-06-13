@@ -7,11 +7,10 @@ This module provides helper functions to write code that is backward-compatible.
 """
 # Note: no unicode_literals feature, since type.__getattribute__ cannot take unicode strings as parameter...
 from __future__ import division, print_function, absolute_import
+from h2o.utils.compatibility import *  # NOQA
 
 from functools import wraps
 import warnings
-
-from h2o.utils.compatibility import with_metaclass
 
 
 def h2o_meta(*args):

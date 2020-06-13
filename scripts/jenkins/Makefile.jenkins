@@ -67,6 +67,12 @@ test-py-booklets:
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 52524 --jvm.xmx 5g --test pybooklet.gbm.vignette.py
 	cd h2o-docs/src/booklets/v2_2015/source && ../../../../../scripts/run.py --numclouds 1 --numnodes 3 --baseport 53534 --jvm.xmx 5g --test pybooklet.glm.vignette.py
 
+test-py-demos:
+	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
+
+test-pyunit-demos:
+	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
+
 test-pyunit-small: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --excludelist .lookup.txt
 
@@ -76,11 +82,8 @@ test-pyunit-single-node:
 test-pyunit-xgboost-stress:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 1 --numnodes 5 --jvm.xmx 3g --testlist ../../tests/pyunitXGBoostStressTestList
 
-test-pyunit-small-automl: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize s --numclouds 6 --jvm.xmx 3g --testlist .lookup.txt
-
-test-py-demos:
-	export NO_GCE_CHECK=True && export MPLBACKEND=Agg && cd h2o-py/demos/ && ../../scripts/run.py --wipeall --numclouds 4 --baseport 56789 --jvm.xmx 10g
+test-pyunit-automl: lookup-automl-tests
+	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 6 --jvm.xmx 3g --testlist .lookup.txt
 
 test-pyunit-medium-large:
 	export NO_GCE_CHECK=True && cd h2o-py/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 1 --numnodes 5 --jvm.xmx 15g
@@ -106,11 +109,11 @@ test-r-small-client-mode: lookup-automl-tests
 test-r-small-client-mode-attack: lookup-automl-tests
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.opts '-Dsys.ai.h2o.debug.clientDisconnectAttack=true' --jvm.xmx 4g --excludelist .lookup.txt
 
-test-r-small-automl: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --testsize s --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
+test-r-automl: lookup-automl-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
 
-test-r-small-client-mode-automl: lookup-automl-tests
-	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --testsize s --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
+test-r-client-mode-automl: lookup-automl-tests
+	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --client --numclouds 4 --jvm.xmx 4g --testlist .lookup.txt
 
 test-r-medium-large:
 	export NO_GCE_CHECK=True && cd h2o-r/tests/ && ../../scripts/run.py --wipeall --geterrs --testsize ml --numclouds 2 --numnodes 2 --jvm.xmx 20g
@@ -190,9 +193,6 @@ test-info:
 		cat h2o-r/tests/results/INFO_file.txt; \
 		exit 1; \
 	fi
-
-test-demos:
-	cd h2o-py/tests/testdir_demos && python ../../../scripts/run.py --whl ../../../h2o-py/build/dist/h2o-*.whl --wipeall --numclouds 1 --jvm.xmx 5g
 
 test-package-java:
 	zip -q -r test-package-java \

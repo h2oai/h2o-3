@@ -26,9 +26,14 @@ def call(final pipelineContext) {
   def modeCode = MODES.find{it['name'] == pipelineContext.getBuildConfig().getMode()}['code']
 
   // Job will execute PR_STAGES only if these are green.
+  // for Python, smoke only oldest and latest supported versions
   def SMOKE_STAGES = [
     [
       stageName: 'Py2.7 Smoke', target: 'test-py-smoke', pythonVersion: '2.7',timeoutValue: 8,
+      component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Smoke', target: 'test-py-smoke', pythonVersion: '3.7',timeoutValue: 8,
       component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -46,18 +51,11 @@ def call(final pipelineContext) {
   ]
 
   // Stages executed after each push to PR branch.
+  // for Python, mainly test with latest supported version
   def PR_STAGES = [
     [
       stageName: 'Py2.7 Booklets', target: 'test-py-booklets', pythonVersion: '2.7',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py3.5 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.5',
-      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
-    ],
-    [
-      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
-      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
       stageName: 'Py2.7 Init Java 8', target: 'test-py-init', pythonVersion: '2.7', javaVersion: 8,
@@ -65,11 +63,15 @@ def call(final pipelineContext) {
       image: "${pipelineContext.getBuildConfig().DOCKER_REGISTRY}/opsh2oai/h2o-3/dev-jdk-8:${pipelineContext.getBuildConfig().DEFAULT_IMAGE_VERSION_TAG}"
     ],
     [
-      stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
+      stageName: 'Py3.7 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.7',
+      timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Small', target: 'test-pyunit-small', pythonVersion: '3.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.5 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.5',
+      stageName: 'Py3.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -90,11 +92,11 @@ def call(final pipelineContext) {
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.5 Small AutoML', target: 'test-r-small-automl', rVersion: '3.5.3',
+      stageName: 'R3.5 AutoML', target: 'test-r-automl', rVersion: '3.5.3',
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.5 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.5.3',
+      stageName: 'R3.5 Client Mode AutoML', target: 'test-r-client-mode-automl', rVersion: '3.5.3',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
@@ -118,7 +120,7 @@ def call(final pipelineContext) {
       timeoutValue: 75, component: pipelineContext.getBuildConfig().COMPONENT_JS
     ],
     [
-      stageName: 'Py3.6 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.5',
+      stageName: 'Py3.7 Medium-large', target: 'test-pyunit-medium-large', pythonVersion: '3.7',
       timeoutValue: 150, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -134,7 +136,11 @@ def call(final pipelineContext) {
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_ANY, additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_R]
     ],
     [
-      stageName: 'Py3.6 Test Demos', target: 'test-demos', pythonVersion: '3.6',
+      stageName: 'Py2.7 Demos', target: 'test-py-demos', pythonVersion: '2.7',
+      timeoutValue: 30, component: pipelineContext.getBuildConfig().COMPONENT_PY
+    ],
+    [
+      stageName: 'Py3.7 Test Demos', target: 'test-pyunit-demos', pythonVersion: '3.7',
       timeoutValue: 10, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -157,10 +163,10 @@ def call(final pipelineContext) {
     [
       stageName: 'MOJO Compatibility (Java 7)', target: 'test-mojo-compatibility',
       archiveFiles: false, timeoutValue: 20, hasJUnit: false, pythonVersion: '3.6', javaVersion: 7,
-      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo) 
+      component: pipelineContext.getBuildConfig().COMPONENT_JAVA, // only run when Java changes (R/Py cannot affect mojo)
       imageSpecifier: "mojocompat",
       additionalTestPackages: [pipelineContext.getBuildConfig().COMPONENT_PY]
-    ]
+    ],
   ]
 
   def BENCHMARK_STAGES = [
@@ -257,6 +263,7 @@ def call(final pipelineContext) {
   ]
 
   // Stages executed in addition to MASTER_STAGES, used for nightly builds.
+  // for Python, rerun all tests with 2.7 and oldest 3.x supported version.
   def NIGHTLY_STAGES = [
     [
       stageName: 'Java 10 Smoke', target: 'test-junit-10-smoke-jenkins', javaVersion: 10, timeoutValue: 20,
@@ -315,7 +322,7 @@ def call(final pipelineContext) {
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.6 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.6',
+      stageName: 'Py3.5 Single Node', target: 'test-pyunit-single-node', pythonVersion: '3.5',
       timeoutValue: 40, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -323,15 +330,15 @@ def call(final pipelineContext) {
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.6 Small', target: 'test-pyunit-small', pythonVersion: '3.6',
+      stageName: 'Py3.5 Small', target: 'test-pyunit-small', pythonVersion: '3.5',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py2.7 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '2.7',
+      stageName: 'Py2.7 AutoML', target: 'test-pyunit-automl', pythonVersion: '2.7',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
-      stageName: 'Py3.6 Small AutoML', target: 'test-pyunit-small-automl', pythonVersion: '3.6',
+      stageName: 'Py3.5 AutoML', target: 'test-pyunit-automl', pythonVersion: '3.5',
       timeoutValue: 90, component: pipelineContext.getBuildConfig().COMPONENT_PY
     ],
     [
@@ -355,11 +362,11 @@ def call(final pipelineContext) {
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.3 Small AutoML', target: 'test-r-small-automl', rVersion: '3.3.3',
+      stageName: 'R3.3 AutoML', target: 'test-r-automl', rVersion: '3.3.3',
       timeoutValue: 125, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [
-      stageName: 'R3.3 Small Client Mode AutoML', target: 'test-r-small-client-mode-automl', rVersion: '3.3.3',
+      stageName: 'R3.3 Client Mode AutoML', target: 'test-r-client-mode-automl', rVersion: '3.3.3',
       timeoutValue: 155, component: pipelineContext.getBuildConfig().COMPONENT_R
     ],
     [

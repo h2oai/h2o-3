@@ -46,14 +46,6 @@ h2o-dev.ipr
 node_modules/
 private/
 *Rsandbox*
-h2o-r/R/
-h2o-r/h2o-package/inst/branch.txt
-h2o-r/h2o-package/man/inst/buildnum.txt
-h2o-r/h2o-package/inst/java/
-h2o-r/h2o-package/inst/source_code_repository_info.txt
-h2o-r/h2o-package/man/h2o-package.Rd
-h2o-r/h2o-package/NAMESPACE
-h2o-r/h2o-package/docs/*
 py2/testdir_single_jvm/h2o_fc-nodes.json
 h2o-py/demos/.ipynb_checkpoints
 Rplots.pdf
@@ -106,34 +98,8 @@ native
 # Ignore Jupyter Notebook project files
 *.ipynb_checkpoints/
 
-h2o-docs/src/booklets/source/DeepLearningBooklet.top
-
-h2o-docs/src/booklets/source/DeepLearningBooklet.tui
-
-h2o-docs/src/booklets/source/DeepLearningBooklet-mpgraph.mp
-
-h2o-docs/src/booklets/source/GBMBooklet-mpgraph.mp
-
-h2o-docs/src/booklets/source/GBMBooklet.top
-
-h2o-docs/src/booklets/source/GBMBooklet.tui
-
-h2o-docs/src/booklets/source/GLMBooklet-mpgraph.mp
-
-h2o-docs/src/booklets/source/GLMBooklet.top
-
-h2o-docs/src/booklets/source/GLMBooklet.tui
-
-h2o-docs/src/booklets/source/PythonBooklet-mpgraph.mp
-
-h2o-docs/src/booklets/source/PythonBooklet.top
-
-h2o-docs/src/booklets/source/PythonBooklet.tui
-
 *.mp
-
 *.top
-
 *.tui
 
 *.gz(busy)
@@ -144,11 +110,6 @@ h2o-*/tests/.lookup.txt
 
 # Ignore leak check output
 leak-check.out
-
-# Ignore h2o-r HTML output
-h2o-r/h2o-package/docs/*.html
-h2o-r/h2o-package/docs/articles/*.html
-h2o-r/h2o-package/docs/reference/*.html
 
 # Terraform
 .terraform/

@@ -62,7 +62,7 @@ def test_progressbar():
             delta = time.time() - last_t
             last_t = time.time()
             if interrupted and random.random() + progress / n_steps > math.exp(-beta * delta / (n_steps / 4)):
-                raise StopIteration("sorry, planets did not align")
+                return  # we can't specify any return value (converted into StopIteration error message) as Py2.7 doesn't support return value in generators.
             if random.random() > math.exp(-beta * delta):
                 progress += 1
             yield progress / n_steps

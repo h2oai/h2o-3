@@ -7,7 +7,7 @@ from tests import pyunit_utils
 from h2o.transforms.preprocessing import H2OScaler
 from h2o.estimators.random_forest import H2ORandomForestEstimator
 from sklearn.pipeline import Pipeline
-from sklearn.grid_search import RandomizedSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 from h2o.cross_validation import H2OKFold
 from h2o.model.regression import h2o_r2_score
 from sklearn.metrics.scorer import make_scorer
@@ -67,7 +67,7 @@ def scale_pca_rf_pipe_new_import():
             }
 
   custom_cv = H2OKFold(iris, n_folds=5, seed=42)
-  random_search = RandomizedSearchCV(pipe, 
+  random_search = RandomizedSearchCV(pipe,
                                      params,
                                      n_iter=5,
                                      scoring=make_scorer(h2o_r2_score),

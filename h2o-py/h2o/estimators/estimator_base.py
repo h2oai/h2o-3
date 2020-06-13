@@ -4,6 +4,7 @@
 # Copyright 2016 H2O.ai;  Apache License Version 2.0 (see LICENSE for details)
 #
 from __future__ import absolute_import, division, print_function, unicode_literals
+from h2o.utils.compatibility import *  # NOQA
 
 from datetime import datetime
 import inspect
@@ -14,7 +15,6 @@ import h2o
 from h2o.exceptions import H2OValueError, H2OResponseError
 from h2o.frame import H2OFrame
 from h2o.job import H2OJob
-from h2o.utils.compatibility import *  # NOQA
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import assert_is_type, is_type, numeric, FunctionType
 from ..model.autoencoder import H2OAutoEncoderModel
