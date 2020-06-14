@@ -48,6 +48,7 @@ public class HeartBeat extends Iced<HeartBeat> {
   public long get_pojo_mem() { return _pojo_mem; }
   public long get_free_mem() { return _free_mem; }
   public long get_swap_mem() { return _swap_mem; }
+  
 
   public int _keys;       // Number of LOCAL keys in this node, cached or homed
 

@@ -21,7 +21,7 @@ public class GenericModelOutput extends Model.Output {
     TwoDimTable _variable_importances;
 
 
-    public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes) {
+    public GenericModelOutput(final ModelDescriptor modelDescriptor, final ModelAttributes modelAttributes, final Table[] reproducibilityInformation) {
         _isSupervised = modelDescriptor.isSupervised();
         _domains = modelDescriptor.scoringDomains();
         _origDomains = modelDescriptor.scoringDomains();
@@ -36,6 +36,7 @@ public class GenericModelOutput extends Model.Output {
         _defaultThreshold = modelDescriptor.defaultThreshold();
         _original_model_identifier = modelDescriptor.algoName();
         _original_model_full_name = modelDescriptor.algoFullName();
+        _reproducibility_information_table = convertTables(reproducibilityInformation);
 
         if (modelAttributes != null) {
             _model_summary = convertTable(modelAttributes.getModelSummary());
@@ -51,7 +52,6 @@ public class GenericModelOutput extends Model.Output {
             convertMetrics(modelAttributes, modelDescriptor);
             _scoring_history = convertTable(modelAttributes.getScoringHistory());
         }
-
     }
 
     private void convertMetrics(final ModelAttributes modelAttributes, final ModelDescriptor modelDescriptor) {
@@ -247,6 +247,17 @@ public class GenericModelOutput extends Model.Output {
 
         TwoDimTable varImps = ModelMetrics.calcVarImp(variableImportances._importances, variableImportances._variables);
         return varImps;
+    }
+    
+    private static TwoDimTable[] convertTables(final Table[] inputTables) {
+        if (inputTables == null)
+            return null;
+        
+        TwoDimTable[] tables = new TwoDimTable[inputTables.length];
+        for (int i = 0; i < inputTables.length; i++) {
+            tables[i] = convertTable(inputTables[i]);
+        }
+        return tables;
     }
     
     private static TwoDimTable convertTable(final Table convertedTable){
