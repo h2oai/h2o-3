@@ -11,7 +11,7 @@ def tf_idf_small_data(preprocess, case_sens, cols=None):
     input_fr = get_simple_input_test_frame() if preprocess else get_simple_preprocessed_input_test_frame()
     expected_fr = get_expected_output_frame_case_sens() if case_sens else get_expected_output_frame_case_insens()
     out_frame = tf_idf(input_fr, cols[0], cols[1], preprocess, case_sens)
-    pyunit_utils.compare_frames(expected_fr, out_frame, len(out_frame), tol_numeric=1e-5)
+    pyunit_utils.compare_frames(expected_fr, out_frame, len(out_frame), tol_numeric=1e-5, compare_NA=False)
     
 
 def get_simple_input_test_frame():

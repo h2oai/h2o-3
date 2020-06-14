@@ -38,7 +38,7 @@ public class AstTfIdfTest extends TestUtil {
 
     @BeforeClass
     static public void setup() {
-        stall_till_cloudsize(2);
+        stall_till_cloudsize(1);
     }
 
     @Test
