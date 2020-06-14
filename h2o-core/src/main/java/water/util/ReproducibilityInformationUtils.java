@@ -106,10 +106,6 @@ public class ReproducibilityInformationUtils {
 
     @Override
     public void setupLocal() {
-      if (H2O.ARGS.client) { // do not fill node info on client node
-        return;
-      }
-      
       totalMem = new long[H2O.CLOUD.size()];
       maxMem = new long[H2O.CLOUD.size()];
       Arrays.fill(totalMem, -1);
@@ -125,6 +121,9 @@ public class ReproducibilityInformationUtils {
       index = new int[H2O.CLOUD.size()];
       Arrays.fill(index, -1);
 
+      if (H2O.ARGS.client) { // do not fill node info on client node
+        return;
+      }
       Runtime runtime = Runtime.getRuntime();
       totalMem[H2O.SELF.index()] = runtime.totalMemory();
       maxMem[H2O.SELF.index()] = runtime.maxMemory();
