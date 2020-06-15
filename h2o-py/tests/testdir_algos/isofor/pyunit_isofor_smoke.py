@@ -12,7 +12,7 @@ def isolation_forest():
     train = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/ecg_discord_train.csv"))
     test = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/ecg_discord_test.csv"))
 
-    if_model = H2OIsolationForestEstimator(ntrees=7, seed=12, sample_size=5)
+    if_model = H2OIsolationForestEstimator(ntrees=7, seed=12, sample_size=5, response_column="C1")
     if_model.train(training_frame=train)
 
     print(if_model)
@@ -23,6 +23,9 @@ def isolation_forest():
     assert perf.mean_normalized_score() > 0
 
     test_pred = if_model.predict(test)
+
+    print(test_pred)
+
     assert test_pred.nrow == 23
 
 if __name__ == "__main__":
