@@ -75,10 +75,10 @@ def test_SE_warns_when_all_basemodels_use_same_weights_column_and_SE_none():
             v.__warningregistry__ = {}
     with warnings.catch_warnings(record=True) as ws:
         # Get all UserWarnings
-        warnings.simplefilter("always", UserWarning)
+        warnings.simplefilter("always", RuntimeWarning)
         se.train(x=x, y=y, training_frame=train)
         assert any((
-            issubclass(w.category, UserWarning) and
+            issubclass(w.category, RuntimeWarning) and
             'use weights_column="weights"' in str(w.message)
             for w in ws
         ))
@@ -86,5 +86,5 @@ def test_SE_warns_when_all_basemodels_use_same_weights_column_and_SE_none():
 
 pu.run_tests([
     test_weights_column_is_propagated_to_metalearner,
-    test_SE_warns_when_all_basemodels_use_same_weights_column_and_SE_none
+    test_SE_warns_when_all_basemodels_use_same_weights_column_and_SE_none,
 ])

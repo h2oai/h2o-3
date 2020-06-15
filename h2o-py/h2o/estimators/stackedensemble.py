@@ -12,8 +12,8 @@ import warnings
 
 import h2o
 from h2o.base import Keyed
-from h2o.exceptions import H2OResponseError
 from h2o.grid import H2OGridSearch
+from h2o.job import H2OJob
 from h2o.utils.shared_utils import quoted
 from h2o.utils.typechecks import is_type
 from h2o.estimators.estimator_base import H2OEstimator
@@ -861,29 +861,6 @@ class H2OStackedEnsembleEstimator(H2OEstimator):
 
     # Override train method to support blending
     def train(self, x=None, y=None, training_frame=None, blending_frame=None, verbose=False, **kwargs):
-        if kwargs.get("weights_column") is None and self._parms.get("weights_column") is None \
-                and len(self.base_models) > 0:
-            weight_columns = []
-            for base_model in self.base_models:
-                try:  # base model is a model
-                    weight_columns.append(h2o.get_model(base_model).actual_params.get("weights_column"))
-                except H2OResponseError:
-                    try:  # base model is a grid
-                        weight_columns.extend([
-                            m.actual_params.get("weights_column")
-                            for m in h2o.get_grid(base_model).models
-                        ])
-                    except H2OResponseError:
-                        raise TypeError("Unsupported type of base model \"{}\". Should be either a model or a grid.".format(base_model))
-
-            weight_columns = [wc.get("column_name") if wc else wc for wc in weight_columns]
-            weight_column_ref = weight_columns[0]
-            if weight_column_ref is not None and all((wc == weight_column_ref for wc in weight_columns)):
-                warnings.warn(("All base models use weights_column=\"{}\" but Stacked Ensemble does not. "
-                               "If you want to use the same weights_column for the meta learner, "
-                               "please specify it as an argument in StackedEnsemble's constructor.").format(weight_column_ref))
-
-
         has_training_frame = training_frame is not None or self.training_frame is not None
         blending_frame = H2OFrame._validate(blending_frame, 'blending_frame', required=not has_training_frame)
 

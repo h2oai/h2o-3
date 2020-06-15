@@ -15,10 +15,7 @@ import water.exceptions.H2OModelBuilderIllegalArgumentException;
 import water.fvec.Frame;
 import water.fvec.Vec;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.stream.Stream;
 
 import water.util.ArrayUtils;
@@ -107,16 +104,31 @@ public class StackedEnsemble extends ModelBuilder<StackedEnsembleModel,StackedEn
     }
     _parms._base_models = baseModels.toArray(new Key[0]);
 
-
+    boolean warnSameWeightsColumns = true;
+    String referenceWeightsColumn = null;
     for (int i = 0; i < _parms._base_models.length; i++) {
       Model baseModel = DKV.getGet(_parms._base_models[i]);
 
-      if ((i == 0) && (_parms._offset_column == null))
-        _parms._offset_column = baseModel._parms._offset_column;
+      if (i == 0) {
+        if ((_parms._offset_column == null))
+          _parms._offset_column = baseModel._parms._offset_column;
+        referenceWeightsColumn = baseModel._parms._weights_column;
+        warnSameWeightsColumns = referenceWeightsColumn != null; // We don't want to warn if no weights are set
+      }
 
-      if (((_parms._offset_column == null) && (baseModel._parms._offset_column != null)) ||
-              ((_parms._offset_column != null) && (!_parms._offset_column.equals(baseModel._parms._offset_column))))
-        throw new IllegalArgumentException("All base models have to have the same offset_column!");
+      if (!Objects.equals(referenceWeightsColumn, baseModel._parms._weights_column)) {
+        warnSameWeightsColumns = false;
+      }
+
+      if (!Objects.equals(_parms._offset_column, baseModel._parms._offset_column))
+        throw new IllegalArgumentException("All base models must have the same offset_column!");
+    }
+
+    if (_parms._weights_column == null && warnSameWeightsColumns && _parms._base_models.length > 0) {
+      warn("_weights_column", "All base models use weights_column=\"" + referenceWeightsColumn +
+              "\" but Stacked Ensemble does not. If you want to use the same " +
+              "weights_column for the meta learner, please specify it as an argument " +
+              "in the h2o.stackedEnsemble call.");
     }
   }
 

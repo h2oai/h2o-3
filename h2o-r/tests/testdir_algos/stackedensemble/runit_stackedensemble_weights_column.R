@@ -40,18 +40,6 @@ stackedensemble.weights_column.test <- function() {
   expect(any(grepl("weights_column=\"weights\"", warns, fixed = TRUE)),
          "SE fails to warn about not having set weights_column when all the base models have the same one")
 
-  # No need to warn when user explicitly specifies not to use weights_column
-  warns <- list()
-  se1 <- tryCatch({h2o.stackedEnsemble(x = x,
-                                     y = y,
-                                     training_frame = train,
-                                     base_models = list(my_gbm, my_rf),
-                                     weights_column = NULL
-                )},
-                warning = function (w) warns <<- w$message)
-  expect(!any(grepl("weights_column=\"weights\"", warns, fixed = TRUE)),
-         "SE fails to not warn about not having set weights_column when user set it to NULL")
-
   # weights_column is propagated to metalearner
   se2 <- h2o.stackedEnsemble(x = x,
                              y = y,
