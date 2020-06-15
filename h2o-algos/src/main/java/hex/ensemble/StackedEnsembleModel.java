@@ -487,10 +487,12 @@ public class StackedEnsembleModel extends Model<StackedEnsembleModel,StackedEnse
 
         if (require_consistent_training_frames) {
           if (trainingFrameRows < 0) trainingFrameRows = _parms.train().numRows();
-          Frame aTrainingFrame = aModel._parms.train(); // FIXME: can be null when aModel was imported
-          if (trainingFrameRows != aTrainingFrame.numRows())
+          long numOfRowsUsedToTrain = aModel._parms.train() == null ?
+                  aModel._output._cross_validation_holdout_predictions_frame_id.get().numRows() :
+                  aModel._parms.train().numRows();
+          if (trainingFrameRows != numOfRowsUsedToTrain)
             throw new H2OIllegalArgumentException("Base models are inconsistent: they use different size (number of rows) training frames."
-                    +" Found: "+trainingFrameRows+" (StackedEnsemble) and "+aTrainingFrame.numRows()+" (model "+k+").");
+                    +" Found: "+trainingFrameRows+" (StackedEnsemble) and "+numOfRowsUsedToTrain+" (model "+k+").");
         }
 
         if (cv_required_on_base_model) {
