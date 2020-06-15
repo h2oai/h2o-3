@@ -16,6 +16,8 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
+import static hex.genmodel.utils.ArrayUtils.nanArray;
+
 /**
  * An easy-to-use prediction wrapper for generated models.  Instantiate as follows.  The following two are equivalent.
  *
@@ -865,14 +867,6 @@ public class EasyPredictModelWrapper implements Serializable {
     validateModelCategory(c);
     final int predsSize = m.getPredsSize(c);
     return predict(data, offset, new double[predsSize]);
-  }
-
-  private static double[] nanArray(int len) {
-    double[] arr = new double[len];
-    for (int i = 0; i < len; i++) {
-      arr[i] = Double.NaN;
-    }
-    return arr;
   }
 
   protected double[] fillRawData(RowData data, double[] rawData) throws PredictException {

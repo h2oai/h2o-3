@@ -23,15 +23,6 @@ public class ArrayUtils {
     }
     return cumsumR;
   }
-
-  public static double[] eleDiff(final double[] from) {
-    int arryLen = from.length-1;
-    double[] cumsumR = new double[arryLen];
-    for (int index = 0; index < arryLen; index++) {
-      cumsumR[index] = from[index+1]-from[index];
-    }
-    return cumsumR;
-  }
   
   // Sum elements of an array
   public static long sum(final long[] from) {
@@ -1493,22 +1484,6 @@ public class ArrayUtils {
       System.arraycopy(x,i*N,res[i],0,N);
     }
     return res;
-  }
-
-  public static double[] flat(double[][] arr) {
-    if (arr == null) return null;
-    if (arr.length == 0) return null;
-    int tlen = 0;
-    for (double[] t : arr) tlen += (t != null) ? t.length : 0;
-    double[] result = Arrays.copyOf(arr[0], tlen);
-    int j = arr[0].length;
-    for (int i = 1; i < arr.length; i++) {
-      if (arr[i] == null)
-        continue;
-      System.arraycopy(arr[i], 0, result, j, arr[i].length);
-      j += arr[i].length;
-    }
-    return result;
   }
 
   public static Object[][] zip(Object[] a, Object[] b) {

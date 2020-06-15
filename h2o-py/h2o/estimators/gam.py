@@ -15,7 +15,7 @@ from h2o.utils.typechecks import assert_is_type, Enum, numeric
 
 class H2OGeneralizedAdditiveEstimator(H2OEstimator):
     """
-    General Additive Model
+    Generalized Additive Model
 
     Fits a generalized additive model, specified by a response variable, a set of predictors, and a
     description of the error distribution.
@@ -415,7 +415,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Stop early when there is no more relative improvement on train or validation (if provided)
 
-        Type: ``bool``  (default: ``True``).
+        Type: ``bool``  (default: ``False``).
         """
         return self._parms.get("early_stopping")
 
@@ -431,7 +431,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
         the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
 
-        Type: ``int``  (default: ``-1``).
+        Type: ``int``  (default: ``0``).
         """
         return self._parms.get("nlambdas")
 
@@ -602,7 +602,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
         values above are 1E-8 and 1E-6 respectively.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("gradient_epsilon")
 
@@ -634,7 +634,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
         of response does not reflect reality.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("prior")
 
@@ -652,7 +652,7 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of variables, then
         lambda_min_ratio is set to 0.01.
 
-        Type: ``float``  (default: ``-1``).
+        Type: ``float``  (default: ``0``).
         """
         return self._parms.get("lambda_min_ratio")
 

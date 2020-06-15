@@ -23,6 +23,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.NoSuchElementException;
 
+import static hex.genmodel.utils.ArrayUtils.flat;
+
 /**
  * Created by tomasnykodym on 8/27/14.
  */
@@ -122,7 +124,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
 
   protected double [] beta_internal(){
     if(_parms._family == Family.multinomial || _parms._family == Family.ordinal)
-      return ArrayUtils.flat(_output._global_beta_multinomial);
+      return flat(_output._global_beta_multinomial);
     return _output._global_beta;
   }
   public double [] beta() { return beta_internal();}
@@ -1024,7 +1026,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       return idxs != null?idxs.length:(ArrayUtils.countNonzeros(beta));
     }
 
-    public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest){
+    public Submodel(double lambda , double [] beta, int iteration, double devTrain, double devTest) {
       this.lambda_value = lambda;
       this.iteration = iteration;
       this.devianceTrain = devTrain;
@@ -1391,7 +1393,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     HashMap<String, Double> res = new HashMap<>();
     double [] b = beta();
     if(_parms._family == Family.multinomial || _parms._family == Family.ordinal){
-      if (standardized) b = ArrayUtils.flat(this._output.getNormBetaMultinomial());
+      if (standardized) b = flat(this._output.getNormBetaMultinomial());
       if(b == null) return res;
       String [] responseDomain = _output._domains[_output._domains.length-1];
       int len = b.length/_output.nclasses();

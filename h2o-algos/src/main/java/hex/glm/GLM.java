@@ -1979,31 +1979,6 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       Frame train = DKV.<Frame>getGet(_parms._train); // need to keep this frame to get scoring metrics back
       _model.score(train).delete();
       scoreEnd(train, t1);
-/*
-        ModelMetrics mtrain = ModelMetrics.getFromDKV(_model, train); // updated by model.scoreAndUpdateModel
-        long t2 = System.currentTimeMillis();
-        if (!(mtrain == null)) {
-          _model._output._training_metrics = mtrain;
-          Log.info(LogMsg(mtrain.toString()));
-        } else {
-          Log.info(LogMsg("ModelMetrics mtrain is null"));
-        }
-        Log.info(LogMsg("Training metrics computed in " + (t2 - t1) + "ms"));
-        if (_valid != null) {
-          Frame valid = DKV.<Frame>getGet(_parms._valid);
-          _model.score(valid).delete();
-          _model._output._validation_metrics = ModelMetrics.getFromDKV(_model, valid); //updated by model.scoreAndUpdateModel
-        }
-      _model._output._scoring_history = _parms._lambda_search?_lsc.to2dTable():(_parms._HGLM?_sc.to2dTableHGLM():_sc.to2dTable());
-      _model.update(_job._key);
-      if (_parms._HGLM)
-        _model.generateSummary(_state._iter, _parms._train);
-      else
-        _model.generateSummary(_parms._train,_state._iter);
-      _lastScore = System.currentTimeMillis();
-      long scoringTime = System.currentTimeMillis() - t1;
-      _scoringInterval = Math.max(_scoringInterval,20*scoringTime); // at most 5% overhead for scoring
-*/
     }
     
     private void scoreEnd(Frame train, long t1) {

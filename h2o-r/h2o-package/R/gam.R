@@ -53,10 +53,10 @@
 #' @param lambda_search \code{Logical}. Use lambda search starting at lambda max, given lambda is then interpreted as lambda min
 #'        Defaults to FALSE.
 #' @param early_stopping \code{Logical}. Stop early when there is no more relative improvement on train or validation (if provided)
-#'        Defaults to TRUE.
+#'        Defaults to FALSE.
 #' @param nlambdas Number of lambdas to be used in a search. Default indicates: If alpha is zero, with lambda search set to True,
 #'        the value of nlamdas is set to 30 (fewer lambdas are needed for ridge regression) otherwise it is set to 100.
-#'        Defaults to -1.
+#'        Defaults to 0.
 #' @param standardize \code{Logical}. Standardize numeric columns to have zero mean and unit variance Defaults to FALSE.
 #' @param missing_values_handling Handling of missing values. Either MeanImputation, Skip or PlugValues. Must be one of: "MeanImputation",
 #'        "Skip", "PlugValues". Defaults to MeanImputation.
@@ -77,14 +77,14 @@
 #' @param gradient_epsilon Converge if  objective changes less (using L-infinity norm) than this, ONLY applies to L-BFGS solver. Default
 #'        indicates: If lambda_search is set to False and lambda is equal to zero, the default value of gradient_epsilon
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
-#'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
+#'        values above are 1E-8 and 1E-6 respectively. Defaults to 0.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
-#'        of response does not reflect reality. Defaults to -1.
+#'        of response does not reflect reality. Defaults to 0.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
 #'        coefficients to zero). Default indicates: if the number of observations is greater than the number of
 #'        variables, then lambda_min_ratio is set to 0.0001; if the number of observations is less than the number of
-#'        variables, then lambda_min_ratio is set to 0.01. Defaults to -1.
+#'        variables, then lambda_min_ratio is set to 0.01. Defaults to 0.
 #' @param beta_constraints Beta constraints
 #' @param max_active_predictors Maximum number of active predictors during computation. Use as a stopping criterion to prevent expensive model
 #'        building with many predictors. Default indicates: If the IRLSM solver is used, the value of
@@ -146,8 +146,8 @@ h2o.gam <- function(x,
                     alpha = NULL,
                     lambda = NULL,
                     lambda_search = FALSE,
-                    early_stopping = TRUE,
-                    nlambdas = -1,
+                    early_stopping = FALSE,
+                    nlambdas = 0,
                     standardize = FALSE,
                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                     plug_values = NULL,
@@ -158,10 +158,10 @@ h2o.gam <- function(x,
                     max_iterations = -1,
                     objective_epsilon = -1,
                     beta_epsilon = 0.0001,
-                    gradient_epsilon = -1,
+                    gradient_epsilon = 0,
                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
-                    prior = -1,
-                    lambda_min_ratio = -1,
+                    prior = 0,
+                    lambda_min_ratio = 0,
                     beta_constraints = NULL,
                     max_active_predictors = -1,
                     interactions = NULL,
@@ -376,8 +376,8 @@ h2o.gam <- function(x,
                                     alpha = NULL,
                                     lambda = NULL,
                                     lambda_search = FALSE,
-                                    early_stopping = TRUE,
-                                    nlambdas = -1,
+                                    early_stopping = FALSE,
+                                    nlambdas = 0,
                                     standardize = FALSE,
                                     missing_values_handling = c("MeanImputation", "Skip", "PlugValues"),
                                     plug_values = NULL,
@@ -388,10 +388,10 @@ h2o.gam <- function(x,
                                     max_iterations = -1,
                                     objective_epsilon = -1,
                                     beta_epsilon = 0.0001,
-                                    gradient_epsilon = -1,
+                                    gradient_epsilon = 0,
                                     link = c("family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit"),
-                                    prior = -1,
-                                    lambda_min_ratio = -1,
+                                    prior = 0,
+                                    lambda_min_ratio = 0,
                                     beta_constraints = NULL,
                                     max_active_predictors = -1,
                                     interactions = NULL,

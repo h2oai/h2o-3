@@ -3,6 +3,7 @@ sys.path.insert(1, "../../../")
 import h2o
 from tests import pyunit_utils
 from random import randint
+import tempfile
 
 def glm_multinomial_mojo_pojo():
     PROBLEM="multinomial"
@@ -12,12 +13,9 @@ def glm_multinomial_mojo_pojo():
     train = df[NTESTROWS:, :]
     test = df[:NTESTROWS, :]
     x = list(set(df.names) - {"response"})
-
-    glmMultinomialModel = pyunit_utils.build_save_model_GLM(params, x, train, "response") # build and save mojo model
-
+    TMPDIR = tempfile.mkdtemp()
+    glmMultinomialModel = pyunit_utils.build_save_model_generic(params, x, train, "response", "glm", TMPDIR) # build and save mojo model
     MOJONAME = pyunit_utils.getMojoName(glmMultinomialModel._id)
-    TMPDIR = os.path.normpath(os.path.join(os.path.dirname(os.path.realpath('__file__')), "..", "results", MOJONAME))
-
     h2o.download_csv(test[x], os.path.join(TMPDIR, 'in.csv'))  # save test file, h2o predict/mojo use same file
     pred_h2o, pred_mojo = pyunit_utils.mojo_predict(glmMultinomialModel, TMPDIR, MOJONAME)  # load model and perform predict
     h2o.download_csv(pred_h2o, os.path.join(TMPDIR, "h2oPred.csv"))
