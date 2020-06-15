@@ -128,55 +128,34 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   /** gbm -> "hex.schemas." ; custAlgo -> "org.myOrg.schemas." */
   public static String schemaDirectory(String urlName) { return SCHEMAS[ArrayUtils.find(ALGOBASES,urlName)]; }
 
-  /**
-   *
-   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
-   * @return true, if model supports exporting to POJO
-   */
-  public static boolean havePojo(String urlName) {
-    return BUILDERS[ensureBuilderIndex(urlName)].havePojo();
-  }
-
-  /**
-   *
-   * @param urlName url name of the algo, for example gbm for Gradient Boosting Machine
-   * @return true, if model supports exporting to MOJO
-   */
-  public static boolean haveMojo(String urlName) {
-    return BUILDERS[ensureBuilderIndex(urlName)].haveMojo();
-  }
-
-  /**
-   * Returns <strong>valid</strong> index of given url name in {@link #ALGOBASES} or throws an exception.
-   * @param urlName url name to return the index for
-   * @return valid index, if url name is not present in {@link #ALGOBASES} throws an exception
-   */
-  private static int ensureBuilderIndex(String urlName) {
+  @SuppressWarnings("unchecked")
+  static <B extends ModelBuilder> Optional<B> getRegisteredBuilder(String urlName) {
     final String formattedName = urlName.toLowerCase();
-    int index = ArrayUtils.find(ALGOBASES, formattedName);
-    if (index < 0) {
-      throw new IllegalArgumentException(String.format("Cannot find Builder for algo url name %s", formattedName));
-    }
-    return index;
+    int idx = ArrayUtils.find(ALGOBASES, formattedName);
+    if (idx < 0)
+      return Optional.empty();
+    return Optional.of((B) BUILDERS[idx]);
   }
-
 
   /** Factory method to create a ModelBuilder instance for given the algo name.
    *  Shallow clone of both the default ModelBuilder instance and a Parameter. */
   public static <B extends ModelBuilder> B make(String algo, Job job, Key<Model> result) {
-    int idx = ArrayUtils.find(ALGOBASES,algo.toLowerCase());
-    if (idx < 0) {
-      StringBuilder sb = new StringBuilder();
-      sb.append("Unknown algo: '").append(algo).append("'; Extension report: ");
-      Log.err(ExtensionManager.getInstance().makeExtensionReport(sb));
-      throw new IllegalStateException("Algorithm '" + algo + "' is not registered. Available algos: [" +
-              StringUtils.join(",", ALGOBASES)  + "]");
-    }
-    B mb = (B)BUILDERS[idx].clone();
-    mb._job = job;
-    mb._result = result;
-    mb._parms = BUILDERS[idx]._parms.clone();
-    return mb;
+    return getRegisteredBuilder(algo)
+            .map(prototype -> { 
+              @SuppressWarnings("unchecked")
+              B mb = (B) prototype.clone();
+              mb._job = job;
+              mb._result = result;
+              mb._parms = prototype._parms.clone();
+              return mb;
+            })
+            .orElseThrow(() -> {
+              StringBuilder sb = new StringBuilder();
+              sb.append("Unknown algo: '").append(algo).append("'; Extension report: ");
+              Log.err(ExtensionManager.getInstance().makeExtensionReport(sb));
+              return new IllegalStateException("Algorithm '" + algo + "' is not registered. " +
+                      "Available algos: [" + StringUtils.join(",", ALGOBASES)  + "]");
+            });
   }
 
   /**

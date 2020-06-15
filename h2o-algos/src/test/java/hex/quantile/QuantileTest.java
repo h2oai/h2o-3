@@ -1,15 +1,17 @@
 package hex.quantile;
 
+import hex.ModelBuilder;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import water.Job;
-import water.TestUtil;
+import water.*;
 import water.fvec.Frame;
 import water.util.ArrayUtils;
 
 import java.util.Arrays;
+
+import static org.junit.Assert.assertFalse;
 
 public class QuantileTest extends TestUtil {
   @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
@@ -694,4 +696,24 @@ public class QuantileTest extends TestUtil {
       if( fr2  != null ) fr2.remove();
     }
   }
+    
+  @Test
+  public void testHavePojoMojo() {
+    try {
+      Scope.enter();
+      QuantileModel.QuantileParameters p = new QuantileModel.QuantileParameters();
+      p._train = TestFrameCatalog.oneChunkFewRows()._key;
+
+      Quantile q = new Quantile(p);
+      assertFalse(q.haveMojo());
+      assertFalse(q.havePojo());
+      
+      QuantileModel qm = new QuantileModel(Key.make(), p, new QuantileModel.QuantileOutput(q));
+      assertFalse(qm.haveMojo());
+      assertFalse(qm.havePojo());
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

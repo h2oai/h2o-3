@@ -348,4 +348,15 @@ public class Quantile extends ModelBuilder<QuantileModel,QuantileModel.QuantileP
     assert plo <= prob && prob <= phi;
     return lo + (hi-lo)*(prob-plo)/(phi-plo); // Classic linear interpolation
   }
+
+  @Override
+  public boolean haveMojo() {
+    return false;
+  }
+
+  @Override
+  public boolean havePojo() {
+    return false;
+  }
+
 }

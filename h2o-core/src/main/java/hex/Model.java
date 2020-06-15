@@ -145,11 +145,25 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   public final boolean isSupervised() { return _output.isSupervised(); }
 
   public boolean havePojo() {
-    return ModelBuilder.havePojo(_parms.algoName());
+    final String algoName = _parms.algoName();
+    return ModelBuilder.getRegisteredBuilder(algoName)
+            .map(ModelBuilder::havePojo)
+            .orElseGet(() -> {
+              Log.warn("Model Builder for algo = " + algoName + " is not registered. " +
+                      "Unable to determine if Model has a POJO. Please override method havePojo().");
+              return false;
+            });
   }
 
   public boolean haveMojo() {
-    return ModelBuilder.haveMojo(_parms.algoName());
+    final String algoName = _parms.algoName();
+    return ModelBuilder.getRegisteredBuilder(algoName)
+            .map(ModelBuilder::haveMojo)
+            .orElseGet(() -> {
+              Log.warn("Model Builder for algo = " + algoName + " is not registered. " +
+                      "Unable to determine if Model has a MOJO. Please override method haveMojo().");
+              return false;
+            });
   }
 
   /**
@@ -2912,18 +2926,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return true;
   }
 
-  /**
-   * Returns features that are used during prediction. This might be a superset of the features that are actually used,
-   * but it should not be a subset.
-   * @return Array of features used during prediction
-   */
-  public String[] getFeaturesUsedInPrediction() {
-    return Stream
-            .of(_output._names)
-            .filter(this::isFeatureUsedInPredict)
-            .toArray(String[]::new);
-  }
-  
   public boolean isDistributionHuber() {
     return _parms._distribution == DistributionFamily.huber;
   }
