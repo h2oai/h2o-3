@@ -411,11 +411,11 @@ FAQ
 
 -  **Which models are trained in the AutoML process?**
 
-  The current version of AutoML trains and cross-validates the following algorithms (in the following order):  three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs, a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net, an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs, and a random grid of Deep Neural Nets.  In some cases, there will not be enough time to complete all the algorithms, so some may be missing from teh leaderboard.  AutoML then trains two Stacked Ensemble models (more info about the ensembles below). Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset, though sometimes this can lead to a loss of performance because having more diversity among the set of models generally increases the performance of the Stacked Ensembles. As a recommendation, if you have really wide (10k+ columns) and/or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF, XGBoost).
+  The current version of AutoML trains and cross-validates the following algorithms (in the following order): three pre-specified XGBoost GBM (Gradient Boosting Machine) models, a fixed grid of GLMs, a default Random Forest (DRF), five pre-specified H2O GBMs, a near-default Deep Neural Net, an Extremely Randomized Forest (XRT), a random grid of XGBoost GBMs, a random grid of H2O GBMs, and a random grid of Deep Neural Nets.  In some cases, there will not be enough time to complete all the algorithms, so some may be missing from the leaderboard.  AutoML then trains two Stacked Ensemble models (more info about the ensembles below). Particular algorithms (or groups of algorithms) can be switched off using the ``exclude_algos`` argument. This is useful if you already have some idea of the algorithms that will do well on your dataset, though sometimes this can lead to a loss of performance because having more diversity among the set of models generally increases the performance of the Stacked Ensembles. As a recommendation, if you have really wide (10k+ columns) and/or sparse data, you may consider skipping the tree-based algorithms (GBM, DRF, XGBoost).
 
-  A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparamter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
+  A list of the hyperparameters searched over for each algorithm in the AutoML process is included in the appendix below.  More `details <https://0xdata.atlassian.net/browse/PUBDEV-6003>`__ about the hyperparameter ranges for the models in addition to the hard-coded models will be added to the appendix at a later date.
 
-  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degredation in model performance when compared to the "All Models" ensemble.   
+  Both of the ensembles should produce better models than any individual model from the AutoML run with the exception of some rare cases.  One ensemble contains all the models, and the second ensemble contains just the best performing model from each algorithm class/family.  The "Best of Family" ensemble is optimized for production use since it only contains six (or fewer) base models.  It should be relatively fast to use (to generate predictions on new data) without much degradation in model performance when compared to the "All Models" ensemble.   
 
 -  **How do I save AutoML runs?**
 
@@ -470,17 +470,7 @@ Random Grid Search Parameters
 
 AutoML performs a hyperparameter search over a variety of H2O algorithms in order to deliver the best model. In the table below, we list the hyperparameters, along with all potential values that can be randomly chosen in the search. If these models also have a non-default value set for a hyperparameter, we identify it in the list as well. Random Forest and Extremely Randomized Trees are not grid searched (in the current version of AutoML), so they are not included in the list below.
 
-
-GLM Hyperparameters
-~~~~~~~~~~~~~~~~~~~
-
-This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GLMStepsProvider.java>`__.
-
-+-----------------------------+---------------------------------------------------------------------------------------------+
-| Parameter                   | Searchable Values                                                                           |
-+=============================+=============================================================================================+
-| ``alpha``                   | ``{0.0, 0.2, 0.4, 0.6, 0.8, 1.0}``                                                          |
-+-----------------------------+---------------------------------------------------------------------------------------------+
+**Note**: AutoML does not run a grid search for GLM. Instead AutoML builds a single model with ``lambda_search`` enabled and passes a list of ``alpha`` values. It returns only the model with the best alpha-lambda combination rather than one model for each alpha.
 
 
 XGBoost Hyperparameters
@@ -500,8 +490,6 @@ This table shows the XGBoost values that are searched over when performing AutoM
 | ``max_depth``                | ``{5, 10, 15, 20}``                                                                         |          
 +------------------------------+---------------------------------------------------------------------------------------------+
 | ``min_rows``                 | ``{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0}``                                            |
-+------------------------------+---------------------------------------------------------------------------------------------+
-| ``min_sum_hessian_in_leaf``  | ``{0.01, 0.1, 1.0, 3.0, 5.0, 10.0, 15.0, 20.0}``                                            |
 +------------------------------+---------------------------------------------------------------------------------------------+
 | ``ntrees``                   | Hard coded: ``10000`` (true value found by early stopping)                                  |                                               
 +------------------------------+---------------------------------------------------------------------------------------------+
