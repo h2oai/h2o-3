@@ -3,7 +3,6 @@ package hex.tree;
 import hex.Distribution;
 import hex.genmodel.utils.DistributionFamily;
 import water.Iced;
-import water.util.ArrayUtils;
 
 public class Constraints extends Iced<Constraints> {
 
@@ -65,7 +64,7 @@ public class Constraints extends Iced<Constraints> {
   }
 
   boolean needsGammaDenom() {
-    return !_dist._family.equals(DistributionFamily.gaussian);
+    return !_dist._family.equals(DistributionFamily.gaussian) && !_dist._family.equals(DistributionFamily.quantile);
   }
 
   boolean needsGammaNom() {

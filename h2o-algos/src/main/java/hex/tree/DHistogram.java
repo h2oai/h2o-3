@@ -57,13 +57,14 @@ public final class DHistogram extends Iced {
 
   protected double [] _vals; // Values w, wY and wYY encoded per bin in a single array. 
                              // If _pred1 or _pred2 are specified they are included as well.
-                             // If constraints are used and gamma denominator needs to be calculated it will be included.
+                             // If constraints are used and gamma denominator or nominator needs to be calculated its will be included.
   protected final int _vals_dim; // _vals.length == _vals_dim * _nbin; How many values per bin are encoded in _vals.
                                  // Current possible values are
                                  // - 3:_pred1 nor _pred2 provided and gamma denominator is not needed 
                                  // - 5 or 6: if either _pred1 or _pred2 is provided (or both)
-                                 //      - 5 if gamma denominator is not needed
+                                 //      - 5 if gamma denominator and nominator are not needed
                                  //      - 6 if gamma denominator is needed
+                                 //      - 7 if gamma nominator is needed (tweedie constraints)
                                  // also see functions hasPreds() and hasDenominator()
   private final Distribution _dist;
   public double w(int i){  return _vals[_vals_dim*i+0];}
@@ -241,7 +242,7 @@ public final class DHistogram extends Iced {
     }
     _nbin = (char) xbins;
     assert(_nbin>0);
-    assert(_vals ==null);
+    assert(_vals == null);
 
 //    Log.info("Histogram: " + this);
     // Do not allocate the big arrays here; wait for scoreCols to pick which cols will be used.
