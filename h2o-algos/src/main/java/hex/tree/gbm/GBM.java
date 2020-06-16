@@ -97,8 +97,10 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
       }
       if (_parms._monotone_constraints != null && _parms._monotone_constraints.length > 0 &&
               !(DistributionFamily.gaussian.equals(_parms._distribution) || 
-                      DistributionFamily.bernoulli.equals(_parms._distribution) || DistributionFamily.tweedie.equals(_parms._distribution))) {
-        error("_monotone_constraints", "Monotone constraints are only supported for Gaussian and Bernoulli distributions, your distribution: " + _parms._distribution + ".");
+                      DistributionFamily.bernoulli.equals(_parms._distribution) || 
+                      DistributionFamily.tweedie.equals(_parms._distribution) || 
+                      DistributionFamily.quantile.equals(_parms._distribution))) {
+        error("_monotone_constraints", "Monotone constraints are only supported for Gaussian, Bernoulli, Tweedie and Quantile distributions, your distribution: " + _parms._distribution + ".");
       }
 
       if (_origTrain != null && _origTrain != _train) {
@@ -534,33 +536,7 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
         }
       } // -- k-trees are done
     }
-
-
-    private void fitBestConstantsQuantile(DTree[] ktrees, int firstLeafIndex, double quantile) {
-      if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
-      assert(_nclass==1);
-      Vec diff = new ComputeDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
-      Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
-      Vec strata = vec_nids(_train,0);
-
-      // compute quantile for all leaf nodes
-      Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, diff, weights, strata, QuantileModel.CombineMethod.INTERPOLATE);
-      H2O.submitTask(sqt);
-      sqt.join();
-
-      final DTree tree = ktrees[0];
-      for (int i = 0; i < sqt._quantiles.length; i++) {
-        if (Double.isNaN(sqt._quantiles[i])) continue; //no active rows for this NID
-        double val = effective_learning_rate() * sqt._quantiles[i];
-        assert !Double.isNaN(val) && !Double.isInfinite(val);
-        if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
-        if (val < -_parms._max_abs_leafnode_pred) val = -_parms._max_abs_leafnode_pred;
-        ((LeafNode) tree.node(sqt._nids[i]))._pred = (float) val;
-        if (DEV_DEBUG) { Log.info("Leaf " + sqt._nids[i] + " has quantile: " + sqt._quantiles[i]); }
-      }
-    }
-
-
+    
     // Jerome Friedman 1999: Greedy Function Approximation: A Gradient Boosting Machine
     // https://statweb.stanford.edu/~jhf/ftp/trebst.pdf
     private void fitBestConstantsHuber(DTree[] ktrees, int firstLeafIndex, double huberDelta) {
@@ -606,6 +582,29 @@ public class GBM extends SharedTree<GBMModel,GBMModel.GBMParameters,GBMModel.GBM
 
     private double effective_learning_rate() {
       return _parms._learn_rate * Math.pow(_parms._learn_rate_annealing, (_model._output._ntrees-1));
+    }
+    
+    private void fitBestConstantsQuantile(DTree[] ktrees, int firstLeafIndex, double quantile) {
+      if (firstLeafIndex == ktrees[0]._len) return; // no splits happened - nothing to do
+      assert(_nclass==1);
+      Vec diff = new ComputeDiff(frameMap).doAll(1, (byte)3 /*numeric*/, _train).outputFrame().anyVec();
+      Vec weights = hasWeightCol() ? _train.vecs()[idx_weight()] : null;
+      Vec strata = vec_nids(_train,0);
+
+      // compute quantile for all leaf nodes
+      Quantile.StratifiedQuantilesTask sqt = new Quantile.StratifiedQuantilesTask(null, quantile, diff, weights, strata, QuantileModel.CombineMethod.INTERPOLATE);
+      H2O.submitTask(sqt);
+      sqt.join();
+
+      final DTree tree = ktrees[0];
+      for (int i = 0; i < sqt._quantiles.length; i++) {
+        if (Double.isNaN(sqt._quantiles[i])) continue; //no active rows for this NID
+        double val = effective_learning_rate() * sqt._quantiles[i];
+        assert !Double.isNaN(val) && !Double.isInfinite(val);
+        if (val > _parms._max_abs_leafnode_pred) val = _parms._max_abs_leafnode_pred;
+        ((LeafNode) tree.node(sqt._nids[i]))._pred = (float) val;
+        if (DEV_DEBUG) { Log.info("Leaf " + sqt._nids[i] + " has quantile: " + sqt._quantiles[i]); }
+      }
     }
 
     private void fitBestConstants(DTree[] ktrees, int[] leafs, GammaPass gp, Constraints cs) {

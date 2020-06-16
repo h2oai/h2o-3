@@ -3719,12 +3719,17 @@ public class GBMTest extends TestUtil {
 
   @Test
   public void testMonotoneConstraintsProstate() {
-    checkMonotoneConstraintsProstate(DistributionFamily.tweedie);
+    checkMonotoneConstraintsProstate(DistributionFamily.gaussian);
   }
 
   @Test
   public void testMonotoneConstraintsProstateTweedie() {
-    checkMonotoneConstraintsProstate(DistributionFamily.gaussian);
+    checkMonotoneConstraintsProstate(DistributionFamily.tweedie);
+  }
+
+  @Test
+  public void testMonotoneConstraintsProstateQuantile() {
+    checkMonotoneConstraintsProstate(DistributionFamily.quantile);
   }
 
   private void checkMonotoneConstraintsProstate(DistributionFamily distributionFamily) {
@@ -3742,12 +3747,17 @@ public class GBMTest extends TestUtil {
       parms._ntrees = 50;
       parms._seed = 42;
       parms._distribution = distributionFamily;
+      if (distributionFamily.equals(quantile)) {
+        parms._quantile_alpha = 0.1;
+      }
 
       String[] uniqueAges = Scope.track(f.vec("AGE").toCategoricalVec()).domain();
 
       GBMModel model = new GBM(parms).trainModel().get();
       Scope.track_generic(model);
 
+      Vec unchangedPreds = Scope.track(model.score(f)).anyVec();
+      
       Vec lastPreds = null;
       for (String ageStr : uniqueAges) {
         final int age = Integer.parseInt(ageStr);
@@ -3766,6 +3776,7 @@ public class GBMTest extends TestUtil {
         if (lastPreds != null)
           for (int i = 0; i < lastPreds.length(); i++) {
             assertTrue("age=" + age + ", id=" + f.vec("ID").at8(i), lastPreds.at(i) <= currentPreds.at(i));
+            System.out.println("age=" + age + ", id=" + f.vec("ID").at8(i)+" "+lastPreds.at(i) +" <= "+currentPreds.at(i)+" - "+unchangedPreds.at(i));
           }
         lastPreds = currentPreds;
       }

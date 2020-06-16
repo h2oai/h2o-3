@@ -44,7 +44,7 @@ public class GBMModel extends SharedTreeModelWithContributions<GBMModel, GBMMode
     public String fullName() { return "Gradient Boosting Machine"; }
     public String javaName() { return GBMModel.class.getName(); }
 
-    Constraints constraints(Frame f) {
+    public Constraints constraints(Frame f) {
       if (_monotone_constraints == null || _monotone_constraints.length == 0) {
         return emptyConstraints(f);
       }
