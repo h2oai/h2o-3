@@ -473,6 +473,20 @@ AutoML performs a hyperparameter search over a variety of H2O algorithms in orde
 **Note**: AutoML does not run a grid search for GLM. Instead AutoML builds a single model with ``lambda_search`` enabled and passes a list of ``alpha`` values. It returns only the model with the best alpha-lambda combination rather than one model for each alpha.
 
 
+GLM Hyperparameters
+~~~~~~~~~~~~~~~~~~~
+
+This table shows the GLM values that are searched over when performing AutoML grid search. Additional information is available `here <https://github.com/h2oai/h2o-3/blob/master/h2o-automl/src/main/java/ai/h2o/automl/modeling/GLMStepsProvider.java>`__.
+
+**Note**: GLM uses its own internal grid search rather than the H2O Grid interface. For GLM, AutoML builds a single model with ``lambda_search`` enabled and passes a list of ``alpha`` values. It returns a single model with the best alpha-lambda combination rather than one model for each alpha.
+
++-----------------------------+---------------------------------------------------------------------------------------------+
+| Parameter                   | Searchable Values                                                                           |
++=============================+=============================================================================================+
+| ``alpha``                   | ``{0.0, 0.2, 0.4, 0.6, 0.8, 1.0}``                                                          |
++-----------------------------+---------------------------------------------------------------------------------------------+
+
+
 XGBoost Hyperparameters
 ~~~~~~~~~~~~~~~~~~~~~~~
 
