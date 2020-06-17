@@ -73,7 +73,6 @@ public class Score extends CMetricScoringTask<Score> {
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
     final double[] tmp = _is_train && _bldr._ntrees > 0 ? null : new double[_bldr._ncols];
-//    final double[] tmp = new double[_bldr._ncols];
 
     // Score all Rows
     float [] val= new float[1];
@@ -96,7 +95,14 @@ public class Score extends CMetricScoringTask<Score> {
         for( int i=0; i< tmp.length; i++ )
           tmp[i] = chks[i].atd(row);
 
-      if( nclass > 1 ) cdists[0] = GenModel.getPrediction(cdists, m._output._priorClassDist, tmp, m.defaultThreshold()); // Fill in prediction
+      if (nclass > 2) { // Fill in prediction for multinomial
+        cdists[0] = GenModel.getPredictionMultinomial(cdists, m._output._priorClassDist, tmp);
+      } else if (nclass == 2) {
+        // for binomial the predicted class is not needed
+        // and it even cannot be returned because the threshold is calculated based on model metrics that are not known yet
+        // (we are just building the metrics)
+        cdists[0] = -1;
+      }
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);
 
