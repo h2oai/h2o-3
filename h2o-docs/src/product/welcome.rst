@@ -960,15 +960,12 @@ The ``app: h2o-k8s`` setting is of **great importance** because it is the name o
 Creating the H2O Deployment
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-We strongly recommended running H2O as a StatefulSet on a Kubernetes cluster. Treating H2O nodes as stateful ensures that:
+We strongly recommended running H2O as a `StatefulSet <https://kubernetes.io/docs/concepts/workloads/controllers/statefulset/>`__ on a Kubernetes cluster. Treating H2O nodes as stateful ensures that:
 
 - H2O nodes are treated as a single unit. They will be brought up and down gracefully and together.
 - No attempts will be made by a K8S healthcheck to restart individual H2O nodes in case of an error.
 - The cluster will be restared as a whole (if required).
 - Persistent storages and volumes associated with the StatefulSet of H2O nodes will not be deleted once the cluster is brought down.
-
-There are official H2O Docker images available in Docker hub: ``h2oai/h2o-open-source-k8s:<tagname>``. Please make sure to replace the ``<tagname>``
-placeholder below with a valid tag, e.g. ``latest`` for latest release or ``nightly`` for bleeding-edge. For more information, please visit the official `H2O Docker Hub Page <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__.
 
 .. code:: bash
 
@@ -1017,8 +1014,9 @@ If none of the optional lookup constraints is specified, a sensible default node
 defaults to 3 minutes. If any of the lookup constraints are defined, the H2O node lookup is terminated on whichever
 condition is met first.
 
-The documentation of the official H2O Docker images is available at the official `H2O Docker Hub Page <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__. Use the `nightly` tag to
-get the bleeding-edge Docker image with H2O inside.
+In the above example, ``'h2oai/h2o-open-source-k8s:latest'`` retrieves the latest build of the H2O Docker image. Replace ``latest`` with ``nightly`` to get the bleeding-edge Docker image with H2O inside.
+
+The documentation for the official H2O Docker images is available at the official `H2O Docker Hub page <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__. 
 
 Exposing the H2O Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~
