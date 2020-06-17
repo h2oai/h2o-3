@@ -6,7 +6,7 @@ H2O-3 does its best to keep backwards compatibility between major versions, but 
 From 3.30.0.5
 ~~~~~~~~~~~~~
 
-The ``h2o-scala`` module is deprecated in version 3.30.0.5 and will be completely removed in the next major version, 3.32.0.1. This by no means has any impact on Scala support, as the ``h2o-scala`` module was intended for internal use only and does not represent the H2O Scala API.
+The ``h2o-scala`` module is deprecated in version 3.30.0.5 and will be completely removed in the next major version, 3.32.0.1. This by no means has any impact on Scala support.
 
 
 From 3.30.0.4
@@ -62,4 +62,3 @@ The following classes were moved and/or renamed:
 =================================================   ======================================
 
 Some internal methods of ``StackedEnsemble`` and ``StackedEnsembleModel`` are no longer public, but this should not impact users.
-
