@@ -147,7 +147,7 @@ public class SQLManager {
             source_table = _tempTableName;
             //returns number of rows, but as an int, not long. if int max value is exceeded, result is negative
             _j.update(0L, "Creating a temporary table");
-            numRow = stmt.executeUpdate("CREATE TABLE " + source_table + " AS " + _select_query);
+            numRow = stmt.executeUpdate(createTempTableSql(_database_type, source_table, _select_query));
           } else {
             source_table = "(" + _select_query + ") sub_h2o_import";
           }
@@ -307,6 +307,17 @@ public class SQLManager {
 
   }
   
+  static String createTempTableSql(String databaseType, String tableName, String selectQuery) {
+
+      switch (databaseType) {
+        case TERADATA_DB_TYPE:
+          return "CREATE TABLE " + tableName + " AS (" + selectQuery + ") WITH DATA";
+
+        default:
+          return "CREATE TABLE " + tableName + " AS " + selectQuery;
+      }
+  }
+
   /**
    * Builds SQL SELECT to retrieve single row from a table based on type of database
    *

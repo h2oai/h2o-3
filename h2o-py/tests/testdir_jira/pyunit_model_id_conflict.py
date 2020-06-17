@@ -15,26 +15,25 @@ def start_model(train):
 
 
 def test_conflicting_model_id():
-    train = h2o.import_file(path="http://h2o-public-test-data.s3.amazonaws.com/smalldata/jira/pubdev_6686.csv")
+    train = h2o.import_file(path=pyunit_utils.locate("smalldata/jira/pubdev_6686.csv"))
 
-    # Start the first model
-    first_model = start_model(train)
-
-    # Start some models to run in parallel with the first one
+    # Start bunch of models to run concurrently
     rfs = []
     for i in range(10):
         print(i)
         rfs.append(start_model(train))
 
-    # First model has to finish successfully
-    first_model.join()
-
     # Parallel built models can fail, no guarantees
+    successful = []
     for m in rfs:
         try:
             m.join()
+            successful.append(m)
         except:
             pass
+
+    # At least one has to succeed (typically the first one submitted)
+    assert len(successful) > 0
 
     # A new model to overwrite the old one has to succeed
     start_model(train).join()
