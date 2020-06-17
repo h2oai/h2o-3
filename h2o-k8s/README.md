@@ -100,8 +100,8 @@ The name of the application `app: h2o-k8s` must correspond to the name expected 
 for the H2O node discovery to work. H2O communicates on port 54321, therefore `containerPort: 54321`must be exposed to
 make it possible for the clients to connect.
 
-There are official H2O Docker images available in Docker hub: `h2oai/h2o-open-source-k8s:<tagname>`. Please make sure to replace the `<tagname>` 
-placeholder with a valid tag, e.g. `latest` for latest release or `nightly` for bleeding-edge. For more informatino, please visit official [H2O Docker Hub page](https://hub.docker.com/r/h2oai/h2o-open-source-k8s). 
+The documentation of the official H2O Docker images is available at the official [H2O Docker Hub page](https://hub.docker.com/r/h2oai/h2o-open-source-k8s). Use the `nightly` tag to
+get the bleeding-edge Docker image with H2O inside. 
 
 Environment variables:
 

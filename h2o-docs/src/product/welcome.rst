@@ -988,7 +988,7 @@ We strongly recommended to run H2O as a StatefulSet on a Kubernetes cluster. Tre
         terminationGracePeriodSeconds: 10
         containers:
           - name: h2o-k8s
-            image: 'h2oai/h2o-open-source-k8s:<tagname>'
+            image: 'h2oai/h2o-open-source-k8s:latest'
             resources:
               requests:
                 memory: "4Gi"
@@ -1009,8 +1009,10 @@ Below are additional environment variables:
 - ``H2O_NODE_LOOKUP_TIMEOUT`` - (Optional) The node lookup constraint. Specify the time before the node lookup times out. (Defaults to 3 minutes.)
 - ``H2O_NODE_EXPECTED_COUNT`` - (Optional) The node lookup constraint. This is the expected number of H2O pods to be discovered. (Defaults to 3.)
 
-There are official H2O Docker images available in Docker hub: `h2oai/h2o-open-source-k8s:<tagname>`. Please make sure to replace the `<tagname>`
-placeholder with a valid tag, e.g. `latest` for latest release or `nightly` for bleeding-edge. For more informatino, please visit official `H2O Docker Hub Page <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__.
+The documentation of the official H2O Docker images is available at the official `H2O Docker Hub Page <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__. Use the `nightly` tag to
+get the bleeding-edge Docker image with H2O inside.
+
+Important note on memory usage: By default, H2O is started with `CMD java -XX:+UseContainerSupport -XX:MaxRAMPercentage=50 -jar /opt/h2oai/h2o-3/h2o.jar` - this default command is overridable. The `-XX:MaxRAMPercentage=50` determines the amount of memory allocated by the JVM. Values in range from 1 to 100 represent the percent of total container memory allocated. By default, H2O only allocates 50% of memory, as XGBoost requires roughly about the same memory. If XGBoost is not run, make sure to raise this number in order to have much improved memory utilization. Recommended value for non-xgboost use cases is 90%, expressed as `-XX:MaxRAMPercentage=90` arg.
 
 1. `H2O_KUBERNETES_SERVICE_DNS` - **[MANDATORY]** Crucial for the clustering to work. The format usually follows the
  `<service-name>.<project-name>.svc.cluster.local` pattern. This setting enables H2O node discovery via DNS.
