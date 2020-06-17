@@ -115,6 +115,7 @@ There is a jupyter notebook with Python demo available `here <https://github.com
 
    .. code-tab:: python
 
+    from collections import OrderedDict
     import h2o
     from h2o.information_retrieval.tf_idf import tf_idf
     
@@ -129,7 +130,7 @@ There is a jupyter notebook with Python demo available `here <https://github.com
     doc_ids = list(range(len(documents)))
     
     # Create H2OFrame
-    input_frame = h2o.H2OFrame({'DocID': doc_ids, 'Document': documents},
+    input_frame = h2o.H2OFrame(OrderedDict([('DocID', doc_ids), ('Document', documents)]),
                                 column_types=['numeric', 'string'])
 
     doc_id_col_idx = 0
