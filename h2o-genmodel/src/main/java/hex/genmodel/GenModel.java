@@ -332,8 +332,17 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
    */
   public static int getPrediction(double[] preds, double[] priorClassDist, double[] data, double threshold) {
     if (preds.length == 3) {
-      return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
+      return getPredictionBinomial(preds, threshold);
+    } else {
+      return getPredictionMultinomial(preds, priorClassDist, data);
     }
+  }
+
+  public static int getPredictionBinomial(double[] preds, double threshold) {
+    return (preds[2] >= threshold) ? 1 : 0; //no tie-breaking
+  }
+
+  public static int getPredictionMultinomial(double[] preds, double[] priorClassDist, double[] data) {
     List<Integer> ties = new ArrayList<>();
     ties.add(0);
     int best=1, tieCnt=0;   // Best class; count of ties
@@ -380,7 +389,7 @@ public abstract class GenModel implements IGenModel, IGeneratedModel, Serializab
         return best-1;          // Return best
     throw new RuntimeException("Should Not Reach Here");
   }
-
+  
   // Utility to do bitset lookup from a POJO
   public static boolean bitSetContains(byte[] bits, int nbits, int bitoff, double dnum) {
     assert(!Double.isNaN(dnum));
