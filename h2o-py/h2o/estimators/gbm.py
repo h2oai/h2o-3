@@ -35,7 +35,7 @@ class H2OGradientBoostingEstimator(H2OEstimator):
                    "col_sample_rate_change_per_level", "col_sample_rate_per_tree", "min_split_improvement",
                    "histogram_type", "max_abs_leafnode_pred", "pred_noise_bandwidth", "categorical_encoding",
                    "calibrate_model", "calibration_frame", "custom_metric_func", "custom_distribution_func",
-                   "export_checkpoints_dir", "monotone_constraints", "check_constant_response"}
+                   "export_checkpoints_dir", "monotone_constraints", "check_constant_response", "gainslift_bins"}
 
     def __init__(self, **kwargs):
         super(H2OGradientBoostingEstimator, self).__init__()
@@ -1865,5 +1865,20 @@ class H2OGradientBoostingEstimator(H2OEstimator):
     def check_constant_response(self, check_constant_response):
         assert_is_type(check_constant_response, None, bool)
         self._parms["check_constant_response"] = check_constant_response
+
+
+    @property
+    def gainslift_bins(self):
+        """
+        Gains/Lift table bins
+
+        Type: ``int``  (default: ``0``).
+        """
+        return self._parms.get("gainslift_bins")
+
+    @gainslift_bins.setter
+    def gainslift_bins(self, gainslift_bins):
+        assert_is_type(gainslift_bins, None, int)
+        self._parms["gainslift_bins"] = gainslift_bins
 
 

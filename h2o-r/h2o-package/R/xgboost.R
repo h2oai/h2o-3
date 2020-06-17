@@ -99,6 +99,7 @@
 #' @param backend Backend. By default (auto), a GPU is used if available. Must be one of: "auto", "gpu", "cpu". Defaults to
 #'        auto.
 #' @param gpu_id Which GPU to use.  Defaults to 0.
+#' @param gainslift_bins Gains/Lift table bins Defaults to 0.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @examples
 #' \dontrun{
@@ -192,6 +193,7 @@ h2o.xgboost <- function(x,
                         dmatrix_type = c("auto", "dense", "sparse"),
                         backend = c("auto", "gpu", "cpu"),
                         gpu_id = 0,
+                        gainslift_bins = 0,
                         verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -344,6 +346,8 @@ h2o.xgboost <- function(x,
     parms$backend <- backend
   if (!missing(gpu_id))
     parms$gpu_id <- gpu_id
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   # Error check and build model
   model <- .h2o.modelJob('xgboost', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -414,6 +418,7 @@ h2o.xgboost <- function(x,
                                         dmatrix_type = c("auto", "dense", "sparse"),
                                         backend = c("auto", "gpu", "cpu"),
                                         gpu_id = 0,
+                                        gainslift_bins = 0,
                                         segment_columns = NULL,
                                         segment_models_id = NULL,
                                         parallelism = 1)
@@ -570,6 +575,8 @@ h2o.xgboost <- function(x,
     parms$backend <- backend
   if (!missing(gpu_id))
     parms$gpu_id <- gpu_id
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   # Build segment-models specific parameters
   segment_parms <- list()

@@ -172,6 +172,9 @@ public class ModelParametersSchemaV3<P extends Model.Parameters, S extends Model
   @API(help = "Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this much)", level = API.Level.secondary, direction=API.Direction.INOUT, gridable = true)
   public double stopping_tolerance;
 
+  @API(help = "Gains/Lift table bins", level = API.Level.secondary, direction=API.Direction.INOUT)
+  public int gainslift_bins;
+
   /*
    * Custom metric
    */

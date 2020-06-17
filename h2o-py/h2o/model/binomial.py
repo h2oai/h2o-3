@@ -869,6 +869,15 @@ class H2OBinomialModel(ModelBase):
         """
         return self._delegate_to_metrics('gains_lift', train, valid, xval)
 
+    def kolmogorov_smirnov(self):
+        """
+        Retrieves a Kolmogorov-Smirnov metric for given binomial model. The number returned is in range between 0 and 1.
+        K-S metric represents the degree of separation between the positive (1) and negative (0) cumulative distribution
+        functions. Detailed metrics per each group are to be found in the gains-lift table.
+
+        :return: Kolmogorov-Smirnov metric, a number between 0 and 1
+        """
+        return max(self.gains_lift()["kolmogorov_smirnov"])
 
     def confusion_matrix(self, metrics=None, thresholds=None, train=False, valid=False, xval=False):
         """

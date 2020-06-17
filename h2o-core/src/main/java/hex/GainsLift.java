@@ -147,10 +147,10 @@ public class GainsLift extends Iced {
             "Gains/Lift Table",
             "Avg response rate: " + PrettyPrint.formatPct(avg_response_rate) + ", avg score: " + PrettyPrint.formatPct(avg_score),
             new String[events.length],
-            new String[]{"Group", "Cumulative Data Fraction", "Lower Threshold", "Lift", "Cumulative Lift", "Response Rate", "Score", "Cumulative Response Rate", "Cumulative Score", "Capture Rate", "Cumulative Capture Rate", "Gain", "Cumulative Gain"},
-            new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
-            new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f"},
-            "");
+            new String[]{"Group", "Cumulative Data Fraction", "Lower Threshold", "Lift", "Cumulative Lift", "Response Rate", "Score", "Cumulative Response Rate", "Cumulative Score", "Capture Rate", "Cumulative Capture Rate", "Gain", "Cumulative Gain", "Kolmogorov Smirnov"},
+            new String[]{"int", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double", "double"},
+            new String[]{"%d", "%.8f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f", "%5f","%5f"},
+            null);
     long sum_e_i = 0;
     long sum_n_i = 0;
     double sum_s_i = 0;
@@ -167,6 +167,8 @@ public class GainsLift extends Iced {
       sum_s_i += n_i * s_i;
       double lift=p_i/P; //can be NaN if P==0
       double sum_lift=(double)sum_e_i/sum_n_i/P; //can be NaN if P==0
+      double cum_event = sum_e_i/(double)E;
+      double cum_non_event = (sum_n_i - sum_e_i) / (double) (N - E);
       table.set(i,0,i+1); //group
       table.set(i,1,(double)sum_n_i/N); //cumulative_data_fraction
       table.set(i,2,_quantiles[i]); //lower_threshold
@@ -180,6 +182,7 @@ public class GainsLift extends Iced {
       table.set(i,10,(double)sum_e_i/E); //cumulative_capture_rate
       table.set(i,11,100*(lift-1)); //gain
       table.set(i,12,100*(sum_lift-1)); //cumulative gain
+      table.set(i,13,cum_event - cum_non_event); //Kolmogorov-Smirnov metric
       if (i== events.length-1) {
         assert(sum_n_i == N) : "Cumulative data fraction must be 1.0, but is " + (double)sum_n_i/N;
         assert(sum_e_i == E) : "Cumulative capture rate must be 1.0, but is " + (double)sum_e_i/E;
