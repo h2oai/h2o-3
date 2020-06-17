@@ -988,7 +988,7 @@ We strongly recommended to run H2O as a StatefulSet on a Kubernetes cluster. Tre
         terminationGracePeriodSeconds: 10
         containers:
           - name: h2o-k8s
-            image: '<someDockerImageWithH2OInside>'
+            image: 'h2oai/h2o-open-source-k8s:<tagname>'
             resources:
               requests:
                 memory: "4Gi"
@@ -1008,6 +1008,21 @@ Below are additional environment variables:
 - ``H2O_KUBERNETES_SERVICE_DNS`` - (Required) Specify the H2O Kubernetes Service DNS to enable H2O node discovery via DNS. This is crucial for the clustering to work. The format usually follows the ``<service-name>.<project-name>.svc.cluster.local`` pattern. This must be modified to match the name of the headless service created.
 - ``H2O_NODE_LOOKUP_TIMEOUT`` - (Optional) The node lookup constraint. Specify the time before the node lookup times out. (Defaults to 3 minutes.)
 - ``H2O_NODE_EXPECTED_COUNT`` - (Optional) The node lookup constraint. This is the expected number of H2O pods to be discovered. (Defaults to 3.)
+
+There are official H2O Docker images available in Docker hub: `h2oai/h2o-open-source-k8s:<tagname>`. Please make sure to replace the `<tagname>`
+placeholder with a valid tag, e.g. `latest` for latest release or `nightly` for bleeding-edge. For more informatino, please visit official `H2O Docker Hub Page <https://hub.docker.com/r/h2oai/h2o-open-source-k8s>`__.
+
+1. `H2O_KUBERNETES_SERVICE_DNS` - **[MANDATORY]** Crucial for the clustering to work. The format usually follows the
+ `<service-name>.<project-name>.svc.cluster.local` pattern. This setting enables H2O node discovery via DNS.
+  It must be modified to match the name of the headless service created. Also, pay attention to the rest of the address
+  to match the specifics of your Kubernetes implementation.
+1. `H2O_NODE_LOOKUP_TIMEOUT` - **[OPTIONAL]** Node lookup constraint. Time before the node lookup is ended.
+1. `H2O_NODE_EXPECTED_COUNT` - **[OPTIONAL]** Node lookup constraint. Expected number of H2O pods to be discovered.
+1. `H2O_KUBERNETES_API_PORT` - **[OPTIONAL]** Port for Kubernetes API checks to listen on. Defaults to 8080.
+
+If none of the optional lookup constraints is specified, a sensible default node lookup timeout will be set - currently
+defaults to 3 minutes. If any of the lookup constraints are defined, the H2O node lookup is terminated on whichever
+condition is met first.
 
 Exposing the H2O Cluster
 ~~~~~~~~~~~~~~~~~~~~~~~~
