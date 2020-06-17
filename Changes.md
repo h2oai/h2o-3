@@ -2,6 +2,90 @@
 
 ## H2O
 
+### Zahradnik (3.30.0.5) - 6/18/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/5/index.html</a>
+
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7329'>PUBDEV-7329</a>] - Fixed an issue that denied all requests to display H2O Flow in an iframe.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7563'>PUBDEV-7563</a>] - Importing with `use_temp_table=False` now works correctly on Teradata.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7588'>PUBDEV-7588</a>] - Building a GLM model with `interactions` and `Lambda = 0` no longer produces a "Categorical value out of bounds" error. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7590'>PUBDEV-7590</a>] - Fixed an inconsistency that occurred when using `predict_leaf_node_assignment` with a path and with a terminal node. For trees with a max_depth of up to 63, the results now match. For max_depth of 64 or higher (for path and nodes that are "too deep"), H2O will no longer produce incorrect results. Instead it will return "NA" for tree paths and "-1" for node IDs. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7596'>PUBDEV-7596</a>] - Leaf node assignment now works correctly for trees with a depth >= 31. Note that for trees with a max_depth of 64 or higher, H2O will return "NA" for tree paths and "-1" for node IDs. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7599'>PUBDEV-7599</a>] - `allow_insecure_xgboost` now works correctly on Hadoop.
+</li>
+</ul>
+
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7241'>PUBDEV-7241</a>] - Added Quantile and Tweedie distribution support for monotone constraints. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7404'>PUBDEV-7404</a>] - Added support for the Kolmogorov-Smirnov metric for H2O-3 Models. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7431'>PUBDEV-7431</a>] - HTML documentation is now available as a downloadable zip file. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7507'>PUBDEV-7507</a>] - MOJOs are now aware of all model metadata. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7601'>PUBDEV-7601</a>] - Users can now retrieve the prediction contributions when running `mojo_predict_pandas` in Python. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7602'>PUBDEV-7602</a>] - Users can now retrieve the prediction contributions when running `h2o.mojo_predict_df` or `h2o.mojo_predict_csv` in R. (STILL OPEN) 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7614'>PUBDEV-7614</a>] - H2O documentation is now available in an h2odriver distribution zip file. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7615'>PUBDEV-7615</a>] - Quantiles models during the training of other models are now recognized as a regular model.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7621'>PUBDEV-7621</a>] - The H2O-SCALA module is deprecated and will be removed in a future release.
+</li>
+</ul>
+
+<h4>Task</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7529'>PUBDEV-7529</a>] - Add a warning in AutoML and XGBoost functions about memory usage. (STILL OPEN)
+</li>
+</ul>
+
+<h4>Improvement</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-6424'>PUBDEV-6424</a>] - Added support for models built with any `family` when running makeGLMModel.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7551'>PUBDEV-7551</a>] - In AutoML, fixed the handling of the `algo_parameters` parameter. (STILL OPEN. NEED MORE INFO ABOUT FIX)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7586'>PUBDEV-7586</a>] - K8S Docker images for h2o-3 are now available. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7616'>PUBDEV-7616</a>] - Warnings are now produced during model building when using the Python client.
+</li>
+</ul>
+
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7144'>PUBDEV-7144</a>] - Added examples for saving and loading grids in the User Guide. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7541'>PUBDEV-7541</a>] - Improved the description of AutoML in the R and Python packages. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7587'>PUBDEV-7587</a>] - Improved the examples in the Performance and Prediction chapter. 
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7589'>PUBDEV-7589</a>] - In the AutoML Random Grid Search Parameters topic, removed the no-longer-supported `min_sum_hessian_in_leaf` parameter from the XGBoost table. Also added clarification on how GHL models are handled in an AutoML random grid search run. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7603'>PUBDEV-7603</a>] - In the Python documentation, add examples for Grid Metrics. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7604'>PUBDEV-7604</a>] - makeGLMModel now includes all families. (STILL OPEN)
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7626'>PUBDEV-7626</a>] - The value of T as described in the description for `categorical_encoding="enum_limited"` is 10, not 1024. (STILL OPEN)
+</li>
+</ul>
+
+
 ### Zahradnik (3.30.0.4) - 6/1/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/4/index.html</a>
