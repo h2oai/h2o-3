@@ -72,6 +72,9 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       throw new IllegalStateException("Isolation Forest doesn't expect the distribution to be specified by the user");
     }
     _parms._distribution = DistributionFamily.gaussian;
+    if (expensive) {
+      System.out.println("fdsfs");
+    }
   }
 
   @Override

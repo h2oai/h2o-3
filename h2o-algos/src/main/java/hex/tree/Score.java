@@ -37,6 +37,7 @@ public class Score extends CMetricScoringTask<Score> {
     this(bldr, is_train, null, oob, kresp, mcat, computeGainsLift, preds, customMetricFunc);
   }
 
+  // called for validation
   public Score(SharedTree bldr, ScoreIncInfo sii, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds, CFuncRef customMetricFunc) {
     this(bldr, false, sii, oob, kresp, mcat, computeGainsLift, preds, customMetricFunc);
   }
@@ -55,11 +56,11 @@ public class Score extends CMetricScoringTask<Score> {
     SharedTreeModel m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
-    final int nclass = _bldr.nclasses();
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
     String[] domain = _kresp != null ? _kresp.get().domain() : null;
+    final int nclass = _bldr.optionalResponse() && domain != null ? domain.length : _bldr.nclasses();
     if (m._parms._distribution == DistributionFamily.quasibinomial) {
       domain = ((GBMModel) m)._output._quasibinomialDomains;
     }
