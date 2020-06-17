@@ -146,6 +146,11 @@ public class GBMStepsProvider
                         searchParams.put("_col_sample_rate", new Double[]{ 0.4, 0.7, 1.0});
                         searchParams.put("_col_sample_rate_per_tree", new Double[]{ 0.4, 0.7, 1.0});
                         searchParams.put("_min_split_improvement", new Double[]{1e-4, 1e-5});
+                        searchParams.put("_categorical_encoding", new Model.Parameters.CategoricalEncodingScheme[] {
+                                Model.Parameters.CategoricalEncodingScheme.Enum,
+                                Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+                                Model.Parameters.CategoricalEncodingScheme.OneHotExplicit,
+                        });
 
                         return hyperparameterSearch(gbmParameters, searchParams);
                     }

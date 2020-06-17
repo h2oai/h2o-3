@@ -1,6 +1,7 @@
 package ai.h2o.automl.modeling;
 
 import ai.h2o.automl.*;
+import hex.Model;
 import hex.deeplearning.DeepLearningModel;
 import hex.deeplearning.DeepLearningModel.DeepLearningParameters;
 import hex.grid.Grid;
@@ -47,6 +48,10 @@ public class DeepLearningStepsProvider
                 searchParams.put("_rho", new Double[] { 0.9, 0.95, 0.99 });
                 searchParams.put("_epsilon", new Double[] { 1e-6, 1e-7, 1e-8, 1e-9 });
                 searchParams.put("_input_dropout_ratio", new Double[] { 0.0, 0.05, 0.1, 0.15, 0.2 });
+                searchParams.put("_categorical_encoding", new Model.Parameters.CategoricalEncodingScheme[] {
+                        Model.Parameters.CategoricalEncodingScheme.SortByResponse,
+                        Model.Parameters.CategoricalEncodingScheme.OneHotInternal,
+                });
 
                 return searchParams;
             }
