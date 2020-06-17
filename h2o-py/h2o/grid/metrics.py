@@ -65,10 +65,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.F1(train=True, valid=False, xval=False)
+        >>> gs.F1(train=True)
         """
         return {model.model_id: model.F1(thresholds, train, valid, xval) for model in
                 self.models}  # dict model key -> F1 score
@@ -97,10 +97,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.F2(train=True, valid=False, xval=False)
+        >>> gs.F2(train=True)
         """
         return {model.model_id: model.F2(thresholds, train, valid, xval) for model in self.models}
 
@@ -128,10 +128,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.F0point5(train=True, valid=False, xval=False)
+        >>> gs.F0point5(train=True)
         """
         return {model.model_id: model.F0point5(thresholds, train, valid, xval) for model in self.models}
 
@@ -159,10 +159,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.accuracy(train=True, valid=False, xval=False)
+        >>> gs.accuracy(train=True)
         """
         return {model.model_id: model.accuracy(thresholds, train, valid, xval) for model in self.models}
 
@@ -190,10 +190,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.error(train=True, valid=False, xval=False)
+        >>> gs.error(train=True)
         """
         return {model.model_id: model.error(thresholds, train, valid, xval) for model in self.models}
 
@@ -221,10 +221,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs. precision(train=True, valid=False, xval=False)
+        >>> gs. precision(train=True)
         """
         return {model.model_id: model.precision(thresholds, train, valid, xval) for model in self.models}
 
@@ -252,10 +252,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.tpr(train=True, valid=False, xval=False)
+        >>> gs.tpr(train=True)
         """
         return {model.model_id: model.tpr(thresholds, train, valid, xval) for model in self.models}
 
@@ -283,10 +283,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.tnr(train=True, valid=False, xval=False)
+        >>> gs.tnr(train=True)
         """
         return {model.model_id: model.tnr(thresholds, train, valid, xval) for model in self.models}
 
@@ -313,10 +313,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.fnr(train=True, valid=False, xval=False)
+        >>> gs.fnr(train=True)
         """
         return {model.model_id: model.fnr(thresholds, train, valid, xval) for model in self.models}
 
@@ -344,10 +344,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.fpr(train=True, valid=False, xval=False)
+        >>> gs.fpr(train=True)
         """
         return {model.model_id: model.fpr(thresholds, train, valid, xval) for model in self.models}
 
@@ -375,10 +375,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.recall(train=True, valid=False, xval=False)
+        >>> gs.recall(train=True)
         """
         return {model.model_id: model.recall(thresholds, train, valid, xval) for model in self.models}
 
@@ -406,10 +406,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.sensitivity(train=True, valid=False, xval=False)
+        >>> gs.sensitivity(train=True)
         """
         return {model.model_id: model.sensitivity(thresholds, train, valid, xval) for model in self.models}
 
@@ -437,10 +437,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.fallout(train=True, valid=False, xval=False)
+        >>> gs.fallout(train=True)
         """
         return {model.model_id: model.fallout(thresholds, train, valid, xval) for model in self.models}
 
@@ -468,10 +468,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.missrate(train=True, valid=False, xval=False)
+        >>> gs.missrate(train=True)
         """
         return {model.model_id: model.missrate(thresholds, train, valid, xval) for model in self.models}
 
@@ -499,10 +499,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.specificity(train=True, valid=False, xval=False)
+        >>> gs.specificity(train=True)
         """
         return {model.model_id: model.specificity(thresholds, train, valid, xval) for model in self.models}
 
@@ -530,10 +530,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.mcc(train=True, valid=False, xval=False)
+        >>> gs.mcc(train=True)
         """
         return {model.model_id: model.mcc(thresholds, train, valid, xval) for model in self.models}
 
@@ -561,10 +561,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.max_per_class_error(train=True, valid=False, xval=False)
+        >>> gs.max_per_class_error(train=True)
         """
         return {model.model_id: model.max_per_class_error(thresholds, train, valid, xval) for model in self.models}
 
@@ -592,10 +592,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.mean_per_class_error(train=True, valid=False, xval=False)
+        >>> gs.mean_per_class_error(train=True)
         """
         return {model.model_id: model.mean_per_class_error(thresholds, train, valid, xval) for model in self.models}
 
@@ -624,10 +624,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.metric("tps", train=True, valid=False, xval=False)
+        >>> gs.metric("tps", train=True)
         """
         return {model.model_id: model.metric(metric, thresholds, train, valid, xval) for model in self.models}
 
@@ -653,10 +653,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.roc(train=True, valid=False, xval=False)
+        >>> gs.roc(train=True)
         """
         return {model.model_id: model.roc(train, valid, xval) for model in self.models}
 
@@ -686,10 +686,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.confusion_matrix(train=True, valid=False, xval=False)
+        >>> gs.confusion_matrix(train=True)
         """
         return {model.model_id: model.confusion_matrix(metrics, thresholds, train, valid, xval) for model in
                 self.models}
@@ -715,10 +715,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.find_threshold_by_max_metric("tps", train=True, valid=False, xval=False)
+        >>> gs.find_threshold_by_max_metric("tps", train=True)
         
         """
         return {model.model_id: model.find_threshold_by_max_metric(metric, train, valid, xval) for model in self.models}
@@ -746,10 +746,10 @@ class H2OBinomialGridSearch(object):
         >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                                                  hyper_parameters)
-        >>> gs.train(x=range(3) + range(4,11),
+        >>> gs.train(x=[3, 4-11],
         ...          y=3,
         ...          training_frame=training_data)
-        >>> gs.find_idx_by_threshold(0.45, train=True, valid=False, xval=False)
+        >>> gs.find_idx_by_threshold(0.45, train=True)
         """
         return {model.model_id: model.find_idx_by_threshold(threshold, train, valid, xval) for model in self.models}
 
@@ -783,7 +783,7 @@ class H2OClusteringGridSearch(object):
         >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
         >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
         >>> gs.train(x=list(range(4)), training_frame=iris)
-        >>> gs.size(train=True, valid=False, xval=False)
+        >>> gs.size(train=True)
         """
         return {model.model_id: model.size(train, valid, xval) for model in self.models}
 
@@ -827,7 +827,7 @@ class H2OClusteringGridSearch(object):
         >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
         >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
         >>> gs.train(x=list(range(4)), training_frame=iris)
-        >>> gs.betweenss(train=True, valid=False, xval=False)
+        >>> gs.betweenss(train=True)
         """
         return {model.model_id: model.betweenss(train, valid, xval) for model in self.models}
 
@@ -853,7 +853,7 @@ class H2OClusteringGridSearch(object):
         >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
         >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
         >>> gs.train(x=list(range(4)), training_frame=iris)
-        >>> gs.totss(train=True, valid=False, xval=False)
+        >>> gs.totss(train=True)
         """
         return {model.model_id: model.totss(train, valid, xval) for model in self.models}
 
@@ -880,7 +880,7 @@ class H2OClusteringGridSearch(object):
         >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
         >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
         >>> gs.train(x=list(range(4)), training_frame=iris)
-        >>> gs.tot_withinss(train=True, valid=False, xval=False)
+        >>> gs.tot_withinss(train=True)
         """
         return {model.model_id: model.tot_withinss(train, valid, xval) for model in self.models}
 
@@ -907,7 +907,7 @@ class H2OClusteringGridSearch(object):
         >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
         >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
         >>> gs.train(x=list(range(4)), training_frame=iris)
-        >>> gs.withinss(train=True, valid=False, xval=False)
+        >>> gs.withinss(train=True)
         """
         return {model.model_id: model.withinss(train, valid, xval) for model in self.models}
 
@@ -933,7 +933,7 @@ class H2OClusteringGridSearch(object):
         >>> hyper_parameters = {'k': [2,3,4], 'init': "random"}
         >>> gs = H2OGridSearch(H2OKMeansEstimator(), hyper_parameters)
         >>> gs.train(x=list(range(4)), training_frame=iris)
-        >>> gs.centroid_stats(train=True, valid=False, xval=False)
+        >>> gs.centroid_stats(train=True)
         """
         return {model.model_id: model.centroid_stats(train, valid, xval) for model in self.models}
 
@@ -1030,7 +1030,7 @@ class H2ODimReductionGridSearch(object):
         >>> gs = H2OGridSearch(H2OGeneralizedLowRankEstimator(),
         ...                    hyper_parameters)
         >>> gs.train(x=iris.names, training_frame=iris)
-        >>> gs.ofinal_step()
+        >>> gs.final_step()
         """
         return {model.model_id: model.final_step for model in self.models}
 
@@ -1069,8 +1069,8 @@ class H2OMultinomialGridSearch(object):
 
         >>> from h2o.estimators.glm import H2OGeneralizedLinearEstimator
         >>> from h2o.grid.grid_search import H2OGridSearch
-        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> iris = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/smalldata/iris/iris.csv")
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
         ...                                                  hyper_parameters)
         >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
@@ -1101,7 +1101,7 @@ class H2OMultinomialGridSearch(object):
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
         ...                                                  hyper_parameters)
         >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
-        >>> gs.hit_ratio_table(train=True, valid=False, xval=False)
+        >>> gs.hit_ratio_table(train=True)
         """
         return {model.model_id: model.hit_ratio_table(train, valid, xval) for model in self.models}
 
@@ -1128,7 +1128,7 @@ class H2OMultinomialGridSearch(object):
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family = "multinomial"),
         ...                                                  hyper_parameters)
         >>> gs.train(x=[0,1,2,3], y=4, training_frame=iris)
-        >>> gs.mean_per_class_error(train=True, valid=False, xval=False)
+        >>> gs.mean_per_class_error(train=True)
         """
         return {model.model_id: model.mean_per_class_error(train, valid, xval) for model in self.models}
 
@@ -1149,7 +1149,8 @@ class H2OOrdinalGridSearch(object):
         >>> from h2o.estimators import H2OGeneralizedLinearEstimator
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
-        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}                          >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
         >>> h2o_df['C11'] = h2o_df['C11'].asfactor()
         >>> gs.train(x=list(range(0,10)), y="C11", training_frame=h2o_df)
         >>> gs.confusion_matrix(h2o_df)
@@ -1175,10 +1176,11 @@ class H2OOrdinalGridSearch(object):
         >>> from h2o.estimators import H2OGeneralizedLinearEstimator
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
-        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}                          >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
         >>> h2o_df['C11'] = h2o_df['C11'].asfactor()
         >>> gs.train(x=list(range(0,10)), y="C11", training_frame=h2o_df)
-        >>> gs.hit_ratio_table(train=True, valid=False, xval=False)
+        >>> gs.hit_ratio_table(train=True)
         """
         return {model.model_id: model.hit_ratio_table(train, valid, xval) for model in self.models}
 
@@ -1201,10 +1203,11 @@ class H2OOrdinalGridSearch(object):
         >>> from h2o.estimators import H2OGeneralizedLinearEstimator
         >>> from h2o.grid.grid_search import H2OGridSearch
         >>> h2o_df = h2o.import_file("http://h2o-public-test-data.s3.amazonaws.com/bigdata/laptop/glm_ordinal_logit/ordinal_multinomial_training_set.csv")
-        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}                          >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
+        >>> hyper_parameters = {'alpha': [0.01,0.5], 'lambda': [1e-5,1e-6]}                          
+        >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family="ordinal"), hyper_parameters)
         >>> h2o_df['C11'] = h2o_df['C11'].asfactor()
         >>> gs.train(x=list(range(0,10)), y="C11", training_frame=h2o_df)
-        >>> gs.mean_per_class_error(train=True, valid=False, xval=False)
+        >>> gs.mean_per_class_error(train=True)
         """
         return {model.model_id: model.mean_per_class_error(train, valid, xval) for model in self.models}
 
