@@ -893,6 +893,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected boolean logMe() { return true; }
 
   abstract public boolean isSupervised();
+
+  public boolean optionalResponse() {
+    return false;
+  }
   
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
@@ -1244,7 +1248,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       for (final String warning : warnings){
           warn("_checkpoint", warning);
       }
-      separateFeatureVecs(); // set MB's fields (like response)
+      ; // set MB's fields (like response)
     } else {
       // Drop all non-numeric columns (e.g., String and UUID).  No current algo
       // can use them, and otherwise all algos will then be forced to remove
@@ -1333,13 +1337,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     else {
-      hide("_response_column", "Ignored for unsupervised methods.");
+      if (!optionalResponse()) {
+        hide("_response_column", "Ignored for unsupervised methods.");
+        _vresponse = null;
+      }
       hide("_balance_classes", "Ignored for unsupervised methods.");
       hide("_class_sampling_factors", "Ignored for unsupervised methods.");
       hide("_max_after_balance_size", "Ignored for unsupervised methods.");
       hide("_max_confusion_matrix_size", "Ignored for unsupervised methods.");
       _response = null;
-      _vresponse = null;
       _nclass = 1;
     }
 
@@ -1351,8 +1357,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
+      if (optionalResponse() && _parms._response_column != null && _response == null) {
+        _vresponse = va.vec(_parms._response_column);
+      }
       _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
-      _vresponse = _valid.vec(_parms._response_column);
+      if (!optionalResponse() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
+        _vresponse = _valid.vec(_parms._response_column);
+      }
     } else {
       _valid = null;
       _vresponse = null;
@@ -1372,6 +1383,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       if (_valid != null) {
         _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
         _vresponse = _valid.vec(_parms._response_column);
+        // FIXME: do I need to handle it here as well?
       }
       boolean restructured = false;
       Vec[] vecs = _train.vecs();

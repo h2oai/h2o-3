@@ -52,6 +52,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
   @Override public boolean isSupervised() { return false; }
 
+  @Override public boolean optionalResponse() { return true; }
+
   @Override protected ScoreKeeper.ProblemType getProblemType() { return ScoreKeeper.ProblemType.anomaly_detection; }
 
   private transient VarSplits _var_splits;

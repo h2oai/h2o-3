@@ -13,7 +13,7 @@ def isolation_forest():
     test = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/ecg_discord_test.csv"))
 
     if_model = H2OIsolationForestEstimator(ntrees=7, seed=12, sample_size=5, response_column="C1")
-    if_model.train(training_frame=train)
+    if_model.train(training_frame=train, validation_frame=test)
 
     print(if_model)
 
@@ -27,6 +27,7 @@ def isolation_forest():
     print(test_pred)
 
     assert test_pred.nrow == 23
+
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(isolation_forest)
