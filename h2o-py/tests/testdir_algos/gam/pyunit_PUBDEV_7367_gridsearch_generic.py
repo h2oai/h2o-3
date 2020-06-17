@@ -8,6 +8,11 @@ from tests import pyunit_utils
 from h2o.estimators.gam import H2OGeneralizedAdditiveEstimator
 from h2o.grid.grid_search import H2OGridSearch
 
+# In this test, we check to make sure that a basic grid search on a GAM functions correctly.
+# The test searches over 2 parameters, alpha and lambda.
+# The test then compares the results of the grid search models with the models we created
+# by manually searching over the hyperspace.
+# If the coefficients do not match or an incorrect number of models is generated, the test throws an assertion error.
 class test_gam_gridsearch:
 
     h2o_data = []
@@ -15,6 +20,9 @@ class test_gam_gridsearch:
     myY = []
     hyper_parameters = {'alpha': [0.1, 0.9], 'lambda':[0, 0.01]}
     manual_gam_models = []
+    h2o_model = []
+    num_grid_models = 0
+    num_expected_models = len(hyper_parameters['alpha']) * len(hyper_parameters['lambda'])
 
     def __init__(self):
         self.setup_data()
@@ -38,15 +46,29 @@ class test_gam_gridsearch:
                                                                               alpha = alpha_param, lambda_ = lambda_param))
 
     def train_models(self):
-        h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="multinomial", gam_columns=["C6", "C7", "C8"],
+        self.h2o_model = H2OGridSearch(H2OGeneralizedAdditiveEstimator(family="multinomial", gam_columns=["C6", "C7", "C8"],
                                                                   keep_gam_cols=True, scale = [1,1,1], num_knots=[5,5,5]), self.hyper_parameters)
-        h2o_model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
+        self.h2o_model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
         for model in self.manual_gam_models:
             model.train(x = self.myX, y = self.myY, training_frame = self.h2o_data)
 
+    def match_models(self):
+        for model in self.manual_gam_models:
+            alpha = model.actual_params['alpha']
+            lambda_ = model.actual_params['lambda']
+            for grid_search_model in self.h2o_model.models:
+                if grid_search_model.actual_params['alpha'] == alpha \
+                    and grid_search_model.actual_params['lambda'] == lambda_:
+                    self.num_grid_models += 1
+                    assert grid_search_model.coef() == model.coef(), "coefficients should be equal"
+                    break
+        
+        assert self.num_grid_models == self.num_expected_models, "Grid search model parameters incorrect or incorrect number of models generated"
+            
 def test_gridsearch():
     test_gam_grid = test_gam_gridsearch()
     test_gam_grid.train_models()
+    test_gam_grid.match_models()
 
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_gridsearch)
