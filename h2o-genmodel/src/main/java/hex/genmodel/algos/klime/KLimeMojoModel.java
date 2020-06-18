@@ -1,7 +1,10 @@
 package hex.genmodel.algos.klime;
 
+import hex.ModelCategory;
 import hex.genmodel.MojoModel;
 import hex.genmodel.algos.glm.GlmMojoModel;
+
+import java.util.EnumSet;
 
 public class KLimeMojoModel extends MojoModel {
 
@@ -10,6 +13,11 @@ public class KLimeMojoModel extends MojoModel {
   MojoModel[] _clusterRegressionModels;
   int[] _rowSubsetMap;
 
+  private static EnumSet<ModelCategory> CATEGORIES = EnumSet.of(ModelCategory.Regression, ModelCategory.KLime);
+  @Override public EnumSet<ModelCategory> getModelCategories() {
+    return CATEGORIES;
+  }
+  
   KLimeMojoModel(String[] columns, String[][] domains, String responseColumn) {
     super(columns, domains, responseColumn);
   }
