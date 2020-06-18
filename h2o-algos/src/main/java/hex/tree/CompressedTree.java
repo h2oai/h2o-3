@@ -5,6 +5,7 @@ import java.util.Random;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import water.*;
+import water.fvec.NewChunk;
 import water.util.IcedBitSet;
 import water.util.SB;
 
@@ -24,17 +25,29 @@ import water.util.SB;
 //    prediction: 4 bytes of float (or 1 or 2 bytes of class prediction)
 //
 
-public class CompressedTree extends Keyed<CompressedTree> {
+public class CompressedTree extends LightKeyed<CompressedTree> {
 
   private static final String KEY_PREFIX = "tree_";
 
-  final byte [] _bits;
-  final long _seed;
+  public transient byte[] _bits;
+  transient long _seed;
 
   public CompressedTree(byte[] bits, long seed, int tid, int cls) {
-    super(makeTreeKey(tid, cls));
+    super(makeTreeKey(seed, tid, cls));
     _bits = bits;
     _seed = seed;
+  }
+
+  @Override
+  public CompressedTree reloadFromBytes(Key k, byte[] ary) {
+    _key = k;
+    _bits = ary;
+    return this;
+  }
+
+  @Override
+  public byte[] asBytes() {
+    return _bits;
   }
 
   public double score(final double row[], final String[][] domains) {
@@ -95,8 +108,13 @@ public class CompressedTree extends Keyed<CompressedTree> {
     return sb.toString();
   }
 
-  public static Key<CompressedTree> makeTreeKey(int treeId, int clazz) {
-    return Key.makeSystem("tree_" + treeId + "_" + clazz + "_" + Key.rand());
+  private static Key<CompressedTree> makeTreeKey(long seed, int tid, int cls) {
+    return Key.makeSystem("tree_" + tid + "_" + cls + "_" + seed + "_" + Key.rand());
+  }
+  
+  public static Key<CompressedTree> makeNewTreeKey(Key<CompressedTree> oldKey) {
+    TreeCoords tc = TreeCoords.parseTreeCoords(oldKey);
+    return makeTreeKey(tc._seed, tc._treeId, tc._clazz);
   }
 
   /**
@@ -114,18 +132,21 @@ public class CompressedTree extends Keyed<CompressedTree> {
   static class TreeCoords {
     int _treeId;
     int _clazz;
+    long _seed;
 
     private static TreeCoords parseTreeCoords(Key<CompressedTree> ctKey) {
       String key = ctKey.toString();
       int prefixIdx = key.indexOf(KEY_PREFIX);
       if (prefixIdx < 0)
         throw new IllegalStateException("Unexpected structure of a CompressedTree key=" + key);
-      String[] keyParts = key.substring(prefixIdx + KEY_PREFIX.length()).split("_", 3);
+      String[] keyParts = key.substring(prefixIdx + KEY_PREFIX.length()).split("_", 4);
       TreeCoords tc = new TreeCoords();
       tc._treeId = Integer.valueOf(keyParts[0]);
       tc._clazz = Integer.valueOf(keyParts[1]);
+      tc._seed = Long.valueOf(keyParts[2]);
       return tc;
     }
+ 
   }
 
 }

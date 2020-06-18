@@ -131,7 +131,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     Iced pojo = (Iced)_pojo;    // Read once!
     if( pojo != null ) return (T)pojo;
     pojo = TypeMap.newInstance(_type);
-    return (T)(_pojo = pojo.reloadFromBytes(memOrLoad()));
+    if (pojo instanceof LightKeyed) {
+        return (T) (_pojo = ((LightKeyed) pojo).reloadFromBytes(_key, memOrLoad()));
+    } else {
+        return (T) (_pojo = pojo.reloadFromBytes(memOrLoad()));
+    }
   }
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
    *  Will (re)build the POJO from the _mem array.  Never returns NULL.  This
