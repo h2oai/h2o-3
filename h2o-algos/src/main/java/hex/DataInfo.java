@@ -470,7 +470,7 @@ public class DataInfo extends Keyed<DataInfo> {
     if(v.isCategorical()) {
       if (useAllFactorLevels) return v.mode();
       long[] bins = v.bins();
-      return ArrayUtils.maxIndex(bins,1);
+      return ArrayUtils.maxIndex(bins,0);
     }
     return (int)Math.round(v.mean());
   }
@@ -1081,7 +1081,10 @@ public class DataInfo extends Keyed<DataInfo> {
   public final int getCategoricalId(int cid, int val) {
     boolean isIWV = isInteractionVec(cid);
     if(val == -1) { // NA
-      val = _catNAFill[cid];
+      if (isIWV && !_useAllFactorLevels) 
+        val = _catNAFill[cid]-1; // need to -1 here because no -1 in 6 lines later for isIWV vector
+      else
+        val = _catNAFill[cid];
     }
 
     if (!_useAllFactorLevels && !isIWV) {  // categorical interaction vecs drop reference level in a special way
@@ -1091,7 +1094,7 @@ public class DataInfo extends Keyed<DataInfo> {
     int [] offs = fullCatOffsets();
     int expandedVal = val + offs[cid];
     if(expandedVal >= offs[cid+1]) {  // previously unseen level
-      assert _valid : "Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid + 1];
+      assert (isIWV && !_useAllFactorLevels) || _valid : "Categorical value out of bounds, got " + val + ", next cat starts at " + fullCatOffsets()[cid + 1];
       if(_skipMissing)
         return -1;
       val = _catNAFill[cid];
