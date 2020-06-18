@@ -112,11 +112,6 @@ public class CompressedTree extends LightKeyed<CompressedTree> {
     return Key.makeSystem("tree_" + tid + "_" + cls + "_" + seed + "_" + Key.rand());
   }
   
-  public static Key<CompressedTree> makeNewTreeKey(Key<CompressedTree> oldKey) {
-    TreeCoords tc = TreeCoords.parseTreeCoords(oldKey);
-    return makeTreeKey(tc._seed, tc._treeId, tc._clazz);
-  }
-
   /**
    * Retrieves tree coordinates in the tree ensemble
    * @return instance of TreeCoord
@@ -149,4 +144,9 @@ public class CompressedTree extends LightKeyed<CompressedTree> {
  
   }
 
+  public CompressedTree deepCopy() {
+    TreeCoords tc = TreeCoords.parseTreeCoords(_key);
+    return new CompressedTree(_bits.clone(), tc._seed, tc._treeId, tc._clazz);
+  } 
+  
 }

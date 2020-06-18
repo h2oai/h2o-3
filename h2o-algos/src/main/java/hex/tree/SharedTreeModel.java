@@ -581,8 +581,7 @@ public abstract class SharedTreeModel<
       for (int j = 0; j < treeKeys[i].length; j++) {
         if (treeKeys[i][j] == null) continue;
         CompressedTree ct = DKV.get(treeKeys[i][j]).get();
-        CompressedTree newCt = IcedUtils.deepCopy(ct);
-        newCt._key = CompressedTree.makeNewTreeKey(ct._key);
+        CompressedTree newCt = ct.deepCopy();
         DKV.put(treeKeys[i][j] = newCt._key,newCt);
       }
     }
@@ -593,7 +592,7 @@ public abstract class SharedTreeModel<
         for (int j = 0; j < treeKeysAux[i].length; j++) {
           if (treeKeysAux[i][j] == null) continue;
           CompressedTree ct = DKV.get(treeKeysAux[i][j]).get();
-          CompressedTree newCt = IcedUtils.deepCopy(ct);
+          CompressedTree newCt = ct.deepCopy();
           newCt._key = Key.make(createAuxKey(treeKeys[i][j].toString()));
           DKV.put(treeKeysAux[i][j] = newCt._key,newCt);
         }
