@@ -35,7 +35,11 @@ public class H2ORunnerAfters extends RunAfters {
         } finally {
             // Clean all keys shared for the whole test class, created during @BeforeClass,
             // but not cleaned in @AfterClass.
-            new CleanAllKeysTask().doAllNodes();
+            try {
+                new CleanAllKeysTask().doAllNodes();
+            } catch (Throwable e) {
+                errors.add(e);
+            }
             for (FrameworkMethod each : afters) {
                 try {
                     each.invokeExplosively(target);
