@@ -66,7 +66,7 @@ class H2OGridSearch(h2o_meta(Keyed)):
         >>> gs = H2OGridSearch(H2OGeneralizedLinearEstimator(family='binomial'),
         ...                    hyper_parameters)
         >>> training_data = h2o.import_file("smalldata/logreg/benign.csv")
-        >>> gs.train(x=range(3) + range(4,11),y=3, training_frame=training_data)
+        >>> gs.train(x=[3, 4-11], y=3, training_frame=training_data)
         >>> gs.show()
     """
 
