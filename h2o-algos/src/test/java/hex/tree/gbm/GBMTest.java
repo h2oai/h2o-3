@@ -13,6 +13,7 @@ import hex.genmodel.easy.prediction.BinomialModelPrediction;
 import hex.genmodel.easy.prediction.MultinomialModelPrediction;
 import hex.genmodel.tools.PredictCsv;
 import hex.genmodel.utils.DistributionFamily;
+import hex.tree.CompressedTree;
 import hex.tree.Constraints;
 import hex.tree.SharedTreeModel;
 import org.junit.*;
@@ -344,8 +345,17 @@ public class GBMTest extends TestUtil {
       Assert.assertTrue(gbm.testJavaScoring(fr,fr2,1e-15));
 
       Assert.assertTrue(job.isStopped()); //HEX-1817
-      return gbm._output;
 
+      for (Key<CompressedTree>[] keys : ArrayUtils.append(gbm._output._treeKeys, gbm._output._treeKeysAux)) {
+        for (Key<CompressedTree> key : keys)
+          if (key != null) {
+            Value treeValue = DKV.get(key);
+            CompressedTree tree = key.get();
+            assertSame(treeValue.memOrLoad(), tree._bits);
+          }
+      }
+
+      return gbm._output;
     } finally {
       if( fr  != null ) fr .remove();
       if( fr2 != null ) fr2.remove();
