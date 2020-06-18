@@ -108,6 +108,9 @@ cp -rp h2o-core/build/docs/javadoc target/docs-website/h2o-core
 cp -rp h2o-algos/build/docs/javadoc target/docs-website/h2o-algos
 cp -rp h2o-genmodel/build/docs/javadoc target/docs-website/h2o-genmodel
 
+# Create a zip file for the whole documentation and add to target.
+(cd target && zip -r docs-website.zip docs-website)
+
 # Create zip files and add them to target.
 make_zip
 
