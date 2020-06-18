@@ -1010,7 +1010,7 @@ The environment variables used are described below:
 - ``H2O_NODE_EXPECTED_COUNT`` - **[OPTIONAL]** Node lookup constraint. This is the expected number of H2O pods to be discovered.
 - ``H2O_KUBERNETES_API_PORT`` - **[OPTIONAL]** Port for Kubernetes API checks to listen on. Defaults to 8080.
 
-If none of the optional lookup constraints is specified, a sensible default node lookup timeout will be set - currently
+If none of the optional lookup constraints are specified, a sensible default node lookup timeout will be set - currently
 defaults to 3 minutes. If any of the lookup constraints are defined, the H2O node lookup is terminated on whichever
 condition is met first.
 
