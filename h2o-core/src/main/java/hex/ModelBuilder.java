@@ -1382,7 +1382,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       if (_valid != null) {
         _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
-        _vresponse = _valid.vec(_parms._response_column);
+        if (!optionalResponse()) {
+          // FIXME !!!
+          _vresponse = _valid.vec(_parms._response_column);
+        }
         // FIXME: do I need to handle it here as well?
       }
       boolean restructured = false;
@@ -1503,7 +1506,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     try {
       String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _workspace.getToDelete(expensive), false);
       Vec response = adapted.vec(_parms._response_column);
-      if (response == null && _parms._response_column != null)
+      if (response == null && _parms._response_column != null && !optionalResponse())
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
       if (expensive) {
         for (String s : msgs) {

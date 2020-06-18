@@ -33,6 +33,7 @@ public class Score extends CMetricScoringTask<Score> {
    *  It expect already adapted validation dataset which is adapted to a model
    *  and contains a response which is adapted to confusion matrix domain.
    */
+  // called fro training
   public Score(SharedTree bldr, boolean is_train, boolean oob, Vec kresp, ModelCategory mcat, boolean computeGainsLift, Frame preds, CFuncRef customMetricFunc) {
     this(bldr, is_train, null, oob, kresp, mcat, computeGainsLift, preds, customMetricFunc);
   }
@@ -52,7 +53,14 @@ public class Score extends CMetricScoringTask<Score> {
 
   @Override public void map(Chunk allchks[]) {
     final Chunk[] chks = getScoringChunks(allchks);
-    Chunk ys = _bldr.isSupervised() ? _bldr.chk_resp(chks) : new C0DChunk(0, chks[0]._len);  // Response
+    Chunk ys; // Response
+    if (_bldr.isSupervised()) {
+      ys = _bldr.chk_resp(chks);
+    } else if (_bldr.optionalResponse() && _kresp != null) {
+      ys = _kresp.get().chunkForChunkIdx(chks[0].cidx());
+    } else {
+      ys = new C0DChunk(0, chks[0]._len); // Dummy response to simplify code
+    }
     SharedTreeModel m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;

@@ -12,7 +12,14 @@ def isolation_forest():
     train = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/ecg_discord_train.csv"))
     test = h2o.import_file(pyunit_utils.locate("smalldata/anomaly/ecg_discord_test.csv"))
 
-    if_model = H2OIsolationForestEstimator(ntrees=7, seed=12, sample_size=5, response_column="C1")
+    train = train.drop("C1")
+    test["response"] = test["C1"].asfactor()
+    test = test.drop("C1")
+
+    print(train.names)
+    print(test.names)
+
+    if_model = H2OIsolationForestEstimator(ntrees=7, seed=12, sample_size=5, response_column="response")
     if_model.train(training_frame=train, validation_frame=test)
 
     print(if_model)

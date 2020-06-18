@@ -2,6 +2,7 @@ package hex.tree.isofor;
 
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.ModelMetricsBinomial;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
@@ -69,7 +70,7 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     if (domain == null)
       return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics", outputAnomalyFlag());
     else
-      return new 
+      return new ModelMetricsBinomial.MetricBuilderBinomial(domain); // FIXME
   }
 
   @Override
