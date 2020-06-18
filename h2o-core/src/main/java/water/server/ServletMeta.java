@@ -8,7 +8,7 @@ import javax.servlet.http.HttpServlet;
 public class ServletMeta {
 
   private final String _contextPath;
-  private Class<? extends HttpServlet> _servletClass;
+  private final Class<? extends HttpServlet> _servletClass;
 
   public ServletMeta(String contextPath, Class<? extends HttpServlet> servletClass) {
     _contextPath = contextPath;

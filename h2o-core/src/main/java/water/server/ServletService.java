@@ -1,5 +1,7 @@
 package water.server;
 
+import water.webserver.iface.WebsocketServlet;
+
 import javax.servlet.http.HttpServlet;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -15,10 +17,6 @@ public final class ServletService {
     _loader = ServiceLoader.load(ServletProvider.class);
   }
 
-  /**
-   * Locates all available non-core primitives of the Rapid language.
-   * @return list of Rapid primitives
-   */
   public synchronized LinkedHashMap<String, Class<? extends HttpServlet>> getAllServlets() {
     return StreamSupport
             .stream(_loader.spliterator(), false)
@@ -27,5 +25,15 @@ public final class ServletService {
             .collect(Collectors.toMap(ServletMeta::getContextPath, ServletMeta::getServletClass,
                     (val1, val2) -> val2, // Latest always wins
                     LinkedHashMap::new));
+  }
+
+  public synchronized LinkedHashMap<String, Class<? extends WebsocketServlet>> getAllWebsockets() {
+    return StreamSupport
+        .stream(_loader.spliterator(), false)
+        .sorted(Comparator.comparing(ServletProvider::priority).reversed())
+        .flatMap(provider -> provider.websockets().stream())
+        .collect(Collectors.toMap(WebsocketMeta::getContextPath, WebsocketMeta::getHandlerClass,
+            (val1, val2) -> val2, // Latest always wins
+            LinkedHashMap::new));
   }
 }

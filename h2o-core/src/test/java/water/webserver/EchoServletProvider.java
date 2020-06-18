@@ -4,10 +4,19 @@ import org.junit.Ignore;
 import water.server.ServletMeta;
 import water.server.ServletProvider;
 import water.server.ServletUtils;
+import water.server.WebsocketMeta;
+import water.webserver.iface.WebsocketConnection;
+import water.webserver.iface.WebsocketHandler;
+import water.webserver.iface.WebsocketServlet;
 
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collections;
 import java.util.List;
@@ -18,6 +27,11 @@ public class EchoServletProvider implements ServletProvider {
   @Override
   public List<ServletMeta> servlets() {
     return Collections.singletonList(new ServletMeta("/99/Echo", EchoServlet.class));
+  }
+
+  @Override
+  public List<WebsocketMeta> websockets() {
+    return Collections.singletonList(new WebsocketMeta("/99/EchoWs", EchoWebsocket.class));
   }
 
   public static class EchoServlet extends HttpServlet {
@@ -38,6 +52,15 @@ public class EchoServletProvider implements ServletProvider {
         ServletUtils.logRequest("GET", request, response);
       }
     }
+  }
+  
+  public static class EchoWebsocket implements WebsocketServlet {
+
+    @Override
+    public WebsocketHandler onConnect(WebsocketConnection conn) {
+      return null;
+    }
+
   }
 
 }
