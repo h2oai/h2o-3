@@ -11,7 +11,7 @@ import static hex.steam.SteamMessenger.TYPE;
 
 public interface SteamMessageSender {
 
-    Logger LOG = Logger.getLogger(SteamHelloMessenger.class);
+    Logger LOG = Logger.getLogger(SteamMessageSender.class);
 
     /**
      * Delivers message to Steam
