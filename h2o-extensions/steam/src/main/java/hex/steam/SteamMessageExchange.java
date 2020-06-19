@@ -10,10 +10,9 @@ import java.util.*;
 
 public class SteamMessageExchange implements SteamMessageSender {
 
-    private static final Logger LOG = Logger.getLogger(SteamHelloMessenger.class);
+    private static final Logger LOG = Logger.getLogger(SteamMessageExchange.class);
 
-    private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() {
-    }.getType();
+    private static final Type MAP_TYPE = new TypeToken<Map<String, String>>() {}.getType();
 
     private final Gson gson = new Gson();
     private final SteamWebsocketServlet servlet;
