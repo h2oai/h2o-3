@@ -928,13 +928,13 @@ Metric Comparison
 +------------+-----------------------+-------------------------------------------------------+
 | F2         | Class                 | good when you want to give more weight to recall      |
 +------------+-----------------------+-------------------------------------------------------+
-| Accuracy   | Class                 | highly interpretable                                  |
+| Accuracy   | Class                 | highly interpretable, bad for imbalanced data         |
 +------------+-----------------------+-------------------------------------------------------+
-| Logloss    | Probability           |                                                       |
+| Logloss    | Predicted value       |                                                       |
 +------------+-----------------------+-------------------------------------------------------+
-| AUC        | Class                 |                                                       |
+| AUC        | Predicted value       | good for imbalanced data                              |
 +------------+-----------------------+-------------------------------------------------------+
-| AUCPR      | Class                 | good for imbalanced data                              |
+| AUCPR      | Predicted value       | good for imbalanced data                              |
 +------------+-----------------------+-------------------------------------------------------+
 
 Stopping Model Metrics
