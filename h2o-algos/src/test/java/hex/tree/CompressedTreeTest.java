@@ -70,10 +70,10 @@ public class CompressedTreeTest extends TestUtil  {
         final SharedTreeSubgraph sg = tree.toSharedTreeSubgraph(auxTreeInfo, model._output._names, model._output._domains);
 
         for (double[] row : data) {
-          final double leafAssignment = SharedTreeMojoModel.scoreTree(tree._bits, row,
+          final double leafAssignment = SharedTreeMojoModel.scoreTree(tree.rawMem(), row,
                   true, model._output._domains);
           final String nodePath = SharedTreeMojoModel.getDecisionPath(leafAssignment);
-          final int nodeId = SharedTreeMojoModel.getLeafNodeId(leafAssignment, auxTreeInfo._bits);
+          final int nodeId = SharedTreeMojoModel.getLeafNodeId(leafAssignment, auxTreeInfo.rawMem());
 
           SharedTreeNode n = sg.rootNode;
           for (int j = 0; j < nodePath.length(); j++) {
