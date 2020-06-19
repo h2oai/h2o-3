@@ -127,15 +127,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  speed.  Will (re)build the POJO from the _mem array.  Never returns NULL.
    *  @return The POJO, probably the cached instance.  */
   public final <T extends Iced> T get() {
-    touch();
-    Iced pojo = (Iced)_pojo;    // Read once!
-    if( pojo != null ) return (T)pojo;
-    pojo = TypeMap.newInstance(_type);
-    if (pojo instanceof LightKeyed) {
-        return (T) (_pojo = ((LightKeyed) pojo).reloadFromBytes(_key, memOrLoad()));
-    } else {
-        return (T) (_pojo = pojo.reloadFromBytes(memOrLoad()));
-    }
+    return getFreezable();
   }
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
    *  Will (re)build the POJO from the _mem array.  Never returns NULL.  This
@@ -149,13 +141,18 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
    *  Will (re)build the POJO from the _mem array.  Never returns NULL.
    *  @return The POJO, probably the cached instance.  */
+  @SuppressWarnings("unchecked")
   public final <T extends Freezable> T getFreezable() {
     touch();
-    Freezable pojo = _pojo;     // Read once!
-    if( pojo != null ) return (T)pojo;
-    pojo = TypeMap.newFreezable(_type);
-    pojo.reloadFromBytes(memOrLoad());
-    return (T)(_pojo = pojo);
+    T pojo = (T) _pojo;    // Read once!
+    if (pojo != null)
+        return (T) pojo;
+    pojo = (T) TypeMap.newInstance(_type);
+    if (pojo instanceof LightKeyed) {
+      return (T) (_pojo = ((LightKeyed) pojo).reloadFromBytes(_key, memOrLoad()));
+    } else {
+      return (T) (_pojo = pojo.reloadFromBytes(memOrLoad()));
+    }
   }
 
   // ---
@@ -326,6 +323,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _pojo = pojo;
     _type = (short)pojo.frozenType();
     _mem = pojo.asBytes();
+    if (_mem == null) {
+        System.out.println("prcak");
+    }
     _max = _mem.length;
     assert _max < MAX : "Value size = " + _max + " (0x"+Integer.toHexString(_max) + ") >= (MAX=" + MAX + ").";
     // For the ICE backend, assume new values are not-yet-written.

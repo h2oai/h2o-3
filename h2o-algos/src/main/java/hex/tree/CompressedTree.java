@@ -29,7 +29,7 @@ public class CompressedTree extends LightKeyed<CompressedTree> {
 
   private static final String KEY_PREFIX = "tree_";
 
-  public transient byte[] _bits;
+  public byte[] _bits;
   transient long _seed;
 
   public CompressedTree(byte[] bits, long seed, int tid, int cls) {
@@ -39,7 +39,7 @@ public class CompressedTree extends LightKeyed<CompressedTree> {
   }
 
   @Override
-  public CompressedTree reloadFromBytes(Key k, byte[] ary) {
+  public CompressedTree reloadFromBytes(Key<CompressedTree> k, byte[] ary) {
     _key = k;
     _bits = ary;
     return this;
