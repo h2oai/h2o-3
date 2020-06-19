@@ -5,7 +5,6 @@ import java.util.Random;
 import hex.genmodel.algos.tree.SharedTreeMojoModel;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import water.*;
-import water.fvec.NewChunk;
 import water.util.IcedBitSet;
 import water.util.SB;
 
@@ -25,43 +24,29 @@ import water.util.SB;
 //    prediction: 4 bytes of float (or 1 or 2 bytes of class prediction)
 //
 
-public class CompressedTree extends LightKeyed<CompressedTree> {
+public class CompressedTree extends MemKeyed<CompressedTree> {
 
   private static final String KEY_PREFIX = "tree_";
 
-  public byte[] _bits;
   transient long _seed;
 
   public CompressedTree(byte[] bits, long seed, int tid, int cls) {
-    super(makeTreeKey(seed, tid, cls));
-    _bits = bits;
+    super(makeTreeKey(seed, tid, cls), bits);
     _seed = seed;
   }
 
-  @Override
-  public CompressedTree reloadFromBytes(Key<CompressedTree> k, byte[] ary) {
-    _key = k;
-    _bits = ary;
-    return this;
-  }
-
-  @Override
-  public byte[] asBytes() {
-    return _bits;
-  }
-
-  public double score(final double row[], final String[][] domains) {
-    return SharedTreeMojoModel.scoreTree(_bits, row, false, domains);
+  public double score(final double[] row, final String[][] domains) {
+    return SharedTreeMojoModel.scoreTree(_mem, row, false, domains);
   }
 
   @Deprecated
-  public String getDecisionPath(final double row[], final String[][] domains) {
-    double d = SharedTreeMojoModel.scoreTree(_bits, row, true, domains);
+  public String getDecisionPath(final double[] row, final String[][] domains) {
+    double d = SharedTreeMojoModel.scoreTree(_mem, row, true, domains);
     return SharedTreeMojoModel.getDecisionPath(d);
   }
 
-  public <T> T getDecisionPath(final double row[], final String[][] domains, final SharedTreeMojoModel.DecisionPathTracker<T> tr) {
-    double d = SharedTreeMojoModel.scoreTree(_bits, row, true, domains);
+  public <T> T getDecisionPath(final double[] row, final String[][] domains, final SharedTreeMojoModel.DecisionPathTracker<T> tr) {
+    double d = SharedTreeMojoModel.scoreTree(_mem, row, true, domains);
     return SharedTreeMojoModel.getDecisionPath(d, tr);
   }
 
@@ -69,7 +54,7 @@ public class CompressedTree extends LightKeyed<CompressedTree> {
                                                  final String[] colNames, final String[][] domains) {
     TreeCoords tc = getTreeCoords();
     String treeName = SharedTreeMojoModel.treeName(tc._treeId, tc._clazz, domains[domains.length - 1]);
-    return SharedTreeMojoModel.computeTreeGraph(tc._treeId, treeName, _bits, auxTreeInfo._bits, colNames, domains);
+    return SharedTreeMojoModel.computeTreeGraph(tc._treeId, treeName, _mem, auxTreeInfo._mem, colNames, domains);
   }
 
   public Random rngForChunk(int cidx) {
@@ -136,9 +121,9 @@ public class CompressedTree extends LightKeyed<CompressedTree> {
         throw new IllegalStateException("Unexpected structure of a CompressedTree key=" + key);
       String[] keyParts = key.substring(prefixIdx + KEY_PREFIX.length()).split("_", 4);
       TreeCoords tc = new TreeCoords();
-      tc._treeId = Integer.valueOf(keyParts[0]);
-      tc._clazz = Integer.valueOf(keyParts[1]);
-      tc._seed = Long.valueOf(keyParts[2]);
+      tc._treeId = Integer.parseInt(keyParts[0]);
+      tc._clazz = Integer.parseInt(keyParts[1]);
+      tc._seed = Long.parseLong(keyParts[2]);
       return tc;
     }
  
@@ -146,7 +131,7 @@ public class CompressedTree extends LightKeyed<CompressedTree> {
 
   public CompressedTree deepCopy() {
     TreeCoords tc = TreeCoords.parseTreeCoords(_key);
-    return new CompressedTree(_bits.clone(), tc._seed, tc._treeId, tc._clazz);
+    return new CompressedTree(_mem.clone(), tc._seed, tc._treeId, tc._clazz);
   } 
   
 }

@@ -267,7 +267,7 @@ class Cleaner extends Thread {
         Object p = val.rawPOJO();
         if( m != null ) len += val._max;
         if( p != null ) len += val._max;
-        if( m != null && p instanceof Chunk ) len -= val._max; // Do not double-count Chunks
+        if( m != null && (p instanceof Chunk || p instanceof MemKeyed)) len -= val._max; // Do not double-count Chunks & MemKeyed objects
         if( len == 0 ) continue;
         cached += len; // Accumulate total amount of cached keys
 
