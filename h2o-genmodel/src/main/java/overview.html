@@ -58,7 +58,12 @@ POJOs allow users to build a model using H2O and then deploy the model to score 
 
 <p></p>
 
-<b>Note:</b> POJOs are not supported for GLRM or Stacked Ensembles models.
+<b>Notes</b>:
+<ul>
+  <li>POJOs are not supported for source files larger than 1G</li>
+  <li>POJOs are not supported for GLRM, Stacked Ensembles, or Word2Vec models.</li>
+  <li>POJO predict cannot parse columns enclosed in double quotes (for example, ""2"").</li>
+</ul>
 
 <p></p>
 <!-- ============================================================ -->
