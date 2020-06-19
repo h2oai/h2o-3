@@ -115,9 +115,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     if( mem != null ) return mem;
     Freezable pojo = _pojo;     // Read once!
     if( pojo != null )          // Has the POJO, make raw bytes
-      return _mem = pojo.asBytes();
+      return pojo.asBytes();
     if( _max == 0 ) return (_mem = new byte[0]);
-    return (_mem = loadPersist());
+    return loadPersist();
   }
   // Just an empty shell of a Value, no local data but the Value is "real".
   // Any attempt to look at the Value will require a remote fetch.
@@ -149,11 +149,12 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
         return pojo;
     pojo = (T) TypeMap.newInstance(_type);
     if (pojo instanceof MemKeyed) {
-      return (T) (_pojo = ((MemKeyed) pojo).reloadFromBytes(_key, memOrLoad()));
+      pojo = (T) (_pojo = ((MemKeyed) pojo).reloadFromBytes(_key, memOrLoad()));
     } else {
       pojo = (T) (_pojo = pojo.reloadFromBytes(memOrLoad()));
-      return pojo;
     }
+    freeMem();
+    return pojo;
   }
 
   // ---
@@ -323,8 +324,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();
-    _mem = pojo.asBytes();
-    _max = _mem.length;
+    _mem = null;
+    _max = 1;
     assert _max < MAX : "Value size = " + _max + " (0x"+Integer.toHexString(_max) + ") >= (MAX=" + MAX + ").";
     // For the ICE backend, assume new values are not-yet-written.
     // For HDFS & NFS backends, assume we from global data and preserve the
@@ -353,8 +354,8 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _key = k;
     _pojo = pojo;
     _type = (short)pojo.frozenType();
-    _mem = pojo.asBytes();
-    _max = _mem.length;
+    _mem = null;
+    _max = 1;
     byte p = (byte)(be&BACKEND_MASK);
     _persist = (p==ICE) ? p : be;
     _rwlock = new AtomicInteger(1);
