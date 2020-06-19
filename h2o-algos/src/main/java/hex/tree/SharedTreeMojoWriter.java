@@ -66,14 +66,14 @@ public abstract class SharedTreeMojoWriter<
           continue; //throw new H2OKeyNotFoundArgumentException("CompressedTree " + key + " not found");
         CompressedTree ct = ctVal.get();
         // assume ct._seed is useless and need not be persisted
-        writeblob(String.format("trees/t%02d_%03d.bin", j, i), ct._bits);
+        writeblob(String.format("trees/t%02d_%03d.bin", j, i), ct.rawMem());
 
         if (model._output._treeKeysAux!=null) {
           key = model._output._treeKeysAux[i][j];
           ctVal = key != null ? DKV.get(key) : null;
           if (ctVal != null) {
             ct = ctVal.get();
-            writeblob(String.format("trees/t%02d_%03d_aux.bin", j, i), ct._bits);
+            writeblob(String.format("trees/t%02d_%03d_aux.bin", j, i), ct.rawMem());
           }
         }
       }

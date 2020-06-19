@@ -23,7 +23,7 @@ public abstract class TreeVisitor<T extends Exception> {
   protected int _depth; // actual depth
   protected int _nodes; // number of visited nodes
   public TreeVisitor( CompressedTree ct ) {
-    _ts = new AutoBuffer((_ct=ct)._bits);
+    _ts = new AutoBuffer((_ct=ct).rawMem());
     _gcmp = new IcedBitSet(0);
   }
 
@@ -46,8 +46,8 @@ public abstract class TreeVisitor<T extends Exception> {
       if (equal == 0 || equal == 1)
         fcmp = _ts.get4f();
       else {
-        if (equal == 2) _gcmp.fill2(_ct._bits, _ts);
-        else _gcmp.fill3(_ct._bits, _ts);
+        if (equal == 2) _gcmp.fill2(_ct.rawMem(), _ts);
+        else _gcmp.fill3(_ct.rawMem(), _ts);
       }
     }
     // Compute the amount to skip.

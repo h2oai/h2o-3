@@ -404,8 +404,8 @@ public abstract class SharedTreeModel<
       CompressedTree auxTree = _auxTreeKeys[tidx][cls].get();
       assert auxTree != null;
 
-      final double d = SharedTreeMojoModel.scoreTree(tree._bits, input, true, _domains);
-      final int nodeId = SharedTreeMojoModel.getLeafNodeId(d, auxTree._bits);
+      final double d = SharedTreeMojoModel.scoreTree(tree.rawMem(), input, true, _domains);
+      final int nodeId = SharedTreeMojoModel.getLeafNodeId(d, auxTree.rawMem());
 
       out.addNum(nodeId, 0);
     }
@@ -463,7 +463,7 @@ public abstract class SharedTreeModel<
         if (_treeKeys[t][c] == null)
           continue;
         _trees[t][c] = SharedTreeMojoModel.computeTreeGraph(0, "T",
-                _treeKeys[t][c].get()._bits, _auxTreeKeys[t][c].get()._bits, _names, _domains);
+                _treeKeys[t][c].get().rawMem(), _auxTreeKeys[t][c].get().rawMem(), _names, _domains);
       }
     }
   }
@@ -504,7 +504,7 @@ public abstract class SharedTreeModel<
           for (int c = 0; c < _treeKeys[t].length; c++) {
             if (_treeKeys[t][c] == null)
               continue;
-            double d = SharedTreeMojoModel.scoreTree(_treeKeys[t][c].get()._bits, input, true, _domains);
+            double d = SharedTreeMojoModel.scoreTree(_treeKeys[t][c].get().rawMem(), input, true, _domains);
             String decisionPath = SharedTreeMojoModel.getDecisionPath(d);
             SharedTreeNode n = _trees[t][c].walkNodes(decisionPath);
             updateStats(n, output);

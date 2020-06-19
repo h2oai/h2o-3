@@ -20,6 +20,10 @@ public class MemKeyed<T extends MemKeyed<T>> extends Keyed<T> {
     return _mem;
   }
 
+  public final byte[] rawMem() {
+    return _mem;
+  }
+  
   @Override
   public final T reloadFromBytes(byte[] ary) {
     throw new IllegalStateException("Reloading from bytes is not supported for MemKeyed objects");
