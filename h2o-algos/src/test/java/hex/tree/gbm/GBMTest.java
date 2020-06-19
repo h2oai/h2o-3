@@ -352,14 +352,14 @@ public class GBMTest extends TestUtil {
             Value treeValue = DKV.get(key);
             CompressedTree possiblyCachedTreePojo = treeValue.get();
             if (possiblyCachedTreePojo != null) {
-              assertSame(ValueHelper.rawMem(treeValue), possiblyCachedTreePojo._bits);
+              assertSame(ValueHelper.rawMem(treeValue), possiblyCachedTreePojo.rawMem());
             }
             treeValue.freePOJO();
             assertNull(ValueHelper.rawPojo(treeValue));
             CompressedTree tree = key.get();
             assertNotNull(tree);
             assertNotSame(possiblyCachedTreePojo, tree);
-            assertSame(ValueHelper.rawMem(treeValue), tree._bits);
+            assertSame(ValueHelper.rawMem(treeValue), tree.rawMem());
           }
       }
 
