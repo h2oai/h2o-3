@@ -146,12 +146,13 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     touch();
     T pojo = (T) _pojo;    // Read once!
     if (pojo != null)
-        return (T) pojo;
+        return pojo;
     pojo = (T) TypeMap.newInstance(_type);
-    if (pojo instanceof LightKeyed) {
-      return (T) (_pojo = ((LightKeyed) pojo).reloadFromBytes(_key, memOrLoad()));
+    if (pojo instanceof MemKeyed) {
+      return (T) (_pojo = ((MemKeyed) pojo).reloadFromBytes(_key, memOrLoad()));
     } else {
-      return (T) (_pojo = pojo.reloadFromBytes(memOrLoad()));
+      pojo = (T) (_pojo = pojo.reloadFromBytes(memOrLoad()));
+      return pojo;
     }
   }
 
@@ -323,9 +324,6 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     _pojo = pojo;
     _type = (short)pojo.frozenType();
     _mem = pojo.asBytes();
-    if (_mem == null) {
-        System.out.println("prcak");
-    }
     _max = _mem.length;
     assert _max < MAX : "Value size = " + _max + " (0x"+Integer.toHexString(_max) + ") >= (MAX=" + MAX + ").";
     // For the ICE backend, assume new values are not-yet-written.
