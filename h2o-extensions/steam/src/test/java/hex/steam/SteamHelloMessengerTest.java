@@ -59,8 +59,9 @@ public class SteamHelloMessengerTest {
             steam.wait(5000);
         }
         assertNotNull("Did not receive response from H2O", steam.receivedMessage);
-        assertEquals("ack", steam.receivedMessage.get("_type"));
-        assertEquals("123", steam.receivedMessage.get("_id"));
+        assertEquals("cloud_info", steam.receivedMessage.get("_type"));
+        assertEquals("123_response", steam.receivedMessage.get("_id"));
+        assertNotNull(steam.receivedMessage.get("node_address_0"));
         sess.close(new CloseReason(CloseReason.CloseCodes.NORMAL_CLOSURE, "Test Done"));
     }
 
