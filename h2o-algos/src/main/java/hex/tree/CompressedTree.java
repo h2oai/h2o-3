@@ -35,6 +35,11 @@ public class CompressedTree extends MemKeyed<CompressedTree> {
     _seed = seed;
   }
 
+  @Override
+  public void postReload() {
+    _seed = getTreeCoords()._seed;
+  }
+
   public double score(final double[] row, final String[][] domains) {
     return SharedTreeMojoModel.scoreTree(_mem, row, false, domains);
   }

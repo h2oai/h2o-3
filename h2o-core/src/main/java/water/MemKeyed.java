@@ -14,9 +14,14 @@ public class MemKeyed<T extends MemKeyed<T>> extends Keyed<T> {
   public final T reloadFromBytes(Key k, byte[] ary) {
     _key = k;
     _mem = ary;
+    postReload();
     return (T) this;
   }
 
+  public void postReload() {
+    // do nothing
+  }
+  
   public final byte[] asBytes() {
     return _mem;
   }
