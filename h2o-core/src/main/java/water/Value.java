@@ -127,7 +127,11 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
    *  speed.  Will (re)build the POJO from the _mem array.  Never returns NULL.
    *  @return The POJO, probably the cached instance.  */
   public final <T extends Iced> T get() {
-    return getFreezable();
+    touch();
+    Iced pojo = (Iced)_pojo;    // Read once!
+    if( pojo != null ) return (T)pojo;
+    pojo = TypeMap.newInstance(_type);
+    return (T)(_pojo = pojo.reloadFromBytes(_key, memOrLoad()));
   }
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
    *  Will (re)build the POJO from the _mem array.  Never returns NULL.  This
@@ -141,16 +145,13 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   /** The FAST path get-POJO as a {@link Freezable} - final method for speed.
    *  Will (re)build the POJO from the _mem array.  Never returns NULL.
    *  @return The POJO, probably the cached instance.  */
-  @SuppressWarnings("unchecked")
   public final <T extends Freezable> T getFreezable() {
     touch();
-    T pojo = (T) _pojo;    // Read once!
-    if (pojo != null)
-        return pojo;
-    pojo = (T) TypeMap.newInstance(_type);
-    byte[] bytes = memOrLoad();
-    pojo.reloadFromBytes(_key, bytes);
-    return (T) (_pojo = pojo);
+    Freezable pojo = _pojo;     // Read once!
+    if( pojo != null ) return (T)pojo;
+    pojo = TypeMap.newFreezable(_type);
+    pojo.reloadFromBytes(memOrLoad());
+    return (T)(_pojo = pojo);
   }
 
   // ---
