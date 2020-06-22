@@ -92,7 +92,7 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
   // - the POJO might be dropped by the MemoryManager and reconstituted from
   //   disk and/or the byte array back to it's original form, losing your changes.
   private volatile Freezable _pojo;
-  Freezable rawPOJO() { return _pojo; }
+  final Freezable rawPOJO() { return _pojo; }
 
   /** Invalidate byte[] cache.  Only used to eagerly free memory, for data
    *  which is expected to be read-once. */
@@ -148,12 +148,9 @@ public final class Value extends Iced implements ForkJoinPool.ManagedBlocker {
     if (pojo != null)
         return pojo;
     pojo = (T) TypeMap.newInstance(_type);
-    if (pojo instanceof MemKeyed) {
-      return (T) (_pojo = ((MemKeyed) pojo).reloadFromBytes(_key, memOrLoad()));
-    } else {
-      pojo = (T) (_pojo = pojo.reloadFromBytes(memOrLoad()));
-      return pojo;
-    }
+    byte[] bytes = memOrLoad();
+    pojo.reloadFromBytes(_key, bytes);
+    return (T) (_pojo = pojo);
   }
 
   // ---

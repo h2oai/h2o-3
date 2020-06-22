@@ -10,7 +10,8 @@ public class MemKeyed<T extends MemKeyed<T>> extends Keyed<T> {
   }
 
   @SuppressWarnings("unchecked")
-  public final T reloadFromBytes(Key<T> k, byte[] ary) {
+  @Override
+  public final T reloadFromBytes(Key k, byte[] ary) {
     _key = k;
     _mem = ary;
     return (T) this;
