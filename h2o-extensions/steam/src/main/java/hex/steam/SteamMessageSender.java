@@ -3,6 +3,9 @@ package hex.steam;
 import java.io.IOException;
 import java.util.Map;
 
+/**
+ * Send messages from H2O to Steam
+ */
 public interface SteamMessageSender {
 
     /**

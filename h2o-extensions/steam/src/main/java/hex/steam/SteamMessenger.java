@@ -2,6 +2,9 @@ package hex.steam;
 
 import java.util.Map;
 
+/**
+ * Receives messages from Steam and is notified of connection state changes.
+ */
 public interface SteamMessenger {
 
     String ID = "_id";
