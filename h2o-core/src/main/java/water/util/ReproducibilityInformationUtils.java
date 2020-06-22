@@ -37,7 +37,6 @@ public class ReproducibilityInformationUtils {
     colHeaders.add("max_mem"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("java_version"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("jvm_launch_parameters"); colTypes.add("string"); colFormat.add("%s");
-    colHeaders.add("jvm_pid"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("os_version"); colTypes.add("string"); colFormat.add("%s");
     colHeaders.add("machine_physical_mem"); colTypes.add("long"); colFormat.add("%d");
     colHeaders.add("machine_locale"); colTypes.add("string"); colFormat.add("%s");
@@ -81,7 +80,6 @@ public class ReproducibilityInformationUtils {
           table.set(row, col++, info.maxMem[i]);
           table.set(row, col++, info.javaVersion[i]);
           table.set(row, col++, info.jvmLaunchParameters[i]);
-          table.set(row, col++, info.jvmPid[i]);
           table.set(row, col++, info.osVersion[i]);
           table.set(row, col++, info.machinePhysicalMem[i]);
           table.set(row, col++, info.machineLocale[i]);
@@ -98,7 +96,6 @@ public class ReproducibilityInformationUtils {
     private long[] maxMem;
     private String[] javaVersion;
     private String[] jvmLaunchParameters;
-    private String[] jvmPid;
     private String[] osVersion;
     private long[] machinePhysicalMem;
     private String[] machineLocale;
@@ -113,7 +110,6 @@ public class ReproducibilityInformationUtils {
       
       javaVersion = new String[H2O.CLOUD.size()];
       jvmLaunchParameters = new String[H2O.CLOUD.size()];
-      jvmPid = new String[H2O.CLOUD.size()];
       osVersion = new String[H2O.CLOUD.size()];
       machinePhysicalMem = new long[H2O.CLOUD.size()];
       machineLocale = new String[H2O.CLOUD.size()];
@@ -129,7 +125,6 @@ public class ReproducibilityInformationUtils {
       maxMem[H2O.SELF.index()] = runtime.maxMemory();
       javaVersion[H2O.SELF.index()] = "Java " + System.getProperty("java.version") + " (from " + System.getProperty("java.vendor") + ")";
       jvmLaunchParameters[H2O.SELF.index()] = ManagementFactory.getRuntimeMXBean().getInputArguments().toString();
-      jvmPid[H2O.SELF.index()] = ManagementFactory.getRuntimeMXBean().getName();
       osVersion[H2O.SELF.index()] = System.getProperty("os.name") + " " + System.getProperty("os.version") + " (" + System.getProperty("os.arch") + ")";
       machinePhysicalMem[H2O.SELF.index()] = OSUtils.getTotalPhysicalMemory();
       machineLocale[H2O.SELF.index()] = Locale.getDefault().toString();
@@ -149,8 +144,6 @@ public class ReproducibilityInformationUtils {
           javaVersion[i] = other.javaVersion[i];
         if (other.jvmLaunchParameters[i] != null)
           jvmLaunchParameters[i] = other.jvmLaunchParameters[i];
-        if (other.jvmPid[i] != null)
-          jvmPid[i] = other.jvmPid[i];
         if (other.osVersion != null)
           osVersion[i] = other.osVersion[i];
         if (other.machinePhysicalMem[i] > -1)
