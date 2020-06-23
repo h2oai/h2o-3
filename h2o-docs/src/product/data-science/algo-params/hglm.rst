@@ -13,12 +13,12 @@ HGLM produces estimates for fixed effects, random effects, variance components a
 
 The ``hglm`` option allows you to build a hierarchical generalized linear model. This option is disabled by default.
 
-**Note**: This initial release of HGLM supports only the Gaussian family and random family.
+**Note**: This initial release of HGLM supports only Gaussian for ``family`` and ``rand_family``.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-none
+- `random_columns <random_columns.html>`__
 
 Example
 ~~~~~~~
