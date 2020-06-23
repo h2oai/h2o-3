@@ -3097,12 +3097,13 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #' \dontrun{
 #' library(h2o)
 #' h2o.init()
-#' data <- h2o.importFile(path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+#' data <- h2o.importFile(
+#' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
 #' model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", training_frame = data, ntrees = 1)
 #' h2o.kolmogorov_smirnov(model)
 #' }
 #' @export
-setGeneric("h2o.kolmogorov_smirnov", function(object, ...) {})
+setGeneric("h2o.kolmogorov_smirnov", function(object) {})
 
 #' @rdname h2o.kolmogorov_smirnov
 #' @export
