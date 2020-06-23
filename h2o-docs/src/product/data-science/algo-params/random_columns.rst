@@ -20,7 +20,7 @@ Example
 .. tabs::
 	.. code-tab:: r R
 
-			library(h2o)
+			  library(h2o)
         h2o.init()
 
         # Import the semiconductor dataset
@@ -35,7 +35,7 @@ Example
         h2odata$Device <- h2o.asfactor(h2odata$Device)
 
         # Train and view the model
-        m11H2O <- h2o.glm(x = xlist, 
+        h2o_glm <- h2o.glm(x = xlist, 
                           y = yresp, 
                           family = "gaussian", 
                           rand_family = c("gaussian"), 
@@ -44,11 +44,11 @@ Example
                           HGLM = TRUE, 
                           random_columns = z, 
                           calc_like = TRUE)
-        print(m11H2O)
+        print(h2o_glm)
 
 	.. code-tab:: python
 
-			import h2o
+			  import h2o
         from h2o.estimators.glm import H2OGeneralizedLinearEstimator
         h2o.init()
 
@@ -58,7 +58,7 @@ Example
         # Set the response, predictor, and random columns
         y = "y"
         x = ["x1","x3","x5","x6"]
-        z = 0
+        z = [0]
 
         # Convert the "Device" column to a factor
         h2o_data["Device"] = h2o_data["Device"].asfactor()
@@ -67,7 +67,7 @@ Example
         h2o_glm = H2OGeneralizedLinearEstimator(HGLM=True, 
                                                 family="gaussian", 
                                                 rand_family=["gaussian"], 
-                                                random_columns=[z],
+                                                random_columns=z,
                                                 rand_link=["identity"],
                                                 calc_like=True)
         h2o_glm.train(x=x, y=y, training_frame=h2o_data)
