@@ -108,6 +108,7 @@ This Appendix provides detailed descriptions of parameters that can be specified
    data-science/algo-params/pred_noise_bandwidth
    data-science/algo-params/prior
    data-science/algo-params/quantile_alpha
+   data-science/algo-params/rand_family
    data-science/algo-params/random_columns
    data-science/algo-params/rate
    data-science/algo-params/rate_annealing

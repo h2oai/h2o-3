@@ -19,6 +19,7 @@ Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
 - `random_columns <random_columns.html>`__
+- `rand_family <rand_family.html>`__
 
 Example
 ~~~~~~~

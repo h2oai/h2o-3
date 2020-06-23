@@ -1,5 +1,5 @@
-``random_columns``
-------------------
+``rand_family``
+---------------
 
 - Available in: GLM
 - Hyperparameter: no
@@ -7,13 +7,15 @@
 Description
 ~~~~~~~~~~~
 
-Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). The ``random_columns`` option specifies an array of random column indices to use in GLM when ``hglm=True``.
+Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). The ``rand_family`` option specifies the Random Family Component as an array to be used in GLM when ``hglm=True``. 
+
+**Note:** You must include one family for each random component. Only ``rand_family={"[gaussian"})`` is currently supported.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `hglm <hglm.html>`__
-- `rand_family <rand_family.html>`__
+- `HGLM <hglm.html>`__
+- `random_columns <random_columns.html>`__
 
 Example
 ~~~~~~~
@@ -73,4 +75,3 @@ Example
                                               calc_like=True)
       h2o_glm.train(x=x, y=y, training_frame=h2o_data)
       print(h2o_glm)
-        
