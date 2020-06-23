@@ -270,13 +270,13 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
 
     private GainsLift calculateGainsLift(Model m, Frame preds, Vec resp, Vec weights) {
       GainsLift gl = null;
-        gl = new GainsLift(preds.lastVec(), resp, weights);
-        if (m != null && m._parms._gainslift_bins != 0) {
-          if (m._parms._gainslift_bins < 1)
-            throw new IllegalArgumentException("Number of G/L bins must be greater than zero.");
-          gl._groups = m._parms._gainslift_bins;
-        }
-        gl.exec(m != null ? m._output._job : null);
+      gl = new GainsLift(preds.lastVec(), resp, weights);
+      if (m != null && m._parms._gainslift_bins != 0) {
+        if (m._parms._gainslift_bins < 1)
+          throw new IllegalArgumentException("Number of G/L bins must be greater than zero.");
+        gl._groups = m._parms._gainslift_bins;
+      }
+      gl.exec(m != null ? m._output._job : null);
       return gl;
     }
 
