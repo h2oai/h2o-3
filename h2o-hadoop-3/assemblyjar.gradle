@@ -11,6 +11,7 @@ dependencies {
         transitive = false
     }
     compile project(":h2o-security")
+    compile project(":h2o-ext-steam")
     compile "org.apache.hadoop:hadoop-client:$hadoopMavenArtifactVersion"
     compile "org.apache.hadoop:hadoop-mapreduce-client-app:$hadoopMavenArtifactVersion"
     // Libraries need for Google Cloud Storage strongly require this Guava version
