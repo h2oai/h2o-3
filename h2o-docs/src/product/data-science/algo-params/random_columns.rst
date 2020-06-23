@@ -1,5 +1,5 @@
-``hglm``
---------
+``random_columns``
+------------------
 
 - Available in: GLM
 - Hyperparameter: no
@@ -7,13 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-Generalized Linear Models (GLM) estimate regression models for outcomes following exponential distributions. Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). HGLM allows you to specify both fixed and random effects, which allows fitting correlated to random effects as well as random regression models. 
-
-HGLM produces estimates for fixed effects, random effects, variance components and their standard errors. It also produces diagnostics, such as variances and leverages. 
-
-The ``hglm`` option allows you to build a hierarchical generalized linear model. This option is disabled by default.
-
-**Note**: This initial release of HGLM supports only the Gaussian family and random family.
+This option specifies an array of random column indices that are used for HGLM.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
@@ -24,9 +18,9 @@ Example
 ~~~~~~~
 
 .. tabs::
-   .. code-tab:: r R
+	.. code-tab:: r R
 
-        library(h2o)
+			library(h2o)
         h2o.init()
 
         # Import the semiconductor dataset
@@ -52,9 +46,9 @@ Example
                           calc_like = TRUE)
         print(m11H2O)
 
-   .. code-tab:: python
+	.. code-tab:: python
 
-        import h2o
+			import h2o
         from h2o.estimators.glm import H2OGeneralizedLinearEstimator
         h2o.init()
 
@@ -78,3 +72,4 @@ Example
                                                 calc_like=True)
         h2o_glm.train(x=x, y=y, training_frame=h2o_data)
         print(h2o_glm)
+        
