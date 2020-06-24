@@ -7,7 +7,7 @@
 Description
 ~~~~~~~~~~~
 
-Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). The ``random_columns`` option specifies an array of random column indices to use in GLM when ``hglm=True``.
+Hierarchical GLM (HGLM) fits generalized linear models with random effects, where the random effect can come from a conjugate exponential-family distribution (for example, Gaussian). The ``random_columns`` option specifies an array of random column indices to use in GLM when ``HGLM=True``.
 
 Related Parameters
 ~~~~~~~~~~~~~~~~~~

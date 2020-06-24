@@ -11,7 +11,7 @@ Generalized Linear Models (GLM) estimate regression models for outcomes followin
 
 HGLM produces estimates for fixed effects, random effects, variance components and their standard errors. It also produces diagnostics, such as variances and leverages. 
 
-The ``hglm`` option allows you to build a hierarchical generalized linear model. This option is disabled by default.
+The ``HGLM`` option allows you to build a hierarchical generalized linear model. This option is disabled by default.
 
 **Note**: This initial release of HGLM supports only Gaussian for ``family`` and ``rand_family``.
 
