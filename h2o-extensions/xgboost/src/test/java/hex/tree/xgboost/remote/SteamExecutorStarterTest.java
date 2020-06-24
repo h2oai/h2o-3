@@ -42,6 +42,7 @@ public class SteamExecutorStarterTest {
     @Test
     public void testSteamClusterStart() throws Exception {
         Scope.enter();
+        final WebsocketClient steam = new WebsocketClient();
         try {
             Frame train = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
 
@@ -50,10 +51,11 @@ public class SteamExecutorStarterTest {
             params._response_column = "AGE";
             params._ignored_columns = new String[]{"ID"};
 
-            final WebsocketClient steam = new WebsocketClient();
+            // queue two model in parallel
+            Job<XGBoostModel> model1 = new XGBoost(params).trainModel();
+            Job<XGBoostModel> model2 = new XGBoost(params).trainModel();
 
             // first request will request external cluster start
-            Job<XGBoostModel> model1 = new XGBoost(params).trainModel();
             Map<String, String> startReq = steam.waitToReceiveMessage("start request");
             assertNotNull(startReq.get("_id"));
             assertEquals("startXGBoostCluster", startReq.get("_type"));
@@ -66,16 +68,57 @@ public class SteamExecutorStarterTest {
             steam.sendMessage(startResp);
             Scope.track_generic(model1.get());
 
-            // another request should not go to steam
-            Job<XGBoostModel> model2 = new XGBoost(params).trainModel();
+            // second model should not go to steam
             assertNull("Unexpected message to steam", steam.waitToReceiveMessage("none", 1_000, false));
             Scope.track_generic(model2.get());
 
             // should terminate the cluster after 5sec
-            Map<String, String> stopReq = steam.waitToReceiveMessage("stop request", 15_000);
+            Map<String, String> stopReq = steam.waitToReceiveMessage("stop request", 10_000);
             assertNotNull(stopReq.get("_id"));
             assertEquals("stopXGBoostCluster", stopReq.get("_type"));
         } finally {
+            steam.close();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSteamClusterFail() throws Exception {
+        Scope.enter();
+        final WebsocketClient steam = new WebsocketClient();
+        try {
+            Frame train = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+            XGBoostModel.XGBoostParameters params = new XGBoostModel.XGBoostParameters();
+            params._train = train._key;
+            params._response_column = "AGE";
+            params._ignored_columns = new String[]{"ID"};
+
+            // first request will request external cluster start
+            Job<XGBoostModel> model1 = new XGBoost(params).trainModel();
+            Map<String, String> startReq = steam.waitToReceiveMessage("start request", 50000);
+            assertNotNull(startReq.get("_id"));
+            assertEquals("startXGBoostCluster", startReq.get("_type"));
+
+            // fail first cluster request
+            Map<String, String> startResp = new HashMap<>();
+            startResp.put(ID, startReq.get(ID) + "_response");
+            startResp.put(TYPE, "xgboostClusterStartNotification");
+            startResp.put("status", "failed");
+            startResp.put("reason", "Testing in progress");
+            steam.sendMessage(startResp);
+            try {
+                Scope.track_generic(model1.get());
+                fail("model1 expected exception to be thrown.");
+            } catch (Exception e) {
+                Scope.track_generic(model1._result.get()); // even though the training failed we need to remove the model
+                assertEquals("Failed to start external cluster: Testing in progress", e.getCause().getMessage());
+            }
+
+            // should send no more messages
+            assertNull("Unexpected message to steam", steam.waitToReceiveMessage("none", 1_000, false));
+        } finally {
+            steam.close();
             Scope.exit();
         }
     }

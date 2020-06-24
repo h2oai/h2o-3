@@ -11,6 +11,7 @@ import water.fvec.Frame;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SteamExecutorStarter implements SteamMessenger {
 
@@ -24,8 +25,6 @@ public class SteamExecutorStarter implements SteamMessenger {
     public static SteamExecutorStarter getInstance() {
         return instance;
     }
-
-    enum Status {STOPPED, STARTING, STARTED}
 
     private static class ClusterInfo {
         final String uri;
@@ -46,12 +45,17 @@ public class SteamExecutorStarter implements SteamMessenger {
         private final int timeoutMs;
 
         private ClusterUsageMonitor(int timeoutSeconds) {
-            this.timeoutMs = timeoutSeconds * 1000;
+            timeoutMs = timeoutSeconds * 1000;
             terminateOn = System.currentTimeMillis() + this.timeoutMs;
         }
 
         synchronized void notifyUsed() {
             terminateOn = System.currentTimeMillis() + this.timeoutMs;
+            this.notify();
+        }
+        
+        synchronized  void stop() {
+            shouldRun = false;
             this.notify();
         }
 
@@ -62,7 +66,7 @@ public class SteamExecutorStarter implements SteamMessenger {
                 if (shouldTerminate) {
                     try {
                         stopCluster();
-                        shouldRun = false;
+                        break;
                     } catch (IOException e) {
                         // cluster stopping failed, wait another timeout for Steam to reconnect
                         LOG.error("Failed to stop external cluster, will try again.", e);
@@ -83,7 +87,6 @@ public class SteamExecutorStarter implements SteamMessenger {
     private final Object clusterLock = new Object[0];
 
     private SteamMessageSender sender;
-    private Status clusterStatus = Status.STOPPED;
     private ClusterInfo cluster;
     private ClusterUsageMonitor monitor;
 
@@ -95,10 +98,11 @@ public class SteamExecutorStarter implements SteamMessenger {
 
     public RemoteXGBoostExecutor getRemoteExecutor(XGBoostModel model, Frame train) throws IOException {
         synchronized (clusterLock) {
-            if (clusterStatus == Status.STARTING) {
-                waitForClusterToStart();
-            } else if (clusterStatus == Status.STOPPED) {
+            if (cluster == null) {
+                LOG.info("Starting external cluster for model " + model._key + ".");
                 startCluster();
+            } else {
+                LOG.info("External cluster available, starting model " + model._key + " now.");
             }
             monitor.notifyUsed();
             return makeExecutor(model, train);
@@ -106,9 +110,7 @@ public class SteamExecutorStarter implements SteamMessenger {
     }
 
     private void startCluster() throws IOException {
-        clusterStatus = Status.STARTING;
         Map<String, String> startRequest = makeStartRequest();
-        LOG.info("Requesting cluster start from Steam");
         sendMessage(startRequest);
         Map<String, String> response = waitForResponse(startRequest);
         if (response.get("status").equals("started")) {
@@ -119,24 +121,8 @@ public class SteamExecutorStarter implements SteamMessenger {
             cluster = new ClusterInfo(remoteUri, userName, password);
             monitor = new ClusterUsageMonitor(timeout);
             new Thread(monitor, "XGBoostClusterMonitor").start();
-            clusterStatus = Status.STARTED;
         } else {
-            clusterStatus = Status.STOPPED;
             throw new IllegalStateException("Failed to start external cluster: " + response.get("reason"));
-        }
-    }
-
-    private void waitForClusterToStart() {
-        LOG.info("A cluster is already starting, waiting.");
-        while (clusterStatus == Status.STARTING) {
-            try {
-                clusterLock.wait();
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        if (clusterStatus != Status.STARTED) {
-            throw new IllegalStateException("External cluster did not start.");
         }
     }
 
@@ -148,7 +134,9 @@ public class SteamExecutorStarter implements SteamMessenger {
         synchronized (clusterLock) {
             Map<String, String> stopRequest = makeStopRequest();
             sendMessage(stopRequest);
-            clusterStatus = Status.STOPPED;
+            cluster = null;
+            monitor.stop();
+            monitor = null;
         }
     }
 
