@@ -58,7 +58,7 @@ public class HyperSpaceSearchCriteria extends Iced {
 
   public final Strategy _strategy;
   public final Strategy strategy() { return _strategy; }
-
+  
   public StoppingCriteria stoppingCriteria() { return null; }
 
 
