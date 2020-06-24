@@ -93,7 +93,7 @@ public class SteamExecutorStarter implements SteamMessenger {
         instance = this;
     }
 
-    public RemoteXGBoostExecutor getRemoteExecutor(XGBoostModel model) throws IOException {
+    public RemoteXGBoostExecutor getRemoteExecutor(XGBoostModel model, Frame train) throws IOException {
         synchronized (clusterLock) {
             if (clusterStatus == Status.STARTING) {
                 waitForClusterToStart();
@@ -101,7 +101,7 @@ public class SteamExecutorStarter implements SteamMessenger {
                 startCluster();
             }
             monitor.notifyUsed();
-            return makeExecutor(model);
+            return makeExecutor(model, train);
         }
     }
 
@@ -140,8 +140,8 @@ public class SteamExecutorStarter implements SteamMessenger {
         }
     }
 
-    private RemoteXGBoostExecutor makeExecutor(XGBoostModel model) {
-        return new RemoteXGBoostExecutor(model, cluster.uri, cluster.userName, cluster.password);
+    private RemoteXGBoostExecutor makeExecutor(XGBoostModel model, Frame train) {
+        return new RemoteXGBoostExecutor(model, train, cluster.uri, cluster.userName, cluster.password);
     }
     
     private void stopCluster() throws IOException {

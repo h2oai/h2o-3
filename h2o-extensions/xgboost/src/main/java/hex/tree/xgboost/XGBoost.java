@@ -349,7 +349,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
     
     private XGBoostExecutor makeExecutor(XGBoostModel model) throws IOException {
       if (H2O.ARGS.use_external_xgboost) {
-        return SteamExecutorStarter.getInstance().getRemoteExecutor(model);
+        return SteamExecutorStarter.getInstance().getRemoteExecutor(model, _train);
       } else {
         String remoteUriFromProp = H2O.getSysProperty("xgboost.external.address", null);
         if (remoteUriFromProp == null) {
@@ -357,7 +357,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
         } else {
           String userName = H2O.getSysProperty("xgboost.external.user", null);
           String password = H2O.getSysProperty("xgboost.external.password", null);
-          return new RemoteXGBoostExecutor(model, remoteUriFromProp, userName, password);
+          return new RemoteXGBoostExecutor(model, _train, remoteUriFromProp, userName, password);
         }
       }
     }
@@ -384,7 +384,6 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       XGBoostUtils.createFeatureMap(model, _train);
       XGBoostVariableImportance variableImportance = model.setupVarImp();
       try (XGBoostExecutor exec = makeExecutor(model)) {
-        exec.init(_train);
         model.model_info().updateBoosterBytes(exec.setup());
         scoreAndBuildTrees(model, exec, variableImportance);
       } catch (Exception e) {
