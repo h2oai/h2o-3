@@ -920,21 +920,21 @@ Metric Comparison
 +------------+-----------------------+-------------------------------------------------------+
 | Metric     | Evaluation Based On   | Tip                                                   |
 +============+=======================+=======================================================+
-| MCC        | Class                 | good for imbalanced data                              |
+| MCC        | Predicted class       | good for imbalanced data                              |
 +------------+-----------------------+-------------------------------------------------------+
-| F1         | Class                 |                                                       |
+| F1         | Predicted class       |                                                       |
 +------------+-----------------------+-------------------------------------------------------+
-| F0.5       | Class                 | good when you want to give more weight to precision   |
+| F0.5       | Predicted class       | good when you want to give more weight to precision   |
 +------------+-----------------------+-------------------------------------------------------+
-| F2         | Class                 | good when you want to give more weight to recall      |
+| F2         | Predicted class       | good when you want to give more weight to recall      |
 +------------+-----------------------+-------------------------------------------------------+
-| Accuracy   | Class                 | highly interpretable                                  |
+| Accuracy   | Predicted class       | highly interpretable, bad for imbalanced data         |
 +------------+-----------------------+-------------------------------------------------------+
-| Logloss    | Probability           |                                                       |
+| Logloss    | Predicted value       |                                                       |
 +------------+-----------------------+-------------------------------------------------------+
-| AUC        | Class                 |                                                       |
+| AUC        | Predicted value       | good for imbalanced data                              |
 +------------+-----------------------+-------------------------------------------------------+
-| AUCPR      | Class                 | good for imbalanced data                              |
+| AUCPR      | Predicted value       | good for imbalanced data                              |
 +------------+-----------------------+-------------------------------------------------------+
 
 Stopping Model Metrics
