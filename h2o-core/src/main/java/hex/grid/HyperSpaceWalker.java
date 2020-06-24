@@ -13,6 +13,7 @@ import water.util.PojoUtils;
 
 import java.util.*;
 import java.util.function.Consumer;
+import java.util.stream.IntStream;
 
 import static java.lang.StrictMath.min;
 
@@ -191,9 +192,9 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       _hyperParams = hyperParams;
       _paramsBuilderFactory = paramsBuilderFactory;
       _hyperParamNames = hyperParams.keySet().toArray(new String[0]);
-      _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
       _search_criteria = search_criteria;
-
+      _maxHyperSpaceSize = computeMaxSizeOfHyperSpace();
+      
       // Sanity check the hyperParams map, and check it against the params object
       try {
         _defaultParams = (MP) params.getClass().newInstance();
@@ -223,13 +224,12 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
       return _paramsBuilderFactory;
     }
 
-    protected MP getModelParams(MP params, Object[] hyperParams) {
+    protected MP getModelParams(MP params, Object[] hyperParams, String[] hyperParamNames) {
       ModelParametersBuilderFactory.ModelParametersBuilder<MP>
               paramsBuilder = _paramsBuilderFactory.get(params);
-      for (int i = 0; i < _hyperParamNames.length; i++) {
-        String paramName = _hyperParamNames[i];
+      for (int i = 0; i < hyperParamNames.length; i++) {
+        String paramName = hyperParamNames[i];
         Object paramValue = hyperParams[i];
-
         if (paramName.equals("valid")) {  // change paramValue to key<Frame> for validation_frame
           paramName = "validation_frame";   // @#$, paramsSchema is still using validation_frame and training_frame
         }
@@ -240,28 +240,68 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
     }
 
     protected long computeMaxSizeOfHyperSpace() {
-      long work = 1;
+      long work = 0;
+      long free_param_combos = 1;
+      
+      if(_hyperParams.get("constraints") == null) {
+        for (Map.Entry<String, Object[]> p : _hyperParams.entrySet()) {
+          if (p.getValue() != null) {
+            work *= p.getValue().length;
+          }
+        }
+        return work;
+      }
+
       for (Map.Entry<String, Object[]> p : _hyperParams.entrySet()) {
-        if (p.getValue() != null) {
-          work *= p.getValue().length;
+        if (p.getValue() != null && !p.getKey().equals("constraints")) {
+          free_param_combos *= p.getValue().length;
         }
       }
+      
+      for (int i = 0; i < _hyperParams.get("constraints").length; i++) {
+        long constrained_param_combos = 1;
+        Map<String, Object[]> constraints = (Map<String, Object[]>)_hyperParams.get("constraints")[i];
+        for (Map.Entry<String, Object[]> p : constraints.entrySet()) {
+          if (p.getValue() != null) {
+            constrained_param_combos *= ((ArrayList) (Object) p.getValue()).toArray().length;
+          }
+        }
+        work += constrained_param_combos * free_param_combos;
+      }
+      
       return work;
     }
 
+    protected Map<String, Object[]> mergeHashMaps(Map<String, Object[]> m1, Map<String, Object[]> m2) {
+      if(m2 == null) { return m1; }
+      Map<String, Object[]> m = new HashMap<>();
+      
+      for(Map.Entry<String, Object[]> entry : m1.entrySet()) {
+        if(entry.getKey().equals("constraints")) { continue; }
+        m.put(entry.getKey(), entry.getValue());
+      }
+      
+      for(Map.Entry<String, Object[]> entry : m2.entrySet()) {
+        m.put(entry.getKey(), ((ArrayList) (Object) entry.getValue()).toArray());
+      }
+      
+      return m;
+    }
+    
     /** Given a list of indices for the hyperparameter values return an Object[] of the actual values. */
-    protected Object[] hypers(int[] hidx) {
-      Object[] hypers = new Object[_hyperParamNames.length];
+    protected Object[] hypers(Map<String, Object[]> hyperParams, String[] hyperParamNames, int[] hidx) {
+      Object[] hypers = new Object[hyperParamNames.length];
       for (int i = 0; i < hidx.length; i++) {
-        hypers[i] = _hyperParams.get(_hyperParamNames[i])[hidx[i]];
+        hypers[i] = hyperParams.get(hyperParamNames[i])[hidx[i]];
       }
       return hypers;
     }
 
-    protected int integerHash(int[] ar) {
-      Integer[] hashMe = new Integer[ar.length];
+    protected int integerHash(Map<String, Object[]> hyperParams, String[] hyperParamNames, int[] ar, int constraintNum) {
+      Integer[] hashMe = new Integer[ar.length + 1];
       for (int i = 0; i < ar.length; i++)
-        hashMe[i] = ar[i] * _hyperParams.get(_hyperParamNames[i]).length;
+        hashMe[i] = ar[i] * hyperParams.get(hyperParamNames[i]).length;
+      hashMe[ar.length] = constraintNum;
       return Arrays.deepHashCode(hashMe);
     }
 
@@ -276,33 +316,50 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         if ("seed".equals(key) || "_seed".equals(key)) continue;  // initialized to the wall clock
 
-        // Ugh.  Java callers, like the JUnits or Sparkling Water users, use a leading _.  REST users don't.
-        String prefix = (key.startsWith("_") ? "" : "_");
-
-        // Throw if params has a non-default value which is not in the hyperParams map
-        Object defaultVal = PojoUtils.getFieldValue(_defaultParams, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
-        Object actualVal = PojoUtils.getFieldValue(_params, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
-
-        if (defaultVal != null && actualVal != null) {
-          // both are not set to null
-          if (defaultVal.getClass().isArray() &&
-                  // array
-                  !PojoUtils.arraysEquals(defaultVal, actualVal)) {
-            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
-          } // array
-          if (!defaultVal.getClass().isArray() &&
-                  // ! array
-                  !defaultVal.equals(actualVal)) {
-            throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
-          } // ! array
-        } // both are set: defaultVal != null && actualVal != null
-
-        // defaultVal is null but actualVal is not, raise exception
-        if (defaultVal == null && !(actualVal == null)) {
-          // only actual is set
-          throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+        if(key.equals("constraints")) {
+          for (int i = 0; i < _hyperParams.get("constraints").length; i++) {
+            Map<String, Object[]> constraints = (Map<String, Object[]>)_hyperParams.get("constraints")[i];
+            for (String constraintKey : constraints.keySet()) {
+              if(_hyperParams.get(constraintKey) != null) {
+                throw new H2OIllegalArgumentException("Grid search model parameter '" + constraintKey + "' is set in both the constraints and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+              }
+              validateParamVals(constraintKey);
+            }
+          }
+        } else {
+          validateParamVals(key);  
         }
+        // Ugh.  Java callers, like the JUnits or Sparkling Water users, use a leading _.  REST users don't.
+
       } // for all keys
+    }
+    
+    private void validateParamVals(String key) {
+      String prefix = (key.startsWith("_") ? "" : "_");
+
+      // Throw if params has a non-default value which is not in the hyperParams map
+      Object defaultVal = PojoUtils.getFieldValue(_defaultParams, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
+      Object actualVal = PojoUtils.getFieldValue(_params, prefix + key, PojoUtils.FieldNaming.CONSISTENT);
+
+      if (defaultVal != null && actualVal != null) {
+        // both are not set to null
+        if (defaultVal.getClass().isArray() &&
+                // array
+                !PojoUtils.arraysEquals(defaultVal, actualVal)) {
+          throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+        } // array
+        if (!defaultVal.getClass().isArray() &&
+                // ! array
+                !defaultVal.equals(actualVal)) {
+          throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+        } // ! array
+      } // both are set: defaultVal != null && actualVal != null
+
+      // defaultVal is null but actualVal is not, raise exception
+      if (defaultVal == null && !(actualVal == null)) {
+        // only actual is set
+        throw new H2OIllegalArgumentException("Grid search model parameter '" + key + "' is set in both the model parameters and in the hyperparameters map.  This is ambiguous; set it in one place or the other, not both.");
+      }
     }
   }
 
@@ -326,17 +383,35 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         /** Hyper params permutation.
          */
         private int[] _currentHyperparamIndices = null;
+        private int _currentConstraint = -1;
+        private Map<String, Object[]> _currentHyperParams = _hyperParams;
+        private String[] _currentHyperParamNames = _hyperParamNames;
 
         @Override
         public MP nextModelParameters(Model previousModel) {
-          _currentHyperparamIndices = _currentHyperparamIndices != null ? nextModelIndices(_currentHyperparamIndices) : new int[_hyperParamNames.length];
+
+          if (_hyperParams.get("constraints") != null && _currentConstraint == -1) {
+            _currentConstraint = 0;
+            _currentHyperParams = mergeHashMaps(_hyperParams, (Map<String, Object[]>) _hyperParams.get("constraints")[0]);
+            _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
+          }
+          
+          _currentHyperparamIndices = _currentHyperparamIndices == null ?
+                  new int[_currentHyperParamNames.length] : nextModelIndices(_currentHyperparamIndices);
+          
+          if(_currentConstraint != -1 && _currentConstraint < _hyperParams.get("constraints").length - 1 && _currentHyperparamIndices == null) {
+            _currentHyperParams = mergeHashMaps(_hyperParams, (Map<String, Object[]>) _hyperParams.get("constraints")[++_currentConstraint]);
+            _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
+            _currentHyperparamIndices = new int[_currentHyperParamNames.length];
+          }
+
           if (_currentHyperparamIndices != null) {
             // Fill array of hyper-values
-            Object[] hypers = hypers(_currentHyperparamIndices);
+            Object[] hypers = hypers(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices);
             // Get clone of parameters
             MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
-            MP params = getModelParams(commonModelParams, hypers);
+            MP params = getModelParams(commonModelParams, hypers, _currentHyperParamNames);
 
             return params;
           } else {
@@ -346,22 +421,22 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
         @Override
         public boolean hasNext(Model previousModel) {
-          if (_currentHyperparamIndices == null) {
-            return true;
-          }
-          int[] hyperparamIndices = _currentHyperparamIndices;
-          for (int i = 0; i < hyperparamIndices.length; i++) {
-            if (hyperparamIndices[i] + 1 < _hyperParams.get(_hyperParamNames[i]).length) {
-              return true;
+          // Checks to see that there is another valid combination of hyper parameters left in the hyperspace.
+          if (_currentHyperparamIndices != null) {
+            int[] hyperParamIndicesCopy = new int[_currentHyperparamIndices.length];
+            System.arraycopy(_currentHyperparamIndices, 0, hyperParamIndicesCopy, 0, _currentHyperparamIndices.length);
+            if (nextModelIndices(hyperParamIndicesCopy) == null && _currentConstraint == _hyperParams.get("constraints").length - 1) {
+              return false;
             }
           }
-          return false;
+          
+          return true;
         }
 
         @Override
         public void onModelFailure(Model failedModel, Consumer<Object[]> withFailedModelHyperParams) {
           // FIXME: when using parallel grid search, there's no good reason to think that the current hyperparam indices where the ones used for the failed model
-          withFailedModelHyperParams.accept(hypers(_currentHyperparamIndices));
+          withFailedModelHyperParams.accept(hypers(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices));
         }
 
         /**
@@ -373,7 +448,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           // Find the next parm to flip
           int i;
           for (i = 0; i < hyperparamIndices.length; i++) {
-            if (hyperparamIndices[i] + 1 < _hyperParams.get(_hyperParamNames[i]).length) {
+            if (hyperparamIndices[i] + 1 < _currentHyperParams.get(_currentHyperParamNames[i]).length) {
               break;
             }
           }
@@ -384,6 +459,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
           for (int j = 0; j < i; j++) {
             hyperparamIndices[j] = 0;
           }
+          
           hyperparamIndices[i]++;
           return hyperparamIndices;
         }
@@ -439,6 +515,10 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         /** One-based count of the permutations we've visited, primarily used as an index into _visitedHyperparamIndices. */
         private int _currentPermutationNum = 0;
 
+        private int _currentConstraint = -1;
+        private Map<String, Object[]> _currentHyperParams = _hyperParams;
+        private String[] _currentHyperParamNames = _hyperParamNames;
+
         // TODO: override into a common subclass:
         @Override
         public MP nextModelParameters(Model previousModel) {
@@ -449,15 +529,15 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
 
           if (_currentHyperparamIndices != null) {
             _visitedPermutations.add(_currentHyperparamIndices);
-            _visitedPermutationHashes.add(integerHash(_currentHyperparamIndices));
+            _visitedPermutationHashes.add(integerHash(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices, _currentConstraint));
             _currentPermutationNum++; // NOTE: 1-based counting
 
             // Fill array of hyper-values
-            Object[] hypers = hypers(_currentHyperparamIndices);
+            Object[] hypers = hypers(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices);
             // Get clone of parameters
             MP commonModelParams = (MP) _params.clone();
             // Fill model parameters
-            MP params = getModelParams(commonModelParams, hypers);
+            MP params = getModelParams(commonModelParams, hypers, _currentHyperParamNames);
 
             // add max_runtime_secs in search criteria into params if applicable
             if (_search_criteria != null && _search_criteria.strategy() == Strategy.RandomDiscrete) {
@@ -489,7 +569,7 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
         public void onModelFailure(Model failedModel, Consumer<Object[]> withFailedModelHyperParams) {
           // FIXME: when using parallel grid search, there's no good reason to think that the current hyperparam indices where the ones used for the failed model
           _currentPermutationNum--;
-          withFailedModelHyperParams.accept(hypers(_currentHyperparamIndices));
+          withFailedModelHyperParams.accept(hypers(_currentHyperParams, _currentHyperParamNames, _currentHyperparamIndices));
         }
 
         /**
@@ -498,16 +578,27 @@ public interface HyperSpaceWalker<MP extends Model.Parameters, C extends HyperSp
          * criteria.
          */
         private int[] nextModelIndices() {
-          int[] hyperparamIndices =  new int[_hyperParamNames.length];
-
+          if(_hyperParams.get("constraints") != null) {
+            _currentConstraint = _random.nextInt(_hyperParams.get("constraints").length);
+            _currentHyperParams = mergeHashMaps(_hyperParams, (Map<String, Object[]>) _hyperParams.get("constraints")[_currentConstraint]);
+            _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
+          }
+          
+          int[] hyperparamIndices = new int[_currentHyperParamNames.length];
+          
           do {
-            // generate random indices
-            for (int i = 0; i < _hyperParamNames.length; i++) {
-              hyperparamIndices[i] = _random.nextInt(_hyperParams.get(_hyperParamNames[i]).length);
+            if(_hyperParams.get("constraints") != null) {
+              _currentConstraint = _random.nextInt(_hyperParams.get("constraints").length);
+              _currentHyperParams = mergeHashMaps(_hyperParams, (Map<String, Object[]>) _hyperParams.get("constraints")[_currentConstraint]);
+              _currentHyperParamNames = _currentHyperParams.keySet().toArray(new String[0]);
+              hyperparamIndices = new int[_currentHyperParamNames.length];
+            }
+            for (int i = 0; i < _currentHyperParamNames.length; i++) {
+              hyperparamIndices[i] = _random.nextInt(_currentHyperParams.get(_currentHyperParamNames[i]).length);
             }
             // check for aliases and loop if we've visited this combo before
-          } while (_visitedPermutationHashes.contains(integerHash(hyperparamIndices)));
-
+          } while (_visitedPermutationHashes.contains(integerHash(_currentHyperParams, _currentHyperParamNames, hyperparamIndices, _currentConstraint)));
+          
           return hyperparamIndices;
         } // nextModel
 
