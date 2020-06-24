@@ -11,10 +11,11 @@ import water.fvec.Vec;
 import water.runner.CloudSize;
 import water.runner.H2ORunner;
 import water.util.Log;
+import water.util.TwoDimTable;
 
 import java.util.Random;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertEquals;
 
 @RunWith(H2ORunner.class)
 @CloudSize(1)
@@ -266,6 +267,31 @@ public class GainsLiftTest extends TestUtil {
 
     actual.remove();
     predict.remove();
+  }
+
+  @Test
+  public void testAverageResponseRate() {
+    final int vectorLength = 10;
+    try {
+      Scope.enter();
+      Vec actual = Scope.track(Vec.makeCon(1.0d, vectorLength));
+      actual.set(0, 0d);
+      Vec predict = Scope.track(Vec.makeCon(1.0d, vectorLength));
+      Vec weights = Scope.track(Vec.makeCon(1.0d, vectorLength));
+      weights.set(0, 0d);
+
+      GainsLift gl = new GainsLift(predict, actual, weights);
+      gl.exec();
+      Log.info(gl);
+      Log.info(gl.avg_response_rate);
+      assertEquals(1.0d, gl.avg_response_rate, 0d);
+
+      final TwoDimTable twoDimTable = gl.createTwoDimTable();
+      assertEquals("Kolmogorov Smirnov",twoDimTable.getColHeaders()[13]);
+      assertEquals(1.0d, twoDimTable.getCellValues()[0][13].get());
+    } finally {
+      Scope.exit();
+    }
   }
 
   @Test
