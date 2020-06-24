@@ -14,6 +14,7 @@ import hex.tree.xgboost.exec.LocalXGBoostExecutor;
 import hex.tree.xgboost.exec.RemoteXGBoostExecutor;
 import hex.tree.xgboost.exec.XGBoostExecutor;
 import hex.tree.xgboost.predict.XGBoostVariableImportance;
+import hex.tree.xgboost.remote.SteamExecutorStarter;
 import hex.tree.xgboost.util.FeatureScore;
 import hex.util.CheckpointUtils;
 import ml.dmlc.xgboost4j.java.DMatrix;
@@ -30,6 +31,7 @@ import water.util.ArrayUtils;
 import water.util.Timer;
 import water.util.TwoDimTable;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -345,14 +347,18 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       }
     }
     
-    private XGBoostExecutor makeExecutor(XGBoostModel model) {
-      String propVal = H2O.getSysProperty("xgboost.external.address", null);
-      if (propVal == null) {
-        return new LocalXGBoostExecutor(model, _train);
+    private XGBoostExecutor makeExecutor(XGBoostModel model) throws IOException {
+      if (H2O.ARGS.use_external_xgboost) {
+        return SteamExecutorStarter.getInstance().getRemoteExecutor(model);
       } else {
-        String userName = H2O.getSysProperty("xgboost.external.user", null);
-        String password = H2O.getSysProperty("xgboost.external.password", null);
-        return new RemoteXGBoostExecutor(propVal, model, _train, userName, password);
+        String remoteUriFromProp = H2O.getSysProperty("xgboost.external.address", null);
+        if (remoteUriFromProp == null) {
+          return new LocalXGBoostExecutor(model, _train);
+        } else {
+          String userName = H2O.getSysProperty("xgboost.external.user", null);
+          String password = H2O.getSysProperty("xgboost.external.password", null);
+          return new RemoteXGBoostExecutor(model, remoteUriFromProp, userName, password);
+        }
       }
     }
 
@@ -378,6 +384,7 @@ public class XGBoost extends ModelBuilder<XGBoostModel,XGBoostModel.XGBoostParam
       XGBoostUtils.createFeatureMap(model, _train);
       XGBoostVariableImportance variableImportance = model.setupVarImp();
       try (XGBoostExecutor exec = makeExecutor(model)) {
+        exec.init(_train);
         model.model_info().updateBoosterBytes(exec.setup());
         scoreAndBuildTrees(model, exec, variableImportance);
       } catch (Exception e) {

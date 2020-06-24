@@ -14,12 +14,21 @@ import water.fvec.Frame;
 public class RemoteXGBoostExecutor implements XGBoostExecutor {
 
     public final XGBoostHttpClient http;
-    public final Key modelKey;
+    public final XGBoostModel model;
+    private final boolean https;
+    private final String userName;
+    private final String password;
     
-    public RemoteXGBoostExecutor(String remoteUri, XGBoostModel model, Frame train, String userName, String password) {
-        boolean https = H2O.ARGS.jks != null;
-        http = new XGBoostHttpClient(remoteUri, https, userName, password);
-        modelKey = model._key;
+    public RemoteXGBoostExecutor(XGBoostModel model, String remoteUri, String userName, String password) {
+        this.https = H2O.ARGS.jks != null;
+        this.userName = userName;
+        this.password = password;
+        this.http = new XGBoostHttpClient(remoteUri, https, userName, password);
+        this.model = model;
+    }
+    
+    @Override
+    public void init(Frame train) {
         XGBoostExecReq.Init req = new XGBoostExecReq.Init();
         XGBoostSetupTask.FrameNodes trainFrameNodes = XGBoostSetupTask.findFrameNodes(train);
         req.num_nodes = trainFrameNodes.getNumNodes();
@@ -28,9 +37,9 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         model._output._native_parameters = BoosterParms.fromMap(req.parms).toTwoDimTable();
         req.save_matrix_path = model._parms._save_matrix_directory;
         req.nodes = collectNodes(trainFrameNodes);
-        XGBoostExecRespV3 resp = http.postJson(modelKey, "init", req);
+        XGBoostExecRespV3 resp = http.postJson(model._key, "init", req);
         String[] remoteNodes = resp.readData();
-        assert modelKey.equals(resp.key.key());
+        assert model._key.equals(resp.key.key());
         uploadCheckpointBooster(model);
         uploadMatrices(model, train, trainFrameNodes, remoteNodes, https, userName, password);
     }
@@ -41,14 +50,14 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         boolean https, String userName, String password
     ) {
         FrameMatrixLoader loader = new FrameMatrixLoader(model, train);
-        new XGBoostUploadMatrixTask(modelKey, trainFrameNodes._nodes, loader, remoteNodes, https, userName, password).run();
+        new XGBoostUploadMatrixTask(model._key, trainFrameNodes._nodes, loader, remoteNodes, https, userName, password).run();
     }
 
     private void uploadCheckpointBooster(XGBoostModel model) {
         if (!model._parms.hasCheckpoint()) {
             return;
         }
-        http.uploadBytes(modelKey, "checkpoint", model.model_info()._boosterBytes);
+        http.uploadBytes(model._key, "checkpoint", model.model_info()._boosterBytes);
     }
 
     private String[] collectNodes(XGBoostSetupTask.FrameNodes nodes) {
@@ -64,27 +73,27 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
     @Override
     public byte[] setup() {
         XGBoostExecReq req = new XGBoostExecReq(); // no req params
-        return http.downloadBytes(modelKey, "setup", req);
+        return http.downloadBytes(model._key, "setup", req);
     }
 
     @Override
     public void update(int treeId) {
         XGBoostExecReq.Update req = new XGBoostExecReq.Update();
         req.treeId = treeId;
-        XGBoostExecRespV3 resp = http.postJson(modelKey, "update", req);
-        assert resp.key.key().equals(modelKey);
+        XGBoostExecRespV3 resp = http.postJson(model._key, "update", req);
+        assert resp.key.key().equals(model._key);
     }
 
     @Override
     public byte[] updateBooster() {
         XGBoostExecReq req = new XGBoostExecReq(); // no req params
-        return http.downloadBytes(modelKey, "getBooster", req);
+        return http.downloadBytes(model._key, "getBooster", req);
     }
 
     @Override
     public void close() {
         XGBoostExecReq req = new XGBoostExecReq(); // no req params
-        XGBoostExecRespV3 resp = http.postJson(modelKey, "cleanup", req);
-        assert resp.key.key().equals(modelKey);
+        XGBoostExecRespV3 resp = http.postJson(model._key, "cleanup", req);
+        assert resp.key.key().equals(model._key);
     }
 }

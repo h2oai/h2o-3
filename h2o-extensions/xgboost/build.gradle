@@ -9,6 +9,7 @@ dependencies {
     compile project(":h2o-algos")
     compile project(":h2o-genmodel")
     compile project(":h2o-genmodel-ext-xgboost")
+    compile project(":h2o-ext-steam")
     compileOnly 'com.esotericsoftware.kryo:kryo:2.21'
     compileOnly "javax.servlet:javax.servlet-api:3.0.1"
     compile "org.apache.httpcomponents:httpclient:${httpClientVersion}"

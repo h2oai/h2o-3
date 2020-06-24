@@ -6,7 +6,5 @@ dependencies {
     compileOnly "javax.servlet:javax.servlet-api:3.0.1"
 
     testCompile project(":h2o-test-support")
-    // using tyrus client since using jetty gets us into conflict because of jetty8/9 dichotomy
-    testCompile "org.glassfish.tyrus.bundles:tyrus-standalone-client:1.12"
     testRuntimeOnly project(":${defaultWebserverModule}")
 }
