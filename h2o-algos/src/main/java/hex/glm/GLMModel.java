@@ -639,6 +639,11 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     }
 
+    public boolean imputeMissing() {
+      return missingValuesHandling() == MissingValuesHandling.MeanImputation || 
+              missingValuesHandling() == MissingValuesHandling.PlugValues; 
+    }
+    
     public DataInfo.Imputer makeImputer() {
       if (missingValuesHandling() == MissingValuesHandling.PlugValues) {
         if (_plug_values == null || _plug_values.get() == null) {
@@ -1621,7 +1626,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
       }
     });
     body.ip("final double [] b = BETA.VALUES;").nl();
-    if(_parms._missing_values_handling == GLMParameters.MissingValuesHandling.MeanImputation){
+    if(_parms.imputeMissing()){
       body.ip("for(int i = 0; i < " + _output._dinfo._cats + "; ++i) if(Double.isNaN(data[i])) data[i] = CAT_MODES.VALUES[i];").nl();
       body.ip("for(int i = 0; i < " + _output._dinfo._nums + "; ++i) if(Double.isNaN(data[i + " + _output._dinfo._cats + "])) data[i+" + _output._dinfo._cats + "] = NUM_MEANS.VALUES[i];").nl();
     }

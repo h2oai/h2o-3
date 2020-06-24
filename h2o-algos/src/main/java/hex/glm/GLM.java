@@ -553,7 +553,7 @@ public class GLM extends ModelBuilder<GLMModel,GLMParameters,GLMOutput> {
       boolean standardizeQ = _parms._HGLM?false:_parms._standardize;
       _dinfo = new DataInfo(_train.clone(), _valid, 1, _parms._use_all_factor_levels || _parms._lambda_search, standardizeQ ? DataInfo.TransformType.STANDARDIZE : DataInfo.TransformType.NONE, DataInfo.TransformType.NONE, 
               _parms.missingValuesHandling() == MissingValuesHandling.Skip, 
-              _parms.missingValuesHandling() == MissingValuesHandling.MeanImputation || _parms.missingValuesHandling() == MissingValuesHandling.PlugValues,
+              _parms.imputeMissing(),
               _parms.makeImputer(), 
               false, hasWeightCol(), hasOffsetCol(), hasFoldCol(), _parms.interactionSpec());
       _totalBetaLen = _parms._family.equals(Family.multinomial) || _parms._family.equals(Family.ordinal)?
