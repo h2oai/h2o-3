@@ -1,16 +1,27 @@
 package hex;
 
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import water.Scope;
 import water.TestUtil;
 import water.fvec.Vec;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 
 import java.util.Random;
 
+import static org.junit.Assert.assertTrue;
+
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class GainsLiftTest extends TestUtil {
-  @BeforeClass public static void stall() { stall_till_cloudsize(1); }
+
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
   @Test public void constant() {
     int len = 100000;
@@ -255,5 +266,23 @@ public class GainsLiftTest extends TestUtil {
 
     actual.remove();
     predict.remove();
+  }
+
+  @Test
+  public void testActualLabelCardinality() {
+    final int vectorLength = 10;
+    Scope.enter();
+    final Vec actual = Vec.makeCon(1.0d, vectorLength);
+    final Vec predict = Vec.makeCon(1.0d, vectorLength);
+    try {
+      expectedException.expect(IllegalArgumentException.class);
+      expectedException.expectMessage("Actual column must contain binary class labels, but found cardinality 1!");
+      GainsLift gl = new GainsLift(predict, actual);
+      gl.exec();
+    } finally {
+      actual.remove();
+      predict.remove();
+      Scope.exit();
+    }
   }
 }
