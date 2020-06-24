@@ -31,7 +31,6 @@ public class SteamHelloMessengerTest {
             assertNotNull(response.get("node_address_0"));
         } finally {
             steam.close();
-            
         }
     }
 

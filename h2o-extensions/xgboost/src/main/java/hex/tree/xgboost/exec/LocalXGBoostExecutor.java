@@ -92,10 +92,6 @@ public class LocalXGBoostExecutor implements XGBoostExecutor {
     }
 
     @Override
-    public void init(Frame train) {
-    }
-
-    @Override
     public byte[] setup() {
         setupTask = new XGBoostSetupTask(
             modelKey, saveMatrixDirectory, boosterParams, checkpointProvider.get(), getRabitEnv(), nodes, loader
