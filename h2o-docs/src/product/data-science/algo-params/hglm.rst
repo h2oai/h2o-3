@@ -1,4 +1,4 @@
-``hglm``
+``HGLM``
 --------
 
 - Available in: GLM

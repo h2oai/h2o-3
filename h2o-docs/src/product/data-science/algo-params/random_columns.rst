@@ -12,7 +12,7 @@ Hierarchical GLM (HGLM) fits generalized linear models with random effects, wher
 Related Parameters
 ~~~~~~~~~~~~~~~~~~
 
-- `hglm <hglm.html>`__
+- `HGLM <hglm.html>`__
 - `rand_family <rand_family.html>`__
 
 Example
