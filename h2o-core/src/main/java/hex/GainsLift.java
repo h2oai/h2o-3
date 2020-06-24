@@ -167,8 +167,10 @@ public class GainsLift extends Iced {
       sum_s_i += n_i * s_i;
       double lift=p_i/P; //can be NaN if P==0
       double sum_lift=(double)sum_e_i/sum_n_i/P; //can be NaN if P==0
-      double cum_event = sum_e_i/(double)E;
-      double cum_non_event = (sum_n_i - sum_e_i) / (double) (N - E);
+      final double cum_event = sum_e_i / (double)E;
+      final double total_non_event = (double) (N - E);
+      // If response rate is 1, there are non non-events and the cumulative count will always be zero
+      final double cum_non_event = total_non_event == 0 ? 0 : (sum_n_i - sum_e_i) / total_non_event;
       table.set(i,0,i+1); //group
       table.set(i,1,(double)sum_n_i/N); //cumulative_data_fraction
       table.set(i,2,_quantiles[i]); //lower_threshold
