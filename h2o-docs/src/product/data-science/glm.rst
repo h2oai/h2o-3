@@ -58,7 +58,7 @@ Defining a GLM Model
 
 -  `ignored_columns <algo-params/ignored_columns.html>`__: (Optional, Python and Flow only) Specify the column or columns to be excluded from the model. In Flow, click the checkbox next to a column name to add it to the list of columns excluded from the model. To add all columns, click the **All** button. To remove a column from the list of ignored columns, click the X next to the column name. To remove all columns from the list of ignored columns, click the **None** button. To search for a specific column, type the column name in the **Search** field above the column list. To only show columns with a specific percentage of missing values, specify the percentage in the **Only show columns with more than 0% missing values** field. To change the selections for the hidden columns, use the **Select Visible** or **Deselect Visible** buttons.
 
-- **random_columns**: An array of random columns to be used for HGLM.
+- `random_columns <algo-params/random_columns.html>`__: An array of random column indices to be used for HGLM.
 
 -  `ignore_const_cols <algo-params/ignore_const_cols.html>`__: Enable this option to ignore constant
    training columns, since no information can be gained from them. This
@@ -87,7 +87,7 @@ Defining a GLM Model
    -  If the family is **gamma**, the response must be numeric and continuous and positive (**Real** or **Int**).
    -  If the family is **tweedie**, the response must be numeric and continuous (**Real**) and non-negative.
 
--  **rand_family**: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family={"[gaussisan]"}`` is supported.
+-  `rand_family <algo-params/rand_family.html>`__: The Random Component Family specified as an array. You must include one family for each random component. Currently only ``rand_family={"[gaussisan]"}`` is supported.
 
 -  `tweedie_variance_power <algo-params/tweedie_variance_power.html>`__: (Only applicable if *Tweedie* is
    specified for **Family**) Specify the Tweedie variance power.
@@ -150,7 +150,7 @@ Defining a GLM Model
 
 -  **calc_like**: Specify whether to return likelihood function value for HGLM. This is disabled by default.
 
--  `hglm <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built; if disabled (default), then a GLM model will be built. 
+-  `HGLM <algo-params/hglm.html>`__: If enabled, then an HGLM model will be built; if disabled (default), then a GLM model will be built. 
 
 -  `prior <algo-params/prior.html>`__: Specify prior probability for p(y==1). Use this parameter for logistic regression if the data has been sampled and the mean of response does not reflect reality. This value defaults to -1 and must be a value in the range (0,1).
    
