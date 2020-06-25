@@ -249,6 +249,8 @@ test-package-java:
 		h2o-jetty-9/build/libs/h2o-jetty-9-*.jar \
 		h2o-extensions/target-encoder/src/ \
 		h2o-extensions/target-encoder/build/libs/h2o-ext-target-encoder*.jar \
+		h2o-extensions/steam/src/ \
+		h2o-extensions/steam/build/libs/h2o-ext-steam*.jar \
 		h2o-test-support/src/ \
 		h2o-test-support/build/libs/h2o-test-support-*.jar \
 		h2o-k8s/src/ \
