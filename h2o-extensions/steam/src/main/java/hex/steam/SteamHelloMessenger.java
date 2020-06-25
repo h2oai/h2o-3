@@ -23,12 +23,12 @@ public class SteamHelloMessenger implements SteamMessenger {
         if (message.get(TYPE).equals("hello")) {
             assert sender != null : "Received message but sender is null";
             Map<String, String> response = new HashMap<>();
-            response.put(TYPE, "cloud_info");
+            response.put(TYPE, "hello_response");
             response.put(ID, message.get(ID) + "_response");
+            response.put("version", H2O.ABV.projectVersion());
+            response.put("branch", H2O.ABV.branchName());
+            response.put("hash", H2O.ABV.lastCommitHash());
             response.put("cloud_size", String.valueOf(H2O.CLOUD.size()));
-            for (int i = 0; i < H2O.CLOUD.size(); i++) {
-                response.put("node_address_" + i, H2O.CLOUD.members()[i].getIpPortString());
-            }
             try {
                 sender.sendMessage(response);
             } catch (IOException e) {
