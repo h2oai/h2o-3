@@ -1,6 +1,7 @@
 package hex.tree.isofor;
 
 import hex.ModelCategory;
+import hex.ModelMetricsBinomial;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.Quantile;
@@ -52,6 +53,8 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
   @Override public boolean isSupervised() { return false; }
 
+  @Override public boolean optionalResponse() { return true; }
+
   @Override protected ScoreKeeper.ProblemType getProblemType() { return ScoreKeeper.ProblemType.anomaly_detection; }
 
   private transient VarSplits _var_splits;
@@ -71,10 +74,25 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     }
     _parms._distribution = DistributionFamily.gaussian;
     if (_parms._contamination != -1 && (_parms._contamination <= 0 || _parms._contamination > 0.5)) {
-      error("_contamination", "Contamination parameter needs to be in range (0, 0.5] or undefined (-1); but it is " + _parms._contamination); 
+      error("_contamination", "Contamination parameter needs to be in range (0, 0.5] or undefined (-1); but it is " + _parms._contamination);
+    }
+    if (_parms._valid != null) {
+      if (_parms._response_column == null) {
+        error("_response_column", "Response column needs to be defined when using a validation frame.");
+      } else if (expensive && vresponse() == null) {
+        error("_response_column", "Validation frame is missing response column `" + _parms._response_column + "`.");
+      }
+      if (_parms._contamination > 0) {
+        error("_contamination", "Contamination parameter cannot be used together with a validation frame.");
+      }
+    }
+    if (expensive && vresponse() != null) {
+      if (!vresponse().isBinary() || vresponse().domain() == null) {
+        error("_response_column", "The response column of the validation frame needs to have a binary categorical domain (not anomaly/anomaly).");
+      }
     }
   }
-
+  
   @Override
   protected void validateRowSampleRate() {
     if (_parms._sample_rate == -1) {
@@ -138,6 +156,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       out._variable_splits = _var_splits.toTwoDimTable(out.features(), "Variable Splits");
     }
     if (_parms._contamination > 0) {
+      assert vresponse() == null; // contamination is not compatible with using validation frame
       Frame fr = _model.score(_train);
       try {
         Vec score = fr.vec("score");
@@ -173,6 +192,12 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       _var_splits = new VarSplits(_ncols);
     }
 
+    @Override protected void finalizeModel() {
+      if (_model._output._validation_metrics instanceof ModelMetricsBinomial) {
+        _model._output._defaultThreshold = ((ModelMetricsBinomial) _model._output._validation_metrics)._auc.defaultThreshold();
+      }
+    }
+    
     // --------------------------------------------------------------------------
     // Build the next random k-trees representing tid-th tree
     @Override protected boolean buildNextKTrees() {

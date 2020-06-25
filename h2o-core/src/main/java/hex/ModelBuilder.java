@@ -872,6 +872,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected boolean logMe() { return true; }
 
   abstract public boolean isSupervised();
+
+  public boolean optionalResponse() {
+    return false;
+  }
   
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
@@ -881,11 +885,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient double[] _orig_projection_array; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
-  
+
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
-  public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
-  public boolean hasFoldCol(){return _parms._fold_column != null;} // don't look at transient Vec
-  public int numSpecialCols() { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0); }
+  public boolean hasWeightCol(){ return _parms._weights_column != null;} // don't look at transient Vec
+  public boolean hasFoldCol()  { return _parms._fold_column != null;} // don't look at transient Vec
+  public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0); }
   public String[] specialColNames() {
     String[] n = new String[numSpecialCols()];
     int i=0;
@@ -1312,13 +1316,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     else {
-      hide("_response_column", "Ignored for unsupervised methods.");
+      if (!optionalResponse()) {
+        hide("_response_column", "Ignored for unsupervised methods.");
+        _vresponse = null;
+      }
       hide("_balance_classes", "Ignored for unsupervised methods.");
       hide("_class_sampling_factors", "Ignored for unsupervised methods.");
       hide("_max_after_balance_size", "Ignored for unsupervised methods.");
       hide("_max_confusion_matrix_size", "Ignored for unsupervised methods.");
       _response = null;
-      _vresponse = null;
       _nclass = 1;
     }
 
@@ -1330,8 +1336,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
+      if (optionalResponse() && _parms._response_column != null && _response == null) {
+        _vresponse = va.vec(_parms._response_column);
+      }
       _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
-      _vresponse = _valid.vec(_parms._response_column);
+      if (!optionalResponse() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
+        _vresponse = _valid.vec(_parms._response_column);
+      }
     } else {
       _valid = null;
       _vresponse = null;
@@ -1350,7 +1361,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       if (_valid != null) {
         _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
-        _vresponse = _valid.vec(_parms._response_column);
       }
       boolean restructured = false;
       Vec[] vecs = _train.vecs();
@@ -1470,7 +1480,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     try {
       String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _workspace.getToDelete(expensive), false);
       Vec response = adapted.vec(_parms._response_column);
-      if (response == null && _parms._response_column != null)
+      if (response == null && _parms._response_column != null && !optionalResponse())
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
       if (expensive) {
         for (String s : msgs) {

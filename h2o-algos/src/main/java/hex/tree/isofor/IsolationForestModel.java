@@ -2,6 +2,7 @@ package hex.tree.isofor;
 
 import hex.ModelCategory;
 import hex.ModelMetrics;
+import hex.genmodel.utils.ArrayUtils;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
@@ -46,10 +47,19 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     public int _max_path_length;
     public int _min_path_length;
 
+    public String _response_column;
+    public String[] _response_domain;
+    
     public IsolationForest.VarSplits _var_splits;
     public TwoDimTable _variable_splits;
 
-    public IsolationForestOutput(IsolationForest b) { super(b); }
+    public IsolationForestOutput(IsolationForest b) { 
+      super(b);
+      if (b.vresponse() != null) {
+        _response_column = b._parms._response_column;
+        _response_domain = b.vresponse().domain();
+      }
+    }
 
     @Override
     public ModelCategory getModelCategory() {
@@ -60,13 +70,31 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     public double defaultThreshold() {
       return _defaultThreshold;
     }
+
+    @Override
+    public String responseName() {
+      return _response_column;
+    }
+
+    @Override
+    public boolean hasResponse() {
+      return _response_column != null;
+    }
+
+    @Override
+    public int responseIdx() {
+      return _names.length;
+    }
   }
 
   public IsolationForestModel(Key<IsolationForestModel> selfKey, IsolationForestParameters parms, IsolationForestOutput output ) { super(selfKey, parms, output); }
 
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics", outputAnomalyFlag());
+    if (domain == null)
+      return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics", outputAnomalyFlag());
+    else
+      return new MetricBuilderAnomalySupervised(domain);
   }
 
   @Override
@@ -81,7 +109,11 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   @Override
   protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
     assert outputAnomalyFlag() ? names.length == 3 : names.length == 2;
-    return new String[names.length][];
+    String[][] domains = new String[names.length][];
+    if (outputAnomalyFlag()) {
+      domains[0] = _output._response_domain != null ? _output._response_domain : new String[]{"0", "1"};
+    }
+    return domains;
   }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
@@ -101,8 +133,12 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   }
 
   final double normalizePathLength(double pathLength) {
-    if (_output._max_path_length > _output._min_path_length) {
-      return  (_output._max_path_length - pathLength) / (_output._max_path_length - _output._min_path_length);
+    return normalizePathLength(pathLength, _output._min_path_length, _output._max_path_length);
+  }
+
+  static double normalizePathLength(double pathLength, int minPathLength, int maxPathLength) {
+    if (maxPathLength > minPathLength) {
+      return  (maxPathLength - pathLength) / (maxPathLength - minPathLength);
     } else {
       return 1;
     }
@@ -117,8 +153,30 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     return new IsolationForestMojoWriter(this);
   }
 
+  @Override
+  public String[] adaptTestForTrain(Frame test, boolean expensive, boolean computeMetrics) {
+    if (!computeMetrics || _output._response_column == null) {
+      return super.adaptTestForTrain(test, expensive, computeMetrics);
+    } else {
+      return adaptTestForTrain(
+              test,
+              _output._origNames,
+              _output._origDomains,
+              ArrayUtils.append(_output._names, _output._response_column),
+              ArrayUtils.append(_output._domains, _output._response_domain),
+              _parms,
+              expensive,
+              true,
+              _output.interactionBuilder(),
+              getToEigenVec(),
+              _toDelete,
+              false
+      );
+    }
+  }
+
   final boolean outputAnomalyFlag() {
-    return _output._defaultThreshold > 0;
+    return _output._defaultThreshold >= 0;
   }
 
 }

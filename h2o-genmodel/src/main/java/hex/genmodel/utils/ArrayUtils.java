@@ -109,4 +109,12 @@ public class ArrayUtils {
     return tmp;
   }
 
+  public static String[][] append(String[][] a, String[]... b) {
+    if (a==null )
+      return b;
+    String[][] tmp = Arrays.copyOf(a,a.length + b.length);
+    System.arraycopy(b, 0, tmp, a.length, b.length);
+    return tmp;
+  }
+
 }

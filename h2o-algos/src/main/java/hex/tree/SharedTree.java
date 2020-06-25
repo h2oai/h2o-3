@@ -360,6 +360,7 @@ public abstract class SharedTree<
         initializeModelSpecifics();
         resumeFromCheckpoint(SharedTree.this);
         scoreAndBuildTrees(doOOBScoring());
+        finalizeModel();
 
       } finally {
         if( _model!=null ) _model.unlock(_job);
@@ -389,6 +390,7 @@ public abstract class SharedTree<
     abstract protected boolean doOOBScoring();
     abstract protected boolean buildNextKTrees();
     abstract protected void initializeModelSpecifics();
+    protected void finalizeModel() {};
 
     // Common methods for all tree builders
 

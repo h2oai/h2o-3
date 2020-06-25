@@ -51,23 +51,31 @@ public class Score extends CMetricScoringTask<Score> {
 
   @Override public void map(Chunk allchks[]) {
     final Chunk[] chks = getScoringChunks(allchks);
-    Chunk ys = _bldr.isSupervised() ? _bldr.chk_resp(chks) : new C0DChunk(0, chks[0]._len);  // Response
+    Chunk ys; // Response
+    if (_bldr.isSupervised()) {
+      ys = _bldr.chk_resp(chks);
+    } else if (_bldr.optionalResponse() && _kresp != null) {
+      ys = _kresp.get().chunkForChunkIdx(chks[0].cidx());
+    } else {
+      ys = new C0DChunk(0, chks[0]._len); // Dummy response to simplify code
+    }
     SharedTreeModel m = _bldr._model;
     Chunk weightsChunk = m._output.hasWeights() ? chks[m._output.weightsIdx()] : null;
     Chunk offsetChunk = m._output.hasOffset() ? chks[m._output.offsetIdx()] : null;
-    final int nclass = _bldr.nclasses();
     // Because of adaption - the validation training set has at least as many
     // classes as the training set (it may have more).  The Confusion Matrix
     // needs to be at least as big as the training set domain.
-    String[] domain = _kresp != null ? _kresp.get().domain() : null;
+    final String[] domain;
     if (m._parms._distribution == DistributionFamily.quasibinomial) {
       domain = ((GBMModel) m)._output._quasibinomialDomains;
+    } else {
+      domain = _kresp != null ? _kresp.get().domain() : null;
     }
+    final int nclass = _bldr.nclasses();
+    _mb = m.makeMetricBuilder(domain);
     // If this is a score-on-train AND DRF, then oobColIdx makes sense,
     // otherwise this field is unused.
     final int oobColIdx = _bldr.idx_oobt();
-    _mb = m.makeMetricBuilder(domain);
-//    _gainsLiftBuilder = _bldr._model._output.nclasses()==2 ? new GainsLift.GainsLiftBuilder(_fr.vec(_bldr.idx_tree(0)).pctiles()) : null;
     final double[] cdists = _mb._work; // Temp working array for class distributions
     // If working a validation set, need to push thru official model scoring
     // logic which requires a temp array to hold the features.
@@ -105,8 +113,9 @@ public class Score extends CMetricScoringTask<Score> {
       val[0] = (float)ys.atd(row);
       _mb.perRow(cdists, val, weight, offset, m);
 
-      if (_preds != null)
+      if (_preds != null) {
         _mb.cachePrediction(cdists, allchks, row, chks.length, m);
+      }
 
       // Compute custom metric if necessary
       customMetricPerRow(cdists, val, weight, offset, m);
