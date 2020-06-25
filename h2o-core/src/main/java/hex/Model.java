@@ -358,7 +358,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     /**
      * Bins for Gains/Lift table, if applicable. Ignored if G/L are not calculated.
      */
-    public int _gainslift_bins;
+    public int _gainslift_bins = -1;
 
     // Public no-arg constructor for reflective creation
     public Parameters() { _ignore_const_cols = defaultDropConsCols(); }

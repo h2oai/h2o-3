@@ -26,6 +26,11 @@ def kolmogorov_smirnov():
     assert ks is not None
     assert 0 < ks < 1
 
+    # Test GS is null whern gainslift_bins = 0
+    model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=0)
+    model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines)
+    assert model.gains_lift() is None
+
 
 def verify_ks(model, data):
     print(model.gains_lift())

@@ -791,9 +791,9 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     @property
     def gainslift_bins(self):
         """
-        Gains/Lift table bins
+        Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
 
-        Type: ``int``  (default: ``0``).
+        Type: ``int``  (default: ``-1``).
         """
         return self._parms.get("gainslift_bins")
 

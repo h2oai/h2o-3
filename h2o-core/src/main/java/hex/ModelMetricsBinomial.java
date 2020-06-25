@@ -14,6 +14,7 @@ import water.util.Log;
 import water.util.MathUtils;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 public class ModelMetricsBinomial extends ModelMetricsSupervised {
   public final AUC2 _auc;
@@ -243,7 +244,10 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       if (_wcount > 0) {
         if (preds != null) {
           if (resp != null) {
-            gl = calculateGainsLift(m, preds, resp, weight);
+            final Optional<GainsLift> optionalGainsLift = calculateGainsLift(m, preds, resp, weight);
+            if(optionalGainsLift.isPresent()){
+              gl = optionalGainsLift.get();
+            }
           }
         }
       }
@@ -268,16 +272,25 @@ public class ModelMetricsBinomial extends ModelMetricsSupervised {
       return mm;
     }
 
-    private GainsLift calculateGainsLift(Model m, Frame preds, Vec resp, Vec weights) {
-      GainsLift gl = null;
-      gl = new GainsLift(preds.lastVec(), resp, weights);
-      if (m != null && m._parms._gainslift_bins != 0) {
-        if (m._parms._gainslift_bins < 1)
-          throw new IllegalArgumentException("Number of G/L bins must be greater than zero.");
+    /**
+     * @param m       Model to calculate GL for
+     * @param preds   Predictions
+     * @param resp    Actual label
+     * @param weights Weights
+     * @return An Optional with GainsLift instance if GainsLift is not disabled (gainslift_bins = 0). Otherwise an
+     * empty Optional.
+     */
+    private Optional<GainsLift> calculateGainsLift(Model m, Frame preds, Vec resp, Vec weights) {
+      final GainsLift gl = new GainsLift(preds.lastVec(), resp, weights);
+      if (m._parms._gainslift_bins < -1) {
+        throw new IllegalArgumentException("Number of G/L bins must be greater or equal than -1.");
+      } else if (m != null && (m._parms._gainslift_bins > 0 || m._parms._gainslift_bins == -1)) {
         gl._groups = m._parms._gainslift_bins;
+      } else if (m != null && m._parms._gainslift_bins == 0){
+        return Optional.empty();
       }
       gl.exec(m != null ? m._output._job : null);
-      return gl;
+      return Optional.of(gl);
     }
 
     @Override
