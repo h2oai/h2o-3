@@ -39,6 +39,36 @@ public class SteamExecutorStarterTest {
         H2O.ARGS.use_external_xgboost = orig_external_xgboost;
     }
 
+    private Map<String, String> makeStartResponse(Map<String, String> startReq) {
+        return makeStartResponse(startReq, "started", null);
+    }
+
+    private Map<String, String> makeStartResponse(Map<String, String> startReq, String status, String reason) {
+        Map<String, String> startResp = new HashMap<>();
+        startResp.put(ID, startReq.get(ID) + "_response");
+        startResp.put(TYPE, "xgboostClusterStartNotification");
+        startResp.put("uri", H2O.getIpPortString());
+        startResp.put("status", status);
+        if (reason != null) {
+            startResp.put("reason", reason);
+        }
+        return startResp;
+    }
+
+    private Map<String, String> makeStopReq(String id) {
+        Map<String, String> stopReq = new HashMap<>();
+        stopReq.put(ID, id);
+        stopReq.put(TYPE, "stopXGBoostClusterNotification");
+        return stopReq;
+    }
+    
+    private void expectAndCheckStopResponse(WebsocketClient steam, String id, boolean allowed) {
+        Map<String, String> stop2Resp = steam.waitToReceiveMessage(id);
+        assertEquals(id + "_response", stop2Resp.get("_id"));
+        assertEquals("stopXGBoostClusterConfirmation", stop2Resp.get("_type"));
+        assertEquals(Boolean.toString(allowed), stop2Resp.get("allowed"));
+    }
+
     @Test
     public void testSteamClusterStart() throws Exception {
         Scope.enter();
@@ -59,23 +89,16 @@ public class SteamExecutorStarterTest {
             Map<String, String> startReq = steam.waitToReceiveMessage("start request");
             assertNotNull(startReq.get("_id"));
             assertEquals("startXGBoostCluster", startReq.get("_type"));
-            Map<String, String> startResp = new HashMap<>();
-            startResp.put(ID, startReq.get(ID) + "_response");
-            startResp.put(TYPE, "xgboostClusterStartNotification");
-            startResp.put("uri", H2O.getIpPortString());
-            startResp.put("status", "started");
-            startResp.put("timeout", "5");
-            steam.sendMessage(startResp);
+            steam.sendMessage(makeStartResponse(startReq));
             Scope.track_generic(model1.get());
 
             // second model should not go to steam
             assertNull("Unexpected message to steam", steam.waitToReceiveMessage("none", 1_000, false));
             Scope.track_generic(model2.get());
 
-            // should terminate the cluster after 5sec
-            Map<String, String> stopReq = steam.waitToReceiveMessage("stop request", 10_000);
-            assertNotNull(stopReq.get("_id"));
-            assertEquals("stopXGBoostCluster", stopReq.get("_type"));
+            // steam requests cluster stop
+            steam.sendMessage(makeStopReq("stop_req"));
+            expectAndCheckStopResponse(steam, "stop_req", true);
         } finally {
             steam.close();
             Scope.exit();
@@ -101,12 +124,7 @@ public class SteamExecutorStarterTest {
             assertEquals("startXGBoostCluster", startReq.get("_type"));
 
             // fail first cluster request
-            Map<String, String> startResp = new HashMap<>();
-            startResp.put(ID, startReq.get(ID) + "_response");
-            startResp.put(TYPE, "xgboostClusterStartNotification");
-            startResp.put("status", "failed");
-            startResp.put("reason", "Testing in progress");
-            steam.sendMessage(startResp);
+            steam.sendMessage(makeStartResponse(startReq, "failed", "Testing in progress"));
             try {
                 Scope.track_generic(model1.get());
                 fail("model1 expected exception to be thrown.");
@@ -117,6 +135,59 @@ public class SteamExecutorStarterTest {
 
             // should send no more messages
             assertNull("Unexpected message to steam", steam.waitToReceiveMessage("none", 1_000, false));
+        } finally {
+            steam.close();
+            Scope.exit();
+        }
+    }
+
+    @Test
+    public void testSteamClusterStop() throws Exception {
+        Scope.enter();
+        final WebsocketClient steam = new WebsocketClient();
+        try {
+            Frame train = Scope.track(parse_test_file("./smalldata/prostate/prostate.csv"));
+
+            XGBoostModel.XGBoostParameters params = new XGBoostModel.XGBoostParameters();
+            params._train = train._key;
+            params._ntrees = 200;
+            params._response_column = "AGE";
+            params._ignored_columns = new String[]{"ID"};
+
+            Job<XGBoostModel> model = new XGBoost(params).trainModel();
+
+            // first request will request external cluster start
+            Map<String, String> startReq = steam.waitToReceiveMessage("start request");
+            assertNotNull(startReq.get("_id"));
+            assertEquals("startXGBoostCluster", startReq.get("_type"));
+            steam.sendMessage(makeStartResponse(startReq));
+
+            // steam requests cluster stop
+            steam.sendMessage(makeStopReq("stop_req_01"));
+            expectAndCheckStopResponse(steam, "stop_req_01", false);
+
+            // model finishes
+            Scope.track_generic(model.get());
+
+            // steam requests cluster stop again
+            steam.sendMessage(makeStopReq("stop_req_02"));
+            expectAndCheckStopResponse(steam, "stop_req_02", true);
+
+            // building another model
+            params._ntrees = 5;
+            Job<XGBoostModel> model2 = new XGBoost(params).trainModel();
+
+            // will request external cluster start again
+            Map<String, String> startReq2 = steam.waitToReceiveMessage("start request");
+            assertNotNull(startReq2.get("_id"));
+            assertEquals("startXGBoostCluster", startReq2.get("_type"));
+            steam.sendMessage(makeStartResponse(startReq));
+
+            Scope.track_generic(model2.get());
+
+            // steam requests cluster stop
+            steam.sendMessage(makeStopReq("stop_req_03"));
+            expectAndCheckStopResponse(steam, "stop_req_03", true);
         } finally {
             steam.close();
             Scope.exit();

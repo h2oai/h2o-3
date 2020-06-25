@@ -6,12 +6,13 @@ import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.exec.RemoteXGBoostExecutor;
 import org.apache.log4j.Logger;
 import water.H2O;
+import water.Job;
 import water.fvec.Frame;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 public class SteamExecutorStarter implements SteamMessenger {
 
@@ -38,57 +39,11 @@ public class SteamExecutorStarter implements SteamMessenger {
         }
     }
     
-    private class ClusterUsageMonitor implements Runnable {
-        
-        private boolean shouldRun = true;
-        private long terminateOn;
-        private final int timeoutMs;
-
-        private ClusterUsageMonitor(int timeoutSeconds) {
-            timeoutMs = timeoutSeconds * 1000;
-            terminateOn = System.currentTimeMillis() + this.timeoutMs;
-        }
-
-        synchronized void notifyUsed() {
-            terminateOn = System.currentTimeMillis() + this.timeoutMs;
-            this.notify();
-        }
-        
-        synchronized  void stop() {
-            shouldRun = false;
-            this.notify();
-        }
-
-        @Override
-        public synchronized void run() {
-            while (shouldRun) {
-                boolean shouldTerminate = terminateOn < System.currentTimeMillis();
-                if (shouldTerminate) {
-                    try {
-                        stopCluster();
-                        break;
-                    } catch (IOException e) {
-                        // cluster stopping failed, wait another timeout for Steam to reconnect
-                        LOG.error("Failed to stop external cluster, will try again.", e);
-                    }
-                } else {
-                    try {
-                        this.wait(timeoutMs);
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                    }
-                }
-            }
-        }
-
-    }
-
     private final Object sendingLock = new Object[0];
     private final Object clusterLock = new Object[0];
 
     private SteamMessageSender sender;
     private ClusterInfo cluster;
-    private ClusterUsageMonitor monitor;
 
     private final Map<String, Map<String, String>> receivedMessages = new HashMap<>();
     
@@ -104,7 +59,6 @@ public class SteamExecutorStarter implements SteamMessenger {
             } else {
                 LOG.info("External cluster available, starting model " + model._key + " now.");
             }
-            monitor.notifyUsed();
             return makeExecutor(model, train);
         }
     }
@@ -117,10 +71,7 @@ public class SteamExecutorStarter implements SteamMessenger {
             String remoteUri = response.get("uri");
             String userName = response.get("user");
             String password = response.get("password");
-            int timeout = Integer.parseInt(response.get("timeout"));
             cluster = new ClusterInfo(remoteUri, userName, password);
-            monitor = new ClusterUsageMonitor(timeout);
-            new Thread(monitor, "XGBoostClusterMonitor").start();
         } else {
             throw new IllegalStateException("Failed to start external cluster: " + response.get("reason"));
         }
@@ -130,16 +81,6 @@ public class SteamExecutorStarter implements SteamMessenger {
         return new RemoteXGBoostExecutor(model, train, cluster.uri, cluster.userName, cluster.password);
     }
     
-    private void stopCluster() throws IOException {
-        synchronized (clusterLock) {
-            Map<String, String> stopRequest = makeStopRequest();
-            sendMessage(stopRequest);
-            cluster = null;
-            monitor.stop();
-            monitor = null;
-        }
-    }
-
     private Map<String, String> waitForResponse(Map<String, String> startRequest) {
         String responseKey = startRequest.get(ID) + "_response";
         synchronized (receivedMessages) {
@@ -173,10 +114,37 @@ public class SteamExecutorStarter implements SteamMessenger {
 
     @Override
     public void onMessage(Map<String, String> message) {
+        if (message.get(TYPE).equals("stopXGBoostClusterNotification")) {
+            handleStopRequest(message);
+        } else {
+            queueResponseMessage(message);
+        }
+    }
+
+    private void queueResponseMessage(Map<String, String> message) {
         synchronized (receivedMessages) {
             receivedMessages.put(message.get(ID), message);
             receivedMessages.notifyAll();
         }
+    }
+
+    private void handleStopRequest(Map<String, String> message) {
+        synchronized (clusterLock) {
+            boolean xgBoostInProgress = isXGBoostInProgress();
+            try {
+                sendMessage(makeStopConfirmation(message, !xgBoostInProgress));
+                if (!xgBoostInProgress) {
+                    cluster = null;
+                }
+            } catch (IOException e) {
+                LOG.error("Failed to send stop cluster response.", e);
+            }
+        }
+    }
+
+    private boolean isXGBoostInProgress() {
+        return Arrays.stream(Job.jobs())
+            .anyMatch(job -> job.isRunning() && job._result.get() instanceof XGBoostModel);
     }
 
     private Map<String, String> makeStartRequest() {
@@ -186,10 +154,11 @@ public class SteamExecutorStarter implements SteamMessenger {
         return req;
     }
 
-    private Map<String, String> makeStopRequest() {
+    private Map<String, String> makeStopConfirmation(Map<String, String> message, boolean allow) {
         Map<String, String> req = new HashMap<>();
-        req.put(TYPE, "stopXGBoostCluster");
-        req.put(ID, H2O.SELF.getIpPortString() + "_stopXGBoost");
+        req.put(TYPE, "stopXGBoostClusterConfirmation");
+        req.put(ID, message.get(ID) + "_response");
+        req.put("allowed", Boolean.toString(allow));
         return req;
     }
 
