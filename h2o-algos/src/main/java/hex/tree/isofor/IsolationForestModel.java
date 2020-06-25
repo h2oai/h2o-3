@@ -2,7 +2,6 @@ package hex.tree.isofor;
 
 import hex.ModelCategory;
 import hex.ModelMetrics;
-import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
@@ -19,6 +18,7 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     public String javaName() { return IsolationForestModel.class.getName(); }
     public int _mtries;
     public long _sample_size;
+    public double _contamination;
 
     public IsolationForestParameters() {
       super();
@@ -36,6 +36,9 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
 
       // early stopping
       _stopping_tolerance = 0.01; // (default 0.001 is too low for the default criterion anomaly_score)
+
+      // IF specific
+      _contamination = -1; // disabled
     }
   }
 
@@ -52,24 +55,33 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     public ModelCategory getModelCategory() {
       return ModelCategory.AnomalyDetection;
     }
+
+    @Override
+    public double defaultThreshold() {
+      return _defaultThreshold;
+    }
   }
 
   public IsolationForestModel(Key<IsolationForestModel> selfKey, IsolationForestParameters parms, IsolationForestOutput output ) { super(selfKey, parms, output); }
 
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics");
+    return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics", outputAnomalyFlag());
   }
 
   @Override
-  protected String[] makeScoringNames(){
-    return new String[]{"predict", "mean_length"};
+  protected String[] makeScoringNames() {
+    if (outputAnomalyFlag()) {
+      return new String[]{"predict", "score", "mean_length"};
+    } else {
+      return new String[]{"predict", "mean_length"};
+    }
   }
 
   @Override
   protected String[][] makeScoringDomains(Frame adaptFrm, boolean computeMetrics, String[] names) {
-    assert names.length == 2;
-    return new String[2][];
+    assert outputAnomalyFlag() ? names.length == 3 : names.length == 2;
+    return new String[names.length][];
   }
 
   /** Bulk scoring API for one row.  Chunks are all compatible with the model,
@@ -78,8 +90,13 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
    *  subclass scoring logic. */
   @Override protected double[] score0(double[] data, double[] preds, double offset, int ntrees) {
     super.score0(data, preds, offset, ntrees);
-    if (ntrees >= 1) preds[1] = preds[0] / ntrees;
-    preds[0] = normalizePathLength(preds[0]);
+    boolean outputAnomalyFlag = outputAnomalyFlag();
+    int off = outputAnomalyFlag ? 1 : 0;
+    if (ntrees >= 1) 
+      preds[off + 1] = preds[0] / ntrees;
+    preds[off] = normalizePathLength(preds[0]);
+    if (outputAnomalyFlag)
+      preds[0] = preds[1] >= _output._defaultThreshold ? 1 : 0; 
     return preds;
   }
 
@@ -98,6 +115,10 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
   @Override
   public IsolationForestMojoWriter getMojo() {
     return new IsolationForestMojoWriter(this);
+  }
+
+  final boolean outputAnomalyFlag() {
+    return _output._defaultThreshold > 0;
   }
 
 }

@@ -38,6 +38,9 @@
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.01.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
+#' @param contamination Contamination ratio - the proportion of anomalies in the input dataset. If undefined (-1) the predict function
+#'        will not mark observations as anomalies and only anomaly score will be returned. Defaults to -1 (undefined).
+#'        Defaults to -1.
 #' @examples
 #' \dontrun{
 #' library(h2o)
@@ -77,7 +80,8 @@ h2o.isolationForest <- function(training_frame,
                                 stopping_rounds = 0,
                                 stopping_metric = c("AUTO", "anomaly_score"),
                                 stopping_tolerance = 0.01,
-                                export_checkpoints_dir = NULL)
+                                export_checkpoints_dir = NULL,
+                                contamination = -1)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
   training_frame <- .validate.H2OFrame(training_frame, required=TRUE)
@@ -128,6 +132,8 @@ h2o.isolationForest <- function(training_frame,
     parms$stopping_tolerance <- stopping_tolerance
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(contamination))
+    parms$contamination <- contamination
 
   # Error check and build model
   model <- .h2o.modelJob('isolationforest', parms, h2oRestApiVersion=3, verbose=FALSE)
@@ -154,6 +160,7 @@ h2o.isolationForest <- function(training_frame,
                                                 stopping_metric = c("AUTO", "anomaly_score"),
                                                 stopping_tolerance = 0.01,
                                                 export_checkpoints_dir = NULL,
+                                                contamination = -1,
                                                 segment_columns = NULL,
                                                 segment_models_id = NULL,
                                                 parallelism = 1)
@@ -209,6 +216,8 @@ h2o.isolationForest <- function(training_frame,
     parms$stopping_tolerance <- stopping_tolerance
   if (!missing(export_checkpoints_dir))
     parms$export_checkpoints_dir <- export_checkpoints_dir
+  if (!missing(contamination))
+    parms$contamination <- contamination
 
   # Build segment-models specific parameters
   segment_parms <- list()

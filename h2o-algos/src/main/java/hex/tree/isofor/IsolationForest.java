@@ -3,6 +3,7 @@ package hex.tree.isofor;
 import hex.ModelCategory;
 import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
+import hex.quantile.Quantile;
 import hex.tree.*;
 import hex.tree.DTree.DecidedNode;
 import hex.tree.DTree.LeafNode;
@@ -15,6 +16,7 @@ import water.Key;
 import water.MRTask;
 import water.fvec.Chunk;
 import water.fvec.Frame;
+import water.fvec.Vec;
 import water.util.PrettyPrint;
 import water.util.TwoDimTable;
 
@@ -68,6 +70,9 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       throw new IllegalStateException("Isolation Forest doesn't expect the distribution to be specified by the user");
     }
     _parms._distribution = DistributionFamily.gaussian;
+    if (_parms._contamination != -1 && (_parms._contamination <= 0 || _parms._contamination > 0.5)) {
+      error("_contamination", "Contamination parameter needs to be in range (0, 0.5] or undefined (-1); but it is " + _parms._contamination); 
+    }
   }
 
   @Override
@@ -131,6 +136,18 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     if (_var_splits != null) {
       out._var_splits = _var_splits;
       out._variable_splits = _var_splits.toTwoDimTable(out.features(), "Variable Splits");
+    }
+    if (_parms._contamination > 0) {
+      Frame fr = _model.score(_train);
+      try {
+        Vec score = fr.vec("score");
+        if (score == null)
+          score = fr.vec("predict");
+        assert score != null;
+        out._defaultThreshold = Quantile.calcQuantile(score, 1 - _parms._contamination);
+      } finally {
+        fr.delete();
+      }
     }
   }
 

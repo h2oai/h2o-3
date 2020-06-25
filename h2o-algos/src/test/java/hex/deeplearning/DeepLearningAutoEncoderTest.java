@@ -4,6 +4,7 @@ import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
 import hex.genmodel.easy.prediction.AutoEncoderModelPrediction;
+import hex.quantile.Quantile;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -117,7 +118,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
 
           // print stats and potential outliers
           sb.append("The following training points are reconstructed with an error above the ").append(quantile * 100).append("-th percentile - check for \"goodness\" of training data.\n");
-          double thresh_train = mymodel.calcOutlierThreshold(l2_train, quantile);
+          double thresh_train = Quantile.calcQuantile(l2_train, quantile);
           for (long i = 0; i < l2_train.length(); i++) {
             if (l2_train.at(i) > thresh_train) {
               sb.append(String.format("row %d : l2_train error = %5f\n", i, l2_train.at(i)));

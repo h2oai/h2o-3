@@ -177,4 +177,38 @@ public class IsolationForestTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testContamination() {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(parse_test_file("smalldata/anomaly/ecg_discord_train.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._seed = 0xDECAF;
+      p._ntrees = 7;
+      p._min_rows = 1;
+      p._sample_size = 5;
+      p._contamination = 0.1;
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      assertNotNull(model);
+      Scope.track_generic(model);
+
+      Frame preds = Scope.track(model.score(train));
+      assertArrayEquals(new String[]{"predict", "score", "mean_length"}, preds.names());
+      assertEquals(train.numRows(), preds.numRows());
+
+      assertTrue(model.outputAnomalyFlag());
+      assertEquals(0.73, model._output._defaultThreshold, 1e-6);
+      assertArrayEquals(new long[]{18L, 2L}, preds.vec("predict").bins());
+      
+      assertTrue(model.testJavaScoring(train, preds, 1e-8));
+
+      assertTrue(model._output._min_path_length < Integer.MAX_VALUE);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

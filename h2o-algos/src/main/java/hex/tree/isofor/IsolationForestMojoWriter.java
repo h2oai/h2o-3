@@ -26,6 +26,7 @@ public class IsolationForestMojoWriter extends SharedTreeMojoWriter<IsolationFor
     super.writeModelData();
     writekv("max_path_length", model._output._max_path_length);
     writekv("min_path_length", model._output._min_path_length);
+    writekv("output_anomaly_flag", model.outputAnomalyFlag());
   }
 
 }
