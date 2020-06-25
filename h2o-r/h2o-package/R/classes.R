@@ -914,6 +914,11 @@ setClass("H2OAutoML", slots = c(project_name = "character",
 #' @rdname h2o.keyof
 setMethod("h2o.keyof", signature("H2OAutoML"), function(object) attr(object, "id"))
 
+#'
+#' Format AutoML object in user-friendly way
+#'
+#' @param object an \code{H2OAutoML} object.
+#' @export
 setMethod("show", signature("H2OAutoML"), function(object) {
     cat("Project: ", object@project_name, "\n")
     cat("===================================\n\n")
