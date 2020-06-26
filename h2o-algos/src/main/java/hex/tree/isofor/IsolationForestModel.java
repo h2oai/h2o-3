@@ -91,10 +91,12 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
 
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {
-    if (domain == null)
-      return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics", outputAnomalyFlag());
-    else
+    // note: in the context of scoring on a training frame during model building domain will be null
+    if (domain != null && _output.hasResponse()) {
       return new MetricBuilderAnomalySupervised(domain);
+    } else {
+      return new ModelMetricsAnomaly.MetricBuilderAnomaly("Isolation Forest Metrics", outputAnomalyFlag());
+    }
   }
 
   @Override

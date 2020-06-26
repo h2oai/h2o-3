@@ -873,7 +873,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   abstract public boolean isSupervised();
 
-  public boolean optionalResponse() {
+  public boolean isResponseOptional() {
     return false;
   }
   
@@ -909,6 +909,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public final boolean isClassifier() { return nclasses() > 1; }
 
+  protected boolean validateStoppingMetric() {
+    return true;
+  }
+  
   /**
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
@@ -1316,7 +1320,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     else {
-      if (!optionalResponse()) {
+      if (!isResponseOptional()) {
         hide("_response_column", "Ignored for unsupervised methods.");
         _vresponse = null;
       }
@@ -1336,11 +1340,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
-      if (optionalResponse() && _parms._response_column != null && _response == null) {
+      if (isResponseOptional() && _parms._response_column != null && _response == null) {
         _vresponse = va.vec(_parms._response_column);
       }
       _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
-      if (!optionalResponse() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
+      if (!isResponseOptional() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
         _vresponse = _valid.vec(_parms._response_column);
       }
     } else {
@@ -1417,7 +1421,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
-    } else {
+    } else if (validateStoppingMetric()){
       if (isClassifier()) {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
@@ -1480,7 +1484,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     try {
       String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _workspace.getToDelete(expensive), false);
       Vec response = adapted.vec(_parms._response_column);
-      if (response == null && _parms._response_column != null && !optionalResponse())
+      if (response == null && _parms._response_column != null && !isResponseOptional())
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
       if (expensive) {
         for (String s : msgs) {

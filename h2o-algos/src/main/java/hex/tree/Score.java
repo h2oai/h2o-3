@@ -54,7 +54,7 @@ public class Score extends CMetricScoringTask<Score> {
     Chunk ys; // Response
     if (_bldr.isSupervised()) {
       ys = _bldr.chk_resp(chks);
-    } else if (_bldr.optionalResponse() && _kresp != null) {
+    } else if (_bldr.isResponseOptional() && _kresp != null) {
       ys = _kresp.get().chunkForChunkIdx(chks[0].cidx());
     } else {
       ys = new C0DChunk(0, chks[0]._len); // Dummy response to simplify code
@@ -175,13 +175,9 @@ public class Score extends CMetricScoringTask<Score> {
     return mm;
   }
 
-  static Frame makePredictionCache(SharedTreeModel model, Vec resp) {
-    String[] domain = resp.domain();
-    if (model._parms._distribution == DistributionFamily.quasibinomial) {
-      domain = ((GBMModel) model)._output._quasibinomialDomains;
-    }
+  static Frame makePredictionCache(SharedTreeModel model, Vec templateVec, String[] domain) {
     ModelMetrics.MetricBuilder mb = model.makeMetricBuilder(domain);
-    return mb.makePredictionCache(model, resp);
+    return mb.makePredictionCache(model, templateVec);
   }
 
   public static class ScoreIncInfo extends Iced<ScoreIncInfo> {

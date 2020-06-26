@@ -53,7 +53,7 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
   @Override public boolean isSupervised() { return false; }
 
-  @Override public boolean optionalResponse() { return true; }
+  @Override public boolean isResponseOptional() { return true; }
 
   @Override protected ScoreKeeper.ProblemType getProblemType() { return ScoreKeeper.ProblemType.anomaly_detection; }
 
@@ -85,14 +85,24 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       if (_parms._contamination > 0) {
         error("_contamination", "Contamination parameter cannot be used together with a validation frame.");
       }
+    } else {
+      if (_parms._stopping_metric != ScoreKeeper.StoppingMetric.AUTO && _parms._stopping_metric != ScoreKeeper.StoppingMetric.anomaly_score) {
+        error("_stopping_metric", "Stopping metric `" + _parms._stopping_metric + 
+                "` can only be used when a labeled validation frame is provided.");
+      }
     }
-    if (expensive && vresponse() != null) {
-      if (!vresponse().isBinary() || vresponse().domain() == null) {
-        error("_response_column", "The response column of the validation frame needs to have a binary categorical domain (not anomaly/anomaly).");
+    if (expensive) {
+      if (vresponse() != null) {
+        if (!vresponse().isBinary() || vresponse().domain()==null) {
+          error("_response_column", "The response column of the validation frame needs to have a binary categorical domain (not anomaly/anomaly).");
+        }
+      }
+      if (response() != null) {
+        error("_training_frame", "Training frame should not have a response column");
       }
     }
   }
-  
+
   @Override
   protected void validateRowSampleRate() {
     if (_parms._sample_rate == -1) {
@@ -104,6 +114,11 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     }
   }
 
+  @Override
+  protected boolean validateStoppingMetric() {
+    return false; // disable the default stopping metric validation
+  }
+  
   private void randomResp(final long seed, final int iteration) {
     new MRTask() {
       @Override public void map(Chunk chks[]) {
@@ -157,16 +172,17 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     }
     if (_parms._contamination > 0) {
       assert vresponse() == null; // contamination is not compatible with using validation frame
+      assert _model.outputAnomalyFlag();
       Frame fr = _model.score(_train);
       try {
         Vec score = fr.vec("score");
-        if (score == null)
-          score = fr.vec("predict");
         assert score != null;
         out._defaultThreshold = Quantile.calcQuantile(score, 1 - _parms._contamination);
       } finally {
         fr.delete();
       }
+    } else if (_model._output._validation_metrics instanceof ModelMetricsBinomial) { 
+      out._defaultThreshold = ((ModelMetricsBinomial) _model._output._validation_metrics)._auc.defaultThreshold();
     }
   }
 
@@ -190,14 +206,13 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
       _initialPrediction = 0;
       _var_splits = new VarSplits(_ncols);
-    }
-
-    @Override protected void finalizeModel() {
-      if (_model._output._validation_metrics instanceof ModelMetricsBinomial) {
-        _model._output._defaultThreshold = ((ModelMetricsBinomial) _model._output._validation_metrics)._auc.defaultThreshold();
+      
+      if ((_parms._contamination > 0) || (vresponse() != null)) {
+        _model._output._defaultThreshold = 0.5;
+        assert _model.outputAnomalyFlag();
       }
     }
-    
+
     // --------------------------------------------------------------------------
     // Build the next random k-trees representing tid-th tree
     @Override protected boolean buildNextKTrees() {
