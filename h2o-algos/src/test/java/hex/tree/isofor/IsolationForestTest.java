@@ -211,4 +211,26 @@ public class IsolationForestTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testTrainingWithResponse()  {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(parse_test_file("smalldata/testng/airlines.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._seed = 0xFEED;
+      p._ntrees = 1;
+      p._max_depth = 3;
+      // this is a weird case and it shouldn't be allowed but the java API permits it, we might disable it in the future
+      p._response_column = "IsDepDelayed";
+      p._ignored_columns = new String[] {"Origin", "Dest", "IsDepDelayed"};
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
+    } finally {
+      Scope.exit();
+    }
+  }
+
 }

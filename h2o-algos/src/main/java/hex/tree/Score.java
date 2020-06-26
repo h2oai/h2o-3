@@ -175,13 +175,9 @@ public class Score extends CMetricScoringTask<Score> {
     return mm;
   }
 
-  static Frame makePredictionCache(SharedTreeModel model, Vec resp) {
-    String[] domain = resp.domain();
-    if (model._parms._distribution == DistributionFamily.quasibinomial) {
-      domain = ((GBMModel) model)._output._quasibinomialDomains;
-    }
+  static Frame makePredictionCache(SharedTreeModel model, Vec templateVec, String[] domain) {
     ModelMetrics.MetricBuilder mb = model.makeMetricBuilder(domain);
-    return mb.makePredictionCache(model, resp);
+    return mb.makePredictionCache(model, templateVec);
   }
 
   public static class ScoreIncInfo extends Iced<ScoreIncInfo> {

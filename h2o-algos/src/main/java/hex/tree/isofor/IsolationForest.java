@@ -86,13 +86,18 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
         error("_contamination", "Contamination parameter cannot be used together with a validation frame.");
       }
     }
-    if (expensive && vresponse() != null) {
-      if (!vresponse().isBinary() || vresponse().domain() == null) {
-        error("_response_column", "The response column of the validation frame needs to have a binary categorical domain (not anomaly/anomaly).");
+    if (expensive) {
+      if (vresponse() != null) {
+        if (!vresponse().isBinary() || vresponse().domain()==null) {
+          error("_response_column", "The response column of the validation frame needs to have a binary categorical domain (not anomaly/anomaly).");
+        }
+      }
+      if (response() != null) {
+        error("_training_frame", "Training frame should not have a response column");
       }
     }
   }
-  
+
   @Override
   protected void validateRowSampleRate() {
     if (_parms._sample_rate == -1) {

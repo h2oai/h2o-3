@@ -207,20 +207,25 @@ public abstract class SharedTree<
           _model._output._init_f = _initialPrediction;
         }
 
-        // Compute the response domain; makes for nicer printouts
-        String[] domain = isSupervised() ? _response.domain() : null;
+        final boolean isQuasibinomial = _parms._distribution == DistributionFamily.quasibinomial;
 
-        // Quasibinomial GBM can have different domains than {0, 1}
-        boolean isQuasibinomial = false;
-        if(_parms._distribution == DistributionFamily.quasibinomial){
-          isQuasibinomial = true;
-          domain = new VecUtils.CollectDoubleDomain(null,2).doAll(_response).stringDomain(_response.isInt());
-          ((GBMModel)_model)._output._quasibinomialDomains = domain;
+        // Get the actual response domain
+        final String[] actualDomain;
+        if (isSupervised()) {
+          actualDomain = _response.domain();
+        } else if (isQuasibinomial) {
+          // Quasibinomial GBM can have different domains than {0, 1}
+          actualDomain = new VecUtils.CollectDoubleDomain(null,2)
+                  .doAll(_response).stringDomain(_response.isInt());
+          ((GBMModel)_model)._output._quasibinomialDomains = actualDomain;
+        } else {
+          // Unsupervised, no domain
+          actualDomain = null;
         }
 
-        // Compute the response domain; makes for nicer printouts
-        assert (_nclass > 1 && domain != null) || (_nclass==1 && domain==null);
-        if( _nclass==1 ) domain = new String[] {"r"}; // For regression, give a name to class 0
+        // Compute the print-out response domain; makes for nicer printouts
+        assert (_nclass > 1 && actualDomain != null) || (_nclass==1 && actualDomain==null);
+        final String[] domain = _nclass == 1 ? new String[] {"r"} : actualDomain; // For regression, give a name to class 0   
 
         // Compute class distribution, used to for initial guesses and to
         // upsample minority classes (if asked for).
@@ -349,9 +354,10 @@ public abstract class SharedTree<
 
         if (_valid != null) {
           _validWorkspace = makeValidWorkspace();
-          _validPredsCache = Score.makePredictionCache(_model, vresponse());
+          String[] vdomain = isQuasibinomial ? actualDomain : vresponse().domain();
+          _validPredsCache = Score.makePredictionCache(_model, vresponse(), vdomain);
         }
-        _trainPredsCache = Score.makePredictionCache(_model, templateVec());
+        _trainPredsCache = Score.makePredictionCache(_model, templateVec(), actualDomain);
 
         // Variable importance: squared-error-improvement-per-variable-per-split
         _improvPerVar = new float[_ncols];
