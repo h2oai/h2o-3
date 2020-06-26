@@ -529,9 +529,7 @@ public class EasyPredictModelWrapper implements Serializable {
   public AnomalyDetectionPrediction predictAnomalyDetection(RowData data) throws PredictException {
     double[] preds = preamble(ModelCategory.AnomalyDetection, data, 0.0);
 
-    AnomalyDetectionPrediction p = new AnomalyDetectionPrediction();
-    p.normalizedScore = preds[0];
-    p.score = preds[1];
+    AnomalyDetectionPrediction p = new AnomalyDetectionPrediction(preds);
     if (enableLeafAssignment) { // only get leaf node assignment if enabled
       SharedTreeMojoModel.LeafNodeAssignments assignments = leafNodeAssignmentExtended(data);
       p.leafNodeAssignments = assignments._paths;

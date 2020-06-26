@@ -29,7 +29,8 @@ public class IsolationForestV3 extends SharedTreeV3<IsolationForest, IsolationFo
                 "stopping_rounds",
                 "stopping_metric",
                 "stopping_tolerance",
-                "export_checkpoints_dir"
+                "export_checkpoints_dir",
+                "contamination"
         };
 
         // Input fields
@@ -41,6 +42,9 @@ public class IsolationForestV3 extends SharedTreeV3<IsolationForest, IsolationFo
 
         @API(help = "Number of variables randomly sampled as candidates at each split. If set to -1, defaults (number of predictors)/3.", gridable = true)
         public int mtries;
+
+        @API(help = "Contamination ratio - the proportion of anomalies in the input dataset. If undefined (-1) the predict function will not mark observations as anomalies and only anomaly score will be returned. Defaults to -1 (undefined).")
+        public double contamination;
 
     }
 }

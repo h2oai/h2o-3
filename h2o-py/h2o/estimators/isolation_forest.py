@@ -28,7 +28,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
                    "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
                    "build_tree_one_node", "mtries", "sample_size", "sample_rate", "col_sample_rate_change_per_level",
                    "col_sample_rate_per_tree", "categorical_encoding", "stopping_rounds", "stopping_metric",
-                   "stopping_tolerance", "export_checkpoints_dir"}
+                   "stopping_tolerance", "export_checkpoints_dir", "contamination"}
 
     def __init__(self, **kwargs):
         super(H2OIsolationForestEstimator, self).__init__()
@@ -591,5 +591,21 @@ class H2OIsolationForestEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def contamination(self):
+        """
+        Contamination ratio - the proportion of anomalies in the input dataset. If undefined (-1) the predict function
+        will not mark observations as anomalies and only anomaly score will be returned. Defaults to -1 (undefined).
+
+        Type: ``float``  (default: ``-1``).
+        """
+        return self._parms.get("contamination")
+
+    @contamination.setter
+    def contamination(self, contamination):
+        assert_is_type(contamination, None, numeric)
+        self._parms["contamination"] = contamination
 
 

@@ -2540,7 +2540,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
                 break;
               case AnomalyDetection:
                 AnomalyDetectionPrediction adp = (AnomalyDetectionPrediction) p;
-                d2 = (col == 0) ? adp.normalizedScore : adp.score;
+                d2 = adp.toPreds()[col];
                 decisionPath = adp.leafNodeAssignments;
                 nodeIds = adp.leafNodeAssignmentIds;
                 break;
