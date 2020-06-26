@@ -367,7 +367,6 @@ public abstract class SharedTree<
         initializeModelSpecifics();
         resumeFromCheckpoint(SharedTree.this);
         scoreAndBuildTrees(doOOBScoring());
-        finalizeModel();
 
       } finally {
         if( _model!=null ) _model.unlock(_job);

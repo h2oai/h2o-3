@@ -162,16 +162,17 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     }
     if (_parms._contamination > 0) {
       assert vresponse() == null; // contamination is not compatible with using validation frame
+      assert _model.outputAnomalyFlag();
       Frame fr = _model.score(_train);
       try {
         Vec score = fr.vec("score");
-        if (score == null)
-          score = fr.vec("predict");
         assert score != null;
         out._defaultThreshold = Quantile.calcQuantile(score, 1 - _parms._contamination);
       } finally {
         fr.delete();
       }
+    } else if (_model._output._validation_metrics instanceof ModelMetricsBinomial) { 
+      out._defaultThreshold = ((ModelMetricsBinomial) _model._output._validation_metrics)._auc.defaultThreshold();
     }
   }
 
@@ -195,14 +196,13 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
 
       _initialPrediction = 0;
       _var_splits = new VarSplits(_ncols);
-    }
-
-    @Override protected void finalizeModel() {
-      if (_model._output._validation_metrics instanceof ModelMetricsBinomial) {
-        _model._output._defaultThreshold = ((ModelMetricsBinomial) _model._output._validation_metrics)._auc.defaultThreshold();
+      
+      if ((_parms._contamination > 0) || (vresponse() != null)) {
+        _model._output._defaultThreshold = 0.5;
+        assert _model.outputAnomalyFlag();
       }
     }
-    
+
     // --------------------------------------------------------------------------
     // Build the next random k-trees representing tid-th tree
     @Override protected boolean buildNextKTrees() {
