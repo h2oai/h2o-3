@@ -211,13 +211,14 @@ public abstract class SharedTree<
 
         // Get the actual response domain
         final String[] actualDomain;
-        if (isSupervised()) {
-          actualDomain = _response.domain();
-        } else if (isQuasibinomial) {
+        if (isQuasibinomial) {
           // Quasibinomial GBM can have different domains than {0, 1}
           actualDomain = new VecUtils.CollectDoubleDomain(null,2)
                   .doAll(_response).stringDomain(_response.isInt());
           ((GBMModel)_model)._output._quasibinomialDomains = actualDomain;
+        } else if (isSupervised()) {
+          // Regular supervised case, most common
+          actualDomain = _response.domain();
         } else {
           // Unsupervised, no domain
           actualDomain = null;
