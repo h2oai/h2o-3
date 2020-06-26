@@ -1,10 +1,3 @@
-def update_param(name, param):
-    if name == 'stopping_metric':
-        param['values'] = ['AUTO', 'anomaly_score']
-        return param
-    return None  # param untouched
-
-
 extensions = dict(
     required_params=['training_frame', 'x'],
     validate_required_params="",
