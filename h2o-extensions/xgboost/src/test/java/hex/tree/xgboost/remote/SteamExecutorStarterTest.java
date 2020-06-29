@@ -63,7 +63,7 @@ public class SteamExecutorStarterTest {
     }
     
     private void expectAndCheckStopResponse(WebsocketClient steam, String id, boolean allowed) {
-        Map<String, String> stop2Resp = steam.waitToReceiveMessage(id);
+        Map<String, String> stop2Resp = steam.waitToReceiveMessage("response to " + id);
         assertEquals(id + "_response", stop2Resp.get("_id"));
         assertEquals("stopXGBoostClusterConfirmation", stop2Resp.get("_type"));
         assertEquals(Boolean.toString(allowed), stop2Resp.get("allowed"));
@@ -163,6 +163,7 @@ public class SteamExecutorStarterTest {
             steam.sendMessage(makeStartResponse(startReq));
 
             // steam requests cluster stop
+            Thread.sleep(500);
             steam.sendMessage(makeStopReq("stop_req_01"));
             expectAndCheckStopResponse(steam, "stop_req_01", false);
 

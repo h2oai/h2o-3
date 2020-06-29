@@ -72,6 +72,7 @@ public class SteamExecutorStarter implements SteamMessenger {
             String userName = response.get("user");
             String password = response.get("password");
             cluster = new ClusterInfo(remoteUri, userName, password);
+            LOG.info("External cluster started at " + remoteUri + ".");
         } else {
             throw new IllegalStateException("Failed to start external cluster: " + response.get("reason"));
         }
@@ -122,6 +123,7 @@ public class SteamExecutorStarter implements SteamMessenger {
     }
 
     private void queueResponseMessage(Map<String, String> message) {
+        LOG.info("Received message response " + message.get(ID));
         synchronized (receivedMessages) {
             receivedMessages.put(message.get(ID), message);
             receivedMessages.notifyAll();
@@ -129,9 +131,11 @@ public class SteamExecutorStarter implements SteamMessenger {
     }
 
     private void handleStopRequest(Map<String, String> message) {
+        LOG.info("Received stop request " + message.get(ID));
         synchronized (clusterLock) {
             boolean xgBoostInProgress = isXGBoostInProgress();
             try {
+                LOG.info("Responding to stop request with allowed=" + !xgBoostInProgress);
                 sendMessage(makeStopConfirmation(message, !xgBoostInProgress));
                 if (!xgBoostInProgress) {
                     cluster = null;
