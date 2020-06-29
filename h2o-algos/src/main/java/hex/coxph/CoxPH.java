@@ -551,8 +551,9 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
         Frame f = reorderTrainFrameColumns(strataMap, time);
 
         int nResponses = (_parms.startVec() == null ? 2 : 3) + (_parms.isStratified() ? 1 : 0);
-        final DataInfo dinfo = new DataInfo(f, null, nResponses, _parms._use_all_factor_levels, TransformType.DEMEAN, TransformType.NONE, true, false, false, false, false, false, _parms.interactionSpec())
-                .disableIntercept();
+        final DataInfo dinfo = new DataInfo(f, null, nResponses, _parms._use_all_factor_levels, 
+                TransformType.DEMEAN, TransformType.NONE, true, false, false, 
+                hasWeightCol(), false, false, _parms.interactionSpec()).disableIntercept();
         Scope.track_generic(dinfo);
         DKV.put(dinfo);
 
@@ -724,9 +725,10 @@ public class CoxPH extends ModelBuilder<CoxPHModel,CoxPHModel.CoxPHParameters,Co
       int ncats = row.nBins;
       int [] cats = row.binIds;
       double [] nums = row.numVals;
-      final double weight = _has_weights_column ? response[0] : 1.0;
-      if (weight <= 0)
+      final double weight = _has_weights_column ? row.weight : 1.0;
+      if (weight <= 0) {
         throw new IllegalArgumentException("weights must be positive values");
+      }
       int respIdx = response.length - 1;
       final long event = (long) (response[respIdx--] - _min_event);
       final int t2 = (int) response[respIdx--];
