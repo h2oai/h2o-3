@@ -30,7 +30,7 @@ class H2ONaiveBayesEstimator(H2OEstimator):
                    "validation_frame", "response_column", "ignored_columns", "ignore_const_cols",
                    "score_each_iteration", "balance_classes", "class_sampling_factors", "max_after_balance_size",
                    "max_confusion_matrix_size", "max_hit_ratio_k", "laplace", "min_sdev", "eps_sdev", "min_prob",
-                   "eps_prob", "compute_metrics", "max_runtime_secs", "export_checkpoints_dir"}
+                   "eps_prob", "compute_metrics", "max_runtime_secs", "export_checkpoints_dir", "gainslift_bins"}
 
     def __init__(self, **kwargs):
         super(H2ONaiveBayesEstimator, self).__init__()
@@ -786,5 +786,20 @@ class H2ONaiveBayesEstimator(H2OEstimator):
     def export_checkpoints_dir(self, export_checkpoints_dir):
         assert_is_type(export_checkpoints_dir, None, str)
         self._parms["export_checkpoints_dir"] = export_checkpoints_dir
+
+
+    @property
+    def gainslift_bins(self):
+        """
+        Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning.
+
+        Type: ``int``  (default: ``-1``).
+        """
+        return self._parms.get("gainslift_bins")
+
+    @gainslift_bins.setter
+    def gainslift_bins(self, gainslift_bins):
+        assert_is_type(gainslift_bins, None, int)
+        self._parms["gainslift_bins"] = gainslift_bins
 
 

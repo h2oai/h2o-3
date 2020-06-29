@@ -3079,6 +3079,59 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
   }
 })
 
+#' Kolmogorov-Smirnov metric for binomial models
+#'
+#' Retrieves a Kolmogorov-Smirnov metric for given binomial model. The number returned is in range between 0 and 1.
+#' K-S metric represents the degree of separation between the positive (1) and negative (0) cumulative distribution
+#' functions. Detailed metrics per each group are to be found in the gains-lift table.
+#'
+#' The \linkS4class{H2OModelMetrics} version of this function will only take
+#' \linkS4class{H2OBinomialMetrics} objects.
+#'
+#' @param object Either an \linkS4class{H2OModel} object or an
+#'        \linkS4class{H2OModelMetrics} object.
+#' @return Kolmogorov-Smirnov metric, a number between 0 and 1.
+#' @seealso \code{\link{h2o.gainsLift}} to see detaied K-S metrics per group
+#' 
+#' @examples
+#' \dontrun{
+#' library(h2o)
+#' h2o.init()
+#' data <- h2o.importFile(
+#' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
+#' model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", training_frame = data, ntrees = 1)
+#' h2o.kolmogorov_smirnov(model)
+#' }
+#' @export
+setGeneric("h2o.kolmogorov_smirnov", function(object) {})
+
+#' @rdname h2o.kolmogorov_smirnov
+#' @export
+setMethod("h2o.kolmogorov_smirnov", "H2OModelMetrics", function(object) {
+  gains_lift <- h2o.gainsLift(object = object)
+  if(is.null(gains_lift)){
+    warning(paste0("No Gains/Lift table for ",class(object)))
+    return(NULL)
+  } else {
+    return(max(gains_lift$kolmogorov_smirnov))
+  }
+  
+})
+
+#' @rdname h2o.kolmogorov_smirnov
+#' @export
+setMethod("h2o.kolmogorov_smirnov", "H2OModel", function(object) {
+  gains_lift <- h2o.gainsLift(object = object)
+  if(is.null(gains_lift)){
+    warning(paste0("No Gains/Lift table for ",class(object)))
+    return(NULL)
+  } else {
+    return(max(gains_lift$kolmogorov_smirnov))
+  }
+  
+})
+
+
 #' Access H2O Confusion Matrices
 #'
 #' Retrieve either a single or many confusion matrices from H2O objects.
