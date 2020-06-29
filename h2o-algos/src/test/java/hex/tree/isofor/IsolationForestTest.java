@@ -296,9 +296,11 @@ public class IsolationForestTest extends TestUtil {
       assertTrue(m._output._validation_metrics instanceof ModelMetricsBinomial);
       assertEquals(((ModelMetricsBinomial) m._output._validation_metrics).mean_per_class_error(), cm.mean_per_class_error(), 1e-6);
 
-      // check that we 
-      m._output.scoreKeepers()[m._output.scoreKeepers().length]._mean_per_class_error
-      cm.mean_per_class_accuracy();
+      // check that we use correct values for score-keeping (early stopping) 
+      assertEquals(
+              m._output.scoreKeepers()[m._output.scoreKeepers().length - 1]._mean_per_class_error,
+              cm.mean_per_class_error(), 1e-6
+      );
     } finally {
       Scope.exit();
     }
