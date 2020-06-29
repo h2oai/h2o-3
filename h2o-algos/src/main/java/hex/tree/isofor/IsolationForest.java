@@ -85,6 +85,11 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
       if (_parms._contamination > 0) {
         error("_contamination", "Contamination parameter cannot be used together with a validation frame.");
       }
+    } else {
+      if (_parms._stopping_metric != ScoreKeeper.StoppingMetric.AUTO && _parms._stopping_metric != ScoreKeeper.StoppingMetric.anomaly_score) {
+        error("_stopping_metric", "Stopping metric `" + _parms._stopping_metric + 
+                "` can only be used when a labeled validation frame is provided.");
+      }
     }
     if (expensive) {
       if (vresponse() != null) {
@@ -109,6 +114,11 @@ public class IsolationForest extends SharedTree<IsolationForestModel, IsolationF
     }
   }
 
+  @Override
+  protected boolean validateStoppingMetric() {
+    return false; // disable the default stopping metric validation
+  }
+  
   private void randomResp(final long seed, final int iteration) {
     new MRTask() {
       @Override public void map(Chunk chks[]) {

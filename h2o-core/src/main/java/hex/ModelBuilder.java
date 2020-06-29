@@ -909,6 +909,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public final boolean isClassifier() { return nclasses() > 1; }
 
+  protected boolean validateStoppingMetric() {
+    return true;
+  }
+  
   /**
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
@@ -1417,7 +1421,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
-    } else {
+    } else if (validateStoppingMetric()){
       if (isClassifier()) {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
