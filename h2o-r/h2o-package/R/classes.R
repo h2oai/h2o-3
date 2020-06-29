@@ -920,19 +920,47 @@ setMethod("h2o.keyof", signature("H2OAutoML"), function(object) attr(object, "id
 #' @param object an \code{H2OAutoML} object.
 #' @export
 setMethod("show", signature("H2OAutoML"), function(object) {
-    cat("Project: ", object@project_name, "\n")
-    cat("===================================\n\n")
-    cat("H2O AutoML Leader Model Details:\n")
-    cat("Model ID:", object@leader@model_id, "\n")
-    cat("Algorithm:", object@leader@algorithm, "\n\n")
-    
-    # summary
-    print(object@leader@model$model_summary)
-    cat("\n")
-    
-    # cross validation metrics summary
-    print(object@leader@model$cross_validation_metrics_summary)
-    
-    cat("\nTop models on leaderboard:\n") 
-    print(head(object@leaderboard, n = 10))
+  cat("AutoML Details\n")
+  cat("==============\n")
+  cat("Project Name:", object@project_name, "\n")
+  cat("Leader Model ID:", object@leader@model_id, "\n")
+  cat("Algorithm:", object@leader@algorithm, "\n\n")
+
+  cat("Total Number of Models Trained:", nrow(object@leaderboard), "\n")
+  cat("Start Time:",
+      as.character(as.POSIXct(as.numeric(object@training_info$start_epoch), origin="1970-01-01")), h2o.getTimezone(), "\n")
+  cat("End Time:",
+      as.character(as.POSIXct(as.numeric(object@training_info$stop_epoch), origin="1970-01-01")), h2o.getTimezone(), "\n")
+  cat("Duration:", object@training_info$duration_secs, "s\n\n")
+
+  cat("Leaderboard\n")
+  cat("===========\n")
+  print(object@leaderboard, n = 10)
+
+  invisible(NULL)
+})
+
+#' Format AutoML object in user-friendly way
+#'
+#' @param object an \code{H2OAutoML} object.
+#' @export
+setMethod("summary", signature("H2OAutoML"), function(object) {
+  cat("AutoML Summary\n")
+  cat("==============\n")
+  cat("Project Name:", object@project_name, "\n")
+  cat("Leader Model ID:", object@leader@model_id, "\n")
+  cat("Algorithm:", object@leader@algorithm, "\n\n")
+
+  cat("Total Number of Models Trained:", nrow(object@leaderboard), "\n")
+  cat("Start Time:",
+      as.character(as.POSIXct(as.numeric(object@training_info$start_epoch), origin="1970-01-01")), h2o.getTimezone(), "\n")
+  cat("End Time:",
+      as.character(as.POSIXct(as.numeric(object@training_info$stop_epoch), origin="1970-01-01")), h2o.getTimezone(), "\n")
+  cat("Duration:", object@training_info$duration_secs, "s\n\n")
+
+  cat("Leaderboard\n")
+  cat("===========\n")
+  print(h2o.get_leaderboard(object, "ALL"), n = Inf)
+
+  invisible(NULL)
 })
