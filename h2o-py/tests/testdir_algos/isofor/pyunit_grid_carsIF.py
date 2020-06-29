@@ -36,11 +36,12 @@ def grid_synthetic_IF():
     predictors = ["x", "y"]
 
     print("Constructing the grid of IF models...")
-    cars_gbm_grid = H2OGridSearch(H2OIsolationForestEstimator, hyper_params=grid_space)
-    cars_gbm_grid.train(x=predictors, y="label", training_frame=train, validation_frame=test)
+    if_grid = H2OGridSearch(H2OIsolationForestEstimator, hyper_params=grid_space)
+    if_grid.train(x=predictors, training_frame=train,
+                  validation_frame=test, validation_response_column="label")
 
     print("Check correct type value....")
-    model_type = cars_gbm_grid[0].type
+    model_type = if_grid[0].type
     assert model_type == 'unsupervised', "Type of model ({0}) is incorrect, expected value is 'unsupervised'.".format(model_type)
 
     print("Performing various checks of the constructed grid...")
@@ -49,9 +50,11 @@ def grid_synthetic_IF():
     size_of_grid_space = 1
     for v in list(grid_space.values()):
         size_of_grid_space = size_of_grid_space * len(v)
-    actual_size = len(cars_gbm_grid)
-    assert size_of_grid_space ==  actual_size, "Expected size of grid to be {0}, but got {1}" \
-                                               "".format(size_of_grid_space,actual_size)
+    actual_size = len(if_grid)
+    print("Expected size of grid space: {0}".format(size_of_grid_space))
+    assert size_of_grid_space == actual_size, "Expected size of grid to be {0}, but got {1}" \
+                                              "".format(size_of_grid_space, actual_size)
+    print(if_grid)
 
 
 if __name__ == "__main__":

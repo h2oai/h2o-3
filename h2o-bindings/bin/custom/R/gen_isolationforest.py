@@ -1,3 +1,9 @@
+def update_param(name, param):
+    if name == 'validation_response_column':
+        param['name'] = None
+        return param
+    return None  # param untouched
+
 extensions = dict(
     required_params=['training_frame', 'x'],
     validate_required_params="",
@@ -6,6 +12,7 @@ parms$training_frame <- training_frame
 if(!missing(x))
   parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
 """,
+    skip_default_set_params_for=['validation_response_column', 'training_frame', 'ignored_columns'],
 )
 
 doc = dict(

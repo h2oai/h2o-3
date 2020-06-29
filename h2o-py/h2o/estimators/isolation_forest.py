@@ -28,7 +28,7 @@ class H2OIsolationForestEstimator(H2OEstimator):
                    "ignore_const_cols", "ntrees", "max_depth", "min_rows", "max_runtime_secs", "seed",
                    "build_tree_one_node", "mtries", "sample_size", "sample_rate", "col_sample_rate_change_per_level",
                    "col_sample_rate_per_tree", "categorical_encoding", "stopping_rounds", "stopping_metric",
-                   "stopping_tolerance", "export_checkpoints_dir", "contamination", "response_column"}
+                   "stopping_tolerance", "export_checkpoints_dir", "contamination", "validation_response_column"}
 
     def __init__(self, **kwargs):
         super(H2OIsolationForestEstimator, self).__init__()
@@ -611,17 +611,18 @@ class H2OIsolationForestEstimator(H2OEstimator):
 
 
     @property
-    def response_column(self):
+    def validation_response_column(self):
         """
-        Response variable column.
+        (experimental) Name of the response column in the validation frame. Response column should be binary and
+        indicate not anomaly/anomaly.
 
         Type: ``str``.
         """
-        return self._parms.get("response_column")
+        return self._parms.get("validation_response_column")
 
-    @response_column.setter
-    def response_column(self, response_column):
-        assert_is_type(response_column, None, str)
-        self._parms["response_column"] = response_column
+    @validation_response_column.setter
+    def validation_response_column(self, validation_response_column):
+        assert_is_type(validation_response_column, None, str)
+        self._parms["validation_response_column"] = validation_response_column
 
 
