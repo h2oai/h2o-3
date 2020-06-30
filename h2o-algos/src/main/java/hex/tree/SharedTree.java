@@ -396,7 +396,6 @@ public abstract class SharedTree<
     abstract protected boolean doOOBScoring();
     abstract protected boolean buildNextKTrees();
     abstract protected void initializeModelSpecifics();
-    protected void finalizeModel() {};
 
     // Common methods for all tree builders
 
