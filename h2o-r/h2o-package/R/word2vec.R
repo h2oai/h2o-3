@@ -25,7 +25,7 @@
 #' h2o.init()
 #' 
 #' # Import the CraigslistJobTitles dataset
-#' job_titles <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv", 
+#' job_titles <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv",
 #'                              col.names = c("category", "jobtitle"),
 #'                              col.types = c("String", "String"), header = TRUE)
 #' 
