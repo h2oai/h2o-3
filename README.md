@@ -684,25 +684,23 @@ Click, C., Lanford, J., Malohlava, M., Parmar, V., and Roark, H. (Oct. 2016). _G
 <a name="Roadmap"></a>
 ## 10. Roadmap
 
-### H2O 3.30 - Winter 2020 (Q1/2020)
+### H2O 3.30.1.1 - July 2020
 
-* Generalized Additive Models: [PUBDEV-6807](https://0xdata.atlassian.net/browse/PUBDEV-6807)
-* Constrained k-means Clustering: [PUBDEV-6447](https://0xdata.atlassian.net/browse/PUBDEV-6447)
-* CBOW for word2vec: [PUBDEV-7229](https://0xdata.atlassian.net/browse/PUBDEV-7229)
-* Fractional Binomial in GLM: [PUBDEV-6037](https://0xdata.atlassian.net/browse/PUBDEV-6037)
-* Bulk Model Building: [PUBDEV-6976](https://0xdata.atlassian.net/browse/PUBDEV-6976)
-* Kubernetes Support: [PUBDEV-6852](https://0xdata.atlassian.net/browse/PUBDEV-6852)
-* Out-of-memory error protection: [PUBDEV-6614](https://0xdata.atlassian.net/browse/PUBDEV-6614)
-
-### H2O 3.32 - Spring 2020 (Q2/2020)
-
-* RuleFit algorithm
-* Grid Search for Unsupervised algos (Isolation Forest, Autoencoder)
-* NLP Improvements: TF-IDF, plot embeddings
 * Hive Data Export
 * XGBoost Stability/Resource utilization: Scaling cluster up for XGBoost
-* Automatic cluster sizing: [PUBDEV-6045](https://0xdata.atlassian.net/browse/PUBDEV-6045)
-* PSVM Improvements (linear kernel, MOJO)
+* Isolation Forest Improvements (contamination, validation frame, grid search)
+* NLP Improvements: TF-IDF
+* Generalized Additive Models (improvements, not a beta anymore)
+* CoxPH additions (new metrics, baseline hazard function, MOJO)
+
+### H2O 3.32.0.1 - September 2020
+
+* RuleFit algorithm
+* Extended Isolation Forest Algoritm
+* Target Encoding for Regression and Multinomial problems
+* Kubernetes Improvements (REST API clustering, healthchecks)
+* GBM monotone constraints for quantile and laplace distributions
+* Performance optimizations (lower memory usage)
 
 <a name="Community"></a>
 ## 11. Community
