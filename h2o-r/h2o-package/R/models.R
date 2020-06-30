@@ -3103,7 +3103,7 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #' @param object Either an \linkS4class{H2OModel} object or an
 #'        \linkS4class{H2OModelMetrics} object.
 #' @return Kolmogorov-Smirnov metric, a number between 0 and 1.
-#' @seealso \code{\link{h2o.gainsLift}} to see detaied K-S metrics per group
+#' @seealso \code{\link{h2o.gainsLift}} to see detailed K-S metrics per group
 #' 
 #' @examples
 #' \dontrun{
@@ -3111,7 +3111,8 @@ setMethod("h2o.gainsLift", "H2OModelMetrics", function(object) {
 #' h2o.init()
 #' data <- h2o.importFile(
 #' path = "https://s3.amazonaws.com/h2o-public-test-data/smalldata/airlines/allyears2k_headers.zip")
-#' model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", training_frame = data, ntrees = 1)
+#' model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", 
+#'                        training_frame = data, ntrees = 1)
 #' h2o.kolmogorov_smirnov(model)
 #' }
 #' @export

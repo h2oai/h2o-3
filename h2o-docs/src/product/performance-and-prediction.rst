@@ -316,6 +316,7 @@ H2O-3 calculates regression metrics for classification problems. The following a
 - `Logloss`_
 - `AUC (Area Under the ROC Curve)`_
 - `AUCPR (Area Under the Precision-Recall Curve)`_
+- `Kolmogorov-Smirnov (KS) Metric`_
 
 Each metric is described in greater detail in the sections that follow. The examples are based off of a GBM model built using the **allyears2k_headers.zip** dataset.
 
@@ -789,6 +790,41 @@ Using the previous example, run the following to retrieve the AUCPR.
         # retrieve the AUCPR for both the training and validation data:
         airlines_gbm.pr_auc(train=True, valid=True, xval=False)
         {u'train': 0.801959918132391, u'valid': 0.7609887253334723}
+
+Kolmogorov-Smirnov (KS) Metric 
+##############################
+
+The `Kolmogorov-Smirnov (KS) <https://en.wikipedia.org/wiki/Kolmogorov–Smirnov_test>`__ metric represents the degree of separation between the positive (1) and negative (0) cumulative distribution functions for a binomial model. It is a nonparametric test that compares the cumulative distributions of two unmatched data sets and does not assume that data are sampled from any defined distributions. The KS metric has more power to detect changes in the shape of the distribution and less to detect a shift in the median because it tests for more deviations from the null hypothesis. Detailed metrics per each group can be found in the gains-lift table. 
+
+**Examples**
+
+Using the previously imported and split airlines dataset, run the following to retrieve the KS metric.
+
+.. tabs::
+  .. code-tab:: r R
+
+    # build a new model using gainslift_bins:
+    model <- h2o.gbm(x = c("Origin", "Distance"), 
+                     y = "IsDepDelayed", 
+                     training_frame = train, 
+                     ntrees = 1, 
+                     gainslift_bins = 10)
+
+    # retrieve the ks metric:
+    kolmogorov_smirnov <- h2o.kolmogorov_smirnov(model)
+    kolmogorov_smirnov
+    [1] 0.2007235
+
+  .. code-tab:: python
+
+    # build a new model using gainslift_bins:
+    model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=10)
+    model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=train)
+
+    # retrieve the ks metric:
+    ks = model.kolmogorov_smirnov()
+    ks
+    0.20072346203696562
 
 Metric Best Practices - Regression
 '''''''''''''''''''''''''''''''''''

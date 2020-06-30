@@ -73,6 +73,8 @@ Defining a Naïve Bayes Model
 
 -  `export_checkpoints_dir <algo-params/export_checkpoints_dir.html>`__: Specify a directory to which generated models will automatically be exported.
 
+- **gainslift_bins**: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
+
 Interpreting a Naïve Bayes Model
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
