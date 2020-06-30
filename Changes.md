@@ -20,7 +20,7 @@ Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/in
 <h4>New Feature</h4>
 
 <ul>
-<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7404'>PUBDEV-7404</a>] - Added documentation the new Kolmogorov-Smirnov metric for binary classification models.
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7404'>PUBDEV-7404</a>] - Added support for the Kolmogorov-Smirnov metric for binary classification models.
 </li>
 </ul>
                                                                                                                                                                                                                                                                                                 
