@@ -35,7 +35,7 @@ predictors <- c("displacement", "power", "weight", "acceleration", "year")
 
 # Train the IF model
 cars_if <- h2o.isolationForest(x = predictors, training_frame = cars,
-                               seed = 1234, stopping_metric = "MSE",
+                               seed = 1234, stopping_metric = "anomaly_score",
                                stopping_rounds = 3, stopping_tolerance = 0.1)
 """
 )
