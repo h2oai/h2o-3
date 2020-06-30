@@ -28,6 +28,7 @@ dependencies {
     compile "ai.h2o:xgboost4j-linux-minimal:${xgboost4jVersion}"
     compile "ai.h2o:xgboost4j-osx-minimal:${xgboost4jVersion}"
 
+    testCompile project(":h2o-app")
     testCompile project(":h2o-test-support")
     testCompile 'com.esotericsoftware.kryo:kryo:2.21'
     testRuntimeOnly project(":${defaultWebserverModule}")

@@ -7,11 +7,14 @@ import hex.tree.xgboost.XGBoostModel;
 import hex.tree.xgboost.matrix.FrameMatrixLoader;
 import hex.tree.xgboost.task.XGBoostUploadMatrixTask;
 import hex.tree.xgboost.task.XGBoostSetupTask;
+import org.apache.log4j.Logger;
 import water.H2O;
 import water.Key;
 import water.fvec.Frame;
 
 public class RemoteXGBoostExecutor implements XGBoostExecutor {
+    
+    private static final Logger LOG = Logger.getLogger(RemoteXGBoostExecutor.class);
 
     public final XGBoostHttpClient http;
     public final Key modelKey;
@@ -28,11 +31,13 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         model._output._native_parameters = BoosterParms.fromMap(req.parms).toTwoDimTable();
         req.save_matrix_path = model._parms._save_matrix_directory;
         req.nodes = collectNodes(trainFrameNodes);
+        LOG.info("Initializing remote executor.");
         XGBoostExecRespV3 resp = http.postJson(modelKey, "init", req);
         String[] remoteNodes = resp.readData();
         assert modelKey.equals(resp.key.key());
         uploadCheckpointBooster(model);
         uploadMatrices(model, train, trainFrameNodes, remoteNodes, https, userName, password);
+        LOG.info("Remote executor init complete.");
     }
 
     private void uploadMatrices(
@@ -41,6 +46,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         boolean https, String userName, String password
     ) {
         FrameMatrixLoader loader = new FrameMatrixLoader(model, train);
+        LOG.info("Starting matrix data upload.");
         new XGBoostUploadMatrixTask(modelKey, trainFrameNodes._nodes, loader, remoteNodes, https, userName, password).run();
     }
 
@@ -48,6 +54,7 @@ public class RemoteXGBoostExecutor implements XGBoostExecutor {
         if (!model._parms.hasCheckpoint()) {
             return;
         }
+        LOG.info("Uploading booster checkpoint.");
         http.uploadBytes(modelKey, "checkpoint", model.model_info()._boosterBytes);
     }
 
