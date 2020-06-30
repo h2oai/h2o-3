@@ -164,6 +164,7 @@ reference:
       - h2o.kfold_column
       - h2o.killMinus3
       - h2o.kmeans
+      - h2o.kolmogorov_smirnov
       - h2o.kurtosis
       - h2o.levels
       - h2o.list_all_extensions
