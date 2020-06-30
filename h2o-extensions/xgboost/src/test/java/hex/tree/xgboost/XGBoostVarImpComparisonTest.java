@@ -103,6 +103,7 @@ public class XGBoostVarImpComparisonTest extends TestUtil {
                 assertNull(nativeModel._output._varimp);
             }
         } finally {
+            System.clearProperty("sys.ai.h2o.xgboost.predict.native.enable");
             Scope.exit();
         }
     }
