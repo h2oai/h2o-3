@@ -54,7 +54,7 @@ public class Score extends CMetricScoringTask<Score> {
     Chunk ys; // Response
     if (_bldr.isSupervised()) {
       ys = _bldr.chk_resp(chks);
-    } else if (_bldr.optionalResponse() && _kresp != null) {
+    } else if (_bldr.isResponseOptional() && _kresp != null) {
       ys = _kresp.get().chunkForChunkIdx(chks[0].cidx());
     } else {
       ys = new C0DChunk(0, chks[0]._len); // Dummy response to simplify code

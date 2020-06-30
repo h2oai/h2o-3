@@ -873,7 +873,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   abstract public boolean isSupervised();
 
-  public boolean optionalResponse() {
+  public boolean isResponseOptional() {
     return false;
   }
   
@@ -1320,7 +1320,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     else {
-      if (!optionalResponse()) {
+      if (!isResponseOptional()) {
         hide("_response_column", "Ignored for unsupervised methods.");
         _vresponse = null;
       }
@@ -1340,11 +1340,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
-      if (optionalResponse() && _parms._response_column != null && _response == null) {
+      if (isResponseOptional() && _parms._response_column != null && _response == null) {
         _vresponse = va.vec(_parms._response_column);
       }
       _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
-      if (!optionalResponse() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
+      if (!isResponseOptional() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
         _vresponse = _valid.vec(_parms._response_column);
       }
     } else {
@@ -1484,7 +1484,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     try {
       String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _workspace.getToDelete(expensive), false);
       Vec response = adapted.vec(_parms._response_column);
-      if (response == null && _parms._response_column != null && !optionalResponse())
+      if (response == null && _parms._response_column != null && !isResponseOptional())
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
       if (expensive) {
         for (String s : msgs) {
