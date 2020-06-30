@@ -34,7 +34,7 @@
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
 #'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO". Defaults to AUTO.
+#'        with the Python client. Must be one of: "AUTO", "anomaly_score". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.01.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
@@ -78,7 +78,7 @@ h2o.isolationForest <- function(training_frame,
                                 col_sample_rate_per_tree = 1,
                                 categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                 stopping_rounds = 0,
-                                stopping_metric = c("AUTO"),
+                                stopping_metric = c("AUTO", "anomaly_score"),
                                 stopping_tolerance = 0.01,
                                 export_checkpoints_dir = NULL,
                                 contamination = -1)
@@ -157,7 +157,7 @@ h2o.isolationForest <- function(training_frame,
                                                 col_sample_rate_per_tree = 1,
                                                 categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                                 stopping_rounds = 0,
-                                                stopping_metric = c("AUTO"),
+                                                stopping_metric = c("AUTO", "anomaly_score"),
                                                 stopping_tolerance = 0.01,
                                                 export_checkpoints_dir = NULL,
                                                 contamination = -1,

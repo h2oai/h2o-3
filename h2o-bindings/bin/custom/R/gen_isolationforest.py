@@ -4,6 +4,7 @@ def update_param(name, param):
         return param
     if name == 'stopping_metric':
         param['values'] = ['AUTO', 'anomaly_score']
+        return param
     return None  # param untouched
 
 extensions = dict(
