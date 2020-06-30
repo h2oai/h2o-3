@@ -34,8 +34,7 @@ public class NaiveBayesV3 extends ModelBuilderSchema<NaiveBayes,NaiveBayesV3,Nai
         "eps_prob",
         "compute_metrics",
         "max_runtime_secs",
-        "export_checkpoints_dir",
-        "gainslift_bins"
+        "export_checkpoints_dir"
 		};
 
   /*Imbalanced Classes*/

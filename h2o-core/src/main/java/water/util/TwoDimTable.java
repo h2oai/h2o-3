@@ -82,7 +82,7 @@ public class TwoDimTable extends Iced {
         colTypes[c] = colTypes[c].toLowerCase();
         if (!(colTypes[c].equals("double") || colTypes[c].equals("float") || colTypes[c].equals("int") ||
             colTypes[c].equals("long") || colTypes[c].equals("string")))
-          throw new IllegalArgumentException(String.format("colTypes values must be one of \"double\", \"float\", \"int\", \"long\", or \"string\". Received \"%s\" as ColType %d", colTypes[c], c));
+          throw new IllegalArgumentException("colTypes values must be one of \"double\", \"float\", \"int\", \"long\", or \"string\"");
       }
     }
 

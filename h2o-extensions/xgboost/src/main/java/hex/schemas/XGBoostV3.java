@@ -85,8 +85,7 @@ public class XGBoostV3 extends ModelBuilderSchema<XGBoost,XGBoostV3,XGBoostV3.XG
         "reg_alpha",
         "dmatrix_type",
         "backend",
-        "gpu_id",
-        "gainslift_bins"
+        "gpu_id"
     };
 
     @API(help="(same as n_estimators) Number of trees.", gridable = true)
