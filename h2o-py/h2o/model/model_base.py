@@ -28,6 +28,7 @@ class ModelBase(h2o_meta(Keyed)):
         self._id = None
         self._model_json = None
         self._metrics_class = None
+        self._metrics_class_valid = None
         self._is_xvalidated = False
         self._xval_keys = None
         self._parms = {}  # internal, for object recycle
@@ -385,7 +386,7 @@ class ModelBase(h2o_meta(Keyed)):
                 if mm["frame"] is not None and mm["frame"]["name"] == test_data.frame_id:
                     raw_metrics = mm
                     break
-            return self._metrics_class(raw_metrics, algo=self._model_json["algo"])
+            return self._metrics_class_valid(raw_metrics, algo=self._model_json["algo"])
 
 
     def scoring_history(self):

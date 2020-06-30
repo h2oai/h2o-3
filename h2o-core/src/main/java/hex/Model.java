@@ -750,7 +750,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     }
 
     protected Output(ModelBuilder b, Frame train) {
-      _isSupervised = b.isSupervised();
       if (b.error_count() > 0)
         throw new IllegalArgumentException(b.validationErrors());
       // Capture the data "shape" the model is valid on
@@ -759,6 +758,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       _origNames = b._origNames;
       _origDomains = b._origDomains;
       _orig_projection_array = b._orig_projection_array;
+      _isSupervised = b.isSupervised();
       _hasOffset = b.hasOffsetCol();
       _hasWeights = b.hasWeightCol();
       _hasFold = b.hasFoldCol();
@@ -845,6 +845,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     public boolean hasOffset  () { return _hasOffset;}
     public boolean hasWeights () { return _hasWeights;}
     public boolean hasFold () { return _hasFold;}
+    public boolean hasResponse() { return isSupervised(); }
     public String responseName() { return isSupervised()?_names[responseIdx()]:null;}
     public String weightsName () { return _hasWeights ?_names[weightsIdx()]:null;}
     public String offsetName  () { return _hasOffset ?_names[offsetIdx()]:null;}
@@ -1565,7 +1566,8 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
   }
   public Frame score(Frame fr, String destination_key, Job j, boolean computeMetrics, CFuncRef customMetricFunc) throws IllegalArgumentException {
     Frame adaptFr = new Frame(fr);
-    computeMetrics = computeMetrics && (!isSupervised() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
+    computeMetrics = computeMetrics && 
+            (!_output.hasResponse() || (adaptFr.vec(_output.responseName()) != null && !adaptFr.vec(_output.responseName()).isBad()));
     String[] msg = adaptTestForTrain(adaptFr,true, computeMetrics);   // Adapt
     // clean up the previous score warning messages
     _warningsP = new String[0];
@@ -1806,7 +1808,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       float [] actual = null;
       _mb = Model.this.makeMetricBuilder(_domain);
       if (_computeMetrics) {
-        if (isSupervised()) {
+        if (_output.hasResponse()) {
           actual = new float[1];
           responseChunk = chks[_output.responseIdx()];
         } else
@@ -1827,7 +1829,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
           double offset = offsetChunk != null ? offsetChunk.atd(row) : 0;
           double[] preds = predict.score0(chks, offset, row, tmp, _mb._work);
           if (_computeMetrics) {
-            if (isSupervised()) {
+            if (responseChunk != null) {
               actual[0] = (float) responseChunk.atd(row);
             } else {
               for (int i = 0; i < actual.length; ++i)

@@ -1,14 +1,25 @@
 package hex.tree.isofor;
 
+import hex.ConfusionMatrix;
+import hex.ModelMetricsBinomial;
+import hex.ScoreKeeper;
 import hex.genmodel.algos.tree.SharedTreeNode;
 import hex.genmodel.algos.tree.SharedTreeSubgraph;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import water.DKV;
+import water.Key;
 import water.Scope;
 import water.TestUtil;
 import water.exceptions.H2OIllegalArgumentException;
 import water.fvec.Frame;
+import water.fvec.TestFrameBuilder;
+import water.fvec.Vec;
+import water.test.util.ConfusionMatrixUtils;
 import water.util.ArrayUtils;
+
+import java.io.IOException;
+import java.util.Random;
 
 import static org.junit.Assert.*;
 
@@ -211,4 +222,87 @@ public class IsolationForestTest extends TestUtil {
     }
   }
 
+  @Test
+  public void testTrainingWithResponse()  {
+    try {
+      Scope.enter();
+      Frame train = Scope.track(parse_test_file("smalldata/testng/airlines.csv"));
+
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._seed = 0xFEED;
+      p._ntrees = 1;
+      p._max_depth = 3;
+      // this is a weird case and it shouldn't be allowed but the java API permits it, we might disable it in the future
+      p._response_column = "IsDepDelayed";
+      p._ignored_columns = new String[] {"Origin", "Dest", "IsDepDelayed"};
+
+      IsolationForestModel model = new IsolationForest(p).trainModel().get();
+      Scope.track_generic(model);
+    } finally {
+      Scope.exit();
+    }
+  }
+
+  @Test
+  public void testEarlyStoppingOnValidationSet() {
+    try {
+      Scope.enter();
+      Random r = new Random(42);
+      final int N = 10000;
+      double[] x1s = new double[N];
+      double[] x2s = new double[N];
+      String[] ys = new String[N];
+      for (int i = 0; i < N; i++) {
+        x1s[i] = r.nextGaussian();
+        x2s[i] = r.nextGaussian();
+        ys[i] = Math.sqrt(Math.pow(x1s[i], 2) + Math.pow(x2s[i], 2)) > Math.PI ? "1" : "0";
+      }
+      final Frame train = new TestFrameBuilder()
+              .withColNames("x1", "x2")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM)
+              .withDataForCol(0, x1s)
+              .withDataForCol(1, x2s)
+              .build();
+      final Frame valid = new TestFrameBuilder()
+              .withColNames("x1", "x2", "y")
+              .withVecTypes(Vec.T_NUM, Vec.T_NUM, Vec.T_CAT)
+              .withDataForCol(0, x1s)
+              .withDataForCol(1, x2s)
+              .withDataForCol(2, ys)
+              .build();
+      
+      IsolationForestModel.IsolationForestParameters p = new IsolationForestModel.IsolationForestParameters();
+      p._train = train._key;
+      p._valid = valid._key;
+      p._seed = 0xFEED;
+      p._response_column = "y";
+      p._stopping_metric = ScoreKeeper.StoppingMetric.mean_per_class_error;
+      p._score_tree_interval = 3;
+      p._stopping_rounds = 5;
+      p._ntrees = 500;
+
+      IsolationForestModel m = new IsolationForest(p).trainModel().get();
+      assertNotNull(m);
+      Scope.track_generic(m);
+
+      // check we stopped early
+      assertTrue(m._output._ntrees < 500);
+
+      // check ability to predict on train (without a response)
+      Frame predicted = Scope.track(m.score(train));
+
+      ConfusionMatrix cm = ConfusionMatrixUtils.buildCM(valid.vec("y"), predicted.vec("predict"));
+      assertTrue(m._output._validation_metrics instanceof ModelMetricsBinomial);
+      assertEquals(((ModelMetricsBinomial) m._output._validation_metrics).mean_per_class_error(), cm.mean_per_class_error(), 1e-6);
+
+      // check that we use correct values for score-keeping (early stopping) 
+      assertEquals(
+              m._output.scoreKeepers()[m._output.scoreKeepers().length - 1]._mean_per_class_error,
+              cm.mean_per_class_error(), 1e-6
+      );
+    } finally {
+      Scope.exit();
+    }
+  }
 }

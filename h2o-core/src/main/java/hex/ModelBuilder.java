@@ -872,6 +872,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected boolean logMe() { return true; }
 
   abstract public boolean isSupervised();
+
+  public boolean isResponseOptional() {
+    return false;
+  }
   
   protected transient Vec _response; // Handy response column
   protected transient Vec _vresponse; // Handy response column
@@ -881,11 +885,11 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected transient String[] _origNames; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient String[][] _origDomains; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
   protected transient double[] _orig_projection_array; // only set if ModelBuilder.encodeFrameCategoricals() changes the training frame
-  
+
   public boolean hasOffsetCol(){ return _parms._offset_column != null;} // don't look at transient Vec
-  public boolean hasWeightCol(){return _parms._weights_column != null;} // don't look at transient Vec
-  public boolean hasFoldCol(){return _parms._fold_column != null;} // don't look at transient Vec
-  public int numSpecialCols() { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0); }
+  public boolean hasWeightCol(){ return _parms._weights_column != null;} // don't look at transient Vec
+  public boolean hasFoldCol()  { return _parms._fold_column != null;} // don't look at transient Vec
+  public int numSpecialCols()  { return (hasOffsetCol() ? 1 : 0) + (hasWeightCol() ? 1 : 0) + (hasFoldCol() ? 1 : 0); }
   public String[] specialColNames() {
     String[] n = new String[numSpecialCols()];
     int i=0;
@@ -905,6 +909,10 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
 
   public final boolean isClassifier() { return nclasses() > 1; }
 
+  protected boolean validateStoppingMetric() {
+    return true;
+  }
+  
   /**
    * Find and set response/weights/offset/fold and put them all in the end,
    * @return number of non-feature vecs
@@ -1312,13 +1320,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
     }
     else {
-      hide("_response_column", "Ignored for unsupervised methods.");
+      if (!isResponseOptional()) {
+        hide("_response_column", "Ignored for unsupervised methods.");
+        _vresponse = null;
+      }
       hide("_balance_classes", "Ignored for unsupervised methods.");
       hide("_class_sampling_factors", "Ignored for unsupervised methods.");
       hide("_max_after_balance_size", "Ignored for unsupervised methods.");
       hide("_max_confusion_matrix_size", "Ignored for unsupervised methods.");
       _response = null;
-      _vresponse = null;
       _nclass = 1;
     }
 
@@ -1330,8 +1340,13 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     // Toss out extra columns, complain about missing ones, remap categoricals
     Frame va = _parms.valid();  // User-given validation set
     if (va != null) {
+      if (isResponseOptional() && _parms._response_column != null && _response == null) {
+        _vresponse = va.vec(_parms._response_column);
+      }
       _valid = adaptFrameToTrain(va, "Validation Frame", "_validation_frame", expensive);
-      _vresponse = _valid.vec(_parms._response_column);
+      if (!isResponseOptional() || (_parms._response_column != null && _valid.find(_parms._response_column) >= 0)) {
+        _vresponse = _valid.vec(_parms._response_column);
+      }
     } else {
       _valid = null;
       _vresponse = null;
@@ -1350,7 +1365,6 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       }
       if (_valid != null) {
         _valid = encodeFrameCategoricals(_valid, ! _parms._is_cv_model /* for CV, need to score one more time in outer loop */);
-        _vresponse = _valid.vec(_parms._response_column);
       }
       boolean restructured = false;
       Vec[] vecs = _train.vecs();
@@ -1407,7 +1421,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         warn("_stopping_tolerance", "Stopping tolerance is ignored for _stopping_rounds=0.");
     } else if (_parms._stopping_rounds < 0) {
       error("_stopping_rounds", "Stopping rounds must be >= 0.");
-    } else {
+    } else if (validateStoppingMetric()){
       if (isClassifier()) {
         if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.deviance && !getClass().getSimpleName().contains("GLM")) {
           error("_stopping_metric", "Stopping metric cannot be deviance for classification.");
@@ -1470,7 +1484,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     try {
       String[] msgs = Model.adaptTestForTrain(adapted, null, null, _train._names, _train.domains(), _parms, expensive, true, null, getToEigenVec(), _workspace.getToDelete(expensive), false);
       Vec response = adapted.vec(_parms._response_column);
-      if (response == null && _parms._response_column != null)
+      if (response == null && _parms._response_column != null && !isResponseOptional())
         error(field, frDesc + " must have a response column '" + _parms._response_column + "'.");
       if (expensive) {
         for (String s : msgs) {
