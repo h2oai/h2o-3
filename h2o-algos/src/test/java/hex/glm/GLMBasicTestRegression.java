@@ -342,23 +342,23 @@ public class GLMBasicTestRegression extends TestUtil {
     double [] resDev  = new double[]{1469,755.4,770.8,908.9,1465,915.7};
     double [] varPow  = new double[]{   0,  1.0, 1.25,  1.5,1.75,  2.0};
 
-    GLMParameters parms = new GLMParameters(Family.tweedie);
-    parms._train = _earinf._key;
-    parms._ignored_columns = new String[]{};
-    // "response_column":"Claims","offset_column":"logInsured"
-    parms._response_column = "Infections";
-    parms._standardize = false;
-    parms._lambda = new double[]{0};
-    parms._alpha = new double[]{0};
-    parms._gradient_epsilon = 1e-10;
-    parms._max_iterations = 1000;
-    parms._objective_epsilon = 0;
-    parms._beta_epsilon = 1e-6;
     for(int x = 0; x < varPow.length; ++x) {
-      double p = varPow[x];
-      parms._tweedie_variance_power = p;
-      parms._tweedie_link_power = 1 - p;
       for (Solver s : /*new Solver[]{Solver.IRLSM}*/ GLMParameters.Solver.values()) {
+        GLMParameters parms = new GLMParameters(Family.tweedie);
+        parms._train = _earinf._key;
+        parms._ignored_columns = new String[]{};
+        // "response_column":"Claims","offset_column":"logInsured"
+        parms._response_column = "Infections";
+        parms._standardize = false;
+        parms._lambda = new double[]{0};
+        parms._alpha = new double[]{0};
+        parms._gradient_epsilon = 1e-10;
+        parms._max_iterations = 1000;
+        parms._objective_epsilon = 0;
+        parms._beta_epsilon = 1e-6;
+        double p = varPow[x];
+        parms._tweedie_variance_power = p;
+        parms._tweedie_link_power = 1 - p;
         if(s == Solver.COORDINATE_DESCENT_NAIVE || s.equals(Solver.GRADIENT_DESCENT_LH)
                 || s.equals(Solver.GRADIENT_DESCENT_SQERR)) continue; // ignore for now, has trouble with zero columns
         try {
@@ -404,23 +404,23 @@ public class GLMBasicTestRegression extends TestUtil {
 //    Residual Deviance: 579.5 	AIC: 805.9
     String [] cfs1 = new String [] { "Intercept", "Merit.1", "Merit.2", "Merit.3", "Class.2", "Class.3", "Class.4", "Class.5"};
     double [] vals = new double [] { -2.0357,     -0.1378,  -0.2207,  -0.4930,   0.2998,   0.4691,   0.5259,    0.2156};
-      GLMParameters parms = new GLMParameters(Family.poisson);
-      parms._train = _canCarTrain._key;
-      parms._ignored_columns = new String[]{"Insured", "Premium", "Cost"};
-      // "response_column":"Claims","offset_column":"logInsured"
-      parms._response_column = "Claims";
-      parms._offset_column = "logInsured";
-      parms._standardize = false;
-      parms._lambda = new double[]{0};
-      parms._alpha = new double[]{0};
-      parms._objective_epsilon = 0;
-      parms._beta_epsilon = 1e-6;
-      parms._gradient_epsilon = 1e-10;
-      parms._max_iterations = 1000;
       for (Solver s : GLMParameters.Solver.values()) {
         if(s == Solver.COORDINATE_DESCENT_NAIVE || s.equals(Solver.GRADIENT_DESCENT_LH)
         || s.equals(Solver.GRADIENT_DESCENT_SQERR)) continue; // skip for now, does not handle zero columns (introduced by extra missing bucket with no missing in the dataset)
         try {
+          GLMParameters parms = new GLMParameters(Family.poisson);
+          parms._train = _canCarTrain._key;
+          parms._ignored_columns = new String[]{"Insured", "Premium", "Cost"};
+          // "response_column":"Claims","offset_column":"logInsured"
+          parms._response_column = "Claims";
+          parms._offset_column = "logInsured";
+          parms._standardize = false;
+          parms._lambda = new double[]{0};
+          parms._alpha = new double[]{0};
+          parms._objective_epsilon = 0;
+          parms._beta_epsilon = 1e-6;
+          parms._gradient_epsilon = 1e-10;
+          parms._max_iterations = 1000;
           parms._solver = s;
           model = new GLM(parms).trainModel().get();
           HashMap<String, Double> coefs = model.coefficients();

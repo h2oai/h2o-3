@@ -11,6 +11,7 @@ public class ModelParameter implements Serializable {
   public String type;
   public Object default_value;
   public Object actual_value;
+  public Object input_value;
   public String level;
   public String[] values;
   public String[] is_member_of_frames;
@@ -43,6 +44,10 @@ public class ModelParameter implements Serializable {
 
   public Object getActualValue() {
     return actual_value;
+  }
+  
+  public Object getInputValue() {
+    return input_value;
   }
 
   public String getLevel() {

@@ -13,10 +13,8 @@ import hex.genmodel.easy.prediction.*;
 import hex.genmodel.utils.DistributionFamily;
 import hex.quantile.QuantileModel;
 import org.joda.time.DateTime;
-import org.joda.time.DateTimeZone;
 import water.*;
 import water.api.ModelsHandler;
-import water.api.RestApiExtension;
 import water.api.StreamWriter;
 import water.api.StreamingSchema;
 import water.api.schemas3.KeyV3;
@@ -25,7 +23,6 @@ import water.codegen.CodeGeneratorPipeline;
 import water.exceptions.JCodeSB;
 import water.fvec.*;
 import water.parser.BufferedString;
-import water.parser.ParseTime;
 import water.persist.Persist;
 import water.udf.CFuncRef;
 import water.util.*;
@@ -51,13 +48,17 @@ import static water.util.FrameUtils.cleanUp;
 public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, O extends Model.Output> extends Lockable<M>
         implements StreamWriter {
 
+  public static final String EVAL_AUTO_PARAMS_ENABLED = H2O.OptArgs.SYSTEM_PROP_PREFIX + "algos.evaluate_auto_model_parameters";
+
   public P _parms;   // TODO: move things around so that this can be protected
+  public P _input_parms;
   public O _output;  // TODO: move things around so that this can be protected
   public String[] _warnings = new String[0];  // warning associated with model building
   public transient String[] _warningsP;     // warnings associated with prediction only (transient, not persisted)
   public Distribution _dist;
   protected ScoringInfo[] scoringInfo;
   public IcedHashMap<Key, String> _toDelete = new IcedHashMap<>();
+  public boolean evalAutoParamsEnabled;
 
 
   public static Model[] fetchAll() {
@@ -77,6 +78,16 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     return models;
   }
 
+  /**
+   * Whether to evaluate input parameters of value AUTO.
+   */
+  public static boolean evaluateAutoModelParameters() {
+    return Boolean.parseBoolean(System.getProperty(EVAL_AUTO_PARAMS_ENABLED, "true"));
+  }
+
+  public void setInputParms(P _input_parms) {
+    this._input_parms = _input_parms;
+  }
 
   public interface DeepFeatures {
     Frame scoreAutoEncoder(Frame frame, Key destination_key, boolean reconstruction_error_per_feature);
@@ -1017,12 +1028,19 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
     super(selfKey);
     assert parms != null;
     _parms = parms;
+    evalAutoParamsEnabled = evaluateAutoModelParameters();
+    if (evalAutoParamsEnabled) {
+      initActualParamValues();
+    }
     _output = output;  // Output won't be set if we're assert output != null;
     if (_output != null)
       _output.startClock();
     _dist = isSupervised() && _output.nclasses() == 1 ? DistributionFactory.getDistribution(_parms) : null;
     Log.info("Starting model "+ selfKey);
   }
+
+  public void initActualParamValues() {}
+  
   /**
    * Deviance of given distribution function at predicted value f
    * @param w observation weight
@@ -1066,7 +1084,7 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
 
   // Lower is better
   public float loss() {
-    switch (_parms._stopping_metric) {
+    switch (Optional.ofNullable(_parms._stopping_metric).orElse(ScoreKeeper.StoppingMetric.AUTO)) {
       case MSE:
         return (float) mse();
       case MAE:
@@ -1092,7 +1110,6 @@ public abstract class Model<M extends Model<M,P,O>, P extends Model.Parameters, 
       case AUTO:
       default:
         return (float) (_output.isClassifier() ? logloss() : _output.isAutoencoder() ? mse() : deviance());
-
     }
   } // loss()
 

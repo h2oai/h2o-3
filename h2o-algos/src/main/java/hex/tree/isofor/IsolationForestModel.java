@@ -3,6 +3,7 @@ package hex.tree.isofor;
 import hex.ModelCategory;
 import hex.ModelMetrics;
 import hex.genmodel.utils.ArrayUtils;
+import hex.ScoreKeeper;
 import hex.genmodel.utils.DistributionFamily;
 import hex.tree.SharedTreeModel;
 import water.Key;
@@ -87,7 +88,24 @@ public class IsolationForestModel extends SharedTreeModel<IsolationForestModel, 
     }
   }
 
-  public IsolationForestModel(Key<IsolationForestModel> selfKey, IsolationForestParameters parms, IsolationForestOutput output ) { super(selfKey, parms, output); }
+  public IsolationForestModel(Key<IsolationForestModel> selfKey, IsolationForestParameters parms, IsolationForestOutput output ) { 
+    super(selfKey, parms, output);
+  }
+
+  @Override
+  public void initActualParamValues() {
+    super.initActualParamValues();
+    if (_parms._stopping_metric == ScoreKeeper.StoppingMetric.AUTO){
+      if (_parms._stopping_rounds == 0) {
+        _parms._stopping_metric = null;
+      } else {
+        _parms._stopping_metric = ScoreKeeper.StoppingMetric.anomaly_score;
+      }
+    }
+    if (_parms._categorical_encoding == Parameters.CategoricalEncodingScheme.AUTO) {
+      _parms._categorical_encoding = Parameters.CategoricalEncodingScheme.Enum;
+    }
+  }
 
   @Override
   public ModelMetrics.MetricBuilder makeMetricBuilder(String[] domain) {

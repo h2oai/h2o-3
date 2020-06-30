@@ -213,7 +213,7 @@ public class GLMTest  extends TestUtil {
       new TestUtil.StandardizeColumns(numCols2Transform, colMeans, oneOSigma, train).doAll(train);
       DKV.put(train);
       Scope.track(train);
-      
+
       params._standardize=false;
       params._train = train._key;
       GLMModel glmS = new GLM(params).trainModel().get();
@@ -2161,6 +2161,7 @@ public class GLMTest  extends TestUtil {
       parms._train = trn._key;
       parms._response_column = "label";
       parms._missing_values_handling = MissingValuesHandling.Skip;
+      GLMParameters parms2 = (GLMParameters) parms.clone(); 
       GLMModel m = new GLM(parms).trainModel().get();
       System.out.println("coefficients = " + m.coefficients());
       double icpt = m.coefficients().get("Intercept");
@@ -2169,8 +2170,8 @@ public class GLMTest  extends TestUtil {
       Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(1), 0);
       Assert.assertEquals(icpt+m.coefficients().get("color.blue"), preds.vec(0).at(2), 0);
       Assert.assertEquals(icpt, preds.vec(0).at(3), 0);
-      parms._missing_values_handling = MissingValuesHandling.MeanImputation;
-      GLMModel m2 = new GLM(parms).trainModel().get();
+      parms2._missing_values_handling = MissingValuesHandling.MeanImputation;
+      GLMModel m2 = new GLM(parms2).trainModel().get();
       Frame preds2 = m2.score(tst);
       icpt = m2.coefficients().get("Intercept");
       System.out.println("coefficients = " + m2.coefficients());

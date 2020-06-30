@@ -35,16 +35,20 @@ compare_output <- function(original_output, generic_output, skipped_original, sk
 }
 
 compare_params <- function(original_model, generic_model){
-  print("Original params:")
-  print(original_model@parameters)
-  print("Generic model params:")
-  print(generic_model@parameters)
-  expect_true(length(original_model@parameters) == (length(generic_model@parameters) - 2)) # Generic has extra model_key & path params
-  
-  for (param_name in original_model@parameters){
-    original_param = original_model@parameters[param_name]
-    generic_param = generic_model@parameters[param_name]
-    expect_false(is.null(original_param))
-    expect_false(is.null(generic_param))
-  }
+    names <- names(original_model@parameters)
+    print("Original params:")
+    for (param_name in names){
+        print(original_model@allparameters[param_name])
+    }
+    print("Generic model params:")
+    for (param_name in names){
+        print(generic_model@allparameters[param_name])
+    }
+    
+    for (param_name in names(original_model@parameters)){
+        original_param = original_model@allparameters[param_name]
+        generic_param = generic_model@allparameters[param_name]
+        expect_false(is.null(original_param))
+        expect_false(is.null(generic_param))
+    }
 }

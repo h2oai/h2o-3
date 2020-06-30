@@ -456,6 +456,7 @@ public class GLMBasicTestMultinomial extends TestUtil {
       params._max_iterations = 500;
       params._solver = Solver.L_BFGS;
       params._missing_values_handling = GLMModel.GLMParameters.MissingValuesHandling.Skip;
+      GLMParameters paramsInitClone = (GLMParameters) params.clone();
 //      params._lambda_search = true;
       model = new GLM(params).trainModel().get();
       assertEquals(covtype_copy.numRows()-3-1,model._nullDOF);
@@ -472,8 +473,8 @@ public class GLMBasicTestMultinomial extends TestUtil {
       preds.delete();
       preds = null;
       // now run the same on the subset
-      params._train = covtype_subset._key;
-      model = new GLM(params).trainModel().get();
+      paramsInitClone._train = covtype_subset._key;
+      model = new GLM(paramsInitClone).trainModel().get();
       assertEquals(covtype_copy.numRows()-3-1,model._nullDOF);
       System.out.println(model._output._training_metrics);
       System.out.println(model._output._validation_metrics);

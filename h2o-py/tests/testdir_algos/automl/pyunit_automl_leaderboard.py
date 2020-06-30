@@ -239,7 +239,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_binomial():
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     first = [m for m in non_se if 'XGBoost_1' in m]
     others = [m for m in non_se if m not in first]
-    check_model_property(first, 'stopping_metric', True, "AUTO")
+    check_model_property(first, 'stopping_metric', True, None) #if stopping_rounds == 0, actual value of stopping_metric is set to None
     check_model_property(others, 'stopping_metric', True, "logloss")
 
 
@@ -257,7 +257,7 @@ def test_AUTO_stopping_metric_with_no_sorting_metric_regression():
     non_se = get_partitioned_model_names(aml.leaderboard).non_se
     first = [m for m in non_se if 'XGBoost_1' in m]
     others = [m for m in non_se if m not in first]
-    check_model_property(first, 'stopping_metric', True, "AUTO")
+    check_model_property(first, 'stopping_metric', True, None) #if stopping_rounds == 0, actual value of stopping_metric is set to None
     check_model_property(others, 'stopping_metric', True, "deviance")
 
 

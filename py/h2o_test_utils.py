@@ -174,7 +174,7 @@ def validate_builder(algo, builder):
     parameters = builder['parameters']
     assert len(parameters) > 0, "FAIL: parameters list is empty: " + algo + " (" + repr(builder) + ")"
     for parameter in parameters:
-        assertKeysExist(parameter, '', ['name', 'help', 'required', 'type', 'default_value', 'actual_value', 'level', 'values'])
+        assertKeysExist(parameter, '', ['name', 'help', 'required', 'type', 'default_value', 'actual_value', 'input_value', 'level', 'values'])
 
     assert 'can_build' in builder, "FAIL: Failed to find can_build list in builder: " + algo + " (" + repr(builder) + ")"
     assert isinstance(builder['can_build'], list), "FAIL: 'can_build' element is not a list in builder: " + algo + " (" + repr(builder) + ")"

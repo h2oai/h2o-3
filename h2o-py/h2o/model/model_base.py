@@ -69,7 +69,8 @@ class ModelBase(h2o_meta(Keyed)):
         params = {}
         for p in self.parms:
             params[p] = {"default": self.parms[p]["default_value"],
-                         "actual": self.parms[p]["actual_value"]}
+                         "actual": self.parms[p]["actual_value"],
+                         "input": self.parms[p]["input_value"]}
         return params
 
 

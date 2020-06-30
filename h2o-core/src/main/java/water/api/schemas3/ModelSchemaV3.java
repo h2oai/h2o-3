@@ -33,7 +33,7 @@ public class ModelSchemaV3<
   // Output fields
   @API(help="The build parameters for the model (e.g. K for KMeans).", direction=API.Direction.OUTPUT)
   public PS parameters;
-
+  
   @API(help="The build output for the model (e.g. the cluster centers for KMeans).", direction=API.Direction.OUTPUT)
   public OS output;
 
@@ -42,6 +42,8 @@ public class ModelSchemaV3<
 
   @API(help="Checksum for all the things that go into building the Model.", direction=API.Direction.OUTPUT)
   protected long checksum;
+
+  private PS input_parameters;
 
   public ModelSchemaV3() {}
   public ModelSchemaV3(M m) {
@@ -75,6 +77,10 @@ public class ModelSchemaV3<
     this.have_mojo = m.haveMojo();
     parameters = createParametersSchema();
     parameters.fillFromImpl(m._parms);
+    if (m._input_parms != null) {
+      input_parameters = createParametersSchema();
+      input_parameters.fillFromImpl(m._input_parms);
+    }
     parameters.model_id = model_id;
 
     output = createOutputSchema();
@@ -95,7 +101,7 @@ public class ModelSchemaV3<
     // Builds ModelParameterSchemaV2 objects for each field, and then calls writeJSON on the array
     try {
       PS defaults = createParametersSchema().fillFromImpl(parameters.getImplClass().newInstance());
-      ModelParametersSchemaV3.writeParametersJSON(ab, parameters, defaults);
+      ModelParametersSchemaV3.writeParametersJSON(ab, parameters, input_parameters, defaults ,"parameters");
       ab.put1(',');
     }
     catch (Exception e) {

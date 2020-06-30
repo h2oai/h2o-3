@@ -87,11 +87,13 @@ public class XGBoostVarImpComparisonTest extends TestUtil {
             parms._train = trainFrame._key;
             parms._valid = testFrame._key;
             parms._response_column = response;
+            XGBoostModel.XGBoostParameters parmsClone = (XGBoostModel.XGBoostParameters) parms.clone();
 
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "true");
             XGBoostModel nativeModel = new XGBoost(parms).trainModel().get();
             Scope.track_generic(nativeModel);
 
+            parms = parmsClone;
             System.setProperty("sys.ai.h2o.xgboost.predict.native.enable", "false");
             XGBoostModel javaModel = new XGBoost(parms).trainModel().get();
             Scope.track_generic(javaModel);

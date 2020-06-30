@@ -13,6 +13,7 @@ import water.udf.CFuncRef;
 import water.util.*;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.*;
 
@@ -76,6 +77,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   protected ModelBuilder(P parms, Key<M> key) {
     _job = new Job<>(_result = key, parms.javaName(), parms.algoName());
     _parms = parms;
+    _input_parms = (P) parms.clone();
   }
 
   /** Shared pre-existing Job and unique new result key */
@@ -83,6 +85,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     _job = job;
     _result = defaultKey(parms.algoName());
     _parms = parms;
+    _input_parms = (P) parms.clone();
   }
 
   /** List of known ModelBuilders with all default args; endlessly cloned by
@@ -147,6 +150,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
               mb._job = job;
               mb._result = result;
               mb._parms = prototype._parms.clone();
+              mb._input_parms = prototype._parms.clone();
               return mb;
             })
             .orElseThrow(() -> {
@@ -170,12 +174,15 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     Job<Model> mJob = new Job<>(mKey, parms.javaName(), parms.algoName());
     B newMB = ModelBuilder.make(parms.algoName(), mJob, mKey);
     newMB._parms = parms.clone();
+    newMB._input_parms = parms.clone();
     return newMB;
   }
 
   /** All the parameters required to build the model. */
   public P _parms;              // Not final, so CV can set-after-clone
 
+  /** All the parameters required to build the model conserved in the input form, with AUTO values not evaluated yet. */
+  public P _input_parms;
 
   /** Training frame: derived from the parameter's training frame, excluding
    *  all ignored columns, all constant and bad columns, perhaps flipping the
@@ -225,6 +232,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
         Scope.enter();
         _parms.read_lock_frames(_job); // Fetch & read-lock input frames
         computeImpl();
+        computeParameters();
         saveModelCheckpointIfConfigured();
       } finally {
         _parms.read_unlock_frames(_job);
@@ -252,6 +260,14 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     }
 
     public abstract void computeImpl();
+
+    public final void computeParameters() {
+      M model = _result.get();
+      if (model != null) {
+        //set input parameters
+        model.setInputParms(_input_parms);
+      }
+    }
   }
 
   private void setFinalState() {
@@ -296,6 +312,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
   public Job<M> trainModelOnH2ONode() {
     if (error_count() > 0)
       throw H2OModelBuilderIllegalArgumentException.makeFromBuilder(this);
+    this._input_parms = (P) this._parms.clone();
     TrainModelRunnable trainModel = new TrainModelRunnable(this);
     H2O.runOnH2ONode(trainModel);
     return _job;
@@ -306,17 +323,20 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     private Job<Model> _job;
     private Key<Model> _key;
     private Model.Parameters _parms;
+    private Model.Parameters _input_parms;
     @SuppressWarnings("unchecked")
     private TrainModelRunnable(ModelBuilder mb) {
       _mb = mb;
       _job = (Job<Model>) _mb._job;
       _key = _job._result;
       _parms = _mb._parms;
+      _input_parms = _mb._input_parms;
     }
     @Override
     public void setupOnRemote() {
       _mb = ModelBuilder.make(_parms.algoName(), _job, _key);
       _mb._parms = _parms;
+      _mb._input_parms = _input_parms;
       _mb.init(false); // validate parameters
     }
     @Override
@@ -410,6 +430,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
     public void run() {
       ModelBuilder mb = ModelBuilder.make(_parms.algoName(), _job, _key);
       mb._parms = _parms;
+      mb._input_parms = _parms.clone();
       mb.trainModelNested(_fr);
     }
   }
@@ -615,6 +636,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       cv_mb._parms._nfolds = 0; // Each submodel is not itself folded
       cv_mb._parms._max_runtime_secs = cv_max_runtime_secs;
       cv_mb.clearValidationErrors(); // each submodel gets its own validation messages and error_count()
+      cv_mb._input_parms = (P) _parms.clone();
 
       // Error-check all the cross-validation Builders before launching any
       cv_mb.init(false);
@@ -1188,7 +1210,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       } else {
         hide("_nfolds", "nfolds is ignored when a fold column is specified.");
       }
-      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
+      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null && _parms != null) {
         error("_fold_assignment", "Fold assignment is not allowed in conjunction with a fold column.");
       }
     }
@@ -1201,7 +1223,7 @@ abstract public class ModelBuilder<M extends Model<M,P,O>, P extends Model.Param
       hide("_keep_cross_validation_predictions", "Only for cross-validation.");
       hide("_keep_cross_validation_fold_assignment", "Only for cross-validation.");
       hide("_fold_assignment", "Only for cross-validation.");
-      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO) {
+      if (_parms._fold_assignment != Model.Parameters.FoldAssignmentScheme.AUTO && _parms._fold_assignment != null) {
         error("_fold_assignment", "Fold assignment is only allowed for cross-validation.");
       }
     }

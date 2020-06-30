@@ -14,6 +14,7 @@ import hex.tree.PlattScalingHelper;
 import hex.tree.xgboost.predict.*;
 import hex.tree.xgboost.util.BoosterHelper;
 import hex.tree.xgboost.util.PredictConfiguration;
+import hex.util.EffectiveParametersUtils;
 import ml.dmlc.xgboost4j.java.Booster;
 import hex.tree.xgboost.predict.PredictorFactory;
 import org.apache.log4j.Logger;
@@ -229,6 +230,43 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     setDataInfoToOutput(dinfo);
     model_info = new XGBoostModelInfo(parms, dinfo);
   }
+
+  @Override
+  public void initActualParamValues() {
+    super.initActualParamValues();
+    EffectiveParametersUtils.initFoldAssignment(_parms);
+    _parms._backend = getActualBackend(_parms);
+    _parms._tree_method = getActualTreeMethod(_parms);
+  }
+
+  public static XGBoostParameters.TreeMethod getActualTreeMethod(XGBoostParameters p) {
+    // tree_method parameter is evaluated according to:
+    // https://github.com/h2oai/xgboost/blob/96f61fb3be8c4fa0e160dd6e82677dfd96a5a9a1/src/gbm/gbtree.cc#L127 
+    // + we don't use external-memory data matrix feature in h2o 
+    // + https://github.com/h2oai/h2o-3/blob/b68e544d8dac3c5c0ed16759e6bf7e8288573ab5/h2o-extensions/xgboost/src/main/java/hex/tree/xgboost/XGBoostModel.java#L348
+    if ( p._tree_method == XGBoostModel.XGBoostParameters.TreeMethod.auto) {
+      if (H2O.getCloudSize() > 1) {
+        if (p._monotone_constraints != null && p._booster != XGBoostParameters.Booster.gblinear && p._backend != XGBoostParameters.Backend.gpu) {
+          return XGBoostParameters.TreeMethod.hist;
+        } else {
+          return XGBoostModel.XGBoostParameters.TreeMethod.approx;
+        }
+      } else if (p.train() != null && p.train().numRows() >= (4 << 20)) {
+        return XGBoostModel.XGBoostParameters.TreeMethod.approx;
+      } else {
+        return XGBoostModel.XGBoostParameters.TreeMethod.exact;
+      }
+    } else {
+      return p._tree_method;
+    }
+  }
+
+  public void initActualParamValuesAfterOutputSetup(boolean isClassifier, int nclasses) {
+    EffectiveParametersUtils.initStoppingMetric(_parms, isClassifier);
+    EffectiveParametersUtils.initCategoricalEncoding(_parms, Parameters.CategoricalEncodingScheme.OneHotInternal);
+    EffectiveParametersUtils.initDistribution(_parms, nclasses);
+    _parms._dmatrix_type = _output._sparse ? XGBoostModel.XGBoostParameters.DMatrixType.sparse : XGBoostModel.XGBoostParameters.DMatrixType.dense;
+  }
   
   public static XGBoostParameters.Backend getActualBackend(XGBoostParameters p) {
     if ( p._backend == XGBoostParameters.Backend.auto || p._backend == XGBoostParameters.Backend.gpu ) {
@@ -329,6 +367,7 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
       params.put("skip_drop", p._skip_drop);
     }
     XGBoostParameters.Backend actualBackend = getActualBackend(p);
+    XGBoostParameters.TreeMethod actualTreeMethod = getActualTreeMethod(p);
     if (actualBackend == XGBoostParameters.Backend.gpu) {
       params.put("gpu_id", p._gpu_id);
       // we are setting updater rather than tree_method here to keep CPU predictor, which is faster
@@ -346,11 +385,11 @@ public class XGBoostModel extends Model<XGBoostModel, XGBoostModel.XGBoostParame
     } else if (H2O.CLOUD.size() > 1 && p._tree_method == XGBoostParameters.TreeMethod.auto &&
         p._monotone_constraints != null) {
       LOG.info("Using hist tree method for distributed computation with monotone_constraints.");
-      params.put("tree_method", XGBoostParameters.TreeMethod.hist.toString());
+      params.put("tree_method", actualTreeMethod.toString());
       params.put("max_bin", p._max_bins);
     } else {
       LOG.info("Using " + p._tree_method.toString() + " tree method.");
-      params.put("tree_method", p._tree_method.toString());
+      params.put("tree_method", actualTreeMethod.toString());
       if (p._tree_method == XGBoostParameters.TreeMethod.hist) {
         params.put("max_bin", p._max_bins);
       }
