@@ -790,6 +790,39 @@ Using the previous example, run the following to retrieve the AUCPR.
         airlines_gbm.pr_auc(train=True, valid=True, xval=False)
         {u'train': 0.801959918132391, u'valid': 0.7609887253334723}
 
+Kolmogorov-Smirnov(KS) Metric 
+#############################
+
+The Kolmogorov-Smirnov metric represents the degree of separation between the positive (1) and negative (0) cumulative distribution functions for a binomial model. It is a nonparametric test that compares the cumulative distributions of two unmatched data sets and does not assume that data are sampled from any defined distributions. The KS metric has the more power to detect changes in the shape of the distribution and less to detect a shift in the median because it tests for more deviations from the null hypothesis. Detailed metrics per each group can be found in the gains-lift table. 
+
+**Examples**
+
+.. tabs::
+  .. code-tab:: r R
+
+    # import the airlines dataset:
+    data <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+    # build and train the model:
+    model <- h2o.gbm(x = c("Origin", "Distance"), y = "IsDepDelayed", training_frame = data, ntrees = 1, gainslife_bins = 500)
+
+    # retrieve the ks metric:
+    kolmogorov_smirnov <- h2o.kolmogorov_smirnov(model)
+    print(kolmogorov_smirnov)
+
+  .. code-tab:: python
+
+    # import the airlines dataset:
+    h2o.import_file(https://s3.amazonaws.com/h2o-public-test-data/smalldata/testng/airlines_train.csv")
+
+    # build and train the model:
+    model = H2OGradientBoostingEstimator(ntrees=1, gainslift_bins=20)
+    model.train(x=["Origin", "Distance"], y="IsDepDelayed", training_frame=airlines)
+
+    # retrieve the ks metric:
+    ks = model.kolmogorov_smirnov()
+    print(ks)
+
 Metric Best Practices - Regression
 '''''''''''''''''''''''''''''''''''
 
