@@ -101,6 +101,7 @@
 #' @param check_constant_response \code{Logical}. Check if response column is constant. If enabled, then an exception is thrown if the response
 #'        column is a constant value.If disabled, then model will train regardless of the response column being a
 #'        constant value or not. Defaults to TRUE.
+#' @param gainslift_bins Gains/Lift table number of bins. 0 means disabled.. Default value -1 means automatic binning. Defaults to -1.
 #' @param verbose \code{Logical}. Print scoring history to the console (Metrics per tree). Defaults to FALSE.
 #' @seealso \code{\link{predict.H2OModel}} for prediction
 #' @examples
@@ -175,6 +176,7 @@ h2o.gbm <- function(x,
                     export_checkpoints_dir = NULL,
                     monotone_constraints = NULL,
                     check_constant_response = TRUE,
+                    gainslift_bins = -1,
                     verbose = FALSE)
 {
   # Validate required training_frame first and other frame args: should be a valid key or an H2OFrame object
@@ -314,6 +316,8 @@ h2o.gbm <- function(x,
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   # Error check and build model
   model <- .h2o.modelJob('gbm', parms, h2oRestApiVersion=3, verbose=verbose)
@@ -375,6 +379,7 @@ h2o.gbm <- function(x,
                                     export_checkpoints_dir = NULL,
                                     monotone_constraints = NULL,
                                     check_constant_response = TRUE,
+                                    gainslift_bins = -1,
                                     segment_columns = NULL,
                                     segment_models_id = NULL,
                                     parallelism = 1)
@@ -518,6 +523,8 @@ h2o.gbm <- function(x,
     parms$monotone_constraints <- monotone_constraints
   if (!missing(check_constant_response))
     parms$check_constant_response <- check_constant_response
+  if (!missing(gainslift_bins))
+    parms$gainslift_bins <- gainslift_bins
 
   # Build segment-models specific parameters
   segment_parms <- list()
