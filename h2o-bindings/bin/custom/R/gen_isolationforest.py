@@ -1,9 +1,11 @@
 def update_param(name, param):
+    if name == 'validation_response_column':
+        param['name'] = None
+        return param
     if name == 'stopping_metric':
         param['values'] = ['AUTO', 'anomaly_score']
         return param
     return None  # param untouched
-
 
 extensions = dict(
     required_params=['training_frame', 'x'],
@@ -13,6 +15,7 @@ parms$training_frame <- training_frame
 if(!missing(x))
   parms$ignored_columns <- .verify_datacols(training_frame, x)$cols_ignore
 """,
+    skip_default_set_params_for=['validation_response_column', 'training_frame', 'ignored_columns'],
 )
 
 doc = dict(
