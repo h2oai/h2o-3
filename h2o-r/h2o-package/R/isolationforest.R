@@ -34,9 +34,7 @@
 #'        stopping_metric does not improve for k:=stopping_rounds scoring events (0 to disable) Defaults to 0.
 #' @param stopping_metric Metric to use for early stopping (AUTO: logloss for classification, deviance for regression and
 #'        anonomaly_score for Isolation Forest). Note that custom and custom_increasing can only be used in GBM and DRF
-#'        with the Python client. Must be one of: "AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC",
-#'        "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing".
-#'        Defaults to AUTO.
+#'        with the Python client. Must be one of: "AUTO". Defaults to AUTO.
 #' @param stopping_tolerance Relative tolerance for metric-based stopping criterion (stop if relative improvement is not at least this
 #'        much) Defaults to 0.01.
 #' @param export_checkpoints_dir Automatically export generated models to this directory.
@@ -57,7 +55,7 @@
 #' 
 #' # Train the IF model
 #' cars_if <- h2o.isolationForest(x = predictors, training_frame = cars,
-#'                                seed = 1234, stopping_metric = "MSE",
+#'                                seed = 1234, stopping_metric = "anomaly_score",
 #'                                stopping_rounds = 3, stopping_tolerance = 0.1)
 #' }
 #' @export
@@ -80,7 +78,7 @@ h2o.isolationForest <- function(training_frame,
                                 col_sample_rate_per_tree = 1,
                                 categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                 stopping_rounds = 0,
-                                stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                stopping_metric = c("AUTO"),
                                 stopping_tolerance = 0.01,
                                 export_checkpoints_dir = NULL,
                                 contamination = -1)
@@ -159,7 +157,7 @@ h2o.isolationForest <- function(training_frame,
                                                 col_sample_rate_per_tree = 1,
                                                 categorical_encoding = c("AUTO", "Enum", "OneHotInternal", "OneHotExplicit", "Binary", "Eigen", "LabelEncoder", "SortByResponse", "EnumLimited"),
                                                 stopping_rounds = 0,
-                                                stopping_metric = c("AUTO", "deviance", "logloss", "MSE", "RMSE", "MAE", "RMSLE", "AUC", "AUCPR", "lift_top_group", "misclassification", "mean_per_class_error", "custom", "custom_increasing"),
+                                                stopping_metric = c("AUTO"),
                                                 stopping_tolerance = 0.01,
                                                 export_checkpoints_dir = NULL,
                                                 contamination = -1,
