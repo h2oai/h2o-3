@@ -1,20 +1,29 @@
 package water;
 
 import static org.junit.Assert.assertFalse;
-import org.junit.BeforeClass;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import water.api.schemas3.TwoDimTableV3;
 import water.fvec.FVecFactory;
 import water.fvec.Frame;
 import water.parser.ParseDataset;
+import water.parser.ParserTest;
+import water.runner.CloudSize;
+import water.runner.H2ORunner;
 import water.util.Log;
 import water.util.TwoDimTable;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static water.util.TwoDimTable.emptyDouble;
 
+@RunWith(H2ORunner.class)
+@CloudSize(1)
 public class TwoDimTableTest extends TestUtil {
-  @BeforeClass() public static void setup() { stall_till_cloudsize(1); }
+
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
   @Test
   public void run0() {
@@ -323,5 +332,13 @@ public class TwoDimTableTest extends TestUtil {
     } finally {
       if (fr != null) fr.delete();
     }
+  }
+
+  @Test
+  public void testTypeError(){
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("colTypes values must be one of \"double\", \"float\", \"int\", \"long\", or \"string\". Received \"wrongtype\"");
+    new TwoDimTable("Test table", "Description", new String[]{"R1"}, new String[]{"C1"}, new String[]{"wrongType"},
+        new String[]{"%f"}, "ColHeaderForRowHeader");
   }
 }
