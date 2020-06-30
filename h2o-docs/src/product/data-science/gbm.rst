@@ -276,6 +276,8 @@ Defining a GBM Model
 
 -  **verbose**: Print scoring history to the console. For GBM, metrics are per tree. This value defaults to FALSE.
 
+- **gainslift_bins**: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
+
 Interpreting a GBM Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 

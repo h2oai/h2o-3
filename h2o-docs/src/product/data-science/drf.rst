@@ -244,6 +244,8 @@ Defining a DRF Model
 
 -  `check_constant_response <algo-params/check_constant_response.html>`__: Check if the response column is a constant value. If enabled (default), then an exception is thrown if the response column is a constant value. If disabled, then the model will train regardless of the response column being a constant value or not.
 
+- **gainslift_bins**: The number of bins for a Gains/Lift table. The default value is ``-1`` and makes the binning automatic. To disable this feature, set to ``0``.
+
 Interpreting a DRF Model
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
