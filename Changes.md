@@ -2,6 +2,35 @@
 
 ## H2O
 
+### Zahradnik (3.30.0.6) - 6/30/2020
+
+Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/6/index.html</a>
+            
+<h4>Bug</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7630'>PUBDEV-7630</a>] - GLM Plug values are now propagated to MOJOs/POJOs.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7631'>PUBDEV-7631</a>] - In the Python documentation, the HGLM example now references `random_columns` by indices rather than by column name.
+</li>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7642'>PUBDEV-7642</a>] - Fixed a link to H2O blogs in the R documentation.
+</li>
+</ul>
+            
+<h4>New Feature</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7404'>PUBDEV-7404</a>] - Added documentation the new Kolmogorov-Smirnov metric for binary classification models.
+</li>
+</ul>
+                                                                                                                                                                                                                                                                                                
+<h4>Docs</h4>
+
+<ul>
+<li>[<a href='https://0xdata.atlassian.net/browse/PUBDEV-7625'>PUBDEV-7625</a>] - Added documentation in the Performance and Prediction chapter for the Kolmogorov-Smirnov metric.
+</li>
+</ul>
+
 ### Zahradnik (3.30.0.5) - 6/18/2020
 
 Download at: <a href='http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/5/index.html'>http://h2o-release.s3.amazonaws.com/h2o/rel-zahradnik/5/index.html</a>
