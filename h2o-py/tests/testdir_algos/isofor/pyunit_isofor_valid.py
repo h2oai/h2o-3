@@ -27,7 +27,8 @@ def isolation_forest_valid():
     test["label"] = labels_test.asfactor()
 
     # Run IF again with same parameters with a labeled test set
-    if_model_valid = H2OIsolationForestEstimator(ntrees=7, seed=12, sample_size=5, response_column="label")
+    if_model_valid = H2OIsolationForestEstimator(ntrees=7, seed=12, sample_size=5, 
+                                                 validation_response_column="label")
     if_model_valid.train(training_frame=train, validation_frame=test)
     print(if_model_valid)
 
