@@ -2035,7 +2035,6 @@ public class DeepLearningTest extends TestUtil {
       parms._seed = 0xdecaf;
       parms._nfolds = 3;
       parms._distribution = bernoulli;
-      parms._categorical_encoding = Model.Parameters.CategoricalEncodingScheme.AUTO;
 
       dl = new DeepLearning(parms).trainModel().get();
 
@@ -2535,13 +2534,12 @@ public class DeepLearningTest extends TestUtil {
       parms._score_interval = 0;
       parms._stopping_rounds = 0;
       parms._overwrite_with_best_model = true;
+      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
+      parms2._epochs = 10;
 
       dl = new DeepLearning(parms).trainModel().get();
       double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
 
-
-      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
-      parms2._epochs = 10;
       parms2._checkpoint = dl._key;
 
       dl2 = new DeepLearning(parms2).trainModel().get();
@@ -2586,13 +2584,12 @@ public class DeepLearningTest extends TestUtil {
       parms._score_interval = 0;
       parms._stopping_rounds = 0;
       parms._overwrite_with_best_model = true;
+      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
+      parms2._epochs = 20;
 
       dl = new DeepLearning(parms).trainModel().get();
       double ll1 = ((ModelMetricsMultinomial)dl._output._validation_metrics).logloss();
 
-
-      DeepLearningParameters parms2 = (DeepLearningParameters)parms.clone();
-      parms2._epochs = 20;
       parms2._checkpoint = dl._key;
 
       dl2 = new DeepLearning(parms2).trainModel().get();

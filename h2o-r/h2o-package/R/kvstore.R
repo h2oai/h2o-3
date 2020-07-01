@@ -210,8 +210,9 @@ h2o.getModel <- function(model_id) {
   }
   parameters <- list()
   allparams  <- list()
-  lapply(json$parameters, function(param) {
-    if (!is.null(param$actual_value)) {
+
+  fill_pairs <- function(param, all=TRUE) {
+    if (!is.null(param$actual_value) && !is.null(param$name)) {
       name <- param$name
       value <- param$actual_value
       mapping <- .type.map[param$type,]
@@ -236,13 +237,31 @@ h2o.getModel <- function(model_id) {
       # Response column needs to be parsed
       if (name == "response_column")
         value <- value$column_name
-      allparams[[name]] <<- value
+        
+      if (all == TRUE) {
+        return(list(name, value))
+      }
+        
       # Store only user changed parameters into parameters
       # TODO: Should we use !isTrue(all.equal(param$default_value, param$actual_value)) instead?
-      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value))
-        parameters[[name]] <<- value
+      if (is.null(param$default_value) || param$required || !identical(param$default_value, param$actual_value)){
+        return(list(name, value))
+      }
     }
-  })
+    return(NULL)
+  }
+    
+  # get name, value pairs
+  allparams_key_val = lapply(json$parameters, fill_pairs, all=TRUE)
+  parameters_key_val = lapply(json$parameters, fill_pairs, all=FALSE)
+    
+  # remove NULLs
+  allparams_key_val[sapply(allparams_key_val, is.null)] <- NULL
+  parameters_key_val[sapply(parameters_key_val, is.null)] <- NULL
+    
+  # fill allparams, parameters
+  for (param in allparams_key_val) {if (!any(is.na(param[1]))) allparams[unlist(param[1])] <- param[2]}
+  for (param in parameters_key_val) {if (!any(is.na(param[1]))) parameters[unlist(param[1])] <- param[2]}
 
   # Run model specific hooks
   model_fill_func <- paste0(".h2o.fill_", json$algo)
@@ -255,6 +274,7 @@ h2o.getModel <- function(model_id) {
 
   parameters$x <- json$output$names
   allparams$x  <- json$output$names
+    
   if (!is.null(parameters$response_column))
   {
     parameters$y <- parameters$response_column
@@ -530,4 +550,18 @@ h2o.download_model <- function(model, path=NULL) {
     writeBin(.h2o.doSafeGET(urlSuffix = urlSuffix, binary = TRUE), file_path, useBytes = TRUE)
     
     return(paste0(file_path))
+}
+
+#'
+#' Execute a Rapids expression.
+#'
+#' @param expr The rapids expression (ascii string)
+#'
+#' @examples
+#' \dontrun{
+#' h2o.rapids('(setproperty "sys.ai.h2o.algos.evaluate_auto_model_parameters" "true")')
+#' }
+#' @export
+h2o.rapids <- function(expr) {
+    res <- .h2o.__remoteSend(.h2o.__RAPIDS, h2oRestApiVersion = 99, ast=paste0(expr), session_id=h2o.getConnection()@mutable$session_id, method = "POST")
 }

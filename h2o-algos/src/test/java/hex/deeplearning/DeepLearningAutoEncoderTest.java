@@ -1,5 +1,7 @@
 package hex.deeplearning;
 
+import hex.Model;
+import hex.ScoreKeeper;
 import hex.genmodel.algos.deeplearning.DeeplearningMojoModel;
 import hex.genmodel.easy.RowData;
 import hex.genmodel.easy.exception.PredictException;
@@ -68,6 +70,7 @@ public class DeepLearningAutoEncoderTest extends TestUtil {
         DeepLearning dl = new DeepLearning(p);
         DeepLearningModel mymodel = dl.trainModel().get();
 
+        p._stopping_metric = ScoreKeeper.StoppingMetric.AUTO; // reset to auto as it got evaluated during previous model building
         p._standardize = false;
         DeepLearning dlNoStand = new DeepLearning(p);
         DeepLearningModel mymodelNoStand = dlNoStand.trainModel().get();

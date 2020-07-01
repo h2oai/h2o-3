@@ -74,22 +74,22 @@ public class PCAWideDataSetsTests extends TestUtil {
 		public void testWideDataSetGramSVD() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD, PCAParameters.Method.GramSVD,
 												_TOLERANCE, _smallDataset, false, true,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 1
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 1
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD, PCAParameters.Method.GramSVD,
 												_TOLERANCE, _smallDataset, true, true,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 2
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 2
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD, PCAParameters.Method.GramSVD,
 												_TOLERANCE, _smallDataset, false, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 3
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 3
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD, PCAParameters.Method.GramSVD,
 												_TOLERANCE, _smallDataset, true, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 4
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 4
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD, PCAParameters.Method.GramSVD,
 												_TOLERANCE, _prostateDataset, false, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 5
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 5
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD, PCAParameters.Method.GramSVD,
 												_TOLERANCE, _prostateDataset, true, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);		  // case 6
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());		  // case 6
 		}
 
 
@@ -105,22 +105,22 @@ public class PCAWideDataSetsTests extends TestUtil {
 		public void testWideDataSetPower() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD, PCAParameters.Method.Power,
 												_TOLERANCE, _smallDataset, false, true,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 1
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 1
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Power, _TOLERANCE, _smallDataset, true, true,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);   // case 2
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());   // case 2
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Power, _TOLERANCE, _smallDataset, false, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 3
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 3
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Power, _TOLERANCE, _smallDataset, true, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 4
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 4
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Power, _TOLERANCE, _prostateDataset, false, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 5
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 5
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Power, _TOLERANCE, _prostateDataset, true, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 6
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 6
 		}
 
 		/*
@@ -135,22 +135,22 @@ public class PCAWideDataSetsTests extends TestUtil {
 		public void testWideDataSetRandomized() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset, false, true,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 1
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 1
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset, true, true,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);   // case 2
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());   // case 2
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset, false, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 3
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 3
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Randomized, _TOLERANCE, _smallDataset, true, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 4
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 4
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Randomized, _TOLERANCE, _prostateDataset, false, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 5
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 5
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD,
 												PCAParameters.Method.Randomized, _TOLERANCE, _prostateDataset, true, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 6
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 6
 		}
 
 		/*
@@ -165,19 +165,19 @@ public class PCAWideDataSetsTests extends TestUtil {
 		public void testWideDataSetGLRM() throws InterruptedException, ExecutionException {
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GramSVD, PCAParameters.Method.GLRM,
 												0.0001, _smallDataset, false, true,
-												_transformTypes[1], pcaParameters);  // case 1 numerical
+												_transformTypes[1], (PCAParameters) pcaParameters.clone());  // case 1 numerical
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GLRM, PCAParameters.Method.GLRM,_TOLERANCE,
-												_smallDataset, true, true, _transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);   // case 2
+												_smallDataset, true, true, _transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());   // case 2
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GLRM, PCAParameters.Method.GLRM,_TOLERANCE,
-												_smallDataset, false, false, _transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 3
+												_smallDataset, false, false, _transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 3
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GLRM, PCAParameters.Method.GLRM,_TOLERANCE,
-												_smallDataset, true, false, _transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 4
+												_smallDataset, true, false, _transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 4
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GLRM, PCAParameters.Method.GLRM, _TOLERANCE,
 												_prostateDataset, false, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 5
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 5
 				ActualPCATests.testWideDataSets(PCAParameters.Method.GLRM, PCAParameters.Method.GLRM, _TOLERANCE,
 												_prostateDataset, true, false,
-												_transformTypes[_rand.nextInt(_transformTypes.length)], pcaParameters);  // case 6
+												_transformTypes[_rand.nextInt(_transformTypes.length)], (PCAParameters) pcaParameters.clone());  // case 6
 		}
 }
 
@@ -217,14 +217,15 @@ class ActualPCATests {
 						pcaParameters._pca_method = pcaMethod;
 						pcaParameters._impute_missing = false;
 						pcaParameters._seed = 12345;
+						PCAParameters pcaParameters2 = (PCAParameters) pcaParameters.clone(); 
 						PCA pcaParms = new PCA(pcaParameters);
 						modelN = pcaParms.trainModel().get(); // get normal data
 						scoreN = modelN.score(train);
 						Scope.track(scoreN);
 						Scope.track_generic(modelN);
 
-						pcaParameters._pca_method = pcaMethod2;
-						PCA pcaParmsW = new PCA(pcaParameters);
+						pcaParameters2._pca_method = pcaMethod2;
+						PCA pcaParmsW = new PCA(pcaParameters2);
 						pcaParmsW.setWideDataset(true);  // force to treat dataset as wide even though it is not.
 						modelW = pcaParmsW.trainModel().get();
 						scoreW = modelW.score(train);

@@ -6,6 +6,7 @@ import hex.api.MakeGLMModelHandler;
 import hex.deeplearning.DeepLearningModel;
 import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.Link;
+import hex.util.EffectiveParametersUtils;
 import org.apache.commons.math3.distribution.NormalDistribution;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.distribution.TDistribution;
@@ -38,6 +39,12 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     _nullDOF = nobs - (parms._intercept?1:0);
   }
 
+  @Override
+  public void initActualParamValues() {
+    super.initActualParamValues();
+    EffectiveParametersUtils.initFoldAssignment(_parms);
+  }
+  
   public void setVcov(double[][] inv) {_output._vcov = inv;}
 
   public static class RegularizationPath extends Iced {

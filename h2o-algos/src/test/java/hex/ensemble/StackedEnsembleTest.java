@@ -378,7 +378,6 @@ public class StackedEnsembleTest extends TestUtil {
         seParams._response_column = target;
         seParams._base_models = grid.getModelKeys();
         seParams._seed = seed;
-
         //running a first blending SE without keeping predictions
         seParams._keep_base_model_predictions = false;
         StackedEnsemble seJob = new StackedEnsemble(seParams);

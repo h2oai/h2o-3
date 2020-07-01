@@ -876,19 +876,19 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    1.31814009  0.82918839  0.63285077  0.02949062  0.00000000  0.83011321
     String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",  "PSA",      "VOL", "GLEASON"};
     double [] vals = new double [] {-7.85142421,   0.0,    0.93030614,   1.31814009,    0.82918839, 0.63285077, 0.02949062, 0.0,    0.83011321};
-    GLMParameters params = new GLMParameters(Family.binomial);
-    params._response_column = "CAPSULE";
-    params._ignored_columns = new String[]{"ID",};
-    params._train = _prostateTrain._key;
-    params._lambda = new double[]{0};
-    params._alpha = new double[]{0};
-    params._standardize = false;
-    params._non_negative = true;
-    params._intercept = true;
-    params._objective_epsilon = 1e-10;
-    params._gradient_epsilon = 1e-6;
-    params._max_iterations = 10000; // not expected to reach max iterations here
     for(Solver s:new Solver[]{Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID",};
+      params._train = _prostateTrain._key;
+      params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
+      params._standardize = false;
+      params._non_negative = true;
+      params._intercept = true;
+      params._objective_epsilon = 1e-10;
+      params._gradient_epsilon = 1e-6;
+      params._max_iterations = 10000; // not expected to reach max iterations here
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;
@@ -929,19 +929,19 @@ public class GLMBasicTestBinomial extends TestUtil {
 //    0.000000000 0.000000000 0.680406869 0.007137494 0.000000000 0.000000000
     String [] cfs1 = new String [] {"Intercept", "AGE", "DPROS.b",    "DPROS.c",     "DPROS.d",  "DCAPS.b",   "PSA",      "VOL", "GLEASON", "RACE.R1"};
     double [] vals = new double [] { 0.0,         0.0,   0.0,          0,             0.0,        0.680406869, 0.007137494, 0.0,  0.0,       0.240953925};
-    GLMParameters params = new GLMParameters(Family.binomial);
-    params._response_column = "CAPSULE";
-    params._ignored_columns = new String[]{"ID",};
-    params._train = _prostateTrain._key;
-    params._lambda = new double[]{0};
-    params._alpha = new double[]{0};
-    params._standardize = false;
-    params._non_negative = true;
-    params._intercept = false;
-    params._objective_epsilon = 1e-6;
-    params._gradient_epsilon = 1e-5;
-    params._max_iterations = 150; // not expected to reach max iterations here
     for(Solver s:new Solver[]{Solver.AUTO,Solver.IRLSM,Solver.L_BFGS, Solver.COORDINATE_DESCENT}) {
+      GLMParameters params = new GLMParameters(Family.binomial);
+      params._response_column = "CAPSULE";
+      params._ignored_columns = new String[]{"ID",};
+      params._train = _prostateTrain._key;
+      params._lambda = new double[]{0};
+      params._alpha = new double[]{0};
+      params._standardize = false;
+      params._non_negative = true;
+      params._intercept = false;
+      params._objective_epsilon = 1e-6;
+      params._gradient_epsilon = 1e-5;
+      params._max_iterations = 150; // not expected to reach max iterations here
       Frame scoreTrain = null, scoreTest = null;
       try {
         params._solver = s;

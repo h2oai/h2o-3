@@ -9,6 +9,7 @@ import hex.glm.GLMModel.GLMParameters.Family;
 import hex.glm.GLMModel.GLMParameters.GLMType;
 import hex.glm.GLMModel.GLMParameters.Link;
 import hex.glm.GLMModel.GLMParameters.Solver;
+import hex.util.EffectiveParametersUtils;
 import water.*;
 import water.fvec.Chunk;
 import water.fvec.Frame;
@@ -56,6 +57,10 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   public GAMModel(Key<GAMModel> selfKey, GAMParameters parms, GAMModelOutput output) {
     super(selfKey, parms, output);
     assert(Arrays.equals(_key._kb, selfKey._kb));
+  }
+  
+  public void initActualParamValuesAfterGlmCreation(){
+    EffectiveParametersUtils.initFoldAssignment(_parms);
   }
 
   public TwoDimTable copyTwoDimTable(TwoDimTable table) {

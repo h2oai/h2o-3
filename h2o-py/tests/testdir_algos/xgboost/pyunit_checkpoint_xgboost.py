@@ -46,7 +46,10 @@ def xgboost_checkpoint():
   except H2OResponseError as e:
     assert "_ntrees: If checkpoint is specified then requested ntrees must be higher than 6" in e.args[0].msg
 
-  model2.ntrees = ntrees2
+  model2 = H2OXGBoostEstimator(
+      ntrees=ntrees2, max_depth=max_depth, min_rows=min_rows, distribution=distribution,
+      checkpoint=restored_model.model_id
+  )
   model2.train(
     y=0, x=list(range(1,train.ncol)), training_frame=train, validation_frame=valid
   )  

@@ -503,7 +503,6 @@ setGeneric("getParms", function(object) { standardGeneric("getParms") })
 #' @rdname ModelAccessors
 #' @export
 setMethod("getParms", "H2OModel", function(object) { object@parameters })
-
 #' @rdname ModelAccessors
 #' @export
 setGeneric("getCenters", function(object) { standardGeneric("getCenters") })

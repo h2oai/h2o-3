@@ -54,6 +54,7 @@ public class GenericModelParameters extends Model.Parameters {
             convertedParam.type = originalParam.type;
             convertedParam.actual_value = convertObjectToIced(originalParam.actual_value);
             convertedParam.default_value = convertObjectToIced(originalParam.default_value);
+            convertedParam.input_value = convertObjectToIced(originalParam.input_value);
 
             convertedParams[i] = convertedParam;
         }
