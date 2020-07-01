@@ -219,8 +219,8 @@ public class GAMModel extends Model<GAMModel, GAMModel.GAMParameters, GAMModel.G
   public static class GAMParameters extends Model.Parameters {
     // the following parameters will be passed to GLM algos
     public boolean _standardize = false; // pass to GLM algo
-    public Family _family;
-    public Link _link;
+    public Family _family = Family.AUTO;
+    public Link _link = Link.family_default;
     public Solver _solver = Solver.AUTO;
     public double _tweedie_variance_power;
     public double _tweedie_link_power;

@@ -37,8 +37,8 @@
 #'        data frame. This is typically the number of times a row is repeated, but non-integer values are supported as
 #'        well. During training, rows with higher weights matter more, due to the larger loss function pre-factor.
 #' @param family Family. Use binomial for classification with logistic regression, others are for regression problems. Must be
-#'        one of: "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie",
-#'        "negativebinomial", "fractionalbinomial".
+#'        one of: "AUTO", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma",
+#'        "tweedie", "negativebinomial", "fractionalbinomial". Defaults to AUTO.
 #' @param tweedie_variance_power Tweedie variance power Defaults to 0.
 #' @param tweedie_link_power Tweedie link power Defaults to 0.
 #' @param theta Theta Defaults to 0.
@@ -79,6 +79,7 @@
 #'        is equal to .000001, otherwise the default value is .0001. If lambda_search is set to True, the conditional
 #'        values above are 1E-8 and 1E-6 respectively. Defaults to -1.
 #' @param link Link function. Must be one of: "family_default", "identity", "logit", "log", "inverse", "tweedie", "ologit".
+#'        Defaults to family_default.
 #' @param prior Prior probability for y==1. To be used only for logistic regression iff the data has been sampled and the mean
 #'        of response does not reflect reality. Defaults to -1.
 #' @param lambda_min_ratio Minimum lambda used in lambda search, specified as a ratio of lambda_max (the smallest lambda that drives all
@@ -138,7 +139,7 @@ h2o.gam <- function(x,
                     score_each_iteration = FALSE,
                     offset_column = NULL,
                     weights_column = NULL,
-                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
+                    family = c("AUTO", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
                     tweedie_variance_power = 0,
                     tweedie_link_power = 0,
                     theta = 0,
@@ -368,7 +369,7 @@ h2o.gam <- function(x,
                                     score_each_iteration = FALSE,
                                     offset_column = NULL,
                                     weights_column = NULL,
-                                    family = c("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
+                                    family = c("AUTO", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"),
                                     tweedie_variance_power = 0,
                                     tweedie_link_power = 0,
                                     theta = 0,

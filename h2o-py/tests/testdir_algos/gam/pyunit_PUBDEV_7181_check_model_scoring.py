@@ -16,7 +16,9 @@ def test_gam_model_predict():
     h2o_data["C2"] = h2o_data["C2"].asfactor()
     myY = "C21"
     model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictGaussianGAM1.csv"))
-    buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'gaussian')
+    pred_gauss = buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'gaussian', 'gaussian')
+    pred_auto_gauss = buildModelCheckPredict(h2o_data, h2o_data,  model_test_data, myY, ["C11", "C12", "C13"], 'AUTO', 'gaussian')
+    pyunit_utils.compare_frames_local(pred_gauss, pred_auto_gauss, prob=1)
 
     print("Checking model scoring for multinomial")
     h2o_data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/multinomial_10_classes_10_cols_10000_Rows_train.csv"))
@@ -25,8 +27,9 @@ def test_gam_model_predict():
     myY = "C11"
     h2o_data["C11"] = h2o_data["C11"].asfactor()
     model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictMultinomialGAM1.csv"))
-    buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C6", "C7", "C8"], 'multinomial')
-
+    pred_multi = buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C6", "C7", "C8"], 'multinomial', 'multinomial')
+    pred_auto_multi = buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C6", "C7", "C8"], 'AUTO', 'multinomial')
+    pyunit_utils.compare_frames_local(pred_multi, pred_auto_multi, prob=1)
 
     print("Checking model scoring for binomial")
     h2o_data = h2o.import_file(pyunit_utils.locate("smalldata/glm_test/binomial_20_cols_10KRows.csv"))
@@ -35,7 +38,9 @@ def test_gam_model_predict():
     myY = "C21"
     h2o_data["C21"] = h2o_data["C21"].asfactor()
     model_test_data = h2o.import_file(pyunit_utils.locate("smalldata/gam_test/predictBinomialGAMRPython.csv"))
-    buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C11", "C12", "C13"], 'binomial')
+    pred_bin = buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C11", "C12", "C13"], 'binomial', 'binomial')
+    pred_auto_bin = buildModelCheckPredict(h2o_data, h2o_data, model_test_data, myY, ["C11", "C12", "C13"], 'AUTO', 'binomial')
+    pyunit_utils.compare_frames_local(pred_bin, pred_auto_bin, prob=1)
     print("gam coeff/varimp test completed successfully")
     
     # add fractional binomial just to make sure it runs
@@ -49,7 +54,7 @@ def test_gam_model_predict():
     predictTest = h2o_model.predict(h2o_data)
     # okay not to have assert/compare here
 
-def buildModelCheckPredict(train_data, test_data, model_test_data, myy, gamX, family):
+def buildModelCheckPredict(train_data, test_data, model_test_data, myy, gamX, family, actual_family):
     numKnots = [5,5,5]
     x=["C1","C2"]
    
@@ -61,12 +66,13 @@ def buildModelCheckPredict(train_data, test_data, model_test_data, myy, gamX, fa
     if pred.ncols < model_test_data.ncols:
         ncolT = model_test_data.ncols-1
         model_test_data = model_test_data.drop(ncolT)
-    if (family == 'gaussian'):
+    if (family == 'gaussian' or (family == 'AUTO' and actual_family == 'gaussian')):
         pyunit_utils.compare_frames_local(pred, model_test_data, prob=1)
     else:
         pred = pred.drop('predict')
         model_test_data = model_test_data.drop('predict')
         pyunit_utils.compare_frames_local(pred, model_test_data, prob=1)
+    return pred
     
 if __name__ == "__main__":
     pyunit_utils.standalone_test(test_gam_model_predict)

@@ -409,7 +409,7 @@ public class GLMModel extends Model<GLMModel,GLMModel.GLMParameters,GLMModel.GLM
     }
     
     public GLMParameters() {
-      this(Family.gaussian, Link.family_default);
+      this(Family.AUTO, Link.family_default);
       assert _link == Link.family_default;
       _stopping_rounds = 3;
       _stopping_metric = ScoreKeeper.StoppingMetric.deviance;

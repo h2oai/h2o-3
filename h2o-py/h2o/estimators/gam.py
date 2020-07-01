@@ -289,14 +289,15 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Family. Use binomial for classification with logistic regression, others are for regression problems.
 
-        One of: ``"gaussian"``, ``"binomial"``, ``"quasibinomial"``, ``"ordinal"``, ``"multinomial"``, ``"poisson"``,
-        ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``, ``"fractionalbinomial"``.
+        One of: ``"auto"``, ``"gaussian"``, ``"binomial"``, ``"quasibinomial"``, ``"ordinal"``, ``"multinomial"``,
+        ``"poisson"``, ``"gamma"``, ``"tweedie"``, ``"negativebinomial"``, ``"fractionalbinomial"``  (default:
+        ``"auto"``).
         """
         return self._parms.get("family")
 
     @family.setter
     def family(self, family):
-        assert_is_type(family, None, Enum("gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"))
+        assert_is_type(family, None, Enum("auto", "gaussian", "binomial", "quasibinomial", "ordinal", "multinomial", "poisson", "gamma", "tweedie", "negativebinomial", "fractionalbinomial"))
         self._parms["family"] = family
 
 
@@ -617,8 +618,8 @@ class H2OGeneralizedAdditiveEstimator(H2OEstimator):
         """
         Link function.
 
-        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``,
-        ``"ologit"``.
+        One of: ``"family_default"``, ``"identity"``, ``"logit"``, ``"log"``, ``"inverse"``, ``"tweedie"``, ``"ologit"``
+        (default: ``"family_default"``).
         """
         return self._parms.get("link")
 
