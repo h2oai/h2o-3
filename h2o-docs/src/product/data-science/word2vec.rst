@@ -115,8 +115,7 @@ Below is a simple example showing how to build a Word2vec model.
    	h2o.init()
 
    	# Import the craigslist dataset into H2O:
-   	job_titles_path = "https://raw.githubusercontent.com/h2oai/sparkling-water/rel-1.6/examples/smalldata/craigslistJobTitles.csv"
-   	job_title <- h2o.importFile(job_titles_path,  
+   	job_title <- h2o.importFile("https://s3.amazonaws.com/h2o-public-test-data/smalldata/craigslistJobTitles.csv",
                                      col.names = c("category", "jobtitle"), 
                                      col.types = c("Enum", "String"), 
                                      header = TRUE)
