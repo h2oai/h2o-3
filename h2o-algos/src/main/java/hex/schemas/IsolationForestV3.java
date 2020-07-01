@@ -38,6 +38,7 @@ public class IsolationForestV3 extends SharedTreeV3<IsolationForest, IsolationFo
                 "stopping_tolerance",
                 "export_checkpoints_dir",
                 "contamination",
+                "validation_frame",
                 "validation_response_column"
         };
 
